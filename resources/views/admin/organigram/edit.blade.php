@@ -27,7 +27,7 @@
                         photoName: null,
                         // Inicializa photoPreview con la ruta existente o null si no hay foto
                         photoPreview: '{{ $organigramMember->profile_photo_path ? asset('storage/' . $organigramMember->profile_photo_path) : null }}',
-                        trajectories: @json($trajectories), // Inicializa trayectorias con los datos pre-procesados
+                        trajectories: {{ $trajectories->toJson() }},
                         removingExistingPhoto: false // Para el checkbox de eliminar foto
                     }"
                     x-on:change="
