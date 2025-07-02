@@ -20,8 +20,9 @@ class AreaSeeder extends Seeder
             'Almacén',
             'Valor Agregado',
             'POSM',
-            'Brokerage', // Corregido de 'Brockerage'
+            'Brokerage',
             'Innovación y Desarrollo',
+            'Administración', // ¡Nueva área!
         ];
 
         foreach ($areas as $areaName) {

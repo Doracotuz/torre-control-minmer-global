@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\Area; // Importa el modelo Area
-use App\Models\User; // Importa el modelo User
+use App\Models\Area;
+use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash; // Importa Hash
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
                     'name' => 'Admin RH',
                     'password' => Hash::make('password'),
                     'area_id' => $rhArea->id,
+                    'is_area_admin' => true, // ¡Este usuario es ahora un admin de área!
                 ]
             );
         }
@@ -39,10 +40,23 @@ class DatabaseSeeder extends Seeder
                     'name' => 'Customer User',
                     'password' => Hash::make('password'),
                     'area_id' => $customerServiceArea->id,
+                    'is_area_admin' => false, // No es admin de área
                 ]
             );
         }
 
-        // Puedes crear más usuarios de prueba para otras áreas si lo deseas
+        // Usuario para el área de Administración (Super Admin)
+        $adminArea = Area::where('name', 'Administración')->first();
+        if ($adminArea) {
+            User::firstOrCreate(
+                ['email' => 'superadmin@example.com'],
+                [
+                    'name' => 'Super Administrador',
+                    'password' => Hash::make('password'),
+                    'area_id' => $adminArea->id,
+                    'is_area_admin' => true, // ¡El Super Admin también es un admin de área!
+                ]
+            );
+        }
     }
 }

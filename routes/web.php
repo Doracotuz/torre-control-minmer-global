@@ -53,6 +53,51 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/folders/{folder}', [FolderController::class, 'destroy'])->name('folders.destroy');
 });
 
+// Rutas de administración (solo accesibles por el área de Administración)
+Route::middleware(['auth', 'check.area:Administración'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', function () {
+        return view('admin.dashboard');
+    })->name('dashboard');
+
+    // Rutas para la gestión de Áreas
+    Route::get('/areas', [App\Http\Controllers\Admin\AreaController::class, 'index'])->name('areas.index');
+    Route::get('/areas/create', [App\Http\Controllers\Admin\AreaController::class, 'create'])->name('areas.create');
+    Route::post('/areas', [App\Http\Controllers\Admin\AreaController::class, 'store'])->name('areas.store');
+    Route::get('/areas/{area}/edit', [App\Http\Controllers\Admin\AreaController::class, 'edit'])->name('areas.edit');
+    Route::put('/areas/{area}', [App\Http\Controllers\Admin\AreaController::class, 'update'])->name('areas.update');
+    Route::delete('/areas/{area}', [App\Http\Controllers\Admin\AreaController::class, 'destroy'])->name('areas.destroy');
+
+    // Rutas para la gestión de Usuarios (NUEVAS RUTAS)
+    Route::get('/users', [App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [App\Http\Controllers\Admin\UserController::class, 'create'])->name('users.create');
+    Route::post('/users', [App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}/edit', [App\Http\Controllers\Admin\UserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
+
+});
+
+// Rutas para Administradores de Área (solo accesibles por usuarios con is_area_admin = true)
+Route::middleware(['auth', 'check.area:area_admin'])->prefix('area-admin')->name('area_admin.')->group(function () {
+    Route::get('/dashboard', function () {
+        return view('area_admin.dashboard');
+    })->name('dashboard');
+
+    // Rutas para la gestión de Usuarios por Administrador de Área
+    Route::get('/users', [App\Http\Controllers\AreaAdmin\UserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [App\Http\Controllers\AreaAdmin\UserController::class, 'create'])->name('users.create');
+    Route::post('/users', [App\Http\Controllers\AreaAdmin\UserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}/edit', [App\Http\Controllers\AreaAdmin\UserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{user}', [App\Http\Controllers\AreaAdmin\UserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [App\Http\Controllers\AreaAdmin\UserController::class, 'destroy'])->name('users.destroy');
+
+    // Rutas para la gestión de Permisos de Carpetas por Administrador de Área (NUEVAS RUTAS)
+    Route::get('/folder-permissions', [App\Http\Controllers\AreaAdmin\FolderPermissionController::class, 'index'])->name('folder_permissions.index');
+    Route::get('/folder-permissions/{folder}/edit', [App\Http\Controllers\AreaAdmin\FolderPermissionController::class, 'edit'])->name('folder_permissions.edit');
+    Route::put('/folder-permissions/{folder}', [App\Http\Controllers\AreaAdmin\FolderPermissionController::class, 'update'])->name('folder_permissions.update');
+
+});
+
 
 // Rutas de perfil de Breeze
 Route::middleware('auth')->group(function () {

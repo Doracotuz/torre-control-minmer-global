@@ -4,36 +4,70 @@ namespace App\Http\Controllers;
 
 use App\Models\Folder;
 use App\Models\Area;
-use App\Models\FileLink; // Importa el modelo FileLink
+use App\Models\FileLink;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Storage; // Importa el facade Storage
+use Illuminate\Support\Facades\Storage;
 
 class FolderController extends Controller
 {
     /**
      * Display a listing of the folders.
-     * Muestra una lista de las carpetas.
+     * Muestra una lista de las carpetas accesibles por el usuario.
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\Folder|null  $folder
-     * @return \Illuminate\View\View
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function index(Request $request, Folder $folder = null)
     {
         $user = Auth::user();
         $currentFolder = $folder; // La carpeta actual que estamos viendo (null si estamos en la raíz)
 
-        // Obtener las carpetas del nivel actual para el área del usuario autenticado
-        // Si hay una carpeta actual, sus hijos; si no, las carpetas de nivel superior (parent_id is null)
-        $folders = Folder::where('area_id', $user->area_id)
-                         ->where('parent_id', $currentFolder ? $currentFolder->id : null)
+        // --- Lógica de Permisos para ver Carpetas y Contenido ---
+        $query = Folder::query();
+
+        // Super Administrador: Ve todas las carpetas
+        if ($user->area && $user->area->name === 'Administración') {
+            // No se aplica ninguna restricción de área o permiso explícito
+        }
+        // Administrador de Área: Ve todas las carpetas de su propia área
+        elseif ($user->is_area_admin) {
+            $query->where('area_id', $user->area_id);
+        }
+        // Usuario Normal: Solo ve carpetas de su área con acceso explícito
+        else {
+            $query->where('area_id', $user->area_id)
+                  ->whereHas('usersWithAccess', function ($q) use ($user) {
+                      $q->where('user_id', $user->id);
+                  });
+        }
+
+        // Filtrar por parent_id para el nivel de jerarquía actual
+        $folders = $query->where('parent_id', $currentFolder ? $currentFolder->id : null)
                          ->orderBy('name')
                          ->get();
 
         // Obtener los archivos/enlaces de la carpeta actual
-        $fileLinks = $currentFolder ? $currentFolder->fileLinks()->orderBy('name')->get() : collect();
+        $fileLinks = collect(); // Inicializar como colección vacía
+        if ($currentFolder) {
+            // Verificar permisos para la carpeta actual antes de mostrar su contenido
+            $hasAccessToCurrentFolder = false;
+            if ($user->area && $user->area->name === 'Administración') {
+                $hasAccessToCurrentFolder = true; // Super Admin siempre tiene acceso
+            } elseif ($user->is_area_admin && $currentFolder->area_id === $user->area_id) {
+                $hasAccessToCurrentFolder = true; // Admin de Área tiene acceso a sus carpetas
+            } elseif ($user->accessibleFolders->contains($currentFolder->id) && $currentFolder->area_id === $user->area_id) {
+                $hasAccessToCurrentFolder = true; // Usuario normal con acceso explícito y en su área
+            }
+
+            if (!$hasAccessToCurrentFolder) {
+                return redirect()->route('dashboard')->with('error', 'No tienes permiso para ver esta carpeta o su contenido.');
+            }
+
+            $fileLinks = $currentFolder->fileLinks()->orderBy('name')->get();
+        }
 
         return view('folders.index', compact('folders', 'currentFolder', 'fileLinks'));
     }
@@ -43,14 +77,29 @@ class FolderController extends Controller
      * Muestra el formulario para crear una nueva carpeta.
      *
      * @param  \App\Models\Folder|null  $folder
-     * @return \Illuminate\View\View
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function create(Folder $folder = null)
     {
-        $currentFolder = $folder; // La carpeta padre donde se creará la nueva carpeta
-        $userArea = Auth::user()->area; // El área del usuario autenticado
+        $user = Auth::user();
+        $currentFolder = $folder;
 
-        return view('folders.create', compact('currentFolder', 'userArea'));
+        // Super Admin puede crear en cualquier lugar
+        if ($user->area && $user->area->name === 'Administración') {
+            // No hay restricción
+        }
+        // Admin de Área solo puede crear en su área
+        elseif ($user->is_area_admin) {
+            if ($currentFolder && $currentFolder->area_id !== $user->area_id) {
+                return redirect()->route('folders.index')->with('error', 'No puedes crear carpetas fuera de tu área.');
+            }
+        }
+        // Usuario Normal no puede crear carpetas
+        else {
+            return redirect()->route('folders.index')->with('error', 'No tienes permiso para crear carpetas.');
+        }
+
+        return view('folders.create', compact('currentFolder', 'user'));
     }
 
     /**
@@ -64,15 +113,45 @@ class FolderController extends Controller
     {
         $user = Auth::user();
 
+        // Determinar el area_id de la nueva carpeta
+        $targetAreaId = null;
+        if ($request->parent_id) {
+            $parentFolder = Folder::find($request->parent_id);
+            if (!$parentFolder) {
+                return back()->withErrors(['parent_id' => 'La carpeta padre no existe.']);
+            }
+            $targetAreaId = $parentFolder->area_id;
+        } else {
+            // Si es carpeta raíz, usa el área del usuario (o permite al Super Admin elegir)
+            if ($user->area && $user->area->name === 'Administración') {
+                // El Super Admin puede crear carpetas raíz para cualquier área.
+                // Para simplificar, asumiremos que las carpetas raíz creadas por Super Admin
+                // se asignan al área del Super Admin por defecto, o se podría añadir un campo de selección de área.
+                // Por ahora, lo asignamos al área del Super Admin.
+                $targetAreaId = $user->area_id;
+            } else {
+                $targetAreaId = $user->area_id;
+            }
+        }
+
+        // Verificar permisos para crear
+        if ($user->area && $user->area->name === 'Administración') {
+            // Super Admin puede crear
+        } elseif ($user->is_area_admin && $targetAreaId === $user->area_id) {
+            // Admin de Área puede crear en su propia área
+        } else {
+            return redirect()->route('folders.index')->with('error', 'No tienes permiso para crear carpetas aquí.');
+        }
+
+
         $request->validate([
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                // Validación de unicidad: el nombre debe ser único para el mismo parent_id y area_id
-                Rule::unique('folders')->where(function ($query) use ($request, $user) {
+                Rule::unique('folders')->where(function ($query) use ($request, $targetAreaId) {
                     return $query->where('parent_id', $request->parent_id)
-                                 ->where('area_id', $user->area_id);
+                                 ->where('area_id', $targetAreaId);
                 }),
             ],
             'parent_id' => 'nullable|exists:folders,id',
@@ -81,11 +160,10 @@ class FolderController extends Controller
         Folder::create([
             'name' => $request->name,
             'parent_id' => $request->parent_id,
-            'area_id' => $user->area_id, // Asigna el área del usuario autenticado
-            'user_id' => $user->id,      // Asigna el usuario que la creó
+            'area_id' => $targetAreaId, // Asigna el área determinada
+            'user_id' => $user->id,
         ]);
 
-        // Redirigir a folders.index con el parent_id (si existe) o a la raíz
         $redirectPath = $request->parent_id ? route('folders.index', $request->parent_id) : route('folders.index');
 
         return redirect($redirectPath)->with('success', 'Carpeta creada exitosamente.');
@@ -100,12 +178,8 @@ class FolderController extends Controller
      */
     public function show(Folder $folder)
     {
-        // Asegurarse de que el usuario tiene permiso para ver esta carpeta (pertenece a su área)
-        if (Auth::user()->area_id !== $folder->area_id) {
-            return redirect()->route('dashboard')->with('error', 'No tienes permiso para ver esta carpeta.');
-        }
-
-        // Reutilizamos la lógica de index para mostrar el contenido de una carpeta específica
+        // La lógica de permisos ya está en el método index, que es llamado aquí.
+        // Si el usuario no tiene acceso, index ya redirigirá.
         return $this->index(request(), $folder);
     }
 
@@ -118,13 +192,18 @@ class FolderController extends Controller
      */
     public function edit(Folder $folder)
     {
-        // Asegurarse de que el usuario tiene permiso para editar esta carpeta (pertenece a su área)
-        if (Auth::user()->area_id !== $folder->area_id) {
-            return redirect()->route('dashboard')->with('error', 'No tienes permiso para editar esta carpeta.');
+        $user = Auth::user();
+
+        // Verificar permisos para editar
+        if ($user->area && $user->area->name === 'Administración') {
+            // Super Admin puede editar cualquier carpeta
+        } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
+            // Admin de Área puede editar carpetas de su propia área
+        } else {
+            return redirect()->route('folders.index')->with('error', 'No tienes permiso para editar esta carpeta.');
         }
 
-        $userArea = Auth::user()->area; // El área del usuario autenticado
-        return view('folders.edit', compact('folder', 'userArea'));
+        return view('folders.edit', compact('folder', 'user'));
     }
 
     /**
@@ -137,9 +216,15 @@ class FolderController extends Controller
      */
     public function update(Request $request, Folder $folder)
     {
-        // Asegurarse de que el usuario tiene permiso para actualizar esta carpeta
-        if (Auth::user()->area_id !== $folder->area_id) {
-            return redirect()->route('dashboard')->with('error', 'No tienes permiso para actualizar esta carpeta.');
+        $user = Auth::user();
+
+        // Verificar permisos para actualizar
+        if ($user->area && $user->area->name === 'Administración') {
+            // Super Admin puede actualizar cualquier carpeta
+        } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
+            // Admin de Área puede actualizar carpetas de su propia área
+        } else {
+            return redirect()->route('folders.index')->with('error', 'No tienes permiso para actualizar esta carpeta.');
         }
 
         $request->validate([
@@ -147,7 +232,6 @@ class FolderController extends Controller
                 'required',
                 'string',
                 'max:255',
-                // Validación de unicidad: el nombre debe ser único para el mismo parent_id y area_id, excluyendo la carpeta actual
                 Rule::unique('folders')->where(function ($query) use ($request, $folder) {
                     return $query->where('parent_id', $folder->parent_id)
                                  ->where('area_id', $folder->area_id);
@@ -159,7 +243,6 @@ class FolderController extends Controller
             'name' => $request->name,
         ]);
 
-        // Redirigir a folders.index con el parent_id (si existe) o a la raíz
         $redirectPath = $folder->parent_id ? route('folders.index', $folder->parent_id) : route('folders.index');
 
         return redirect($redirectPath)->with('success', 'Carpeta actualizada exitosamente.');
@@ -174,15 +257,20 @@ class FolderController extends Controller
      */
     public function destroy(Folder $folder)
     {
-        // Asegurarse de que el usuario tiene permiso para eliminar esta carpeta
-        if (Auth::user()->area_id !== $folder->area_id) {
-            return redirect()->route('dashboard')->with('error', 'No tienes permiso para eliminar esta carpeta.');
+        $user = Auth::user();
+
+        // Verificar permisos para eliminar
+        if ($user->area && $user->area->name === 'Administración') {
+            // Super Admin puede eliminar cualquier carpeta
+        } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
+            // Admin de Área puede eliminar carpetas de su propia área
+        } else {
+            return redirect()->route('folders.index')->with('error', 'No tienes permiso para eliminar esta carpeta.');
         }
 
         $parentFolderId = $folder->parent_id;
-        $folder->delete(); // Esto también eliminará subcarpetas y file_links debido a onDelete('cascade')
+        $folder->delete();
 
-        // Redirigir a folders.index con el parent_id (si existe) o a la raíz
         $redirectPath = $parentFolderId ? route('folders.index', $parentFolderId) : route('folders.index');
 
         return redirect($redirectPath)->with('success', 'Carpeta eliminada exitosamente.');
@@ -197,9 +285,15 @@ class FolderController extends Controller
      */
     public function createFileLink(Folder $folder)
     {
-        // Asegurarse de que el usuario tiene permiso para añadir a esta carpeta
-        if (Auth::user()->area_id !== $folder->area_id) {
-            return redirect()->route('dashboard')->with('error', 'No tienes permiso para añadir elementos a esta carpeta.');
+        $user = Auth::user();
+
+        // Verificar permisos para añadir a esta carpeta
+        if ($user->area && $user->area->name === 'Administración') {
+            // Super Admin puede añadir
+        } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
+            // Admin de Área puede añadir en su propia área
+        } else {
+            return redirect()->route('folders.index', $folder)->with('error', 'No tienes permiso para añadir elementos a esta carpeta.');
         }
 
         return view('file_links.create', compact('folder'));
@@ -215,9 +309,15 @@ class FolderController extends Controller
      */
     public function storeFileLink(Request $request, Folder $folder)
     {
-        // Asegurarse de que el usuario tiene permiso para añadir a esta carpeta
-        if (Auth::user()->area_id !== $folder->area_id) {
-            return redirect()->route('dashboard')->with('error', 'No tienes permiso para añadir elementos a esta carpeta.');
+        $user = Auth::user();
+
+        // Verificar permisos para almacenar
+        if ($user->area && $user->area->name === 'Administración') {
+            // Super Admin puede almacenar
+        } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
+            // Admin de Área puede almacenar en su propia área
+        } else {
+            return redirect()->route('folders.index', $folder)->with('error', 'No tienes permiso para añadir elementos a esta carpeta.');
         }
 
         $request->validate([
@@ -265,9 +365,15 @@ class FolderController extends Controller
      */
     public function editFileLink(FileLink $fileLink)
     {
-        // Asegurarse de que el usuario tiene permiso para editar este elemento
-        if (Auth::user()->area_id !== $fileLink->folder->area_id) {
-            return redirect()->route('dashboard')->with('error', 'No tienes permiso para editar este elemento.');
+        $user = Auth::user();
+
+        // Verificar permisos para editar
+        if ($user->area && $user->area->name === 'Administración') {
+            // Super Admin puede editar
+        } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
+            // Admin de Área puede editar
+        } else {
+            return redirect()->route('folders.index', $fileLink->folder)->with('error', 'No tienes permiso para editar este elemento.');
         }
 
         return view('file_links.edit', compact('fileLink'));
@@ -283,29 +389,32 @@ class FolderController extends Controller
      */
     public function updateFileLink(Request $request, FileLink $fileLink)
     {
-        // Asegurarse de que el usuario tiene permiso para actualizar este elemento
-        if (Auth::user()->area_id !== $fileLink->folder->area_id) {
-            return redirect()->route('dashboard')->with('error', 'No tienes permiso para actualizar este elemento.');
+        $user = Auth::user();
+
+        // Verificar permisos para actualizar
+        if ($user->area && $user->area->name === 'Administración') {
+            // Super Admin puede actualizar
+        } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
+            // Admin de Área puede actualizar
+        } else {
+            return redirect()->route('folders.index', $fileLink->folder)->with('error', 'No tienes permiso para actualizar este elemento.');
         }
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'url' => 'nullable|url|max:2048', // Solo se puede cambiar la URL si es un enlace
+            'url' => 'nullable|url|max:2048',
         ]);
 
-        // Solo permitir cambiar la URL si es un enlace existente
         if ($fileLink->type === 'link') {
             $fileLink->update([
                 'name' => $request->name,
                 'url' => $request->url,
             ]);
         } else {
-            // Para archivos, solo se permite cambiar el nombre
             $fileLink->update([
                 'name' => $request->name,
             ]);
         }
-
 
         return redirect()->route('folders.index', $fileLink->folder)->with('success', 'Elemento actualizado exitosamente.');
     }
@@ -319,12 +428,17 @@ class FolderController extends Controller
      */
     public function destroyFileLink(FileLink $fileLink)
     {
-        // Asegurarse de que el usuario tiene permiso para eliminar este elemento
-        if (Auth::user()->area_id !== $fileLink->folder->area_id) {
-            return redirect()->route('dashboard')->with('error', 'No tienes permiso para eliminar este elemento.');
+        $user = Auth::user();
+
+        // Verificar permisos para eliminar
+        if ($user->area && $user->area->name === 'Administración') {
+            // Super Admin puede eliminar
+        } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
+            // Admin de Área puede eliminar
+        } else {
+            return redirect()->route('folders.index', $fileLink->folder)->with('error', 'No tienes permiso para eliminar este elemento.');
         }
 
-        // Si es un archivo, eliminarlo del almacenamiento
         if ($fileLink->type === 'file' && $fileLink->path) {
             Storage::disk('public')->delete($fileLink->path);
         }
