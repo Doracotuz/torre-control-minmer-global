@@ -27,7 +27,7 @@
     <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16 items-center">
             <div class="flex items-center">
-                <!-- Icono del Área, Título del Área y Nombre de la Carpeta -->
+                <!-- Título del Área y Nombre de la Carpeta -->
                 <div class="ml-4 text-sm font-medium text-gray-700 flex items-center space-x-2">
                     @if (Auth::user()->area)
                         @php
@@ -148,6 +148,7 @@
                     </x-slot>
 
                     <x-slot name="content">
+                        {{-- Usar route() directamente para las rutas de Breeze --}}
                         <x-dropdown-link :href="route('profile.edit')">
                             {{ __('Profile') }}
                         </x-dropdown-link>

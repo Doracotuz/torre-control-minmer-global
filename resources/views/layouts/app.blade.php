@@ -7,17 +7,14 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
-        <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-        <!-- Google Fonts: Raleway Extrabold and Montserrat Regular -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@800&display=swap" rel="stylesheet">
 
-        <!-- Scripts -->
-        {{-- Added 'defer' to ensure app.js loads after DOM --}}
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @vite(['resources/css/app.css'])
+        {{-- CRÍTICO: Cargar Alpine.js directamente desde CDN con defer en el head --}}
         <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script>      
         <style>
             /* Custom CSS for more refined active state and hover effects */
@@ -131,13 +128,38 @@
                 50% { transform: translate(-50%, -50%) rotate(180deg); opacity: 0.3; }
                 100% { transform: translate(-50%, -50%) rotate(360deg); opacity: 0.1; }
             }
+            /* Essential for x-cloak to work */
+            [x-cloak] { display: none !important; }
         </style>
     </head>
     {{-- x-cloak prevents flash of unstyled content --}}
-    <body class="font-sans antialiased" style="font-family: 'Montserrat', sans-serif;" x-cloak>
+    <body class="font-sans antialiased" style="font-family: 'Montserrat', sans-serif;" x-cloak
+        x-data="{
+            showFileModal: false,
+            fileContentSrc: '',
+            fileContentType: '',
+            fileDownloadUrl: '',
+            fileFileName: '',
+            showPropertiesModal: false,
+            propertiesData: {},
+            // Define Alpine.js functions directly within x-data
+            openFileModal: function(src, type, name) {
+                this.showFileModal = true;
+                this.fileContentSrc = src;
+                this.fileContentType = type;
+                this.fileDownloadUrl = src;
+                this.fileFileName = name;
+                console.log('openFileModal called from global Alpine:', { src, type, name }); // Debug log
+            },
+            openPropertiesModal: function(itemData) {
+                this.showPropertiesModal = true;
+                this.propertiesData = itemData;
+                console.log('openPropertiesModal called from global Alpine:', itemData); // Debug log
+            }
+        }"
+    >
         <div class="min-h-screen bg-gray-100 flex">
 
-            <!-- Sidebar (Nueva Sección con estilos modernos y animaciones) -->
             {{-- hidden by default, visible on large screens --}}
             <div class="w-64 bg-[#2c3856] text-white flex-col min-h-screen shadow-2xl relative z-10 transition-all duration-500 ease-in-out hidden lg:flex">
                 <div class="p-6 text-center border-b border-gray-700/50 flex flex-col items-center justify-center">
@@ -171,6 +193,11 @@
                                 {{ request()->routeIs('admin.users.index') ? 'active-link' : '' }}">
                                 <span class="transition-transform duration-300 ease-out group-hover:translate-x-2">{{ __('Gestionar Usuarios') }}</span>
                             </x-nav-link>
+                            {{-- Organigram Link --}}
+                            <x-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.index')" class="nav-link-custom group block px-4 py-3 text-base font-medium rounded-lg text-gray-100
+                                {{ request()->routeIs('admin.organigram.index') ? 'active-link' : '' }}">
+                                <span class="transition-transform duration-300 ease-out group-hover:translate-x-2">{{ __('Organigrama') }}</span>
+                            </x-nav-link>
                         </div>
                     @elseif (Auth::user()->is_area_admin)
                         <div class="border-t border-gray-700/50 pt-6 mt-6">
@@ -192,12 +219,10 @@
                 </nav>
             </div>
 
-            <!-- Main Content Area -->
             {{-- Take full width on small screens, take remaining width on large screens --}}
             <div class="flex-1 flex flex-col bg-gray-100 w-full lg:w-auto">
                 @include('layouts.navigation', ['currentFolder' => $currentFolder ?? null])
 
-                <!-- Page Heading -->
                 @if (isset($header))
                     <header class="bg-white shadow-sm">
                         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -206,7 +231,6 @@
                     </header>
                 @endif
 
-                <!-- Page Content -->
                 <main class="flex-1 p-8">
                     {{ $slot }}
                 </main>

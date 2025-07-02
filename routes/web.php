@@ -11,6 +11,7 @@ use App\Http\Controllers\AreaAdmin\FolderPermissionController; // Importa el con
 use Illuminate\Support\Facades\Auth; // Necesario para Auth::user() en las rutas
 use Illuminate\Support\Facades\Storage; // Necesario para Storage en las rutas
 use App\Http\Controllers\DashboardController; // Importa el controlador del Dashboard
+use App\Http\Controllers\Admin\OrganigramController; // Importa el controlador del Organigrama
 
 // REDIRECCIÓN AUTOMÁTICA DE LA RAÍZ A LA PÁGINA DE LOGIN
 Route::get('/', function () {
@@ -109,6 +110,33 @@ Route::middleware(['auth', 'check.area:Administración'])->prefix('admin')->name
     Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
     Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+
+    // Rutas para la gestión del Organigrama (NUEVAS RUTAS)
+    Route::prefix('organigram')->name('organigram.')->group(function () {
+        Route::get('/', [OrganigramController::class, 'index'])->name('index');
+        Route::get('/create', [OrganigramController::class, 'create'])->name('create');
+        Route::post('/', [OrganigramController::class, 'store'])->name('store');
+        Route::get('/{organigram_member}/edit', [OrganigramController::class, 'edit'])->name('edit');
+        Route::put('/{organigram_member}', [OrganigramController::class, 'update'])->name('update');
+        Route::delete('/{organigram_member}', [OrganigramController::class, 'destroy'])->name('destroy');
+
+        // Rutas para gestionar Actividades del Organigrama (CRUD)
+        Route::prefix('activities')->name('activities.')->group(function () {
+            Route::get('/', [OrganigramController::class, 'activitiesIndex'])->name('index');
+            Route::post('/', [OrganigramController::class, 'activitiesStore'])->name('store');
+            Route::put('/{activity?}', [OrganigramController::class, 'activitiesUpdate'])->name('update');
+            Route::delete('/{activity}', [OrganigramController::class, 'activitiesDestroy'])->name('destroy');
+        });
+
+        // Rutas para gestionar Habilidades del Organigrama (CRUD)
+        Route::prefix('skills')->name('skills.')->group(function () {
+            Route::get('/', [OrganigramController::class, 'skillsIndex'])->name('index');
+            Route::post('/', [OrganigramController::class, 'skillsStore'])->name('store');
+            Route::put('/{skill?}', [OrganigramController::class, 'skillsUpdate'])->name('update');
+            Route::delete('/{skill}', [OrganigramController::class, 'skillsDestroy'])->name('destroy');
+        });
+    });    
+    
 });
 
 
