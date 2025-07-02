@@ -16,7 +16,9 @@
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@800&display=swap" rel="stylesheet">
 
         <!-- Scripts -->
+        {{-- Added 'defer' to ensure app.js loads after DOM --}}
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script>      
         <style>
             /* Custom CSS for more refined active state and hover effects */
             .nav-link-custom {
@@ -54,19 +56,96 @@
                 position: relative; /* Ensure text is above ::before pseudo-element */
                 z-index: 1;
             }
+
+            /* 3D Text and Gleam Effects - Movimientos cancelados */
+            .logo-text-3d {
+                display: inline-block;
+                position: relative;
+                transform-style: preserve-3d;
+                perspective: 800px;
+                text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+                transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1); /* Mantener transición para hover sutil */
+            }
+            .logo-text-3d:hover {
+                transform: translateY(-5px) rotateX(2deg) scale(1.02); /* Movimiento sutil en hover */
+            }
+
+            .logo-text-3d::after {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.5s ease-in-out;
+                animation: none;
+            }
+
+            .logo-text-3d:hover::after {
+                opacity: 1;
+                animation: gleam 1.5s infinite linear;
+            }
+
+            @keyframes gleam {
+                0% { transform: translate(-50%, -50%) rotate(0deg); opacity: 0.2; }
+                50% { transform: translate(-50%, -50%) rotate(180deg); opacity: 0.5; }
+                100% { transform: translate(-50%, -50%) rotate(360deg); opacity: 0.2; }
+            }
+
+            .logo-subtitle-3d {
+                display: inline-block;
+                position: relative;
+                transform-style: preserve-3d;
+                perspective: 600px;
+                text-shadow: 0.5px 0.5px 2px rgba(0,0,0,0.4);
+                transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1); /* Mantener transición para hover sutil */
+            }
+            .logo-subtitle-3d:hover {
+                transform: translateY(5px) rotateX(-2deg) scale(1.01); /* Movimiento sutil en hover */
+            }
+
+            .logo-subtitle-3d::after {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle at center, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.5s ease-in-out;
+                animation: none;
+            }
+
+            .logo-subtitle-3d:hover::after {
+                opacity: 1;
+                animation: gleam-subtle 1.8s infinite linear;
+            }
+
+            @keyframes gleam-subtle {
+                0% { transform: translate(-50%, -50%) rotate(0deg); opacity: 0.1; }
+                50% { transform: translate(-50%, -50%) rotate(180deg); opacity: 0.3; }
+                100% { transform: translate(-50%, -50%) rotate(360deg); opacity: 0.1; }
+            }
         </style>
     </head>
-    <body class="font-sans antialiased" style="font-family: 'Montserrat', sans-serif;">
+    {{-- x-cloak prevents flash of unstyled content --}}
+    <body class="font-sans antialiased" style="font-family: 'Montserrat', sans-serif;" x-cloak>
         <div class="min-h-screen bg-gray-100 flex">
 
             <!-- Sidebar (Nueva Sección con estilos modernos y animaciones) -->
-            <div class="w-64 bg-[#2c3856] text-white flex flex-col min-h-screen shadow-2xl relative z-10 transition-all duration-500 ease-in-out"> {{-- Color de fondo principal, sombra más pronunciada --}}
-                <div class="p-6 text-center border-b border-gray-700/50 flex flex-col items-center justify-center"> {{-- Más padding y centrado --}}
-                    <img src="{{ asset('storage/LogoBlanco.png') }}" alt="Minmer Global Logo" class="h-24 mx-auto mb-3 transition-transform duration-700 ease-in-out hover:scale-115 transform origin-center"> {{-- Logo más grande y con animación más marcada --}}
-                    <span class="text-xl font-extrabold text-white tracking-wide" style="font-family: 'Raleway', sans-serif;">TORRE DE CONTROL</span> {{-- Fuente Raleway, espaciado de letras --}}
-                    <span class="text-xs text-gray-300 mt-1" style="font-family: 'Montserrat', sans-serif;">MINMER GLOBAL</span>
+            {{-- hidden by default, visible on large screens --}}
+            <div class="w-64 bg-[#2c3856] text-white flex-col min-h-screen shadow-2xl relative z-10 transition-all duration-500 ease-in-out hidden lg:flex">
+                <div class="p-6 text-center border-b border-gray-700/50 flex flex-col items-center justify-center">
+                    <img src="{{ asset('storage/LogoBlanco.png') }}" alt="Minmer Global Logo" class="h-24 mx-auto mb-3 transition-transform duration-700 ease-in-out hover:scale-115 transform origin-center">
+                    <span class="text-xl font-extrabold text-white tracking-wide logo-text-3d" style="font-family: 'Raleway', sans-serif;">TORRE DE CONTROL</span>
+                    <span class="text-xs text-gray-300 mt-1 logo-subtitle-3d" style="font-family: 'Montserrat', sans-serif;">MINMER GLOBAL</span>
                 </div>
-                <nav class="flex-1 px-4 py-8 space-y-4"> {{-- Más padding y espacio entre elementos --}}
+                <nav class="flex-1 px-4 py-8 space-y-4">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="nav-link-custom group block px-4 py-3 text-base font-medium rounded-lg text-gray-100
                         {{ request()->routeIs('dashboard') ? 'active-link' : '' }}">
                         <span class="transition-transform duration-300 ease-out group-hover:translate-x-2">{{ __('Dashboard') }}</span>
@@ -78,7 +157,7 @@
                     </x-nav-link>
 
                     @if (Auth::user()->area && Auth::user()->area->name === 'Administración')
-                        <div class="border-t border-gray-700/50 pt-6 mt-6"> {{-- Separador con transparencia y más espacio --}}
+                        <div class="border-t border-gray-700/50 pt-6 mt-6">
                             <span class="block px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider" style="font-family: 'Raleway', sans-serif;">Super Admin</span>
                             <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="nav-link-custom group block px-4 py-3 text-base font-medium rounded-lg text-gray-100
                                 {{ request()->routeIs('admin.dashboard') ? 'active-link' : '' }}">
@@ -94,7 +173,7 @@
                             </x-nav-link>
                         </div>
                     @elseif (Auth::user()->is_area_admin)
-                        <div class="border-t border-gray-700/50 pt-6 mt-6"> {{-- Separador con transparencia y más espacio --}}
+                        <div class="border-t border-gray-700/50 pt-6 mt-6">
                             <span class="block px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider" style="font-family: 'Raleway', sans-serif;">Admin de Área</span>
                             <x-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="nav-link-custom group block px-4 py-3 text-base font-medium rounded-lg text-gray-100
                                 {{ request()->routeIs('area_admin.dashboard') ? 'active-link' : '' }}">
@@ -114,12 +193,13 @@
             </div>
 
             <!-- Main Content Area -->
-            <div class="flex-1 flex flex-col bg-gray-100"> {{-- Fondo del contenido principal --}}
-                @include('layouts.navigation') {{-- Esto es el nav de Breeze que ya tenías --}}
+            {{-- Take full width on small screens, take remaining width on large screens --}}
+            <div class="flex-1 flex flex-col bg-gray-100 w-full lg:w-auto">
+                @include('layouts.navigation', ['currentFolder' => $currentFolder ?? null])
 
                 <!-- Page Heading -->
                 @if (isset($header))
-                    <header class="bg-white shadow-sm"> {{-- Sombra más sutil --}}
+                    <header class="bg-white shadow-sm">
                         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                             {{ $header }}
                         </div>
@@ -127,10 +207,11 @@
                 @endif
 
                 <!-- Page Content -->
-                <main class="flex-1 p-8"> {{-- Más padding al contenido principal --}}
+                <main class="flex-1 p-8">
                     {{ $slot }}
                 </main>
             </div>
         </div>
+
     </body>
 </html>

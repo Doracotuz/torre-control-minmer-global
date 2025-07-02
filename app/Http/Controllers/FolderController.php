@@ -14,7 +14,7 @@ class FolderController extends Controller
 {
     /**
      * Display a listing of the folders.
-     * Muestra una lista de las carpetas accesibles por el usuario.
+     * Muestra una lista de las carpetas accesibles por el usuario, con opción de búsqueda.
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\Folder|null  $folder
@@ -24,52 +24,75 @@ class FolderController extends Controller
     {
         $user = Auth::user();
         $currentFolder = $folder; // La carpeta actual que estamos viendo (null si estamos en la raíz)
+        $searchQuery = $request->input('search'); // Obtener el término de búsqueda
 
         // --- Lógica de Permisos para ver Carpetas y Contenido ---
-        $query = Folder::query();
+        $folderQuery = Folder::query();
+        $fileLinkQuery = FileLink::query();
 
-        // Super Administrador: Ve todas las carpetas
+        // Aplicar filtros de permiso según el rol del usuario
         if ($user->area && $user->area->name === 'Administración') {
-            // No se aplica ninguna restricción de área o permiso explícito
-        }
-        // Administrador de Área: Ve todas las carpetas de su propia área
-        elseif ($user->is_area_admin) {
-            $query->where('area_id', $user->area_id);
-        }
-        // Usuario Normal: Solo ve carpetas de su área con acceso explícito
-        else {
-            $query->where('area_id', $user->area_id)
-                  ->whereHas('usersWithAccess', function ($q) use ($user) {
-                      $q->where('user_id', $user->id);
+            // Super Administrador: No se aplica ninguna restricción de área o permiso explícito
+        } elseif ($user->is_area_admin) {
+            // Administrador de Área: Ve todas las carpetas y archivos de su propia área
+            $folderQuery->where('area_id', $user->area_id);
+            $fileLinkQuery->whereHas('folder', function($q) use ($user) {
+                $q->where('area_id', $user->area_id);
+            });
+        } else {
+            // Usuario Normal: Solo ve carpetas y archivos de su área con acceso explícito
+            $folderQuery->where('area_id', $user->area_id)
+                        ->whereHas('usersWithAccess', function ($q) use ($user) {
+                            $q->where('user_id', $user->id);
+                        });
+            $fileLinkQuery->whereHas('folder', function($q) use ($user) {
+                $q->where('area_id', $user->area_id)
+                  ->whereHas('usersWithAccess', function ($q2) use ($user) {
+                      $q2->where('user_id', $user->id);
                   });
+            });
         }
 
-        // Filtrar por parent_id para el nivel de jerarquía actual
-        $folders = $query->where('parent_id', $currentFolder ? $currentFolder->id : null)
-                         ->orderBy('name')
-                         ->get();
+        // --- Lógica de Búsqueda ---
+        if ($searchQuery) {
+            // Si hay un término de búsqueda, buscamos en todas las carpetas y archivos accesibles
+            // Ignoramos la jerarquía de parent_id para la búsqueda global
+            $folders = $folderQuery->where('name', 'like', '%' . $searchQuery . '%')
+                                   ->orderBy('name')
+                                   ->get();
+            $fileLinks = $fileLinkQuery->where('name', 'like', '%' . $searchQuery . '%')
+                                       ->orderBy('name')
+                                       ->get();
+            $currentFolder = null; // En modo búsqueda, no estamos en una carpeta específica
+        } else {
+            // Si no hay término de búsqueda, aplicamos la lógica de jerarquía normal
+            $folders = $folderQuery->where('parent_id', $currentFolder ? $currentFolder->id : null)
+                                   ->orderBy('name')
+                                   ->get();
 
-        // Obtener los archivos/enlaces de la carpeta actual
-        $fileLinks = collect(); // Inicializar como colección vacía
-        if ($currentFolder) {
-            // Verificar permisos para la carpeta actual antes de mostrar su contenido
-            $hasAccessToCurrentFolder = false;
-            if ($user->area && $user->area->name === 'Administración') {
-                $hasAccessToCurrentFolder = true; // Super Admin siempre tiene acceso
-            } elseif ($user->is_area_admin && $currentFolder->area_id === $user->area_id) {
-                $hasAccessToCurrentFolder = true; // Admin de Área tiene acceso a sus carpetas
-            } elseif ($user->accessibleFolders->contains($currentFolder->id) && $currentFolder->area_id === $user->area_id) {
-                $hasAccessToCurrentFolder = true; // Usuario normal con acceso explícito y en su área
+            $fileLinks = collect(); // Inicializar como colección vacía
+            if ($currentFolder) {
+                // Verificar permisos para la carpeta actual antes de mostrar su contenido
+                $hasAccessToCurrentFolder = false;
+                if ($user->area && $user->area->name === 'Administración') {
+                    $hasAccessToCurrentFolder = true; // Super Admin siempre tiene acceso
+                } elseif ($user->is_area_admin && $currentFolder->area_id === $user->area_id) {
+                    $hasAccessToCurrentFolder = true; // Admin de Área tiene acceso a sus carpetas
+                } elseif ($currentFolder->area_id === $user->area_id && $user->accessibleFolders->contains($currentFolder->id)) {
+                    $hasAccessToCurrentFolder = true; // Usuario normal con acceso explícito y en su área
+                }
+
+                if (!$hasAccessToCurrentFolder) {
+                    return redirect()->route('dashboard')->with('error', 'No tienes permiso para ver esta carpeta o su contenido.');
+                }
+
+                $fileLinks = $fileLinkQuery->where('folder_id', $currentFolder->id)
+                                           ->orderBy('name')
+                                           ->get();
             }
-
-            if (!$hasAccessToCurrentFolder) {
-                return redirect()->route('dashboard')->with('error', 'No tienes permiso para ver esta carpeta o su contenido.');
-            }
-
-            $fileLinks = $currentFolder->fileLinks()->orderBy('name')->get();
         }
 
-        return view('folders.index', compact('folders', 'currentFolder', 'fileLinks'));
+        return view('folders.index', compact('folders', 'currentFolder', 'fileLinks', 'searchQuery'));
     }
 
     /**
@@ -124,11 +147,7 @@ class FolderController extends Controller
         } else {
             // Si es carpeta raíz, usa el área del usuario (o permite al Super Admin elegir)
             if ($user->area && $user->area->name === 'Administración') {
-                // El Super Admin puede crear carpetas raíz para cualquier área.
-                // Para simplificar, asumiremos que las carpetas raíz creadas por Super Admin
-                // se asignan al área del Super Admin por defecto, o se podría añadir un campo de selección de área.
-                // Por ahora, lo asignamos al área del Super Admin.
-                $targetAreaId = $user->area_id;
+                $targetAreaId = $user->area_id; // Super Admin crea en su propia área por defecto
             } else {
                 $targetAreaId = $user->area_id;
             }

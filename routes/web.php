@@ -2,10 +2,19 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FolderController;
+use App\Http\Controllers\Api\SearchController; // Importa el controlador de búsqueda
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AreaController; // Importa los controladores de Admin
+use App\Http\Controllers\Admin\UserController as AdminUserController; // Alias para evitar conflicto de nombres
+use App\Http\Controllers\AreaAdmin\UserController as AreaAdminUserController; // Alias para evitar conflicto de nombres
+use App\Http\Controllers\AreaAdmin\FolderPermissionController; // Importa el controlador de permisos de carpeta
+use Illuminate\Support\Facades\Auth; // Necesario para Auth::user() en las rutas
+use Illuminate\Support\Facades\Storage; // Necesario para Storage en las rutas
+use App\Http\Controllers\DashboardController; // Importa el controlador del Dashboard
 
+// REDIRECCIÓN AUTOMÁTICA DE LA RAÍZ A LA PÁGINA DE LOGIN
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 Route::get('/dashboard', function () {
@@ -33,7 +42,7 @@ Route::middleware(['auth', 'check.area:Almacén'])->group(function () {
 
 // Rutas para la gestión de carpetas y archivos/enlaces
 Route::middleware(['auth'])->group(function () {
-    // Las rutas más específicas deben ir primero
+    // La ruta de creación de carpetas debe ir antes de la ruta general con parámetro opcional
     Route::get('/folders/create/{folder?}', [FolderController::class, 'create'])->name('folders.create');
     Route::post('/folders', [FolderController::class, 'store'])->name('folders.store');
 
@@ -44,14 +53,40 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/file-links/{fileLink}', [FolderController::class, 'updateFileLink'])->name('file_links.update');
     Route::delete('/file-links/{fileLink}', [FolderController::class, 'destroyFileLink'])->name('file_links.destroy');
 
-    // La ruta general para listar/mostrar carpetas (debe ir al final de las rutas de 'folders')
+    // Ruta para descarga directa de archivos (usada por la búsqueda predictiva)
+    Route::get('/files/{fileLink}/download', function (App\Models\FileLink $fileLink) {
+        if ($fileLink->type === 'file' && Storage::disk('public')->exists($fileLink->path)) {
+            // Asegúrate de que el usuario tiene permisos para descargar este archivo
+            $user = Auth::user();
+            if ($user->area && $user->area->name === 'Administración') {
+                // Super Admin puede descargar
+            } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
+                // Admin de Área puede descargar
+            } elseif ($fileLink->folder->area_id === $user->area_id && $user->accessibleFolders->contains($fileLink->folder->id)) {
+                // Usuario normal con acceso explícito y en su área
+            } else {
+                abort(403, 'No tienes permiso para descargar este archivo.');
+            }
+
+            return Storage::disk('public')->download($fileLink->path, $fileLink->name . '.' . pathinfo($fileLink->path, PATHINFO_EXTENSION));
+        }
+        abort(404);
+    })->name('files.download');
+
+
+    // La ruta general para listar/mostrar carpetas
     Route::get('/folders/{folder?}', [FolderController::class, 'index'])->name('folders.index');
 
-    // Rutas de edición y eliminación de carpetas (pueden ir aquí o antes de folders.index)
+    // Rutas de edición y eliminación de carpetas
     Route::get('/folders/{folder}/edit', [FolderController::class, 'edit'])->name('folders.edit');
     Route::put('/folders/{folder}', [FolderController::class, 'update'])->name('folders.update');
     Route::delete('/folders/{folder}', [FolderController::class, 'destroy'])->name('folders.destroy');
+
+    // Ruta para sugerencias de búsqueda (API para frontend, protegida por 'auth' de sesión)
+    Route::get('/search-suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
+    Route::get('/dashboard-data', [App\Http\Controllers\DashboardController::class, 'data'])->name('dashboard.data');    
 });
+
 
 // Rutas de administración (solo accesibles por el área de Administración)
 Route::middleware(['auth', 'check.area:Administración'])->prefix('admin')->name('admin.')->group(function () {
@@ -60,22 +95,22 @@ Route::middleware(['auth', 'check.area:Administración'])->prefix('admin')->name
     })->name('dashboard');
 
     // Rutas para la gestión de Áreas
-    Route::get('/areas', [App\Http\Controllers\Admin\AreaController::class, 'index'])->name('areas.index');
-    Route::get('/areas/create', [App\Http\Controllers\Admin\AreaController::class, 'create'])->name('areas.create');
-    Route::post('/areas', [App\Http\Controllers\Admin\AreaController::class, 'store'])->name('areas.store');
-    Route::get('/areas/{area}/edit', [App\Http\Controllers\Admin\AreaController::class, 'edit'])->name('areas.edit');
-    Route::put('/areas/{area}', [App\Http\Controllers\Admin\AreaController::class, 'update'])->name('areas.update');
-    Route::delete('/areas/{area}', [App\Http\Controllers\Admin\AreaController::class, 'destroy'])->name('areas.destroy');
+    Route::get('/areas', [AreaController::class, 'index'])->name('areas.index');
+    Route::get('/areas/create', [AreaController::class, 'create'])->name('areas.create');
+    Route::post('/areas', [AreaController::class, 'store'])->name('areas.store');
+    Route::get('/areas/{area}/edit', [AreaController::class, 'edit'])->name('areas.edit');
+    Route::put('/areas/{area}', [AreaController::class, 'update'])->name('areas.update');
+    Route::delete('/areas/{area}', [AreaController::class, 'destroy'])->name('areas.destroy');
 
-    // Rutas para la gestión de Usuarios (NUEVAS RUTAS)
-    Route::get('/users', [App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
-    Route::get('/users/create', [App\Http\Controllers\Admin\UserController::class, 'create'])->name('users.create');
-    Route::post('/users', [App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
-    Route::get('/users/{user}/edit', [App\Http\Controllers\Admin\UserController::class, 'edit'])->name('users.edit');
-    Route::put('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
-    Route::delete('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
-
+    // Rutas para la gestión de Usuarios
+    Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
+    Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
 });
+
 
 // Rutas para Administradores de Área (solo accesibles por usuarios con is_area_admin = true)
 Route::middleware(['auth', 'check.area:area_admin'])->prefix('area-admin')->name('area_admin.')->group(function () {
@@ -84,20 +119,18 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('area-admin')->name
     })->name('dashboard');
 
     // Rutas para la gestión de Usuarios por Administrador de Área
-    Route::get('/users', [App\Http\Controllers\AreaAdmin\UserController::class, 'index'])->name('users.index');
-    Route::get('/users/create', [App\Http\Controllers\AreaAdmin\UserController::class, 'create'])->name('users.create');
-    Route::post('/users', [App\Http\Controllers\AreaAdmin\UserController::class, 'store'])->name('users.store');
-    Route::get('/users/{user}/edit', [App\Http\Controllers\AreaAdmin\UserController::class, 'edit'])->name('users.edit');
-    Route::put('/users/{user}', [App\Http\Controllers\AreaAdmin\UserController::class, 'update'])->name('users.update');
-    Route::delete('/users/{user}', [App\Http\Controllers\AreaAdmin\UserController::class, 'destroy'])->name('users.destroy');
+    Route::get('/users', [AreaAdminUserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [AreaAdminUserController::class, 'create'])->name('users.create');
+    Route::post('/users', [AreaAdminUserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}/edit', [AreaAdminUserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{user}', [AreaAdminUserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [AreaAdminUserController::class, 'destroy'])->name('users.destroy');
 
-    // Rutas para la gestión de Permisos de Carpetas por Administrador de Área (NUEVAS RUTAS)
-    Route::get('/folder-permissions', [App\Http\Controllers\AreaAdmin\FolderPermissionController::class, 'index'])->name('folder_permissions.index');
-    Route::get('/folder-permissions/{folder}/edit', [App\Http\Controllers\AreaAdmin\FolderPermissionController::class, 'edit'])->name('folder_permissions.edit');
-    Route::put('/folder-permissions/{folder}', [App\Http\Controllers\AreaAdmin\FolderPermissionController::class, 'update'])->name('folder_permissions.update');
-
+    // Rutas para la gestión de Permisos de Carpetas por Administrador de Área
+    Route::get('/folder-permissions', [FolderPermissionController::class, 'index'])->name('folder_permissions.index');
+    Route::get('/folder-permissions/{folder}/edit', [FolderPermissionController::class, 'edit'])->name('folder_permissions.edit');
+    Route::put('/folder-permissions/{folder}', [FolderPermissionController::class, 'update'])->name('folder_permissions.update');
 });
-
 
 // Rutas de perfil de Breeze
 Route::middleware('auth')->group(function () {
