@@ -1,11 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Gestión de Carpetas') }}
+            {{ __('Explorar carpetas') }}
             @if ($currentFolder)
                 <span class="text-gray-500"> / {{ $currentFolder->name }}</span>
             @else
-                <span class="text-gray-500"> / Raíz</span>
+                <span class="text-gray-500"> / Global</span>
             @endif
         </h2>
     </x-slot>
@@ -82,7 +82,7 @@
                     </nav>
 
                     <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-semibold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">{{ __('Contenido Actual') }}</h3>
+                        <h3 class="text-xl font-semibold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">{{ __('') }}</h3>
                         <div>
                             <a href="{{ route('folders.create', ['folder' => $currentFolder ? $currentFolder->id : null]) }}" class="inline-flex items-center px-5 py-2 bg-[#2b2b2b] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#666666] focus:bg-[#666666] active:bg-[#000000] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md mr-3">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>

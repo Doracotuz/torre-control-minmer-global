@@ -24,11 +24,12 @@
                         <!-- Información del Área (solo lectura) -->
                         <div class="mt-4">
                             <x-input-label for="area_name" :value="__('Área de la Carpeta')" />
-                            <x-text-input id="area_name" class="block mt-1 w-full bg-gray-100" type="text" name="area_name" :value="$userArea->name" readonly />
+                            {{-- CAMBIO AQUÍ: Usar $user->area->name en lugar de $userArea->name --}}
+                            <x-text-input id="area_name" class="block mt-1 w-full bg-gray-100" type="text" name="area_name" :value="$user->area->name" readonly />
                         </div>
 
                         <div class="flex items-center justify-end mt-4">
-                            <a href="{{ $folder->parent_id ? route('folders.show', $folder->parent_id) : route('folders.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mr-4">
+                            <a href="{{ $folder->parent_id ? route('folders.index', $folder->parent_id) : route('folders.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mr-4">
                                 {{ __('Cancelar') }}
                             </a>
                             <x-primary-button>
