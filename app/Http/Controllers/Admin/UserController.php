@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\Area; // Para poder seleccionar áreas en los formularios
+use App\Models\User; // Asegúrate de que User esté importado
+use App\Models\Area; // Asegúrate de que Area esté importado
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage; // ¡Importa la fachada Storage!
 
 class UserController extends Controller
 {
@@ -49,16 +50,22 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'area_id' => 'required|exists:areas,id',
-            'is_area_admin' => 'boolean', // Nueva validación
+            'is_area_admin' => 'boolean',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validación para la foto
         ]);
 
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'area_id' => $request->area_id,
-            'is_area_admin' => $request->has('is_area_admin'), // Guarda el valor del checkbox
-        ]);
+        $data = $request->all(); // Obtiene todos los datos validados
+        $data['password'] = Hash::make($request->password);
+        $data['is_area_admin'] = $request->has('is_area_admin'); // Guarda el valor del checkbox (true/false)
+
+        // Manejo de la subida de la foto de perfil
+        if ($request->hasFile('profile_photo')) {
+            $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 'public');
+        } else {
+            $data['profile_photo_path'] = null; // Asegura que si no se sube, el campo sea null
+        }
+
+        User::create($data);
 
         return redirect()->route('admin.users.index')->with('success', 'Usuario creado exitosamente.');
     }
@@ -97,19 +104,40 @@ class UserController extends Controller
             ],
             'password' => 'nullable|string|min:8|confirmed',
             'area_id' => 'required|exists:areas,id',
-            'is_area_admin' => 'boolean', // Nueva validación
+            'is_area_admin' => 'boolean',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validación para la foto
         ]);
 
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->area_id = $request->area_id;
-        $user->is_area_admin = $request->has('is_area_admin'); // Actualiza el valor del checkbox
+        $data = $request->except(['_token', '_method', 'password_confirmation']); // Obtiene todos los datos excepto estos
 
+        $data['is_area_admin'] = $request->has('is_area_admin');
+
+        // Actualiza la contraseña si se proporcionó una nueva
         if ($request->filled('password')) {
-            $user->password = Hash::make($request->password);
+            $data['password'] = Hash::make($request->password);
+        } else {
+            unset($data['password']); // No actualizar la contraseña si está vacía
         }
 
-        $user->save();
+        // Manejo de la foto de perfil
+        if ($request->hasFile('profile_photo')) {
+            // Eliminar la foto antigua si existe
+            if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
+                Storage::disk('public')->delete($user->profile_photo_path);
+            }
+            $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 'public');
+        } elseif ($request->input('remove_profile_photo')) { // Si se marcó la casilla para eliminar la foto
+            if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
+                Storage::disk('public')->delete($user->profile_photo_path);
+            }
+            $data['profile_photo_path'] = null;
+        } else {
+            // Si no se subió nueva foto y no se pidió eliminar, mantener la existente
+            $data['profile_photo_path'] = $user->profile_photo_path;
+        }
+
+
+        $user->update($data); // Usar $data para actualizar
 
         return redirect()->route('admin.users.index')->with('success', 'Usuario actualizado exitosamente.');
     }
@@ -123,9 +151,10 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        // Opcional: Considerar la lógica para reasignar carpetas/archivos si el usuario es eliminado
-        // Actualmente, las carpetas/archivos creados por este usuario se eliminarán si la clave foránea es cascade.
-        // Si area_id en users es nullable, no hay problema si el área se elimina antes.
+        // Eliminar la foto de perfil si existe
+        if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
+            Storage::disk('public')->delete($user->profile_photo_path);
+        }
 
         $user->delete();
 

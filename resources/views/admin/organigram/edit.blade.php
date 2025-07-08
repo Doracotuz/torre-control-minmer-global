@@ -27,7 +27,7 @@
                         photoName: null,
                         // Inicializa photoPreview con la ruta existente o null si no hay foto
                         photoPreview: '{{ $organigramMember->profile_photo_path ? asset('storage/' . $organigramMember->profile_photo_path) : null }}',
-                        trajectories: {{ $trajectories->toJson() }},
+                        trajectories: {{ $trajectories->toJson() }}, // Carga las trayectorias existentes
                         removingExistingPhoto: false // Para el checkbox de eliminar foto
                     }"
                     x-on:change="
@@ -37,7 +37,7 @@
                             reader.onload = (e) => {
                                 photoPreview = e.target.result;
                             };
-                            reader.readAsDataURL($refs.photo.files[0]);
+                            reader.readAsDataURL(this.$refs.photo.files[0]); // CORRECCIÓN AQUÍ: Usar this.$refs.photo
                             removingExistingPhoto = false; // Desmarcar si se selecciona una nueva foto
                         } else {
                             photoName = null;
@@ -174,34 +174,36 @@
 
                             <div class="mb-6">
                                 <h4 class="text-base font-semibold text-[#2c3856] mb-2">{{ __('Trayectoria Profesional') }}</h4>
-                                <div x-for="(trajectory, index) in trajectories" :key="trajectory.id ? trajectory.id : index" class="bg-gray-50 p-4 rounded-lg shadow-sm mb-3 border border-gray-200">
-                                    <div class="flex justify-end">
-                                        <button type="button" @click="trajectories.splice(index, 1)" class="text-red-500 hover:text-red-700 text-sm">Eliminar</button>
-                                    </div>
-                                    <input type="hidden" x-bind:name="'trajectories[' + index + '][id]'" x-bind:value="trajectory.id">
-                                    <div class="mb-2">
-                                        <x-input-label x-bind:for="'trajectory_title_' + index" :value="__('Título del Puesto')" />
-                                        <x-text-input x-bind:id="'trajectory_title_' + index" x-bind:name="'trajectories[' + index + '][title]'" type="text" class="mt-1 block w-full" x-model="trajectory.title" required />
-                                        <x-input-error class="mt-2" x-bind:messages="$errors->get('trajectories.' + index + '.title') ?? []" />
-                                    </div>
-                                    <div class="mb-2">
-                                        <x-input-label x-bind:for="'trajectory_description_' + index" :value="__('Descripción')" />
-                                        <textarea x-bind:id="'trajectory_description_' + index" x-bind:name="'trajectories[' + index + '][description]'" rows="2" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" x-model="trajectory.description"></textarea>
-                                        <x-input-error class="mt-2" x-bind:messages="$errors->get('trajectories.' + index + '.description') ?? []" />
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-4 mb-2">
-                                        <div>
-                                            <x-input-label x-bind:for="'trajectory_start_date_' + index" :value="__('Fecha Inicio')" />
-                                            <x-text-input x-bind:id="'trajectory_start_date_' + index" x-bind:name="'trajectories[' + index + '][start_date]'" type="date" class="mt-1 block w-full" x-model="trajectory.start_date" />
-                                            <x-input-error class="mt-2" x-bind:messages="$errors->get('trajectories.' + index + '.start_date') ?? []" />
+                                <template x-for="(trajectory, index) in trajectories" :key="index">
+                                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm mb-3 border border-gray-200">
+                                        <div class="flex justify-end">
+                                            <button type="button" @click="trajectories.splice(index, 1)" class="text-red-500 hover:text-red-700 text-sm">Eliminar</button>
                                         </div>
-                                        <div>
-                                            <x-input-label x-bind:for="'trajectory_end_date_' + index" :value="__('Fecha Fin (Opcional)')" />
-                                            <x-text-input x-bind:id="'trajectory_end_date_' + index" x-bind:name="'trajectories[' + index + '][end_date]'" type="date" class="mt-1 block w-full" x-model="trajectory.end_date" />
-                                            <x-input-error class="mt-2" x-bind:messages="$errors->get('trajectories.' + index + '.end_date') ?? []" />
+                                        <input type="hidden" x-bind:name="'trajectories[' + index + '][id]'" x-bind:value="trajectory.id">
+                                        <div class="mb-2">
+                                            <x-input-label x-bind:for="'trajectory_title_' + index" :value="__('Título del Puesto')" />
+                                            <x-text-input x-bind:id="'trajectory_title_' + index" x-bind:name="'trajectories[' + index + '][title]'" type="text" class="mt-1 block w-full" x-model="trajectory.title" required />
+                                            <x-input-error class="mt-2" x-bind:messages="$errors->get('trajectories.' + index + '.title') ?? []" />
+                                        </div>
+                                        <div class="mb-2">
+                                            <x-input-label x-bind:for="'trajectory_description_' + index" :value="__('Descripción')" />
+                                            <textarea x-bind:id="'trajectory_description_' + index" x-bind:name="'trajectories[' + index + '][description]'" rows="2" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" x-model="trajectory.description"></textarea>
+                                            <x-input-error class="mt-2" x-bind:messages="$errors->get('trajectories.' + index + '.description') ?? []" />
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-4 mb-2">
+                                            <div>
+                                                <x-input-label x-bind:for="'trajectory_start_date_' + index" :value="__('Fecha Inicio')" />
+                                                <x-text-input x-bind:id="'trajectory_start_date_' + index" x-bind:name="'trajectories[' + index + '][start_date]'" type="date" class="mt-1 block w-full" x-model="trajectory.start_date" />
+                                                <x-input-error class="mt-2" x-bind:messages="$errors->get('trajectories.' + index + '.start_date') ?? []" />
+                                            </div>
+                                            <div>
+                                                <x-input-label x-bind:for="'trajectory_end_date_' + index" :value="__('Fecha Fin (Opcional)')" />
+                                                <x-text-input x-bind:id="'trajectory_end_date_' + index" x-bind:name="'trajectories[' + index + '][end_date]'" type="date" class="mt-1 block w-full" x-model="trajectory.end_date" />
+                                                <x-input-error class="mt-2" x-bind:messages="$errors->get('trajectories.' + index + '.end_date') ?? []" />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                </template>
                                 <button type="button" @click="trajectories.push({ id: null, title: '', description: '', start_date: '', end_date: '' })" class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-full font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mt-3">
                                     {{ __('Añadir Trayectoria') }}
                                 </button>

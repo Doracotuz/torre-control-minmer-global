@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Area;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage; // Importar Storage
 
 class AreaController extends Controller
 {
@@ -44,9 +45,16 @@ class AreaController extends Controller
         $request->validate([
             'name' => 'required|string|max:255|unique:areas,name',
             'description' => 'nullable|string|max:1000',
+            'icon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validación para el icono
         ]);
 
-        Area::create($request->all());
+        $data = $request->all();
+
+        if ($request->hasFile('icon')) {
+            $data['icon_path'] = $request->file('icon')->store('area_icons', 'public');
+        }
+
+        Area::create($data);
 
         return redirect()->route('admin.areas.index')->with('success', 'Área creada exitosamente.');
     }
@@ -81,9 +89,26 @@ class AreaController extends Controller
                 Rule::unique('areas')->ignore($area->id),
             ],
             'description' => 'nullable|string|max:1000',
+            'icon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validación para el icono
         ]);
 
-        $area->update($request->all());
+        $data = $request->all();
+
+        // Si se sube un nuevo icono
+        if ($request->hasFile('icon')) {
+            // Eliminar el icono antiguo si existe
+            if ($area->icon_path && Storage::disk('public')->exists($area->icon_path)) {
+                Storage::disk('public')->delete($area->icon_path);
+            }
+            $data['icon_path'] = $request->file('icon')->store('area_icons', 'public');
+        } elseif ($request->input('remove_icon')) { // Si se marcó la casilla para eliminar el icono
+            if ($area->icon_path && Storage::disk('public')->exists($area->icon_path)) {
+                Storage::disk('public')->delete($area->icon_path);
+            }
+            $data['icon_path'] = null;
+        }
+
+        $area->update($data);
 
         return redirect()->route('admin.areas.index')->with('success', 'Área actualizada exitosamente.');
     }
@@ -95,23 +120,21 @@ class AreaController extends Controller
      * @param  \App\Models\Area  $area
      * @return \Illuminate\Http\RedirectResponse
      */
-        public function destroy(Area $area)
-        {
-            // Primero, manejamos los usuarios de esta área
-            // Esto los establecerá a null como ya lo hace tu migración de users.
-            // Si quisieras eliminarlos, tendrías que hacer: $area->users()->delete();
-            // Pero tu migración de users ya maneja onDelete('set null'), así que no hay que hacer nada aquí.
+    public function destroy(Area $area)
+    {
+        // Lógica de eliminación en cascada para carpetas y sus contenidos
+        // (Asumiendo que el modelo Folder tiene el evento 'deleting' que maneja FileLinks)
+        $area->folders->each(function ($folder) {
+            $folder->delete(); // Esto disparará el evento 'deleting' en el modelo Folder
+        });
 
-            // Eliminar todas las carpetas asociadas a esta área.
-            // Al llamar a delete() en cada carpeta, se disparará el evento 'deleting' de Folder,
-            // que a su vez eliminará los FileLinks y sus archivos físicos.
-            $area->folders->each(function ($folder) {
-                $folder->delete(); // Esto activará el evento 'deleting' en el modelo Folder
-            });
-
-            // Finalmente, eliminar el área.
-            $area->delete();
-
-            return redirect()->route('admin.areas.index')->with('success', 'Área eliminada exitosamente.');
+        // Eliminar el icono del área si existe
+        if ($area->icon_path && Storage::disk('public')->exists($area->icon_path)) {
+            Storage::disk('public')->delete($area->icon_path);
         }
+
+        $area->delete(); // Eliminar el registro del área
+
+        return redirect()->route('admin.areas.index')->with('success', 'Área eliminada exitosamente.');
+    }
 }
