@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class FolderController extends Controller
 {
@@ -99,6 +100,7 @@ class FolderController extends Controller
      * Show the form for creating a new folder.
      * Muestra el formulario para crear una nueva carpeta.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\Folder|null  $folder
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
@@ -320,7 +322,7 @@ class FolderController extends Controller
 
     /**
      * Store a newly created file or link in storage.
-     * Almacena un nuevo archivo o enlace creado en la base de datos.
+     * Almacena uno o varios archivos/enlaces creados en la base de datos.
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\Folder  $folder
@@ -339,132 +341,222 @@ class FolderController extends Controller
             return redirect()->route('folders.index', $folder)->with('error', 'No tienes permiso para añadir elementos a esta carpeta.');
         }
 
-        $request->validate([
-            'name' => 'required|string|max:255',
+        $validationRules = [
             'type' => 'required|in:file,link',
-            'file' => 'nullable|file|max:10240', // Max 10MB (10240 KB)
+            'files' => 'nullable|array', // Ahora 'files' es un array
+            'files.*' => 'file|max:10240', // Validación para cada archivo en el array
             'url' => 'nullable|url|max:2048',
-        ]);
+            'name' => 'nullable|string|max:255', // Nombre es opcional para archivos
+        ];
 
-        $path = null;
-        $url = null;
-
-        if ($request->type === 'file') {
-            if ($request->hasFile('file')) {
-                $path = $request->file('file')->store('files', 'public'); // Guarda en storage/app/public/files
-            } else {
-                return back()->withErrors(['file' => 'Debe seleccionar un archivo para subir.']);
-            }
-        } elseif ($request->type === 'link') {
-            if ($request->filled('url')) {
-                $url = $request->url;
-            } else {
-                return back()->withErrors(['url' => 'Debe proporcionar una URL para el enlace.']);
-            }
-        }
-
-        FileLink::create([
-            'name' => $request->name,
-            'type' => $request->type,
-            'path' => $path,
-            'url' => $url,
-            'folder_id' => $folder->id,
-            'user_id' => Auth::id(),
-        ]);
-
-        return redirect()->route('folders.index', $folder)->with('success', 'Elemento añadido exitosamente.');
-    }
-
-    /**
-     * Show the form for editing the specified file or link.
-     * Muestra el formulario para editar el archivo o enlace especificado.
-     *
-     * @param  \App\Models\FileLink  $fileLink
-     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
-     */
-    public function editFileLink(FileLink $fileLink)
-    {
-        $user = Auth::user();
-
-        // Verificar permisos para editar
-        if ($user->area && $user->area->name === 'Administración') {
-            // Super Admin puede editar
-        } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
-            // Admin de Área puede editar
+        // Si el tipo es 'link', el 'name' y 'url' son requeridos
+        if ($request->type === 'link') {
+            $validationRules['name'] = 'required|string|max:255';
+            $validationRules['url'] = 'required|url|max:2048';
         } else {
-            return redirect()->route('folders.index', $fileLink->folder)->with('error', 'No tienes permiso para editar este elemento.');
+            // Si el tipo es 'file', al menos un archivo es requerido
+            $validationRules['files'] = 'required|array';
+            $validationRules['files.*'] = 'file|max:10240';
         }
 
-        return view('file_links.edit', compact('fileLink'));
+        $request->validate($validationRules);
+
+        // Si es un enlace, solo se procesa uno
+        if ($request->type === 'link') {
+            FileLink::create([
+                'name' => $request->name,
+                'type' => 'link',
+                'url' => $request->url,
+                'folder_id' => $folder->id,
+                'user_id' => Auth::id(),
+            ]);
+            return redirect()->route('folders.index', $folder)->with('success', 'Enlace añadido exitosamente.');
+        }
+
+        // Si es un archivo (o múltiples archivos)
+        $uploadedCount = 0;
+        $errors = [];
+
+        foreach ($request->file('files') as $file) {
+            // Si el nombre no fue proporcionado en el input, usar el nombre original del archivo (sin extensión)
+            $fileNameToStore = $request->name; // Nombre del input, si existe
+            if (empty($fileNameToStore) || $request->file('files')->count() > 1) {
+                // Si el input de nombre está vacío O si son múltiples archivos, usar el nombre original del archivo
+                $fileNameToStore = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            }
+
+            // Asegurar que el nombre final para la BD incluya la extensión original
+            $originalExtension = $file->getClientOriginalExtension();
+            if (!Str::endsWith(strtolower($fileNameToStore), '.' . strtolower($originalExtension))) {
+                $fileNameToStore .= '.' . strtolower($originalExtension);
+            }
+
+            try {
+                $path = $file->store('files', 'public'); // Guarda el archivo
+                FileLink::create([
+                    'name' => $fileNameToStore,
+                    'type' => 'file',
+                    'path' => $path,
+                    'folder_id' => $folder->id,
+                    'user_id' => Auth::id(),
+                ]);
+                $uploadedCount++;
+            } catch (\Exception $e) {
+                $errors[] = "Error al subir {$originalFileName}: " . $e->getMessage();
+            }
+        }
+
+        if ($uploadedCount > 0) {
+            return redirect()->route('folders.index', $folder)->with('success', "Se subieron {$uploadedCount} archivo(s) exitosamente.");
+        } else {
+            return redirect()->route('folders.index', $folder)->with('error', 'No se pudo subir ningún archivo.' . (!empty($errors) ? ' Errores: ' . implode(', ', $errors) : ''));
+        }
     }
 
     /**
-     * Update the specified file or link in storage.
-     * Actualiza el archivo o enlace especificado en la base de datos.
+     * Mueve una carpeta a una nueva carpeta padre.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\FileLink  $fileLink
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function updateFileLink(Request $request, FileLink $fileLink)
+    public function moveFolder(Request $request)
     {
-        $user = Auth::user();
-
-        // Verificar permisos para actualizar
-        if ($user->area && $user->area->name === 'Administración') {
-            // Super Admin puede actualizar
-        } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
-            // Admin de Área puede actualizar
-        } else {
-            return redirect()->route('folders.index', $fileLink->folder)->with('error', 'No tienes permiso para actualizar este elemento.');
-        }
-
         $request->validate([
-            'name' => 'required|string|max:255',
-            'url' => 'nullable|url|max:2048',
+            'folder_id' => 'required|exists:folders,id',
+            'target_folder_id' => 'nullable|exists:folders,id', // null para mover a la raíz
         ]);
 
-        if ($fileLink->type === 'link') {
-            $fileLink->update([
-                'name' => $request->name,
-                'url' => $request->url,
-            ]);
-        } else {
-            $fileLink->update([
-                'name' => $request->name,
-            ]);
+        $folderToMove = Folder::findOrFail($request->folder_id);
+        $targetFolder = $request->target_folder_id ? Folder::findOrFail($request->target_folder_id) : null;
+        $user = Auth::user();
+
+        // Validar permisos para mover
+        // Super Admin puede mover cualquier carpeta a cualquier lugar
+        if ($user->area && $user->area->name === 'Administración') {
+            // No se requiere validación adicional de área
+        }
+        // Admin de Área solo puede mover carpetas dentro de su propia área
+        elseif ($user->is_area_admin) {
+            if ($folderToMove->area_id !== $user->area_id) {
+                return response()->json(['success' => false, 'message' => 'No tienes permiso para mover esta carpeta fuera de tu área.'], 403);
+            }
+            if ($targetFolder && $targetFolder->area_id !== $user->area_id) {
+                return response()->json(['success' => false, 'message' => 'No puedes mover carpetas a un área diferente a la tuya.'], 403);
+            }
+            // Si mueve a la raíz, debe ser su propia área
+            if (is_null($targetFolder) && $folderToMove->area_id !== $user->area_id) {
+                 return response()->json(['success' => false, 'message' => 'No puedes mover carpetas de otras áreas a la raíz de tu área.'], 403);
+            }
+        }
+        // Usuario normal no puede mover carpetas
+        else {
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para mover carpetas.'], 403);
         }
 
-        return redirect()->route('folders.index', $fileLink->folder)->with('success', 'Elemento actualizado exitosamente.');
+        // Evitar mover una carpeta a sí misma o a una de sus subcarpetas
+        if ($targetFolder && $this->isDescendantOf($targetFolder, $folderToMove)) {
+            return response()->json(['success' => false, 'message' => 'No puedes mover una carpeta a sí misma o a una de sus subcarpetas.'], 422);
+        }
+
+        // Asegurarse de que el nombre sea único en la nueva ubicación
+        $existingFolderInTarget = Folder::where('name', $folderToMove->name)
+                                        ->where('parent_id', $request->target_folder_id)
+                                        ->where('area_id', $folderToMove->area_id) // El área de la carpeta no cambia al moverla
+                                        ->where('id', '!=', $folderToMove->id)
+                                        ->first();
+        if ($existingFolderInTarget) {
+            return response()->json(['success' => false, 'message' => 'Ya existe una carpeta con el mismo nombre en la carpeta de destino.'], 409);
+        }
+
+
+        $folderToMove->parent_id = $request->target_folder_id;
+        $folderToMove->save();
+
+        return response()->json(['success' => true, 'message' => 'Carpeta movida exitosamente.']);
     }
 
     /**
-     * Remove the specified file or link from storage.
-     * Elimina el archivo o enlace especificado de la base de datos y del almacenamiento si es un archivo.
+     * Sube archivos arrastrados y soltados a una carpeta específica.
      *
-     * @param  \App\Models\FileLink  $fileLink
-     * @return \Illuminate\Http\RedirectResponse
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function destroyFileLink(FileLink $fileLink)
+    public function uploadDroppedFiles(Request $request)
     {
+        $request->validate([
+            'folder_id' => 'nullable|exists:folders,id', // null para subir a la raíz
+            'files' => 'required|array',
+            'files.*' => 'file|max:10240', // 10MB por archivo
+            // 'names' ya no es necesario si usamos getClientOriginalName()
+        ]);
+
+        $targetFolder = $request->folder_id ? Folder::findOrFail($request->folder_id) : null;
         $user = Auth::user();
+        $uploadedCount = 0;
+        $errors = [];
 
-        // Verificar permisos para eliminar
+        // Validar permisos para subir
+        $targetAreaId = $targetFolder ? $targetFolder->area_id : $user->area_id; // Si es raíz, usa el área del usuario
+
         if ($user->area && $user->area->name === 'Administración') {
-            // Super Admin puede eliminar
-        } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
-            // Admin de Área puede eliminar
+            // Super Admin puede subir a cualquier lugar
+        } elseif ($user->is_area_admin && $targetAreaId === $user->area_id) {
+            // Admin de Área puede subir a su propia área
         } else {
-            return redirect()->route('folders.index', $fileLink->folder)->with('error', 'No tienes permiso para eliminar este elemento.');
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para subir archivos aquí.'], 403);
         }
 
-        if ($fileLink->type === 'file' && $fileLink->path) {
-            Storage::disk('public')->delete($fileLink->path);
+        foreach ($request->file('files') as $file) {
+            $originalFileName = $file->getClientOriginalName();
+            $fileNameWithoutExt = pathinfo($originalFileName, PATHINFO_FILENAME);
+            $extension = $file->getClientOriginalExtension();
+
+            // Construir el nombre final del archivo para el registro
+            $fileNameToStore = $fileNameWithoutExt;
+            if (!Str::endsWith(strtolower($fileNameToStore), '.' . strtolower($extension))) {
+                $fileNameToStore .= '.' . strtolower($extension);
+            }
+
+            try {
+                $path = $file->store('files', 'public'); // Guarda el archivo
+                FileLink::create([
+                    'name' => $fileNameToStore, // Usar el nombre construido
+                    'type' => 'file',
+                    'path' => $path,
+                    'folder_id' => $request->folder_id,
+                    'user_id' => Auth::id(),
+                ]);
+                $uploadedCount++;
+            } catch (\Exception $e) {
+                $errors[] = "Error al subir {$originalFileName}: " . $e->getMessage();
+            }
         }
 
-        $folder = $fileLink->folder;
-        $fileLink->delete();
+        if ($uploadedCount > 0) {
+            return response()->json(['success' => true, 'message' => "Se subieron {$uploadedCount} archivo(s) exitosamente."]);
+        } else {
+            return response()->json(['success' => false, 'message' => 'No se pudo subir ningún archivo.' . (!empty($errors) ? ' Errores: ' . implode(', ', $errors) : '')], 500);
+        }
+    }
 
-        return redirect()->route('folders.index', $folder)->with('success', 'Elemento eliminado exitosamente.');
+    /**
+     * Helper para prevenir ciclos en la jerarquía (ej. A es manager de B, B no puede ser manager de A)
+     * Adaptado para carpetas: verifica si $descendant es una subcarpeta de $ancestor
+     */
+    protected function isDescendantOf($descendant, $ancestor)
+    {
+        if (!$descendant || !$ancestor) {
+            return false;
+        }
+
+        $current = $descendant;
+        while ($current->parent_id) {
+            if ($current->parent_id === $ancestor->id) {
+                return true;
+            }
+            $current = Folder::find($current->parent_id);
+            if (!$current) break; // Evitar bucles infinitos si la relación es inconsistente
+        }
+        return false;
     }
 }

@@ -95,14 +95,23 @@ class AreaController extends Controller
      * @param  \App\Models\Area  $area
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function destroy(Area $area)
-    {
-        // Opcional: Añadir lógica para manejar usuarios y carpetas asociados antes de eliminar el área
-        // Por ejemplo, reasignarlos a un área por defecto o eliminar usuarios/carpetas.
-        // Actualmente, onDelete('set null') en users y onDelete('cascade') en folders ya manejan esto.
+        public function destroy(Area $area)
+        {
+            // Primero, manejamos los usuarios de esta área
+            // Esto los establecerá a null como ya lo hace tu migración de users.
+            // Si quisieras eliminarlos, tendrías que hacer: $area->users()->delete();
+            // Pero tu migración de users ya maneja onDelete('set null'), así que no hay que hacer nada aquí.
 
-        $area->delete();
+            // Eliminar todas las carpetas asociadas a esta área.
+            // Al llamar a delete() en cada carpeta, se disparará el evento 'deleting' de Folder,
+            // que a su vez eliminará los FileLinks y sus archivos físicos.
+            $area->folders->each(function ($folder) {
+                $folder->delete(); // Esto activará el evento 'deleting' en el modelo Folder
+            });
 
-        return redirect()->route('admin.areas.index')->with('success', 'Área eliminada exitosamente.');
-    }
+            // Finalmente, eliminar el área.
+            $area->delete();
+
+            return redirect()->route('admin.areas.index')->with('success', 'Área eliminada exitosamente.');
+        }
 }

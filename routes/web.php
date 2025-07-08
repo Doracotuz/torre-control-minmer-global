@@ -4,14 +4,30 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\Api\SearchController; // Importa el controlador de búsqueda
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\AreaController; // Importa los controladores de Admin
-use App\Http\Controllers\Admin\UserController as AdminUserController; // Alias para evitar conflicto de nombres
-use App\Http\Controllers\AreaAdmin\UserController as AreaAdminUserController; // Alias para evitar conflicto de nombres
-use App\Http\Controllers\AreaAdmin\FolderPermissionController; // Importa el controlador de permisos de carpeta
-use Illuminate\Support\Facades\Auth; // Necesario para Auth::user() en las rutas
-use Illuminate\Support\Facades\Storage; // Necesario para Storage en las rutas
-use App\Http\Controllers\DashboardController; // Importa el controlador del Dashboard
+use App\Http\Controllers\Admin\AreaController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\AreaAdmin\UserController as AreaAdminUserController;
+use App\Http\Controllers\AreaAdmin\FolderPermissionController;
 use App\Http\Controllers\Admin\OrganigramController; // Importa el controlador del Organigrama
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str; // ¡Añade esta línea para usar Str::endsWith!
+use App\Http\Controllers\FileLinkController;
+
+
+Route::get('/terms-conditions', function () {
+    return view('terms-conditions');
+})->name('terms.conditions');
+
+Route::get('/privacy-policy', function () {
+    return view('privacy-policy');
+})->name('privacy.policy');
+
+Route::get('/cookies-policy', function () {
+    return view('cookies-policy');
+})->name('cookies.policy');
+
+
 
 // REDIRECCIÓN AUTOMÁTICA DE LA RAÍZ A LA PÁGINA DE LOGIN
 Route::get('/', function () {
@@ -50,11 +66,14 @@ Route::middleware(['auth'])->group(function () {
     // Rutas para la gestión de archivos/enlaces
     Route::get('/folders/{folder}/file-links/create', [FolderController::class, 'createFileLink'])->name('file_links.create');
     Route::post('/folders/{folder}/file-links', [FolderController::class, 'storeFileLink'])->name('file_links.store');
-    Route::get('/file-links/{fileLink}/edit', [FolderController::class, 'editFileLink'])->name('file_links.edit');
-    Route::put('/file-links/{fileLink}', [FolderController::class, 'updateFileLink'])->name('file_links.update');
-    Route::delete('/file-links/{fileLink}', [FolderController::class, 'destroyFileLink'])->name('file_links.destroy');
+    Route::get('/file-links/{fileLink}/edit', [FileLinkController::class, 'edit'])->name('file_links.edit');
+    Route::put('/file-links/{fileLink}', [FileLinkController::class, 'update'])->name('file_links.update');
+    Route::delete('/file-links/{fileLink}', [FileLinkController::class, 'destroy'])->name('file_links.destroy');
+    // Rutas para arrastrar y soltar carpetas y subir archivos (NUEVAS RUTAS PARA D&D)
+    Route::put('/folders/move', [FolderController::class, 'moveFolder'])->name('folders.move'); // Mover carpeta
+    Route::post('/folders/upload-dropped-files', [FolderController::class, 'uploadDroppedFiles'])->name('folders.upload-dropped-files'); // Subir archivos arrastrados
 
-    // Ruta para descarga directa de archivos (usada por la búsqueda predictiva)
+    // Ruta para descarga directa de archivos (usada por la búsqueda predictiva y clics en tabla)
     Route::get('/files/{fileLink}/download', function (App\Models\FileLink $fileLink) {
         if ($fileLink->type === 'file' && Storage::disk('public')->exists($fileLink->path)) {
             // Asegúrate de que el usuario tiene permisos para descargar este archivo
@@ -69,7 +88,16 @@ Route::middleware(['auth'])->group(function () {
                 abort(403, 'No tienes permiso para descargar este archivo.');
             }
 
-            return Storage::disk('public')->download($fileLink->path, $fileLink->name . '.' . pathinfo($fileLink->path, PATHINFO_EXTENSION));
+            // Lógica para asegurar el nombre de descarga correcto
+            $originalExtension = pathinfo($fileLink->path, PATHINFO_EXTENSION);
+            $downloadFileName = $fileLink->name;
+
+            // Si el nombre asignado no termina con la extensión original, la añadimos
+            if (!Str::endsWith(strtolower($fileLink->name), '.' . strtolower($originalExtension))) {
+                $downloadFileName .= '.' . strtolower($originalExtension);
+            }
+
+            return Storage::disk('public')->download($fileLink->path, $downloadFileName);
         }
         abort(404);
     })->name('files.download');
@@ -84,8 +112,8 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/folders/{folder}', [FolderController::class, 'destroy'])->name('folders.destroy');
 
     // Ruta para sugerencias de búsqueda (API para frontend, protegida por 'auth' de sesión)
-    Route::get('/search-suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
-    Route::get('/dashboard-data', [App\Http\Controllers\DashboardController::class, 'data'])->name('dashboard.data');    
+    Route::get('/search-suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions'); // ¡Añadido el nombre de la ruta!
+    Route::get('/dashboard-data', [App\Http\Controllers\DashboardController::class, 'data'])->name('dashboard.data');
 });
 
 
@@ -124,7 +152,7 @@ Route::middleware(['auth', 'check.area:Administración'])->prefix('admin')->name
         Route::prefix('activities')->name('activities.')->group(function () {
             Route::get('/', [OrganigramController::class, 'activitiesIndex'])->name('index');
             Route::post('/', [OrganigramController::class, 'activitiesStore'])->name('store');
-            Route::put('/{activity?}', [OrganigramController::class, 'activitiesUpdate'])->name('update');
+            Route::put('/{activity}', [OrganigramController::class, 'activitiesUpdate'])->name('update');
             Route::delete('/{activity}', [OrganigramController::class, 'activitiesDestroy'])->name('destroy');
         });
 
@@ -132,11 +160,10 @@ Route::middleware(['auth', 'check.area:Administración'])->prefix('admin')->name
         Route::prefix('skills')->name('skills.')->group(function () {
             Route::get('/', [OrganigramController::class, 'skillsIndex'])->name('index');
             Route::post('/', [OrganigramController::class, 'skillsStore'])->name('store');
-            Route::put('/{skill?}', [OrganigramController::class, 'skillsUpdate'])->name('update');
+            Route::put('/{skill}', [OrganigramController::class, 'skillsUpdate'])->name('update');
             Route::delete('/{skill}', [OrganigramController::class, 'skillsDestroy'])->name('destroy');
         });
     });    
-    
 });
 
 

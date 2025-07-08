@@ -7,12 +7,15 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
+        <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <!-- Google Fonts: Raleway Extrabold and Montserrat Regular -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@800&display=swap" rel="stylesheet">
 
+        <!-- CSS Assets -->
         @vite(['resources/css/app.css'])
         {{-- CRÍTICO: Cargar Alpine.js directamente desde CDN con defer en el head --}}
         <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script>      
@@ -160,6 +163,7 @@
     >
         <div class="min-h-screen bg-gray-100 flex">
 
+            <!-- Sidebar (Nueva Sección con estilos modernos y animaciones) -->
             {{-- hidden by default, visible on large screens --}}
             <div class="w-64 bg-[#2c3856] text-white flex-col min-h-screen shadow-2xl relative z-10 transition-all duration-500 ease-in-out hidden lg:flex">
                 <div class="p-6 text-center border-b border-gray-700/50 flex flex-col items-center justify-center">
@@ -219,10 +223,12 @@
                 </nav>
             </div>
 
+            <!-- Main Content Area -->
             {{-- Take full width on small screens, take remaining width on large screens --}}
             <div class="flex-1 flex flex-col bg-gray-100 w-full lg:w-auto">
                 @include('layouts.navigation', ['currentFolder' => $currentFolder ?? null])
 
+                <!-- Page Heading -->
                 @if (isset($header))
                     <header class="bg-white shadow-sm">
                         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -231,6 +237,7 @@
                     </header>
                 @endif
 
+                <!-- Page Content -->
                 <main class="flex-1 p-8">
                     {{ $slot }}
                 </main>
