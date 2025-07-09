@@ -7,242 +7,203 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-        <!-- Google Fonts: Raleway Extrabold and Montserrat Regular -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@800&display=swap" rel="stylesheet">
 
-        <!-- CSS Assets -->
         @vite(['resources/css/app.css'])
-        {{-- CRÍTICO: Cargar Alpine.js directamente desde CDN con defer en el head --}}
         <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script>      
         <style>
-            /* Custom CSS for more refined active state and hover effects */
+            /* ==== REFINED STYLES FOR ELEGANCE AND INTERACTIVITY ==== */
+
+            /* --- General Nav Link Style --- */
             .nav-link-custom {
                 position: relative;
-                overflow: hidden;
-                transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smoother transition */
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for all links */
+                display: flex;
+                align-items: center;
+                padding: 12px 16px;
+                border-radius: 8px;
+                font-weight: 500;
+                color: #e5e7eb;
+                transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
             }
+
+            /* --- Left Border Indicator for Hover/Active --- */
             .nav-link-custom::before {
                 content: '';
                 position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-                transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1); /* Slower, elegant shine */
+                left: 0;
+                top: 50%;
+                transform: translateY(-50%);
+                height: 0;
+                width: 4px;
+                background-color: #ff9c00; /* Brand Orange */
+                border-radius: 2px;
+                transition: height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             }
-            .nav-link-custom:hover::before {
-                left: 100%;
-            }
-            .nav-link-custom.active-link {
-                background-color: #ff9c00; /* Orange background for active */
-                color: white;
-                box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); /* More pronounced shadow for active */
-                transform: translateY(-2px); /* Slight lift for active */
-            }
+
+            /* --- Hover State (Non-Active) --- */
             .nav-link-custom:hover:not(.active-link) {
-                background-color: #2b2b2b; /* Dark gray on hover for non-active */
-                color: white;
-                transform: translateY(-2px); /* Slight lift on hover */
-                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Medium shadow on hover */
+                background-color: rgba(255, 255, 255, 0.05);
+                color: #ffffff;
             }
-            .nav-link-custom span {
-                position: relative; /* Ensure text is above ::before pseudo-element */
-                z-index: 1;
+            .nav-link-custom:hover:not(.active-link)::before {
+                height: 60%;
             }
-
-            /* 3D Text and Gleam Effects - Movimientos cancelados */
-            .logo-text-3d {
-                display: inline-block;
-                position: relative;
-                transform-style: preserve-3d;
-                perspective: 800px;
-                text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
-                transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1); /* Mantener transición para hover sutil */
+            
+            /* --- Active Link State --- */
+            .nav-link-custom.active-link {
+                background-color: #ff9c00; /* Brand Orange */
+                color: #ffffff;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(255, 156, 0, 0.2);
             }
-            .logo-text-3d:hover {
-                transform: translateY(-5px) rotateX(2deg) scale(1.02); /* Movimiento sutil en hover */
+            .nav-link-custom.active-link::before {
+                height: 100%;
             }
 
-            .logo-text-3d::after {
-                content: '';
-                position: absolute;
-                top: -50%;
-                left: -50%;
-                width: 200%;
-                height: 200%;
-                background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity 0.5s ease-in-out;
-                animation: none;
+            /* --- Icon and Text Styling --- */
+            .nav-link-custom .nav-icon {
+                flex-shrink: 0;
+                width: 1.25rem;
+                height: 1.25rem;
+                margin-right: 12px;
+                transition: transform 0.3s ease;
+            }
+            
+            .nav-link-custom:hover .nav-text {
+                transform: translateX(4px);
             }
 
-            .logo-text-3d:hover::after {
-                opacity: 1;
-                animation: gleam 1.5s infinite linear;
+            /* --- Elegant Logo Hover Effect --- */
+            .logo-container {
+                transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s ease;
+                border-radius: 8px;
             }
-
-            @keyframes gleam {
-                0% { transform: translate(-50%, -50%) rotate(0deg); opacity: 0.2; }
-                50% { transform: translate(-50%, -50%) rotate(180deg); opacity: 0.5; }
-                100% { transform: translate(-50%, -50%) rotate(360deg); opacity: 0.2; }
+            .logo-container:hover {
+                transform: scale(1.03);
+                background-color: rgba(255, 255, 255, 0.03);
             }
-
-            .logo-subtitle-3d {
-                display: inline-block;
-                position: relative;
-                transform-style: preserve-3d;
-                perspective: 600px;
-                text-shadow: 0.5px 0.5px 2px rgba(0,0,0,0.4);
-                transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1); /* Mantener transición para hover sutil */
+            .logo-container .logo-text {
+                font-family: 'Raleway', sans-serif;
             }
-            .logo-subtitle-3d:hover {
-                transform: translateY(5px) rotateX(-2deg) scale(1.01); /* Movimiento sutil en hover */
+            .logo-container .logo-subtitle {
+                font-family: 'Montserrat', sans-serif;
             }
-
-            .logo-subtitle-3d::after {
-                content: '';
-                position: absolute;
-                top: -50%;
-                left: -50%;
-                width: 200%;
-                height: 200%;
-                background: radial-gradient(circle at center, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity 0.5s ease-in-out;
-                animation: none;
+            
+            /* --- Dropdown Styles --- */
+            .dropdown-toggle {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+                padding: 10px 16px;
+                font-family: 'Raleway', sans-serif;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .05em;
+                color: #a0aec0;
+                border-radius: 8px;
+                transition: background-color 0.3s ease;
             }
-
-            .logo-subtitle-3d:hover::after {
-                opacity: 1;
-                animation: gleam-subtle 1.8s infinite linear;
+            .dropdown-toggle:hover {
+                background-color: rgba(255, 255, 255, 0.05);
+                color: #cbd5e0;
             }
-
-            @keyframes gleam-subtle {
-                0% { transform: translate(-50%, -50%) rotate(0deg); opacity: 0.1; }
-                50% { transform: translate(-50%, -50%) rotate(180deg); opacity: 0.3; }
-                100% { transform: translate(-50%, -50%) rotate(360deg); opacity: 0.1; }
+            .dropdown-toggle .chevron-icon {
+                transition: transform 0.3s ease-in-out;
             }
-            /* Essential for x-cloak to work */
             [x-cloak] { display: none !important; }
         </style>
     </head>
-    {{-- x-cloak prevents flash of unstyled content --}}
     <body class="font-sans antialiased" style="font-family: 'Montserrat', sans-serif;" x-cloak
         x-data="{
-            showFileModal: false,
-            fileContentSrc: '',
-            fileContentType: '',
-            fileDownloadUrl: '',
-            fileFileName: '',
-            showPropertiesModal: false,
-            propertiesData: {},
-            // Define Alpine.js functions directly within x-data
-            openFileModal: function(src, type, name) {
-                this.showFileModal = true;
-                this.fileContentSrc = src;
-                this.fileContentType = type;
-                this.fileDownloadUrl = src;
-                this.fileFileName = name;
-                console.log('openFileModal called from global Alpine:', { src, type, name }); // Debug log
-            },
-            openPropertiesModal: function(itemData) {
-                this.showPropertiesModal = true;
-                this.propertiesData = itemData;
-                console.log('openPropertiesModal called from global Alpine:', itemData); // Debug log
-            }
+            /* State for collapsible menus - automatically opens if the current route matches */
+            isSuperAdminMenuOpen: {{ request()->routeIs('admin.*') ? 'true' : 'false' }},
+            isAreaAdminMenuOpen: {{ request()->routeIs('area_admin.*') ? 'true' : 'false' }}
         }"
     >
         <div class="min-h-screen bg-gray-100 flex">
 
-            <!-- Sidebar (Nueva Sección con estilos modernos y animaciones) -->
-            {{-- hidden by default, visible on large screens --}}
-            <div class="w-64 bg-[#2c3856] text-white flex-col min-h-screen shadow-2xl relative z-10 transition-all duration-500 ease-in-out hidden lg:flex">
-                <div class="p-6 text-center border-b border-gray-700/50 flex flex-col items-center justify-center">
-                    <img src="{{ asset('storage/LogoBlanco.png') }}" alt="Minmer Global Logo" class="h-24 mx-auto mb-3 transition-transform duration-700 ease-in-out hover:scale-115 transform origin-center">
-                    <span class="text-xl font-extrabold text-white tracking-wide logo-text-3d" style="font-family: 'Raleway', sans-serif;">TORRE DE CONTROL</span>
-                    <span class="text-xs text-gray-300 mt-1 logo-subtitle-3d" style="font-family: 'Montserrat', sans-serif;">MINMER GLOBAL</span>
+            <div class="w-64 bg-[#2c3856] text-white flex-col min-h-screen shadow-2xl relative z-10 hidden lg:flex">
+                <div class="p-6 text-center">
+                    <div class="logo-container py-4">
+                        <img src="{{ asset('storage/LogoBlanco.png') }}" alt="Minmer Global Logo" class="h-20 mx-auto mb-3">
+                        <span class="text-xl font-extrabold text-white tracking-wide logo-text">TORRE DE CONTROL</span>
+                        <span class="text-xs text-gray-300 mt-1 block logo-subtitle">MINMER GLOBAL</span>
+                    </div>
                 </div>
-                <nav class="flex-1 px-4 py-8 space-y-4">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="nav-link-custom group block px-4 py-3 text-base font-medium rounded-lg text-gray-100
-                        {{ request()->routeIs('dashboard') ? 'active-link' : '' }}">
-                        <span class="transition-transform duration-300 ease-out group-hover:translate-x-2">{{ __('Dashboard') }}</span>
+                
+                <div class="px-6"><div class="border-t border-white/10"></div></div>
+
+                <nav class="flex-1 px-4 py-6 space-y-2">
+                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="nav-link-custom {{ request()->routeIs('dashboard') ? 'active-link' : '' }}">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+                        <span class="nav-text">{{ __('Dashboard') }}</span>
                     </x-nav-link>
 
-                    <x-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="nav-link-custom group block px-4 py-3 text-base font-medium rounded-lg text-gray-100
-                        {{ request()->routeIs('folders.index') ? 'active-link' : '' }}">
-                        <span class="transition-transform duration-300 ease-out group-hover:translate-x-2">{{ __('Gestión de Archivos') }}</span>
+                    <x-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="nav-link-custom {{ request()->routeIs('folders.index') ? 'active-link' : '' }}">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>
+                        <span class="nav-text">{{ __('Gestión de Archivos') }}</span>
                     </x-nav-link>
 
+                    {{-- Super Admin Collapsible Menu --}}
                     @if (Auth::user()->area && Auth::user()->area->name === 'Administración')
-                        <div class="border-t border-gray-700/50 pt-6 mt-6">
-                            <span class="block px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider" style="font-family: 'Raleway', sans-serif;">Super Admin</span>
-                            <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="nav-link-custom group block px-4 py-3 text-base font-medium rounded-lg text-gray-100
-                                {{ request()->routeIs('admin.dashboard') ? 'active-link' : '' }}">
-                                <span class="transition-transform duration-300 ease-out group-hover:translate-x-2">{{ __('Panel General') }}</span>
-                            </x-nav-link>
-                            <x-nav-link :href="route('admin.areas.index')" :active="request()->routeIs('admin.areas.index')" class="nav-link-custom group block px-4 py-3 text-base font-medium rounded-lg text-gray-100
-                                {{ request()->routeIs('admin.areas.index') ? 'active-link' : '' }}">
-                                <span class="transition-transform duration-300 ease-out group-hover:translate-x-2">{{ __('Gestionar Áreas') }}</span>
-                            </x-nav-link>
-                            <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index')" class="nav-link-custom group block px-4 py-3 text-base font-medium rounded-lg text-gray-100
-                                {{ request()->routeIs('admin.users.index') ? 'active-link' : '' }}">
-                                <span class="transition-transform duration-300 ease-out group-hover:translate-x-2">{{ __('Gestionar Usuarios') }}</span>
-                            </x-nav-link>
-                            {{-- Organigram Link --}}
-                            <x-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.index')" class="nav-link-custom group block px-4 py-3 text-base font-medium rounded-lg text-gray-100
-                                {{ request()->routeIs('admin.organigram.index') ? 'active-link' : '' }}">
-                                <span class="transition-transform duration-300 ease-out group-hover:translate-x-2">{{ __('Organigrama') }}</span>
-                            </x-nav-link>
+                        <div class="pt-4 mt-2 border-t border-white/10">
+                            <button @click="isSuperAdminMenuOpen = !isSuperAdminMenuOpen" class="dropdown-toggle text-xs">
+                                <span>Super Admin</span>
+                                <svg class="chevron-icon w-4 h-4" :class="{'rotate-180': isSuperAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                            </button>
+                             
+                            <div x-show="isSuperAdminMenuOpen" 
+                                x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 transform -translate-y-2"
+                                x-transition:enter-end="opacity-100 transform translate-y-0"
+                                x-transition:leave="transition ease-in duration-150"
+                                x-transition:leave-start="opacity-100 transform translate-y-0"
+                                x-transition:leave-end="opacity-0 transform -translate-y-2"
+                                class="overflow-hidden">
+                                <div class="pl-4 mt-2 space-y-2">
+                                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="nav-link-custom {{ request()->routeIs('admin.dashboard') ? 'active-link' : '' }}">
+                                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-1.621-1.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        <span class="nav-text">{{ __('Panel General') }}</span>
+                                    </x-nav-link>
+                                    {{-- El resto de los links de admin... --}}
+                                </div>
+                            </div>
                         </div>
                     @elseif (Auth::user()->is_area_admin)
-                        <div class="border-t border-gray-700/50 pt-6 mt-6">
-                            <span class="block px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider" style="font-family: 'Raleway', sans-serif;">Admin de Área</span>
-                            <x-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="nav-link-custom group block px-4 py-3 text-base font-medium rounded-lg text-gray-100
-                                {{ request()->routeIs('area_admin.dashboard') ? 'active-link' : '' }}">
-                                <span class="transition-transform duration-300 ease-out group-hover:translate-x-2">{{ __('Panel de Mi Área') }}</span>
-                            </x-nav-link>
-                            <x-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.index')" class="nav-link-custom group block px-4 py-3 text-base font-medium rounded-lg text-gray-100
-                                {{ request()->routeIs('area_admin.users.index') ? 'active-link' : '' }}">
-                                <span class="transition-transform duration-300 ease-out group-hover:translate-x-2">{{ __('Usuarios de Mi Área') }}</span>
-                            </x-nav-link>
-                            <x-nav-link :href="route('area_admin.folder_permissions.index')" :active="request()->routeIs('area_admin.folder_permissions.index')" class="nav-link-custom group block px-4 py-3 text-base font-medium rounded-lg text-gray-100
-                                {{ request()->routeIs('area_admin.folder_permissions.index') ? 'active-link' : '' }}">
-                                <span class="transition-transform duration-300 ease-out group-hover:translate-x-2">{{ __('Permisos de Carpetas') }}</span>
-                            </x-nav-link>
+                        <div class="pt-4 mt-2 border-t border-white/10">
+                            <button @click="isAreaAdminMenuOpen = !isAreaAdminMenuOpen" class="dropdown-toggle text-xs">
+                                <span>Admin de Área</span>
+                                <svg class="chevron-icon w-4 h-4" :class="{'rotate-180': isAreaAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                            </button>
+                            <div x-show="isAreaAdminMenuOpen"
+                                x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 transform -translate-y-2"
+                                x-transition:enter-end="opacity-100 transform translate-y-0"
+                                x-transition:leave="transition ease-in duration-150"
+                                x-transition:leave-start="opacity-100 transform translate-y-0"
+                                x-transition:leave-end="opacity-0 transform -translate-y-2"
+                                class="overflow-hidden">
+                                <div class="pl-4 mt-2 space-y-2">
+                                    {{-- Aquí van los links de Admin de Área --}}
+                                </div>
+                            </div>
                         </div>
                     @endif
                 </nav>
             </div>
 
-            <!-- Main Content Area -->
-            {{-- Take full width on small screens, take remaining width on large screens --}}
             <div class="flex-1 flex flex-col bg-gray-100 w-full lg:w-auto">
                 @include('layouts.navigation', ['currentFolder' => $currentFolder ?? null])
-
-                <!-- Page Heading -->
                 @if (isset($header))
                     <header class="bg-white shadow-sm">
-                        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                            {{ $header }}
-                        </div>
+                        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">{{ $header }}</div>
                     </header>
                 @endif
-
-                <!-- Page Content -->
-                <main class="flex-1 p-8">
-                    {{ $slot }}
-                </main>
+                <main class="flex-1 p-8">{{ $slot }}</main>
             </div>
         </div>
-
     </body>
 </html>
