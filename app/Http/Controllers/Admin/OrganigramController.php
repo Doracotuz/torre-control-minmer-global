@@ -391,10 +391,10 @@ class OrganigramController extends Controller
             'name' => 'MINMER GLOBAL',
             'title' => 'Organigrama Principal',
             'type' => 'root',
-            'img' => asset('images/LogoAzul.png'), // Reemplaza con la ruta real de tu logo
+            'img' => asset('images/LogoAzul.png'),
         ];
 
-        // 2. Nodos de Áreas
+        // 2. Nodos de Áreas (CON CAMBIOS)
         foreach ($areas as $area) {
             $flatNodes[] = [
                 'id' => 'area_' . $area->id,
@@ -402,7 +402,8 @@ class OrganigramController extends Controller
                 'name' => $area->name,
                 'title' => 'Área',
                 'type' => 'area',
-                'img' => $area->icon_path ? asset('storage/' . $area->icon_path) : null, // Añadimos la imagen si existe
+                'img' => $area->icon_path ? asset('storage/' . $area->icon_path) : null,
+                'description' => $area->description, // <-- CAMBIO: Añadido para el modal
             ];
         }
 
@@ -417,7 +418,7 @@ class OrganigramController extends Controller
                 'title' => $member->position->name ?? 'Sin Posición',
                 'img' => $member->profile_photo_path ? asset('storage/' . $member->profile_photo_path) : null,
                 'type' => 'member',
-                'full_details' => [
+                'full_details' => [ // Objeto con toda la información para el modal del miembro
                     'name' => $member->name,
                     'email' => $member->email,
                     'cell_phone' => $member->cell_phone,
@@ -435,10 +436,7 @@ class OrganigramController extends Controller
             ];
         }
 
-        // CAMBIO PRINCIPAL: Convertir la lista plana a un árbol anidado
         $nestedTree = $this->buildNestedTree($flatNodes);
-
-        // La librería espera un único objeto raíz, no un array que lo contenga.
         return response()->json($nestedTree[0] ?? null);
     }   
 
@@ -452,21 +450,21 @@ class OrganigramController extends Controller
     }
 
     /**
-     * NUEVA FUNCIÓN: Convierte una lista plana de nodos (con id y pid) en un árbol anidado.
-     * @param array $elements La lista de nodos.
-     * @param mixed $parentId El ID del padre desde el cual empezar a construir.
-     * @return array El árbol anidado.
+     * Convierte una lista plana de nodos en un árbol anidado.
      */
-    private function buildNestedTree(array &$elements, $parentId = null) {
+    private function buildNestedTree(array &$elements, $parentId = null, int $depth = 0) {
         $branch = [];
         foreach ($elements as &$element) {
             if ($element['pid'] == $parentId) {
-                $children = $this->buildNestedTree($elements, $element['id']);
+                if ($depth >= 1) {
+                    $element['collapsed'] = true;
+                }
+                $children = $this->buildNestedTree($elements, $element['id'], $depth + 1);
                 if ($children) {
                     $element['children'] = $children;
                 }
                 $branch[] = $element;
-                unset($element); // Desvincular la referencia
+                unset($element);
             }
         }
         return $branch;
