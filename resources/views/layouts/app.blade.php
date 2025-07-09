@@ -113,6 +113,15 @@
             .dropdown-toggle .chevron-icon {
                 transition: transform 0.3s ease-in-out;
             }
+
+            .sticky-sidebar {
+                position: sticky;
+                top: 0;
+                min-height: 100vh; /* Asegura que la sidebar tenga al menos la altura de la ventana */
+                align-self: flex-start; /* Ayuda a que sticky funcione correctamente dentro de un flex container */
+            }
+
+
             [x-cloak] { display: none !important; }
         </style>
     </head>
@@ -124,8 +133,8 @@
         }"
     >
         <div class="min-h-screen bg-gray-100 flex">
-
-            <div class="w-64 bg-[#2c3856] text-white flex-col min-h-screen shadow-2xl relative z-10 hidden lg:flex">
+            <div class="w-64 bg-[#2c3856] text-white flex-col min-h-screen shadow-2xl relative z-10 hidden lg:flex sticky-sidebar">
+            <!-- <div class="w-64 bg-[#2c3856] text-white flex-col min-h-screen shadow-2xl relative z-10 hidden lg:flex"> -->
                 <div class="p-6 text-center">
                     <div class="logo-container py-4">
                         <img src="{{ asset('storage/LogoBlanco.png') }}" alt="Minmer Global Logo" class="h-20 mx-auto mb-3">

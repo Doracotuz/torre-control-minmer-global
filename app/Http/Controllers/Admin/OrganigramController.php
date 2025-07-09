@@ -16,32 +16,58 @@ use App\Models\OrganigramTrajectory; // Importa el modelo OrganigramTrajectory
 class OrganigramController extends Controller
 {
     /**
-     * Display a listing of the organigram members.
-     * Muestra una lista de todos los miembros del organigrama.
+     * Display a listing of the organigram members with optional filters.
+     * Muestra una lista de todos los miembros del organigrama con filtros opcionales.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(Request $request) // <-- Añadir Request
     {
-        // Cargar miembros con sus relaciones para mostrar la jerarquía y detalles
-        // Incluye la relación 'position' para poder acceder al nombre del puesto.
-        $members = OrganigramMember::with(['area', 'manager', 'subordinates', 'activities', 'skills', 'trajectories', 'position']) // AÑADIDO 'position'
-                                    ->orderBy('area_id')
-                                    ->get(); // Obtener todos los miembros ordenados por área inicialmente
+        // Obtener todas las áreas, posiciones y managers para los filtros
+        $areas = Area::orderBy('name')->get();
+        $positions = OrganigramPosition::orderBy('name')->get();
+        $managers = OrganigramMember::orderBy('name')->get(); // Todos los miembros pueden ser managers
 
-        // Opción 2: Ordenar la colección por el nombre de la posición después de obtenerla.
-        // Puedes cambiar a 'hierarchy_level' si esa columna está implementada y prefieres ese orden.
-        $members = $members->sortBy(function($member) {
-            // Usa el nombre del puesto para ordenar, si no tiene puesto, se considera vacío para el orden.
+        // Iniciar la consulta de miembros
+        $query = OrganigramMember::with(['area', 'manager', 'subordinates', 'activities', 'skills', 'trajectories', 'position']);
+
+        // Aplicar filtros basados en el request
+        if ($request->filled('position_id')) {
+            $query->where('position_id', $request->position_id);
+        }
+
+        if ($request->filled('manager_id')) {
+            // Si manager_id es 'null' (para miembros sin jefe), filtrar por manager_id IS NULL
+            if ($request->manager_id === 'null') {
+                $query->whereNull('manager_id');
+            } else {
+                $query->where('manager_id', $request->manager_id);
+            }
+        }
+
+        if ($request->filled('area_id')) {
+            $query->where('area_id', $request->area_id);
+        }
+
+        // Ordenar los miembros
+        $members = $query->get()->sortBy(function($member) {
             return $member->position->name ?? '';
         });
 
-        // Opcional: Construir una estructura jerárquica para la vista
+        // Opcional: Construir una estructura jerárquica para la vista (no afectada por los filtros de la tabla)
+        // Esta parte es más para la vista interactiva o para una representación gráfica.
+        // Para la tabla plana, `$members` ya está filtrado.
         $hierarchicalMembers = $members->whereNull('manager_id')->map(function ($member) use ($members) {
             return $this->buildHierarchy($member, $members);
         });
 
-        return view('admin.organigram.index', compact('members', 'hierarchicalMembers'));
+        // Pasar las variables de los filtros seleccionados a la vista para mantenerlos en los selectores
+        $selectedPosition = $request->input('position_id');
+        $selectedManager = $request->input('manager_id');
+        $selectedArea = $request->input('area_id');
+
+        return view('admin.organigram.index', compact('members', 'hierarchicalMembers', 'areas', 'positions', 'managers', 'selectedPosition', 'selectedManager', 'selectedArea')); // <-- Añadir variables
     }
 
     /**

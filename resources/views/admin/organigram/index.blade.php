@@ -30,24 +30,36 @@
                         </button>
                     </div>
                 @endif
-                {{-- El resto de los mensajes de error se omiten por brevedad --}}
+                @if (session('error'))
+                    <div x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 5000)"
+                         class="fixed top-5 right-5 z-50 bg-white border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert">
+                        <div class="flex items-center">
+                            <svg class="w-6 h-6 mr-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <strong class="font-bold mr-1" style="font-family: 'Raleway', sans-serif;">¡Error!</strong>
+                            <span class="block sm:inline">{{ session('error') }}</span>
+                        </div>
+                        <button @click="show = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none ml-4">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                @endif
 
-                {{-- Barra de Título y Botones de Acción (Mejorada para responsividad) --}}
-                <div class="flex flex-wrap justify-between items-center mb-8 gap-4">
+                {{-- Barra de Título y Botones de Acción (Ahora más prominentes) --}}
+                <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
                     <h3 class="text-2xl font-bold text-[#2c3856] w-full text-center sm:w-auto sm:text-left" style="font-family: 'Raleway', sans-serif;">Miembros del Organigrama</h3>
-                    <div class="flex flex-wrap justify-center sm:justify-end gap-3 w-full sm:w-auto">
-
-                        <a href="{{ route('admin.organigram.interactive') }}" class="inline-flex items-center justify-center px-4 py-2 bg-[#ff9c00] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-orange-500 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                            Interactivo
+                    <div class="flex flex-wrap justify-center sm:justify-end gap-4 w-full sm:w-auto">
+                        {{-- Botón "Interactivo" más grande y prominente --}}
+                        <a href="{{ route('admin.organigram.interactive') }}" class="inline-flex items-center justify-center px-5 py-2.5 bg-[#ff9c00] border border-transparent rounded-full font-bold text-sm text-white uppercase tracking-widest hover:bg-orange-500 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-lg">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            Organigrama
                         </a>
 
-                        {{-- Menú desplegable para "Acciones" --}}
+                        {{-- Menú desplegable para "Acciones" más grande y prominente --}}
                         <div x-data="{ open: false }" class="relative inline-block text-left">
                             <div>
-                                <button @click="open = !open" type="button" class="inline-flex items-center justify-center w-full px-4 py-2 bg-[#2c3856] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#4a5d8c] focus:bg-[#4a5d8c] active:bg-[#1a233a] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md" aria-expanded="true" aria-haspopup="true">
+                                <button @click="open = !open" type="button" class="inline-flex items-center justify-center w-full px-5 py-2.5 bg-[#2c3856] border border-transparent rounded-full font-bold text-sm text-white uppercase tracking-widest hover:bg-[#4a5d8c] focus:bg-[#4a5d8c] active:bg-[#1a233a] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-lg" aria-expanded="true" aria-haspopup="true">
                                     Acciones
-                                    <svg class="w-4 h-4 ml-2 -mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                                    <svg class="w-5 h-5 ml-2 -mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                                 </button>
                             </div>
                             <div x-show="open" x-transition @click.away="open = false" class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10" role="menu" aria-orientation="vertical">
@@ -65,8 +77,63 @@
                     </div>
                 </div>
 
+                {{-- FORMULARIO DE FILTROS (Minimalista) --}}
+                <form action="{{ route('admin.organigram.index') }}" method="GET" class="mb-8 px-4 py-4 md:px-0 md:py-0"> {{-- Eliminamos padding excesivo, fondo y bordes --}}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end"> {{-- Alineamos los elementos a la base --}}
+                        {{-- Filtro por Posición --}}
+                        <div>
+                            <label for="position_id" class="block text-sm font-medium text-gray-700 mb-1">Posición</label> {{-- Etiquetas más cortas --}}
+                            <select id="position_id" name="position_id" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm">
+                                <option value="">Todas</option>
+                                @foreach($positions as $position)
+                                    <option value="{{ $position->id }}" {{ (string)$position->id === (string)$selectedPosition ? 'selected' : '' }}>
+                                        {{ $position->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Filtro por Jefe Directo --}}
+                        <div>
+                            <label for="manager_id" class="block text-sm font-medium text-gray-700 mb-1">Jefe Directo</label>
+                            <select id="manager_id" name="manager_id" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm">
+                                <option value="">Todos</option>
+                                <option value="null" {{ 'null' === (string)$selectedManager ? 'selected' : '' }}>Sin Jefe</option> {{-- Etiqueta más corta --}}
+                                @foreach($managers as $manager)
+                                    <option value="{{ $manager->id }}" {{ (string)$manager->id === (string)$selectedManager ? 'selected' : '' }}>
+                                        {{ $manager->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Filtro por Área --}}
+                        <div>
+                            <label for="area_id" class="block text-sm font-medium text-gray-700 mb-1">Área</label>
+                            <select id="area_id" name="area_id" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm">
+                                <option value="">Todas</option>
+                                @foreach($areas as $area)
+                                    <option value="{{ $area->id }}" {{ (string)$area->id === (string)$selectedArea ? 'selected' : '' }}>
+                                        {{ $area->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end mt-6 space-x-3">
+                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-[#2c3856] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#4a5d8c] focus:bg-[#4a5d8c] active:bg-[#1a233a] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V19l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                            Aplicar
+                        </button> {{-- Etiqueta más corta --}}
+                        <a href="{{ route('admin.organigram.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-300 border border-transparent rounded-full font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-400 focus:bg-gray-400 active:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
+                            Limpiar
+                        </a> {{-- Etiqueta más corta --}}
+                    </div>
+                </form>
+
                 @if ($members->isEmpty())
-                    <p class="text-lg text-[#666666] py-8 text-center">No hay miembros en el organigrama para mostrar.</p>
+                    <p class="text-lg text-[#666666] py-8 text-center">No hay miembros en el organigrama para mostrar con los filtros aplicados.</p>
                 @else
                     {{-- TABLA para pantallas medianas y grandes --}}
                     <div class="hidden md:block overflow-x-auto">
@@ -77,7 +144,6 @@
                                     <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-[#666666] uppercase tracking-wider" style="font-family: 'Montserrat', sans-serif;">Posición</th>
                                     <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-[#666666] uppercase tracking-wider" style="font-family: 'Montserrat', sans-serif;">Área</th>
                                     <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-[#666666] uppercase tracking-wider" style="font-family: 'Montserrat', sans-serif;">Jefe Directo</th>
-                                    <!-- <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-[#666666] uppercase tracking-wider" style="font-family: 'Montserrat', sans-serif;">Contacto</th> -->
                                     <th scope="col" class="px-6 py-4 text-right text-xs font-semibold text-[#666666] uppercase tracking-wider rounded-tr-lg" style="font-family: 'Montserrat', sans-serif;">Acciones</th>
                                 </tr>
                             </thead>
@@ -89,7 +155,9 @@
                                                 @if ($member->profile_photo_path)
                                                     <img class="h-11 w-11 rounded-full object-cover mr-4" src="{{ asset('storage/' . $member->profile_photo_path) }}" alt="{{ $member->name }}">
                                                 @else
-                                                    {{-- Placeholder SVG --}}
+                                                    <svg class="h-11 w-11 rounded-full text-gray-300 bg-gray-100 mr-4" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 0c1.347 0 2.659.182 3.935.503l.366.096A14.977 14.977 0 0124 20.993zM12 11a6 6 0 100-12 6 6 0 000 12zm-2 2h4a1 1 0 110 2h-4a1 1 0 110-2z" />
+                                                    </svg>
                                                 @endif
                                                 <div class="text-base font-bold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">{{ $member->name }}</div>
                                             </div>
@@ -97,7 +165,6 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-[#2b2b2b]">{{ $member->position->name ?? 'N/A' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-[#2b2b2b]">{{ $member->area->name ?? 'N/A' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-[#2b2b2b]">{{ $member->manager->name ?? 'N/A' }}</td>
-                                        <!-- <td class="px-6 py-4 whitespace-nowrap text-sm text-[#666666]">{{ $member->email }}<br>{{ $member->cell_phone }}</td> -->
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
                                             <a href="{{ route('admin.organigram.edit', $member) }}" class="text-[#2c3856] hover:text-[#ff9c00] font-semibold transition-colors duration-200">Editar</a>
                                             <form action="{{ route('admin.organigram.destroy', $member) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro?');">
@@ -120,7 +187,9 @@
                                     @if ($member->profile_photo_path)
                                         <img class="h-16 w-16 rounded-full object-cover mr-4" src="{{ asset('storage/' . $member->profile_photo_path) }}" alt="{{ $member->name }}">
                                     @else
-                                        {{-- Placeholder --}}
+                                        <svg class="h-16 w-16 rounded-full text-gray-300 bg-gray-100 mr-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 0c1.347 0 2.659.182 3.935.503l.366.096A14.977 14.977 0 0124 20.993zM12 11a6 6 0 100-12 6 6 0 000 12zm-2 2h4a1 1 0 110 2h-4a1 1 0 110-2z" />
+                                        </svg>
                                     @endif
                                     <div class="flex-grow">
                                         <div class="font-bold text-lg text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">{{ $member->name }}</div>

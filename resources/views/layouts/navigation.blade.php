@@ -22,7 +22,7 @@
          }
      })"
      @click.away="showSuggestions = false"
-     class="bg-white border-b border-gray-100 shadow-md relative z-20">
+     class="bg-white border-b border-gray-100 shadow-md relative z-20 sticky top-0">
     <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16 items-center">
             <div class="flex items-center space-x-2 sm:space-x-4">
