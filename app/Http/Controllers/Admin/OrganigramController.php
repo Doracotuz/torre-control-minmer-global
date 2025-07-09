@@ -391,6 +391,7 @@ class OrganigramController extends Controller
             'name' => 'MINMER GLOBAL',
             'title' => 'Organigrama Principal',
             'type' => 'root',
+            'img' => asset('images/LogoAzul.png'), // Reemplaza con la ruta real de tu logo
         ];
 
         // 2. Nodos de Áreas
@@ -401,6 +402,7 @@ class OrganigramController extends Controller
                 'name' => $area->name,
                 'title' => 'Área',
                 'type' => 'area',
+                'img' => $area->icon_path ? asset('storage/' . $area->icon_path) : null, // Añadimos la imagen si existe
             ];
         }
 
