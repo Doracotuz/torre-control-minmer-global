@@ -16,7 +16,7 @@ class OrganigramMember extends Model
         'name',
         'email',
         'cell_phone',
-        'position',
+        'position_id',
         'profile_photo_path',
         'area_id',
         'manager_id',
@@ -68,6 +68,11 @@ class OrganigramMember extends Model
     public function trajectories(): HasMany
     {
         return $this->hasMany(OrganigramTrajectory::class);
+    }
+
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(OrganigramPosition::class);
     }
 
     

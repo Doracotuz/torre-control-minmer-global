@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('organigram_positions', function (Blueprint $table) {
             $table->id();
+            $table->string('name')->unique(); // Ej: "Director General", "Gerente", "Analista Senior"
+            $table->text('description')->nullable();
+            $table->integer('hierarchy_level')->nullable()->comment('Opcional: Nivel numérico para ordenar jerárquicamente');
             $table->timestamps();
         });
     }

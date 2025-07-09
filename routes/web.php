@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str; // ¡Añade esta línea para usar Str::endsWith!
 use App\Http\Controllers\FileLinkController;
-
+use App\Http\Controllers\Admin\OrganigramPositionController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -163,6 +163,18 @@ Route::middleware(['auth', 'check.area:Administración'])->prefix('admin')->name
             Route::put('/{skill}', [OrganigramController::class, 'skillsUpdate'])->name('update');
             Route::delete('/{skill}', [OrganigramController::class, 'skillsDestroy'])->name('destroy');
         });
+
+        // ¡NUEVAS RUTAS para gestionar Posiciones del Organigrama (CRUD)!
+        Route::prefix('positions')->name('positions.')->group(function () {
+            Route::get('/', [OrganigramPositionController::class, 'index'])->name('index');
+            Route::post('/', [OrganigramPositionController::class, 'store'])->name('store');
+            Route::put('/{organigram_position}', [OrganigramPositionController::class, 'update'])->name('update');
+            Route::delete('/{organigram_position}', [OrganigramPositionController::class, 'destroy'])->name('destroy');
+
+        });
+        Route::get('/interactive', [OrganigramController::class, 'interactiveOrganigram'])->name('interactive');
+        Route::get('/interactive-data', [OrganigramController::class, 'getInteractiveOrganigramData'])->name('interactive.data');
+
     });    
 });
 

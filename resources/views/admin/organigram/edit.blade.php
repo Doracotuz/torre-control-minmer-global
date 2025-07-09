@@ -109,9 +109,14 @@
                             </div>
 
                             <div class="mb-4">
-                                <x-input-label for="position" :value="__('Posición')" />
-                                <x-text-input id="position" name="position" type="text" class="mt-1 block w-full" :value="old('position', $organigramMember->position)" required />
-                                <x-input-error class="mt-2" :messages="$errors->get('position') ?? []" />
+                                <x-input-label for="position_id" :value="__('Posición')" />
+                                <select id="position_id" name="position_id" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
+                                    <option value="">Selecciona una Posición</option>
+                                    @foreach ($positions as $position)
+                                        <option value="{{ $position->id }}" {{ old('position_id', $organigramMember->position_id) == $position->id ? 'selected' : '' }}>{{ $position->name }}</option>
+                                    @endforeach
+                                </select>
+                                <x-input-error class="mt-2" :messages="$errors->get('position_id') ?? []" />
                             </div>
 
                             <div class="mb-4">

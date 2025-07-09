@@ -6,9 +6,9 @@
     </x-slot>
 
     <div class="py-12 bg-gray-100">
-        {{-- CAMBIO AQUÍ: Usamos max-w-full para que ocupe el 100% del ancho disponible --}}
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-8">
+                {{-- Mensajes de éxito y error (sin cambios) --}}
                 @if (session('success'))
                     <div x-data="{ show: true }" x-show="show" x-transition:enter="transition ease-out duration-300 transform scale-90 opacity-0" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200 transform scale-100 opacity-100" x-transition:leave-end="opacity-0 scale-90"
                          class="fixed top-4 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert">
@@ -34,19 +34,29 @@
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
                     </div>
-                </div>
+                </div> {{-- Esto parece ser un cierre de div extra en tu código original, lo mantengo por si es intencional, pero revisa --}}
                 @endif
 
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-semibold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">{{ __('Miembros del Organigrama') }}</h3>
-                    <div>
-                        <a href="{{ route('admin.organigram.activities.index') }}" class="inline-flex items-center px-5 py-2 bg-gray-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md mr-3">
+                {{-- Botones de acción: Flex-wrap para apilar en pantallas pequeñas --}}
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-[#2c3856] mb-3 sm:mb-0" style="font-family: 'Raleway', sans-serif;">{{ __('Miembros del Organigrama') }}</h3>
+                    <div class="flex flex-wrap justify-center sm:justify-end gap-2 sm:gap-3">
+
+                        <a href="{{ route('admin.organigram.interactive') }}" class="inline-flex items-center px-4 py-2 bg-[#ff9c00] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-orange-600 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                {{ __('Organigrama Interactivo') }}
+                        </a>
+
+                        <a href="{{ route('admin.organigram.activities.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
                             {{ __('Gestionar Actividades') }}
                         </a>
-                        <a href="{{ route('admin.organigram.skills.index') }}" class="inline-flex items-center px-5 py-2 bg-gray-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md mr-3">
+                        <a href="{{ route('admin.organigram.skills.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
                             {{ __('Gestionar Habilidades') }}
                         </a>
-                        <a href="{{ route('admin.organigram.create') }}" class="inline-flex items-center px-5 py-2 bg-[#2c3856] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#4a5d8c] focus:bg-[#4a5d8c] active:bg-[#1a233a] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
+                        <a href="{{ route('admin.organigram.positions.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
+                            {{ __('Gestionar Posiciones') }}
+                        </a>
+                        <a href="{{ route('admin.organigram.create') }}" class="inline-flex items-center px-4 py-2 bg-[#2c3856] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#4a5d8c] focus:bg-[#4a5d8c] active:bg-[#1a233a] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM12 15v-1a4 4 0 00-4-4H6a4 4 0 00-4 4v1h10z"></path></svg>
                             {{ __('Añadir Miembro') }}
                         </a>
@@ -56,7 +66,8 @@
                 @if ($members->isEmpty())
                     <p class="text-lg text-gray-600 py-8 text-center" style="font-family: 'Montserrat', sans-serif;">No hay miembros en el organigrama para mostrar.</p>
                 @else
-                    <div class="overflow-x-auto">
+                    {{-- TABLA para pantallas medianas y grandes --}}
+                    <div class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
@@ -96,7 +107,7 @@
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                            {{ $member->position }}
+                                            {{ $member->position->name ?? 'N/A' }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                             {{ $member->area->name ?? 'N/A' }}
@@ -121,10 +132,57 @@
                             </tbody>
                         </table>
                     </div>
+
+                    {{-- LISTA DE TARJETAS para pantallas pequeñas y medianas --}}
+                    <div class="grid grid-cols-1 gap-4 md:hidden"> {{-- Se muestra solo en pantallas pequeñas --}}
+                        @foreach ($members as $member)
+                            <div class="bg-white rounded-lg shadow-md p-4 border border-gray-200 flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                                <div class="flex-shrink-0">
+                                    @if ($member->profile_photo_path)
+                                        <img class="h-16 w-16 rounded-full object-cover" src="{{ asset('storage/' . $member->profile_photo_path) }}" alt="{{ $member->name }}">
+                                    @else
+                                        <div class="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
+                                            <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg>
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="flex-grow w-full">
+                                    <div class="font-bold text-lg text-[#2c3856]">{{ $member->name }}</div>
+                                    <div class="text-sm text-gray-700">
+                                        <strong>Posición:</strong> {{ $member->position->name ?? 'N/A' }}
+                                    </div>
+                                    <div class="text-sm text-gray-700">
+                                        <strong>Área:</strong> {{ $member->area->name ?? 'N/A' }}
+                                    </div>
+                                    <div class="text-sm text-gray-700">
+                                        <strong>Jefe:</strong> {{ $member->manager->name ?? 'N/A' }}
+                                    </div>
+                                    <div class="text-sm text-gray-700">
+                                        <strong>Contacto:</strong> {{ $member->email }} | {{ $member->cell_phone }}
+                                    </div>
+                                </div>
+                                <div class="flex flex-col sm:flex-row items-center sm:items-end gap-2 mt-3 sm:mt-0 w-full sm:w-auto">
+                                    <a href="{{ route('admin.organigram.edit', $member) }}" class="inline-flex items-center justify-center px-3 py-1.5 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-700 w-full sm:w-auto">
+                                        Editar
+                                    </a>
+                                    <form action="{{ route('admin.organigram.destroy', $member) }}" method="POST" class="w-full sm:w-auto" onsubmit="return confirm('¿Seguro que quieres eliminar?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="inline-flex items-center justify-center px-3 py-1.5 bg-red-600 text-white rounded-md text-xs font-semibold hover:bg-red-700 w-full sm:w-auto">
+                                            Eliminar
+                                        </button>
+                                    </form>
+                                    {{-- Botón para ver más detalles en el modal (opcional, si el modal es para todos los detalles) --}}
+                                    {{-- <button @click="openPropertiesModal(JSON.parse(JSON.stringify({{ $member->load(['activities', 'skills', 'trajectories', 'area', 'manager', 'position']) }})))" class="mt-2 text-blue-600 hover:underline text-sm">Ver Detalles</button> --}}
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
                 @endif
             </div>
         </div>
 
+        {{-- Modal de Propiedades - Asegurando responsividad interna --}}
         <div x-data="{ showPropertiesModal: false, propertiesData: {} }"
              x-show="showPropertiesModal"
              x-transition:enter="transition ease-out duration-300"
@@ -138,7 +196,7 @@
              @click.away="showPropertiesModal = false"
              @keydown.escape.window="showPropertiesModal = false"
         >
-            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" @click.stop="">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col" @click.stop="">
                 <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-4">
                     <h3 class="text-xl font-semibold text-[#2c3856]" x-text="propertiesData.name + ' - Detalles'"></h3>
                     <button @click="showPropertiesModal = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
@@ -148,14 +206,14 @@
 
                 <div class="flex-1 overflow-y-auto text-gray-700 text-base grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <div class="mb-3 flex items-center">
-                            <img x-show="propertiesData.profile_photo_path" :src="'{{ asset('storage') }}/' + propertiesData.profile_photo_path" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md mr-4">
-                            <div x-show="!propertiesData.profile_photo_path" class="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 border-4 border-gray-300 shadow-md mr-4">
+                        <div class="mb-3 flex flex-col sm:flex-row items-center sm:items-start"> {{-- CAMBIADO: flex-col en sm, flex-row en md --}}
+                            <img x-show="propertiesData.profile_photo_path" :src="'{{ asset('storage') }}/' + propertiesData.profile_photo_path" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md mb-3 sm:mb-0 sm:mr-4"> {{-- Ajuste de márgenes para móvil --}}
+                            <div x-show="!propertiesData.profile_photo_path" class="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 border-4 border-gray-300 shadow-md mb-3 sm:mb-0 sm:mr-4"> {{-- Ajuste de márgenes para móvil --}}
                                 <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg>
                             </div>
-                            <div>
+                            <div class="w-full text-center sm:text-left"> {{-- Ancho completo y centrado en móvil --}}
                                 <span class="font-semibold text-[#2c3856]">Nombre:</span> <span x-text="propertiesData.name"></span><br>
-                                <span class="font-semibold text-[#2c3856]">Posición:</span> <span x-text="propertiesData.position"></span><br>
+                                <span class="font-semibold text-[#2c3856]">Posición:</span> <span x-text="propertiesData.position_name"></span><br>
                                 <span class="font-semibold text-[#2c3856]">Área:</span> <span x-text="propertiesData.area_name"></span>
                             </div>
                         </div>
