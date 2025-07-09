@@ -50,6 +50,15 @@ class OrganigramController extends Controller
             $query->where('area_id', $request->area_id);
         }
 
+        // NUEVO: Filtro por búsqueda de texto en nombre o email
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                  ->orWhere('email', 'like', '%' . $search . '%');
+            });
+        }
+
         // Ordenar los miembros
         $members = $query->get()->sortBy(function($member) {
             return $member->position->name ?? '';
@@ -66,8 +75,9 @@ class OrganigramController extends Controller
         $selectedPosition = $request->input('position_id');
         $selectedManager = $request->input('manager_id');
         $selectedArea = $request->input('area_id');
+        $searchQuery = $request->input('search'); // NUEVO: Pasar el término de búsqueda
 
-        return view('admin.organigram.index', compact('members', 'hierarchicalMembers', 'areas', 'positions', 'managers', 'selectedPosition', 'selectedManager', 'selectedArea')); // <-- Añadir variables
+        return view('admin.organigram.index', compact('members', 'hierarchicalMembers', 'areas', 'positions', 'managers', 'selectedPosition', 'selectedManager', 'selectedArea', 'searchQuery')); // <-- Añadir searchQuery
     }
 
     /**

@@ -78,11 +78,19 @@
                 </div>
 
                 {{-- FORMULARIO DE FILTROS (Minimalista) --}}
-                <form action="{{ route('admin.organigram.index') }}" method="GET" class="mb-8 px-4 py-4 md:px-0 md:py-0"> {{-- Eliminamos padding excesivo, fondo y bordes --}}
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end"> {{-- Alineamos los elementos a la base --}}
+                <form action="{{ route('admin.organigram.index') }}" method="GET" class="mb-8 px-4 py-4 md:px-0 md:py-0">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end"> {{-- Cambiado a 4 columnas para el buscador --}}
+                        {{-- Nuevo: Filtro por Nombre/Email --}}
+                        <div>
+                            <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+                            <input type="text" id="search" name="search" placeholder="Nombre o Email"
+                                   class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm"
+                                   value="{{ $searchQuery ?? '' }}"> {{-- Mantener el valor de búsqueda --}}
+                        </div>
+
                         {{-- Filtro por Posición --}}
                         <div>
-                            <label for="position_id" class="block text-sm font-medium text-gray-700 mb-1">Posición</label> {{-- Etiquetas más cortas --}}
+                            <label for="position_id" class="block text-sm font-medium text-gray-700 mb-1">Posición</label>
                             <select id="position_id" name="position_id" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm">
                                 <option value="">Todas</option>
                                 @foreach($positions as $position)
@@ -98,7 +106,7 @@
                             <label for="manager_id" class="block text-sm font-medium text-gray-700 mb-1">Jefe Directo</label>
                             <select id="manager_id" name="manager_id" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm">
                                 <option value="">Todos</option>
-                                <option value="null" {{ 'null' === (string)$selectedManager ? 'selected' : '' }}>Sin Jefe</option> {{-- Etiqueta más corta --}}
+                                <option value="null" {{ 'null' === (string)$selectedManager ? 'selected' : '' }}>Sin Jefe</option>
                                 @foreach($managers as $manager)
                                     <option value="{{ $manager->id }}" {{ (string)$manager->id === (string)$selectedManager ? 'selected' : '' }}>
                                         {{ $manager->name }}
@@ -125,10 +133,10 @@
                         <button type="submit" class="inline-flex items-center px-4 py-2 bg-[#2c3856] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#4a5d8c] focus:bg-[#4a5d8c] active:bg-[#1a233a] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V19l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
                             Aplicar
-                        </button> {{-- Etiqueta más corta --}}
+                        </button>
                         <a href="{{ route('admin.organigram.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-300 border border-transparent rounded-full font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-400 focus:bg-gray-400 active:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
                             Limpiar
-                        </a> {{-- Etiqueta más corta --}}
+                        </a>
                     </div>
                 </form>
 
