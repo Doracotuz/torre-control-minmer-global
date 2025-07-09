@@ -129,158 +129,180 @@
     @vite('resources/js/app.js')
 
     {{-- Script Principal Optimizado --}}
-    <script>
-        window.memberDetailsStore = {};
+<script>
+    // Almacenamiento global para detalles de miembros
+    window.memberDetailsStore = {};
 
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('areaModal', () => ({
-                showModal: false,
-                data: {},
-                openModal(detail) { this.data = detail; this.showModal = true; }
-            }));
-            Alpine.data('memberModal', () => ({
-                showModal: false,
-                data: {},
-                openModal(memberId) {
-                    const details = window.memberDetailsStore[memberId];
-                    if (details) {
-                        this.data = details;
-                        this.showModal = true;
-                    } else {
-                        console.error('Detalles no encontrados para el miembro ID:', memberId);
-                    }
-                }
-            }));
-        });
-
-        $(function() {
-            const chartContainer = $('#chart-container');
-            chartContainer.html('<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-500">Cargando organigrama...</div>');
-
-            // CORRECCIÓN: Función de centrado y zoom mejorada
-            function fitChart() {
-                const PADDING = 40;
-                const MAX_ZOOM = 1.0;
-                const MIN_ZOOM = 0.2; // Reducido para permitir más alejamiento si es necesario
-
-                const chartElement = chartContainer.find('.orgchart');
-                if (chartElement.length === 0) return;
-
-                const containerWidth = chartContainer.width();
-                const containerHeight = chartContainer.height();
-                
-                // Asegurarse de que el elemento del organigrama no tenga transformaciones previas para medirlo correctamente
-                chartElement.css('transform', ''); 
-                const chartWidth = chartElement[0].scrollWidth;
-                const chartHeight = chartElement[0].scrollHeight;
-
-                if (chartWidth === 0 || chartHeight === 0) return;
-
-                const scaleX = (containerWidth - PADDING) / chartWidth;
-                const scaleY = (containerHeight - PADDING) / chartHeight;
-                let scale = Math.min(scaleX, scaleY);
-                scale = Math.min(Math.max(scale, MIN_ZOOM), MAX_ZOOM);
-
-                // Calcular la posición para centrar. Se usa el centro del contenedor como origen.
-                const newX = (containerWidth - chartWidth) / 2;
-                const newY = (containerHeight - chartHeight) / 2;
-
-                // Aplicar transformación con transición suave
-                chartElement.css({
-                    'transform': `translate(${newX}px, ${newY}px) scale(${scale})`,
-                    'transform-origin': 'top left', // El origen de la transformación es la esquina superior izquierda
-                    'transition': 'transform 0.3s ease'
-                });
+    // Inicialización de componentes de Alpine.js para los modales
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('areaModal', () => ({
+            showModal: false,
+            data: {},
+            openModal(detail) {
+                this.data = detail;
+                this.showModal = true;
             }
+        }));
 
-            $.ajax({
-                url: `{{ url('/admin/organigram/interactive-data') }}`,
-                method: 'GET',
-                cache: false,
-                success: function(response) {
-                    if (!response || !response.id) {
-                        chartContainer.html('<p class="text-red-500 text-center py-4">No se recibieron datos válidos.</p>');
-                        return;
-                    }
-
-                    function extractDetails(node) {
-                        // CORRECCIÓN: Almacenar los detalles usando el ID original para proxies
-                        const storeId = node.is_proxy ? node.original_id : node.id;
-                        if (node.type === 'member' && node.full_details) {
-                             window.memberDetailsStore[storeId] = node.full_details;
-                        }
-                        if (node.children && node.children.length > 0) {
-                            node.children.forEach(child => extractDetails(child));
-                        }
-                    }
-                    extractDetails(response);
-                    
-                    const orgchart = chartContainer.empty().orgchart({
-                        data: response,
-                        pan: true,
-                        zoom: true,
-                        direction: 't2b',
-                        depth: 2, // Inicia con 2 niveles de profundidad para un mejor aspecto inicial
-                        nodeContent: 'title',
-                        nodeTemplate: function(data) {
-                            let topBorderColor = data.type === 'root' ? '#2c3856' : (data.type === 'area' ? '#ff9c00' : '#e2e8f0');
-                            let proxyClass = data.is_proxy ? ' is-proxy' : '';
-                            let photoHtml = `<div class="h-16 w-16 mx-auto mb-3"></div>`;
-                            if (data.img) {
-                                let imageFitClass = (data.type === 'root' || data.type === 'area') ? 'object-contain' : 'object-cover';
-                                photoHtml = `<div class="h-16 w-16 mx-auto mb-3"><img class="rounded-full ${imageFitClass} h-full w-full border-2 border-gray-200 shadow-sm" src="${data.img}"></div>`;
-                            }
-
-                            let detailsButtonHtml = '';
-                            if (data.type === 'member') {
-                                // CORRECCIÓN: Usar el ID original para proxies para asegurar que el modal encuentre los detalles.
-                                const memberIdForModal = data.is_proxy ? data.original_id : data.id;
-                                detailsButtonHtml = `
-                                    <button 
-                                        @click.stop="window.dispatchEvent(new CustomEvent('open-member-modal', { detail: '${memberIdForModal}' }))"
-                                        class="absolute top-1 right-1 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2c3856] transition-all duration-200"
-                                        title="Ver detalles de ${data.name}">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                    </button>
-                                `;
-                            }
-
-                            return `
-                                <div class="node-header" style="background-color: ${topBorderColor}; height: 8px; border-radius: 0.5rem 0.5rem 0 0;"></div>
-                                <div class="node-content-wrapper${proxyClass}">
-                                    ${detailsButtonHtml}
-                                    ${photoHtml}
-                                    <div class="font-semibold text-gray-800 node-title">${data.name}</div>
-                                    <div class="text-xs text-gray-500 node-position">${data.title}</div>
-                                </div>`;
-                        },
-                        onClickNode: function(node, nodeData) {
-                            if (nodeData.type === 'area') {
-                                window.dispatchEvent(new CustomEvent('open-area-modal', { detail: { name: nodeData.name, description: nodeData.description } }));
-                            }
-                        }
-                    });
-
-                    // CORRECCIÓN: Usar requestAnimationFrame para asegurar que el DOM esté listo antes de centrar.
-                    // Esto es más fiable que un setTimeout.
-                    chartContainer.on('click', '.oc-edge-btn', function() {
-                        // Esperamos a que la animación de expandir/colapsar termine.
-                        setTimeout(() => {
-                            requestAnimationFrame(fitChart);
-                        }, 350); // La animación CSS dura 0.3s, esperamos un poco más.
-                    });
-                    
-                    // Ajustar al redimensionar la ventana
-                    $(window).on('resize', () => {
-                        requestAnimationFrame(fitChart);
-                    });
-
-                },
-                error: function(xhr, status, error) {
-                    chartContainer.html('<p class="text-red-500 text-center py-4">Error al cargar el organigrama: ' + error + '</p>');
-                    console.error('Error en AJAX:', xhr, status, error);
+        Alpine.data('memberModal', () => ({
+            showModal: false,
+            data: {},
+            openModal(memberId) {
+                const details = window.memberDetailsStore[memberId];
+                if (details) {
+                    this.data = details;
+                    this.showModal = true;
+                } else {
+                    console.error('Detalles no encontrados para el miembro ID:', memberId);
                 }
+            }
+        }));
+    });
+
+    $(function() {
+        const chartContainer = $('#chart-container');
+        chartContainer.html('<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-500">Cargando organigrama...</div>');
+
+        /**
+         * Función final para centrar y escalar el organigrama.
+         * Utiliza left/top para posicionar y transform:scale() para el zoom,
+         * evitando conflictos con la función de paneo de la librería.
+         */
+        function fitChart() {
+            const PADDING = 40;
+            const MAX_ZOOM = 1.0;
+            const MIN_ZOOM = 0.2;
+
+            const chartElement = chartContainer.find('.orgchart');
+            if (chartElement.length === 0) return;
+
+            const containerWidth = chartContainer.width();
+            const containerHeight = chartContainer.height();
+
+            // Medimos el tamaño real y completo del organigrama (sin escalar)
+            const chartWidth = chartElement[0].scrollWidth;
+            const chartHeight = chartElement[0].scrollHeight;
+
+            if (chartWidth === 0 || chartHeight === 0) return;
+
+            // Calculamos la escala para que quepa en el contenedor
+            let scale = Math.min((containerWidth - PADDING) / chartWidth, (containerHeight - PADDING) / chartHeight);
+            scale = Math.min(Math.max(scale, MIN_ZOOM), MAX_ZOOM);
+
+            // Calculamos el espacio de 'left' y 'top' para centrar el organigrama YA ESCALADO
+            const scaledWidth = chartWidth * scale;
+            const scaledHeight = chartHeight * scale;
+            const newX = (containerWidth - scaledWidth) / 2;
+            const newY = (containerHeight - scaledHeight) / 2;
+
+            // Aplicamos los estilos para posicionar y escalar
+            chartElement.css({
+                'transition': 'all 0.3s ease',
+                'left': newX + 'px',
+                'top': newY + 'px',
+                'transform': `scale(${scale})`,
+                'transform-origin': 'top left'
             });
+        }
+
+        $.ajax({
+            url: `{{ url('/admin/organigram/interactive-data') }}`,
+            method: 'GET',
+            cache: false,
+            success: function(response) {
+                if (!response || !response.id) {
+                    chartContainer.html('<p class="text-red-500 text-center py-4">No se recibieron datos válidos.</p>');
+                    return;
+                }
+
+                // Extrae y almacena los detalles completos de cada miembro
+                function extractDetails(node) {
+                    const storeId = node.is_proxy ? node.original_id : node.id;
+                    if (node.type === 'member' && node.full_details) {
+                        window.memberDetailsStore[storeId] = node.full_details;
+                    }
+                    if (node.children && node.children.length > 0) {
+                        node.children.forEach(child => extractDetails(child));
+                    }
+                }
+                extractDetails(response);
+
+                // Inicializa el organigrama
+                const orgchart = chartContainer.empty().orgchart({
+                    data: response,
+                    pan: true,
+                    zoom: true,
+                    direction: 't2b',
+                    depth: 2,
+                    nodeContent: 'title',
+                    nodeTemplate: function(data) {
+                        let topBorderColor = data.type === 'root' ? '#2c3856' : (data.type === 'area' ? '#ff9c00' : '#e2e8f0');
+                        let proxyClass = data.is_proxy ? ' is-proxy' : '';
+
+                        let photoHtml = `<div class="h-16 w-16 mx-auto mb-3"></div>`;
+                        if (data.img) {
+                            let imageFitClass = (data.type === 'root' || data.type === 'area') ? 'object-contain' : 'object-cover';
+                            photoHtml = `<div class="h-16 w-16 mx-auto mb-3"><img class="rounded-full ${imageFitClass} h-full w-full border-2 border-gray-200 shadow-sm" src="${data.img}"></div>`;
+                        }
+
+                        let detailsButtonHtml = '';
+                        if (data.type === 'member') {
+                            const memberIdForModal = data.is_proxy ? data.original_id : data.id;
+                            detailsButtonHtml = `
+                                <button
+                                    @click.stop="window.dispatchEvent(new CustomEvent('open-member-modal', { detail: '${memberIdForModal}' }))"
+                                    class="absolute top-1 right-1 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2c3856] transition-all duration-200"
+                                    title="Ver detalles de ${data.name}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                </button>
+                            `;
+                        }
+
+                        return `
+                            <div class="node-header" style="background-color: ${topBorderColor}; height: 8px; border-radius: 0.5rem 0.5rem 0 0;"></div>
+                            <div class="node-content-wrapper${proxyClass}">
+                                ${detailsButtonHtml}
+                                ${photoHtml}
+                                <div class="font-semibold text-gray-800 node-title">${data.name}</div>
+                                <div class="text-xs text-gray-500 node-position">${data.title}</div>
+                            </div>`;
+                    },
+                    onClickNode: function(node, nodeData) {
+                        if (nodeData.type === 'area') {
+                            window.dispatchEvent(new CustomEvent('open-area-modal', {
+                                detail: {
+                                    name: nodeData.name,
+                                    description: nodeData.description
+                                }
+                            }));
+                        }
+                    }
+                });
+
+                // 1. Centrado inicial: Se ejecuta tras un breve retraso para asegurar que el organigrama se haya renderizado.
+                setTimeout(() => {
+                    requestAnimationFrame(fitChart);
+                }, 150);
+
+                // 2. Re-centrado al expandir/colapsar: Se ejecuta al hacer clic en los botones de nodos.
+                chartContainer.on('click', '.oc-edge-btn', function() {
+                    // Espera a que termine la animación de la librería (0.3s) antes de re-calcular.
+                    setTimeout(() => {
+                        requestAnimationFrame(fitChart);
+                    }, 350);
+                });
+
+                // 3. Re-centrado al redimensionar la ventana.
+                $(window).on('resize', () => {
+                    requestAnimationFrame(fitChart);
+                });
+
+            },
+            error: function(xhr, status, error) {
+                chartContainer.html('<p class="text-red-500 text-center py-4">Error al cargar el organigrama: ' + error + '</p>');
+                console.error('Error en AJAX:', xhr, status, error);
+            }
         });
-    </script>
+    });
+</script>
 </x-app-layout>
