@@ -37,6 +37,18 @@
         /* Animaciones para colapsar/ocultar nodos */
         .orgchart .node.collapsed { opacity: 0; transform: scale(0.8); }
         .orgchart .node.expanded { opacity: 1; transform: scale(1); }
+                .orgchart .node.is-proxy {
+            border-style: dashed;
+            border-color: #ff9c00; /* Naranja para que destaque */
+            background-color: #fffaf0; /* Un fondo ligeramente diferente */
+        }
+        .orgchart .node.is-proxy .node-title::after {
+            content: '(Rol Cruzado)';
+            display: block;
+            font-size: 0.65rem;
+            color: #9ca3af;
+            font-weight: normal;
+        }
     </style>
 
     {{-- Layout y Modales (sin cambios significativos) --}}
@@ -173,6 +185,8 @@
                             if (data.type === 'root') topBorderColor = '#2c3856';
                             if (data.type === 'area') topBorderColor = '#ff9c00';
 
+                            let proxyClass = data.is_proxy ? ' is-proxy' : '';
+
                             let photoHtml = `<div class="h-16 w-16 mx-auto mb-3"></div>`;
                             if (data.img) {
                                 let imageFitClass = (data.type === 'root' || data.type === 'area') ? 'object-contain' : 'object-cover';
@@ -182,6 +196,9 @@
 
                             let detailsButtonHtml = '';
                             if (data.type === 'member') {
+
+                                const memberIdForModal = data.is_proxy ? data.original_id : data.id;
+
                                 detailsButtonHtml = `
                                     <button 
                                         @click.stop="window.dispatchEvent(new CustomEvent('open-member-modal', { detail: '${data.id}' }))"
@@ -195,7 +212,7 @@
 
                             return `
                                 <div class="node-header" style="background-color: ${topBorderColor}; height: 8px; border-radius: 0.5rem 0.5rem 0 0;"></div>
-                                <div class="node-content-wrapper">
+                                <div class="node-content-wrapper${proxyClass}">
                                     ${detailsButtonHtml}
                                     ${photoHtml}
                                     <div class="font-semibold text-gray-800 node-title">${data.name}</div>

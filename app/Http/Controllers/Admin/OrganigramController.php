@@ -381,12 +381,13 @@ class OrganigramController extends Controller
 
     public function getInteractiveOrganigramData()
     {
+        // Cargar todas las relaciones necesarias para evitar consultas N+1
         $members = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])->get();
         $areas = Area::all();
 
         $flatNodes = [];
 
-        // 1. Nodo Raíz
+        // 1. Nodo Raíz (sin cambios)
         $flatNodes[] = [
             'id' => 'org_root',
             'pid' => null,
@@ -396,7 +397,7 @@ class OrganigramController extends Controller
             'img' => asset('images/LogoAzul.png'),
         ];
 
-        // 2. Nodos de Áreas (CON CAMBIOS)
+        // 2. Nodos de Áreas (sin cambios)
         foreach ($areas as $area) {
             $flatNodes[] = [
                 'id' => 'area_' . $area->id,
@@ -405,21 +406,70 @@ class OrganigramController extends Controller
                 'title' => 'Área',
                 'type' => 'area',
                 'img' => $area->icon_path ? asset('storage/' . $area->icon_path) : null,
-                'description' => $area->description, // <-- CAMBIO: Añadido para el modal
+                'description' => $area->description,
             ];
         }
 
-        // 3. Nodos de Miembros
+        // =================================================================
+        // NUEVA LÓGICA PARA MÁNAGERS TRANSVERSALES Y PROXIES
+        // =================================================================
+
+        // 3. Identificar mánagers que necesitan un proxy y en qué áreas
+        $proxiesToCreate = [];
         foreach ($members as $member) {
-            $parentId = $member->manager_id ? (string)$member->manager_id : 'area_' . $member->area_id;
+            // Si el miembro tiene un mánager y están en áreas diferentes
+            if ($member->manager && $member->area_id !== $member->manager->area_id) {
+                $manager = $member->manager;
+                $targetAreaId = $member->area_id;
+                
+                // Usamos una clave única para no crear el mismo proxy múltiples veces
+                $proxyKey = 'proxy_' . $manager->id . '_area_' . $targetAreaId;
+                
+                if (!isset($proxiesToCreate[$proxyKey])) {
+                    $proxiesToCreate[$proxyKey] = [
+                        'id' => $proxyKey,
+                        'pid' => 'area_' . $targetAreaId, // El proxy cuelga del área foránea
+                        'original_id' => (string)$manager->id, // Guardamos el ID real para futuras referencias
+                        'name' => $manager->name,
+                        'title' => $manager->position->name ?? 'Sin Posición',
+                        'img' => $manager->profile_photo_path ? asset('storage/' . $manager->profile_photo_path) : null,
+                        'type' => 'member',
+                        'is_proxy' => true, // <-- Marca clave para el frontend
+                    ];
+                }
+            }
+        }
+
+        // 4. Añadir los nodos proxy a la lista plana
+        foreach ($proxiesToCreate as $proxyNode) {
+            $flatNodes[] = $proxyNode;
+        }
+
+        // 5. Nodos de Miembros (con lógica de 'pid' modificada)
+        foreach ($members as $member) {
+            $parentId = null;
             
+            if ($member->manager) {
+                // Si el mánager está en una ÁREA DIFERENTE, el padre es el NODO PROXY
+                if ($member->area_id !== $member->manager->area_id) {
+                    $parentId = 'proxy_' . $member->manager_id . '_area_' . $member->area_id;
+                } else {
+                // Si el mánager está en la MISMA ÁREA, el padre es el mánager real
+                    $parentId = (string)$member->manager_id;
+                }
+            } else {
+                // Si NO tiene mánager, el padre es el NODO DE ÁREA
+                $parentId = 'area_' . $member->area_id;
+            }
+
             $flatNodes[] = [
-                'id' => (string)$member->id,
-                'pid' => $parentId,
+                'id' => (string)$member->id, // El ID del miembro real
+                'pid' => $parentId, // El padre se asigna según la nueva lógica
                 'name' => $member->name,
                 'title' => $member->position->name ?? 'Sin Posición',
                 'img' => $member->profile_photo_path ? asset('storage/' . $member->profile_photo_path) : null,
                 'type' => 'member',
+                'is_proxy' => false, // Este es un nodo real, no un proxy
                 'full_details' => [ // Objeto con toda la información para el modal del miembro
                     'name' => $member->name,
                     'email' => $member->email,
@@ -440,7 +490,8 @@ class OrganigramController extends Controller
 
         $nestedTree = $this->buildNestedTree($flatNodes);
         return response()->json($nestedTree[0] ?? null);
-    }   
+    }
+   
 
     /**
      * Muestra la vista para el organigrama interactivo.
