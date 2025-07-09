@@ -135,7 +135,11 @@
                                 <select id="manager_id" name="manager_id" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                                     <option value="">Ninguno</option>
                                     @foreach ($managers as $manager)
-                                        <option value="{{ $manager->id }}" {{ old('manager_id', $organigramMember->manager_id) == $manager->id ? 'selected' : '' }}>{{ $manager->name }} ({{ $manager->position }})</option>
+                                        <option value="{{ $manager->id }}" {{ old('manager_id', $organigramMember->manager_id) == $manager->id ? 'selected' : '' }}>
+                                            {{ $manager->name }} 
+                                            ({{ $manager->position->name ?? 'Sin Posición' }}) 
+                                            - Área: {{ $manager->area->name ?? 'N/A' }}
+                                        </option>
                                     @endforeach
                                 </select>
                                 <x-input-error class="mt-2" :messages="$errors->get('manager_id') ?? []" />

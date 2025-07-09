@@ -77,7 +77,7 @@
                                     <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-[#666666] uppercase tracking-wider" style="font-family: 'Montserrat', sans-serif;">Posición</th>
                                     <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-[#666666] uppercase tracking-wider" style="font-family: 'Montserrat', sans-serif;">Área</th>
                                     <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-[#666666] uppercase tracking-wider" style="font-family: 'Montserrat', sans-serif;">Jefe Directo</th>
-                                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-[#666666] uppercase tracking-wider" style="font-family: 'Montserrat', sans-serif;">Contacto</th>
+                                    <!-- <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-[#666666] uppercase tracking-wider" style="font-family: 'Montserrat', sans-serif;">Contacto</th> -->
                                     <th scope="col" class="px-6 py-4 text-right text-xs font-semibold text-[#666666] uppercase tracking-wider rounded-tr-lg" style="font-family: 'Montserrat', sans-serif;">Acciones</th>
                                 </tr>
                             </thead>
@@ -97,7 +97,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-[#2b2b2b]">{{ $member->position->name ?? 'N/A' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-[#2b2b2b]">{{ $member->area->name ?? 'N/A' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-[#2b2b2b]">{{ $member->manager->name ?? 'N/A' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-[#666666]">{{ $member->email }}<br>{{ $member->cell_phone }}</td>
+                                        <!-- <td class="px-6 py-4 whitespace-nowrap text-sm text-[#666666]">{{ $member->email }}<br>{{ $member->cell_phone }}</td> -->
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
                                             <a href="{{ route('admin.organigram.edit', $member) }}" class="text-[#2c3856] hover:text-[#ff9c00] font-semibold transition-colors duration-200">Editar</a>
                                             <form action="{{ route('admin.organigram.destroy', $member) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro?');">

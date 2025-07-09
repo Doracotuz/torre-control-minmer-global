@@ -65,7 +65,7 @@ class OrganigramController extends Controller
     public function create()
     {
         $areas = Area::orderBy('name')->get();
-        $managers = OrganigramMember::orderBy('name')->get(); // Posibles managers
+        $managers = OrganigramMember::with(['area', 'position'])->orderBy('name')->get(); // Posibles managers
         $activities = OrganigramActivity::orderBy('name')->get(); // Todas las actividades disponibles
         $skills = OrganigramSkill::orderBy('name')->get(); // Todas las habilidades disponibles
         $positions = OrganigramPosition::orderBy('hierarchy_level')->orderBy('name')->get(); // NUEVO: Obtener posiciones
@@ -145,7 +145,9 @@ class OrganigramController extends Controller
     {
         $areas = Area::orderBy('name')->get();
         // Excluir al propio miembro de la lista de posibles managers para evitar auto-referencias
-        $managers = OrganigramMember::where('id', '!=', $organigramMember->id)->orderBy('name')->get();
+        $managers = OrganigramMember::where('id', '!=', $organigramMember->id)
+                                    ->with(['area', 'position'])
+                                    ->orderBy('name')->get();
         $activities = OrganigramActivity::orderBy('name')->get();
         $skills = OrganigramSkill::orderBy('name')->get();
         $positions = OrganigramPosition::orderBy('hierarchy_level')->orderBy('name')->get(); // NUEVO: Obtener posiciones
