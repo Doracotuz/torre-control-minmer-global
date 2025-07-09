@@ -1,133 +1,107 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h2 class="font-semibold text-xl text-[#2c3856] leading-tight">
             {{ __('Gestión de Áreas') }}
         </h2>
     </x-slot>
 
-    <div class="py-6 sm:py-12">
-        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-4 sm:p-8">
-                {{-- Mensajes de éxito/error --}}
+    <div class="py-12 bg-gray-100">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-6 md:p-8">
+                
+                {{-- Alertas de Éxito/Error --}}
                 @if (session('success'))
-                    <div x-data="{ show: true }" x-show="show" x-transition:enter="transition ease-out duration-300 transform scale-90 opacity-0" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200 transform scale-100 opacity-100" x-transition:leave-end="opacity-0 scale-90"
-                         class="fixed top-4 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert">
-                        <div class="flex items-center">
-                            <svg class="w-6 h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            <strong class="font-bold mr-1">{{ __('¡Éxito!') }}</strong>
-                            <span class="block sm:inline">{{ session('success') }}</span>
-                        </div>
-                        <button @click="show = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
+                    <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition class="fixed top-5 right-5 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]">
+                        <div class="flex items-center"><svg class="w-6 h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><div><strong class="font-bold">{{ __('¡Éxito!') }}</strong><span class="block sm:inline ml-1">{{ session('success') }}</span></div></div>
+                        <button @click="show = false" class="text-gray-400 hover:text-gray-700">&times;</button>
                     </div>
                 @endif
                 @if (session('error'))
-                    <div x-data="{ show: true }" x-show="show" x-transition:enter="transition ease-out duration-300 transform scale-90 opacity-0" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200 transform scale-100 opacity-100" x-transition:leave-end="opacity-0 scale-90"
-                         class="fixed top-4 right-4 z-50 bg-white border-l-4 border-red-600 text-red-700 px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert">
-                        <div class="flex items-center">
-                            <svg class="w-6 h-6 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            <strong class="font-bold mr-1">{{ __('¡Error!') }}</strong>
-                            <span class="block sm:inline">{{ session('error') }}</span>
-                        </div>
-                        <button @click="show = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
+                     <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition class="fixed top-5 right-5 z-50 bg-white border-l-4 border-red-600 text-red-700 px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]">
+                        <div class="flex items-center"><svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><div><strong class="font-bold">{{ __('¡Error!') }}</strong><span class="block sm:inline ml-1">{{ session('error') }}</span></div></div>
+                        <button @click="show = false" class="text-gray-400 hover:text-gray-700">&times;</button>
                     </div>
                 @endif
-
-                <div class="flex justify-end mb-4">
-                    <a href="{{ route('admin.areas.create') }}" class="inline-flex items-center px-4 py-2 bg-[#2b2b2b] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#666666] focus:bg-[#666666] active:bg-[#000000] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
-                        {{ __('Crear Nueva Área') }}
-                    </a>
-                </div>
-
-                {{-- Contenedor de la tabla: se oculta en móviles y se muestra un listado apilado --}}
-                <div class="hidden sm:block overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {{ __('Nombre') }}
-                                </th>
-                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">
-                                    {{ __('Icono') }}
-                                </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {{ __('Descripción') }}
-                                </th>
-                                <th scope="col" class="relative px-6 py-3">
-                                    <span class="sr-only">{{ __('Acciones') }}</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach ($areas as $area)
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">
-                                            {{ $area->name }}
-                                        </div>
-                                    </td>
-                                    <td class="px-3 py-4 whitespace-nowrap sm:px-6">
-                                        @if ($area->icon_path)
-                                            <img src="{{ asset('storage/' . $area->icon_path) }}" alt="{{ $area->name }} Icon" class="h-8 w-8 object-contain rounded-md border border-gray-200 p-1">
-                                        @else
-                                            <span class="text-gray-400 text-sm">N/A</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900 truncate w-32 sm:w-48 lg:w-64">
-                                            {{ $area->description ?? 'N/A' }}
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-1 sm:space-x-3 flex flex-col sm:flex-row items-end justify-end space-y-2 sm:space-y-0">
-                                        <a href="{{ route('admin.areas.edit', $area) }}" class="inline-flex items-center px-3 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xxs sm:text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm w-full sm:w-auto justify-center">
-                                            {{ __('Editar') }}
-                                        </a>
-                                        <form action="{{ route('admin.areas.destroy', $area) }}" method="POST" class="inline-block w-full sm:w-auto" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta área? Esto eliminará también todas las carpetas, archivos y permisos asociados a esta área, y desvinculará a los usuarios. ¡Esta acción es irreversible!');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xxs sm:text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm w-full">
-                                                {{ __('Eliminar') }}
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                {{-- Versión móvil de la tabla (listado apilado) --}}
-                <div class="sm:hidden space-y-4">
-                    @foreach ($areas as $area)
-                        <div class="bg-white rounded-lg shadow p-4 border border-gray-200">
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="text-base font-semibold text-gray-900">{{ $area->name }}</div>
-                                @if ($area->icon_path)
-                                    <img src="{{ asset('storage/' . $area->icon_path) }}" alt="{{ $area->name }} Icon" class="h-8 w-8 object-contain rounded-md border border-gray-200 p-1">
-                                @endif
-                            </div>
-                            <div class="text-sm text-gray-700 mb-3">
-                                <span class="font-medium">{{ __('Descripción:') }}</span> {{ $area->description ?? 'N/A' }}
-                            </div>
-                            <div class="flex justify-end space-x-2">
-                                <a href="{{ route('admin.areas.edit', $area) }}" class="inline-flex items-center px-3 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm">
-                                    {{ __('Editar') }}
-                                </a>
-                                <form action="{{ route('admin.areas.destroy', $area) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta área? Esto eliminará también todas las carpetas, archivos y permisos asociados a esta área, y desvinculará a los usuarios. ¡Esta acción es irreversible!');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm">
-                                        {{ __('Eliminar') }}
-                                    </button>
-                                </form>
-                            </div>
+                
+                {{-- Contenedor con lógica de Alpine.js para el selector de vista --}}
+                <div x-data="{ view: localStorage.getItem('areas_view_mode') || 'grid' }" x-init="$watch('view', val => localStorage.setItem('areas_view_mode', val))">
+                    
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                        <div class="inline-flex rounded-lg shadow-sm">
+                            <button @click="view = 'grid'" :class="{ 'bg-[#2c3856] text-white': view === 'grid', 'bg-white text-gray-600 hover:bg-gray-50': view !== 'grid' }" class="px-4 py-2 text-sm font-semibold border border-gray-200 rounded-l-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:z-10" title="Vista de Mosaico">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                            </button>
+                            <button @click="view = 'list'" :class="{ 'bg-[#2c3856] text-white': view === 'list', 'bg-white text-gray-600 hover:bg-gray-50': view !== 'list' }" class="px-4 py-2 text-sm font-semibold border-t border-b border-r border-gray-200 rounded-r-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:z-10" title="Vista de Lista">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                            </button>
                         </div>
-                    @endforeach
-                </div>
+                        <a href="{{ route('admin.areas.create') }}" class="inline-flex items-center px-5 py-2 bg-[#2c3856] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#ff9c00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff9c00] transition-all duration-300 transform hover:scale-105 shadow-md w-full sm:w-auto justify-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Crear Área
+                        </a>
+                    </div>
 
+                    <div x-show="view === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        @forelse ($areas as $area)
+                            <div class="bg-white rounded-lg shadow border border-gray-100 p-5 flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                                <div class="flex justify-between items-start mb-3">
+                                    <h5 class="text-lg font-bold text-[#2c3856]">{{ $area->name }}</h5>
+                                    @if ($area->icon_path)
+                                        <img class="h-10 w-10 object-contain" src="{{ asset('storage/' . $area->icon_path) }}" alt="{{ $area->name }}">
+                                    @else
+                                        <div class="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" /></svg>
+                                        </div>
+                                    @endif
+                                </div>
+                                <p class="flex-grow text-sm text-gray-600 mb-4 line-clamp-3">{{ $area->description ?? 'Sin descripción.' }}</p>
+                                <div class="mt-auto pt-4 border-t border-gray-100 flex justify-end space-x-2">
+                                    <a href="{{ route('admin.areas.edit', $area) }}" class="inline-flex items-center px-3 py-1 bg-gray-100 text-[#2c3856] rounded-full font-semibold text-xs hover:bg-gray-200 transition-colors">Editar</a>
+                                    <form action="{{ route('admin.areas.destroy', $area) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta área? ¡Esta acción es irreversible!');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-100 text-red-700 rounded-full font-semibold text-xs hover:bg-red-200 transition-colors">Eliminar</button>
+                                    </form>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="col-span-full text-center text-gray-500 py-12">No hay áreas creadas. ¡Comienza creando una!</p>
+                        @endforelse
+                    </div>
+
+                    <div x-show="view === 'list'" class="overflow-x-auto bg-white rounded-lg shadow border">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-[#2c3856]">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Icono</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Nombre</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Descripción</th>
+                                    <th class="relative px-6 py-3"><span class="sr-only">Acciones</span></th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @forelse ($areas as $area)
+                                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            @if ($area->icon_path)
+                                                <img class="h-9 w-9 object-contain" src="{{ asset('storage/' . $area->icon_path) }}" alt="{{ $area->name }}">
+                                            @else
+                                                <div class="h-9 w-9 bg-gray-100 rounded-md flex items-center justify-center">
+                                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" /></svg>
+                                                </div>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-bold text-gray-900">{{ $area->name }}</div></td>
+                                        <td class="px-6 py-4"><p class="text-sm text-gray-600 line-clamp-2 max-w-md">{{ $area->description ?? 'N/A' }}</p></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><div class="flex items-center justify-end space-x-4"><a href="{{ route('admin.areas.edit', $area) }}" class="text-[#2c3856] hover:text-[#ff9c00] font-semibold">Editar</a><form action="{{ route('admin.areas.destroy', $area) }}" method="POST" onsubmit="return confirm('¿Estás seguro? ¡Esta acción es irreversible!');">@csrf @method('DELETE')<button type="submit" class="text-red-600 hover:text-red-800 font-semibold">Eliminar</button></form></div></td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="4" class="px-6 py-12 text-center text-gray-500">No hay áreas creadas.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

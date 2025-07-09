@@ -8,26 +8,14 @@
     <div class="py-12 bg-gray-100">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-8">
+                
+                {{-- ELIMINADO: El evento x-on:change se ha movido de aquí --}}
                 <form method="POST" action="{{ route('admin.organigram.store') }}" enctype="multipart/form-data"
                     x-data="{
                         photoName: null,
                         photoPreview: null,
-                        trajectories: [], // Inicializado como array vacío para empezar sin trayectorias
-                    }"
-                    x-on:change="
-                        if ($refs.photo && $refs.photo.files.length > 0) {
-                            photoName = $refs.photo.files[0].name;
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                photoPreview = e.target.result;
-                            };
-                            reader.readAsDataURL(this.$refs.photo.files[0]); // Corregido: this.$refs
-                        } else {
-                            photoName = null;
-                            photoPreview = null;
-                        }
-                    "
-                >
+                        trajectories: [],
+                    }">
                     @csrf
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -46,7 +34,23 @@
                                         </div>
                                     </template>
                                 </div>
-                                <input type="file" class="hidden" x-ref="photo" name="profile_photo" id="profile_photo" accept="image/*">
+
+                                {{-- AÑADIDO: El evento x-on:change ahora está aquí --}}
+                                <input type="file" class="hidden" x-ref="photo" name="profile_photo" id="profile_photo" accept="image/*"
+                                    x-on:change="
+                                        if ($refs.photo.files.length > 0) {
+                                            photoName = $refs.photo.files[0].name;
+                                            const reader = new FileReader();
+                                            reader.onload = (e) => {
+                                                photoPreview = e.target.result;
+                                            };
+                                            reader.readAsDataURL($refs.photo.files[0]);
+                                        } else {
+                                            photoName = null;
+                                            photoPreview = null;
+                                        }
+                                    ">
+
                                 <label for="profile_photo" class="inline-flex items-center px-5 py-2 bg-[#ff9c00] text-white rounded-full font-semibold text-sm uppercase tracking-widest hover:bg-orange-600 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md cursor-pointer">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                     <span x-text="photoName || 'Seleccionar Foto'"></span>
@@ -54,6 +58,7 @@
                                 <x-input-error class="mt-2" :messages="$errors->get('profile_photo') ?? []" />
                             </div>
 
+                            {{-- El resto de los campos del formulario no cambian --}}
                             <div class="mb-4">
                                 <x-input-label for="name" :value="__('Nombre Completo')" />
                                 <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name')" required />
@@ -71,8 +76,7 @@
                                 <x-text-input id="cell_phone" name="cell_phone" type="text" class="mt-1 block w-full" :value="old('cell_phone')" />
                                 <x-input-error class="mt-2" :messages="$errors->get('cell_phone') ?? []" />
                             </div>
-
-                            {{-- CAMBIADO: Campo 'Posición' ahora es un select --}}
+                            
                             <div class="mb-4">
                                 <x-input-label for="position_id" :value="__('Posición')" />
                                 <select id="position_id" name="position_id" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
@@ -100,7 +104,7 @@
                                 <select id="manager_id" name="manager_id" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                                     <option value="">Ninguno</option>
                                     @foreach ($managers as $manager)
-                                        <option value="{{ $manager->id }}" {{ old('manager_id') == $manager->id ? 'selected' : '' }}>{{ $manager->name }} ({{ $manager->position }})</option>
+                                        <option value="{{ $manager->id }}" {{ old('manager_id') == $manager->id ? 'selected' : '' }}>{{ $manager->name }} ({{ $manager->position->name ?? 'Sin posición' }})</option>
                                     @endforeach
                                 </select>
                                 <x-input-error class="mt-2" :messages="$errors->get('manager_id') ?? []" />
@@ -108,6 +112,7 @@
                         </div>
 
                         <div>
+                            {{-- ... resto del formulario sin cambios ... --}}
                             <h3 class="text-lg font-semibold text-[#2c3856] mb-4">{{ __('Detalles Adicionales') }}</h3>
 
                             <div class="mb-6">
