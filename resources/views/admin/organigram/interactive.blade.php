@@ -18,7 +18,7 @@
             width: 200px;
             margin: 20px;
             position: relative;
-            transition: all 0.3s ease; /* Animación suave para nodos */
+            transition: all 0.8s ease; /* Animación suave para nodos */
         }
         .node-content-wrapper { padding: 1rem; text-align: center; }
         .node-title, .node-position { display: flex; align-items: center; justify-content: center; text-align: center; }
@@ -29,7 +29,7 @@
             width: 22px; height: 22px; border-radius: 50%; background-color: #2c3856; color: #ffffff;
             font-size: 14px; line-height: 22px; border: 1px solid #ffffff;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); cursor: pointer;
-            transition: all 0.3s ease; transform: translateY(-11px);
+            transition: all 0.8s ease; transform: translateY(-11px);
         }
         .orgchart .oc-edge-btn:hover {
             background-color: #ff9c00; transform: translateY(-11px) scale(1.1);
