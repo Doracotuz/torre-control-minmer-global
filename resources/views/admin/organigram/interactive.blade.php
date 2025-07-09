@@ -5,11 +5,20 @@
         </h2>
     </x-slot>
 
-    {{-- Estilos personalizados (sin cambios) --}}
+    {{-- Estilos (sin cambios) --}}
     <style>
         #chart-container { background-color: #f8f9fa; background-image: none; }
         .orgchart { background: transparent !important; }
-        .orgchart .node { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); padding: 0; width: 200px; margin: 20px; }
+        .orgchart .node {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 0;
+            width: 200px;
+            margin: 20px;
+            position: relative;
+        }
         .node-content-wrapper { padding: 1rem; text-align: center; }
         .node-title, .node-position { display: flex; align-items: center; justify-content: center; text-align: center; }
         .node-title { height: 2.5rem; line-height: 1.25; }
@@ -19,7 +28,7 @@
         .orgchart .oc-edge-btn:hover { background-color: #ff9c00; transform: translateY(-11px) scale(1.1); }
     </style>
 
-    {{-- Layout de pantalla completa --}}
+    {{-- Layout y Modales (sin cambios) --}}
     <div class="bg-gray-100 w-full h-full flex flex-col p-6">
         <div class="bg-white w-full h-full shadow-xl sm:rounded-lg border border-gray-200 flex flex-col">
             <div class="flex justify-end p-4 border-b border-gray-200">
@@ -29,14 +38,8 @@
             </div>
             <div id="chart-container" class="w-full flex-1 overflow-auto"></div>
 
-            <div x-data="areaModal"
-                 @open-area-modal.window="openModal($event.detail)"
-                 x-show="showModal"
-                 x-transition
-                 class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50"
-                 style="display: none;"
-                 @click.away="showModal = false"
-                 @keydown.escape.window="showModal = false">
+            {{-- Modal para Áreas --}}
+            <div x-data="areaModal" @open-area-modal.window="openModal($event.detail)" x-show="showModal" x-transition class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50" style="display: none;" @click.away="showModal = false" @keydown.escape.window="showModal = false">
                 <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg" @click.stop="">
                     <div class="flex justify-between items-center pb-3 border-b">
                         <h3 class="text-xl font-semibold text-[#2c3856]" x-text="data.name"></h3>
@@ -51,14 +54,8 @@
                 </div>
             </div>
 
-            <div x-data="memberModal"
-                 @open-member-modal.window="openModal($event.detail)"
-                 x-show="showModal"
-                 x-transition
-                 class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50"
-                 style="display: none;"
-                 @click.away="showModal = false"
-                 @keydown.escape.window="showModal = false">
+            {{-- Modal para Miembros --}}
+            <div x-data="memberModal" @open-member-modal.window="openModal($event.detail)" x-show="showModal" x-transition class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50" style="display: none;" @click.away="showModal = false" @keydown.escape.window="showModal = false">
                 <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" @click.stop="">
                     <div class="flex justify-between items-center p-4 border-b border-gray-200">
                         <h3 class="text-2xl font-semibold text-[#2c3856]" x-text="data.name + ' - Detalles'"></h3>
@@ -100,36 +97,37 @@
         </div>
     </div>
 
-    {{-- Librerías (sin cambios) --}}
+    {{-- Librerías --}}
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/orgchart/3.1.3/js/jquery.orgchart.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/orgchart/3.1.3/css/jquery.orgchart.min.css" />
     @vite('resources/js/app.js')
 
-    {{-- ===== SCRIPT PRINCIPAL CON CORRECCIONES ===== --}}
+    {{-- ========================================================== --}}
+    {{-- SCRIPT PRINCIPAL CON EL NUEVO ENFOQUE A PRUEBA DE ERRORES --}}
+    {{-- ========================================================== --}}
     <script>
-        // FORMA CORRECTA Y ROBUSTA DE INICIALIZAR LOS DATOS DE ALPINE.JS
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('areaModal', () => ({
-                showModal: false,
-                data: {},
-                openModal(detail) {
-                    this.data = detail;
-                    this.showModal = true;
-                }
-            }));
+        // 1. ALMACENAMIENTO GLOBAL PARA LOS DETALLES DE MIEMBROS
+        window.memberDetailsStore = {};
 
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('areaModal', () => ({ showModal: false, data: {}, openModal(detail) { this.data = detail; this.showModal = true; } }));
+
+            // 2. MODAL DE MIEMBRO MODIFICADO PARA BUSCAR POR ID
             Alpine.data('memberModal', () => ({
                 showModal: false,
                 data: {},
-                openModal(detail) {
-                    this.data = detail;
-                    this.showModal = true;
+                openModal(memberId) {
+                    // Busca los detalles en el almacenamiento global usando el ID
+                    const details = window.memberDetailsStore[memberId];
+                    if (details) {
+                        this.data = details;
+                        this.showModal = true;
+                    }
                 }
             }));
         });
 
-        // LÓGICA DEL ORGANIGRAMA
         $(function() {
             const chartContainer = $('#chart-container');
             chartContainer.html('<p class="text-gray-500 text-center py-4">Cargando organigrama...</p>');
@@ -137,14 +135,27 @@
             $.ajax({
                 url: `{{ url('/admin/organigram/interactive-data') }}`,
                 method: 'GET',
-                success: function(data) {
-                    if (!data) {
+                success: function(response) {
+                    if (!response) {
                         chartContainer.html('<p>No se recibieron datos.</p>');
                         return;
                     }
 
+                    // 3. POBLAR EL ALMACENAMIENTO GLOBAL CON LOS DATOS RECIBIDOS
+                    // Esta función recursiva extrae los detalles de todos los miembros del árbol
+                    function extractDetails(node) {
+                        if (node.type === 'member' && node.full_details) {
+                            window.memberDetailsStore[node.id] = node.full_details;
+                        }
+                        if (node.children && node.children.length > 0) {
+                            node.children.forEach(child => extractDetails(child));
+                        }
+                    }
+                    extractDetails(response);
+
+
                     chartContainer.empty().orgchart({
-                        'data' : data,
+                        'data' : response,
                         'pan': true,
                         'zoom': true,
                         'direction': 't2b',
@@ -154,27 +165,51 @@
                             let topBorderColor = '#e2e8f0';
                             if (data.type === 'root') topBorderColor = '#2c3856';
                             if (data.type === 'area') topBorderColor = '#ff9c00';
-                            let photoHtml = '';
-                            const placeholderDiv = `<div class="h-16 w-16 mx-auto mb-3"></div>`;
+                            
+                            let photoHtml = `<div class="h-16 w-16 mx-auto mb-3"></div>`;
                             if (data.img) {
                                 let imageFitClass = (data.type === 'root' || data.type === 'area') ? 'object-contain' : 'object-cover';
                                 let imageShapeClass = data.type === 'member' ? 'rounded-full' : 'rounded-md';
                                 photoHtml = `<div class="h-16 w-16 mx-auto mb-3"><img class="${imageShapeClass} ${imageFitClass} h-full w-full border-2 border-gray-200 shadow-sm" src="${data.img}"></div>`;
-                            } else {
-                                photoHtml = placeholderDiv;
                             }
-                            return `<div class="node-header" style="background-color: ${topBorderColor}; height: 8px; border-radius: 0.5rem 0.5rem 0 0;"></div><div class="node-content-wrapper">${photoHtml}<div class="font-semibold text-gray-800 node-title">${data.name}</div><div class="text-xs text-gray-500 node-position">${data.title}</div></div>`;
+
+                            // 4. BOTÓN SIMPLIFICADO QUE SOLO USA EL ID
+                            let detailsButtonHtml = '';
+                            if (data.type === 'member') {
+                                detailsButtonHtml = `
+                                    <button 
+                                        @click.stop="window.dispatchEvent(new CustomEvent('open-member-modal', { detail: '${data.id}' }))"
+                                        class="absolute top-1 right-1 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2c3856] transition-all duration-200"
+                                        aria-label="Ver detalles de ${data.name}"
+                                        title="Ver detalles">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                    </button>
+                                `;
+                            }
+
+                            return `
+                                <div class="node-header" style="background-color: ${topBorderColor}; height: 8px; border-radius: 0.5rem 0.5rem 0 0;"></div>
+                                <div class="node-content-wrapper">
+                                    ${detailsButtonHtml}
+                                    ${photoHtml}
+                                    <div class="font-semibold text-gray-800 node-title">${data.name}</div>
+                                    <div class="text-xs text-gray-500 node-position">${data.title}</div>
+                                </div>`;
                         },
                         
                         'onClickNode': function(node, nodeData) {
-                            if (nodeData.type === 'member' && nodeData.full_details) {
-                                window.dispatchEvent(new CustomEvent('open-member-modal', { detail: nodeData.full_details }));
-                            } else if (nodeData.type === 'area') {
-                                window.dispatchEvent(new CustomEvent('open-area-modal', { detail: nodeData }));
+                            if (nodeData.type === 'area') {
+                                window.dispatchEvent(new CustomEvent('open-area-modal', { 
+                                    detail: {
+                                        name: nodeData.name,
+                                        description: nodeData.description
+                                    }
+                                }));
                             }
                         }
                     });
 
+                    // Centrar el organigrama
                     setTimeout(function() {
                         const containerWidth = chartContainer.width();
                         const chartElement = chartContainer.find('.orgchart');

@@ -456,7 +456,7 @@ class OrganigramController extends Controller
         $branch = [];
         foreach ($elements as &$element) {
             if ($element['pid'] == $parentId) {
-                if ($depth >= 1) {
+                if ($depth >= 0) {
                     $element['collapsed'] = true;
                 }
                 $children = $this->buildNestedTree($elements, $element['id'], $depth + 1);
