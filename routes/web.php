@@ -71,7 +71,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/file-links/{fileLink}', [FileLinkController::class, 'destroy'])->name('file_links.destroy');
     // Rutas para arrastrar y soltar carpetas y subir archivos (NUEVAS RUTAS PARA D&D)
     Route::put('/folders/move', [FolderController::class, 'moveFolder'])->name('folders.move'); // Mover carpeta
-    Route::post('/folders/upload-dropped-files', [FolderController::class, 'uploadDroppedFiles'])->name('folders.upload-dropped-files'); // Subir archivos arrastrados
+    Route::post('/folders/upload-dropped-files', [FolderController::class, 'uploadDroppedFiles'])->name('folders.uploadDroppedFiles'); // Subir archivos arrastrados
 
     // Ruta para descarga directa de archivos (usada por la búsqueda predictiva y clics en tabla)
     Route::get('/files/{fileLink}/download', function (App\Models\FileLink $fileLink) {

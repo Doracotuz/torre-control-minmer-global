@@ -12,118 +12,111 @@
 
     {{-- Main content wrapper with x-data for properties modal and drag-drop --}}
     <div class="py-6 sm:py-12 bg-gray-100"
-         x-data="{
-             showPropertiesModal: false,
-             propertiesData: {},
-             isTileView: true,
-             tileSize: 'medium',
-             openPropertiesModal: function(itemData) {
-                 this.showPropertiesModal = true;
-                 this.propertiesData = itemData;
-                 console.log('openPropertiesModal called from Alpine:', itemData);
-             },
-             draggingFolderId: null,
-             dropTargetFolderId: null,
-             handleDragStart(event, folderId) {
-                 this.draggingFolderId = folderId;
-                 event.dataTransfer.setData('text/plain', folderId);
-                 event.dataTransfer.effectAllowed = 'move';
-                 console.log('Started dragging folder:', folderId);
-             },
-             handleDragOver(event, targetFolderId) {
-                 event.preventDefault();
-                 if (this.draggingFolderId && this.draggingFolderId != targetFolderId) {
-                     this.dropTargetFolderId = targetFolderId;
-                     event.dataTransfer.dropEffect = 'move';
-                 } else {
-                     event.dataTransfer.dropEffect = 'none';
-                 }
-             },
-             handleDragLeave(event) {
-                 this.dropTargetFolderId = null;
-             },
-             handleDrop(event, targetFolderId) {
-                 event.preventDefault();
-                 this.dropTargetFolderId = null;
-                 const draggedId = event.dataTransfer.getData('text/plain');
+        x-data="{
+            showPropertiesModal: false,
+            propertiesData: {},
+            isTileView: true,
+            tileSize: 'medium',
+            openPropertiesModal(itemData) {
+                this.showPropertiesModal = true;
+                this.propertiesData = itemData;
+            },
+            
+            // --- Lógica de Drag and Drop Unificada ---
+            draggingFolderId: null,
+            dropTargetFolderId: null,
 
-                 if (draggedId && draggedId != targetFolderId) {
-                     console.log(`Dropped folder ${draggedId} into folder ${targetFolderId}`);
-                     fetch('/folders/move', {
-                         method: 'PUT',
-                         headers: {
-                             'Content-Type': 'application/json',
-                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                         },
-                         body: JSON.stringify({
-                             folder_id: draggedId,
-                             target_folder_id: targetFolderId
-                         })
-                     })
-                     .then(response => response.json())
-                     .then(data => {
-                         if (data.success) {
-                             window.location.reload();
-                         } else {
-                             alert('Error al mover carpeta: ' + data.message);
-                         }
-                     })
-                     .catch(error => {
-                         console.error('Error moving folder:', error);
-                         alert('Error al mover carpeta.');
-                     });
-                 }
-                 this.draggingFolderId = null;
-             },
-             isDraggingFile: false,
-             handleFileDragOver(event) {
-                 event.preventDefault();
-                 event.stopPropagation();
-                 this.isDraggingFile = true;
-                 event.dataTransfer.dropEffect = 'copy';
-             },
-             handleFileDragLeave(event) {
-                 event.preventDefault();
-                 event.stopPropagation();
-                 this.isDraggingFile = false;
-             },
-             handleFileDrop(event, targetFolderId) {
-                 event.preventDefault();
-                 event.stopPropagation();
-                 this.isDraggingFile = false;
+            // 1. Se dispara cuando empiezas a arrastrar una carpeta INTERNA
+            handleDragStart(event, folderId) {
+                this.draggingFolderId = folderId;
+                event.dataTransfer.setData('text/plain', folderId);
+                event.dataTransfer.effectAllowed = 'move';
+            },
 
-                 const files = event.dataTransfer.files;
-                 if (files.length > 0) {
-                     console.log('Dropped files:', files);
-                     const formData = new FormData();
-                     formData.append('folder_id', targetFolderId);
-                     for (let i = 0; i < files.length; i++) {
-                         formData.append('files[]', files[i]);
-                         formData.append('names[]', files[i].name);
-                     }
+            // 2. Se dispara cuando algo (archivo o carpeta) pasa por encima de una carpeta destino
+            handleDragOver(event, targetFolderId) {
+                event.preventDefault(); // Esencial para permitir el 'drop'
+                const isFileDrag = event.dataTransfer.types.includes('Files');
+                const isInternalFolderDrag = this.draggingFolderId && this.draggingFolderId != targetFolderId;
 
-                     fetch('/folders/upload-dropped-files', {
-                         method: 'POST',
-                         headers: {
-                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                         },
-                         body: formData
-                     })
-                     .then(response => response.json())
-                     .then(data => {
-                         if (data.success) {
-                             window.location.reload();
-                         } else {
-                             alert('Error al subir archivos: ' + data.message);
-                         }
-                     })
-                     .catch(error => {
-                         console.error('Error uploading files:', error);
-                         alert('Error al subir archivos.');
-                     });
-                 }
-             }
-         }"
+                if (isFileDrag || isInternalFolderDrag) {
+                    this.dropTargetFolderId = targetFolderId;
+                    event.dataTransfer.dropEffect = isFileDrag ? 'copy' : 'move';
+                } else {
+                    event.dataTransfer.dropEffect = 'none';
+                }
+            },
+
+            // 3. Se dispara cuando el elemento arrastrado sale de la carpeta destino
+            handleDragLeave(event) {
+                this.dropTargetFolderId = null;
+            },
+
+            // 4. Lógica central: se dispara cuando sueltas el elemento
+            handleDrop(event, targetFolderId) {
+                event.preventDefault();
+                const files = event.dataTransfer.files;
+                const draggedInternalFolderId = event.dataTransfer.getData('text/plain');
+
+                // --- CASO A: Se soltaron ARCHIVOS del escritorio ---
+                if (files.length > 0) {
+                    const formData = new FormData();
+                    formData.append('folder_id', targetFolderId);
+                    for (let i = 0; i < files.length; i++) {
+                        formData.append('files[]', files[i]);
+                    }
+
+                    fetch('{{ route('folders.uploadDroppedFiles') }}', { // Usamos la ruta de Laravel
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            alert('Error al subir archivos: ' + (data.message || 'Error desconocido.'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al subir:', error);
+                        alert('Ocurrió un error de red al intentar subir los archivos.');
+                    });
+
+                // --- CASO B: Se soltó una CARPETA INTERNA ---
+                } else if (draggedInternalFolderId && draggedInternalFolderId != targetFolderId) {
+                    fetch('{{ route('folders.move') }}', { // Usamos la ruta de Laravel
+                        method: 'POST', // Laravel maneja PUT/PATCH via POST con _method, pero aquí es un endpoint de API
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            _method: 'PUT', // Campo para simular un método PUT
+                            folder_id: draggedInternalFolderId,
+                            target_folder_id: targetFolderId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            alert('Error al mover carpeta: ' + (data.message || 'Error desconocido.'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al mover:', error);
+                        alert('Ocurrió un error de red al intentar mover la carpeta.');
+                    });
+                }
+
+                // Limpiar el estado al final
+                this.dropTargetFolderId = null;
+                this.draggingFolderId = null;
+            }
+        }"
     >
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             {{-- Notificaciones Flash (Estilo y Posición Mejorados) --}}
@@ -160,7 +153,7 @@
                     <ol class="list-none p-0 inline-flex items-center flex-wrap">
                         <li class="flex items-center">
                             <a href="{{ route('folders.index') }}" class="text-[#2c3856] hover:text-[#ff9c00] transition-colors duration-200 font-semibold">{{ __('Raíz') }}</a>
-                            <svg class="fill-current w-3 h-3 mx-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 67.254c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.476 239.029c9.373 9.372 9.373 24.568 0 33.942z"/></svg>
+                            <svg class="fill-current w-3 h-3 mx-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 67.254c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569 9.373 33.941 0L285.476 239.029c9.373 9.372 9.373 24.568 0 33.942z"/></svg>
                         </li>
                         @if ($currentFolder)
                             @php
@@ -175,7 +168,7 @@
                                 <li class="flex items-center">
                                     <a href="{{ route('folders.index', $pFolder) }}" class="text-[#2c3856] hover:text-[#ff9c00] transition-colors duration-200 font-semibold">{{ $pFolder->name }}</a>
                                     @if (!$loop->last)
-                                        <svg class="fill-current w-3 h-3 mx-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 67.254c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.476 239.029c9.373 9.372 9.373 24.568 0 33.942z"/></svg>
+                                        <svg class="fill-current w-3 h-3 mx-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 67.254c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569 9.373 33.941 0L285.476 239.029c9.373 9.372 9.373 24.568 0 33.942z"/></svg>
                                     @endif
                                 </li>
                             @endforeach
