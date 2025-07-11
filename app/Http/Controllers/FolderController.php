@@ -338,30 +338,32 @@ class FolderController extends Controller
         } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
             // Admin de Área puede almacenar en su propia área
         } else {
-            return redirect()->route('folders.index', $folder)->with('error', 'No tienes permiso para añadir elementos a esta carpeta.');
+            return response()->json(['message' => 'No tienes permiso para añadir elementos a esta carpeta.'], 403);
         }
 
         $validationRules = [
             'type' => 'required|in:file,link',
-            'files' => 'nullable|array', // Ahora 'files' es un array
-            'files.*' => 'file|max:10240', // Validación para cada archivo en el array
+            'files' => 'nullable|array',
+            'files.*' => 'file|max:500000', // 500MB por archivo
             'url' => 'nullable|url|max:2048',
-            'name' => 'nullable|string|max:255', // Nombre es opcional para archivos
+            'name' => 'nullable|string|max:255',
         ];
 
-        // Si el tipo es 'link', el 'name' y 'url' son requeridos
         if ($request->type === 'link') {
             $validationRules['name'] = 'required|string|max:255';
             $validationRules['url'] = 'required|url|max:2048';
         } else {
-            // Si el tipo es 'file', al menos un archivo es requerido
             $validationRules['files'] = 'required|array';
-            $validationRules['files.*'] = 'file|max:10240';
+            $validationRules['files.*'] = 'file|max:500000'; // 500MB por archivo
+            // Para múltiples archivos, el campo 'name' del formulario se ignora y se usan los nombres originales.
+            // Para un solo archivo, si se proporciona un nombre en el formulario, se usa.
+            if (count($request->file('files') ?: []) > 1) {
+                $validationRules['name'] = 'nullable|string|max:255';
+            }
         }
 
         $request->validate($validationRules);
 
-        // Si es un enlace, solo se procesa uno
         if ($request->type === 'link') {
             FileLink::create([
                 'name' => $request->name,
@@ -370,46 +372,60 @@ class FolderController extends Controller
                 'folder_id' => $folder->id,
                 'user_id' => Auth::id(),
             ]);
-            return redirect()->route('folders.index', $folder)->with('success', 'Enlace añadido exitosamente.');
+            return response()->json(['message' => 'Enlace añadido exitosamente.'], 200);
         }
 
-        // Si es un archivo (o múltiples archivos)
         $uploadedCount = 0;
         $errors = [];
 
-        foreach ($request->file('files') as $file) {
-            // Si el nombre no fue proporcionado en el input, usar el nombre original del archivo (sin extensión)
-            $fileNameToStore = $request->name; // Nombre del input, si existe
-            if (empty($fileNameToStore) || $request->file('files')->count() > 1) {
-                // Si el input de nombre está vacío O si son múltiples archivos, usar el nombre original del archivo
-                $fileNameToStore = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-            }
+        $files = $request->file('files');
+        if (is_array($files)) {
+            foreach ($files as $file) {
+                if ($file instanceof \Illuminate\Http\UploadedFile) {
+                    $originalFileName = $file->getClientOriginalName();
+                    $fileNameWithoutExt = pathinfo($originalFileName, PATHINFO_FILENAME);
+                    $extension = $file->getClientOriginalExtension();
 
-            // Asegurar que el nombre final para la BD incluya la extensión original
-            $originalExtension = $file->getClientOriginalExtension();
-            if (!Str::endsWith(strtolower($fileNameToStore), '.' . strtolower($originalExtension))) {
-                $fileNameToStore .= '.' . strtolower($originalExtension);
-            }
+                    $fileNameToStore = $fileNameWithoutExt; // Por defecto el nombre original del archivo
 
-            try {
-                $path = $file->store('files', 'public'); // Guarda el archivo
-                FileLink::create([
-                    'name' => $fileNameToStore,
-                    'type' => 'file',
-                    'path' => $path,
-                    'folder_id' => $folder->id,
-                    'user_id' => Auth::id(),
-                ]);
-                $uploadedCount++;
-            } catch (\Exception $e) {
-                $errors[] = "Error al subir {$originalFileName}: " . $e->getMessage();
+                    // Si es un solo archivo Y se proporcionó un nombre en el campo 'name', úsalo.
+                    if (count($files) === 1 && $request->filled('name')) {
+                        $fileNameToStore = $request->name;
+                    }
+
+                    // Asegúrate de que la extensión del archivo se mantenga o se añada
+                    if (!Str::endsWith(strtolower($fileNameToStore), '.' . strtolower($extension))) {
+                        $fileNameToStore .= '.' . strtolower($extension);
+                    }
+
+                    try {
+                        $path = $file->store('files', 'public'); // Guarda el archivo
+                        FileLink::create([
+                            'name' => $fileNameToStore, // Usa el nombre determinado
+                            'type' => 'file',
+                            'path' => $path,
+                            'folder_id' => $folder->id,
+                            'user_id' => Auth::id(),
+                        ]);
+                        $uploadedCount++;
+                    } catch (\Exception $e) {
+                        $errors[] = "Error al subir {$originalFileName}: " . $e->getMessage();
+                    }
+                }
             }
+        } else {
+            $errors[] = "No se recibieron archivos válidos.";
         }
 
         if ($uploadedCount > 0) {
-            return redirect()->route('folders.index', $folder)->with('success', "Se subieron {$uploadedCount} archivo(s) exitosamente.");
+            $message = "Se subieron {$uploadedCount} archivo(s) exitosamente.";
+            if (!empty($errors)) {
+                $message .= ' Advertencias: ' . implode(', ', $errors);
+            }
+            return response()->json(['message' => $message], 200);
         } else {
-            return redirect()->route('folders.index', $folder)->with('error', 'No se pudo subir ningún archivo.' . (!empty($errors) ? ' Errores: ' . implode(', ', $errors) : ''));
+            $errorMessage = 'No se pudo subir ningún archivo.' . (!empty($errors) ? ' Errores: ' . implode(', ', $errors) : '');
+            return response()->json(['message' => $errorMessage], 500);
         }
     }
 
@@ -486,7 +502,7 @@ class FolderController extends Controller
         $request->validate([
             'folder_id' => 'nullable|exists:folders,id', // null para subir a la raíz
             'files' => 'required|array',
-            'files.*' => 'file|max:10240', // 10MB por archivo
+            'files.*' => 'file|max:500000', // 10MB por archivo
             // 'names' ya no es necesario si usamos getClientOriginalName()
         ]);
 
