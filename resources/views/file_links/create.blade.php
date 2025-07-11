@@ -18,7 +18,6 @@
                         x-on:drop.prevent.stop="
                             $refs.fileInput.files = event.dataTransfer.files;
                             $refs.fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-                            // No llamar a uploadFiles() aquí si el input file ya tiene un @change que lo hace
                         "
                     >
                         @csrf
@@ -57,7 +56,7 @@
                                             fileName = $refs.fileInput.files[0].name.split('.').slice(0, -1).join('.');
                                         }
                                     }
-                                    uploadFiles(); // Llama a la función de subida aquí
+                                    uploadFiles();
                                 } else {
                                     fileName = '';
                                 }
@@ -85,7 +84,7 @@
                                 <x-primary-button @click="window.location.href = '{{ route('folders.index', $folder) }}'" class="ml-4 text-sm">
                                     {{ __('Volver a la carpeta') }}
                                 </x-primary-button>
-                                <button @click="localShow = false; successMessage = ''" class="ml-2 text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
+                                <button @click="localShow = false; successMessage = ''; resetForm()" class="ml-2 text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
                             </div>
@@ -114,7 +113,7 @@
                             <a href="{{ route('folders.index', $folder) }}" class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mr-4">
                                 {{ __('Cancelar') }}
                             </a>
-                            <x-primary-button type="submit" x-bind:disabled="uploading">
+                            <x-primary-button type="submit" x-bind:disabled="uploading || successMessage">
                                 {{ __('Añadir Elemento(s)') }}
                             </x-primary-button>
                         </div>
@@ -131,7 +130,7 @@
                 elementType: '{{ old('type', 'file') }}',
                 fileName: '{{ old('name') }}',
                 uploading: false,
-                isUploading: false, // Bandera para evitar ejecuciones múltiples
+                isUploading: false,
                 uploadProgress: 0,
                 currentFile: 0,
                 totalFiles: 0,
@@ -139,43 +138,33 @@
                 errorMessage: '',
                 successMessage: '',
 
-                init() {
-                    // Si ya hay un mensaje de éxito/error en la sesión (por ejemplo, después de una redirección con with()),
-                    // podemos mostrarlo. Pero dado que estamos usando Axios, es menos probable que esto suceda.
-                    // Estos watchers se encargarán de mostrar los mensajes cuando se actualicen las propiedades.
+                resetForm() {
+                    this.fileName = '';
+                    this.$refs.fileInput.value = '';
+                    this.uploadProgress = 0;
+                    this.uploadMessage = '';
+                    this.errorMessage = '';
+                    this.uploading = false;
+                    this.isUploading = false;
                 },
 
                 async uploadFiles() {
                     if (this.isUploading) {
-                        console.log('Subida ya en curso, ignorando duplicado');
                         return;
                     }
-                    console.log('uploadFiles ejecutado');
                     this.errorMessage = '';
                     this.successMessage = '';
-                    // Reiniciar la propiedad local 'localShow' en los componentes de mensaje
-                    // para que las animaciones se disparen de nuevo.
-                    // Esto se hace con x-init="$watch(...)" en cada div de mensaje.
-
                     this.uploading = true;
                     this.isUploading = true;
                     this.uploadProgress = 0;
-                    this.currentFile = 0;
-                    this.totalFiles = 0;
-                    this.uploadMessage = '';
 
                     if (this.elementType === 'link') {
                         const formData = new FormData(this.$el);
                         try {
-                            const response = await axios.post(this.$el.action, formData, {
-                                headers: {
-                                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
-                                }
-                            });
+                            const response = await axios.post(this.$el.action, formData);
                             this.successMessage = response.data.message || 'Enlace añadido exitosamente.';
                         } catch (error) {
-                            this.errorMessage = `Error al añadir enlace: ${error.response?.data?.message || error.message || 'Error desconocido'}`;
-                            console.error('Error al añadir enlace:', error);
+                            this.errorMessage = `Error al añadir enlace: ${error.response?.data?.message || error.message}`;
                         } finally {
                             this.uploading = false;
                             this.isUploading = false;
@@ -191,57 +180,49 @@
                         return;
                     }
 
-                    this.uploading = true;
                     this.totalFiles = files.length;
-                    this.uploadMessage = 'Preparando carga...';
-
-                    const formData = new FormData();
-                    formData.append('type', 'file');
-                    formData.append('_token', document.querySelector('input[name="_token"]').value);
-
-                    // Adjuntar el nombre solo si es un solo archivo y el campo 'name' no está vacío
-                    if (files.length === 1 && this.fileName) {
-                        formData.append('name', this.fileName);
-                    }
-                    // Si son múltiples archivos o el campo de nombre está vacío para un solo archivo,
-                    // el controlador de Laravel usará el nombre original del archivo.
+                    let successfulUploads = 0;
 
                     for (let i = 0; i < files.length; i++) {
-                        formData.append('files[]', files[i]);
+                        const file = files[i];
+                        this.currentFile = i + 1;
+                        this.uploadProgress = 0;
+                        this.uploadMessage = `Subiendo archivo ${this.currentFile} de ${this.totalFiles} (${file.name})...`;
+
+                        const formData = new FormData();
+                        formData.append('type', 'file');
+                        formData.append('_token', document.querySelector('input[name="_token"]').value);
+                        formData.append('files[]', file);
+
+                        if (files.length === 1 && this.fileName) {
+                            formData.append('name', this.fileName);
+                        }
+
+                        try {
+                            const response = await axios.post('{{ route('file_links.store', $folder) }}', formData, {
+                                headers: {
+                                    'Content-Type': 'multipart/form-data'
+                                },
+                                onUploadProgress: (progressEvent) => {
+                                    if (progressEvent.lengthComputable) {
+                                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                                        this.uploadProgress = percentCompleted;
+                                        this.uploadMessage = `Subiendo ${percentCompleted}% (archivo ${this.currentFile} de ${this.totalFiles})`;
+                                    }
+                                }
+                            });
+                            successfulUploads++;
+                        } catch (error) {
+                            this.errorMessage = `Error al subir el archivo "${file.name}": ${error.response?.data?.message || error.message}`;
+                            this.uploading = false;
+                            this.isUploading = false;
+                            return;
+                        }
                     }
 
-                    const startTime = Date.now();
-                    try {
-                        const response = await axios.post('{{ route('file_links.store', $folder) }}', formData, {
-                            headers: {
-                                'Content-Type': 'multipart/form-data',
-                                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
-                            },
-                            onUploadProgress: (progressEvent) => {
-                                if (progressEvent.lengthComputable) {
-                                    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                                    this.uploadProgress = percentCompleted;
-                                    this.uploadMessage = `Subiendo ${percentCompleted}% (archivo ${this.currentFile + 1} de ${this.totalFiles})`;
-                                } else {
-                                    const elapsed = (Date.now() - startTime) / 1000;
-                                    const simulatedProgress = Math.min(100, Math.round((elapsed / 30) * 100));
-                                    this.uploadProgress = simulatedProgress;
-                                    this.uploadMessage = `Subiendo ${simulatedProgress}% (estimado, archivo ${this.currentFile + 1} de ${this.totalFiles})`;
-                                }
-                            }
-                        });
-                        this.currentFile = this.totalFiles;
-                        this.successMessage = response.data.message || `Se subieron ${this.totalFiles} archivo(s) exitosamente.`;
-                        // Después de un éxito, es buena práctica resetear el campo de archivo
-                        this.$refs.fileInput.value = '';
-                        this.fileName = ''; // Limpiar el nombre mostrado
-                    } catch (error) {
-                        this.errorMessage = `Error al subir archivos: ${error.response?.data?.message || error.message || 'Error desconocido'}`;
-                        console.error('Error en la carga:', error);
-                    } finally {
-                        this.uploading = false;
-                        this.isUploading = false;
-                    }
+                    this.successMessage = `Se subieron ${successfulUploads} de ${this.totalFiles} archivo(s) exitosamente.`;
+                    this.uploading = false;
+                    this.isUploading = false;
                 }
             }));
         });
