@@ -21,7 +21,7 @@
                 this.showPropertiesModal = true;
                 this.propertiesData = itemData;
             },
-            
+
             // --- Lógica de Drag and Drop Unificada ---
             draggingFolderId: null,
             dropTargetFolderId: null,
@@ -115,6 +115,71 @@
                 // Limpiar el estado al final
                 this.dropTargetFolderId = null;
                 this.draggingFolderId = null;
+            },
+
+            // --- Lógica de Selección Múltiple ---
+            selectedItems: [], // Array para almacenar IDs y tipos de elementos seleccionados (ej: [{id: 1, type: 'folder'}, {id: 5, type: 'file_link'}])
+            toggleSelection(itemId, itemType) {
+                const index = this.selectedItems.findIndex(item => item.id === itemId && item.type === itemType);
+                if (index > -1) {
+                    this.selectedItems.splice(index, 1); // Deseleccionar
+                } else {
+                    this.selectedItems.push({ id: itemId, type: itemType }); // Seleccionar
+                }
+            },
+            isSelected(itemId, itemType) {
+                return this.selectedItems.some(item => item.id === itemId && item.type === itemType);
+            },
+            isAnySelected() {
+                return this.selectedItems.length > 0;
+            },
+            selectAll(event) {
+                if (event.target.checked) {
+                    // Seleccionar todas las carpetas y file_links en la vista actual
+                    @foreach($folders as $folderItem)
+                        if (!this.isSelected({{ $folderItem->id }}, 'folder')) {
+                            this.selectedItems.push({ id: {{ $folderItem->id }}, type: 'folder' });
+                        }
+                    @endforeach
+                    @foreach($fileLinks as $fileLink)
+                        if (!this.isSelected({{ $fileLink->id }}, 'file_link')) {
+                            this.selectedItems.push({ id: {{ $fileLink->id }}, type: 'file_link' });
+                        }
+                    @endforeach
+                } else {
+                    this.selectedItems = []; // Deseleccionar todo
+                }
+            },
+            deleteSelected() {
+                if (!confirm('¿Estás seguro de que quieres eliminar los elementos seleccionados?')) {
+                    return;
+                }
+
+                const folderIdsToDelete = this.selectedItems.filter(item => item.type === 'folder').map(item => item.id);
+                const fileLinkIdsToDelete = this.selectedItems.filter(item => item.type === 'file_link').map(item => item.id);
+
+                const formData = new FormData();
+                formData.append('_method', 'DELETE'); // Simular DELETE request
+                formData.append('folder_ids', JSON.stringify(folderIdsToDelete));
+                formData.append('file_link_ids', JSON.stringify(fileLinkIdsToDelete));
+
+                fetch('{{ route('folders.bulk_delete') }}', { // Necesitarás crear esta ruta en Laravel
+                    method: 'POST', // Será un POST para simular DELETE con formData
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert('Error al eliminar elementos: ' + (data.message || 'Error desconocido.'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al eliminar:', error);
+                    alert('Ocurrió un error de red al intentar eliminar los elementos.');
+                });
             }
         }"
     >
@@ -179,6 +244,19 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 space-y-4 sm:space-y-0">
                     <h3 class="text-xl font-semibold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">{{ __('Contenido Actual') }}</h3>
                     <div class="flex flex-wrap items-center justify-start sm:justify-end gap-3">
+                        {{-- Casilla de verificación "Seleccionar Todos" --}}
+                        <div x-show="!isTileView" class="hidden sm:flex items-center">
+                            <input type="checkbox" @change="selectAll($event)" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
+                            <label class="text-sm text-gray-700">{{ __('Seleccionar Todos') }}</label>
+                        </div>
+                        {{-- Botón Eliminar Seleccionados --}}
+                        <button @click="deleteSelected()" x-show="isAnySelected()"
+                                class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-full font-semibold text-xxs sm:text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:bg-red-700 active:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
+                            <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <span class="hidden sm:inline">{{ __('Eliminar Seleccionados') }}</span>
+                            <span class="sm:hidden">{{ __('Eliminar') }}</span>
+                        </button>
+
                         {{-- Botones de Alternancia de Vista --}}
                         <div class="flex rounded-full border border-gray-300 overflow-hidden">
                             <button @click="isTileView = true"
@@ -251,7 +329,7 @@
                         {{-- Mosaicos de Carpetas --}}
                         @foreach ($folders as $folderItem)
                             <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
-                                        hover:bg-gray-50 transform hover:scale-105"
+                                        hover:bg-gray-50 transform hover:scale-105 relative" {{-- Added relative for checkbox positioning --}}
                                  draggable="true"
                                  x-on:dragstart="handleDragStart($event, {{ $folderItem->id }})"
                                  x-on:dragover.prevent="handleDragOver($event, {{ $folderItem->id }})"
@@ -263,11 +341,19 @@
                                      creator: '{{ $folderItem->user->name ?? 'N/A' }}',
                                      date: '{{ $folderItem->created_at->format('d M Y, H:i') }}',
                                      isFolder: true,
-                                     path: '{{ $folderItem->parent ? $folderItem->parent->name . '/' : '' }}{{ $folderItem->name }}'
+                                     path: '{{ $folderItem->parent ? $folderItem->parent->name . '/' : '' }}{{ $folderItem->name }}',
+                                     item_count: '{{ $folderItem->items_count ?? 0 }}' {{-- PASA EL CONTADOR --}}
                                  })"
                                  :class="{'border-blue-400 border-dashed bg-blue-100': dropTargetFolderId == {{ $folderItem->id }}}"
                                  x-data="{ showDetails: false }"
                             >
+                                {{-- Checkbox para selección múltiple --}}
+                                <input type="checkbox"
+                                    class="absolute top-2 left-2 rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] z-10"
+                                    @click.stop="toggleSelection({{ $folderItem->id }}, 'folder')"
+                                    :checked="isSelected({{ $folderItem->id }}, 'folder')"
+                                >
+
                                 {{-- ENVOLVER ICONO Y NOMBRE EN UN <a> PARA LA ACCIÓN PRINCIPAL --}}
                                 <a href="{{ route('folders.index', $folderItem) }}"
                                    class="flex flex-col items-center justify-center w-full"
@@ -281,6 +367,8 @@
                                     </span>
                                     <span class="text-sm text-gray-500">Carpeta</span>
                                     <span class="text-xs text-gray-400 mt-1">{{ $folderItem->created_at->format('d M Y') }}</span>
+                                    {{-- Contador de elementos en carpeta --}}
+                                    <span class="text-xs text-gray-400">({{ $folderItem->items_count ?? 0 }} elementos)</span>
                                 </a> {{-- FIN DEL <a> --}}
 
                                 {{-- Botón para desplegar/ocultar Detalles --}}
@@ -291,8 +379,9 @@
                                 {{-- INFO DE CREADO POR, TIPO, FECHA (ahora condicional) --}}
                                 <div x-show="showDetails" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-y-0" x-transition:enter-end="opacity-100 transform scale-y-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-y-100" x-transition:leave-end="opacity-0 transform scale-y-0" class="text-center text-gray-600 text-xxs sm:text-xs mt-2 space-y-1 opacity-75 origin-top" style="display: none;">
                                     <p><span class="font-semibold">{{ __('Creado por:') }}</span> {{ $folderItem->user->name ?? 'N/A' }}</p>
-                                    <p><span class="font-semibold">{{ __('Tipo:') }}</p>
-                                    <p>{{ $folderItem->created_at->format('d M Y') }}</p>
+                                    <p><span class="font-semibold">{{ __('Tipo:') }}</span> Carpeta</p>
+                                    <p><span class="font-semibold">{{ __('Fecha:') }}</span> {{ $folderItem->created_at->format('d M Y') }}</p>
+                                    <p><span class="font-semibold">{{ __('Elementos:') }}</span> {{ $folderItem->items_count ?? 0 }}</p>
                                 </div>
                                 {{-- FIN INFO ADICIONAL --}}
 
@@ -312,7 +401,7 @@
                             </div>
                         @endforeach
 
-                        {{-- Mosaicos de Archivos y Enlaces (sin cambios si ya funcionan) --}}
+                        {{-- Mosaicos de Archivos y Enlaces (con checkbox) --}}
                         @foreach ($fileLinks as $fileLink)
                             @php
                                 $fileExtension = $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : null;
@@ -321,7 +410,7 @@
                                 $fileUrl = $fileLink->type == 'file' ? asset('storage/' . $fileLink->path) : $fileLink->url;
                             @endphp
                             <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
-                                        hover:bg-gray-50 transform hover:scale-105"
+                                        hover:bg-gray-50 transform hover:scale-105 relative" {{-- Added relative for checkbox positioning --}}
                                  x-on:contextmenu.prevent="openPropertiesModal({
                                      name: '{{ $fileLink->name }}',
                                      type: '{{ $fileLink->type == 'file' ? 'Archivo (' . strtoupper($fileExtension) . ')' : 'Enlace' }}',
@@ -332,6 +421,13 @@
                                  })"
                                  x-data="{ showDetails: false }"
                             >
+                                {{-- Checkbox para selección múltiple --}}
+                                <input type="checkbox"
+                                    class="absolute top-2 left-2 rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] z-10"
+                                    @click.stop="toggleSelection({{ $fileLink->id }}, 'file_link')"
+                                    :checked="isSelected({{ $fileLink->id }}, 'file_link')"
+                                >
+
                                 <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
                                    target="_blank"
                                    class="flex flex-col items-center justify-center w-full"
@@ -375,8 +471,7 @@
                                 <div x-show="showDetails" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-y-0" x-transition:enter-end="opacity-100 transform scale-y-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-y-100" x-transition:leave-end="opacity-0 transform scale-y-0" class="text-center text-gray-600 text-xxs sm:text-xs mt-2 space-y-1 opacity-75 origin-top" style="display: none;">
                                     <p><span class="font-semibold">{{ __('Creado por:') }}</span> {{ $fileLink->user->name ?? 'N/A' }}</p>
                                     <p><span class="font-semibold">{{ __('Tipo:') }}</span> {{ $fileLink->type == 'file' ? 'Archivo' : 'Enlace' }}</p>
-                                    <p><span class="font-semibold">{{ __('Fecha:') }}</p>
-                                    <p>{{ $fileLink->created_at->format('d M Y') }}</p>
+                                    <p><span class="font-semibold">{{ __('Fecha:') }}</span> {{ $fileLink->created_at->format('d M Y') }}</p>
                                 </div>
                                 {{-- FIN INFO ADICIONAL --}}
 
@@ -403,6 +498,8 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">
+                                        {{-- Checkbox "Seleccionar Todos" en la cabecera de la tabla --}}
+                                        <input type="checkbox" @change="selectAll($event)" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
                                         {{ __('Nombre del Elemento') }}
                                     </th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -433,18 +530,28 @@
                                             creator: '{{ $folderItem->user->name ?? 'N/A' }}',
                                             date: '{{ $folderItem->created_at->format('d M Y, H:i') }}',
                                             isFolder: true,
-                                            path: '{{ $folderItem->parent ? $folderItem->parent->name . '/' : '' }}{{ $folderItem->name }}'
+                                            path: '{{ $folderItem->parent ? $folderItem->parent->name . '/' : '' }}{{ $folderItem->name }}',
+                                            item_count: '{{ $folderItem->items_count ?? 0 }}' {{-- PASA EL CONTADOR --}}
                                         })"
                                         :class="{'bg-blue-100 border-blue-400 border-dashed': dropTargetFolderId == {{ $folderItem->id }}}"
                                     >
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            {{-- ENVOLVER ICONO Y NOMBRE EN UN <a> PARA LA ACCIÓN PRINCIPAL --}}
-                                            <a href="{{ route('folders.index', $folderItem) }}" class="flex items-center" onclick="event.stopPropagation()">
-                                                <svg class="w-7 h-7 text-[#ff9c00] mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
-                                                </svg>
-                                                <span class="text-lg font-medium text-[#2c3856] truncate">{{ $folderItem->name }}</span>
-                                            </a> {{-- FIN DEL <a> --}}
+                                            <div class="flex items-center">
+                                                {{-- Checkbox para selección múltiple --}}
+                                                <input type="checkbox"
+                                                    class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2"
+                                                    @click.stop="toggleSelection({{ $folderItem->id }}, 'folder')"
+                                                    :checked="isSelected({{ $folderItem->id }}, 'folder')"
+                                                >
+                                                {{-- ENVOLVER ICONO Y NOMBRE EN UN <a> PARA LA ACCIÓN PRINCIPAL --}}
+                                                <a href="{{ route('folders.index', $folderItem) }}" class="flex items-center" onclick="event.stopPropagation()">
+                                                    <svg class="w-7 h-7 text-[#ff9c00] mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                                                    </svg>
+                                                    <span class="text-lg font-medium text-[#2c3856] truncate">{{ $folderItem->name }}</span>
+                                                    <span class="ml-2 text-sm text-gray-500">({{ $folderItem->items_count ?? 0 }} elementos)</span>
+                                                </a> {{-- FIN DEL <a> --}}
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                             {{ __('Carpeta') }}
@@ -496,6 +603,12 @@
                                     >
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
+                                                {{-- Checkbox para selección múltiple --}}
+                                                <input type="checkbox"
+                                                    class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2"
+                                                    @click.stop="toggleSelection({{ $fileLink->id }}, 'file_link')"
+                                                    :checked="isSelected({{ $fileLink->id }}, 'file_link')"
+                                                >
                                                 @if ($fileLink->type == 'file')
                                                     @if ($isImage)
                                                         <svg class="w-7 h-7 text-green-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -587,6 +700,9 @@
                 </div>
                 <div class="mb-3">
                     <span class="font-semibold text-[#2c3856]">Fecha de Subida:</span> <span x-text="propertiesData.date"></span>
+                </div>
+                <div x-show="propertiesData.isFolder" class="mb-3">
+                    <span class="font-semibold text-[#2c3856]">Elementos en carpeta:</span> <span x-text="propertiesData.item_count"></span>
                 </div>
                 <div x-show="propertiesData.path" class="mb-3">
                     <span class="font-semibold text-[#2c3856]" x-text="propertiesData.isFolder ? 'Ruta:' : 'Ubicación:'"></span> <span x-text="propertiesData.path"></span>

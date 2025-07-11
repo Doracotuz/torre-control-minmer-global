@@ -68,6 +68,9 @@ class FolderController extends Controller
         } else {
             // Si no hay término de búsqueda, aplicamos la lógica de jerarquía normal
             $folders = $folderQuery->where('parent_id', $currentFolder ? $currentFolder->id : null)
+                                   ->withCount(['children as items_count' => function ($query) {
+                                       $query->selectRaw('count(*) + (select count(*) from file_links where folder_id = folders.id)');
+                                   }]) // Cargar el contador de items
                                    ->orderBy('name')
                                    ->get();
 
@@ -107,7 +110,6 @@ class FolderController extends Controller
     public function create(Folder $folder = null)
     {
         $user = Auth::user();
-        $currentFolder = $folder;
 
         // Super Admin puede crear en cualquier lugar
         if ($user->area && $user->area->name === 'Administración') {
@@ -290,7 +292,7 @@ class FolderController extends Controller
         }
 
         $parentFolderId = $folder->parent_id;
-        $folder->delete();
+        $folder->delete(); // Esto debería manejar la eliminación de sus contenidos por cascada si está configurado en el modelo o migraciones
 
         $redirectPath = $parentFolderId ? route('folders.index', $parentFolderId) : route('folders.index');
 
@@ -554,6 +556,84 @@ class FolderController extends Controller
             return response()->json(['success' => false, 'message' => 'No se pudo subir ningún archivo.' . (!empty($errors) ? ' Errores: ' . implode(', ', $errors) : '')], 500);
         }
     }
+
+    /**
+     * Elimina múltiples carpetas y/o file_links.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function bulkDelete(Request $request)
+    {
+        $user = Auth::user();
+        $folderIds = json_decode($request->input('folder_ids', '[]'));
+        $fileLinkIds = json_decode($request->input('file_link_ids', '[]'));
+
+        $deletedCount = 0;
+        $errors = [];
+
+        // Eliminar carpetas
+        foreach ($folderIds as $folderId) {
+            $folder = Folder::find($folderId);
+            if ($folder) {
+                // Verificar permisos para eliminar la carpeta
+                if ($user->area && $user->area->name === 'Administración') {
+                    // Super Admin puede eliminar cualquier carpeta
+                } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
+                    // Admin de Área puede eliminar carpetas de su propia área
+                } else {
+                    $errors[] = "No tienes permiso para eliminar la carpeta '{$folder->name}'.";
+                    continue; // Saltar a la siguiente carpeta
+                }
+
+                try {
+                    $folder->delete(); // Esto debería manejar la eliminación en cascada
+                    $deletedCount++;
+                } catch (\Exception $e) {
+                    $errors[] = "Error al eliminar la carpeta '{$folder->name}': " . $e->getMessage();
+                }
+            }
+        }
+
+        // Eliminar FileLinks
+        foreach ($fileLinkIds as $fileLinkId) {
+            $fileLink = FileLink::find($fileLinkId);
+            if ($fileLink) {
+                // Verificar permisos para eliminar el FileLink
+                if ($user->area && $user->area->name === 'Administración') {
+                    // Super Admin puede eliminar cualquier file_link
+                } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
+                    // Admin de Área puede eliminar file_links de su propia área
+                } else {
+                    $errors[] = "No tienes permiso para eliminar el elemento '{$fileLink->name}'.";
+                    continue; // Saltar al siguiente file_link
+                }
+
+                try {
+                    // Si es un archivo, elimina el archivo físico del almacenamiento
+                    if ($fileLink->type === 'file' && Storage::disk('public')->exists($fileLink->path)) {
+                        Storage::disk('public')->delete($fileLink->path);
+                    }
+                    $fileLink->delete();
+                    $deletedCount++;
+                } catch (\Exception $e) {
+                    $errors[] = "Error al eliminar el elemento '{$fileLink->name}': " . $e->getMessage();
+                }
+            }
+        }
+
+        if ($deletedCount > 0) {
+            $message = "Se eliminaron {$deletedCount} elemento(s) exitosamente.";
+            if (!empty($errors)) {
+                $message .= ' Algunas eliminaciones fallaron: ' . implode(', ', $errors);
+            }
+            return response()->json(['success' => true, 'message' => $message]);
+        } else {
+            $errorMessage = 'No se pudo eliminar ningún elemento.' . (!empty($errors) ? ' Errores: ' . implode(', ', $errors) : '');
+            return response()->json(['success' => false, 'message' => $errorMessage], 500);
+        }
+    }
+
 
     /**
      * Helper para prevenir ciclos en la jerarquía (ej. A es manager de B, B no puede ser manager de A)

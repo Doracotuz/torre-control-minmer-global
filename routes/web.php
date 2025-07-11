@@ -73,6 +73,10 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/folders/move', [FolderController::class, 'moveFolder'])->name('folders.move'); // Mover carpeta
     Route::post('/folders/upload-dropped-files', [FolderController::class, 'uploadDroppedFiles'])->name('folders.uploadDroppedFiles'); // Subir archivos arrastrados
 
+    // RUTA PARA ELIMINACIÓN MASIVA (¡AÑADE ESTA LÍNEA!)
+    Route::delete('/folders/bulk-delete', [FolderController::class, 'bulkDelete'])->name('folders.bulk_delete');
+    
+
     // Ruta para descarga directa de archivos (usada por la búsqueda predictiva y clics en tabla)
     Route::get('/files/{fileLink}/download', function (App\Models\FileLink $fileLink) {
         if ($fileLink->type === 'file' && Storage::disk('public')->exists($fileLink->path)) {
