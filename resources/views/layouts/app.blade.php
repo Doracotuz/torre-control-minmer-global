@@ -12,7 +12,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@800&display=swap" rel="stylesheet">
 
         @vite(['resources/css/app.css'])
-        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script>      
+        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script>
         <style>
             /* ==== REFINED STYLES FOR ELEGANCE AND INTERACTIVITY ==== */
 
@@ -50,7 +50,7 @@
             .nav-link-custom:hover:not(.active-link)::before {
                 height: 60%;
             }
-            
+
             /* --- Active Link State --- */
             .nav-link-custom.active-link {
                 background-color: #ff9c00; /* Brand Orange */
@@ -70,7 +70,7 @@
                 margin-right: 12px;
                 transition: transform 0.3s ease;
             }
-            
+
             .nav-link-custom:hover .nav-text {
                 transform: translateX(4px);
             }
@@ -90,7 +90,7 @@
             .logo-container .logo-subtitle {
                 font-family: 'Montserrat', sans-serif;
             }
-            
+
             /* --- Dropdown Styles --- */
             .dropdown-toggle {
                 display: flex;
@@ -142,7 +142,7 @@
                         <span class="text-xs text-gray-300 mt-1 block logo-subtitle">MINMER GLOBAL</span>
                     </div>
                 </div>
-                
+
                 <div class="px-6"><div class="border-t border-white/10"></div></div>
 
                 <nav class="flex-1 px-4 py-6 space-y-2">
@@ -163,8 +163,8 @@
                                 <span>Super Admin</span>
                                 <svg class="chevron-icon w-4 h-4" :class="{'rotate-180': isSuperAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                             </button>
-                             
-                            <div x-show="isSuperAdminMenuOpen" 
+
+                            <div x-show="isSuperAdminMenuOpen"
                                 x-transition:enter="transition ease-out duration-200"
                                 x-transition:enter-start="opacity-0 transform -translate-y-2"
                                 x-transition:enter-end="opacity-100 transform translate-y-0"

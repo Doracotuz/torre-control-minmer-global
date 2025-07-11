@@ -9,7 +9,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200">
                 <div class="p-6 md:p-8">
-                    
+
                     @if (session('success'))
                         <div class="bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-md mb-6" role="alert">
                             <p class="font-bold">¡Éxito!</p>
@@ -30,7 +30,8 @@
                         </a>
                     </div>
 
-                    <div class="overflow-x-auto bg-white rounded-lg shadow">
+                    {{-- Versión de tabla para pantallas grandes --}}
+                    <div class="overflow-x-auto bg-white rounded-lg shadow hidden sm:block">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-[#2c3856]">
                                 <tr>
@@ -89,6 +90,47 @@
                             </tbody>
                         </table>
                     </div>
+
+                    {{-- Versión de lista/tarjetas para pantallas pequeñas --}}
+                    <div class="sm:hidden">
+                        @forelse ($users as $user)
+                            <div class="bg-white shadow overflow-hidden rounded-lg mb-4 border border-gray-200 p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <div class="text-sm font-bold text-gray-700">Nombre:</div>
+                                    <div class="text-sm text-gray-900">{{ $user->name }}</div>
+                                </div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <div class="text-sm font-bold text-gray-700">Email:</div>
+                                    <div class="text-sm text-gray-500">{{ $user->email }}</div>
+                                </div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <div class="text-sm font-bold text-gray-700">Rol:</div>
+                                    @if($user->is_area_admin)
+                                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-[#ff9c00]">
+                                            Admin. de Área
+                                        </span>
+                                    @else
+                                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                            Usuario
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="flex justify-end space-x-4 border-t pt-4">
+                                    <a href="{{ route('area_admin.users.edit', $user) }}" class="text-[#2c3856] hover:text-[#ff9c00] font-semibold text-sm transition-colors duration-200">Editar</a>
+                                    <form action="{{ route('area_admin.users.destroy', $user) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que quieres eliminar a este usuario?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-red-600 hover:text-red-800 font-semibold text-sm transition-colors duration-200">Eliminar</button>
+                                    </form>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="px-6 py-12 text-center text-gray-500 bg-white rounded-lg shadow">
+                                No hay usuarios registrados en esta área.
+                            </div>
+                        @endforelse
+                    </div>
+
                 </div>
             </div>
         </div>
