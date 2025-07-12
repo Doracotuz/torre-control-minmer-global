@@ -23,33 +23,80 @@
             },
 
             // --- Lógica de Drag and Drop Unificada ---
-            draggingFolderId: null,
-            dropTargetFolderId: null,
+            draggingFolderId: null, // ID de la carpeta que se está arrastrando internamente
+            dropTargetFolderId: null, // ID de la carpeta sobre la que se está arrastrando (NULL para el área principal)
+            isDraggingFile: false, // Indica si se está arrastrando un archivo externo (desde el OS)
+            highlightMainDropArea: false, // NUEVO: Para controlar el resaltado del área principal
 
             // 1. Se dispara cuando empiezas a arrastrar una carpeta INTERNA
             handleDragStart(event, folderId) {
+                console.log('DragStart:', folderId);
                 this.draggingFolderId = folderId;
                 event.dataTransfer.setData('text/plain', folderId);
                 event.dataTransfer.effectAllowed = 'move';
             },
 
-            // 2. Se dispara cuando algo (archivo o carpeta) pasa por encima de una carpeta destino
+            // 2. Se dispara cuando algo (archivo o carpeta) pasa por encima de una carpeta destino o el área principal
             handleDragOver(event, targetFolderId) {
                 event.preventDefault(); // Esencial para permitir el 'drop'
                 const isFileDrag = event.dataTransfer.types.includes('Files');
                 const isInternalFolderDrag = this.draggingFolderId && this.draggingFolderId != targetFolderId;
 
+                console.log('DragOver - isFileDrag:', isFileDrag, 'isInternalFolderDrag:', isInternalFolderDrag, 'targetFolderId:', targetFolderId);
+
                 if (isFileDrag || isInternalFolderDrag) {
-                    this.dropTargetFolderId = targetFolderId;
+                    this.dropTargetFolderId = targetFolderId; // Establecer el objetivo
+                    this.isDraggingFile = isFileDrag; // Actualizar el estado de arrastre de archivo
+                    this.highlightMainDropArea = isFileDrag && targetFolderId === null; // Resaltar solo si es archivo y es el área principal
+
                     event.dataTransfer.dropEffect = isFileDrag ? 'copy' : 'move';
                 } else {
                     event.dataTransfer.dropEffect = 'none';
+                    this.dropTargetFolderId = null; // No es un objetivo válido
+                    this.isDraggingFile = false;
+                    this.highlightMainDropArea = false;
                 }
             },
 
-            // 3. Se dispara cuando el elemento arrastrado sale de la carpeta destino
-            handleDragLeave(event) {
+            // NUEVO: handleDragEnter para el área principal
+            handleMainDragEnter(event) {
+                event.preventDefault();
+                const isFileDrag = event.dataTransfer.types.includes('Files');
+                if (isFileDrag) {
+                    this.highlightMainDropArea = true;
+                    this.dropTargetFolderId = null; // Para indicar que es el área principal
+                    console.log('Main DragEnter: Highlighting main area.');
+                }
+            },
+
+            // MODIFICADO: handleDragLeave
+            handleDragLeave(event, targetFolderId = null) { // targetFolderId es opcional para el área principal
+                // Limpia el resaltado si el puntero realmente sale de la zona de drop.
+                // Es un poco complicado saber exactamente cuándo el puntero abandona un elemento *y* no entra en otro.
+                // Una solución común es limpiar en dragleave y volver a activar en dragenter si se entra a otro elemento.
+                // Para el área principal, simplemente limpia cuando el puntero sale.
+
+                // Detecta si el puntero está saliendo del elemento actual
+                const rect = event.target.getBoundingClientRect();
+                const x = event.clientX;
+                const y = event.clientY;
+
+                if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+                    // El puntero ha salido completamente del elemento
+                    console.log('DragLeave: Clearing highlight.');
+                    this.dropTargetFolderId = null;
+                    this.isDraggingFile = false;
+                    this.highlightMainDropArea = false;
+                }
+            },
+
+            // NUEVO: handleDragEnd para limpiar todo el estado de arrastre
+            handleDragEnd(event) {
+                console.log('DragEnd: Cleaning up drag state.');
+                this.draggingFolderId = null;
                 this.dropTargetFolderId = null;
+                this.isDraggingFile = false;
+                this.highlightMainDropArea = false;
             },
 
             // 4. Lógica central: se dispara cuando sueltas el elemento
@@ -57,6 +104,12 @@
                 event.preventDefault();
                 const files = event.dataTransfer.files;
                 const draggedInternalFolderId = event.dataTransfer.getData('text/plain');
+
+                // Limpiar los estados de arrastre inmediatamente para que el resaltado desaparezca
+                this.dropTargetFolderId = null;
+                this.draggingFolderId = null;
+                this.isDraggingFile = false;
+                this.highlightMainDropArea = false; // Asegurar que el resaltado principal se desactive
 
                 // --- CASO A: Se soltaron ARCHIVOS del escritorio ---
                 if (files.length > 0) {
@@ -74,14 +127,17 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            sessionStorage.setItem('flash_success', data.message);
                             window.location.reload();
                         } else {
-                            alert('Error al subir archivos: ' + (data.message || 'Error desconocido.'));
+                            sessionStorage.setItem('flash_error', data.message);
+                            window.location.reload();
                         }
                     })
                     .catch(error => {
                         console.error('Error al subir:', error);
-                        alert('Ocurrió un error de red al intentar subir los archivos.');
+                        sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar subir los archivos.');
+                        window.location.reload();
                     });
 
                 // --- CASO B: Se soltó una CARPETA INTERNA ---
@@ -101,20 +157,19 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            sessionStorage.setItem('flash_success', data.message);
                             window.location.reload();
                         } else {
-                            alert('Error al mover carpeta: ' + (data.message || 'Error desconocido.'));
+                            sessionStorage.setItem('flash_error', data.message);
+                            window.location.reload();
                         }
                     })
                     .catch(error => {
                         console.error('Error al mover:', error);
-                        alert('Ocurrió un error de red al intentar mover la carpeta.');
+                        sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar mover la carpeta.');
+                        window.location.reload();
                     });
                 }
-
-                // Limpiar el estado al final
-                this.dropTargetFolderId = null;
-                this.draggingFolderId = null;
             },
 
             // --- Lógica de Selección Múltiple ---
@@ -134,20 +189,16 @@
                 return this.selectedItems.length > 0;
             },
             selectAll(event) {
+                this.selectedItems = []; // Limpiar antes de (re)seleccionar
+
                 if (event.target.checked) {
                     // Seleccionar todas las carpetas y file_links en la vista actual
                     @foreach($folders as $folderItem)
-                        if (!this.isSelected({{ $folderItem->id }}, 'folder')) {
-                            this.selectedItems.push({ id: {{ $folderItem->id }}, type: 'folder' });
-                        }
+                        this.selectedItems.push({ id: {{ $folderItem->id }}, type: 'folder' });
                     @endforeach
                     @foreach($fileLinks as $fileLink)
-                        if (!this.isSelected({{ $fileLink->id }}, 'file_link')) {
-                            this.selectedItems.push({ id: {{ $fileLink->id }}, type: 'file_link' });
-                        }
+                        this.selectedItems.push({ id: {{ $fileLink->id }}, type: 'file_link' });
                     @endforeach
-                } else {
-                    this.selectedItems = []; // Deseleccionar todo
                 }
             },
             deleteSelected() {
@@ -171,49 +222,94 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        sessionStorage.setItem('flash_success', data.message);
                         window.location.reload();
                     } else {
-                        alert('Error al eliminar elementos: ' + (data.message || 'Error desconocido.'));
+                        sessionStorage.setItem('flash_error', data.message);
+                        window.location.reload();
                     }
                 })
                 .catch(error => {
                     console.error('Error al eliminar:', error);
-                    alert('Ocurrió un error de red al intentar eliminar los elementos.');
+                    sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar eliminar los elementos.');
+                    window.location.reload();
                 });
+            },
+
+            // --- Lógica para mostrar mensajes flash de sessionStorage ---
+            init() {
+                const flashSuccess = sessionStorage.getItem('flash_success');
+                const flashError = sessionStorage.getItem('flash_error');
+
+                if (flashSuccess) {
+                    document.getElementById('flash-success-message').innerText = flashSuccess;
+                    document.getElementById('flash-success').style.display = 'flex';
+                    // No necesitamos x-transition:enter/leave si manejamos la visibilidad con display
+                    setTimeout(() => {
+                        document.getElementById('flash-success').style.display = 'none';
+                    }, 5000); // Ocultar después de 5 segundos
+                    sessionStorage.removeItem('flash_success'); // Limpiar para que no se muestre de nuevo
+                }
+                if (flashError) {
+                    document.getElementById('flash-error-message').innerText = flashError;
+                    document.getElementById('flash-error').style.display = 'flex';
+                     setTimeout(() => {
+                        document.getElementById('flash-error').style.display = 'none';
+                    }, 5000); // Ocultar después de 5 segundos
+                    sessionStorage.removeItem('flash_error'); // Limpiar para que no se muestre de nuevo
+                }
             }
         }"
+        {{-- Listener de eventos flash custom (ya no es necesario si init() lo maneja, pero se puede dejar si hay otros dispatches) --}}
+        {{-- @flash-message.window="
+            if ($event.detail.type === 'success') {
+                document.getElementById('flash-success-message').innerText = $event.detail.message;
+                document.getElementById('flash-success').style.display = 'flex';
+                setTimeout(() => { document.getElementById('flash-success').style.display = 'none'; }, 5000);
+            } else if ($event.detail.type === 'error') {
+                document.getElementById('flash-error-message').innerText = $event.detail.message;
+                document.getElementById('flash-error').style.display = 'flex';
+                setTimeout(() => { document.getElementById('flash-error').style.display = 'none'; }, 5000);
+            }
+        " --}}
     >
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             {{-- Notificaciones Flash (Estilo y Posición Mejorados) --}}
-            @if (session('success'))
-                <div x-data="{ show: true }" x-show="show" x-transition:enter="transition ease-out duration-300 transform scale-90 opacity-0" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200 transform scale-100 opacity-100" x-transition:leave-end="opacity-0 scale-90"
-                     class="fixed top-4 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert">
-                    <div class="flex items-center">
-                        <svg class="w-6 h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <strong class="font-bold mr-1">{{ __('¡Éxito!') }}</strong>
-                        <span class="block sm:inline">{{ session('success') }}</span>
-                    </div>
-                    <button @click="show = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
+            {{-- Quita x-show y x-transition de aquí, los manejará el JS directamente --}}
+            <div id="flash-success"
+                 class="fixed top-4 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]"
+                 role="alert" style="display: none;">
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <strong class="font-bold mr-1">{{ __('¡Éxito!') }}</strong>
+                    <span id="flash-success-message" class="block sm:inline"></span>
                 </div>
-            @endif
-            @if (session('error'))
-                <div x-data="{ show: true }" x-show="show" x-transition:enter="transition ease-out duration-300 transform scale-90 opacity-0" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200 transform scale-100 opacity-100" x-transition:leave-end="opacity-0 scale-90"
-                     class="fixed top-4 right-4 z-50 bg-white border-l-4 border-red-600 text-red-700 px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert">
-                    <div class="flex items-center">
-                        <svg class="w-6 h-6 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <strong class="font-bold mr-1">{{ __('¡Error!') }}</strong>
-                        <span class="block sm:inline">{{ session('error') }}</span>
-                    </div>
-                    <button @click="show = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
+                <button @click="document.getElementById('flash-success').style.display = 'none';" class="text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="flash-error"
+                 class="fixed top-4 right-4 z-50 bg-white border-l-4 border-red-600 text-red-700 px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]"
+                 role="alert" style="display: none;">
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <strong class="font-bold mr-1">{{ __('¡Error!') }}</strong>
+                    <span id="flash-error-message" class="block sm:inline"></span>
                 </div>
-            @endif
+                <button @click="document.getElementById('flash-error').style.display = 'none';" class="text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
 
 
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-4 sm:p-8">
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-4 sm:p-8"
+                 @dragover.prevent="handleDragOver($event, {{ $currentFolder ? $currentFolder->id : 'null' }})"
+                 @dragleave="handleDragLeave($event)"
+                 @dragenter.self="handleMainDragEnter($event)" {{-- Añadido para detectar la entrada específicamente al div principal --}}
+                 @drop.prevent="handleDrop($event, {{ $currentFolder ? $currentFolder->id : 'null' }})"
+                 @dragend="handleDragEnd($event)" {{-- Limpia el estado después de soltar o cancelar arrastre --}}
+                 :class="{ 'border-blue-400 border-dashed bg-blue-100': highlightMainDropArea }" {{-- Clase condicional usando el nuevo estado --}}
+            >
                 <nav class="text-sm font-medium text-gray-500 mb-4 sm:mb-6">
                     <ol class="list-none p-0 inline-flex items-center flex-wrap">
                         <li class="flex items-center">
@@ -333,7 +429,7 @@
                                  draggable="true"
                                  x-on:dragstart="handleDragStart($event, {{ $folderItem->id }})"
                                  x-on:dragover.prevent="handleDragOver($event, {{ $folderItem->id }})"
-                                 x-on:dragleave="handleDragLeave($event)"
+                                 x-on:dragleave="handleDragLeave($event, {{ $folderItem->id }})" {{-- Pasa el ID para depuración --}}
                                  x-on:drop.prevent="handleDrop($event, {{ $folderItem->id }})"
                                  x-on:contextmenu.prevent="openPropertiesModal({
                                      name: '{{ $folderItem->name }}',
@@ -522,7 +618,7 @@
                                         draggable="true"
                                         x-on:dragstart="handleDragStart($event, {{ $folderItem->id }})"
                                         x-on:dragover.prevent="handleDragOver($event, {{ $folderItem->id }})"
-                                        x-on:dragleave="handleDragLeave($event)"
+                                        x-on:dragleave="handleDragLeave($event, {{ $folderItem->id }})"
                                         x-on:drop.prevent="handleDrop($event, {{ $folderItem->id }})"
                                         x-on:contextmenu.prevent="openPropertiesModal({
                                             name: '{{ $folderItem->name }}',
@@ -578,12 +674,6 @@
                                 @endforeach
 
                                 @foreach ($fileLinks as $fileLink)
-                                    @php
-                                        $fileExtension = $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : null;
-                                        $isImage = in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
-                                        $isPdf = strtolower($fileExtension) == 'pdf';
-                                        $fileUrl = $fileLink->type == 'file' ? asset('storage/' . $fileLink->path) : $fileLink->url;
-                                    @endphp
                                     <tr class="hover:bg-gray-100 transition-colors duration-150 cursor-pointer"
                                         x-on:contextmenu.prevent="openPropertiesModal({
                                             name: '{{ $fileLink->name }}',
