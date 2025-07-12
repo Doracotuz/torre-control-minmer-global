@@ -26,7 +26,7 @@
             draggingFolderId: null, // ID de la carpeta que se está arrastrando internamente
             dropTargetFolderId: null, // ID de la carpeta sobre la que se está arrastrando (NULL para el área principal)
             isDraggingFile: false, // Indica si se está arrastrando un archivo externo (desde el OS)
-            highlightMainDropArea: false, // NUEVO: Para controlar el resaltado del área principal
+            highlightMainDropArea: false, // Para controlar el resaltado del área principal
 
             // 1. Se dispara cuando empiezas a arrastrar una carpeta INTERNA
             handleDragStart(event, folderId) {
@@ -58,7 +58,7 @@
                 }
             },
 
-            // NUEVO: handleDragEnter para el área principal
+            // handleDragEnter para el área principal
             handleMainDragEnter(event) {
                 event.preventDefault();
                 const isFileDrag = event.dataTransfer.types.includes('Files');
@@ -69,20 +69,13 @@
                 }
             },
 
-            // MODIFICADO: handleDragLeave
-            handleDragLeave(event, targetFolderId = null) { // targetFolderId es opcional para el área principal
-                // Limpia el resaltado si el puntero realmente sale de la zona de drop.
-                // Es un poco complicado saber exactamente cuándo el puntero abandona un elemento *y* no entra en otro.
-                // Una solución común es limpiar en dragleave y volver a activar en dragenter si se entra a otro elemento.
-                // Para el área principal, simplemente limpia cuando el puntero sale.
-
-                // Detecta si el puntero está saliendo del elemento actual
+            // handleDragLeave
+            handleDragLeave(event, targetFolderId = null) {
                 const rect = event.target.getBoundingClientRect();
                 const x = event.clientX;
                 const y = event.clientY;
 
                 if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
-                    // El puntero ha salido completamente del elemento
                     console.log('DragLeave: Clearing highlight.');
                     this.dropTargetFolderId = null;
                     this.isDraggingFile = false;
@@ -90,7 +83,7 @@
                 }
             },
 
-            // NUEVO: handleDragEnd para limpiar todo el estado de arrastre
+            // handleDragEnd para limpiar todo el estado de arrastre
             handleDragEnd(event) {
                 console.log('DragEnd: Cleaning up drag state.');
                 this.draggingFolderId = null;
@@ -109,7 +102,7 @@
                 this.dropTargetFolderId = null;
                 this.draggingFolderId = null;
                 this.isDraggingFile = false;
-                this.highlightMainDropArea = false; // Asegurar que el resaltado principal se desactive
+                this.highlightMainDropArea = false;
 
                 // --- CASO A: Se soltaron ARCHIVOS del escritorio ---
                 if (files.length > 0) {
@@ -119,7 +112,7 @@
                         formData.append('files[]', files[i]);
                     }
 
-                    fetch('{{ route('folders.uploadDroppedFiles') }}', { // Usamos la ruta de Laravel
+                    fetch('{{ route('folders.uploadDroppedFiles') }}', {
                         method: 'POST',
                         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                         body: formData
@@ -142,14 +135,14 @@
 
                 // --- CASO B: Se soltó una CARPETA INTERNA ---
                 } else if (draggedInternalFolderId && draggedInternalFolderId != targetFolderId) {
-                    fetch('{{ route('folders.move') }}', { // Usamos la ruta de Laravel
-                        method: 'POST', // Laravel maneja PUT/PATCH via POST con _method, pero aquí es un endpoint de API
+                    fetch('{{ route('folders.move') }}', {
+                        method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         },
                         body: JSON.stringify({
-                            _method: 'PUT', // Campo para simular un método PUT
+                            _method: 'PUT',
                             folder_id: draggedInternalFolderId,
                             target_folder_id: targetFolderId
                         })
@@ -173,13 +166,13 @@
             },
 
             // --- Lógica de Selección Múltiple ---
-            selectedItems: [], // Array para almacenar IDs y tipos de elementos seleccionados (ej: [{id: 1, type: 'folder'}, {id: 5, type: 'file_link'}])
+            selectedItems: [],
             toggleSelection(itemId, itemType) {
                 const index = this.selectedItems.findIndex(item => item.id === itemId && item.type === itemType);
                 if (index > -1) {
-                    this.selectedItems.splice(index, 1); // Deseleccionar
+                    this.selectedItems.splice(index, 1);
                 } else {
-                    this.selectedItems.push({ id: itemId, type: itemType }); // Seleccionar
+                    this.selectedItems.push({ id: itemId, type: itemType });
                 }
             },
             isSelected(itemId, itemType) {
@@ -189,10 +182,9 @@
                 return this.selectedItems.length > 0;
             },
             selectAll(event) {
-                this.selectedItems = []; // Limpiar antes de (re)seleccionar
+                this.selectedItems = [];
 
                 if (event.target.checked) {
-                    // Seleccionar todas las carpetas y file_links en la vista actual
                     @foreach($folders as $folderItem)
                         this.selectedItems.push({ id: {{ $folderItem->id }}, type: 'folder' });
                     @endforeach
@@ -210,12 +202,12 @@
                 const fileLinkIdsToDelete = this.selectedItems.filter(item => item.type === 'file_link').map(item => item.id);
 
                 const formData = new FormData();
-                formData.append('_method', 'DELETE'); // Simular DELETE request
+                formData.append('_method', 'DELETE');
                 formData.append('folder_ids', JSON.stringify(folderIdsToDelete));
                 formData.append('file_link_ids', JSON.stringify(fileLinkIdsToDelete));
 
-                fetch('{{ route('folders.bulk_delete') }}', { // Necesitarás crear esta ruta en Laravel
-                    method: 'POST', // Será un POST para simular DELETE con formData
+                fetch('{{ route('folders.bulk_delete') }}', {
+                    method: 'POST',
                     headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                     body: formData
                 })
@@ -244,38 +236,24 @@
                 if (flashSuccess) {
                     document.getElementById('flash-success-message').innerText = flashSuccess;
                     document.getElementById('flash-success').style.display = 'flex';
-                    // No necesitamos x-transition:enter/leave si manejamos la visibilidad con display
                     setTimeout(() => {
                         document.getElementById('flash-success').style.display = 'none';
-                    }, 5000); // Ocultar después de 5 segundos
-                    sessionStorage.removeItem('flash_success'); // Limpiar para que no se muestre de nuevo
+                    }, 5000);
+                    sessionStorage.removeItem('flash_success');
                 }
                 if (flashError) {
                     document.getElementById('flash-error-message').innerText = flashError;
                     document.getElementById('flash-error').style.display = 'flex';
                      setTimeout(() => {
                         document.getElementById('flash-error').style.display = 'none';
-                    }, 5000); // Ocultar después de 5 segundos
-                    sessionStorage.removeItem('flash_error'); // Limpiar para que no se muestre de nuevo
+                    }, 5000);
+                    sessionStorage.removeItem('flash_error');
                 }
             }
         }"
-        {{-- Listener de eventos flash custom (ya no es necesario si init() lo maneja, pero se puede dejar si hay otros dispatches) --}}
-        {{-- @flash-message.window="
-            if ($event.detail.type === 'success') {
-                document.getElementById('flash-success-message').innerText = $event.detail.message;
-                document.getElementById('flash-success').style.display = 'flex';
-                setTimeout(() => { document.getElementById('flash-success').style.display = 'none'; }, 5000);
-            } else if ($event.detail.type === 'error') {
-                document.getElementById('flash-error-message').innerText = $event.detail.message;
-                document.getElementById('flash-error').style.display = 'flex';
-                setTimeout(() => { document.getElementById('flash-error').style.display = 'none'; }, 5000);
-            }
-        " --}}
     >
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             {{-- Notificaciones Flash (Estilo y Posición Mejorados) --}}
-            {{-- Quita x-show y x-transition de aquí, los manejará el JS directamente --}}
             <div id="flash-success"
                  class="fixed top-4 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]"
                  role="alert" style="display: none;">
@@ -284,7 +262,7 @@
                     <strong class="font-bold mr-1">{{ __('¡Éxito!') }}</strong>
                     <span id="flash-success-message" class="block sm:inline"></span>
                 </div>
-                <button @click="document.getElementById('flash-success').style.display = 'none';" class="text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
+                <button @click="document.getElementById('flash-success').style.display = 'none';" class="text-gray-500 hover:text-gray-700 focus:outline-none">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -296,7 +274,7 @@
                     <strong class="font-bold mr-1">{{ __('¡Error!') }}</strong>
                     <span id="flash-error-message" class="block sm:inline"></span>
                 </div>
-                <button @click="document.getElementById('flash-error').style.display = 'none';" class="text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
+                <button @click="document.getElementById('flash-error').style.display = 'none';" class="text-gray-500 hover:text-gray-700 focus:outline-none">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -305,10 +283,10 @@
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-4 sm:p-8"
                  @dragover.prevent="handleDragOver($event, {{ $currentFolder ? $currentFolder->id : 'null' }})"
                  @dragleave="handleDragLeave($event)"
-                 @dragenter.self="handleMainDragEnter($event)" {{-- Añadido para detectar la entrada específicamente al div principal --}}
+                 @dragenter.self="handleMainDragEnter($event)"
                  @drop.prevent="handleDrop($event, {{ $currentFolder ? $currentFolder->id : 'null' }})"
-                 @dragend="handleDragEnd($event)" {{-- Limpia el estado después de soltar o cancelar arrastre --}}
-                 :class="{ 'border-blue-400 border-dashed bg-blue-100': highlightMainDropArea }" {{-- Clase condicional usando el nuevo estado --}}
+                 @dragend="handleDragEnd($event)"
+                 :class="{ 'border-blue-400 border-dashed bg-blue-100': highlightMainDropArea }"
             >
                 <nav class="text-sm font-medium text-gray-500 mb-4 sm:mb-6">
                     <ol class="list-none p-0 inline-flex items-center flex-wrap">
@@ -340,9 +318,11 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 space-y-4 sm:space-y-0">
                     <h3 class="text-xl font-semibold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">{{ __('Contenido Actual') }}</h3>
                     <div class="flex flex-wrap items-center justify-start sm:justify-end gap-3">
-                        {{-- Casilla de verificación "Seleccionar Todos" --}}
-                        <div x-show="!isTileView" class="hidden sm:flex items-center">
-                            <input type="checkbox" @change="selectAll($event)" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
+                        {{-- Casilla de verificación "Seleccionar Todos" - AHORA SIEMPRE VISIBLE --}}
+                        <div class="flex items-center">
+                            <input type="checkbox" @change="selectAll($event)"
+                                   :checked="selectedItems.length > 0 && selectedItems.length === ({{ count($folders) }} + {{ count($fileLinks) }})"
+                                   class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
                             <label class="text-sm text-gray-700">{{ __('Seleccionar Todos') }}</label>
                         </div>
                         {{-- Botón Eliminar Seleccionados --}}
@@ -425,11 +405,11 @@
                         {{-- Mosaicos de Carpetas --}}
                         @foreach ($folders as $folderItem)
                             <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
-                                        hover:bg-gray-50 transform hover:scale-105 relative" {{-- Added relative for checkbox positioning --}}
+                                        hover:bg-gray-50 transform hover:scale-105 relative"
                                  draggable="true"
                                  x-on:dragstart="handleDragStart($event, {{ $folderItem->id }})"
                                  x-on:dragover.prevent="handleDragOver($event, {{ $folderItem->id }})"
-                                 x-on:dragleave="handleDragLeave($event, {{ $folderItem->id }})" {{-- Pasa el ID para depuración --}}
+                                 x-on:dragleave="handleDragLeave($event)"
                                  x-on:drop.prevent="handleDrop($event, {{ $folderItem->id }})"
                                  x-on:contextmenu.prevent="openPropertiesModal({
                                      name: '{{ $folderItem->name }}',
@@ -438,10 +418,10 @@
                                      date: '{{ $folderItem->created_at->format('d M Y, H:i') }}',
                                      isFolder: true,
                                      path: '{{ $folderItem->parent ? $folderItem->parent->name . '/' : '' }}{{ $folderItem->name }}',
-                                     item_count: '{{ $folderItem->items_count ?? 0 }}' {{-- PASA EL CONTADOR --}}
+                                     item_count: '{{ $folderItem->items_count ?? 0 }}'
                                  })"
                                  :class="{'border-blue-400 border-dashed bg-blue-100': dropTargetFolderId == {{ $folderItem->id }}}"
-                                 x-data="{ showDetails: false }"
+                                 x-data="{ showDetails: false }" {{-- Vuelve el estado showDetails local para el mosaico --}}
                             >
                                 {{-- Checkbox para selección múltiple --}}
                                 <input type="checkbox"
@@ -453,7 +433,7 @@
                                 {{-- ENVOLVER ICONO Y NOMBRE EN UN <a> PARA LA ACCIÓN PRINCIPAL --}}
                                 <a href="{{ route('folders.index', $folderItem) }}"
                                    class="flex flex-col items-center justify-center w-full"
-                                   onclick="event.stopPropagation()" {{-- Importante para que no interfiera con botones internos --}}
+                                   onclick="event.stopPropagation()"
                                 >
                                     <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-[#ff9c00] mb-2 sm:mb-3 group-hover:text-orange-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
@@ -464,20 +444,19 @@
                                     <span class="text-sm text-gray-500">Carpeta</span>
                                     <span class="text-xs text-gray-400 mt-1">{{ $folderItem->created_at->format('d M Y') }}</span>
                                     {{-- Contador de elementos en carpeta --}}
-                                    <span class="text-xs text-gray-400">({{ $folderItem->items_count ?? 0 }} elementos)</span>
-                                </a> {{-- FIN DEL <a> --}}
+                                    </a> {{-- FIN DEL <a> --}}
 
-                                {{-- Botón para desplegar/ocultar Detalles --}}
+                                {{-- Botón para desplegar/ocultar Detalles (VUELVE AQUÍ) --}}
                                 <button @click.stop="showDetails = !showDetails" class="mt-2 text-xs text-gray-500 hover:text-gray-700 focus:outline-none px-2 py-1 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors duration-150">
                                     <span x-text="showDetails ? '{{ __('Ocultar Detalles') }}' : '{{ __('Ver Detalles') }}'"></span>
                                 </button>
 
-                                {{-- INFO DE CREADO POR, TIPO, FECHA (ahora condicional) --}}
+                                {{-- INFO DE CREADO POR, TIPO, FECHA (ahora condicional de nuevo) --}}
                                 <div x-show="showDetails" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-y-0" x-transition:enter-end="opacity-100 transform scale-y-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-y-100" x-transition:leave-end="opacity-0 transform scale-y-0" class="text-center text-gray-600 text-xxs sm:text-xs mt-2 space-y-1 opacity-75 origin-top" style="display: none;">
                                     <p><span class="font-semibold">{{ __('Creado por:') }}</span> {{ $folderItem->user->name ?? 'N/A' }}</p>
                                     <p><span class="font-semibold">{{ __('Tipo:') }}</span> Carpeta</p>
                                     <p><span class="font-semibold">{{ __('Fecha:') }}</span> {{ $folderItem->created_at->format('d M Y') }}</p>
-                                    <p><span class="font-semibold">{{ __('Elementos:') }}</span> {{ $folderItem->items_count ?? 0 }}</p>
+                                    <p><span class="font-semibold">{{ __('Elementos Totales:') }}</span> {{ $folderItem->items_count ?? 0 }}</p>
                                 </div>
                                 {{-- FIN INFO ADICIONAL --}}
 
@@ -486,7 +465,7 @@
                                     <a href="{{ route('folders.edit', $folderItem) }}" :class="{'px-1 py-0.5 text-xxs': tileSize === 'small', 'px-2 py-1 text-xs': tileSize === 'medium', 'px-3 py-1.5 text-sm': tileSize === 'large'}" class="inline-flex items-center justify-center bg-indigo-500 border border-transparent rounded-md font-semibold text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" onclick="event.stopPropagation()">
                                         {{ __('Editar') }}
                                     </a>
-                                    <form action="{{ route('folders.destroy', $folderItem) }}" method="POST" class="inline-block w-full sm:w-auto" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta carpeta? Esto también eliminará todo su contenido (subcarpetas, archivos y enlaces).'); event.stopPropagation();"> {{-- event.stopPropagation() aquí para el submit --}}
+                                    <form action="{{ route('folders.destroy', $folderItem) }}" method="POST" class="inline-block w-full sm:w-auto" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta carpeta? Esto también eliminará todo su contenido (subcarpetas, archivos y enlaces).'); event.stopPropagation();">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" :class="{'px-1 py-0.5 text-xxs': tileSize === 'small', 'px-2 py-1 text-xs': tileSize === 'medium', 'px-3 py-1.5 text-sm': tileSize === 'large'}" class="inline-flex items-center justify-center bg-red-500 border border-transparent rounded-md font-semibold text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full">
@@ -506,7 +485,7 @@
                                 $fileUrl = $fileLink->type == 'file' ? asset('storage/' . $fileLink->path) : $fileLink->url;
                             @endphp
                             <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
-                                        hover:bg-gray-50 transform hover:scale-105 relative" {{-- Added relative for checkbox positioning --}}
+                                        hover:bg-gray-50 transform hover:scale-105 relative"
                                  x-on:contextmenu.prevent="openPropertiesModal({
                                      name: '{{ $fileLink->name }}',
                                      type: '{{ $fileLink->type == 'file' ? 'Archivo (' . strtoupper($fileExtension) . ')' : 'Enlace' }}',
@@ -515,7 +494,7 @@
                                      isFolder: false,
                                      path: '{{ $fileLink->type == 'file' ? $fileLink->path : $fileLink->url }}'
                                  })"
-                                 x-data="{ showDetails: false }"
+                                 x-data="{ showDetails: false }" {{-- Vuelve el estado showDetails local para el mosaico --}}
                             >
                                 {{-- Checkbox para selección múltiple --}}
                                 <input type="checkbox"
@@ -558,12 +537,12 @@
                                     @endif
                                     <span class="text-xxs text-gray-400 mt-1" :class="{'text-xxs': tileSize === 'small', 'text-xs': tileSize === 'medium', 'text-sm': tileSize === 'large'}">{{ $fileLink->created_at->format('d M Y') }}</span>
                                 </a>
-                                {{-- Botón para desplegar/ocultar Detalles --}}
+                                {{-- Botón para desplegar/ocultar Detalles (VUELVE AQUÍ) --}}
                                 <button @click.stop="showDetails = !showDetails" class="mt-2 text-xxs sm:text-xs text-gray-500 hover:text-gray-700 focus:outline-none px-2 py-1 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors duration-150">
                                     <span x-text="showDetails ? '{{ __('Ocultar Detalles') }}' : '{{ __('Ver Detalles') }}'"></span>
                                 </button>
 
-                                {{-- INFO DE CREADO POR, TIPO, FECHA (ahora condicional) --}}
+                                {{-- INFO DE CREADO POR, TIPO, FECHA (ahora condicional de nuevo) --}}
                                 <div x-show="showDetails" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-y-0" x-transition:enter-end="opacity-100 transform scale-y-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-y-100" x-transition:leave-end="opacity-0 transform scale-y-0" class="text-center text-gray-600 text-xxs sm:text-xs mt-2 space-y-1 opacity-75 origin-top" style="display: none;">
                                     <p><span class="font-semibold">{{ __('Creado por:') }}</span> {{ $fileLink->user->name ?? 'N/A' }}</p>
                                     <p><span class="font-semibold">{{ __('Tipo:') }}</span> {{ $fileLink->type == 'file' ? 'Archivo' : 'Enlace' }}</p>
@@ -589,222 +568,350 @@
                     </div>
 
                     {{-- VISTA DE TABLA/FILAS --}}
-                    <div x-show="!isTileView" class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">
-                                        {{-- Checkbox "Seleccionar Todos" en la cabecera de la tabla --}}
-                                        <input type="checkbox" @change="selectAll($event)" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
-                                        {{ __('Nombre del Elemento') }}
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('Tipo') }}
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('Creado Por') }}
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('Fecha de Subida') }}
-                                    </th>
-                                    <th scope="col" class="relative px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">
-                                        {{ __('Acciones') }}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach ($folders as $folderItem)
-                                    <tr class="hover:bg-gray-100 transition-colors duration-150 cursor-pointer"
-                                        draggable="true"
-                                        x-on:dragstart="handleDragStart($event, {{ $folderItem->id }})"
-                                        x-on:dragover.prevent="handleDragOver($event, {{ $folderItem->id }})"
-                                        x-on:dragleave="handleDragLeave($event, {{ $folderItem->id }})"
-                                        x-on:drop.prevent="handleDrop($event, {{ $folderItem->id }})"
-                                        x-on:contextmenu.prevent="openPropertiesModal({
-                                            name: '{{ $folderItem->name }}',
-                                            type: 'Carpeta',
-                                            creator: '{{ $folderItem->user->name ?? 'N/A' }}',
-                                            date: '{{ $folderItem->created_at->format('d M Y, H:i') }}',
-                                            isFolder: true,
-                                            path: '{{ $folderItem->parent ? $folderItem->parent->name . '/' : '' }}{{ $folderItem->name }}',
-                                            item_count: '{{ $folderItem->items_count ?? 0 }}' {{-- PASA EL CONTADOR --}}
-                                        })"
-                                        :class="{'bg-blue-100 border-blue-400 border-dashed': dropTargetFolderId == {{ $folderItem->id }}}"
-                                    >
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                {{-- Checkbox para selección múltiple --}}
-                                                <input type="checkbox"
-                                                    class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2"
-                                                    @click.stop="toggleSelection({{ $folderItem->id }}, 'folder')"
-                                                    :checked="isSelected({{ $folderItem->id }}, 'folder')"
-                                                >
-                                                {{-- ENVOLVER ICONO Y NOMBRE EN UN <a> PARA LA ACCIÓN PRINCIPAL --}}
-                                                <a href="{{ route('folders.index', $folderItem) }}" class="flex items-center" onclick="event.stopPropagation()">
-                                                    <svg class="w-7 h-7 text-[#ff9c00] mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
-                                                    </svg>
-                                                    <span class="text-lg font-medium text-[#2c3856] truncate">{{ $folderItem->name }}</span>
-                                                    <span class="ml-2 text-sm text-gray-500">({{ $folderItem->items_count ?? 0 }} elementos)</span>
-                                                </a> {{-- FIN DEL <a> --}}
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                            {{ __('Carpeta') }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                            {{ $folderItem->user->name ?? 'N/A' }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                            {{ $folderItem->created_at->format('d M Y, H:i') }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                                            <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center px-3 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" onclick="event.stopPropagation()">
-                                                {{ __('Editar') }}
-                                            </a>
-                                            <form action="{{ route('folders.destroy', $folderItem) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta carpeta? Esto también eliminará todo su contenido (subcarpetas, archivos y enlaces).'); event.stopPropagation();">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                                    {{ __('Eliminar') }}
-                                                </button>
-                                            </form>
-                                        </td>
+                    <div x-show="!isTileView">
+                        {{-- Tabla para pantallas medianas y grandes --}}
+                        <div class="overflow-x-auto hidden sm:block">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">
+                                            {{-- Checkbox "Seleccionar Todos" en la cabecera de la tabla --}}
+                                            <input type="checkbox" @change="selectAll($event)"
+                                                   :checked="selectedItems.length > 0 && selectedItems.length === ({{ count($folders) }} + {{ count($fileLinks) }})"
+                                                   class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
+                                            {{ __('Nombre del Elemento') }}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            {{ __('Tipo') }}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            {{ __('Creado Por') }}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            {{ __('Fecha de Subida') }}
+                                        </th>
+                                        <th scope="col" class="relative px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">
+                                            {{ __('Acciones') }}
+                                        </th>
                                     </tr>
-                                @endforeach
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    @foreach ($folders as $folderItem)
+                                        <tr class="hover:bg-gray-100 transition-colors duration-150 cursor-pointer"
+                                            draggable="true"
+                                            x-on:dragstart="handleDragStart($event, {{ $folderItem->id }})"
+                                            x-on:dragover.prevent="handleDragOver($event, {{ $folderItem->id }})"
+                                            x-on:dragleave="handleDragLeave($event)"
+                                            x-on:drop.prevent="handleDrop($event, {{ $folderItem->id }})"
+                                            x-on:contextmenu.prevent="openPropertiesModal({
+                                                name: '{{ $folderItem->name }}',
+                                                type: 'Carpeta',
+                                                creator: '{{ $folderItem->user->name ?? 'N/A' }}',
+                                                date: '{{ $folderItem->created_at->format('d M Y, H:i') }}',
+                                                isFolder: true,
+                                                path: '{{ $folderItem->parent ? $folderItem->parent->name . '/' : '' }}{{ $folderItem->name }}',
+                                                item_count: '{{ $folderItem->items_count ?? 0 }}'
+                                            })"
+                                            :class="{'bg-blue-100 border-blue-400 border-dashed': dropTargetFolderId == {{ $folderItem->id }}}"
+                                        >
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    {{-- Checkbox para selección múltiple --}}
+                                                    <input type="checkbox"
+                                                        class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2"
+                                                        @click.stop="toggleSelection({{ $folderItem->id }}, 'folder')"
+                                                        :checked="isSelected({{ $folderItem->id }}, 'folder')"
+                                                    >
+                                                    {{-- ENVOLVER ICONO Y NOMBRE EN UN <a> PARA LA ACCIÓN PRINCIPAL --}}
+                                                    <a href="{{ route('folders.index', $folderItem) }}" class="flex items-center" onclick="event.stopPropagation()">
+                                                        <svg class="w-7 h-7 text-[#ff9c00] mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                                                        </svg>
+                                                        <span class="text-lg font-medium text-[#2c3856] truncate">{{ $folderItem->name }}</span>
+                                                        <span class="ml-2 text-sm text-gray-500">({{ $folderItem->items_count ?? 0 }} elementos)</span>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                {{ __('Carpeta') }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                {{ $folderItem->user->name ?? 'N/A' }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                {{ $folderItem->created_at->format('d M Y, H:i') }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                                                <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center px-3 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" onclick="event.stopPropagation()">
+                                                    {{ __('Editar') }}
+                                                </a>
+                                                <form action="{{ route('folders.destroy', $folderItem) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta carpeta? Esto también eliminará todo su contenido (subcarpetas, archivos y enlaces).'); event.stopPropagation();">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                                        {{ __('Eliminar') }}
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endforeach
 
-                                @foreach ($fileLinks as $fileLink)
-                                    <tr class="hover:bg-gray-100 transition-colors duration-150 cursor-pointer"
-                                        x-on:contextmenu.prevent="openPropertiesModal({
-                                            name: '{{ $fileLink->name }}',
-                                            type: '{{ $fileLink->type == 'file' ? 'Archivo (' . strtoupper($fileExtension) . ')' : 'Enlace' }}',
-                                            creator: '{{ $fileLink->user->name ?? 'N/A' }}',
-                                            date: '{{ $fileLink->created_at->format('d M Y, H:i') }}',
-                                            isFolder: false,
-                                            path: '{{ $fileLink->type == 'file' ? $fileLink->path : $fileLink->url }}'
-                                        })"
-                                        x-on:click.stop="
-                                            @if ($fileLink->type == 'file')
-                                                window.open('{{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }}', '_blank')
-                                            @else
-                                                window.open('{{ $fileUrl }}', '_blank')
-                                            @endif
-                                        "
-                                    >
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                {{-- Checkbox para selección múltiple --}}
-                                                <input type="checkbox"
-                                                    class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2"
-                                                    @click.stop="toggleSelection({{ $fileLink->id }}, 'file_link')"
-                                                    :checked="isSelected({{ $fileLink->id }}, 'file_link')"
-                                                >
+                                    @foreach ($fileLinks as $fileLink)
+                                        @php
+                                            $fileExtension = $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : null;
+                                            $isImage = in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
+                                            $isPdf = strtolower($fileExtension) == 'pdf';
+                                            $fileUrl = $fileLink->type == 'file' ? asset('storage/' . $fileLink->path) : $fileLink->url;
+                                        @endphp
+                                        <tr class="hover:bg-gray-100 transition-colors duration-150 cursor-pointer"
+                                            x-on:contextmenu.prevent="openPropertiesModal({
+                                                name: '{{ $fileLink->name }}',
+                                                type: '{{ $fileLink->type == 'file' ? 'Archivo (' . strtoupper($fileExtension) . ')' : 'Enlace' }}',
+                                                creator: '{{ $fileLink->user->name ?? 'N/A' }}',
+                                                date: '{{ $fileLink->created_at->format('d M Y, H:i') }}',
+                                                isFolder: false,
+                                                path: '{{ $fileLink->type == 'file' ? $fileLink->path : $fileLink->url }}'
+                                            })"
+                                            x-on:click.stop="
                                                 @if ($fileLink->type == 'file')
-                                                    @if ($isImage)
-                                                        <svg class="w-7 h-7 text-green-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                                        </svg>
-                                                    @elseif ($isPdf)
-                                                        <svg class="w-7 h-7 text-red-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                                        </svg>
-                                                    @else
-                                                        <svg class="w-7 h-7 text-gray-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                                        </svg>
-                                                    @endif
-                                                    <span class="text-lg font-medium text-[#2c3856] truncate">{{ $fileLink->name }}</span>
+                                                    window.open('{{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }}', '_blank')
                                                 @else
-                                                    <svg class="w-7 h-7 text-blue-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                                    </svg>
-                                                    <span class="text-lg font-medium text-[#2c3856] truncate">{{ $fileLink->name }}</span>
+                                                    window.open('{{ $fileUrl }}', '_blank')
                                                 @endif
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                            "
+                                        >
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    {{-- Checkbox para selección múltiple --}}
+                                                    <input type="checkbox"
+                                                        class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2"
+                                                        @click.stop="toggleSelection({{ $fileLink->id }}, 'file_link')"
+                                                        :checked="isSelected({{ $fileLink->id }}, 'file_link')"
+                                                    >
+                                                    @if ($fileLink->type == 'file')
+                                                        @if ($isImage)
+                                                            <svg class="w-7 h-7 text-green-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                            </svg>
+                                                        @elseif ($isPdf)
+                                                            <svg class="w-7 h-7 text-red-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                            </svg>
+                                                        @else
+                                                            <svg class="w-7 h-7 text-gray-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                            </svg>
+                                                        @endif
+                                                        <span class="text-lg font-medium text-[#2c3856] truncate">{{ $fileLink->name }}</span>
+                                                    @else
+                                                        <svg class="w-7 h-7 text-blue-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                                        </svg>
+                                                        <span class="text-lg font-medium text-[#2c3856] truncate">{{ $fileLink->name }}</span>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                @if ($fileLink->type == 'file')
+                                                    {{ __('Archivo') }} ({{ strtoupper($fileExtension) }})
+                                                @else
+                                                    {{ __('Enlace') }}
+                                                @endif
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                {{ $fileLink->user->name ?? 'N/A' }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                {{ $fileLink->created_at->format('d M Y, H:i') }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                                                <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center px-3 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" onclick="event.stopPropagation()">
+                                                    {{ __('Editar') }}
+                                                </a>
+                                                <form action="{{ route('file_links.destroy', $fileLink) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este elemento?'); event.stopPropagation();">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                                        {{ __('Eliminar') }}
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {{-- Lista de tarjetas para pantallas pequeñas (copia de la tabla, pero con div's) --}}
+                        <div class="sm:hidden space-y-4"> {{-- Añadido espacio entre tarjetas --}}
+                            @foreach ($folders as $folderItem)
+                                <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 p-4 relative">
+                                    {{-- Checkbox para selección múltiple --}}
+                                    <input type="checkbox"
+                                        class="absolute top-2 left-2 rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] z-10"
+                                        @click.stop="toggleSelection({{ $folderItem->id }}, 'folder')"
+                                        :checked="isSelected({{ $folderItem->id }}, 'folder')"
+                                    >
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <a href="{{ route('folders.index', $folderItem) }}" class="flex items-center flex-shrink-0" onclick="event.stopPropagation()">
+                                            <svg class="w-7 h-7 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                                            </svg>
+                                        </a>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-base font-semibold text-[#2c3856] truncate">
+                                                <a href="{{ route('folders.index', $folderItem) }}" class="hover:underline" onclick="event.stopPropagation()">
+                                                    {{ $folderItem->name }}
+                                                </a>
+                                            </p>
+                                            <p class="text-sm text-gray-500 truncate">{{ __('Carpeta') }} ({{ $folderItem->items_count ?? 0 }} elementos)</p>
+                                        </div>
+                                    </div>
+                                    <div class="border-t border-gray-100 pt-3 mt-3 space-y-1 text-sm text-gray-700">
+                                        <p><span class="font-medium text-gray-600">{{ __('Creado Por:') }}</span> {{ $folderItem->user->name ?? 'N/A' }}</p>
+                                        <p><span class="font-medium text-gray-600">{{ __('Fecha:') }}</span> {{ $folderItem->created_at->format('d M Y, H:i') }}</p>
+                                    </div>
+                                    <div class="flex justify-end gap-2 mt-4">
+                                        <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center px-3 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
+                                            {{ __('Editar') }}
+                                        </a>
+                                        <form action="{{ route('folders.destroy', $folderItem) }}" method="POST" class="inline-block w-full" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta carpeta? Esto también eliminará todo su contenido (subcarpetas, archivos y enlaces).'); event.stopPropagation();">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
+                                                {{ __('Eliminar') }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endforeach
+
+                            @foreach ($fileLinks as $fileLink)
+                                @php
+                                    $fileExtension = $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : null;
+                                    $isImage = in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
+                                    $isPdf = strtolower($fileExtension) == 'pdf';
+                                    $fileUrl = $fileLink->type == 'file' ? asset('storage/' . $fileLink->path) : $fileLink->url;
+                                @endphp
+                                <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 p-4 relative">
+                                    {{-- Checkbox para selección múltiple --}}
+                                    <input type="checkbox"
+                                        class="absolute top-2 left-2 rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] z-10"
+                                        @click.stop="toggleSelection({{ $fileLink->id }}, 'file_link')"
+                                        :checked="isSelected({{ $fileLink->id }}, 'file_link')"
+                                    >
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif" target="_blank" class="flex items-center flex-shrink-0" onclick="event.stopPropagation()">
                                             @if ($fileLink->type == 'file')
-                                                {{ __('Archivo') }} ({{ strtoupper($fileExtension) }})
+                                                @if ($isImage)
+                                                    <svg class="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                @elseif ($isPdf)
+                                                    <svg class="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                    </svg>
+                                                @else
+                                                    <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                @endif
                                             @else
-                                                {{ __('Enlace') }}
+                                                <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                                </svg>
                                             @endif
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                            {{ $fileLink->user->name ?? 'N/A' }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                            {{ $fileLink->created_at->format('d M Y, H:i') }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                                            <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center px-3 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" onclick="event.stopPropagation()">
-                                                {{ __('Editar') }}
-                                            </a>
-                                            <form action="{{ route('file_links.destroy', $fileLink) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este elemento?'); event.stopPropagation();">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                                    {{ __('Eliminar') }}
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                        </a>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-base font-semibold text-[#2c3856] truncate">
+                                                <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif" target="_blank" class="hover:underline" onclick="event.stopPropagation()">
+                                                    {{ $fileLink->name }}
+                                                </a>
+                                            </p>
+                                            <p class="text-sm text-gray-500 truncate">
+                                                @if ($fileLink->type == 'file')
+                                                    {{ __('Archivo') }} ({{ strtoupper($fileExtension) }})
+                                                @else
+                                                    {{ __('Enlace') }}
+                                                @endif
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="border-t border-gray-100 pt-3 mt-3 space-y-1 text-sm text-gray-700">
+                                        <p><span class="font-medium text-gray-600">{{ __('Creado Por:') }}</span> {{ $fileLink->user->name ?? 'N/A' }}</p>
+                                        <p><span class="font-medium text-gray-600">{{ __('Fecha:') }}</span> {{ $fileLink->created_at->format('d M Y, H:i') }}</p>
+                                    </div>
+                                    <div class="flex justify-end gap-2 mt-4">
+                                        <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center px-3 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
+                                            {{ __('Editar') }}
+                                        </a>
+                                        <form action="{{ route('file_links.destroy', $fileLink) }}" method="POST" class="inline-block w-full" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este elemento?'); event.stopPropagation();">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full">
+                                                {{ __('Eliminar') }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                     {{-- FIN VISTA DE TABLA/FILAS --}}
                 @endif
             </div>
         </div>
-    </div>
 
-    <div x-show="showPropertiesModal"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50"
-         style="display: none;" {{-- x-cloak handles display, but keep for initial render --}}
-         @click.away="showPropertiesModal = false"
-         @keydown.escape.window="showPropertiesModal = false"
-    >
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col" @click.stop="">
-            <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-4">
-                <h3 class="text-xl font-semibold text-[#2c3856]">{{ __('Propiedades del Elemento') }}</h3>
-                <button @click="showPropertiesModal = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
+        {{-- INICIO DEL MODAL DE PROPIEDADES --}}
+        <div x-show="showPropertiesModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50"
+             style="display: none;"
+             @click.away="showPropertiesModal = false"
+             @keydown.escape.window="showPropertiesModal = false"
+        >
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col" @click.stop="">
+                <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-4">
+                    <h3 class="text-xl font-semibold text-[#2c3856]">{{ __('Propiedades del Elemento') }}</h3>
+                    <button @click="showPropertiesModal = false" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
 
-            <div class="flex-1 overflow-y-auto text-gray-700 text-base">
-                <div class="mb-3">
-                    <span class="font-semibold text-[#2c3856]">Nombre:</span> <span x-text="propertiesData.name"></span>
+                <div class="flex-1 overflow-y-auto text-gray-700 text-base">
+                    <div class="mb-3">
+                        <span class="font-semibold text-[#2c3856]">Nombre:</span> <span x-text="propertiesData.name"></span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="font-semibold text-[#2c3856]">Tipo:</span> <span x-text="propertiesData.type"></span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="font-semibold text-[#2c3856]">Creado Por:</span> <span x-text="propertiesData.creator"></span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="font-semibold text-[#2c3856]">Fecha de Subida:</span> <span x-text="propertiesData.date"></span>
+                    </div>
+                    <div x-show="propertiesData.isFolder" class="mb-3">
+                        <span class="font-semibold text-[#2c3856]">Elementos en carpeta:</span> <span x-text="propertiesData.item_count"></span>
+                    </div>
+                    <div x-show="propertiesData.path" class="mb-3">
+                        <span class="font-semibold text-[#2c3856]" x-text="propertiesData.isFolder ? 'Ruta:' : 'Ubicación:'"></span> <span x-text="propertiesData.path"></span>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <span class="font-semibold text-[#2c3856]">Tipo:</span> <span x-text="propertiesData.type"></span>
-                </div>
-                <div class="mb-3">
-                    <span class="font-semibold text-[#2c3856]">Creado Por:</span> <span x-text="propertiesData.creator"></span>
-                </div>
-                <div class="mb-3">
-                    <span class="font-semibold text-[#2c3856]">Fecha de Subida:</span> <span x-text="propertiesData.date"></span>
-                </div>
-                <div x-show="propertiesData.isFolder" class="mb-3">
-                    <span class="font-semibold text-[#2c3856]">Elementos en carpeta:</span> <span x-text="propertiesData.item_count"></span>
-                </div>
-                <div x-show="propertiesData.path" class="mb-3">
-                    <span class="font-semibold text-[#2c3856]" x-text="propertiesData.isFolder ? 'Ruta:' : 'Ubicación:'"></span> <span x-text="propertiesData.path"></span>
-                </div>
-            </div>
 
-            <div class="flex justify-end pt-4 border-t border-gray-200">
-                <button @click="showPropertiesModal = false"
-                   class="inline-flex items-center px-5 py-2 bg-gray-200 border border-transparent rounded-full font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 shadow-md">
-                    {{ __('Cerrar') }}
-                </button>
+                <div class="flex justify-end pt-4 border-t border-gray-200">
+                    <button @click="showPropertiesModal = false"
+                       class="inline-flex items-center px-5 py-2 bg-gray-200 border border-transparent rounded-full font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 shadow-md">
+                        {{ __('Cerrar') }}
+                    </button>
+                </div>
             </div>
         </div>
+        {{-- FIN DEL MODAL DE PROPIEDADES --}}
     </div>
 </x-app-layout>

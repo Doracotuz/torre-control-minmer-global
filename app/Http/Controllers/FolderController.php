@@ -68,11 +68,14 @@ class FolderController extends Controller
         } else {
             // Si no hay término de búsqueda, aplicamos la lógica de jerarquía normal
             $folders = $folderQuery->where('parent_id', $currentFolder ? $currentFolder->id : null)
-                                   ->withCount(['children as items_count' => function ($query) {
-                                       $query->selectRaw('count(*) + (select count(*) from file_links where folder_id = folders.id)');
-                                   }]) // Cargar el contador de items
-                                   ->orderBy('name')
-                                   ->get();
+                                   // MODIFICADO: Esta es la parte clave para contar todos los elementos
+                                   ->withCount(['children', 'fileLinks'])
+                                   ->get()
+                                   ->map(function ($folder) {
+                                       // Sumamos los conteos de children y fileLinks
+                                       $folder->items_count = $folder->children_count + $folder->file_links_count;
+                                       return $folder;
+                                   });
 
             $fileLinks = collect(); // Inicializar como colección vacía
             if ($currentFolder) {
