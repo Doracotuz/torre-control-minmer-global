@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User; // Asegúrate de que User esté importado
-use App\Models\Area; // Asegúrate de que Area esté importado
+use App\Models\User;
+use App\Models\Area;
+use App\Models\Folder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage; // ¡Importa la fachada Storage!
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -20,7 +21,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with('area')->orderBy('name')->get(); // Carga la relación 'area'
+        $users = User::with('area')->orderBy('name')->get();
         return view('admin.users.index', compact('users'));
     }
 
@@ -32,7 +33,11 @@ class UserController extends Controller
      */
     public function create()
     {
-        $areas = Area::orderBy('name')->get(); // Obtiene todas las áreas para el select
+        $areas = Area::orderBy('name')->get();
+        // Para la selección de carpetas, podrías cargar solo las carpetas raíz o todas,
+        // dependiendo de si quieres que el Super Admin solo asigne raíces o también subcarpetas directamente.
+        // `getFoldersForClientAccess` ya devuelve las carpetas raíz cuando parent_id es null
+        // No necesitamos `$folders` aquí, ya que Alpine.js cargará dinámicamente.
         return view('admin.users.create', compact('areas'));
     }
 
@@ -45,27 +50,51 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'area_id' => 'required|exists:areas,id',
             'is_area_admin' => 'boolean',
-            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validación para la foto
-        ]);
+            'is_client' => 'boolean',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'accessible_folder_ids' => 'nullable|array',
+            'accessible_folder_ids.*' => 'exists:folders,id',
+        ];
 
-        $data = $request->all(); // Obtiene todos los datos validados
+        // Hacer area_id condicionalmente requerido
+        if (!$request->has('is_client')) {
+            $rules['area_id'] = 'required|exists:areas,id';
+        } else {
+            $rules['area_id'] = 'nullable|exists:areas,id'; // Permite que sea nulo si es cliente
+        }
+
+        $request->validate($rules);
+
+        $data = $request->all();
         $data['password'] = Hash::make($request->password);
-        $data['is_area_admin'] = $request->has('is_area_admin'); // Guarda el valor del checkbox (true/false)
+        $data['is_area_admin'] = $request->has('is_area_admin');
+        $data['is_client'] = $request->has('is_client');
 
-        // Manejo de la subida de la foto de perfil
+        // Si es cliente y no se seleccionó área, asegúrate de que sea null
+        if ($data['is_client'] && !$request->filled('area_id')) {
+            $data['area_id'] = null;
+        }
+
         if ($request->hasFile('profile_photo')) {
             $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 'public');
         } else {
-            $data['profile_photo_path'] = null; // Asegura que si no se sube, el campo sea null
+            $data['profile_photo_path'] = null;
         }
 
-        User::create($data);
+        $user = User::create($data);
+
+        if ($user->isClient()) {
+            // Asegúrate de que los IDs vengan como un array, incluso si es una cadena separada por comas
+            $folderIds = explode(',', $request->input('accessible_folder_ids')[0] ?? ''); // El hidden input envía una cadena
+            $folderIds = array_filter(array_map('intval', $folderIds)); // Limpia y convierte a int
+
+            $user->accessibleFolders()->sync($folderIds);
+        }
 
         return redirect()->route('admin.users.index')->with('success', 'Usuario creado exitosamente.');
     }
@@ -79,8 +108,11 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        $areas = Area::orderBy('name')->get(); // Obtiene todas las áreas para el select
-        return view('admin.users.edit', compact('user', 'areas'));
+        $areas = Area::orderBy('name')->get();
+        // Las carpetas no se pasan aquí, ya que se cargarán dinámicamente con la API
+        $accessibleFolderIds = $user->accessibleFolders->pluck('id')->toArray();
+
+        return view('admin.users.edit', compact('user', 'areas', 'accessibleFolderIds'));
     }
 
     /**
@@ -93,7 +125,7 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
-        $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => [
                 'required',
@@ -103,41 +135,62 @@ class UserController extends Controller
                 Rule::unique('users')->ignore($user->id),
             ],
             'password' => 'nullable|string|min:8|confirmed',
-            'area_id' => 'required|exists:areas,id',
             'is_area_admin' => 'boolean',
-            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validación para la foto
-        ]);
+            'is_client' => 'boolean',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'accessible_folder_ids' => 'nullable|array',
+            'accessible_folder_ids.*' => 'exists:folders,id',
+        ];
 
-        $data = $request->except(['_token', '_method', 'password_confirmation']); // Obtiene todos los datos excepto estos
+        // Hacer area_id condicionalmente requerido
+        if (!$request->has('is_client')) {
+            $rules['area_id'] = 'required|exists:areas,id';
+        } else {
+            $rules['area_id'] = 'nullable|exists:areas,id'; // Permite que sea nulo si es cliente
+        }
+
+        $request->validate($rules);
+
+        $data = $request->except(['_token', '_method', 'password_confirmation']);
 
         $data['is_area_admin'] = $request->has('is_area_admin');
+        $data['is_client'] = $request->has('is_client');
 
-        // Actualiza la contraseña si se proporcionó una nueva
+        // Si es cliente y no se seleccionó área, asegúrate de que sea null
+        if ($data['is_client'] && !$request->filled('area_id')) {
+            $data['area_id'] = null;
+        }
+
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         } else {
-            unset($data['password']); // No actualizar la contraseña si está vacía
+            unset($data['password']);
         }
 
-        // Manejo de la foto de perfil
         if ($request->hasFile('profile_photo')) {
-            // Eliminar la foto antigua si existe
             if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
                 Storage::disk('public')->delete($user->profile_photo_path);
             }
             $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 'public');
-        } elseif ($request->input('remove_profile_photo')) { // Si se marcó la casilla para eliminar la foto
+        } elseif ($request->input('remove_profile_photo')) {
             if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
                 Storage::disk('public')->delete($user->profile_photo_path);
             }
             $data['profile_photo_path'] = null;
         } else {
-            // Si no se subió nueva foto y no se pidió eliminar, mantener la existente
             $data['profile_photo_path'] = $user->profile_photo_path;
         }
 
+        $user->update($data);
 
-        $user->update($data); // Usar $data para actualizar
+        if ($user->isClient()) {
+            $folderIds = explode(',', $request->input('accessible_folder_ids')[0] ?? ''); // El hidden input envía una cadena
+            $folderIds = array_filter(array_map('intval', $folderIds));
+
+            $user->accessibleFolders()->sync($folderIds);
+        } else {
+            $user->accessibleFolders()->detach();
+        }
 
         return redirect()->route('admin.users.index')->with('success', 'Usuario actualizado exitosamente.');
     }
@@ -151,10 +204,11 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        // Eliminar la foto de perfil si existe
         if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
             Storage::disk('public')->delete($user->profile_photo_path);
         }
+
+        $user->accessibleFolders()->detach();
 
         $user->delete();
 

@@ -25,14 +25,13 @@ class FolderController extends Controller
     public function index(Request $request, Folder $folder = null)
     {
         $user = Auth::user();
-        $currentFolder = $folder; // La carpeta actual que estamos viendo (null si estamos en la raíz)
-        $searchQuery = $request->input('search'); // Obtener el término de búsqueda
+        $currentFolder = $folder;
+        $searchQuery = $request->input('search');
 
-        // --- Lógica de Permisos para ver Carpetas y Contenido ---
         $folderQuery = Folder::query();
         $fileLinkQuery = FileLink::query();
 
-        // Aplicar filtros de permiso según el rol del usuario
+        // Lógica de Permisos para ver Carpetas y Contenido
         if ($user->area && $user->area->name === 'Administración') {
             // Super Administrador: No se aplica ninguna restricción de área o permiso explícito
         } elseif ($user->is_area_admin) {
@@ -41,6 +40,23 @@ class FolderController extends Controller
             $fileLinkQuery->whereHas('folder', function($q) use ($user) {
                 $q->where('area_id', $user->area_id);
             });
+        } elseif ($user->isClient()) { // Lógica para Clientes
+            $accessibleFolderIds = $user->accessibleFolders->pluck('id')->toArray();
+
+            // Los clientes solo deben ver las carpetas que son hijas de la carpeta actual O que son la carpeta raíz
+            // y a las que tienen acceso.
+            $folderQuery->whereIn('id', $accessibleFolderIds)
+                        ->where('parent_id', $currentFolder ? $currentFolder->id : null);
+            
+            // Los fileLinks deben pertenecer a la carpeta actual y ser accesibles para el cliente
+            $fileLinkQuery->whereIn('folder_id', $accessibleFolderIds)
+                          ->where('folder_id', $currentFolder ? $currentFolder->id : null);
+
+            // Si el cliente intenta acceder a una carpeta a la que no tiene acceso, redirigir
+            if ($currentFolder && !in_array($currentFolder->id, $accessibleFolderIds)) {
+                return redirect()->route('dashboard')->with('error', 'No tienes permiso para ver esta carpeta.');
+            }
+
         } else {
             // Usuario Normal: Solo ve carpetas y archivos de su área con acceso explícito
             $folderQuery->where('area_id', $user->area_id)
@@ -55,10 +71,9 @@ class FolderController extends Controller
             });
         }
 
-        // --- Lógica de Búsqueda ---
+        // Lógica de Búsqueda
         if ($searchQuery) {
             // Si hay un término de búsqueda, buscamos en todas las carpetas y archivos accesibles
-            // Ignoramos la jerarquía de parent_id para la búsqueda global
             $folders = $folderQuery->where('name', 'like', '%' . $searchQuery . '%')
                                    ->orderBy('name')
                                    ->get();
@@ -68,32 +83,35 @@ class FolderController extends Controller
             $currentFolder = null; // En modo búsqueda, no estamos en una carpeta específica
         } else {
             // Si no hay término de búsqueda, aplicamos la lógica de jerarquía normal
+            // Si el usuario es un cliente, ya aplicamos el filtro parent_id y accessibleFolderIds arriba
+            // por lo que solo necesitamos obtener los resultados.
             $folders = $folderQuery->where('parent_id', $currentFolder ? $currentFolder->id : null)
-                                   // MODIFICADO: Esta es la parte clave para contar todos los elementos
                                    ->withCount(['children', 'fileLinks'])
                                    ->get()
                                    ->map(function ($folder) {
-                                       // Sumamos los conteos de children y fileLinks
                                        $folder->items_count = $folder->children_count + $folder->file_links_count;
                                        return $folder;
                                    });
 
-            $fileLinks = collect(); // Inicializar como colección vacía
+            $fileLinks = collect();
             if ($currentFolder) {
                 // Verificar permisos para la carpeta actual antes de mostrar su contenido
                 $hasAccessToCurrentFolder = false;
                 if ($user->area && $user->area->name === 'Administración') {
-                    $hasAccessToCurrentFolder = true; // Super Admin siempre tiene acceso
+                    $hasAccessToCurrentFolder = true;
                 } elseif ($user->is_area_admin && $currentFolder->area_id === $user->area_id) {
-                    $hasAccessToCurrentFolder = true; // Admin de Área tiene acceso a sus carpetas
+                    $hasAccessToCurrentFolder = true;
+                } elseif ($user->isClient() && in_array($currentFolder->id, $accessibleFolderIds)) { // Cliente: acceso explícito a la carpeta actual
+                    $hasAccessToCurrentFolder = true;
                 } elseif ($currentFolder->area_id === $user->area_id && $user->accessibleFolders->contains($currentFolder->id)) {
-                    $hasAccessToCurrentFolder = true; // Usuario normal con acceso explícito y en su área
+                    $hasAccessToCurrentFolder = true;
                 }
 
                 if (!$hasAccessToCurrentFolder) {
                     return redirect()->route('dashboard')->with('error', 'No tienes permiso para ver esta carpeta o su contenido.');
                 }
 
+                // Si es un cliente, $fileLinkQuery ya está filtrado por accessibleFolderIds y folder_id
                 $fileLinks = $fileLinkQuery->where('folder_id', $currentFolder->id)
                                            ->orderBy('name')
                                            ->get();
@@ -126,9 +144,13 @@ class FolderController extends Controller
                 return redirect()->route('folders.index')->with('error', 'No puedes crear carpetas fuera de tu área.');
             }
         }
-        // Usuario Normal no puede crear carpetas
-        else {
-            return redirect()->route('folders.index')->with('error', 'No tienes permiso para crear carpetas.');
+        // Clientes no pueden crear carpetas
+        elseif ($user->isClient()) {
+            return redirect()->route('folders.index')->with('error', 'Los usuarios tipo Cliente no tienen permiso para crear carpetas.');
+        }
+        // Usuario Normal ahora puede crear carpetas si está en su área
+        elseif ($currentFolder && $currentFolder->area_id !== $user->area_id) {
+            return redirect()->route('folders.index')->with('error', 'No puedes crear carpetas fuera de tu área.');
         }
 
         return view('folders.create', compact('currentFolder', 'user'));
@@ -167,6 +189,10 @@ class FolderController extends Controller
             // Super Admin puede crear
         } elseif ($user->is_area_admin && $targetAreaId === $user->area_id) {
             // Admin de Área puede crear en su propia área
+        } elseif ($user->isClient()) { // Clientes no pueden crear carpetas
+            return redirect()->route('folders.index')->with('error', 'Los usuarios tipo Cliente no tienen permiso para crear carpetas.');
+        } elseif ($targetAreaId === $user->area_id) { // Usuario Normal puede crear en su área
+            // No se necesita un 'else' adicional, la creación se permite si el área coincide.
         } else {
             return redirect()->route('folders.index')->with('error', 'No tienes permiso para crear carpetas aquí.');
         }
@@ -228,6 +254,7 @@ class FolderController extends Controller
         } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
             // Admin de Área puede editar carpetas de su propia área
         } else {
+            // Ni usuario normal ni cliente pueden editar carpetas
             return redirect()->route('folders.index')->with('error', 'No tienes permiso para editar esta carpeta.');
         }
 
@@ -252,6 +279,7 @@ class FolderController extends Controller
         } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
             // Admin de Área puede actualizar carpetas de su propia área
         } else {
+            // Ni usuario normal ni cliente pueden actualizar carpetas
             return redirect()->route('folders.index')->with('error', 'No tienes permiso para actualizar esta carpeta.');
         }
 
@@ -293,11 +321,12 @@ class FolderController extends Controller
         } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
             // Admin de Área puede eliminar carpetas de su propia área
         } else {
+            // Usuario Normal y Cliente NO tienen permiso para eliminar carpetas
             return redirect()->route('folders.index')->with('error', 'No tienes permiso para eliminar esta carpeta.');
         }
 
         $parentFolderId = $folder->parent_id;
-        $folder->delete(); // Esto debería manejar la eliminación de sus contenidos por cascada si está configurado en el modelo o migraciones
+        $folder->delete();
 
         $redirectPath = $parentFolderId ? route('folders.index', $parentFolderId) : route('folders.index');
 
@@ -320,6 +349,10 @@ class FolderController extends Controller
             // Super Admin puede añadir
         } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
             // Admin de Área puede añadir en su propia área
+        } elseif ($user->isClient()) { // Clientes no pueden añadir elementos
+            return redirect()->route('folders.index', $folder)->with('error', 'Los usuarios tipo Cliente no tienen permiso para añadir elementos a esta carpeta.');
+        } elseif ($folder->area_id === $user->area_id) { // Usuario Normal puede añadir en su área
+            // No se necesita un 'else' adicional, se permite si el área coincide.
         } else {
             return redirect()->route('folders.index', $folder)->with('error', 'No tienes permiso para añadir elementos a esta carpeta.');
         }
@@ -344,6 +377,10 @@ class FolderController extends Controller
             // Super Admin puede almacenar
         } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
             // Admin de Área puede almacenar en su propia área
+        } elseif ($user->isClient()) { // Clientes no pueden almacenar elementos
+            return response()->json(['message' => 'Los usuarios tipo Cliente no tienen permiso para añadir elementos a esta carpeta.'], 403);
+        } elseif ($folder->area_id === $user->area_id) { // Usuario Normal puede almacenar en su área
+            // No se necesita un 'else' adicional, se permite si el área coincide.
         } else {
             return response()->json(['message' => 'No tienes permiso para añadir elementos a esta carpeta.'], 403);
         }
@@ -362,8 +399,6 @@ class FolderController extends Controller
         } else {
             $validationRules['files'] = 'required|array';
             $validationRules['files.*'] = 'file|max:500000'; // 500MB por archivo
-            // Para múltiples archivos, el campo 'name' del formulario se ignora y se usan los nombres originales.
-            // Para un solo archivo, si se proporciona un nombre en el formulario, se usa.
             if (count($request->file('files') ?: []) > 1) {
                 $validationRules['name'] = 'nullable|string|max:255';
             }
@@ -393,22 +428,20 @@ class FolderController extends Controller
                     $fileNameWithoutExt = pathinfo($originalFileName, PATHINFO_FILENAME);
                     $extension = $file->getClientOriginalExtension();
 
-                    $fileNameToStore = $fileNameWithoutExt; // Por defecto el nombre original del archivo
+                    $fileNameToStore = $fileNameWithoutExt;
 
-                    // Si es un solo archivo Y se proporcionó un nombre en el campo 'name', úsalo.
                     if (count($files) === 1 && $request->filled('name')) {
                         $fileNameToStore = $request->name;
                     }
 
-                    // Asegúrate de que la extensión del archivo se mantenga o se añada
                     if (!Str::endsWith(strtolower($fileNameToStore), '.' . strtolower($extension))) {
                         $fileNameToStore .= '.' . strtolower($extension);
                     }
 
                     try {
-                        $path = $file->store('files', 'public'); // Guarda el archivo
+                        $path = $file->store('files', 'public');
                         FileLink::create([
-                            'name' => $fileNameToStore, // Usa el nombre determinado
+                            'name' => $fileNameToStore,
                             'type' => 'file',
                             'path' => $path,
                             'folder_id' => $folder->id,
@@ -446,7 +479,7 @@ class FolderController extends Controller
     {
         $request->validate([
             'folder_id' => 'required|exists:folders,id',
-            'target_folder_id' => 'nullable|exists:folders,id', // null para mover a la raíz
+            'target_folder_id' => 'nullable|exists:folders,id',
         ]);
 
         $folderToMove = Folder::findOrFail($request->folder_id);
@@ -466,12 +499,11 @@ class FolderController extends Controller
             if ($targetFolder && $targetFolder->area_id !== $user->area_id) {
                 return response()->json(['success' => false, 'message' => 'No puedes mover carpetas a un área diferente a la tuya.'], 403);
             }
-            // Si mueve a la raíz, debe ser su propia área
             if (is_null($targetFolder) && $folderToMove->area_id !== $user->area_id) {
                  return response()->json(['success' => false, 'message' => 'No puedes mover carpetas de otras áreas a la raíz de tu área.'], 403);
             }
         }
-        // Usuario normal no puede mover carpetas
+        // Usuario normal y Clientes no pueden mover carpetas
         else {
             return response()->json(['success' => false, 'message' => 'No tienes permiso para mover carpetas.'], 403);
         }
@@ -484,13 +516,12 @@ class FolderController extends Controller
         // Asegurarse de que el nombre sea único en la nueva ubicación
         $existingFolderInTarget = Folder::where('name', $folderToMove->name)
                                         ->where('parent_id', $request->target_folder_id)
-                                        ->where('area_id', $folderToMove->area_id) // El área de la carpeta no cambia al moverla
+                                        ->where('area_id', $folderToMove->area_id)
                                         ->where('id', '!=', $folderToMove->id)
                                         ->first();
         if ($existingFolderInTarget) {
             return response()->json(['success' => false, 'message' => 'Ya existe una carpeta con el mismo nombre en la carpeta de destino.'], 409);
         }
-
 
         $folderToMove->parent_id = $request->target_folder_id;
         $folderToMove->save();
@@ -507,10 +538,9 @@ class FolderController extends Controller
     public function uploadDroppedFiles(Request $request)
     {
         $request->validate([
-            'folder_id' => 'nullable|exists:folders,id', // null para subir a la raíz
+            'folder_id' => 'nullable|exists:folders,id',
             'files' => 'required|array',
             'files.*' => 'file|max:500000', // 10MB por archivo
-            // 'names' ya no es necesario si usamos getClientOriginalName()
         ]);
 
         $targetFolder = $request->folder_id ? Folder::findOrFail($request->folder_id) : null;
@@ -519,12 +549,16 @@ class FolderController extends Controller
         $errors = [];
 
         // Validar permisos para subir
-        $targetAreaId = $targetFolder ? $targetFolder->area_id : $user->area_id; // Si es raíz, usa el área del usuario
+        $targetAreaId = $targetFolder ? $targetFolder->area_id : ($user->area_id ?? null); // Si es raíz, usa el área del usuario
 
         if ($user->area && $user->area->name === 'Administración') {
             // Super Admin puede subir a cualquier lugar
         } elseif ($user->is_area_admin && $targetAreaId === $user->area_id) {
             // Admin de Área puede subir a su propia área
+        } elseif ($user->isClient()) { // Clientes no pueden subir archivos
+            return response()->json(['success' => false, 'message' => 'Los usuarios tipo Cliente no tienen permiso para subir archivos aquí.'], 403);
+        } elseif ($targetAreaId === $user->area_id) { // Usuario Normal puede subir a su área
+            // No se necesita un 'else' adicional, la subida se permite si el área coincide.
         } else {
             return response()->json(['success' => false, 'message' => 'No tienes permiso para subir archivos aquí.'], 403);
         }
@@ -534,16 +568,15 @@ class FolderController extends Controller
             $fileNameWithoutExt = pathinfo($originalFileName, PATHINFO_FILENAME);
             $extension = $file->getClientOriginalExtension();
 
-            // Construir el nombre final del archivo para el registro
             $fileNameToStore = $fileNameWithoutExt;
             if (!Str::endsWith(strtolower($fileNameToStore), '.' . strtolower($extension))) {
                 $fileNameToStore .= '.' . strtolower($extension);
             }
 
             try {
-                $path = $file->store('files', 'public'); // Guarda el archivo
+                $path = $file->store('files', 'public');
                 FileLink::create([
-                    'name' => $fileNameToStore, // Usar el nombre construido
+                    'name' => $fileNameToStore,
                     'type' => 'file',
                     'path' => $path,
                     'folder_id' => $request->folder_id,
@@ -588,11 +621,11 @@ class FolderController extends Controller
                     // Admin de Área puede eliminar carpetas de su propia área
                 } else {
                     $errors[] = "No tienes permiso para eliminar la carpeta '{$folder->name}'.";
-                    continue; // Saltar a la siguiente carpeta
+                    continue;
                 }
 
                 try {
-                    $folder->delete(); // Esto debería manejar la eliminación en cascada
+                    $folder->delete();
                     $deletedCount++;
                 } catch (\Exception $e) {
                     $errors[] = "Error al eliminar la carpeta '{$folder->name}': " . $e->getMessage();
@@ -611,11 +644,10 @@ class FolderController extends Controller
                     // Admin de Área puede eliminar file_links de su propia área
                 } else {
                     $errors[] = "No tienes permiso para eliminar el elemento '{$fileLink->name}'.";
-                    continue; // Saltar al siguiente file_link
+                    continue;
                 }
 
                 try {
-                    // Si es un archivo, elimina el archivo físico del almacenamiento
                     if ($fileLink->type === 'file' && Storage::disk('public')->exists($fileLink->path)) {
                         Storage::disk('public')->delete($fileLink->path);
                     }
@@ -656,7 +688,7 @@ class FolderController extends Controller
                 return true;
             }
             $current = Folder::find($current->parent_id);
-            if (!$current) break; // Evitar bucles infinitos si la relación es inconsistente
+            if (!$current) break;
         }
         return false;
     }
@@ -673,6 +705,14 @@ class FolderController extends Controller
             // Super Admin: no hay restricción
         } elseif ($user->is_area_admin) {
             $query->where('area_id', $user->area_id);
+        } elseif ($user->isClient()) { // Clientes solo ven sus carpetas accesibles
+            $accessibleFolderIds = $user->accessibleFolders->pluck('id')->toArray();
+            $query->whereIn('id', $accessibleFolderIds);
+            // Además, si el parentId es una carpeta a la que el cliente tiene acceso, se muestran sus hijos (si están en la lista)
+            if ($parentId && !in_array($parentId, $accessibleFolderIds)) {
+                // Si el parentId no es una carpeta a la que el cliente tiene acceso, no se muestran hijos
+                $query->whereRaw('1 = 0'); // Devuelve un resultado vacío
+            }
         } else {
             // Usuario normal: solo sus carpetas accesibles
             $query->where('area_id', $user->area_id)
@@ -682,7 +722,7 @@ class FolderController extends Controller
         }
 
         $folders = $query->where('parent_id', $parentId)
-                         ->withCount(['children', 'fileLinks']) // Para el conteo de elementos
+                         ->withCount(['children', 'fileLinks'])
                          ->orderBy('name')
                          ->get()
                          ->map(function ($folder) {
@@ -706,7 +746,7 @@ class FolderController extends Controller
             'folder_ids.*' => 'exists:folders,id',
             'file_link_ids' => 'array',
             'file_link_ids.*' => 'exists:file_links,id',
-            'target_folder_id' => 'nullable|exists:folders,id', // null para mover a la raíz
+            'target_folder_id' => 'nullable|exists:folders,id',
         ]);
 
         $user = Auth::user();
@@ -738,6 +778,7 @@ class FolderController extends Controller
                 return response()->json(['success' => false, 'message' => 'No tienes permiso para mover elementos a un área diferente a la tuya.'], 403);
             }
         } else {
+            // Usuario normal y Clientes no pueden mover elementos
             return response()->json(['success' => false, 'message' => 'No tienes permiso para mover elementos.'], 403);
         }
 
@@ -762,15 +803,11 @@ class FolderController extends Controller
                 continue;
             }
 
-            // ***** VALIDACIÓN ADICIONAL Y MÁS EXPLÍCITA PARA EL PROBLEMA *****
-            // Si la carpeta de destino es la misma que la carpeta a mover, O si la carpeta de destino es una subcarpeta de la que se va a mover
             if ($targetFolderId == $folderToMove->id || ($targetFolder && $this->isDescendantOf($targetFolder, $folderToMove))) {
                 $errors[] = "No puedes mover la carpeta '{$folderToMove->name}' a sí misma o a una de sus subcarpetas.";
-                continue; // Saltar a la siguiente carpeta si esta validación falla
+                continue;
             }
-            // ***************************************************************
 
-            // Evitar mover a una carpeta si ya existe un elemento con el mismo nombre y área
             $existingFolderInTarget = Folder::where('name', $folderToMove->name)
                                     ->where('parent_id', $targetFolderId)
                                     ->where('area_id', $folderToMove->area_id)
@@ -790,7 +827,7 @@ class FolderController extends Controller
             }
         }
 
-        // Mover FileLinks (la lógica permanece igual, ya que no son carpetas que puedan contenerse a sí mismas)
+        // Mover FileLinks
         foreach ($fileLinkIds as $fileLinkId) {
             $fileLinkToMove = FileLink::find($fileLinkId);
             if (!$fileLinkToMove) {
@@ -811,7 +848,6 @@ class FolderController extends Controller
                 continue;
             }
 
-            // Evitar mover a una carpeta si ya existe un elemento con el mismo nombre y área
             $existingFileLinkInTarget = FileLink::where('name', $fileLinkToMove->name)
                                     ->where('folder_id', $targetFolderId)
                                     ->whereHas('folder', function($q) use ($fileLinkToMove) {
@@ -845,9 +881,28 @@ class FolderController extends Controller
         }
     }
 
-    /**
-     * Helper para prevenir ciclos en la jerarquía
-     */
+    public function getFoldersForClientAccess(Request $request)
+    {
+        $user = Auth::user();
 
+        // Esta API solo debería ser accesible por el Super Admin
+        if (!($user->area && $user->area->name === 'Administración')) {
+            return response()->json(['message' => 'Acceso no autorizado para esta API.'], 403);
+        }
+
+        $parentId = $request->input('parent_id');
+
+        $folders = Folder::where('parent_id', $parentId)
+                         ->orderBy('name')
+                         ->get();
+
+        // Para cada carpeta, verificar si tiene subcarpetas para el frontend
+        $folders->map(function ($folder) {
+            $folder->has_children = $folder->children()->exists();
+            return $folder;
+        });
+
+        return response()->json($folders);
+    }
 
 }

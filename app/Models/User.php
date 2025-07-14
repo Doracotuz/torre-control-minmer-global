@@ -26,6 +26,7 @@ class User extends Authenticatable
         'profile_photo_path', // ¡Añade esta línea!
         'area_id',
         'is_area_admin',
+        'is_client',
     ];
 
     /**
@@ -49,6 +50,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_area_admin' => 'boolean',
+            'is_client' => 'boolean',
         ];
     }
 
@@ -82,5 +84,10 @@ class User extends Authenticatable
     public function accessibleFolders(): BelongsToMany
     {
         return $this->belongsToMany(Folder::class, 'folder_user');
+    }
+
+    public function isClient(): bool
+    {
+        return $this->is_client;
     }
 }

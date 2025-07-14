@@ -2,18 +2,19 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FolderController;
-use App\Http\Controllers\Api\SearchController; // Importa el controlador de búsqueda
+use App\Http\Controllers\Api\SearchController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AreaController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AreaAdmin\UserController as AreaAdminUserController;
 use App\Http\Controllers\AreaAdmin\FolderPermissionController;
-use App\Http\Controllers\Admin\OrganigramController; // Importa el controlador del Organigrama
+use App\Http\Controllers\Admin\OrganigramController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str; // ¡Añade esta línea para usar Str::endsWith!
+use Illuminate\Support\Str;
 use App\Http\Controllers\FileLinkController;
 use App\Http\Controllers\Admin\OrganigramPositionController;
+use App\Models\FileLink;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -27,9 +28,6 @@ Route::get('/cookies-policy', function () {
     return view('cookies-policy');
 })->name('cookies.policy');
 
-
-
-// REDIRECCIÓN AUTOMÁTICA DE LA RAÍZ A LA PÁGINA DE LOGIN
 Route::get('/', function () {
     return redirect()->route('login');
 });
@@ -59,48 +57,42 @@ Route::middleware(['auth', 'check.area:Almacén'])->group(function () {
 
 // Rutas para la gestión de carpetas y archivos/enlaces
 Route::middleware(['auth'])->group(function () {
-    // La ruta de creación de carpetas debe ir antes de la ruta general con parámetro opcional
     Route::get('/folders/create/{folder?}', [FolderController::class, 'create'])->name('folders.create');
     Route::post('/folders', [FolderController::class, 'store'])->name('folders.store');
 
-    // Rutas para la gestión de archivos/enlaces
     Route::get('/folders/{folder}/file-links/create', [FolderController::class, 'createFileLink'])->name('file_links.create');
     Route::post('/folders/{folder}/file-links', [FolderController::class, 'storeFileLink'])->name('file_links.store');
     Route::get('/file-links/{fileLink}/edit', [FileLinkController::class, 'edit'])->name('file_links.edit');
     Route::put('/file-links/{fileLink}', [FileLinkController::class, 'update'])->name('file_links.update');
     Route::delete('/file-links/{fileLink}', [FileLinkController::class, 'destroy'])->name('file_links.destroy');
-    // Rutas para arrastrar y soltar carpetas y subir archivos (NUEVAS RUTAS PARA D&D)
-    Route::put('/folders/move', [FolderController::class, 'moveFolder'])->name('folders.move'); // Mover carpeta
-    Route::post('/folders/upload-dropped-files', [FolderController::class, 'uploadDroppedFiles'])->name('folders.uploadDroppedFiles'); // Subir archivos arrastrados
 
-    // RUTA PARA ELIMINACIÓN MASIVA (¡AÑADE ESTA LÍNEA!)
+    Route::put('/folders/move', [FolderController::class, 'moveFolder'])->name('folders.move');
+    Route::post('/folders/upload-dropped-files', [FolderController::class, 'uploadDroppedFiles'])->name('folders.uploadDroppedFiles');
+
     Route::delete('/folders/bulk-delete', [FolderController::class, 'bulkDelete'])->name('folders.bulk_delete');
     
-    // 1. API para obtener subcarpetas para el modal de mover
-    Route::get('/folders/api/children', [FolderController::class, 'apiChildren'])->name('folders.api.children'); //
-    // 2. Ruta para mover elementos seleccionados
-    Route::post('/items/bulk-move', [FolderController::class, 'bulkMove'])->name('items.bulk_move'); //
+    Route::get('/folders/api/children', [FolderController::class, 'apiChildren'])->name('folders.api.children');
+    Route::post('/items/bulk-move', [FolderController::class, 'bulkMove'])->name('items.bulk_move');
 
     // Ruta para descarga directa de archivos (usada por la búsqueda predictiva y clics en tabla)
-    Route::get('/files/{fileLink}/download', function (App\Models\FileLink $fileLink) {
+    Route::get('/files/{fileLink}/download', function (FileLink $fileLink) {
         if ($fileLink->type === 'file' && Storage::disk('public')->exists($fileLink->path)) {
-            // Asegúrate de que el usuario tiene permisos para descargar este archivo
             $user = Auth::user();
             if ($user->area && $user->area->name === 'Administración') {
                 // Super Admin puede descargar
             } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
                 // Admin de Área puede descargar
+            } elseif ($user->isClient() && $user->accessibleFolders->contains($fileLink->folder->id)) {
+                // Cliente puede descargar
             } elseif ($fileLink->folder->area_id === $user->area_id && $user->accessibleFolders->contains($fileLink->folder->id)) {
                 // Usuario normal con acceso explícito y en su área
             } else {
                 abort(403, 'No tienes permiso para descargar este archivo.');
             }
 
-            // Lógica para asegurar el nombre de descarga correcto
             $originalExtension = pathinfo($fileLink->path, PATHINFO_EXTENSION);
             $downloadFileName = $fileLink->name;
 
-            // Si el nombre asignado no termina con la extensión original, la añadimos
             if (!Str::endsWith(strtolower($fileLink->name), '.' . strtolower($originalExtension))) {
                 $downloadFileName .= '.' . strtolower($originalExtension);
             }
@@ -110,20 +102,14 @@ Route::middleware(['auth'])->group(function () {
         abort(404);
     })->name('files.download');
 
-
-    // La ruta general para listar/mostrar carpetas
     Route::get('/folders/{folder?}', [FolderController::class, 'index'])->name('folders.index');
-
-    // Rutas de edición y eliminación de carpetas
     Route::get('/folders/{folder}/edit', [FolderController::class, 'edit'])->name('folders.edit');
     Route::put('/folders/{folder}', [FolderController::class, 'update'])->name('folders.update');
     Route::delete('/folders/{folder}', [FolderController::class, 'destroy'])->name('folders.destroy');
 
-    // Ruta para sugerencias de búsqueda (API para frontend, protegida por 'auth' de sesión)
-    Route::get('/search-suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions'); // ¡Añadido el nombre de la ruta!
+    Route::get('/search-suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
     Route::get('/dashboard-data', [App\Http\Controllers\DashboardController::class, 'data'])->name('dashboard.data');
 });
-
 
 // Rutas de administración (solo accesibles por el área de Administración)
 Route::middleware(['auth', 'check.area:Administración'])->prefix('admin')->name('admin.')->group(function () {
@@ -147,7 +133,9 @@ Route::middleware(['auth', 'check.area:Administración'])->prefix('admin')->name
     Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
 
-    // Rutas para la gestión del Organigrama (NUEVAS RUTAS)
+    Route::get('/api/folders-for-client-access', [App\Http\Controllers\FolderController::class, 'getFoldersForClientAccess'])->name('api.folders_for_client_access');
+
+    // Rutas para la gestión del Organigrama
     Route::prefix('organigram')->name('organigram.')->group(function () {
         Route::get('/', [OrganigramController::class, 'index'])->name('index');
         Route::get('/create', [OrganigramController::class, 'create'])->name('create');
@@ -172,19 +160,21 @@ Route::middleware(['auth', 'check.area:Administración'])->prefix('admin')->name
             Route::delete('/{skill}', [OrganigramController::class, 'skillsDestroy'])->name('destroy');
         });
 
-        // ¡NUEVAS RUTAS para gestionar Posiciones del Organigrama (CRUD)!
+        // Rutas para gestionar Posiciones del Organigrama (CRUD)
         Route::prefix('positions')->name('positions.')->group(function () {
             Route::get('/', [OrganigramPositionController::class, 'index'])->name('index');
             Route::post('/', [OrganigramPositionController::class, 'store'])->name('store');
             Route::put('/{organigram_position}', [OrganigramPositionController::class, 'update'])->name('update');
             Route::delete('/{organigram_position}', [OrganigramPositionController::class, 'destroy'])->name('destroy');
-
         });
+
+        // Rutas interactivas para el organigrama (consolidadas aquí)
         Route::get('/interactive', [OrganigramController::class, 'interactiveOrganigram'])->name('interactive');
         Route::get('/interactive-data', [OrganigramController::class, 'getInteractiveOrganigramData'])->name('interactive.data');
+        Route::get('/interactive-data-without-areas', [OrganigramController::class, 'getInteractiveOrganigramDataWithoutAreas'])->name('interactive.data.without-areas');
 
-    });    
-});
+    }); // Cierra Route::prefix('organigram')
+}); // Cierra Route::middleware(['auth', 'check.area:Administración'])
 
 
 // Rutas para Administradores de Área (solo accesibles por usuarios con is_area_admin = true)

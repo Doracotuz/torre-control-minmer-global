@@ -44,14 +44,17 @@
                         @forelse ($users as $user)
                             <div class="bg-white rounded-lg shadow border border-gray-100 p-4 flex flex-col text-center transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
                                 <div class="flex-grow flex flex-col items-center">
-                                    <img class="h-20 w-20 rounded-full object-cover mb-3 border-4 {{ $user->is_area_admin ? 'border-[#ff9c00]' : 'border-gray-200' }}" 
-                                         src="{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&color=2C3856&background=F3F4F6' }}" 
-                                         alt="{{ $user->name }}">
+                                    <img class="h-20 w-20 rounded-full object-cover mb-3 border-4 
+                                        {{ $user->is_area_admin ? 'border-[#ff9c00]' : ($user->is_client ? 'border-blue-400' : 'border-gray-200') }}" 
+                                        src="{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&color=2C3856&background=F3F4F6' }}" 
+                                        alt="{{ $user->name }}">
                                     <h5 class="text-base font-bold text-[#2c3856]">{{ $user->name }}</h5>
                                     <p class="text-xs text-gray-500 mb-2 truncate w-full">{{ $user->email }}</p>
                                     <p class="text-xs text-gray-600 font-medium">{{ $user->area->name ?? 'Sin área' }}</p>
                                     @if ($user->is_area_admin)
                                         <span class="mt-2 px-2 py-0.5 inline-flex text-xxs leading-5 font-semibold rounded-full bg-orange-100 text-[#ff9c00]">Admin. de Área</span>
+                                    @elseif ($user->is_client) {{-- AÑADIDO: INDICADOR DE CLIENTE --}}
+                                        <span class="mt-2 px-2 py-0.5 inline-flex text-xxs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Cliente</span>
                                     @endif
                                 </div>
                                 <div class="mt-4 pt-4 border-t border-gray-100 flex justify-center space-x-2">
@@ -68,6 +71,8 @@
                         @endforelse
                     </div>
 
+                    {{-- Versión de tabla para pantallas pequeñas --}}
+
                     <div x-show="view === 'list'" class="overflow-x-auto bg-white rounded-lg shadow border">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-[#2c3856]">
@@ -75,7 +80,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Nombre</th>
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Email</th>
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Área</th>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Admin. Área</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Rol</th> {{-- Cambiado de 'Admin. Área' a 'Rol' --}}
                                     <th class="relative px-6 py-3"><span class="sr-only">Acciones</span></th>
                                 </tr>
                             </thead>
@@ -85,7 +90,15 @@
                                         <td class="px-6 py-4 whitespace-nowrap"><div class="flex items-center"><img class="h-9 w-9 rounded-full object-cover mr-3" src="{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&color=2C3856&background=F3F4F6' }}" alt="{{ $user->name }}"><div class="text-sm font-medium text-gray-900">{{ $user->name }}</div></div></td>
                                         <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->email }}</div></td>
                                         <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->area->name ?? 'N/A' }}</div></td>
-                                        <td class="px-6 py-4 whitespace-nowrap">@if ($user->is_area_admin)<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-[#ff9c00]">Sí</span>@else<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">No</span>@endif</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            @if ($user->is_area_admin)
+                                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-[#ff9c00]">Admin. de Área</span>
+                                            @elseif ($user->is_client) {{-- AÑADIDO: INDICADOR DE CLIENTE --}}
+                                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Cliente</span>
+                                            @else
+                                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Normal</span>
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><div class="flex items-center justify-end space-x-4"><a href="{{ route('admin.users.edit', $user) }}" class="text-[#2c3856] hover:text-[#ff9c00] font-semibold">Editar</a><form action="{{ route('admin.users.destroy', $user) }}" method="POST" onsubmit="return confirm('¿Estás seguro?');">@csrf @method('DELETE')<button type="submit" class="text-red-600 hover:text-red-800 font-semibold">Eliminar</button></form></div></td>
                                     </tr>
                                 @empty

@@ -9,18 +9,59 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200">
                 
-                {{-- Inicializamos Alpine.js con los datos existentes para la previsualización --}}
                 <form method="POST" action="{{ route('admin.users.update', $user) }}" enctype="multipart/form-data" class="p-6 md:p-8"
                       x-data="{ 
                           photoName: null, 
-                          photoPreview: '{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null }}' 
+                          photoPreview: '{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null }}',
+                          isClient: {{ old('is_client', $user->is_client) ? 'true' : 'false' }},
+                          selectedFolderIds: @json(old('accessible_folder_ids', $accessibleFolderIds)),
+                          folders: [],
+                          loadingFolders: true,
+                          loadFolders(parentId = null) {
+                              this.loadingFolders = true;
+                              fetch('{{ route('admin.api.folders_for_client_access') }}?parent_id=' + (parentId || ''))
+                                  .then(response => response.json())
+                                  .then(data => {
+                                      this.folders = data.map(folder => ({ ...folder, isOpen: false, children: [] }));
+                                      this.loadingFolders = false;
+                                  })
+                                  .catch(error => {
+                                      console.error('Error loading folders:', error);
+                                      this.loadingFolders = false;
+                                  });
+                          },
+                          toggleFolder(folder) {
+                              folder.isOpen = !folder.isOpen;
+                              if (folder.isOpen && folder.children.length === 0 && folder.has_children) {
+                                  this.loadingFolders = true;
+                                  fetch('{{ route('admin.api.folders_for_client_access') }}?parent_id=' + folder.id)
+                                      .then(response => response.json())
+                                      .then(data => {
+                                          folder.children = data.map(child => ({ ...child, isOpen: false, children: [] }));
+                                          this.loadingFolders = false;
+                                      })
+                                      .catch(error => {
+                                          console.error('Error loading subfolders:', error);
+                                          this.loadingFolders = false;
+                                      });
+                              }
+                          },
+                          init() {
+                              this.loadFolders();
+                              // Si es cliente, deshabilita el campo de área al cargar
+                              if (this.isClient) {
+                                  const areaSelect = document.getElementById('area_id');
+                                  if (areaSelect) {
+                                      areaSelect.disabled = true;
+                                  }
+                              }
+                          }
                       }">
                     @csrf
                     @method('PUT')
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-                        {{-- Columna 1: Campos de texto --}}
                         <div class="space-y-6">
                             <div>
                                 <x-input-label for="name" :value="__('Nombre')" class="font-semibold" />
@@ -48,7 +89,6 @@
                             </div>
                         </div>
 
-                        {{-- Columna 2: Foto de perfil y selects --}}
                         <div class="space-y-6">
                             <div>
                                 <x-input-label :value="__('Foto de Perfil')" class="font-semibold mb-3 text-center" />
@@ -91,9 +131,10 @@
                                 </div>
                             </div>
                             
-                            <div>
+                            {{-- Campo de Área, visible si NO es cliente --}}
+                            <div x-show="!isClient" x-transition.opacity>
                                 <x-input-label for="area_id" :value="__('Área')" class="font-semibold" />
-                                <select id="area_id" name="area_id" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm" required>
+                                <select id="area_id" name="area_id" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm" x-bind:required="!isClient" x-bind:disabled="isClient">
                                     <option value="">{{ __('Selecciona un Área') }}</option>
                                     @foreach ($areas as $area)
                                         <option value="{{ $area->id }}" {{ old('area_id', $user->area_id) == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
@@ -102,12 +143,101 @@
                                 <x-input-error :messages="$errors->get('area_id')" class="mt-2" />
                             </div>
 
+                            {{-- Campo de Área, si es cliente y no se seleccionó área --}}
+                            <input type="hidden" name="area_id" x-show="isClient" x-bind:value="isClient ? null : '{{ $user->area_id }}'">
+
                             <div class="pt-2">
                                 <label for="is_area_admin" class="inline-flex items-center">
                                     <input id="is_area_admin" type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" name="is_area_admin" value="1" {{ old('is_area_admin', $user->is_area_admin) ? 'checked' : '' }}>
                                     <span class="ms-2 text-sm text-gray-600">{{ __('Asignar como Administrador de Área') }}</span>
                                 </label>
                             </div>  
+
+                            {{-- NUEVO CAMPO PARA IS_CLIENT --}}
+                            <div class="pt-2">
+                                <label for="is_client" class="inline-flex items-center">
+                                <input type="checkbox" name="is_client" id="is_client" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" value="1" x-model="isClient"
+                                    @change="
+                                        // CORRECCIÓN: Accede directamente al elemento, sin 'let' ni 'const'
+                                        document.getElementById('area_id').disabled = isClient;
+                                        if (isClient) {
+                                            document.getElementById('area_id').value = ''; // Deselecciona el área si se convierte en cliente
+                                        } else {
+                                            // Solo si en 'edit.blade.php', para reestablecer el valor original si se desmarca
+                                            // document.getElementById('area_id').value = '{{ $user->area_id ?? '' }}'; 
+                                        }
+                                    ">
+                                <span class="ms-2 text-sm text-gray-600">{{ __('Asignar como Usuario Cliente') }}</span>
+                                </label>
+                            </div>
+
+                            {{-- EXPLORADOR DE CARPETAS INTERACTIVO --}}
+                            <div x-show="isClient" x-transition.opacity class="mt-4">
+                                <x-input-label :value="__('Carpetas Accesibles (para clientes)')" class="font-semibold mb-2" />
+                                <div class="border border-gray-300 rounded-md p-3 max-h-60 overflow-y-auto bg-white">
+                                    <p x-show="loadingFolders" class="text-sm text-gray-500">Cargando carpetas...</p>
+                                    <ul class="space-y-1">
+                                        <template x-for="folder in folders" :key="folder.id">
+                                            <li class="flex items-start">
+                                                <div class="flex items-center">
+                                                    <template x-if="folder.has_children">
+                                                        <button type="button" @click.prevent="toggleFolder(folder)" class="mr-1 text-gray-500 hover:text-gray-700 focus:outline-none">
+                                                            <svg x-show="!folder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                                            <svg x-show="folder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                        </button>
+                                                    </template>
+                                                    <template x-if="!folder.has_children">
+                                                        <span class="mr-1 w-4 h-4 inline-block"></span>
+                                                    </template>
+                                                    <input type="checkbox" :id="'folder_' + folder.id" :value="folder.id" x-model="selectedFolderIds" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
+                                                    <label :for="'folder_' + folder.id" x-text="folder.name" class="text-sm text-gray-700 cursor-pointer"></label>
+                                                </div>
+                                                <ul x-show="folder.isOpen" x-transition.opacity class="ml-6 mt-1 w-full space-y-1">
+                                                    <template x-for="childFolder in folder.children" :key="childFolder.id">
+                                                        <li class="flex items-start">
+                                                            <div class="flex items-center">
+                                                                <template x-if="childFolder.has_children">
+                                                                    <button type="button" @click.prevent="toggleFolder(childFolder)" class="mr-1 text-gray-500 hover:text-gray-700 focus:outline-none">
+                                                                        <svg x-show="!childFolder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                                                        <svg x-show="childFolder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                                    </button>
+                                                                </template>
+                                                                <template x-if="!childFolder.has_children">
+                                                                    <span class="mr-1 w-4 h-4 inline-block"></span>
+                                                                </template>
+                                                                <input type="checkbox" :id="'folder_' + childFolder.id" :value="childFolder.id" x-model="selectedFolderIds" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
+                                                                <label :for="'folder_' + childFolder.id" x-text="childFolder.name" class="text-sm text-gray-700 cursor-pointer"></label>
+                                                            </div>
+                                                            <ul x-show="childFolder.isOpen" x-transition.opacity class="ml-6 mt-1 w-full space-y-1">
+                                                                <template x-for="grandchildFolder in childFolder.children" :key="grandchildFolder.id">
+                                                                    <li class="flex items-start">
+                                                                        <div class="flex items-center">
+                                                                            <template x-if="grandchildFolder.has_children">
+                                                                                <button type="button" @click.prevent="toggleFolder(grandchildFolder)" class="mr-1 text-gray-500 hover:text-gray-700 focus:outline-none">
+                                                                                    <svg x-show="!grandchildFolder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                                                                    <svg x-show="grandchildFolder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                                                </button>
+                                                                            </template>
+                                                                            <template x-if="!grandchildFolder.has_children">
+                                                                                <span class="mr-1 w-4 h-4 inline-block"></span>
+                                                                            </template>
+                                                                            <input type="checkbox" :id="'folder_' + grandchildFolder.id" :value="grandchildFolder.id" x-model="selectedFolderIds" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
+                                                                            <label :for="'folder_' + grandchildFolder.id" x-text="grandchildFolder.name" class="text-sm text-gray-700 cursor-pointer"></label>
+                                                                        </div>
+                                                                    </li>
+                                                                </template>
+                                                            </ul>
+                                                        </li>
+                                                    </template>
+                                                </ul>
+                                            </li>
+                                        </template>
+                                    </ul>
+                                </div>
+                                <input type="hidden" name="accessible_folder_ids[]" :value="selectedFolderIds.join(',')">
+                                <p class="mt-1 text-xs text-gray-500">Selecciona las carpetas a las que este usuario cliente tendrá acceso.</p>
+                                <x-input-error :messages="$errors->get('accessible_folder_ids')" class="mt-2" />
+                            </div>
                         </div>
                     </div>
 

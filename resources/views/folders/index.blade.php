@@ -10,6 +10,17 @@
         </h2>
     </x-slot>
 
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            @if (session('success'))
+                sessionStorage.setItem('flash_success', '{{ session('success') }}');
+            @endif
+            @if (session('error'))
+                sessionStorage.setItem('flash_error', '{{ session('error') }}');
+            @endif
+        });
+    </script>
+
     {{-- Main content wrapper, now with simple x-data reference --}}
     <div class="py-6 sm:py-12 bg-gray-100" x-data="fileManager()">
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
@@ -1111,16 +1122,17 @@
                         document.getElementById('flash-success').style.display = 'flex';
                         setTimeout(() => {
                             document.getElementById('flash-success').style.display = 'none';
+                            sessionStorage.removeItem('flash_success');
                         }, 5000);
-                        sessionStorage.removeItem('flash_success');
                     }
                     if (flashError) {
                         document.getElementById('flash-error-message').innerText = flashError;
                         document.getElementById('flash-error').style.display = 'flex';
                          setTimeout(() => {
                             document.getElementById('flash-error').style.display = 'none';
+                            sessionStorage.removeItem('flash_error');
                         }, 5000);
-                        sessionStorage.removeItem('flash_error');
+                        
                     }
 
                     this.$watch('isTileView', value => {
