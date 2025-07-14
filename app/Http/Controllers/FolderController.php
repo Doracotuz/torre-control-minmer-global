@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
+
 class FolderController extends Controller
 {
     /**
@@ -113,6 +114,7 @@ class FolderController extends Controller
     public function create(Folder $folder = null)
     {
         $user = Auth::user();
+        $currentFolder = $folder;
 
         // Super Admin puede crear en cualquier lugar
         if ($user->area && $user->area->name === 'Administración') {
@@ -658,4 +660,194 @@ class FolderController extends Controller
         }
         return false;
     }
+
+    public function apiChildren(Request $request)
+    {
+        $user = Auth::user();
+        $parentId = $request->input('parent_id');
+
+        $query = Folder::query();
+
+        // Aplicar filtros de permiso
+        if ($user->area && $user->area->name === 'Administración') {
+            // Super Admin: no hay restricción
+        } elseif ($user->is_area_admin) {
+            $query->where('area_id', $user->area_id);
+        } else {
+            // Usuario normal: solo sus carpetas accesibles
+            $query->where('area_id', $user->area_id)
+                  ->whereHas('usersWithAccess', function ($q) use ($user) {
+                      $q->where('user_id', $user->id);
+                  });
+        }
+
+        $folders = $query->where('parent_id', $parentId)
+                         ->withCount(['children', 'fileLinks']) // Para el conteo de elementos
+                         ->orderBy('name')
+                         ->get()
+                         ->map(function ($folder) {
+                            $folder->items_count = $folder->children_count + $folder->file_links_count;
+                            return $folder;
+                        });
+
+        return response()->json($folders);
+    }
+
+    /**
+     * Mueve múltiples carpetas y/o file_links a una nueva ubicación.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function bulkMove(Request $request)
+    {
+        $request->validate([
+            'folder_ids' => 'array',
+            'folder_ids.*' => 'exists:folders,id',
+            'file_link_ids' => 'array',
+            'file_link_ids.*' => 'exists:file_links,id',
+            'target_folder_id' => 'nullable|exists:folders,id', // null para mover a la raíz
+        ]);
+
+        $user = Auth::user();
+        $folderIds = $request->input('folder_ids', []);
+        $fileLinkIds = $request->input('file_link_ids', []);
+        $targetFolderId = $request->input('target_folder_id');
+
+        $movedCount = 0;
+        $errors = [];
+
+        // Determinar el área de destino.
+        $targetArea = null;
+        $targetFolder = null;
+        if ($targetFolderId) {
+            $targetFolder = Folder::find($targetFolderId);
+            if (!$targetFolder) {
+                return response()->json(['success' => false, 'message' => 'La carpeta de destino no existe.'], 404);
+            }
+            $targetArea = $targetFolder->area;
+        } else {
+            $targetArea = $user->area;
+        }
+
+        // Permisos para la carpeta de destino
+        if ($user->area && $user->area->name === 'Administración') {
+            // Super Admin
+        } elseif ($user->is_area_admin) {
+            if (!$targetArea || $targetArea->id !== $user->area_id) {
+                return response()->json(['success' => false, 'message' => 'No tienes permiso para mover elementos a un área diferente a la tuya.'], 403);
+            }
+        } else {
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para mover elementos.'], 403);
+        }
+
+        // Mover carpetas
+        foreach ($folderIds as $folderId) {
+            $folderToMove = Folder::find($folderId);
+            if (!$folderToMove) {
+                $errors[] = "Carpeta con ID {$folderId} no encontrada.";
+                continue;
+            }
+
+            // Permisos para la carpeta a mover
+            if ($user->area && $user->area->name === 'Administración') {
+                // Super Admin
+            } elseif ($user->is_area_admin) {
+                if ($folderToMove->area_id !== $user->area_id) {
+                    $errors[] = "No tienes permiso para mover la carpeta '{$folderToMove->name}' fuera de tu área.";
+                    continue;
+                }
+            } else {
+                $errors[] = "No tienes permiso para mover la carpeta '{$folderToMove->name}'.";
+                continue;
+            }
+
+            // ***** VALIDACIÓN ADICIONAL Y MÁS EXPLÍCITA PARA EL PROBLEMA *****
+            // Si la carpeta de destino es la misma que la carpeta a mover, O si la carpeta de destino es una subcarpeta de la que se va a mover
+            if ($targetFolderId == $folderToMove->id || ($targetFolder && $this->isDescendantOf($targetFolder, $folderToMove))) {
+                $errors[] = "No puedes mover la carpeta '{$folderToMove->name}' a sí misma o a una de sus subcarpetas.";
+                continue; // Saltar a la siguiente carpeta si esta validación falla
+            }
+            // ***************************************************************
+
+            // Evitar mover a una carpeta si ya existe un elemento con el mismo nombre y área
+            $existingFolderInTarget = Folder::where('name', $folderToMove->name)
+                                    ->where('parent_id', $targetFolderId)
+                                    ->where('area_id', $folderToMove->area_id)
+                                    ->where('id', '!=', $folderToMove->id)
+                                    ->first();
+            if ($existingFolderInTarget) {
+                $errors[] = "Ya existe una carpeta con el mismo nombre ('{$folderToMove->name}') en la carpeta de destino.";
+                continue;
+            }
+
+            try {
+                $folderToMove->parent_id = $targetFolderId;
+                $folderToMove->save();
+                $movedCount++;
+            } catch (\Exception $e) {
+                $errors[] = "Error al mover la carpeta '{$folderToMove->name}': " . $e->getMessage();
+            }
+        }
+
+        // Mover FileLinks (la lógica permanece igual, ya que no son carpetas que puedan contenerse a sí mismas)
+        foreach ($fileLinkIds as $fileLinkId) {
+            $fileLinkToMove = FileLink::find($fileLinkId);
+            if (!$fileLinkToMove) {
+                $errors[] = "Archivo/Enlace con ID {$fileLinkId} no encontrado.";
+                continue;
+            }
+
+            // Permisos para el FileLink a mover:
+            if ($user->area && $user->area->name === 'Administración') {
+                // Super Admin
+            } elseif ($user->is_area_admin) {
+                if ($fileLinkToMove->folder->area_id !== $user->area_id) {
+                    $errors[] = "No tienes permiso para mover el elemento '{$fileLinkToMove->name}' fuera de tu área.";
+                    continue;
+                }
+            } else {
+                $errors[] = "No tienes permiso para mover el elemento '{$fileLinkToMove->name}'.";
+                continue;
+            }
+
+            // Evitar mover a una carpeta si ya existe un elemento con el mismo nombre y área
+            $existingFileLinkInTarget = FileLink::where('name', $fileLinkToMove->name)
+                                    ->where('folder_id', $targetFolderId)
+                                    ->whereHas('folder', function($q) use ($fileLinkToMove) {
+                                        $q->where('area_id', $fileLinkToMove->folder->area_id);
+                                    })
+                                    ->where('id', '!=', $fileLinkToMove->id)
+                                    ->first();
+            if ($existingFileLinkInTarget) {
+                $errors[] = "Ya existe un archivo o enlace con el mismo nombre ('{$fileLinkToMove->name}') en la carpeta de destino.";
+                continue;
+            }
+
+            try {
+                $fileLinkToMove->folder_id = $targetFolderId;
+                $fileLinkToMove->save();
+                $movedCount++;
+            } catch (\Exception $e) {
+                $errors[] = "Error al mover el elemento '{$fileLinkToMove->name}': " . $e->getMessage();
+            }
+        }
+
+        if ($movedCount > 0 && empty($errors)) {
+            $message = "Se movieron {$movedCount} elemento(s) exitosamente.";
+            return response()->json(['success' => true, 'message' => $message]);
+        } elseif ($movedCount > 0 && !empty($errors)) {
+             $message = "Se movieron {$movedCount} elemento(s) con advertencias: " . implode(', ', $errors);
+             return response()->json(['success' => true, 'message' => $message]);
+        } else {
+            $errorMessage = 'No se pudo mover ningún elemento.' . (!empty($errors) ? ' Errores: ' . implode(', ', $errors) : '');
+            return response()->json(['success' => false, 'message' => $errorMessage], 500);
+        }
+    }
+
+    /**
+     * Helper para prevenir ciclos en la jerarquía
+     */
+
+
 }

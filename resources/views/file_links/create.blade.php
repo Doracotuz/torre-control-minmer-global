@@ -12,19 +12,19 @@
                 <div class="p-6 text-gray-900">
                     <form method="POST" action="{{ route('file_links.store', $folder) }}" enctype="multipart/form-data"
                         x-data="form()"
-                        x-on:submit.prevent="uploadFiles"
+                        x-on:submit.prevent="if (elementType === 'link') uploadFiles()" {{-- Solo enviar el formulario si es un enlace --}}
                         x-on:dragover.prevent.stop="event.dataTransfer.dropEffect = 'copy'"
                         x-on:dragleave.prevent.stop=""
                         x-on:drop.prevent.stop="
                             $refs.fileInput.files = event.dataTransfer.files;
-                            $refs.fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            $refs.fileInput.dispatchEvent(new Event('change', { bubbles: true })); {{-- El drop dispara el change --}}
                         "
                     >
                         @csrf
 
                         <div class="mb-4">
                             <x-input-label for="type" :value="__('Tipo de Elemento')" />
-                            <select id="type" name="type" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" x-model="elementType" @change="if(elementType !== 'file') { fileName = ''; $refs.fileInput.value = ''; } if(elementType !== 'link') { $refs.urlInput.value = ''; }">
+                            <select id="type" name="type" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" x-model="elementType" @change="if(elementType !== 'file') { fileName = ''; if($refs.fileInput) $refs.fileInput.value = ''; } if(elementType !== 'link') { if($refs.urlInput) $refs.urlInput.value = ''; }">
                                 <option value="file">{{ __('Archivo Local') }}</option>
                                 <option value="link">{{ __('Enlace Externo') }}</option>
                             </select>
@@ -47,8 +47,9 @@
                                     <p x-show="fileName" class="text-xs text-[#ff9c00] mt-1" x-text="fileName"></p>
                                 </div>
                             </label>
-                            <input x-ref="fileInput" id="file" class="hidden" type="file" name="files[]" multiple x-bind:required="elementType === 'file'" x-on:change="
-                                if ($refs.fileInput && $refs.fileInput.files.length > 0 && !isUploading) {
+                            {{-- x-bind:required para el input de archivo --}}
+                            <input x-ref="fileInput" id="file" class="hidden" type="file" name="files[]" multiple x-bind:required="elementType === 'file' && !isUploading && $refs.fileInput.files.length === 0" x-on:change="
+                                if ($refs.fileInput && $refs.fileInput.files.length > 0) {
                                     if (elementType === 'file') {
                                         if ($refs.fileInput.files.length > 1) {
                                             fileName = $refs.fileInput.files.length + ' archivos seleccionados';
@@ -56,6 +57,7 @@
                                             fileName = $refs.fileInput.files[0].name.split('.').slice(0, -1).join('.');
                                         }
                                     }
+                                    // Disparar la subida automáticamente al seleccionar/soltar archivos
                                     uploadFiles();
                                 } else {
                                     fileName = '';
@@ -72,6 +74,7 @@
                             <p class="mt-2 text-sm text-gray-600" x-text="uploadMessage"></p>
                         </div>
 
+                        {{-- Notificación de éxito --}}
                         <div x-data="{ localShow: false }" x-show="localShow && successMessage" x-transition:enter="transition ease-out duration-300 transform scale-90 opacity-0" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200 transform scale-100 opacity-100" x-transition:leave-end="opacity-0 scale-90"
                              class="fixed top-4 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert"
                              x-init="$watch('successMessage', (value) => { if (value) localShow = true; })">
@@ -90,6 +93,7 @@
                             </div>
                         </div>
 
+                        {{-- Notificación de error --}}
                         <div x-data="{ localShow: false }" x-show="localShow && errorMessage" x-transition:enter="transition ease-out duration-300 transform scale-90 opacity-0" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200 transform scale-100 opacity-100" x-transition:leave-end="opacity-0 scale-90"
                              class="fixed top-4 right-4 z-50 bg-white border-l-4 border-red-500 text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert"
                              x-init="$watch('errorMessage', (value) => { if (value) localShow = true; })">
@@ -113,7 +117,8 @@
                             <a href="{{ route('folders.index', $folder) }}" class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mr-4">
                                 {{ __('Cancelar') }}
                             </a>
-                            <x-primary-button type="submit" x-bind:disabled="uploading || successMessage">
+                            {{-- La deshabilitación del botón ahora solo considera 'uploading' --}}
+                            <x-primary-button type="submit" x-bind:disabled="uploading || (elementType === 'file' && (!($refs.fileInput && $refs.fileInput.files.length > 0) && !successMessage))">
                                 {{ __('Añadir Elemento(s)') }}
                             </x-primary-button>
                         </div>
@@ -138,27 +143,45 @@
                 errorMessage: '',
                 successMessage: '',
 
+                init() {
+                    // Inicializar el fileName si ya hay un old('name') y elementType es 'file'
+                    if (this.elementType === 'file' && this.fileName) {
+                        // Si vienes de una validación fallida y ya hay un nombre de archivo, no hay un archivo real en el input ref,
+                        // así que este fileName probablemente no sea el de un archivo real sino del old input.
+                        // Podrías decidir limpiarlo o no, pero por simplicidad, lo mantendremos como está si viene del old.
+                    }
+                },
+
                 resetForm() {
                     this.fileName = '';
-                    this.$refs.fileInput.value = '';
+                    if (this.$refs.fileInput) {
+                        this.$refs.fileInput.value = ''; // Limpia el input de archivo
+                    }
+                    if (this.$refs.urlInput) {
+                        this.$refs.urlInput.value = ''; // Limpia el input de URL
+                    }
                     this.uploadProgress = 0;
                     this.uploadMessage = '';
                     this.errorMessage = '';
+                    this.successMessage = ''; // Crucial para re-habilitar el botón de envío y limpiar la notificación
                     this.uploading = false;
                     this.isUploading = false;
+                    this.elementType = 'file'; // O el valor predeterminado que quieras al resetear
                 },
 
                 async uploadFiles() {
                     if (this.isUploading) {
-                        return;
+                        return; // Evita envíos múltiples si ya está en curso
                     }
+
                     this.errorMessage = '';
                     this.successMessage = '';
-                    this.uploading = true;
+                    this.uploading = true; // Deshabilita el botón durante la carga
                     this.isUploading = true;
                     this.uploadProgress = 0;
 
                     if (this.elementType === 'link') {
+                        // Para enlaces, el envío se hace al clickear el botón, no al cambiar un input
                         const formData = new FormData(this.$el);
                         try {
                             const response = await axios.post(this.$el.action, formData);
@@ -166,16 +189,17 @@
                         } catch (error) {
                             this.errorMessage = `Error al añadir enlace: ${error.response?.data?.message || error.message}`;
                         } finally {
-                            this.uploading = false;
+                            this.uploading = false; // Re-habilita el botón
                             this.isUploading = false;
                         }
                         return;
                     }
 
+                    // Lógica para archivos (se dispara por x-on:change o x-on:drop)
                     const files = this.$refs.fileInput?.files;
                     if (!files || files.length === 0) {
                         this.errorMessage = 'Por favor, selecciona al menos un archivo.';
-                        this.uploading = false;
+                        this.uploading = false; // Re-habilita el botón si no hay archivos
                         this.isUploading = false;
                         return;
                     }
@@ -214,14 +238,14 @@
                             successfulUploads++;
                         } catch (error) {
                             this.errorMessage = `Error al subir el archivo "${file.name}": ${error.response?.data?.message || error.message}`;
-                            this.uploading = false;
+                            this.uploading = false; // Re-habilita el botón en caso de error
                             this.isUploading = false;
-                            return;
+                            return; // Detener el bucle y la subida si un archivo falla
                         }
                     }
 
                     this.successMessage = `Se subieron ${successfulUploads} de ${this.totalFiles} archivo(s) exitosamente.`;
-                    this.uploading = false;
+                    this.uploading = false; // Re-habilita el botón al finalizar todas las subidas de archivos
                     this.isUploading = false;
                 }
             }));

@@ -76,6 +76,10 @@ Route::middleware(['auth'])->group(function () {
     // RUTA PARA ELIMINACIÓN MASIVA (¡AÑADE ESTA LÍNEA!)
     Route::delete('/folders/bulk-delete', [FolderController::class, 'bulkDelete'])->name('folders.bulk_delete');
     
+    // 1. API para obtener subcarpetas para el modal de mover
+    Route::get('/folders/api/children', [FolderController::class, 'apiChildren'])->name('folders.api.children'); //
+    // 2. Ruta para mover elementos seleccionados
+    Route::post('/items/bulk-move', [FolderController::class, 'bulkMove'])->name('items.bulk_move'); //
 
     // Ruta para descarga directa de archivos (usada por la búsqueda predictiva y clics en tabla)
     Route::get('/files/{fileLink}/download', function (App\Models\FileLink $fileLink) {
