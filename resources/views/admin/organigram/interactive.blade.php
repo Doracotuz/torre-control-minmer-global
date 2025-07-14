@@ -5,7 +5,7 @@
         </h2>
     </x-slot>
 
-    {{-- Estilos (sin cambios) --}}
+    {{-- Estilos (sin cambios en esta sección) --}}
     <style>
         #main-chart-wrapper {
             position: relative;
@@ -21,13 +21,13 @@
             text-align: center;
             overflow: hidden;
             flex-grow: 1;
+            min-height: 200px;
         }
         .orgchart {
             background: transparent !important;
             display: inline-block;
             position: absolute;
-            /* Si tienes problemas con el tamaño inicial, podrías probar a quitar esta transición */
-            /* transition: all 0.3s ease; */
+            transition: transform 0.3s ease, left 0.3s ease, top 0.3s ease;
         }
         .orgchart .node {
             background-color: #ffffff;
@@ -70,7 +70,7 @@
         }
     </style>
 
-    {{-- Layout y Modales --}}
+    {{-- Layout y Modales (sin cambios en la estructura principal del layout) --}}
     <div class="bg-gray-100 w-full h-full flex flex-col p-6">
         <div class="bg-white w-full h-full shadow-xl sm:rounded-lg border border-gray-200 flex flex-col">
             <div class="flex justify-between items-center p-4 border-b border-gray-200">
@@ -78,7 +78,7 @@
                     {{ __('Volver a Gestión de Miembros') }}
                 </a>
                 <div class="flex items-center">
-                    <input type="checkbox" id="toggleAreaNodes" class="form-checkbox h-5 w-5 text-[#2c3856] rounded focus:ring-[#ff9c00]"> {{-- Quita 'checked' aquí --}}
+                    <input type="checkbox" id="toggleAreaNodes" class="form-checkbox h-5 w-5 text-[#2c3856] rounded focus:ring-[#ff9c00]">
                     <label for="toggleAreaNodes" class="ml-2 text-gray-700 select-none">{{ __('Mostrar Nodos de Área') }}</label>
                 </div>
             </div>
@@ -103,53 +103,53 @@
                 </div>
             </div>
 
-            {{-- Modal para Miembros (sin cambios) --}}
+            {{-- Modal para Miembros - Actualizado con operador de encadenamiento opcional --}}
             <div x-data="memberModal" @open-member-modal.window="openModal($event.detail)" x-show="showModal" x-transition class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50" style="display: none;" @click.away="closeModalAndResetData()">
                 <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden" @click.stop="">
                     <div class="flex justify-between items-center p-4 bg-[#2c3856] text-white">
-                        <h3 class="text-xl font-bold" x-text="data.name + ' - Detalles'"></h3>
+                        <h3 class="text-xl font-bold" x-text="data?.name + ' - Detalles'"></h3> {{-- Agregado ?. --}}
                         <button @click="closeModalAndResetData()" class="text-gray-300 hover:text-white text-3xl leading-none">&times;</button>
                     </div>
                     <div class="p-6 flex-1 overflow-y-auto bg-gray-50">
-                        <template x-if="showModal">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div class="md:col-span-1 space-y-4 text-center">
-                                    <img x-show="data.profile_photo_path" :src="data.profile_photo_path" class="w-40 h-40 rounded-full object-cover mx-auto border-4 border-[#ff9c00] shadow-md">
-                                    <div x-show="!data.profile_photo_path" class="w-40 h-40 rounded-full bg-gray-200 flex items-center justify-center mx-auto border-4 border-[#ff9c00] shadow-md">
-                                        <svg class="w-20 h-20 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg>
-                                    </div>
-                                    <div class="space-y-3 text-sm">
-                                        <div><p class="font-semibold text-gray-500 block">Posición</p><p class="text-lg font-bold text-[#2c3856]" x-text="data.position_name"></p></div>
-                                        <div><p class="font-semibold text-gray-500 block">Área</p><p class="text-base text-[#666666]" x-text="data.area_name"></p></div>
-                                        <div><p class="font-semibold text-gray-500 block">Jefe Directo</p><p class="text-base text-[#666666]" x-text="data.manager_name || 'N/A'"></p></div>
-                                        <div class="pt-2"><p class="font-semibold text-gray-500 block">Email</p><a :href="'mailto:' + data.email" class="text-blue-600 hover:underline" x-text="data.email"></a></div>
-                                        <div><p class="font-semibold text-gray-500 block">Celular</p><p class="text-base text-[#666666]" x-text="data.cell_phone"></p></div>
-                                    </div>
+                        {{-- Se muestra este div solo si hay datos cargados (data no es null) --}}
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6" x-show="data">
+                            <div class="md:col-span-1 space-y-4 text-center">
+                                <img x-show="data?.profile_photo_path" :src="data?.profile_photo_path" class="w-40 h-40 rounded-full object-cover mx-auto border-4 border-[#ff9c00] shadow-md"> {{-- Agregado ?. --}}
+                                <div x-show="!data?.profile_photo_path" class="w-40 h-40 rounded-full bg-gray-200 flex items-center justify-center mx-auto border-4 border-[#ff9c00] shadow-md"> {{-- Agregado ?. --}}
+                                    <svg class="w-20 h-20 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg>
                                 </div>
-                                <div class="md:col-span-2 space-y-6">
-                                    <div><h4 class="font-bold text-lg text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Actividades</h4><ul class="list-disc list-inside space-y-1 text-[#2b2b2b]">
-                                        <template x-for="activity in data.activities" :key="activity.id"><li x-text="activity.name"></li></template>
-                                        <template x-if="data.activities && data.activities.length === 0"><li class="text-gray-500">No hay actividades asignadas.</li></template>
-                                    </ul></div>
-
-                                    <div><h4 class="font-bold text-lg text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Habilidades</h4><ul class="list-disc list-inside space-y-1 text-[#2b2b2b]">
-                                        <template x-for="skill in data.skills" :key="skill.id"><li x-text="skill.name"></li></template>
-                                        <template x-if="data.skills && data.skills.length === 0"><li class="text-gray-500">No hay habilidades registradas.</li></template>
-                                    </ul></div>
-
-                                    <div><h4 class="font-bold text-lg text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Trayectoria Profesional</h4><div class="space-y-4">
-                                        <template x-for="trajectory in data.trajectories" :key="trajectory.id">
-                                            <div class="border-l-4 border-[#ff9c00] pl-4">
-                                                <p class="font-semibold text-[#2c3856]" x-text="trajectory.title"></p>
-                                                <p class="text-sm text-gray-500" x-text="trajectory.start_date + ' - ' + (trajectory.end_date || 'Actual')"></p>
-                                                <p class="text-sm text-[#666666] mt-1" x-text="trajectory.description"></p>
-                                            </div>
-                                        </template>
-                                        <template x-if="data.trajectories && data.trajectories.length === 0"><p class="text-gray-500">No hay trayectoria registrada.</p></template>
-                                    </div></div>
+                                <div class="space-y-3 text-sm">
+                                    <div><p class="font-semibold text-gray-500 block">Posición</p><p class="text-lg font-bold text-[#2c3856]" x-text="data?.position_name"></p></div> {{-- Agregado ?. --}}
+                                    <div><p class="font-semibold text-gray-500 block">Área</p><p class="text-base text-[#666666]" x-text="data?.area_name"></p></div> {{-- Agregado ?. --}}
+                                    <div><p class="font-semibold text-gray-500 block">Jefe Directo</p><p class="text-base text-[#666666]" x-text="data?.manager_name || 'N/A'"></p></div> {{-- Agregado ?. --}}
+                                    <div class="pt-2"><p class="font-semibold text-gray-500 block">Email</p><a :href="'mailto:' + data?.email" class="text-blue-600 hover:underline" x-text="data?.email"></a></div> {{-- Agregado ?. --}}
+                                    <div><p class="font-semibold text-gray-500 block">Celular</p><p class="text-base text-[#666666]" x-text="data?.cell_phone"></p></div> {{-- Agregado ?. --}}
                                 </div>
                             </div>
-                        </template>
+                            <div class="md:col-span-2 space-y-6">
+                                <div><h4 class="font-bold text-lg text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Actividades</h4><ul class="list-disc list-inside space-y-1 text-[#2b2b2b]">
+                                    <template x-for="activity in data?.activities" :key="activity.id"><li x-text="activity.name"></li></template> {{-- Agregado ?. --}}
+                                    <li x-show="!data?.activities || data?.activities.length === 0" class="text-gray-500">No hay actividades asignadas.</li> {{-- Agregado ?. --}}
+                                </ul></div>
+
+                                <div><h4 class="font-bold text-lg text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Habilidades</h4><ul class="list-disc list-inside space-y-1 text-[#2b2b2b]">
+                                    <template x-for="skill in data?.skills" :key="skill.id"><li x-text="skill.name"></li></template> {{-- Agregado ?. --}}
+                                    <li x-show="!data?.skills || data?.skills.length === 0" class="text-gray-500">No hay habilidades registradas.</li> {{-- Agregado ?. --}}
+                                </ul></div>
+
+                                <div><h4 class="font-bold text-lg text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Trayectoria Profesional</h4><div class="space-y-4">
+                                    <template x-for="trajectory in data?.trajectories" :key="trajectory.id"> {{-- Agregado ?. --}}
+                                        <div class="border-l-4 border-[#ff9c00] pl-4">
+                                            <p class="font-semibold text-[#2c3856]" x-text="trajectory.title"></p>
+                                            <p class="text-sm text-gray-500" x-text="trajectory.start_date + ' - ' + (trajectory.end_date || 'Actual')"></p>
+                                            <p class="text-sm text-[#666666] mt-1" x-text="trajectory.description"></p>
+                                        </div>
+                                    </template>
+                                    <p x-show="!data?.trajectories || data?.trajectories.length === 0" class="text-gray-500">No hay trayectoria registrada.</p> {{-- Agregado ?. --}}
+                                </div></div>
+                            </div>
+                        </div>
+                        <div x-show="!data" class="text-center text-gray-600">Cargando detalles...</div> {{-- Mensaje mientras se carga o si no hay datos --}}
                     </div>
                 </div>
             </div>
@@ -170,10 +170,9 @@
 
     // Obtener el estado inicial de "mostrar nodos de área" de la URL
     const urlParams = new URLSearchParams(window.location.search);
-    // Por defecto, mostrar nodos de área si no hay parámetro o si el parámetro es 'true'
     let showAreaNodesInitially = !(urlParams.get('show_areas') === 'false');
 
-    // Inicialización de componentes de Alpine.js para los modales (sin cambios)
+    // Inicialización de componentes de Alpine.js para los modales
     document.addEventListener('alpine:init', () => {
         Alpine.data('areaModal', () => ({
             showModal: false,
@@ -186,34 +185,23 @@
 
         Alpine.data('memberModal', () => ({
             showModal: false,
-            data: {
-                name: '', email: '', cell_phone: '', position_name: '',
-                area_name: '', manager_name: '', profile_photo_path: null,
-                activities: [], skills: [], trajectories: []
-            },
+            data: null, // Inicializado como null para indicar que no hay datos cargados
             openModal(memberId) {
                 const details = window.memberDetailsStore[memberId];
                 if (details) {
-                    Object.assign(this.data, details);
+                    // Copia profunda para evitar cualquier referencia compartida y asegurar un estado fresco
+                    this.data = JSON.parse(JSON.stringify(details));
                     this.showModal = true;
                 } else {
                     console.error('Detalles no encontrados para el miembro ID:', memberId);
-                    this.data = {
-                        name: '', email: '', cell_phone: '', position_name: '',
-                        area_name: '', manager_name: '', profile_photo_path: null,
-                        activities: [], skills: [], trajectories: []
-                    };
-                    this.showModal = false;
+                    this.closeModalAndResetData();
                 }
             },
             closeModalAndResetData() {
                 this.showModal = false;
+                // Restablecer data a null después de que el modal se oculte visualmente
                 Alpine.nextTick(() => {
-                    this.data = {
-                        name: '', email: '', cell_phone: '', position_name: '',
-                        area_name: '', manager_name: '', profile_photo_path: null,
-                        activities: [], skills: [], trajectories: []
-                    };
+                    this.data = null;
                 });
             }
         }));
@@ -223,23 +211,23 @@
         const chartContainer = $('#chart-container');
         const toggleAreaNodesCheckbox = $('#toggleAreaNodes');
 
-        // Setea el estado inicial del checkbox basándose en el parámetro de URL
         toggleAreaNodesCheckbox.prop('checked', showAreaNodesInitially);
 
-        /**
-         * Función para renderizar el organigrama con los datos proporcionados.
-         * @param {object} data - Los datos del organigrama.
-         * @param {number} initialDepth - La profundidad inicial a mostrar (0 para la raíz solamente, 1 para el primer nivel de hijos, etc.).
-         */
         function renderOrgChart(data, initialDepth = 0) {
-            // No es necesario destruir ni limpiar el contenedor explícitamente aquí,
-            // ya que la recarga de la página lo hará por nosotros.
-            // Esto es solo para la carga INICIAL del organigrama en la página.
+            const existingOrgchartElement = chartContainer.find('.orgchart');
+            if (existingOrgchartElement.length > 0) {
+                const ocInstance = existingOrgchartElement.data('oc');
+                if (ocInstance && typeof ocInstance.destroy === 'function') {
+                    ocInstance.destroy();
+                }
+            }
+            chartContainer.empty();
+
 
             chartContainer.orgchart({
                 data: data,
                 pan: true,
-                zoom: true, // ¡Asegúrate de que el zoom con la rueda esté habilitado!
+                zoom: true,
                 direction: 't2b',
                 depth: initialDepth,
                 collapsible: true,
@@ -288,29 +276,72 @@
                 }
             });
 
-            // Re-centrado al expandir/colapsar: Se ejecuta al hacer clic en los botones de nodos.
-            // Aseguramos que currentOrgchartInstance sea la nueva instancia
-            const newOrgchartInstance = chartContainer.data('oc');
-            chartContainer.off('click', '.oc-edge-btn').on('click', '.oc-edge-btn', function() {
-                // Aquí usamos newOrgchartInstance para asegurarnos de que la función fitChart tenga la instancia correcta
-                if (newOrgchartInstance) { // Si la instancia existe
-                    setTimeout(() => {
+            chartContainer.off('click', '.oc-edge-btn');
+
+            chartContainer.on('click', '.oc-edge-btn', function() {
+                const $button = $(this);
+                const $parentNodeElement = $button.closest('.node');
+                const isExpanding = $parentNodeElement.hasClass('collapsed');
+
+                setTimeout(() => {
+                    if (isExpanding) {
+                        centerAndZoomOnNode($parentNodeElement);
+                    } else {
                         requestAnimationFrame(fitChart);
-                    }, 350);
-                }
+                    }
+                }, 350);
             });
 
-            // Intenta ajustar el organigrama después de un pequeño retraso para permitir la renderización
             setTimeout(() => {
                 requestAnimationFrame(fitChart);
-            }, 150);
+            }, 500);
         }
 
-        /**
-         * Función para ajustar y centrar el organigrama.
-         * Esta función no necesita la variable global currentOrgchartInstance
-         * porque opera directamente sobre el elemento del organigrama.
-         */
+        function centerAndZoomOnNode($nodeElement) {
+            const PADDING = 80;
+            const MAX_ZOOM = 1.0;
+            const MIN_ZOOM = 0.2;
+            const chartElement = chartContainer.find('.orgchart');
+
+            if (chartElement.length === 0 || $nodeElement.length === 0) {
+                console.warn("centerAndZoomOnNode: Orgchart or node element not found.");
+                return;
+            }
+
+            const containerWidth = chartContainer.width();
+            const containerHeight = chartContainer.height();
+
+            const nodePosition = $nodeElement.position();
+            const nodeWidth = $nodeElement.outerWidth(true);
+            const nodeHeight = $nodeElement.outerHeight(true);
+
+            const nodeCenterX = nodePosition.left + nodeWidth / 2;
+            const nodeCenterY = nodePosition.top + nodeHeight / 2;
+
+            let targetVisibleHeight = nodeHeight * 1.5;
+            let targetVisibleWidth = nodeWidth * 1.5;
+
+            let scaleX = (containerWidth - PADDING) / targetVisibleWidth;
+            let scaleY = (containerHeight - PADDING) / targetVisibleHeight;
+            let newScale = Math.min(scaleX, scaleY);
+            newScale = Math.min(Math.max(newScale, MIN_ZOOM), MAX_ZOOM);
+
+            const newX = (containerWidth / 2) - (nodeCenterX * newScale);
+            const newY = (containerHeight / 2) - (nodeCenterY * newScale);
+
+            chartElement.css({
+                'transition': 'transform 0.5s ease, left 0.5s ease, top 0.5s ease',
+                'left': newX + 'px',
+                'top': newY + 'px',
+                'transform': `scale(${newScale})`,
+                'transform-origin': 'top left'
+            });
+
+            setTimeout(() => {
+                chartElement.css('transition', 'transform 0.3s ease, left 0.3s ease, top 0.3s ease');
+            }, 550);
+        }
+
         function fitChart() {
             const PADDING = 40;
             const MAX_ZOOM = 1.0;
@@ -330,8 +361,8 @@
             const chartHeight = chartElement[0].scrollHeight;
 
             if (chartWidth === 0 || chartHeight === 0) {
-                console.warn("fitChart: chartWidth or chartHeight is zero. This might indicate that the chart is not fully rendered yet. Retrying in 50ms.");
-                setTimeout(() => requestAnimationFrame(fitChart), 50);
+                console.warn("fitChart: chartWidth or chartHeight is zero. This indicates the chart might not be fully rendered yet. Retrying in 100ms.");
+                setTimeout(() => requestAnimationFrame(fitChart), 100);
                 return;
             }
 
@@ -352,7 +383,6 @@
             });
         }
 
-        // Determina qué URL de datos usar al cargar la página
         const dataUrl = showAreaNodesInitially ?
             `{{ route('admin.organigram.interactive.data') }}` :
             `{{ route('admin.organigram.interactive.data.without-areas') }}`;
@@ -360,7 +390,6 @@
         const loadingMessageDiv = $('<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-500">Cargando organigrama...</div>');
         chartContainer.append(loadingMessageDiv);
 
-        // Carga los datos y renderiza el organigrama UNA SOLA VEZ al cargar la página
         $.ajax({
             url: dataUrl,
             method: 'GET',
@@ -372,15 +401,27 @@
                     chartContainer.html('<p class="text-red-500 text-center py-4">No se recibieron datos válidos.</p>');
                     return;
                 }
-                originalOrgchartData = response; // Guardar por si se necesita más tarde (aunque no se usará para re-renderizar directamente)
+                originalOrgchartData = response;
 
                 function extractDetails(node) {
                     const storeId = node.is_proxy ? node.original_id : node.id;
                     if (node.type === 'member' && node.full_details) {
-                        node.full_details.activities = node.full_details.activities || [];
-                        node.full_details.skills = node.full_details.skills || [];
-                        node.full_details.trajectories = node.full_details.trajectories || [];
-                        window.memberDetailsStore[storeId] = node.full_details;
+                        // Solo almacenar si no existe ya en memberDetailsStore
+                        if (!window.memberDetailsStore[storeId]) {
+                            window.memberDetailsStore[storeId] = {
+                                name: node.full_details.name || '',
+                                email: node.full_details.email || '',
+                                cell_phone: node.full_details.cell_phone || '',
+                                position_name: node.full_details.position_name || '',
+                                area_name: node.full_details.area_name || '',
+                                manager_name: node.full_details.manager_name || '',
+                                profile_photo_path: node.full_details.profile_photo_path || null,
+                                // Uso de operador de encadenamiento opcional y mapeo para copias
+                                activities: node.full_details.activities?.map(item => ({ ...item })) || [],
+                                skills: node.full_details.skills?.map(item => ({ ...item })) || [],
+                                trajectories: node.full_details.trajectories?.map(item => ({ ...item })) || []
+                            };
+                        }
                     }
                     if (node.children && node.children.length > 0) {
                         node.children.forEach(child => extractDetails(child));
@@ -397,7 +438,6 @@
             }
         });
 
-        // Manejador de evento para la casilla de verificación
         toggleAreaNodesCheckbox.on('change', function() {
             const isChecked = this.checked;
             const currentUrl = new URL(window.location.href);
@@ -407,10 +447,9 @@
             } else {
                 currentUrl.searchParams.set('show_areas', 'false');
             }
-            window.location.href = currentUrl.toString(); // Recargar la página con el nuevo parámetro
+            window.location.href = currentUrl.toString();
         });
 
-        // Re-centrado al redimensionar la ventana.
         $(window).on('resize', () => {
             requestAnimationFrame(fitChart);
         });

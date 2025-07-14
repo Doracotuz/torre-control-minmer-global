@@ -11,8 +11,8 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@800&display=swap" rel="stylesheet">
 
-        @vite(['resources/css/app.css'])
-        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script>
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <!-- <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script> -->
         <style>
             /* ==== REFINED STYLES FOR ELEGANCE AND INTERACTIVITY ==== */
 
