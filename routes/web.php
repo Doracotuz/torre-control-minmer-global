@@ -208,4 +208,30 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// Ruta de prueba para verificar la conexión a S3
+Route::get('/s3-test', function () {
+    try {
+        // Intenta guardar un archivo de texto simple
+        $testContent = 'Hello from Laravel on EC2! This is a test file for S3 connectivity.';
+        $fileName = 's3-connection-test-' . time() . '.txt';
+
+        // Usamos el disco 's3' que está configurado en filesystems.php
+        Storage::disk('s3')->put($fileName, $testContent);
+
+        // También puedes intentar listar algunos archivos para verificar lectura
+        $files = Storage::disk('s3')->files('storage/app/public'); // Lista archivos en la carpeta donde está tu logo
+        $listedFiles = implode(', ', $files);
+
+        return "<h2>S3 Connection Test Successful!</h2>" .
+               "<p>File '{$fileName}' created in S3 bucket. You can verify it in your AWS S3 console.</p>" .
+               "<p>Files found in 'storage/app/public/' in S3: {$listedFiles}</p>";
+
+    } catch (\Exception $e) {
+        // Si hay algún error, captúralo y muéstralo
+        return "<h2>S3 Connection Test Failed!</h2>" .
+               "<p>Error: " . $e->getMessage() . "</p>" .
+               "<p>Stack Trace (first few lines): <pre>" . substr($e->getTraceAsString(), 0, 500) . "...</pre></p>";
+    }
+});
+
 require __DIR__.'/auth.php';
