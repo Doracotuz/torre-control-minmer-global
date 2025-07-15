@@ -366,7 +366,7 @@
                                             {{ __('Creado Por') }}
                                         </th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            {{ __('Fecha de Subida') }}
+                                            {{ __('Fecha de Carga') }}
                                         </th>
                                         <th scope="col" class="relative px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">
                                             {{ __('Acciones') }}

@@ -125,20 +125,20 @@
                             </div>
                             
                             {{-- Campo de Área, visible si NO es cliente --}}
-                            <div x-show="!isClient" x-transition.opacity>
-                                <x-input-label for="area_id" :value="__('Área')" class="font-semibold" />
-                                <select id="area_id" name="area_id" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm" x-bind:required="!isClient" x-bind:disabled="isClient">
-                                    <option value="">{{ __('Selecciona un Área') }}</option>
-                                    @foreach ($areas as $area)
-                                        <option value="{{ $area->id }}" {{ old('area_id') == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
-                                    @endforeach
-                                </select>
-                                <x-input-error :messages="$errors->get('area_id')" class="mt-2" />
-                            </div>
+                                <div x-show="!isClient" x-transition.opacity>
+                                    <x-input-label for="area_id" :value="__('Área')" class="font-semibold" />
+                                    <select id="area_id" name="area_id" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm" required>
+                                        <option value="">{{ __('Selecciona un Área') }}</option>
+                                        @foreach ($areas as $area)
+                                            <option value="{{ $area->id }}" {{ old('area_id') == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <x-input-error :messages="$errors->get('area_id')" class="mt-2" />
+                                </div>
                             
                             {{-- Campo de Área, si es cliente y no se seleccionó área --}}
                             {{-- Esto es para el caso cuando el area_id no es requerido para clientes y se envía como null --}}
-                            <input type="hidden" name="area_id" x-show="isClient" x-bind:value="isClient ? null : ''">
+                            <!-- <input type="hidden" name="area_id" x-show="isClient" x-bind:value="isClient ? null : ''"> -->
 
                             <div class="pt-2">
                                 <label for="is_area_admin" class="inline-flex items-center">

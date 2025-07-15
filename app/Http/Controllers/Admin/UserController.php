@@ -57,23 +57,25 @@ class UserController extends Controller
             'is_area_admin' => 'boolean',
             'is_client' => 'boolean',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'accessible_folder_ids' => 'nullable|array',
-            'accessible_folder_ids.*' => 'exists:folders,id',
         ];
 
-        // Hacer area_id condicionalmente requerido
-        if (!$request->has('is_client')) {
+        // Reglas condicionales para area_id
+        if (!$request->has('is_client') || !$request->input('is_client')) { // Si NO es cliente
             $rules['area_id'] = 'required|exists:areas,id';
-        } else {
-            $rules['area_id'] = 'nullable|exists:areas,id'; // Permite que sea nulo si es cliente
+            // Asegúrate de que accessible_folder_ids no se valide si no es cliente
+            $request->request->set('accessible_folder_ids', []); // Forzar a un array vacío para que la validación 'nullable|array' pase.
+        } else { // Si SÍ es cliente
+            $rules['area_id'] = 'nullable|exists:areas,id';
+            $rules['accessible_folder_ids'] = 'nullable|array';
+            $rules['accessible_folder_ids.*'] = 'exists:folders,id';
         }
 
-        $request->validate($rules);
+        $request->validate($rules); //
 
         $data = $request->all();
         $data['password'] = Hash::make($request->password);
         $data['is_area_admin'] = $request->has('is_area_admin');
-        $data['is_client'] = $request->has('is_client');
+        $data['is_client'] = $request->has('is_client'); //
 
         // Si es cliente y no se seleccionó área, asegúrate de que sea null
         if ($data['is_client'] && !$request->filled('area_id')) {
@@ -86,17 +88,21 @@ class UserController extends Controller
             $data['profile_photo_path'] = null;
         }
 
-        $user = User::create($data);
+        $user = User::create($data); //
 
         if ($user->isClient()) {
-            // Asegúrate de que los IDs vengan como un array, incluso si es una cadena separada por comas
-            $folderIds = explode(',', $request->input('accessible_folder_ids')[0] ?? ''); // El hidden input envía una cadena
-            $folderIds = array_filter(array_map('intval', $folderIds)); // Limpia y convierte a int
+            // El hidden input aún envía una cadena. Por eso se mantiene explode.
+            // Pero como la validación ya garantiza que es válido si existe, aquí solo se procesa.
+            $folderIds = explode(',', $request->input('accessible_folder_ids')[0] ?? '');
+            $folderIds = array_filter(array_map('intval', $folderIds));
 
-            $user->accessibleFolders()->sync($folderIds);
+            $user->accessibleFolders()->sync($folderIds); //
+        } else {
+            // Asegurarse de que si se desmarca "is_client", se desvinculen las carpetas
+            $user->accessibleFolders()->detach(); //
         }
 
-        return redirect()->route('admin.users.index')->with('success', 'Usuario creado exitosamente.');
+        return redirect()->route('admin.users.index')->with('success', 'Usuario creado exitosamente.'); //
     }
 
     /**
@@ -138,23 +144,25 @@ class UserController extends Controller
             'is_area_admin' => 'boolean',
             'is_client' => 'boolean',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'accessible_folder_ids' => 'nullable|array',
-            'accessible_folder_ids.*' => 'exists:folders,id',
         ];
 
-        // Hacer area_id condicionalmente requerido
-        if (!$request->has('is_client')) {
+        // Reglas condicionales para area_id y accessible_folder_ids
+        if (!$request->has('is_client') || !$request->input('is_client')) { // Si NO es cliente
             $rules['area_id'] = 'required|exists:areas,id';
-        } else {
-            $rules['area_id'] = 'nullable|exists:areas,id'; // Permite que sea nulo si es cliente
+            // Asegúrate de que accessible_folder_ids no se valide si no es cliente
+            $request->request->set('accessible_folder_ids', []); // Forzar a un array vacío para que la validación 'nullable|array' pase.
+        } else { // Si SÍ es cliente
+            $rules['area_id'] = 'nullable|exists:areas,id';
+            $rules['accessible_folder_ids'] = 'nullable|array';
+            $rules['accessible_folder_ids.*'] = 'exists:folders,id';
         }
 
-        $request->validate($rules);
+        $request->validate($rules); //
 
-        $data = $request->except(['_token', '_method', 'password_confirmation']);
+        $data = $request->except(['_token', '_method', 'password_confirmation']); //
 
-        $data['is_area_admin'] = $request->has('is_area_admin');
-        $data['is_client'] = $request->has('is_client');
+        $data['is_area_admin'] = $request->has('is_area_admin'); //
+        $data['is_client'] = $request->has('is_client'); //
 
         // Si es cliente y no se seleccionó área, asegúrate de que sea null
         if ($data['is_client'] && !$request->filled('area_id')) {
@@ -181,18 +189,19 @@ class UserController extends Controller
             $data['profile_photo_path'] = $user->profile_photo_path;
         }
 
-        $user->update($data);
+        $user->update($data); //
 
         if ($user->isClient()) {
-            $folderIds = explode(',', $request->input('accessible_folder_ids')[0] ?? ''); // El hidden input envía una cadena
+            $folderIds = explode(',', $request->input('accessible_folder_ids')[0] ?? '');
             $folderIds = array_filter(array_map('intval', $folderIds));
 
-            $user->accessibleFolders()->sync($folderIds);
+            $user->accessibleFolders()->sync($folderIds); //
         } else {
-            $user->accessibleFolders()->detach();
+            // Si el usuario ya no es cliente, desvincula todas las carpetas.
+            $user->accessibleFolders()->detach(); //
         }
 
-        return redirect()->route('admin.users.index')->with('success', 'Usuario actualizado exitosamente.');
+        return redirect()->route('admin.users.index')->with('success', 'Usuario actualizado exitosamente.'); //
     }
 
     /**
