@@ -134,7 +134,7 @@
                             {{-- Campo de Área, visible si NO es cliente --}}
                             <div x-show="!isClient" x-transition.opacity>
                                 <x-input-label for="area_id" :value="__('Área')" class="font-semibold" />
-                                <select id="area_id" name="area_id" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm" x-bind:required="!isClient" x-bind:disabled="isClient">
+                                <select id="area_id" name="area_id" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm" x-bind:required="!isClient">
                                     <option value="">{{ __('Selecciona un Área') }}</option>
                                     @foreach ($areas as $area)
                                         <option value="{{ $area->id }}" {{ old('area_id', $user->area_id) == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
@@ -144,7 +144,7 @@
                             </div>
 
                             {{-- Campo de Área, si es cliente y no se seleccionó área --}}
-                            <input type="hidden" name="area_id" x-show="isClient" x-bind:value="isClient ? null : '{{ $user->area_id }}'">
+                            <!-- <input type="hidden" name="area_id" x-show="isClient" x-bind:value="isClient ? null : '{{ $user->area_id }}'"> -->
 
                             <div class="pt-2">
                                 <label for="is_area_admin" class="inline-flex items-center">
@@ -158,13 +158,13 @@
                                 <label for="is_client" class="inline-flex items-center">
                                 <input type="checkbox" name="is_client" id="is_client" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" value="1" x-model="isClient"
                                     @change="
-                                        // CORRECCIÓN: Accede directamente al elemento, sin 'let' ni 'const'
-                                        document.getElementById('area_id').disabled = isClient;
+                                        const areaSelect = document.getElementById('area_id');
+                                        areaSelect.disabled = isClient;
                                         if (isClient) {
-                                            document.getElementById('area_id').value = ''; // Deselecciona el área si se convierte en cliente
+                                            areaSelect.value = ''; // Limpiar el valor si se convierte en cliente
                                         } else {
-                                            // Solo si en 'edit.blade.php', para reestablecer el valor original si se desmarca
-                                            // document.getElementById('area_id').value = '{{ $user->area_id ?? '' }}'; 
+                                            // Restaurar el valor original del usuario si estaba en una área
+                                            areaSelect.value = '{{ $user->area_id }}';
                                         }
                                     ">
                                 <span class="ms-2 text-sm text-gray-600">{{ __('Asignar como Usuario Cliente') }}</span>
