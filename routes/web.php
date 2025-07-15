@@ -28,8 +28,12 @@ Route::get('/cookies-policy', function () {
     return view('cookies-policy');
 })->name('cookies.policy');
 
+// Route::get('/', function () {
+//     return redirect()->route('login');
+// });
+
 Route::get('/', function () {
-    return redirect()->route('login');
+    return view('auth.login'); // O el nombre exacto de tu vista de login, que generalmente es 'auth.login' para Breeze/Jetstream
 });
 
 Route::get('/dashboard', function () {
