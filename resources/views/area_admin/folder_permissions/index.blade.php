@@ -9,96 +9,34 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
+                    {{-- Notificaciones --}}
                     @if (session('success'))
-                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                            <strong class="font-bold">¡Éxito!</strong>
-                            <span class="block sm:inline">{{ session('success') }}</span>
+                        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition class="fixed top-5 right-5 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]">
+                            <div class="flex items-center"><svg class="w-6 h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><div><strong class="font-bold">{{ __('¡Éxito!') }}</strong><span class="block sm:inline ml-1">{{ session('success') }}</span></div></div>
+                            <button @click="show = false" class="text-gray-400 hover:text-gray-700">&times;</button>
                         </div>
                     @endif
                     @if (session('error'))
-                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                            <strong class="font-bold">¡Error!</strong>
-                            <span class="block sm:inline">{{ session('error') }}</span>
+                        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition class="fixed top-5 right-5 z-50 bg-white border-l-4 border-red-600 text-red-700 px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]">
+                            <div class="flex items-center"><svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><div><strong class="font-bold">{{ __('¡Error!') }}</strong><span class="block sm:inline ml-1">{{ session('error') }}</span></div></div>
+                            <button @click="show = false" class="text-gray-400 hover:text-gray-700">&times;</button>
                         </div>
                     @endif
 
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Selecciona una carpeta para gestionar sus permisos:</h3>
 
-                    {{-- Versión de tabla para pantallas grandes --}}
-                    <div class="overflow-x-auto bg-white rounded-lg shadow hidden sm:block">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-[#2c3856]">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                                        Nombre de la Carpeta
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                                        Ruta
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                                        Acciones
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
+                    {{-- Lista Jerárquica de Carpetas --}}
+                    <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
+                        @if ($folders->isEmpty())
+                            <p class="text-center text-gray-500 py-4">No hay carpetas disponibles para gestionar permisos en esta área.</p>
+                        @else
+                            <ul class="space-y-2">
                                 @foreach ($folders as $folder)
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm font-medium text-gray-900">
-                                                {{ $folder->name }}
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            @php
-                                                $path = [];
-                                                $tempFolder = $folder;
-                                                while ($tempFolder) {
-                                                    array_unshift($path, $tempFolder->name);
-                                                    $tempFolder = $tempFolder->parent;
-                                                }
-                                                echo implode(' / ', $path);
-                                            @endphp
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="{{ route('area_admin.folder_permissions.edit', $folder) }}" class="text-indigo-600 hover:text-indigo-900">Gestionar Permisos</a>
-                                        </td>
-                                    </tr>
+                                    {{-- Pasa la carpeta y los componentes de ruta iniciales al parcial --}}
+                                    @include('area_admin.folder_permissions.partials.folder_item', ['folder' => $folder, 'level' => 0])
                                 @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {{-- Versión de lista/tarjetas para pantallas pequeñas --}}
-                    <div class="sm:hidden">
-                        @forelse ($folders as $folder)
-                            <div class="bg-white shadow overflow-hidden rounded-lg mb-4 border border-gray-200 p-4">
-                                <div class="flex justify-between items-center mb-2">
-                                    <div class="text-sm font-bold text-gray-700">Nombre de la Carpeta:</div>
-                                    <div class="text-sm text-gray-900">{{ $folder->name }}</div>
-                                </div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <div class="text-sm font-bold text-gray-700">Ruta:</div>
-                                    <div class="text-sm text-gray-500">
-                                        @php
-                                            $path = [];
-                                            $tempFolder = $folder;
-                                            while ($tempFolder) {
-                                                array_unshift($path, $tempFolder->name);
-                                                $tempFolder = $tempFolder->parent;
-                                            }
-                                            echo implode(' / ', $path);
-                                        @endphp
-                                    </div>
-                                </div>
-                                <div class="flex justify-end pt-4 border-t mt-4">
-                                    <a href="{{ route('area_admin.folder_permissions.edit', $folder) }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-sm">Gestionar Permisos</a>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="px-6 py-12 text-center text-gray-500 bg-white rounded-lg shadow">
-                                No hay carpetas disponibles para gestionar permisos en esta área.
-                            </div>
-                        @endforelse
+                            </ul>
+                        @endif
                     </div>
 
                 </div>

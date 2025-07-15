@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage; // Importar Storage
 
 class UserController extends Controller
 {
@@ -55,16 +56,24 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            // is_area_admin no se permite modificar aquí, solo el super admin lo hace
+            'profile_photo' => 'nullable|image|max:2048', // Añadida validación para la foto
         ]);
 
-        User::create([
+        $userData = [
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'area_id' => $areaId, // Asigna automáticamente al área del admin
             'is_area_admin' => false, // Por defecto, los nuevos usuarios no son administradores de área
-        ]);
+        ];
+
+        // Manejo de la subida de la foto de perfil
+        if ($request->hasFile('profile_photo')) { //
+            $path = $request->file('profile_photo')->store('profile-photos', 'public'); //
+            $userData['profile_photo_path'] = $path; //
+        }
+
+        User::create($userData); //
 
         return redirect()->route('area_admin.users.index')->with('success', 'Usuario creado exitosamente en tu área.');
     }
@@ -102,7 +111,7 @@ class UserController extends Controller
             return redirect()->route('area_admin.users.index')->with('error', 'No tienes permiso para actualizar este usuario.');
         }
 
-        $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => [
                 'required',
@@ -112,19 +121,36 @@ class UserController extends Controller
                 Rule::unique('users')->ignore($user->id),
             ],
             'password' => 'nullable|string|min:8|confirmed',
-            // is_area_admin no se permite modificar aquí
-        ]);
+            'profile_photo' => 'nullable|image|max:2048', // Añadida validación para la foto
+        ];
+
+        $request->validate($rules);
 
         $user->name = $request->name;
         $user->email = $request->email;
-        // area_id no se permite cambiar aquí, siempre es el área del admin
-        // is_area_admin no se permite cambiar aquí
 
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
         }
 
-        $user->save();
+        // Manejo de la eliminación de la foto
+        if ($request->has('remove_profile_photo') && $request->boolean('remove_profile_photo')) { //
+            if ($user->profile_photo_path) { //
+                Storage::disk('public')->delete($user->profile_photo_path); //
+            }
+            $user->profile_photo_path = null; //
+        }
+        // Manejo de la subida de una nueva foto
+        elseif ($request->hasFile('profile_photo')) { //
+            // Eliminar la foto antigua si existe
+            if ($user->profile_photo_path) { //
+                Storage::disk('public')->delete($user->profile_photo_path); //
+            }
+            $path = $request->file('profile_photo')->store('profile-photos', 'public'); //
+            $user->profile_photo_path = $path; //
+        }
+
+        $user->save(); //
 
         return redirect()->route('area_admin.users.index')->with('success', 'Usuario actualizado exitosamente.');
     }
@@ -148,7 +174,12 @@ class UserController extends Controller
             return redirect()->route('area_admin.users.index')->with('error', 'No puedes eliminar tu propia cuenta desde aquí.');
         }
 
-        $user->delete();
+        // Eliminar la foto de perfil del almacenamiento si existe
+        if ($user->profile_photo_path) { //
+            Storage::disk('public')->delete($user->profile_photo_path); //
+        }
+
+        $user->delete(); //
 
         return redirect()->route('area_admin.users.index')->with('success', 'Usuario eliminado exitosamente.');
     }

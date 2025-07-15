@@ -89,4 +89,9 @@ class Folder extends Model
         }
         return 'Raíz/' . $path;
     }
+
+    public function childrenRecursive(): HasMany
+    {
+        return $this->hasMany(Folder::class, 'parent_id')->with('childrenRecursive');
+    }
 }

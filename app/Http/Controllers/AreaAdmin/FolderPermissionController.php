@@ -7,23 +7,39 @@ use App\Models\Folder;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule; // ¡Añade esta línea!
+use Illuminate\Validation\Rule;
 
 class FolderPermissionController extends Controller
 {
     /**
-     * Display a list of folders for the area admin to manage permissions.
-     * Muestra una lista de carpetas para que el administrador de área gestione los permisos.
+     * Display a list of folders for the area admin to manage permissions, organized hierarchically.
+     * Muestra una lista de carpetas para que el administrador de área gestione los permisos, organizada jerárquicamente.
      *
      * @return \Illuminate\View\View
      */
     public function index()
     {
         $user = Auth::user();
-        // Obtener solo las carpetas que pertenecen al área del administrador
-        $folders = Folder::where('area_id', $user->area_id)
+        $areaId = $user->area_id;
+
+        // Obtener solo las carpetas de nivel superior que pertenecen al área del administrador
+        // y cargar recursivamente todos sus hijos
+        $folders = Folder::where('area_id', $areaId)
+                         ->whereNull('parent_id') // Obtener solo las carpetas raíz
+                         ->with('childrenRecursive') // Usar una relación recursiva si está definida, o cargar manualmente
                          ->orderBy('name')
                          ->get();
+
+        // Si 'childrenRecursive' no está definida en tu modelo Folder, podrías necesitar
+        // cargar los hijos de forma más explícita o procesar la colección.
+        // Asumiendo que has añadido 'childrenRecursive' o que 'children' es suficiente
+        // para el primer nivel y el partial se encargará del resto de la recursión.
+        // Si no tienes 'childrenRecursive', el 'with('children')' original y la recursión en la vista aún funcionarán.
+        // Para asegurar una carga profunda, puedes definir una relación recursiva en Folder.php:
+        // public function childrenRecursive() {
+        //     return $this->children()->with('childrenRecursive');
+        // }
+
 
         return view('area_admin.folder_permissions.index', compact('folders'));
     }
