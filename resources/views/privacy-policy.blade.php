@@ -57,7 +57,7 @@
     <div class="container mx-auto px-4 py-12">
         <!-- Logotipo -->
         <div class="flex justify-center mb-8">
-            <img src="{{ asset('images/logoBlanco.png') }}" alt="Logo Estrategias y Soluciones Minmer Global" class="h-24 logo">
+            <img src="{{ Storage::disk('s3')->url('images/LogoBlanco.png') }}" alt="Logo Estrategias y Soluciones Minmer Global" class="h-24 logo">
         </div>
 
         <!-- Título principal -->

@@ -12,7 +12,7 @@
                 <form method="POST" action="{{ route('area_admin.users.update', $user) }}" enctype="multipart/form-data" class="p-6 md:p-8"
                       x-data="{ // Agregado x-data para Alpine.js
                           photoName: null,
-                          photoPreview: '{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null }}'
+                          photoPreview: '{{ $user->profile_photo_path ? Storage::disk('s3')->url($user->profile_photo_path) : null }}'
                       }">
                     @csrf
                     @method('PUT')

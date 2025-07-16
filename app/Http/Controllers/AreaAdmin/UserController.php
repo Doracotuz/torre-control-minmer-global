@@ -68,12 +68,13 @@ class UserController extends Controller
         ];
 
         // Manejo de la subida de la foto de perfil
-        if ($request->hasFile('profile_photo')) { //
-            $path = $request->file('profile_photo')->store('profile-photos', 'public'); //
-            $userData['profile_photo_path'] = $path; //
+        if ($request->hasFile('profile_photo')) {
+            // CAMBIO: Almacenar en S3
+            $path = $request->file('profile_photo')->store('profile-photos', 's3');
+            $userData['profile_photo_path'] = $path;
         }
 
-        User::create($userData); //
+        User::create($userData);
 
         return redirect()->route('area_admin.users.index')->with('success', 'Usuario creado exitosamente en tu área.');
     }
@@ -134,23 +135,26 @@ class UserController extends Controller
         }
 
         // Manejo de la eliminación de la foto
-        if ($request->has('remove_profile_photo') && $request->boolean('remove_profile_photo')) { //
-            if ($user->profile_photo_path) { //
-                Storage::disk('public')->delete($user->profile_photo_path); //
+        if ($request->has('remove_profile_photo') && $request->boolean('remove_profile_photo')) {
+            if ($user->profile_photo_path) {
+                // CAMBIO: Eliminar de S3
+                Storage::disk('s3')->delete($user->profile_photo_path);
             }
-            $user->profile_photo_path = null; //
+            $user->profile_photo_path = null;
         }
         // Manejo de la subida de una nueva foto
-        elseif ($request->hasFile('profile_photo')) { //
+        elseif ($request->hasFile('profile_photo')) {
             // Eliminar la foto antigua si existe
-            if ($user->profile_photo_path) { //
-                Storage::disk('public')->delete($user->profile_photo_path); //
+            if ($user->profile_photo_path) {
+                // CAMBIO: Eliminar de S3
+                Storage::disk('s3')->delete($user->profile_photo_path);
             }
-            $path = $request->file('profile_photo')->store('profile-photos', 'public'); //
-            $user->profile_photo_path = $path; //
+            // CAMBIO: Almacenar en S3
+            $path = $request->file('profile_photo')->store('profile-photos', 's3');
+            $user->profile_photo_path = $path;
         }
 
-        $user->save(); //
+        $user->save();
 
         return redirect()->route('area_admin.users.index')->with('success', 'Usuario actualizado exitosamente.');
     }
@@ -175,11 +179,12 @@ class UserController extends Controller
         }
 
         // Eliminar la foto de perfil del almacenamiento si existe
-        if ($user->profile_photo_path) { //
-            Storage::disk('public')->delete($user->profile_photo_path); //
+        if ($user->profile_photo_path) {
+            // CAMBIO: Eliminar de S3
+            Storage::disk('s3')->delete($user->profile_photo_path);
         }
 
-        $user->delete(); //
+        $user->delete();
 
         return redirect()->route('area_admin.users.index')->with('success', 'Usuario eliminado exitosamente.');
     }

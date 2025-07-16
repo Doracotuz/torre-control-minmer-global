@@ -51,7 +51,7 @@
                                 <div class="flex-grow flex flex-col items-center">
                                     <img class="h-20 w-20 rounded-full object-cover mb-3 border-4
                                         {{ $user->is_area_admin ? 'border-[#ff9c00]' : 'border-gray-200' }}"
-                                        src="{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&color=2C3856&background=F3F4F6' }}"
+                                        src="{{ $user->profile_photo_path ? Storage::disk('s3')->url($user->profile_photo_path) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&color=2C3856&background=F3F4F6' }}"
                                         alt="{{ $user->name }}">
                                     <h5 class="text-base font-bold text-[#2c3856]">{{ $user->name }}</h5>
                                     <p class="text-xs text-gray-500 mb-2 truncate w-full">{{ $user->email }}</p>
@@ -92,7 +92,7 @@
                                     <tr class="hover:bg-gray-50 transition-colors duration-200">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
-                                                <img class="h-9 w-9 rounded-full object-cover mr-3" src="{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&color=2C3856&background=F3F4F6' }}" alt="{{ $user->name }}">
+                                                <img class="h-9 w-9 rounded-full object-cover mr-3" src="{{ $user->profile_photo_path ? Storage::disk('s3')->url($user->profile_photo_path) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&color=2C3856&background=F3F4F6' }}" alt="{{ $user->name }}">
                                                 <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
                                             </div>
                                         </td>
