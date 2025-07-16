@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
-use Illuminate\Support\Facades\Storage; // ¡Añade esta línea!
+use Illuminate\Support\Facades\Storage; // ¡Esta línea ya está bien!
 
 class ProfileController extends Controller
 {
@@ -35,19 +35,22 @@ class ProfileController extends Controller
             $user->email_verified_at = null;
         }
 
-        // --- Lógica para la subida de foto de perfil (NUEVO) ---
+        // --- Lógica para la subida de foto de perfil (MODIFICADO PARA S3) ---
         if ($request->hasFile('profile_photo')) {
             // Eliminar la foto anterior si existe
             if ($user->profile_photo_path) {
-                Storage::disk('public')->delete($user->profile_photo_path);
+                // CAMBIO PARA S3: Cambiar 'public' por 's3'
+                Storage::disk('s3')->delete($user->profile_photo_path);
             }
-            // Guardar la nueva foto en el disco 'public' (storage/app/public/profile-photos)
-            $path = $request->file('profile_photo')->store('profile-photos', 'public');
+            // Guardar la nueva foto en el disco 's3'
+            // CAMBIO PARA S3: Cambiar 'public' por 's3' y usar 'putFile' para consistencia con FolderController
+            $path = Storage::disk('s3')->putFile('profile-photos', $request->file('profile_photo'), 'public');
             $user->profile_photo_path = $path;
         } elseif ($request->input('remove_profile_photo')) {
             // Lógica para eliminar la foto si el checkbox "eliminar foto" está marcado
             if ($user->profile_photo_path) {
-                Storage::disk('public')->delete($user->profile_photo_path);
+                // CAMBIO PARA S3: Cambiar 'public' por 's3'
+                Storage::disk('s3')->delete($user->profile_photo_path);
                 $user->profile_photo_path = null;
             }
         }
@@ -73,7 +76,8 @@ class ProfileController extends Controller
 
         // Eliminar la foto de perfil al eliminar la cuenta
         if ($user->profile_photo_path) {
-            Storage::disk('public')->delete($user->profile_photo_path);
+            // CAMBIO PARA S3: Cambiar 'public' por 's3'
+            Storage::disk('s3')->delete($user->profile_photo_path);
         }
 
         $user->delete();

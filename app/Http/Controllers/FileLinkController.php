@@ -150,8 +150,9 @@ class FileLinkController extends Controller
         $folderId = $fileLink->folder_id; // Guarda el ID de la carpeta antes de eliminar el fileLink
 
         // Si es un archivo, elimina el archivo físico del almacenamiento
-        if ($fileLink->type === 'file' && Storage::disk('public')->exists($fileLink->path)) {
-            Storage::disk('public')->delete($fileLink->path);
+        // CAMBIO PARA S3: Usar 's3' disk para verificar existencia y eliminar
+        if ($fileLink->type === 'file' && Storage::disk('s3')->exists($fileLink->path)) {
+            Storage::disk('s3')->delete($fileLink->path);
         }
 
         $fileLink->delete(); // Elimina el registro de la base de datos

@@ -117,8 +117,9 @@ class OrganigramController extends Controller
         ]);
 
         $path = null;
+        // CAMBIO PARA S3: Usar 's3' disk para guardar la foto de perfil
         if ($request->hasFile('profile_photo')) {
-            $path = $request->file('profile_photo')->store('organigram-photos', 'public');
+            $path = Storage::disk('s3')->putFile('organigram-photos', $request->file('profile_photo'), 'public');
         }
 
         $member = OrganigramMember::create([
@@ -200,15 +201,16 @@ class OrganigramController extends Controller
             'trajectories.*.end_date' => 'nullable|date|after_or_equal:trajectories.*.start_date',
         ]);
 
+        // CAMBIO PARA S3: Lógica para la subida y eliminación de foto de perfil
         if ($request->hasFile('profile_photo')) {
             if ($organigramMember->profile_photo_path) {
-                Storage::disk('public')->delete($organigramMember->profile_photo_path);
+                Storage::disk('s3')->delete($organigramMember->profile_photo_path); // CAMBIO PARA S3
             }
-            $path = $request->file('profile_photo')->store('organigram-photos', 'public');
+            $path = Storage::disk('s3')->putFile('organigram-photos', $request->file('profile_photo'), 'public'); // CAMBIO PARA S3
             $organigramMember->profile_photo_path = $path;
         } elseif ($request->input('remove_profile_photo')) {
             if ($organigramMember->profile_photo_path) {
-                Storage::disk('public')->delete($organigramMember->profile_photo_path);
+                Storage::disk('s3')->delete($organigramMember->profile_photo_path); // CAMBIO PARA S3
                 $organigramMember->profile_photo_path = null;
             }
         }
@@ -266,8 +268,9 @@ class OrganigramController extends Controller
      */
     public function destroy(OrganigramMember $organigramMember)
     {
+        // CAMBIO PARA S3: Eliminar la foto de perfil del organigrama de S3
         if ($organigramMember->profile_photo_path) {
-            Storage::disk('public')->delete($organigramMember->profile_photo_path);
+            Storage::disk('s3')->delete($organigramMember->profile_photo_path); // CAMBIO PARA S3
         }
 
         $organigramMember->delete();
@@ -391,7 +394,11 @@ class OrganigramController extends Controller
             'name' => 'MINMER GLOBAL',
             'title' => 'Organigrama Principal',
             'type' => 'root',
-            'img' => asset('images/LogoAzul.png'),
+            // CAMBIO PARA S3: Si la imagen está en el bucket y se sirve por CloudFront, puedes usar Storage::disk('s3')->url().
+            // Asumo que 'images/LogoAzul.png' es un activo local en la carpeta 'public' o gestionado por el despliegue de CloudFront.
+            // Si también quieres que este logo vaya a S3, tendrías que subirlo y ajustar la ruta en el .env y filesystems.php
+            // de manera similar a como hicimos para el login.blade.php. Por ahora, lo dejo como asset() si es local.
+            'img' => asset('images/LogoAzul.png'), 
         ];
 
         // 2. Nodos de Áreas
@@ -402,7 +409,8 @@ class OrganigramController extends Controller
                 'name' => $area->name,
                 'title' => 'Área',
                 'type' => 'area',
-                'img' => $area->icon_path ? asset('storage/' . $area->icon_path) : null,
+                // CAMBIO PARA S3: Generar URL del icono de área desde S3
+                'img' => $area->icon_path ? Storage::disk('s3')->url($area->icon_path) : null,
                 'description' => $area->description,
             ];
         }
@@ -429,7 +437,8 @@ class OrganigramController extends Controller
                         'original_id' => (string)$manager->id, // Guardamos el ID real para futuras referencias
                         'name' => $manager->name,
                         'title' => $manager->position->name ?? 'Sin Posición',
-                        'img' => $manager->profile_photo_path ? asset('storage/' . $manager->profile_photo_path) : null,
+                        // CAMBIO PARA S3: Generar URL de la foto de perfil del mánager para el proxy
+                        'img' => $manager->profile_photo_path ? Storage::disk('s3')->url($manager->profile_photo_path) : null,
                         'type' => 'member',
                         'is_proxy' => true, // <-- Marca clave para el frontend
                     ];
@@ -464,7 +473,8 @@ class OrganigramController extends Controller
                 'pid' => $parentId, // El padre se asigna según la nueva lógica
                 'name' => $member->name,
                 'title' => $member->position->name ?? 'Sin Posición',
-                'img' => $member->profile_photo_path ? asset('storage/' . $member->profile_photo_path) : null,
+                // CAMBIO PARA S3: Generar URL de la foto de perfil del miembro
+                'img' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
                 'type' => 'member',
                 'is_proxy' => false, // Este es un nodo real, no un proxy
                 'full_details' => [ // Objeto con toda la información para el modal del miembro
@@ -475,7 +485,8 @@ class OrganigramController extends Controller
                     'area_name' => $member->area->name ?? 'N/A',
                     'manager_name' => $member->manager->name ?? 'N/A',
                     'manager_id' => $member->manager_id,
-                    'profile_photo_path' => $member->profile_photo_path ? asset('storage/' . $member->profile_photo_path) : null,
+                    // CAMBIO PARA S3: Generar URL de la foto de perfil del miembro en full_details
+                    'profile_photo_path' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
                     'activities' => $member->activities->map(fn($a) => ['id' => $a->id, 'name' => $a->name]),
                     'skills' => $member->skills->map(fn($s) => ['id' => $s->id, 'name' => $s->name]),
                     'trajectories' => $member->trajectories->map(fn($t) => [
@@ -508,7 +519,8 @@ class OrganigramController extends Controller
             'name' => 'MINMER GLOBAL',
             'title' => 'Organigrama Principal',
             'type' => 'root',
-            'img' => asset('images/LogoAzul.png'),
+            // CAMBIO PARA S3: Mismo punto que antes, si el LogoAzul.png debe ir a S3, ajustar esto.
+            'img' => asset('images/LogoAzul.png'), 
         ];
 
         // 2. Nodos de Miembros (Re-parenting directo)
@@ -528,7 +540,8 @@ class OrganigramController extends Controller
                 'pid' => $parentId,
                 'name' => $member->name,
                 'title' => $member->position->name ?? 'Sin Posición',
-                'img' => $member->profile_photo_path ? asset('storage/' . $member->profile_photo_path) : null,
+                // CAMBIO PARA S3: Generar URL de la foto de perfil del miembro
+                'img' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
                 'type' => 'member',
                 'is_proxy' => false, // Siempre false en esta vista
                 'full_details' => [
@@ -539,7 +552,8 @@ class OrganigramController extends Controller
                     'area_name' => $member->area->name ?? 'N/A',
                     'manager_name' => $member->manager->name ?? 'N/A',
                     'manager_id' => $member->manager_id,
-                    'profile_photo_path' => $member->profile_photo_path ? asset('storage/' . $member->profile_photo_path) : null,
+                    // CAMBIO PARA S3: Generar URL de la foto de perfil del miembro en full_details
+                    'profile_photo_path' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
                     'activities' => $member->activities->map(fn($a) => ['id' => $a->id, 'name' => $a->name]),
                     'skills' => $member->skills->map(fn($s) => ['id' => $s->id, 'name' => $s->name]),
                     'trajectories' => $member->trajectories->map(fn($t) => [
