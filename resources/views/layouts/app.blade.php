@@ -137,7 +137,7 @@
             <!-- <div class="w-64 bg-[#2c3856] text-white flex-col min-h-screen shadow-2xl relative z-10 hidden lg:flex"> -->
                 <div class="p-6 text-center">
                     <div class="logo-container py-4">
-                        <img src="{{ asset('storage/LogoBlanco.png') }}" alt="Minmer Global Logo" class="h-20 mx-auto mb-3">
+                        <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" alt="Minmer Global Logo" class="h-20 mx-auto mb-3">
                         <span class="text-xl font-extrabold text-white tracking-wide logo-text">TORRE DE CONTROL</span>
                         <span class="text-xs text-gray-300 mt-1 block logo-subtitle">MINMER GLOBAL</span>
                     </div>
