@@ -261,7 +261,9 @@
                                 $fileExtension = $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : null;
                                 $isImage = in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
                                 $isPdf = strtolower($fileExtension) == 'pdf';
-                                $fileUrl = $fileLink->type == 'file' ? asset('storage/' . $fileLink->path) : $fileLink->url;
+                                // CAMBIO AQUÍ: Usar Storage::disk('s3')->url() para generar la URL para previsualización
+                                $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
+
                             @endphp
                             <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
                                         hover:bg-gray-50 transform hover:scale-105 relative"
@@ -437,7 +439,8 @@
                                             $fileExtension = $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : null;
                                             $isImage = in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
                                             $isPdf = strtolower($fileExtension) == 'pdf';
-                                            $fileUrl = $fileLink->type == 'file' ? asset('storage/' . $fileLink->path) : $fileLink->url;
+                                            // CAMBIO AQUÍ: Usar Storage::disk('s3')->url() para generar la URL para previsualización
+                                            $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
                                         @endphp
                                         <tr class="hover:bg-gray-100 transition-colors duration-150"
                                             x-on:contextmenu.prevent="openPropertiesModal({
@@ -565,7 +568,8 @@
                                     $fileExtension = $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : null;
                                     $isImage = in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
                                     $isPdf = strtolower($fileExtension) == 'pdf';
-                                    $fileUrl = $fileLink->type == 'file' ? asset('storage/' . $fileLink->path) : $fileLink->url;
+                                    // CAMBIO AQUÍ: Usar Storage::disk('s3')->url() para generar la URL para previsualización
+                                    $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
                                 @endphp
                                 <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 p-4 relative">
                                     {{-- Checkbox para selección múltiple --}}

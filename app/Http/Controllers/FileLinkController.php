@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth; // Para acceder al usuario autenticado
 use Illuminate\Support\Facades\Storage; // Para manejar la eliminación de archivos físicos
 use Illuminate\Support\Str; // Para usar funciones de cadena como Str::endsWith
+use Symfony\Component\HttpFoundation\StreamedResponse; // Necesario para la descarga de archivos
 
 class FileLinkController extends Controller
 {
@@ -150,13 +151,60 @@ class FileLinkController extends Controller
         $folderId = $fileLink->folder_id; // Guarda el ID de la carpeta antes de eliminar el fileLink
 
         // Si es un archivo, elimina el archivo físico del almacenamiento
-        if ($fileLink->type === 'file' && Storage::disk('public')->exists($fileLink->path)) {
-            Storage::disk('public')->delete($fileLink->path);
+        if ($fileLink->type === 'file' && Storage::disk('s3')->exists($fileLink->path)) {
+            Storage::disk('s3')->delete($fileLink->path);
         }
 
         $fileLink->delete(); // Elimina el registro de la base de datos
 
         return redirect()->route('folders.index', $folderId)
                          ->with('success', 'Elemento eliminado exitosamente.');
+    }
+
+    /**
+     * Descarga un archivo desde S3.
+     *
+     * @param  \App\Models\FileLink  $fileLink
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\RedirectResponse
+     */
+    public function download(FileLink $fileLink)
+    {
+        $user = Auth::user();
+
+        // 1. Verificar si es realmente un archivo y si existe el path
+        if ($fileLink->type !== 'file' || !$fileLink->path) {
+            return back()->with('error', 'No es un archivo descargable o la ruta no es válida.');
+        }
+
+        // 2. Lógica de Permisos para descargar el archivo
+        $hasPermission = false;
+        if ($user->area && $user->area->name === 'Administración') {
+            // Super Admin puede descargar cualquier archivo
+            $hasPermission = true;
+        } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
+            // Administrador de Área puede descargar archivos de su área
+            $hasPermission = true;
+        } elseif ($user->isClient()) {
+            // Cliente solo puede descargar si la carpeta es accesible para él
+            if ($user->accessibleFolders->contains($fileLink->folder_id)) {
+                $hasPermission = true;
+            }
+        } elseif ($fileLink->folder->area_id === $user->area_id && $user->accessibleFolders->contains($fileLink->folder_id)) {
+            // Usuario Normal: archivo de su área y con acceso explícito a la carpeta
+            $hasPermission = true;
+        }
+
+        if (!$hasPermission) {
+            return back()->with('error', 'No tienes permiso para descargar este archivo.');
+        }
+
+        // 3. Verificar si el archivo existe en S3
+        if (!Storage::disk('s3')->exists($fileLink->path)) {
+            return back()->with('error', 'El archivo no se encuentra en el almacenamiento.');
+        }
+
+        // 4. Descargar el archivo desde S3
+        // El segundo argumento es el nombre deseado del archivo al descargar
+        return Storage::disk('s3')->download($fileLink->path, $fileLink->name);
     }
 }

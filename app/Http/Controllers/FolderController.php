@@ -439,7 +439,7 @@ class FolderController extends Controller
                     }
 
                     try {
-                        $path = $file->store('files', 'public');
+                        $path = $file->store('files', 's3');
                         FileLink::create([
                             'name' => $fileNameToStore,
                             'type' => 'file',
@@ -574,7 +574,7 @@ class FolderController extends Controller
             }
 
             try {
-                $path = $file->store('files', 'public');
+                $path = $file->store('files', 's3');
                 FileLink::create([
                     'name' => $fileNameToStore,
                     'type' => 'file',
@@ -648,8 +648,8 @@ class FolderController extends Controller
                 }
 
                 try {
-                    if ($fileLink->type === 'file' && Storage::disk('public')->exists($fileLink->path)) {
-                        Storage::disk('public')->delete($fileLink->path);
+                    if ($fileLink->type === 'file' && Storage::disk('s3')->exists($fileLink->path)) {
+                        Storage::disk('s3')->delete($fileLink->path);
                     }
                     $fileLink->delete();
                     $deletedCount++;

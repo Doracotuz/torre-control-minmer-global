@@ -79,32 +79,34 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/items/bulk-move', [FolderController::class, 'bulkMove'])->name('items.bulk_move');
 
     // Ruta para descarga directa de archivos (usada por la búsqueda predictiva y clics en tabla)
-    Route::get('/files/{fileLink}/download', function (FileLink $fileLink) {
-        if ($fileLink->type === 'file' && Storage::disk('public')->exists($fileLink->path)) {
-            $user = Auth::user();
-            if ($user->area && $user->area->name === 'Administración') {
-                // Super Admin puede descargar
-            } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
-                // Admin de Área puede descargar
-            } elseif ($user->isClient() && $user->accessibleFolders->contains($fileLink->folder->id)) {
-                // Cliente puede descargar
-            } elseif ($fileLink->folder->area_id === $user->area_id && $user->accessibleFolders->contains($fileLink->folder->id)) {
-                // Usuario normal con acceso explícito y en su área
-            } else {
-                abort(403, 'No tienes permiso para descargar este archivo.');
-            }
+    Route::get('/files/{fileLink}/download', [FileLinkController::class, 'download'])->name('files.download');
 
-            $originalExtension = pathinfo($fileLink->path, PATHINFO_EXTENSION);
-            $downloadFileName = $fileLink->name;
+    // Route::get('/files/{fileLink}/download', function (FileLink $fileLink) {
+    //     if ($fileLink->type === 'file' && Storage::disk('public')->exists($fileLink->path)) {
+    //         $user = Auth::user();
+    //         if ($user->area && $user->area->name === 'Administración') {
+    //             // Super Admin puede descargar
+    //         } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
+    //             // Admin de Área puede descargar
+    //         } elseif ($user->isClient() && $user->accessibleFolders->contains($fileLink->folder->id)) {
+    //             // Cliente puede descargar
+    //         } elseif ($fileLink->folder->area_id === $user->area_id && $user->accessibleFolders->contains($fileLink->folder->id)) {
+    //             // Usuario normal con acceso explícito y en su área
+    //         } else {
+    //             abort(403, 'No tienes permiso para descargar este archivo.');
+    //         }
 
-            if (!Str::endsWith(strtolower($fileLink->name), '.' . strtolower($originalExtension))) {
-                $downloadFileName .= '.' . strtolower($originalExtension);
-            }
+    //         $originalExtension = pathinfo($fileLink->path, PATHINFO_EXTENSION);
+    //         $downloadFileName = $fileLink->name;
 
-            return Storage::disk('public')->download($fileLink->path, $downloadFileName);
-        }
-        abort(404);
-    })->name('files.download');
+    //         if (!Str::endsWith(strtolower($fileLink->name), '.' . strtolower($originalExtension))) {
+    //             $downloadFileName .= '.' . strtolower($originalExtension);
+    //         }
+
+    //         return Storage::disk('public')->download($fileLink->path, $downloadFileName);
+    //     }
+    //     abort(404);
+    // })->name('files.download');
 
     Route::get('/folders/{folder?}', [FolderController::class, 'index'])->name('folders.index');
     Route::get('/folders/{folder}/edit', [FolderController::class, 'edit'])->name('folders.edit');
