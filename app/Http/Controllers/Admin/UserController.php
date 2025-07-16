@@ -82,9 +82,8 @@ class UserController extends Controller
             $data['area_id'] = null;
         }
 
-        // CAMBIO PARA S3: Guardar la foto de perfil en S3
         if ($request->hasFile('profile_photo')) {
-            $data['profile_photo_path'] = Storage::disk('s3')->putFile('profile_photos', $request->file('profile_photo'), 'public');
+            $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 'public');
         } else {
             $data['profile_photo_path'] = null;
         }
@@ -176,22 +175,17 @@ class UserController extends Controller
             unset($data['password']);
         }
 
-        // CAMBIO PARA S3: Lógica para la subida y eliminación de foto de perfil
         if ($request->hasFile('profile_photo')) {
-            if ($user->profile_photo_path) { // Solo si ya existe una foto, intenta eliminarla
-                // CAMBIO PARA S3: Cambiar 'public' por 's3' para verificar y eliminar
-                Storage::disk('s3')->delete($user->profile_photo_path);
+            if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
+                Storage::disk('public')->delete($user->profile_photo_path);
             }
-            // CAMBIO PARA S3: Cambiar 'public' por 's3' para guardar la nueva foto
-            $data['profile_photo_path'] = Storage::disk('s3')->putFile('profile_photos', $request->file('profile_photo'), 'public');
+            $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 'public');
         } elseif ($request->input('remove_profile_photo')) {
-            if ($user->profile_photo_path) { // Solo si existe una foto, intenta eliminarla
-                // CAMBIO PARA S3: Cambiar 'public' por 's3' para verificar y eliminar
-                Storage::disk('s3')->delete($user->profile_photo_path);
+            if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
+                Storage::disk('public')->delete($user->profile_photo_path);
             }
             $data['profile_photo_path'] = null;
         } else {
-            // Si no se sube una nueva foto y no se marca para eliminar, se mantiene la existente
             $data['profile_photo_path'] = $user->profile_photo_path;
         }
 
@@ -219,11 +213,8 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        // CAMBIO PARA S3: Eliminar la foto de perfil del usuario de S3
-        if ($user->profile_photo_path) { // Solo si existe una foto, intenta eliminarla
-            if (Storage::disk('s3')->exists($user->profile_photo_path)) { // Verifica que exista en S3
-                Storage::disk('s3')->delete($user->profile_photo_path);
-            }
+        if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
+            Storage::disk('public')->delete($user->profile_photo_path);
         }
 
         $user->accessibleFolders()->detach();

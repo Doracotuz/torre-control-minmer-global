@@ -239,9 +239,6 @@
                     let photoHtml = `<div class="h-16 w-16 mx-auto mb-3"></div>`;
                     if (data.img) {
                         let imageFitClass = (data.type === 'root' || data.type === 'area') ? 'object-contain' : 'object-cover';
-                        // CAMBIO PARA S3: Asegurarse de que la URL de la imagen se genere correctamente.
-                        // La URL ya debería venir completa desde el controlador (getInteractiveOrganigramData),
-                        // por lo que solo necesitamos usarla directamente.
                         photoHtml = `<div class="h-16 w-16 mx-auto mb-3"><img class="rounded-full ${imageFitClass} h-full w-full border-2 border-gray-200 shadow-sm" src="${data.img}"></div>`;
                     }
 
@@ -418,7 +415,6 @@
                                 position_name: node.full_details.position_name || '',
                                 area_name: node.full_details.area_name || '',
                                 manager_name: node.full_details.manager_name || '',
-                                // CAMBIO PARA S3: La URL ya viene procesada del backend, solo la asignamos
                                 profile_photo_path: node.full_details.profile_photo_path || null,
                                 // Uso de operador de encadenamiento opcional y mapeo para copias
                                 activities: node.full_details.activities?.map(item => ({ ...item })) || [],

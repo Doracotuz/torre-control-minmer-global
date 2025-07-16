@@ -50,9 +50,8 @@ class AreaController extends Controller
 
         $data = $request->all();
 
-        // CAMBIO PARA S3: Usar 's3' disk para guardar el icono
         if ($request->hasFile('icon')) {
-            $data['icon_path'] = Storage::disk('s3')->putFile('area_icons', $request->file('icon'), 'public');
+            $data['icon_path'] = $request->file('icon')->store('area_icons', 'public');
         }
 
         Area::create($data);
@@ -98,16 +97,13 @@ class AreaController extends Controller
         // Si se sube un nuevo icono
         if ($request->hasFile('icon')) {
             // Eliminar el icono antiguo si existe
-            // CAMBIO PARA S3: Cambiar 'public' por 's3' para verificar y eliminar
-            if ($area->icon_path && Storage::disk('s3')->exists($area->icon_path)) {
-                Storage::disk('s3')->delete($area->icon_path);
+            if ($area->icon_path && Storage::disk('public')->exists($area->icon_path)) {
+                Storage::disk('public')->delete($area->icon_path);
             }
-            // CAMBIO PARA S3: Cambiar 'public' por 's3' para guardar el nuevo icono
-            $data['icon_path'] = Storage::disk('s3')->putFile('area_icons', $request->file('icon'), 'public');
+            $data['icon_path'] = $request->file('icon')->store('area_icons', 'public');
         } elseif ($request->input('remove_icon')) { // Si se marcó la casilla para eliminar el icono
-            // CAMBIO PARA S3: Cambiar 'public' por 's3' para verificar y eliminar
-            if ($area->icon_path && Storage::disk('s3')->exists($area->icon_path)) {
-                Storage::disk('s3')->delete($area->icon_path);
+            if ($area->icon_path && Storage::disk('public')->exists($area->icon_path)) {
+                Storage::disk('public')->delete($area->icon_path);
             }
             $data['icon_path'] = null;
         }
@@ -133,9 +129,8 @@ class AreaController extends Controller
         });
 
         // Eliminar el icono del área si existe
-        // CAMBIO PARA S3: Cambiar 'public' por 's3' para verificar y eliminar
-        if ($area->icon_path && Storage::disk('s3')->exists($area->icon_path)) {
-            Storage::disk('s3')->delete($area->icon_path);
+        if ($area->icon_path && Storage::disk('public')->exists($area->icon_path)) {
+            Storage::disk('public')->delete($area->icon_path);
         }
 
         $area->delete(); // Eliminar el registro del área

@@ -38,7 +38,7 @@
                                 <div class="flex flex-col items-center space-y-4">
                                     {{-- Previsualización del Icono --}}
                                     <div class="w-32 h-32 rounded-full bg-gray-100 border-4 border-gray-200 flex items-center justify-center overflow-hidden shadow-md">
-                                        <img src="{{ Storage::url('area_icons/default-icon.svg') }}" 
+                                        <img src="{{ asset('images/default-icon.svg') }}" 
                                              alt="Previsualización del icono" 
                                              class="w-full h-full object-cover" 
                                              id="iconPreview">

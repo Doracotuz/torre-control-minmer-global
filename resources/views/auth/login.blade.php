@@ -1,6 +1,6 @@
 <x-guest-layout>
     <div class="flex flex-col items-center justify-center mb-6">
-        <img src="{{ asset('LogoBlanco.png') }}" alt="Minmer Global Logo" class="h-20 mb-3 filter invert"> {{-- Logo blanco, invertido para fondo oscuro --}}
+        <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" alt="Minmer Global Logo" class="h-20 mb-3 filter invert">
         <h1 class="text-3xl font-extrabold text-[#2c3856] mb-1" style="font-family: 'Raleway', sans-serif;">TORRE DE CONTROL</h1>
         <p class="text-sm text-gray-600" style="font-family: 'Montserrat', sans-serif;">MINMER GLOBAL</p>
     </div>

@@ -161,8 +161,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 @if ($member->profile_photo_path)
-                                                    {{-- CAMBIO PARA S3: Usar Storage::url para cargar la imagen desde S3 --}}
-                                                    <img class="h-11 w-11 rounded-full object-cover mr-4" src="{{ Storage::url($member->profile_photo_path) }}" alt="{{ $member->name }}">
+                                                    <img class="h-11 w-11 rounded-full object-cover mr-4" src="{{ asset('storage/' . $member->profile_photo_path) }}" alt="{{ $member->name }}">
                                                 @else
                                                     <svg class="h-11 w-11 rounded-full text-gray-300 bg-gray-100 mr-4" fill="currentColor" viewBox="0 0 24 24">
                                                         <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 0c1.347 0 2.659.182 3.935.503l.366.096A14.977 14.977 0 0124 20.993zM12 11a6 6 0 100-12 6 6 0 000 12zm-2 2h4a1 1 0 110 2h-4a1 1 0 110-2z" />
@@ -194,8 +193,7 @@
                             <div class="bg-white rounded-lg shadow-md p-5 border border-gray-100 flex flex-col">
                                 <div class="flex items-center mb-4">
                                     @if ($member->profile_photo_path)
-                                        {{-- CAMBIO PARA S3: Usar Storage::url para cargar la imagen desde S3 --}}
-                                        <img class="h-16 w-16 rounded-full object-cover mr-4" src="{{ Storage::url($member->profile_photo_path) }}" alt="{{ $member->name }}">
+                                        <img class="h-16 w-16 rounded-full object-cover mr-4" src="{{ asset('storage/' . $member->profile_photo_path) }}" alt="{{ $member->name }}">
                                     @else
                                         <svg class="h-16 w-16 rounded-full text-gray-300 bg-gray-100 mr-4" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 0c1.347 0 2.659.182 3.935.503l.366.096A14.977 14.977 0 0124 20.993zM12 11a6 6 0 100-12 6 6 0 000 12zm-2 2h4a1 1 0 110 2h-4a1 1 0 110-2z" />

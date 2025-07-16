@@ -47,8 +47,7 @@
                                 <div class="flex justify-between items-start mb-3">
                                     <h5 class="text-lg font-bold text-[#2c3856]">{{ $area->name }}</h5>
                                     @if ($area->icon_path)
-                                        {{-- CAMBIO PARA S3: Usar Storage::url para cargar la imagen desde S3 --}}
-                                        <img class="h-10 w-10 object-contain" src="{{ Storage::url($area->icon_path) }}" alt="{{ $area->name }}">
+                                        <img class="h-10 w-10 object-contain" src="{{ asset('storage/' . $area->icon_path) }}" alt="{{ $area->name }}">
                                     @else
                                         <div class="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center">
                                             <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" /></svg>
@@ -85,8 +84,7 @@
                                     <tr class="hover:bg-gray-50 transition-colors duration-200">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             @if ($area->icon_path)
-                                                {{-- CAMBIO PARA S3: Usar Storage::url para cargar la imagen desde S3 --}}
-                                                <img class="h-9 w-9 object-contain" src="{{ Storage::url($area->icon_path) }}" alt="{{ $area->name }}">
+                                                <img class="h-9 w-9 object-contain" src="{{ asset('storage/' . $area->icon_path) }}" alt="{{ $area->name }}">
                                             @else
                                                 <div class="h-9 w-9 bg-gray-100 rounded-md flex items-center justify-center">
                                                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" /></svg>

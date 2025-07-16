@@ -439,12 +439,11 @@ class FolderController extends Controller
                     }
 
                     try {
-                        // CAMBIO PARA S3: Usar 's3' disk y putFile con visibilidad 'public'
-                        $path = Storage::disk('s3')->putFile('files', $file, 'public'); 
+                        $path = $file->store('files', 'public');
                         FileLink::create([
                             'name' => $fileNameToStore,
                             'type' => 'file',
-                            'path' => $path, // La ruta almacenada será la de S3 (ej. files/nombre_aleatorio.ext)
+                            'path' => $path,
                             'folder_id' => $folder->id,
                             'user_id' => Auth::id(),
                         ]);
@@ -575,12 +574,11 @@ class FolderController extends Controller
             }
 
             try {
-                // CAMBIO PARA S3: Usar 's3' disk y putFile con visibilidad 'public'
-                $path = Storage::disk('s3')->putFile('files', $file, 'public');
+                $path = $file->store('files', 'public');
                 FileLink::create([
                     'name' => $fileNameToStore,
                     'type' => 'file',
-                    'path' => $path, // La ruta almacenada será la de S3 (ej. files/nombre_aleatorio.ext)
+                    'path' => $path,
                     'folder_id' => $request->folder_id,
                     'user_id' => Auth::id(),
                 ]);
@@ -650,9 +648,8 @@ class FolderController extends Controller
                 }
 
                 try {
-                    // CAMBIO PARA S3: Usar 's3' disk para verificar existencia y eliminar
-                    if ($fileLink->type === 'file' && Storage::disk('s3')->exists($fileLink->path)) {
-                        Storage::disk('s3')->delete($fileLink->path);
+                    if ($fileLink->type === 'file' && Storage::disk('public')->exists($fileLink->path)) {
+                        Storage::disk('public')->delete($fileLink->path);
                     }
                     $fileLink->delete();
                     $deletedCount++;
