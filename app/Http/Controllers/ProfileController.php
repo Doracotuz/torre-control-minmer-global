@@ -39,15 +39,15 @@ class ProfileController extends Controller
         if ($request->hasFile('profile_photo')) {
             // Eliminar la foto anterior si existe
             if ($user->profile_photo_path) {
-                Storage::disk('public')->delete($user->profile_photo_path);
+                Storage::disk('s3')->delete($user->profile_photo_path);
             }
             // Guardar la nueva foto en el disco 'public' (storage/app/public/profile-photos)
-            $path = $request->file('profile_photo')->store('profile-photos', 'public');
+            $path = $request->file('profile_photo')->store('profile_photos', 's3');
             $user->profile_photo_path = $path;
         } elseif ($request->input('remove_profile_photo')) {
             // Lógica para eliminar la foto si el checkbox "eliminar foto" está marcado
             if ($user->profile_photo_path) {
-                Storage::disk('public')->delete($user->profile_photo_path);
+                Storage::disk('s3')->delete($user->profile_photo_path);
                 $user->profile_photo_path = null;
             }
         }
@@ -73,7 +73,7 @@ class ProfileController extends Controller
 
         // Eliminar la foto de perfil al eliminar la cuenta
         if ($user->profile_photo_path) {
-            Storage::disk('public')->delete($user->profile_photo_path);
+            Storage::disk('s3')->delete($user->profile_photo_path);
         }
 
         $user->delete();

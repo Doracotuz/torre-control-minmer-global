@@ -50,7 +50,7 @@
                         @endphp
                         
                         @if ($areaCustomIconPath)
-                            <img src="{{ asset('storage/' . $areaCustomIconPath) }}" alt="{{ $areaName }} Icon" class="h-5 w-5 sm:h-6 sm:w-6 mr-3 object-contain">
+                            <img src="{{ Storage::disk('s3')->url($areaCustomIconPath) }}" alt="{{ $areaName }} Icon" class="h-5 w-5 sm:h-6 sm:w-6 mr-3 object-contain">
                         @else
                             {!! $areaIconSvg !!}
                         @endif
@@ -115,7 +115,7 @@
                         <button class="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
                             {{-- Foto de perfil --}}
                             @if (Auth::user()->profile_photo_path)
-                                <img class="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover mr-2 object-center" src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()->name }}">
+                                <img class="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover mr-2 object-center" src="{{ Storage::disk('s3')->url(Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()->name }}">
                             @else
                                 {{-- Icono SVG de usuario por defecto si no hay foto --}}
                                 <svg class="h-7 w-7 sm:h-8 sm:w-8 rounded-full text-gray-400 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg>

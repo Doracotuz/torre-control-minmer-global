@@ -38,17 +38,17 @@
                             @csrf
                             @method('patch')
 
-                            <!-- Campo de Foto de Perfil -->
                             <div class="flex flex-col items-center">
                                 <x-input-label for="profile_photo" :value="__('Foto de Perfil')" class="mb-4 text-lg font-semibold text-[#2c3856]" />
 
-                                <!-- Foto de perfil actual o preview -->
                                 <div class="mt-2 mb-4">
                                     <template x-if="photoPreview">
                                         <img :src="photoPreview" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md">
                                     </template>
                                     <template x-if="!photoPreview && '{{ $user->profile_photo_path }}'">
-                                        <img src="{{ asset('storage/' . $user->profile_photo_path) }}" alt="{{ $user->name }}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md">
+                                        {{-- Línea editada para usar Storage::disk('s3')->url() --}}
+                                        <img src="{{ $user->profile_photo_path ? Storage::disk('s3')->url($user->profile_photo_path) : '' }}" alt="{{ $user->name }}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md">
+
                                     </template>
                                     <template x-if="!photoPreview && !'{{ $user->profile_photo_path }}'">
                                         <div class="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 border-4 border-gray-300 shadow-md">
@@ -57,7 +57,6 @@
                                     </template>
                                 </div>
 
-                                <!-- Botón personalizado para subir archivo -->
                                 <input type="file" class="hidden" x-ref="photo" name="profile_photo" id="profile_photo" accept="image/*">
                                 <label for="profile_photo" class="inline-flex items-center px-5 py-2 bg-[#ff9c00] text-white rounded-full font-semibold text-sm uppercase tracking-widest hover:bg-orange-600 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md cursor-pointer">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -65,7 +64,6 @@
                                 </label>
                                 <x-input-error class="mt-2" :messages="$errors->get('profile_photo')" />
 
-                                <!-- Opción para eliminar foto actual -->
                                 @if ($user->profile_photo_path)
                                     <div class="mt-4">
                                         <label for="remove_profile_photo" class="inline-flex items-center cursor-pointer">
@@ -76,7 +74,6 @@
                                 @endif
                             </div>
 
-                            <!-- Campos existentes de Nombre y Email -->
                             <div class="mt-8"> {{-- Añadir margen superior para separar de la sección de foto --}}
                                 <x-input-label for="name" :value="__('Nombre')" />
                                 <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
@@ -131,7 +128,6 @@
                 </div>
             </div>
 
-            <!-- Si necesitas la sección de eliminar usuario, descomenta esto -->
             {{--
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
