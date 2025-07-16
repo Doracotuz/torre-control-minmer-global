@@ -83,7 +83,8 @@ class UserController extends Controller
         }
 
         if ($request->hasFile('profile_photo')) {
-            $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 'public');
+            // CAMBIO: Almacenar en S3
+            $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 's3');
         } else {
             $data['profile_photo_path'] = null;
         }
@@ -176,13 +177,14 @@ class UserController extends Controller
         }
 
         if ($request->hasFile('profile_photo')) {
-            if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
-                Storage::disk('public')->delete($user->profile_photo_path);
+            if ($user->profile_photo_path && Storage::disk('s3')->exists($user->profile_photo_path)) { // CAMBIO: Usar S3
+                Storage::disk('s3')->delete($user->profile_photo_path); // CAMBIO: Usar S3
             }
-            $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 'public');
+            // CAMBIO: Almacenar en S3
+            $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 's3');
         } elseif ($request->input('remove_profile_photo')) {
-            if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
-                Storage::disk('public')->delete($user->profile_photo_path);
+            if ($user->profile_photo_path && Storage::disk('s3')->exists($user->profile_photo_path)) { // CAMBIO: Usar S3
+                Storage::disk('s3')->delete($user->profile_photo_path); // CAMBIO: Usar S3
             }
             $data['profile_photo_path'] = null;
         } else {
@@ -213,8 +215,8 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
-            Storage::disk('public')->delete($user->profile_photo_path);
+        if ($user->profile_photo_path && Storage::disk('s3')->exists($user->profile_photo_path)) { // CAMBIO: Usar S3
+            Storage::disk('s3')->delete($user->profile_photo_path);
         }
 
         $user->accessibleFolders()->detach();

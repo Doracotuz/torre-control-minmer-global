@@ -51,7 +51,7 @@ class AreaController extends Controller
         $data = $request->all();
 
         if ($request->hasFile('icon')) {
-            $data['icon_path'] = $request->file('icon')->store('area_icons', 'public');
+            $data['icon_path'] = $request->file('icon')->store('area_icons', 's3');
         }
 
         Area::create($data);
@@ -97,13 +97,13 @@ class AreaController extends Controller
         // Si se sube un nuevo icono
         if ($request->hasFile('icon')) {
             // Eliminar el icono antiguo si existe
-            if ($area->icon_path && Storage::disk('public')->exists($area->icon_path)) {
-                Storage::disk('public')->delete($area->icon_path);
+            if ($area->icon_path && Storage::disk('s3')->exists($area->icon_path)) {
+                Storage::disk('s3')->delete($area->icon_path);
             }
-            $data['icon_path'] = $request->file('icon')->store('area_icons', 'public');
+            $data['icon_path'] = $request->file('icon')->store('area_icons', 's3');
         } elseif ($request->input('remove_icon')) { // Si se marcó la casilla para eliminar el icono
-            if ($area->icon_path && Storage::disk('public')->exists($area->icon_path)) {
-                Storage::disk('public')->delete($area->icon_path);
+            if ($area->icon_path && Storage::disk('s3')->exists($area->icon_path)) {
+                Storage::disk('s3')->delete($area->icon_path);
             }
             $data['icon_path'] = null;
         }
@@ -129,8 +129,8 @@ class AreaController extends Controller
         });
 
         // Eliminar el icono del área si existe
-        if ($area->icon_path && Storage::disk('public')->exists($area->icon_path)) {
-            Storage::disk('public')->delete($area->icon_path);
+        if ($area->icon_path && Storage::disk('s3')->exists($area->icon_path)) {
+            Storage::disk('s3')->delete($area->icon_path);
         }
 
         $area->delete(); // Eliminar el registro del área

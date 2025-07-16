@@ -118,7 +118,7 @@ class OrganigramController extends Controller
 
         $path = null;
         if ($request->hasFile('profile_photo')) {
-            $path = $request->file('profile_photo')->store('organigram-photos', 'public');
+            $path = $request->file('profile_photo')->store('organigram-photos', 's3');
         }
 
         $member = OrganigramMember::create([
@@ -202,13 +202,13 @@ class OrganigramController extends Controller
 
         if ($request->hasFile('profile_photo')) {
             if ($organigramMember->profile_photo_path) {
-                Storage::disk('public')->delete($organigramMember->profile_photo_path);
+                Storage::disk('s3')->delete($organigramMember->profile_photo_path);
             }
-            $path = $request->file('profile_photo')->store('organigram-photos', 'public');
+            $path = $request->file('profile_photo')->store('organigram-photos', 's3');
             $organigramMember->profile_photo_path = $path;
         } elseif ($request->input('remove_profile_photo')) {
             if ($organigramMember->profile_photo_path) {
-                Storage::disk('public')->delete($organigramMember->profile_photo_path);
+                Storage::disk('s3')->delete($organigramMember->profile_photo_path);
                 $organigramMember->profile_photo_path = null;
             }
         }
@@ -267,7 +267,7 @@ class OrganigramController extends Controller
     public function destroy(OrganigramMember $organigramMember)
     {
         if ($organigramMember->profile_photo_path) {
-            Storage::disk('public')->delete($organigramMember->profile_photo_path);
+            Storage::disk('s3')->delete($organigramMember->profile_photo_path);
         }
 
         $organigramMember->delete();
@@ -402,7 +402,7 @@ class OrganigramController extends Controller
                 'name' => $area->name,
                 'title' => 'Área',
                 'type' => 'area',
-                'img' => $area->icon_path ? asset('storage/' . $area->icon_path) : null,
+                'img' => $area->icon_path ? Storage::disk('s3')->url($area->icon_path) : null,
                 'description' => $area->description,
             ];
         }
@@ -429,7 +429,7 @@ class OrganigramController extends Controller
                         'original_id' => (string)$manager->id, // Guardamos el ID real para futuras referencias
                         'name' => $manager->name,
                         'title' => $manager->position->name ?? 'Sin Posición',
-                        'img' => $manager->profile_photo_path ? asset('storage/' . $manager->profile_photo_path) : null,
+                        'img' => $manager->profile_photo_path ? Storage::disk('s3')->url($manager->profile_photo_path) : null,
                         'type' => 'member',
                         'is_proxy' => true, // <-- Marca clave para el frontend
                     ];
@@ -464,7 +464,7 @@ class OrganigramController extends Controller
                 'pid' => $parentId, // El padre se asigna según la nueva lógica
                 'name' => $member->name,
                 'title' => $member->position->name ?? 'Sin Posición',
-                'img' => $member->profile_photo_path ? asset('storage/' . $member->profile_photo_path) : null,
+                'img' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
                 'type' => 'member',
                 'is_proxy' => false, // Este es un nodo real, no un proxy
                 'full_details' => [ // Objeto con toda la información para el modal del miembro
@@ -475,7 +475,7 @@ class OrganigramController extends Controller
                     'area_name' => $member->area->name ?? 'N/A',
                     'manager_name' => $member->manager->name ?? 'N/A',
                     'manager_id' => $member->manager_id,
-                    'profile_photo_path' => $member->profile_photo_path ? asset('storage/' . $member->profile_photo_path) : null,
+                    'profile_photo_path' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
                     'activities' => $member->activities->map(fn($a) => ['id' => $a->id, 'name' => $a->name]),
                     'skills' => $member->skills->map(fn($s) => ['id' => $s->id, 'name' => $s->name]),
                     'trajectories' => $member->trajectories->map(fn($t) => [
@@ -528,7 +528,7 @@ class OrganigramController extends Controller
                 'pid' => $parentId,
                 'name' => $member->name,
                 'title' => $member->position->name ?? 'Sin Posición',
-                'img' => $member->profile_photo_path ? asset('storage/' . $member->profile_photo_path) : null,
+                'img' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
                 'type' => 'member',
                 'is_proxy' => false, // Siempre false en esta vista
                 'full_details' => [
@@ -539,7 +539,7 @@ class OrganigramController extends Controller
                     'area_name' => $member->area->name ?? 'N/A',
                     'manager_name' => $member->manager->name ?? 'N/A',
                     'manager_id' => $member->manager_id,
-                    'profile_photo_path' => $member->profile_photo_path ? asset('storage/' . $member->profile_photo_path) : null,
+                    'profile_photo_path' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
                     'activities' => $member->activities->map(fn($a) => ['id' => $a->id, 'name' => $a->name]),
                     'skills' => $member->skills->map(fn($s) => ['id' => $s->id, 'name' => $s->name]),
                     'trajectories' => $member->trajectories->map(fn($t) => [

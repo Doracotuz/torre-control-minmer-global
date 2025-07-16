@@ -12,7 +12,7 @@
                 <form method="POST" action="{{ route('admin.users.update', $user) }}" enctype="multipart/form-data" class="p-6 md:p-8"
                       x-data="{ 
                           photoName: null, 
-                          photoPreview: '{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null }}',
+                          photoPreview: '{{ $user->profile_photo_path ? Storage::disk('s3')->url($user->profile_photo_path) : null }}',
                           isClient: {{ old('is_client', $user->is_client) ? 'true' : 'false' }},
                           selectedFolderIds: @json(old('accessible_folder_ids', $accessibleFolderIds)),
                           folders: [],
