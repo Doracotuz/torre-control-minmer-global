@@ -12,7 +12,8 @@
                 <form method="POST" action="{{ route('admin.users.update', $user) }}" enctype="multipart/form-data" class="p-6 md:p-8"
                       x-data="{ 
                           photoName: null, 
-                          photoPreview: '{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null }}',
+                          // CAMBIO PARA S3: Inicializa photoPreview con la ruta S3 existente o null
+                          photoPreview: '{{ $user->profile_photo_path ? Storage::url($user->profile_photo_path) : null }}',
                           isClient: {{ old('is_client', $user->is_client) ? 'true' : 'false' }},
                           selectedFolderIds: @json(old('accessible_folder_ids', $accessibleFolderIds)),
                           folders: [],
@@ -144,8 +145,6 @@
                             </div>
 
                             {{-- Campo de Área, si es cliente y no se seleccionó área --}}
-                            <!-- <input type="hidden" name="area_id" x-show="isClient" x-bind:value="isClient ? null : '{{ $user->area_id }}'"> -->
-
                             <div class="pt-2">
                                 <label for="is_area_admin" class="inline-flex items-center">
                                     <input id="is_area_admin" type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" name="is_area_admin" value="1" {{ old('is_area_admin', $user->is_area_admin) ? 'checked' : '' }}>

@@ -39,7 +39,8 @@
                                 <div class="flex flex-col items-center space-y-4">
                                     {{-- Previsualización del Icono Actual --}}
                                     <div class="w-32 h-32 rounded-full bg-gray-100 border-4 border-gray-200 flex items-center justify-center overflow-hidden shadow-md">
-                                        <img src="{{ $area->icon_path ? asset('storage/' . $area->icon_path) : asset('images/placeholder_user.jpg') }}" 
+                                        {{-- CAMBIO PARA S3: Usar Storage::url para cargar la imagen desde S3 --}}
+                                        <img src="{{ $area->icon_path ? Storage::url($area->icon_path) : asset('images/placeholder_user.jpg') }}" 
                                              alt="{{ $area->name }} Icon" 
                                              class="w-full h-full object-cover" 
                                              id="iconPreview">

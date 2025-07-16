@@ -36,14 +36,14 @@
                                   this.loadingFolders = true;
                                   fetch('{{ route('admin.api.folders_for_client_access') }}?parent_id=' + folder.id)
                                       .then(response => response.json())
-                                      .then(data => {
-                                          folder.children = data.map(child => ({ ...child, isOpen: false, children: [] }));
-                                          this.loadingFolders = false;
-                                      })
-                                      .catch(error => {
-                                          console.error('Error loading subfolders:', error);
-                                          this.loadingFolders = false;
-                                      });
+                                  .then(data => {
+                                      this.folders = data.map(child => ({ ...child, isOpen: false, children: [] }));
+                                      this.loadingFolders = false;
+                                  })
+                                  .catch(error => {
+                                      console.error('Error loading subfolders:', error);
+                                      this.loadingFolders = false;
+                                  });
                               }
                           },
                           init() {
@@ -138,8 +138,6 @@
                             
                             {{-- Campo de Área, si es cliente y no se seleccionó área --}}
                             {{-- Esto es para el caso cuando el area_id no es requerido para clientes y se envía como null --}}
-                            <!-- <input type="hidden" name="area_id" x-show="isClient" x-bind:value="isClient ? null : ''"> -->
-
                             <div class="pt-2">
                                 <label for="is_area_admin" class="inline-flex items-center">
                                     <input id="is_area_admin" type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" name="is_area_admin" value="1" {{ old('is_area_admin') ? 'checked' : '' }}>

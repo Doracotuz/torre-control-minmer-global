@@ -25,8 +25,8 @@
                 <form method="POST" action="{{ route('admin.organigram.update', $organigramMember) }}" enctype="multipart/form-data"
                     x-data="{
                         photoName: null,
-                        // Inicializa photoPreview con la ruta existente o null si no hay foto
-                        photoPreview: '{{ $organigramMember->profile_photo_path ? asset('storage/' . $organigramMember->profile_photo_path) : null }}',
+                        // CAMBIO PARA S3: Inicializa photoPreview con la ruta S3 existente o null
+                        photoPreview: '{{ $organigramMember->profile_photo_path ? Storage::url($organigramMember->profile_photo_path) : null }}',
                         trajectories: {{ $trajectories->toJson() }}, // Carga las trayectorias existentes
                         removingExistingPhoto: false // Para el checkbox de eliminar foto
                     }"
@@ -41,9 +41,9 @@
                             removingExistingPhoto = false; // Desmarcar si se selecciona una nueva foto
                         } else {
                             photoName = null;
-                            // Si no hay nueva foto y no se ha marcado para eliminar la existente
+                            // CAMBIO PARA S3: Si no hay nueva foto y no se ha marcado para eliminar la existente, usa la URL de S3
                             if (!removingExistingPhoto && '{{ $organigramMember->profile_photo_path }}') {
-                                photoPreview = '{{ asset('storage/' . $organigramMember->profile_photo_path) }}';
+                                photoPreview = '{{ Storage::url($organigramMember->profile_photo_path) }}';
                             } else { // Si se marcó para eliminar o no hay foto existente
                                 photoPreview = null;
                             }
@@ -63,9 +63,9 @@
                                     <template x-if="photoPreview">
                                         <img :src="photoPreview" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md">
                                     </template>
-                                    {{-- Muestra la foto existente si no hay preview y no se ha marcado para eliminar --}}
+                                    {{-- CAMBIO PARA S3: Muestra la foto existente desde S3 si no hay preview y no se ha marcado para eliminar --}}
                                     <template x-if="!photoPreview && '{{ $organigramMember->profile_photo_path }}' && !removingExistingPhoto">
-                                        <img src="{{ asset('storage/' . $organigramMember->profile_photo_path) }}" alt="{{ $organigramMember->name }}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md">
+                                        <img src="{{ Storage::url($organigramMember->profile_photo_path) }}" alt="{{ $organigramMember->name }}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md">
                                     </template>
                                     <template x-if="!photoPreview && !'{{ $organigramMember->profile_photo_path }}' || removingExistingPhoto">
                                         <div class="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 border-4 border-gray-300 shadow-md">
