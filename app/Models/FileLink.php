@@ -29,8 +29,8 @@ class FileLink extends Model
 
         static::deleting(function ($fileLink) {
             if ($fileLink->type === 'file' && $fileLink->path) {
-                if (Storage::disk('public')->exists($fileLink->path)) {
-                    Storage::disk('public')->delete($fileLink->path);
+                if (Storage::disk('s3')->exists($fileLink->path)) {
+                    Storage::disk('s3')->delete($fileLink->path);
                     \Log::info("Archivo físico eliminado: " . $fileLink->path);
                 } else {
                     \Log::warning("Archivo físico no encontrado para eliminar: " . $fileLink->path);

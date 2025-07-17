@@ -43,7 +43,7 @@
                                 <div class="flex flex-col items-center justify-center pt-5 pb-6">
                                     <svg class="w-6 h-6 mb-3 text-gray-400 group-hover:text-[#2c3856] transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 0115.9 6H16a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h2"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12l-4-4m0 0L8 12m4-4v8"></path></svg>
                                     <p class="mb-2 text-sm text-gray-500 group-hover:text-[#2c3856] transition-colors duration-300"><span class="font-semibold">{{ __('Haz clic para subir') }}</span> {{ __('o arrastra y suelta') }}</p>
-                                    <p class="text-xs text-gray-500 group-hover:text-[#2c3856] transition-colors duration-300">{{ __('PNG, JPG, PDF, DOCX, XLSX (Máx. 10MB por archivo)') }}</p>
+                                    <p class="text-xs text-gray-500 group-hover:text-[#2c3856] transition-colors duration-300">{{ __('PNG, JPG, PDF, DOCX, XLSX (Máx. 500MB por archivo)') }}</p>
                                     <p x-show="fileName" class="text-xs text-[#ff9c00] mt-1" x-text="fileName"></p>
                                 </div>
                             </label>

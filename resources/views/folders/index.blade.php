@@ -186,7 +186,7 @@
                             <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
                                         hover:bg-gray-50 transform hover:scale-105 relative"
                                  draggable="true"
-                                 x-on:dragstart="handleDragStart($event, {{ $folderItem->id }})"
+                                 x-on:dragstart="handleDragStart($event, {{ $folderItem->id }}, 'folder')"
                                  x-on:dragover.prevent="handleDragOver($event, {{ $folderItem->id }})"
                                  x-on:dragleave="handleDragLeave($event)"
                                  x-on:drop.prevent.stop="handleDrop($event, {{ $folderItem->id }})"
@@ -263,10 +263,11 @@
                                 $isPdf = strtolower($fileExtension) == 'pdf';
                                 // CAMBIO AQUÍ: Usar Storage::disk('s3')->url() para generar la URL para previsualización
                                 $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
-
                             @endphp
                             <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
                                         hover:bg-gray-50 transform hover:scale-105 relative"
+                                 draggable="true" {{-- ¡AÑADIDO PARA HACER EL ARCHIVO ARRASTRABLE! --}}
+                                 x-on:dragstart="handleDragStart($event, {{ $fileLink->id }}, 'file_link')" {{-- ¡AÑADIDO Y MODIFICADO! --}}
                                  x-on:contextmenu.prevent="openPropertiesModal({
                                      name: '{{ $fileLink->name }}',
                                      type: '{{ $fileLink->type == 'file' ? 'Archivo (' . strtoupper($fileExtension) . ')' : 'Enlace' }}',
@@ -379,7 +380,7 @@
                                     @foreach ($folders as $folderItem)
                                         <tr class="hover:bg-gray-100 transition-colors duration-150"
                                             draggable="true"
-                                            x-on:dragstart="handleDragStart($event, {{ $folderItem->id }})"
+                                            x-on:dragstart="handleDragStart($event, {{ $folderItem->id }}, 'folder')" {{-- ¡MODIFICADO! --}}
                                             x-on:dragover.prevent="handleDragOver($event, {{ $folderItem->id }})"
                                             x-on:dragleave="handleDragLeave($event)"
                                             x-on:drop.prevent.stop="handleDrop($event, {{ $folderItem->id }})"
@@ -443,6 +444,8 @@
                                             $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
                                         @endphp
                                         <tr class="hover:bg-gray-100 transition-colors duration-150"
+                                            draggable="true" {{-- ¡AÑADIDO PARA HACER EL ARCHIVO ARRASTRABLE! --}}
+                                            x-on:dragstart="handleDragStart($event, {{ $fileLink->id }}, 'file_link')" {{-- ¡AÑADIDO Y MODIFICADO! --}}
                                             x-on:contextmenu.prevent="openPropertiesModal({
                                                 name: '{{ $fileLink->name }}',
                                                 type: '{{ $fileLink->type == 'file' ? 'Archivo (' . strtoupper($fileExtension) . ')' : 'Enlace' }}',
@@ -571,7 +574,10 @@
                                     // CAMBIO AQUÍ: Usar Storage::disk('s3')->url() para generar la URL para previsualización
                                     $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
                                 @endphp
-                                <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 p-4 relative">
+                                <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 p-4 relative"
+                                     draggable="true" {{-- ¡AÑADIDO PARA HACER EL ARCHIVO ARRASTRABLE! --}}
+                                     x-on:dragstart="handleDragStart($event, {{ $fileLink->id }}, 'file_link')" {{-- ¡AÑADIDO Y MODIFICADO! --}}
+                                >
                                     {{-- Checkbox para selección múltiple --}}
                                     <input type="checkbox"
                                         class="absolute top-2 left-2 rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] z-10"
@@ -783,30 +789,40 @@
                 },
 
                 // --- Lógica de Drag and Drop Unificada ---
-                draggingFolderId: null,
+                draggingItemId: null, // Ahora guarda el ID del elemento (carpeta o archivo)
+                draggingItemType: null, // Nuevo: 'folder' o 'file_link'
                 dropTargetFolderId: null,
                 isDraggingFile: false,
                 highlightMainDropArea: false,
 
-                handleDragStart(event, folderId) {
-                    console.log('DragStart:', folderId);
-                    this.draggingFolderId = folderId;
-                    event.dataTransfer.setData('text/plain', folderId);
+                handleDragStart(event, itemId, itemType) { // Recibe el tipo
+                    console.log('DragStart:', itemId, itemType);
+                    this.draggingItemId = itemId;
+                    this.draggingItemType = itemType;
+
+                    // Almacena un objeto JSON en dataTransfer para incluir el ID y el tipo
+                    event.dataTransfer.setData('text/plain', JSON.stringify({ id: itemId, type: itemType }));
                     event.dataTransfer.effectAllowed = 'move';
                 },
 
                 handleDragOver(event, targetFolderId) {
                     event.preventDefault();
+                    // Identifica si lo que se arrastra son archivos externos (desde el sistema operativo)
                     const isFileDrag = event.dataTransfer.types.includes('Files');
-                    const isInternalFolderDrag = this.draggingFolderId && this.draggingFolderId != targetFolderId;
+                    // Identifica si lo que se arrastra es un elemento interno (carpeta o archivo)
+                    const isInternalItemDrag = this.draggingItemId !== null;
 
-                    if (isFileDrag || isInternalFolderDrag) {
-                        this.dropTargetFolderId = targetFolderId;
-                        this.isDraggingFile = isFileDrag;
+                    if (isFileDrag || isInternalItemDrag) {
+                        this.dropTargetFolderId = targetFolderId; // La carpeta sobre la que se suelta
+                        this.isDraggingFile = isFileDrag; // Sigue siendo útil para resaltar
+
+                        // Resalta la zona principal de soltar si se arrastra un archivo externo o si es la carpeta actual
                         this.highlightMainDropArea = isFileDrag && (targetFolderId === null || targetFolderId === {{ $currentFolder ? $currentFolder->id : 'null' }});
 
+                        // Determina el efecto visual
                         event.dataTransfer.dropEffect = isFileDrag ? 'copy' : 'move';
                     } else {
+                        // Si no es un archivo externo ni un elemento interno válido, no permitir el drop
                         event.dataTransfer.dropEffect = 'none';
                         this.dropTargetFolderId = null;
                         this.isDraggingFile = false;
@@ -824,16 +840,19 @@
                 },
 
                 handleDragLeave(event, targetFolderId = null) {
+                    // Solo resetear si el puntero sale completamente del área de drop o del contenedor principal
+                    // event.relatedTarget es el elemento al que el puntero se mueve
+                    // event.currentTarget es el elemento que recibió el dragleave
                     if (!event.relatedTarget || !event.currentTarget.contains(event.relatedTarget)) {
                         this.dropTargetFolderId = null;
                         this.isDraggingFile = false;
                         this.highlightMainDropArea = false;
-                    } else {
                     }
                 },
 
                 handleDragEnd(event) {
-                    this.draggingFolderId = null;
+                    this.draggingItemId = null;
+                    this.draggingItemType = null;
                     this.dropTargetFolderId = null;
                     this.isDraggingFile = false;
                     this.highlightMainDropArea = false;
@@ -841,14 +860,24 @@
 
                 handleDrop(event, targetFolderId) {
                     event.preventDefault();
-                    const files = event.dataTransfer.files;
-                    const draggedInternalFolderId = event.dataTransfer.getData('text/plain');
+                    const files = event.dataTransfer.files; // Archivos externos
+                    const draggedData = event.dataTransfer.getData('text/plain'); // Datos del arrastre interno
 
+                    let draggedItem = null;
+                    try {
+                        draggedItem = JSON.parse(draggedData);
+                    } catch (e) {
+                        console.warn('Dragged data is not JSON or is empty:', draggedData, e);
+                    }
+
+                    // Resetear el estado de drag
                     this.dropTargetFolderId = null;
-                    this.draggingFolderId = null;
+                    this.draggingItemId = null;
+                    this.draggingItemType = null;
                     this.isDraggingFile = false;
                     this.highlightMainDropArea = false;
 
+                    // Lógica para SOLTAR ARCHIVOS EXTERNOS (subida)
                     if (files.length > 0) {
                         const actualTargetFolderId = targetFolderId === null ? ({{ $currentFolder ? $currentFolder->id : 'null' }}) : targetFolderId;
                         console.log('Drop: Files detected. Target folder ID:', actualTargetFolderId);
@@ -880,19 +909,33 @@
                             window.location.reload();
                         });
 
-                    } else if (draggedInternalFolderId && draggedInternalFolderId != targetFolderId) {
-                        console.log('Drop: Internal folder detected. Dragged ID:', draggedInternalFolderId, 'Target ID:', targetFolderId);
-                        fetch('{{ route('folders.move') }}', {
+                    }
+                    // Lógica para SOLTAR ELEMENTOS INTERNOS (mover)
+                    else if (draggedItem && draggedItem.id && draggedItem.type && draggedItem.id != targetFolderId) {
+                        console.log('Drop: Internal item detected. Dragged ID:', draggedItem.id, 'Type:', draggedItem.type, 'Target ID:', targetFolderId);
+
+                        let requestBody = {
+                            target_folder_id: targetFolderId
+                        };
+
+                        if (draggedItem.type === 'folder') {
+                            requestBody.folder_ids = [draggedItem.id];
+                            requestBody.file_link_ids = [];
+                        } else if (draggedItem.type === 'file_link') {
+                            requestBody.folder_ids = [];
+                            requestBody.file_link_ids = [draggedItem.id];
+                        } else {
+                            console.warn('Unknown item type dragged:', draggedItem.type);
+                            return; // No hacer nada si el tipo es desconocido
+                        }
+
+                        fetch('{{ route('items.bulk_move') }}', { // Usamos bulk_move para ambos tipos
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
                             },
-                            body: JSON.stringify({
-                                _method: 'PUT',
-                                folder_id: draggedInternalFolderId,
-                                target_folder_id: targetFolderId
-                            })
+                            body: JSON.stringify(requestBody)
                         })
                         .then(response => response.json())
                         .then(data => {
@@ -906,7 +949,7 @@
                         })
                         .catch(error => {
                             console.error('Error al mover:', error);
-                            sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar mover la carpeta.');
+                            sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar mover el elemento.');
                             window.location.reload();
                         });
                     }
@@ -949,12 +992,12 @@
                     const fileLinkIdsToDelete = this.selectedItems.filter(item => item.type === 'file_link').map(item => item.id);
 
                     const formData = new FormData();
-                    formData.append('_method', 'DELETE');
+                    formData.append('_method', 'DELETE'); // Laravel expects _method for DELETE requests
                     formData.append('folder_ids', JSON.stringify(folderIdsToDelete));
                     formData.append('file_link_ids', JSON.stringify(fileLinkIdsToDelete));
 
                     fetch('{{ route('folders.bulk_delete') }}', {
-                        method: 'POST',
+                        method: 'POST', // Axios/Fetch doesn't support DELETE with body directly, so POST + _method
                         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                         body: formData
                     })
@@ -1060,10 +1103,13 @@
                         alert('No hay elementos seleccionados para mover.');
                         return;
                     }
+                    // Si se seleccionó la raíz, moveTargetFolderId será null. Si se seleccionó una carpeta específica, tendrá un ID.
+                    // Si moveTargetFolderId es null y moveTargetFolderName no es 'Raíz', significa que el usuario no eligió un destino válido.
                     if (this.moveTargetFolderId === null && this.moveTargetFolderName !== 'Raíz') {
-                         alert('Por favor, selecciona una carpeta de destino o Raíz.');
+                         alert('Por favor, selecciona una carpeta de destino o la Raíz.');
                          return;
                     }
+
 
                     if (!confirm(`¿Estás seguro de que quieres mover los elementos seleccionados a "${this.moveTargetFolderName}"?`)) {
                         return;
@@ -1081,7 +1127,7 @@
                         body: JSON.stringify({
                             folder_ids: folderIdsToMove,
                             file_link_ids: fileLinkIdsToMove,
-                            target_folder_id: this.moveTargetFolderId
+                            target_folder_id: this.moveTargetFolderId // null si es la raíz
                         })
                     })
                     .then(response => response.json())
