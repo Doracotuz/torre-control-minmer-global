@@ -13,7 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'check.area' => \App\Http\Middleware\CheckUserArea::class,
+            'super.admin' => \App\Http\Middleware\CheckSuperAdmin::class,
+
         ]);
+        
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -157,7 +157,7 @@
                     </x-nav-link>
 
                     {{-- Super Admin Collapsible Menu --}}
-                    @if (Auth::user()->area && Auth::user()->area->name === 'Administración')
+                    @if (Auth::user()->is_area_admin && Auth::user()->area?->name === 'Administración')
                         <div class="pt-4 mt-2 border-t border-white/10">
                             <button @click="isSuperAdminMenuOpen = !isSuperAdminMenuOpen" class="dropdown-toggle text-xs">
                                 <span>Super Admin</span>

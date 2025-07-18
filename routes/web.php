@@ -118,10 +118,10 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Rutas de administración (solo accesibles por el área de Administración)
-Route::middleware(['auth', 'check.area:Administración'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('dashboard');
+Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', function () { //
+        return view('admin.dashboard'); //
+    })->name('dashboard'); //
 
     // Rutas para la gestión de Áreas
     Route::get('/areas', [AreaController::class, 'index'])->name('areas.index');
