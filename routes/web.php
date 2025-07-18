@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 use App\Http\Controllers\FileLinkController;
 use App\Http\Controllers\Admin\OrganigramPositionController;
 use App\Models\FileLink;
+use App\Http\Controllers\TmsController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -208,6 +209,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::prefix('tms')->name('tms.')->group(function () {
+        Route::get('/', [TmsController::class, 'index'])->name('index');
+        Route::get('/ver-rutas', [TmsController::class, 'viewRoutes'])->name('viewRoutes');
+        Route::get('/crear-ruta', [TmsController::class, 'createRoute'])->name('createRoute');
+        Route::post('/crear-ruta', [TmsController::class, 'storeRoute'])->name('storeRoute');
+        Route::get('/asignar-rutas', [TmsController::class, 'assignRoutes'])->name('assignRoutes');
+    });    
 });
 
 
