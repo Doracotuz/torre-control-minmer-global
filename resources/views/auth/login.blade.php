@@ -1,7 +1,22 @@
 <x-guest-layout>
+    {{-- Estilos CSS para la animación del logotipo --}}
+    <style>
+        .logo-coin-flip {
+            /* Prepara el elemento para transformaciones 3D y añade una transición suave */
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+        }
+
+        .logo-coin-flip:hover {
+            /* Al pasar el cursor, gira el logo 360 grados en el eje Y */
+            transform: rotateY(360deg);
+        }
+    </style>
+
     <div class="flex flex-col items-center justify-center mb-6">
-        <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" alt="Minmer Global Logo" class="h-20 mb-3 filter invert">
-        <h1 class="text-3xl font-extrabold text-[#2c3856] mb-1" style="font-family: 'Raleway', sans-serif;">TORRE DE CONTROL</h1>
+        {{-- Se cambió la clase de altura de h-20 a h-32 para hacer el logo más grande --}}
+        <img src="{{ Storage::disk('s3')->url('LogoAzul.png') }}" alt="Minmer Global Logo" class="h-32 mb-3 filter logo-coin-flip">
+        <h1 class="text-3xl font-extrabold text-[#2c3856] mb-1" style="font-family: 'Raleway', sans-serif;">CONTROL TOWER</h1>
         <p class="text-sm text-gray-600" style="font-family: 'Montserrat', sans-serif;">MINMER GLOBAL</p>
     </div>
 
@@ -43,17 +58,9 @@
                 {{ __('Iniciar Sesión') }}
             </button>
         </div>
-        {{-- Se eliminó el enlace de registro según la solicitud de no usar invitados --}}
-        {{--
-        <div class="text-center mt-6">
-            <p class="text-sm text-gray-600">¿No tienes cuenta?
-                <a href="{{ route('register') }}" class="text-blue-600 hover:text-blue-800 transition-colors duration-200 font-medium">Regístrate aquí</a>
-            </p>
-        </div>
-        --}}
+        
     </form>
 
-    {{-- Enlaces de Términos y Condiciones y Política de Privacidad --}}
     <div class="mt-8 pt-6 border-t border-gray-200 text-center space-y-3">
         <p class="text-sm text-gray-500 mb-4">© 2025 Minmer Global. Todos los derechos reservados.</p>
         <p class="text-sm text-gray-600">

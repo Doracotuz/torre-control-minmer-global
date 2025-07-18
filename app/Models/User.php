@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Notifications\CustomResetPasswordNotification; // <-- 1. LÍNEA AÑADIDA
 
 class User extends Authenticatable
 {
@@ -89,5 +90,16 @@ class User extends Authenticatable
     public function isClient(): bool
     {
         return $this->is_client;
+    }
+
+    /**
+     * Enviar la notificación de restablecimiento de contraseña personalizada.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token) // <-- 2. MÉTODO AÑADIDO
+    {
+        $this->notify(new CustomResetPasswordNotification($token));
     }
 }
