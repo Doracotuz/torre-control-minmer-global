@@ -285,7 +285,9 @@
                                     :checked="isSelected({{ $fileLink->id }}, 'file_link')"
                                 >
 
+                                {{-- CAMBIO AQUÍ: Añadido el atributo download="{{ $fileLink->name }}" para el caso de descarga --}}
                                 <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
+                                   @if ($fileLink->type == 'file' && !$isImage && !$isPdf) download="{{ $fileLink->name }}" @endif
                                    target="_blank"
                                    class="flex flex-col items-center justify-center w-full"
                                    onclick="event.stopPropagation()"
@@ -334,7 +336,7 @@
 
                                 {{-- Acciones (botones con estilo mejorado y responsivo) --}}
                                 <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full justify-center">
-                                    <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center justify-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                    <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center justify-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-wider hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                         {{ __('Editar') }}
                                     </a>
                                     <form action="{{ route('file_links.destroy', $fileLink) }}" method="POST" class="inline-block w-full sm:w-auto" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este elemento?'); event.stopPropagation();">
@@ -462,7 +464,9 @@
                                                         @click.stop="toggleSelection({{ $fileLink->id }}, 'file_link')"
                                                         :checked="isSelected({{ $fileLink->id }}, 'file_link')"
                                                     >
+                                                    {{-- CAMBIO AQUÍ: Añadido el atributo download="{{ $fileLink->name }}" para el caso de descarga --}}
                                                     <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
+                                                       @if ($fileLink->type == 'file' && !$isImage && !$isPdf) download="{{ $fileLink->name }}" @endif
                                                        target="_blank"
                                                        class="flex items-center cursor-pointer"
                                                        onclick="event.stopPropagation()"
@@ -585,7 +589,12 @@
                                         :checked="isSelected({{ $fileLink->id }}, 'file_link')"
                                     >
                                     <div class="flex items-center space-x-3 mb-2">
-                                        <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif" target="_blank" class="flex items-center flex-shrink-0" onclick="event.stopPropagation()">
+                                        {{-- CAMBIO AQUÍ: Añadido el atributo download="{{ $fileLink->name }}" para el caso de descarga --}}
+                                        <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
+                                           @if ($fileLink->type == 'file' && !$isImage && !$isPdf) download="{{ $fileLink->name }}" @endif
+                                           target="_blank"
+                                           class="flex items-center flex-shrink-0"
+                                           onclick="event.stopPropagation()">
                                             @if ($fileLink->type == 'file')
                                                 @if ($isImage)
                                                     <svg class="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -608,7 +617,9 @@
                                         </a>
                                         <div class="flex-1 min-w-0">
                                             <p class="text-base font-semibold text-[#2c3856] truncate">
-                                                <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif" target="_blank" class="hover:underline" onclick="event.stopPropagation()">
+                                                <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
+                                                   @if ($fileLink->type == 'file' && !$isImage && !$isPdf) download="{{ $fileLink->name }}" @endif
+                                                   target="_blank" class="hover:underline" onclick="event.stopPropagation()">
                                                     {{ $fileLink->name }}
                                                 </a>
                                             </p>
@@ -766,7 +777,7 @@
                     </button>
                     <button @click="confirmMove()"
                        :disabled="selectedItems.length === 0"
-                       class="inline-flex items-center px-5 py-2 bg-blue-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 shadow-md">
+                       class="ml-3 inline-flex items-center px-5 py-2 bg-blue-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 shadow-md">
                         {{ __('Mover Aquí') }}
                     </button>
                 </div>

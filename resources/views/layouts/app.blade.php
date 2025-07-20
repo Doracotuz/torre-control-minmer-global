@@ -140,7 +140,7 @@
                 <div class="p-6 text-center">
                     <div class="logo-container py-4">
                         <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" alt="Minmer Global Logo" class="h-20 mx-auto mb-3">
-                        <span class="text-xl font-extrabold text-white tracking-wide logo-text">TORRE DE CONTROL</span>
+                        <span class="text-xl font-extrabold text-white tracking-wide logo-text">CONTROL TOWER</span>
                         <span class="text-xs text-gray-300 mt-1 block logo-subtitle">MINMER GLOBAL</span>
                     </div>
                 </div>
@@ -162,7 +162,7 @@
                         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V14.25m-17.25 4.5v-1.875a3.375 3.375 0 013.375-3.375h9.75a3.375 3.375 0 013.375 3.375v1.875m-17.25 4.5h16.5M5.625 9h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
                         </svg>
-                        <span class="nav-text">{{ __('TMS') }}</span>
+                        <span class="nav-text">{{ __('Rutas') }}</span>
                     </x-nav-link>               
 
                     {{-- Super Admin Collapsible Menu --}}

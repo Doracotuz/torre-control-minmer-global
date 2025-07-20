@@ -16,6 +16,8 @@ use App\Http\Controllers\FileLinkController;
 use App\Http\Controllers\Admin\OrganigramPositionController;
 use App\Models\FileLink;
 use App\Http\Controllers\TmsController;
+use App\Http\Controllers\OperatorViewController;
+use App\Http\Controllers\ClientViewController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -204,6 +206,7 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('area-admin')->name
     Route::put('/folder-permissions/{folder}', [FolderPermissionController::class, 'update'])->name('folder_permissions.update');
 });
 
+
 // Rutas de perfil de Breeze
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -215,7 +218,35 @@ Route::middleware('auth')->group(function () {
         Route::get('/crear-ruta', [TmsController::class, 'createRoute'])->name('createRoute');
         Route::post('/crear-ruta', [TmsController::class, 'storeRoute'])->name('storeRoute');
         Route::get('/asignar-rutas', [TmsController::class, 'assignRoutes'])->name('assignRoutes');
+        Route::post('/import-shipments', [TmsController::class, 'importShipments'])->name('importShipments');
+        Route::post('/store-shipment', [TmsController::class, 'storeShipment'])->name('storeShipment');
+        Route::post('/assign-shipments', [TmsController::class, 'assignShipmentsToRoute'])->name('assignShipmentsToRoute');
+        Route::patch('/shipments/{shipment}', [TmsController::class, 'updateShipment'])->name('shipments.update');
+        Route::delete('/routes/{route}', [TmsController::class, 'destroyRoute'])->name('routes.destroy');
+        Route::get('/export-shipments', [TmsController::class, 'exportShipments'])->name('exportShipments');
+        Route::delete('/shipments/{shipment}', [TmsController::class, 'destroyShipment'])->name('shipments.destroy');
+
     });    
+});
+
+Route::prefix('operator')->name('operator.')->group(function () {
+    // La ruta principal ahora puede recibir opcionalmente un número de guía
+    Route::get('/{guide_number?}', [OperatorViewController::class, 'index'])->name('index');
+    
+    // Esta ruta se mantiene igual, solo procesará la búsqueda y redirigirá
+    Route::post('/find-route', [OperatorViewController::class, 'findRoute'])->name('findRoute');
+    
+    Route::post('/start-route', [OperatorViewController::class, 'startRoute'])->name('startRoute');
+    Route::post('/update-invoice-status', [OperatorViewController::class, 'updateInvoiceStatus'])->name('updateInvoiceStatus');
+    Route::post('/register-event', [OperatorViewController::class, 'registerEvent'])->name('registerEvent');
+});
+
+Route::prefix('tracking')->name('tracking.')->group(function () {
+    // La ruta principal ahora puede recibir opcionalmente un número de factura
+    Route::get('/{invoice_number?}', [ClientViewController::class, 'index'])->name('index');
+    
+    // Esta ruta procesará la búsqueda y redirigirá
+    Route::post('/search', [ClientViewController::class, 'search'])->name('search');
 });
 
 
