@@ -8,114 +8,119 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
         body { background-color: #f3f4f6; }
-        #qr-reader {
+        .hidden-camera-input { display: none; }
+        .preview-container {
             width: 100%;
             max-width: 500px;
-            margin: 0 auto;
+            margin: 20px auto;
+            border: 2px dashed #e5e7eb;
             border-radius: 10px;
-            overflow: hidden;
-            border: 4px solid #e5e7eb;
         }
-        .btn-start-scan {
-            background-color: #2c3856;
-            color: white;
-            transition: background-color 0.3s ease;
+        #imagePreview {
+            max-height: 300px;
+            object-fit: contain;
         }
-        .btn-start-scan:hover {
-            background-color: #1a2233;
-        }
-        /* Oculta el footer de la librería del escaner */
-        #qr-reader__dashboard_section_csr { display: none; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen">
-
     <div class="w-full max-w-2xl mx-auto p-4">
         <div class="text-center mb-6">
             <img src="{{ Storage::disk('s3')->url('LogoAzul.png') }}" alt="Logotipo Minmer Global" class="mx-auto h-16 w-auto mb-4">
             <h1 class="text-3xl font-bold text-[#2b2b2b]">Escaner de Acceso</h1>
-            <p class="text-[#666666]">Presiona el botón para iniciar la cámara.</p>
+            <p class="text-[#666666]">Escanea el código QR con tu cámara.</p>
         </div>
 
-        {{-- Alerta de conexión no segura (solo se muestra si no es HTTPS) --}}
-        <div id="https-warning" class="hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded-md" role="alert">
-            <p class="font-bold">Aviso de Seguridad</p>
-            <p>Para usar la cámara en un dispositivo móvil, esta página debe cargarse a través de una conexión segura (HTTPS).</p>
-        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md text-center">
+            <!-- Input oculto para la cámara -->
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden-camera-input">
+            
+            <!-- Vista previa de la imagen capturada -->
+            <div class="preview-container hidden" id="previewContainer">
+                <img id="imagePreview" class="w-full rounded-lg">
+                <div class="mt-2 text-gray-600" id="scanStatus"></div>
+            </div>
 
-        <div id="scanner-container" class="bg-white p-6 rounded-lg shadow-md text-center">
-            <div id="qr-reader" class="w-full"></div>
-            <div id="scanner-status" class="mt-4 text-gray-600 font-semibold"></div>
-            <button id="start-scan-btn" class="mt-4 px-6 py-3 rounded-lg font-semibold btn-start-scan">
+            <!-- Botón para iniciar el escaneo -->
+            <button id="startScanBtn" class="mt-4 px-6 py-3 rounded-lg font-semibold bg-[#2c3856] text-white hover:bg-[#1a2233] transition">
                 <i class="fas fa-camera mr-2"></i> Iniciar Escáner
+            </button>
+
+            <!-- Botón para procesar QR (oculto inicialmente) -->
+            <button id="processBtn" class="mt-4 px-6 py-3 rounded-lg font-semibold bg-green-600 text-white hover:bg-green-700 transition hidden">
+                <i class="fas fa-search mr-2"></i> Procesar QR
             </button>
         </div>
     </div>
 
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <!-- Librería para leer QR desde imagen -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const startScanBtn = document.getElementById('start-scan-btn');
-            const scannerStatus = document.getElementById('scanner-status');
-            const httpsWarning = document.getElementById('https-warning');
-            let lastScannedUrl = null;
-            let html5QrCode = new Html5Qrcode("qr-reader");
+        document.addEventListener('DOMContentLoaded', function() {
+            const cameraInput = document.getElementById('cameraInput');
+            const startScanBtn = document.getElementById('startScanBtn');
+            const processBtn = document.getElementById('processBtn');
+            const previewContainer = document.getElementById('previewContainer');
+            const imagePreview = document.getElementById('imagePreview');
+            const scanStatus = document.getElementById('scanStatus');
+            
+            let capturedImage = null;
 
-            // Mostrar advertencia HTTPS si es necesario
-            if (window.location.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-                httpsWarning.classList.remove('hidden');
-            }
+            // 1. Iniciar cámara al hacer clic
+            startScanBtn.addEventListener('click', () => {
+                cameraInput.click();
+            });
 
-            const qrCodeSuccessCallback = (decodedText) => {
-                if (decodedText === lastScannedUrl) return;
-                lastScannedUrl = decodedText;
-                
-                scannerStatus.innerHTML = `<i class="fas fa-check-circle text-green-500"></i> QR detectado!`;
-                html5QrCode.stop().then(() => {
-                    window.location.href = decodedText;
-                }).catch(() => {
-                    window.location.href = decodedText;
-                });
-            };
-
-            const config = { 
-                fps: 10,
-                qrbox: { width: 250, height: 250 } // Tamaño fijo para mejor rendimiento en móviles
-            };
-
-            startScanBtn.addEventListener('click', async () => {
-                try {
-                    startScanBtn.style.display = 'none';
-                    scannerStatus.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Activando cámara...`;
+            // 2. Cuando se captura una imagen
+            cameraInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
                     
-                    // Iniciar directamente con cámara trasera preferida
-                    await html5QrCode.start(
-                        { facingMode: "environment" }, // Fuerza cámara trasera en móviles
-                        config,
-                        qrCodeSuccessCallback,
-                        (error) => { /* Ignorar errores de lectura */ }
-                    );
+                    reader.onload = function(event) {
+                        capturedImage = event.target.result;
+                        imagePreview.src = capturedImage;
+                        previewContainer.classList.remove('hidden');
+                        startScanBtn.classList.add('hidden');
+                        processBtn.classList.remove('hidden');
+                        scanStatus.innerHTML = '<i class="fas fa-check-circle text-blue-500"></i> Imagen capturada. Haz clic en "Procesar QR"';
+                    };
                     
-                    scannerStatus.innerHTML = `<i class="fas fa-camera text-blue-500"></i> Escáner activo. Enfoca un código QR.`;
-                    
-                } catch (err) {
-                    console.error("Error cámara:", err);
-                    let errorMsg = 'Error al acceder a la cámara';
-                    
-                    if (err.message.includes('Permission denied')) {
-                        errorMsg = 'Permiso denegado. Por favor habilita el acceso a la cámara en ajustes del navegador.';
-                    } else if (err.message.includes('found no cameras')) {
-                        errorMsg = 'No se detectó cámara trasera. Intenta en otro dispositivo.';
-                    }
-                    
-                    scannerStatus.innerHTML = `
-                        <i class="fas fa-times-circle text-red-500"></i> ${errorMsg}
-                        <button onclick="window.location.reload()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded text-sm">
-                            Reintentar
-                        </button>
-                    `;
-                    startScanBtn.style.display = 'block';
+                    reader.readAsDataURL(file);
                 }
+            });
+
+            // 3. Procesar la imagen para leer QR
+            processBtn.addEventListener('click', function() {
+                if (!capturedImage) return;
+                
+                scanStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando código QR...';
+                
+                const img = new Image();
+                img.onload = function() {
+                    // Crear canvas para analizar la imagen
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    context.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    // Obtener datos de imagen para jsQR
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    
+                    if (code) {
+                        scanStatus.innerHTML = '<i class="fas fa-check-circle text-green-500"></i> QR detectado! Redirigiendo...';
+                        setTimeout(() => {
+                            window.location.href = code.data;
+                        }, 1000);
+                    } else {
+                        scanStatus.innerHTML = '<i class="fas fa-times-circle text-red-500"></i> No se encontró QR. Intenta de nuevo.';
+                        processBtn.classList.add('hidden');
+                        startScanBtn.classList.remove('hidden');
+                    }
+                };
+                
+                img.src = capturedImage;
             });
         });
     </script>
