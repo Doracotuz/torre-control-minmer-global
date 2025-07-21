@@ -34,6 +34,55 @@
     .badge-status-ingresado { background-color: var(--color-accent); }
     .badge-status-no-ingresado { background-color: var(--color-secondary-text); }
     .badge-status-cancelada { background-color: var(--color-dark); }
+
+    /* ===== ESTILOS PARA TABLA RESPONSIVA ===== */
+    @media (max-width: 768px) {
+        /* Esconder la cabecera de la tabla en móvil */
+        .responsive-table thead {
+            display: none;
+        }
+        /* Convertir cada fila en un bloque (tarjeta) */
+        .responsive-table tbody, .responsive-table tr {
+            display: block;
+        }
+        .responsive-table tr {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        /* Convertir cada celda en un bloque y alinear el contenido */
+        .responsive-table td {
+            display: block;
+            text-align: right;
+            padding-left: 50%; /* Espacio para la etiqueta */
+            position: relative;
+            border-bottom: 1px solid #eee;
+        }
+        .responsive-table td:last-child {
+            border-bottom: none;
+        }
+        /* Crear la etiqueta usando el atributo data-label */
+        .responsive-table td::before {
+            content: attr(data-label);
+            position: absolute;
+            left: 1rem; /* Margen izquierdo para la etiqueta */
+            width: 45%;
+            padding-right: 10px;
+            white-space: nowrap;
+            text-align: left;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+        /* Estilo especial para la celda de acciones */
+        .responsive-table .actions-cell {
+            padding: 1rem;
+            text-align: center;
+        }
+        .responsive-table .actions-cell::before {
+            display: none; /* No se necesita etiqueta para las acciones */
+        }
+    }
 </style>
 
 {{-- Comienzo del Contenido de la Página --}}
@@ -47,6 +96,7 @@
         </a>
     </div>
 
+    {{-- Filtros (sin cambios) --}}
     <div class="bg-white rounded-lg shadow-md mb-6">
         <div class="header-custom-primary p-4 rounded-t-lg">
             <h6 class="font-bold text-white">🔍 Filtros de Búsqueda</h6>
@@ -71,9 +121,11 @@
         </div>
     </div>
 
+    {{-- Tabla de Visitas --}}
     <div class="bg-white rounded-lg shadow-md">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-700">
+            {{-- Añadida la clase "responsive-table" para aplicar los nuevos estilos --}}
+            <table class="w-full text-sm text-left text-gray-700 responsive-table">
                 <thead class="text-xs text-white uppercase header-custom-primary">
                     <tr>
                         <th scope="col" class="px-6 py-3">Visitante</th>
@@ -88,12 +140,13 @@
                 <tbody>
                     @forelse ($visits as $visit)
                         <tr class="bg-white border-b hover:bg-gray-50">
-                            <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{{ $visit->visitor_name }} {{ $visit->visitor_last_name }}</td>
-                            <td class="px-6 py-4">{{ $visit->email }}</td>
-                            <td class="px-6 py-4">{{ $visit->company ?? 'N/A' }}</td>
-                            <td class="px-6 py-4">{{ $visit->visit_datetime->format('d/m/Y h:i A') }}</td>
-                            <td class="px-6 py-4">{{ $visit->license_plate ?? 'N/A' }}</td>
-                            <td class="px-6 py-4">
+                            {{-- Atributos data-label añadidos a cada celda --}}
+                            <td data-label="Visitante" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{{ $visit->visitor_name }} {{ $visit->visitor_last_name }}</td>
+                            <td data-label="Correo" class="px-6 py-4">{{ $visit->email }}</td>
+                            <td data-label="Empresa" class="px-6 py-4">{{ $visit->company ?? 'N/A' }}</td>
+                            <td data-label="Fecha y Hora" class="px-6 py-4">{{ $visit->visit_datetime->format('d/m/Y h:i A') }}</td>
+                            <td data-label="Placa" class="px-6 py-4">{{ $visit->license_plate ?? 'N/A' }}</td>
+                            <td data-label="Estatus" class="px-6 py-4">
                                 @php
                                     $statusClass = '';
                                     if ($visit->status == 'Ingresado') $statusClass = 'badge-status-ingresado';
@@ -105,19 +158,20 @@
                                     {{ $visit->status }}
                                 </span>
                             </td>
-                        <td class="px-6 py-4 text-center">
-                            <form action="{{ route('area_admin.visits.destroy', $visit) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta visita? Esta acción no se puede deshacer.');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-red-600 hover:text-red-900 font-semibold" title="Eliminar Visita">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </form>
-                        </td>                            
+                            {{-- Clase especial para la celda de acciones --}}
+                            <td class="px-6 py-4 actions-cell">
+                                <form action="{{ route('area_admin.visits.destroy', $visit) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta visita? Esta acción no se puede deshacer.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-900 font-semibold text-lg" title="Eliminar Visita">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-8 text-gray-500">
+                            <td colspan="7" class="text-center py-8 text-gray-500">
                                 No se encontraron visitas con los filtros seleccionados.
                             </td>
                         </tr>

@@ -1,9 +1,17 @@
-<nav x-data="{ open: false, search: '', suggestions: [], showSuggestions: false, timeout: null }"
+<nav x-data="{
+        open: false,
+        search: '',
+        suggestions: [],
+        showSuggestions: false,
+        timeout: null,
+        /* Nuevos estados para los menús colapsables en móvil */
+        isMobileSuperAdminMenuOpen: {{ request()->routeIs('admin.*') ? 'true' : 'false' }},
+        isMobileAreaAdminMenuOpen: {{ request()->routeIs('area_admin.*') ? 'true' : 'false' }}
+     }"
      x-init="$watch('search', value => {
          clearTimeout(this.timeout);
-         if (value.length > 2) { // Start searching after 2 characters
+         if (value.length > 2) {
              this.timeout = setTimeout(() => {
-                 // Usar la ruta web protegida por 'auth' en lugar de '/api/'
                  fetch(`{{ route('search.suggestions') }}?query=${value}`)
                      .then(response => response.json())
                      .then(data => {
@@ -15,7 +23,7 @@
                          this.suggestions = [];
                          this.showSuggestions = false;
                      });
-             }, 300); // Debounce search input
+             }, 300);
          } else {
              this.suggestions = [];
              this.showSuggestions = false;
@@ -23,6 +31,7 @@
      })"
      @click.away="showSuggestions = false"
      class="bg-white border-b border-gray-100 shadow-md relative z-20 sticky top-0">
+    {{-- Contenido de la barra de navegación (sin cambios) --}}
     <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16 items-center">
             <div class="flex items-center space-x-2 sm:space-x-4">
@@ -81,31 +90,22 @@
                      x-transition:leave-start="opacity-100 transform scale-100"
                      x-transition:leave-end="opacity-0 transform scale-95"
                      class="absolute z-30 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto"
-                     style="display: none;"
-                >
+                     style="display: none;">
                     <template x-for="suggestion in suggestions" :key="suggestion.id">
                         <a :href="suggestion.type === 'folder' ? `{{ url('/folders') }}/${suggestion.id}` : (suggestion.type === 'file' ? `{{ url('/files') }}/${suggestion.id}/download` : suggestion.url)"
                            @click="search = suggestion.name; showSuggestions = false;"
                            class="flex flex-col px-3 py-2 sm:px-4 sm:py-2 hover:bg-gray-100 cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-b-0">
                             <div class="flex items-center text-sm sm:text-base">
-                                <template x-if="suggestion.type === 'folder'">
-                                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-[#ff9c00] mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-                                </template>
-                                <template x-if="suggestion.type === 'file'">
-                                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                                </template>
-                                <template x-if="suggestion.type === 'link'">
-                                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                                </template>
+                                <template x-if="suggestion.type === 'folder'"><svg class="w-4 h-4 sm:w-5 sm:h-5 text-[#ff9c00] mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg></template>
+                                <template x-if="suggestion.type === 'file'"><svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg></template>
+                                <template x-if="suggestion.type === 'link'"><svg class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg></template>
                                 <span x-text="suggestion.name" class="font-medium text-gray-800 truncate"></span>
                                 <span class="text-xxs sm:text-xs text-gray-500 ml-auto" x-text="suggestion.area"></span>
                             </div>
                             <div class="mt-0.5 text-xxs sm:text-xs text-gray-500 truncate" x-text="suggestion.full_path"></div>
                         </a>
                     </template>
-                    <div x-show="suggestions.length === 0 && search.length > 2" class="px-3 py-2 sm:px-4 sm:py-2 text-gray-500 text-sm">
-                        No hay sugerencias.
-                    </div>
+                    <div x-show="suggestions.length === 0 && search.length > 2" class="px-3 py-2 sm:px-4 sm:py-2 text-gray-500 text-sm">No hay sugerencias.</div>
                 </div>
             </div>
 
@@ -113,37 +113,21 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            {{-- Foto de perfil --}}
                             @if (Auth::user()->profile_photo_path)
                                 <img class="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover mr-2 object-center" src="{{ Storage::disk('s3')->url(Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()->name }}">
                             @else
-                                {{-- Icono SVG de usuario por defecto si no hay foto --}}
                                 <svg class="h-7 w-7 sm:h-8 sm:w-8 rounded-full text-gray-400 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg>
                             @endif
                             <div class="hidden sm:block">{{ Auth::user()->name }}</div>
-
-                            <div class="ms-0.5 sm:ms-1">
-                                <svg class="fill-current h-3 w-3 sm:h-4 sm:w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
+                            <div class="ms-0.5 sm:ms-1"><svg class="fill-current h-3 w-3 sm:h-4 sm:w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg></div>
                         </button>
                     </x-slot>
 
                     <x-slot name="content">
-                        {{-- Usar route() directamente para las rutas de Breeze --}}
-                        <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Perfil') }}
-                        </x-dropdown-link>
-
+                        <x-dropdown-link :href="route('profile.edit')">{{ __('Perfil') }}</x-dropdown-link>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-
-                            <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Cerrar Sesión') }}
-                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('Cerrar Sesión') }}</x-dropdown-link>
                         </form>
                     </x-slot>
                 </x-dropdown>
@@ -162,40 +146,60 @@
 
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
+            {{-- Enlaces estándar --}}
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')">
                 {{ __('Gestión de Archivos') }}
             </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('area_admin.visits.index')" :active="request()->routeIs('area_admin.visits.*')">
+                {{ __('Gestión de Visitas') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('tms.index')" :active="request()->routeIs('tms.*')">
+                {{ __('Rutas') }}
+            </x-responsive-nav-link>
+        </div>
 
-            @if (Auth::user()->area && Auth::user()->area->name === 'Administración')
-                <div class="border-t border-gray-200 pt-2 mt-2">
+        {{-- Menús de Administrador (replicados de app.blade.php) --}}
+        @if (Auth::user()->is_area_admin)
+        <div class="pt-4 pb-3 border-t border-gray-200">
+             @if (Auth::user()->area?->name === 'Administración')
+                {{-- Botón Colapsable para Super Admin --}}
+                <button @click="isMobileSuperAdminMenuOpen = !isMobileSuperAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 focus:outline-none focus:text-gray-800 focus:bg-gray-50 transition duration-150 ease-in-out">
+                    <span class="font-semibold">Super Admin</span>
+                    <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileSuperAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                </button>
+                {{-- Contenido Colapsable de Super Admin --}}
+                <div x-show="isMobileSuperAdminMenuOpen" class="mt-2 space-y-1 pl-4 border-l-2 border-gray-200 ml-4">
                     <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                        {{ __('Panel General (Super Admin)') }}
+                        {{ __('Panel General') }}
                     </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('admin.areas.index')" :active="request()->routeIs('admin.areas.index')">
-                        {{ __('Gestionar Áreas') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index')">
-                        {{ __('Gestionar Usuarios') }}
-                    </x-responsive-nav-link>
+                    {{-- Aquí irían otros enlaces de Super Admin si los hubiera --}}
                 </div>
-            @elseif (Auth::user()->is_area_admin)
-                <div class="border-t border-gray-200 pt-2 mt-2">
-                    <x-responsive-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')">
-                        {{ __('Panel de Mi Área (Admin de Área)') }}
+            @else
+                {{-- Botón Colapsable para Admin de Área --}}
+                <button @click="isMobileAreaAdminMenuOpen = !isMobileAreaAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 focus:outline-none focus:text-gray-800 focus:bg-gray-50 transition duration-150 ease-in-out">
+                    <span class="font-semibold">Admin de Área</span>
+                    <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileAreaAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                </button>
+                {{-- Contenido Colapsable de Admin de Área --}}
+                <div x-show="isMobileAreaAdminMenuOpen" class="mt-2 space-y-1 pl-4 border-l-2 border-gray-200 ml-4">
+                     <x-responsive-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')">
+                        {{ __('Panel de Área') }}
                     </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.index')">
-                        {{ __('Usuarios de Mi Área') }}
+                    <x-responsive-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.*')">
+                        {{ __('Gestión de Usuarios') }}
                     </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('area_admin.folder_permissions.index')" :active="request()->routeIs('area_admin.folder_permissions.index')">
+                    <x-responsive-nav-link :href="route('area_admin.folder_permissions.index')" :active="request()->routeIs('area_admin.folder_permissions.*')">
                         {{ __('Permisos de Carpetas') }}
                     </x-responsive-nav-link>
                 </div>
             @endif
         </div>
+        @endif
 
+        {{-- Menú de Usuario y Logout (sin cambios) --}}
         <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">
                 <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
@@ -209,7 +213,6 @@
 
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-
                     <x-responsive-nav-link :href="route('logout')"
                             onclick="event.preventDefault();
                                         this.closest('form').submit();">
