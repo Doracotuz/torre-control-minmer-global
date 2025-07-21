@@ -59,13 +59,12 @@
             const scannerStatus = document.getElementById('scanner-status');
             const httpsWarning = document.getElementById('https-warning');
             let lastScannedUrl = null;
+            let html5QrCode = new Html5Qrcode("qr-reader");
 
             // Muestra la alerta si la conexión no es segura (y no es localhost)
             if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
                 httpsWarning.classList.remove('hidden');
             }
-
-            const html5QrCode = new Html5Qrcode("qr-reader");
 
             const qrCodeSuccessCallback = (decodedText, decodedResult) => {
                 if (decodedText === lastScannedUrl) return;
@@ -73,66 +72,78 @@
 
                 scannerStatus.innerHTML = `<i class="fas fa-check-circle text-green-500"></i> QR Detectado. Redirigiendo...`;
                 
-                // Detener el escáner
                 html5QrCode.stop().then(() => {
                     window.location.href = decodedText;
                 }).catch(err => {
                     console.error("Fallo al detener el escáner.", err);
-                    window.location.href = decodedText; // Redirigir de todas formas
+                    window.location.href = decodedText;
                 });
             };
 
             const config = { 
-                fps: 10, 
+                fps: 10,
                 qrbox: (viewfinderWidth, viewfinderHeight) => {
                     const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                    return { width: minEdge * 0.8, height: minEdge * 0.8 };
+                    const size = Math.min(minEdge * 0.8, 300); // Limitar tamaño máximo para móviles
+                    return { width: size, height: size };
                 }
             };
 
-            startScanBtn.addEventListener('click', () => {
-                startScanBtn.style.display = 'none';
-                scannerStatus.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Solicitando permiso de cámara...`;
-
-                // 1. Pedir permisos y obtener la lista de cámaras
-                Html5Qrcode.getCameras().then(cameras => {
+            startScanBtn.addEventListener('click', async () => {
+                try {
+                    startScanBtn.style.display = 'none';
+                    scannerStatus.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Solicitando permiso de cámara...`;
+                    
+                    // 1. Verificar permisos primero
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: {
+                            facingMode: { ideal: "environment" } // Preferir cámara trasera
+                        } 
+                    });
+                    
+                    // Detener el stream inmediatamente (solo necesitamos verificar permisos)
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    // 2. Obtener cámaras disponibles
+                    const cameras = await Html5Qrcode.getCameras();
                     scannerStatus.innerHTML = `<i class="fas fa-camera"></i> Permiso concedido. Iniciando...`;
                     
                     if (cameras && cameras.length) {
-                        let cameraId = cameras[0].id; // Usar la primera cámara por defecto
+                        // Priorizar cámara trasera
+                        let cameraId = cameras.find(cam => 
+                            cam.label.toLowerCase().includes('back') || 
+                            cam.label.toLowerCase().includes('rear') || 
+                            cam.label.toLowerCase().includes('trasera')
+                        )?.id || cameras[0].id;
                         
-                        // Intentar encontrar la cámara trasera
-                        const rearCamera = cameras.find(camera => 
-                            camera.label.toLowerCase().includes('back') || 
-                            camera.label.toLowerCase().includes('rear') || 
-                            camera.label.toLowerCase().includes('trasera')
-                        );
-                        if (rearCamera) {
-                            cameraId = rearCamera.id;
-                        }
-                        
-                        // 2. Iniciar el escáner con el ID de la cámara seleccionada
-                        html5QrCode.start(
+                        // 3. Iniciar escáner
+                        await html5QrCode.start(
                             cameraId, 
                             config,
                             qrCodeSuccessCallback,
-                            (errorMessage) => { /* ignorar errores de "QR no encontrado" */ }
-                        ).catch((err) => {
-                            scannerStatus.innerHTML = `<i class="fas fa-times-circle text-red-500"></i> Error al iniciar el escáner.`;
-                            console.error(`No se pudo iniciar el escáner: ${err}`);
-                            startScanBtn.style.display = 'block';
-                        });
-
+                            (errorMessage) => {
+                                // Ignorar errores de "QR no encontrado"
+                            }
+                        );
+                        
                     } else {
-                        scannerStatus.innerHTML = `<i class="fas fa-times-circle text-red-500"></i> Error: No se encontraron cámaras en este dispositivo.`;
-                        startScanBtn.style.display = 'block';
+                        throw new Error('No se encontraron cámaras en este dispositivo');
                     }
-                }).catch(err => {
-                    // Mostrar un error si el permiso es denegado por el usuario o el navegador
-                    scannerStatus.innerHTML = `<i class="fas fa-times-circle text-red-500"></i> Error: No se pudo acceder a la cámara. Por favor, concede los permisos.`;
-                    console.error(`Error al obtener cámaras: ${err}`);
+                    
+                } catch (err) {
+                    console.error(`Error: ${err}`);
+                    scannerStatus.innerHTML = `
+                        <i class="fas fa-times-circle text-red-500"></i> 
+                        ${err.message.includes('Permission denied') ? 
+                            'Permiso denegado. Por favor habilita el acceso a la cámara.' : 
+                            'Error al acceder a la cámara: ' + err.message}
+                        <br>
+                        <button onclick="window.location.reload()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded">
+                            Reintentar
+                        </button>
+                    `;
                     startScanBtn.style.display = 'block';
-                });
+                }
             });
         });
     </script>
