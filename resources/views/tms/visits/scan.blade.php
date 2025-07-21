@@ -61,84 +61,56 @@
             let lastScannedUrl = null;
             let html5QrCode = new Html5Qrcode("qr-reader");
 
-            // Muestra la alerta si la conexión no es segura (y no es localhost)
-            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            // Mostrar advertencia HTTPS si es necesario
+            if (window.location.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
                 httpsWarning.classList.remove('hidden');
             }
 
-            const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+            const qrCodeSuccessCallback = (decodedText) => {
                 if (decodedText === lastScannedUrl) return;
                 lastScannedUrl = decodedText;
-
-                scannerStatus.innerHTML = `<i class="fas fa-check-circle text-green-500"></i> QR Detectado. Redirigiendo...`;
                 
+                scannerStatus.innerHTML = `<i class="fas fa-check-circle text-green-500"></i> QR detectado!`;
                 html5QrCode.stop().then(() => {
                     window.location.href = decodedText;
-                }).catch(err => {
-                    console.error("Fallo al detener el escáner.", err);
+                }).catch(() => {
                     window.location.href = decodedText;
                 });
             };
 
             const config = { 
                 fps: 10,
-                qrbox: (viewfinderWidth, viewfinderHeight) => {
-                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                    const size = Math.min(minEdge * 0.8, 300); // Limitar tamaño máximo para móviles
-                    return { width: size, height: size };
-                }
+                qrbox: { width: 250, height: 250 } // Tamaño fijo para mejor rendimiento en móviles
             };
 
             startScanBtn.addEventListener('click', async () => {
                 try {
                     startScanBtn.style.display = 'none';
-                    scannerStatus.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Solicitando permiso de cámara...`;
+                    scannerStatus.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Activando cámara...`;
                     
-                    // 1. Verificar permisos primero
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: {
-                            facingMode: { ideal: "environment" } // Preferir cámara trasera
-                        } 
-                    });
+                    // Iniciar directamente con cámara trasera preferida
+                    await html5QrCode.start(
+                        { facingMode: "environment" }, // Fuerza cámara trasera en móviles
+                        config,
+                        qrCodeSuccessCallback,
+                        (error) => { /* Ignorar errores de lectura */ }
+                    );
                     
-                    // Detener el stream inmediatamente (solo necesitamos verificar permisos)
-                    stream.getTracks().forEach(track => track.stop());
-                    
-                    // 2. Obtener cámaras disponibles
-                    const cameras = await Html5Qrcode.getCameras();
-                    scannerStatus.innerHTML = `<i class="fas fa-camera"></i> Permiso concedido. Iniciando...`;
-                    
-                    if (cameras && cameras.length) {
-                        // Priorizar cámara trasera
-                        let cameraId = cameras.find(cam => 
-                            cam.label.toLowerCase().includes('back') || 
-                            cam.label.toLowerCase().includes('rear') || 
-                            cam.label.toLowerCase().includes('trasera')
-                        )?.id || cameras[0].id;
-                        
-                        // 3. Iniciar escáner
-                        await html5QrCode.start(
-                            cameraId, 
-                            config,
-                            qrCodeSuccessCallback,
-                            (errorMessage) => {
-                                // Ignorar errores de "QR no encontrado"
-                            }
-                        );
-                        
-                    } else {
-                        throw new Error('No se encontraron cámaras en este dispositivo');
-                    }
+                    scannerStatus.innerHTML = `<i class="fas fa-camera text-blue-500"></i> Escáner activo. Enfoca un código QR.`;
                     
                 } catch (err) {
-                    console.error(`Error: ${err}`);
+                    console.error("Error cámara:", err);
+                    let errorMsg = 'Error al acceder a la cámara';
+                    
+                    if (err.message.includes('Permission denied')) {
+                        errorMsg = 'Permiso denegado. Por favor habilita el acceso a la cámara en ajustes del navegador.';
+                    } else if (err.message.includes('found no cameras')) {
+                        errorMsg = 'No se detectó cámara trasera. Intenta en otro dispositivo.';
+                    }
+                    
                     scannerStatus.innerHTML = `
-                        <i class="fas fa-times-circle text-red-500"></i> 
-                        ${err.message.includes('Permission denied') ? 
-                            'Permiso denegado. Por favor habilita el acceso a la cámara.' : 
-                            'Error al acceder a la cámara: ' + err.message}
-                        <br>
-                        <button onclick="window.location.reload()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded">
+                        <i class="fas fa-times-circle text-red-500"></i> ${errorMsg}
+                        <button onclick="window.location.reload()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded text-sm">
                             Reintentar
                         </button>
                     `;
