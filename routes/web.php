@@ -18,6 +18,7 @@ use App\Models\FileLink;
 use App\Http\Controllers\TmsController;
 use App\Http\Controllers\OperatorViewController;
 use App\Http\Controllers\ClientViewController;
+use App\Http\Controllers\VisitController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -204,6 +205,13 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('area-admin')->name
     Route::get('/folder-permissions', [FolderPermissionController::class, 'index'])->name('folder_permissions.index');
     Route::get('/folder-permissions/{folder}/edit', [FolderPermissionController::class, 'edit'])->name('folder_permissions.edit');
     Route::put('/folder-permissions/{folder}', [FolderPermissionController::class, 'update'])->name('folder_permissions.update');
+
+    Route::prefix('visits')->name('visits.')->group(function () {
+        Route::get('/create', [App\Http\Controllers\VisitController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\VisitController::class, 'store'])->name('store');
+        Route::get('/', [VisitController::class, 'index'])->name('index');
+        Route::delete('/{visit}', [VisitController::class, 'destroy'])->name('destroy');
+    });    
 });
 
 
@@ -247,6 +255,13 @@ Route::prefix('tracking')->name('tracking.')->group(function () {
     
     // Esta ruta procesará la búsqueda y redirigirá
     Route::post('/search', [ClientViewController::class, 'search'])->name('search');
+});
+
+Route::prefix('v')->name('visits.')->group(function () {
+    // Página que muestra la cámara para escanear
+    Route::get('/scan', [App\Http\Controllers\VisitController::class, 'showScanPage'])->name('scan.page');
+    // Página a la que redirige el QR para validar el token
+    Route::get('/validate/{token}', [App\Http\Controllers\VisitController::class, 'showValidationResult'])->name('validate.show');
 });
 
 
