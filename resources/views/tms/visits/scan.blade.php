@@ -12,12 +12,17 @@
             width: 100%;
             max-width: 500px;
             margin: 0 auto;
-            border: 4px solid #e5e7eb;
             border-radius: 10px;
+            overflow: hidden; /* Para que el video no se salga del borde redondeado */
         }
         #qr-reader-results { font-family: monospace; }
-        .result-card {
-            transition: all 0.3s ease-in-out;
+        .btn-start-scan {
+            background-color: #2c3856;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        .btn-start-scan:hover {
+            background-color: #1a2233;
         }
     </style>
 </head>
@@ -30,7 +35,12 @@
             <p class="text-[#666666]">Apunta la cámara al código QR de la invitación.</p>
         </div>
 
-        <div id="qr-reader"></div>
+        <div id="scanner-container" class="bg-white p-6 rounded-lg shadow-md text-center">
+            <div id="qr-reader"></div>
+            <button id="start-scan-btn" class="mt-4 px-6 py-3 rounded-lg font-semibold btn-start-scan">
+                <i class="fas fa-camera mr-2"></i> Iniciar Escáner
+            </button>
+        </div>
 
         <div id="result-container" class="mt-6 text-center">
             {{-- Los resultados de la validación se mostrarán aquí --}}
@@ -39,46 +49,57 @@
 
     <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <script>
-        const resultContainer = document.getElementById('result-container');
-        let lastScannedUrl = null;
+        document.addEventListener('DOMContentLoaded', function () {
+            const resultContainer = document.getElementById('result-container');
+            const startScanBtn = document.getElementById('start-scan-btn');
+            let lastScannedUrl = null;
 
-        function onScanSuccess(decodedText, decodedResult) {
-            // Para evitar múltiples escaneos del mismo QR
-            if (decodedText === lastScannedUrl) {
-                return;
+            const html5QrcodeScanner = new Html5QrcodeScanner(
+                "qr-reader", 
+                { 
+                    fps: 10, 
+                    qrbox: (viewfinderWidth, viewfinderHeight) => {
+                        // Hacemos el cuadro de escaneo un 80% del ancho del contenedor
+                        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                        return {
+                            width: minEdge * 0.8,
+                            height: minEdge * 0.8
+                        };
+                    },
+                    // Pedimos explícitamente la cámara trasera del móvil
+                    facingMode: "environment" 
+                },
+                false // verbose
+            );
+
+            function onScanSuccess(decodedText, decodedResult) {
+                if (decodedText === lastScannedUrl) return;
+                lastScannedUrl = decodedText;
+                
+                // Detener el escáner por completo
+                html5QrcodeScanner.clear().catch(error => {
+                    console.error("Fallo al limpiar el escáner.", error);
+                });
+
+                resultContainer.innerHTML = `
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i>
+                        <p class="mt-2 text-gray-600 font-semibold">Validando QR...</p>
+                    </div>`;
+                
+                window.location.href = decodedText;
             }
-            lastScannedUrl = decodedText;
-            
-            // Pausar el escaner para procesar el resultado
-            html5QrcodeScanner.pause();
 
-            // Mostrar un estado de "Cargando..."
-            resultContainer.innerHTML = `
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i>
-                    <p class="mt-2 text-gray-600 font-semibold">Validando QR...</p>
-                </div>`;
-            
-            // Redirigir a la página de validación
-            window.location.href = decodedText;
-        }
+            function onScanFailure(error) {
+                // Se ignora para no mostrar errores constantes si no encuentra un QR
+            }
 
-        function onScanFailure(error) {
-            // No hacer nada en caso de fallo, para no molestar al usuario
-        }
-
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "qr-reader", 
-            { 
-                fps: 10, 
-                qrbox: { width: 250, height: 250 },
-                supportedScanTypes: [
-                    Html5QrcodeScanType.SCAN_TYPE_CAMERA
-                ]
-            },
-            false // verbose
-        );
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+            // El escáner solo se renderiza cuando el usuario hace clic en el botón
+            startScanBtn.addEventListener('click', () => {
+                startScanBtn.style.display = 'none'; // Ocultar el botón
+                html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+            });
+        });
     </script>
 </body>
 </html>
