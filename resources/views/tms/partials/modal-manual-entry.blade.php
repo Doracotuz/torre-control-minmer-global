@@ -1,15 +1,15 @@
 <?php
 // Archivo: resources/views/tms/partials/modal-manual-entry.blade.php
-// NOTA: Este archivo ya no contiene la etiqueta <script> para evitar conflictos.
-// La lógica de Alpine.js ahora es manejada por la vista principal (assign-routes.blade.php).
 ?>
 <div x-show="isManualModalOpen" @keydown.escape.window="isManualModalOpen = false" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="manual-modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div x-show="isManualModalOpen" @click="isManualModalOpen = false" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        {{-- ===================== CAMBIO REALIZADO AQUÍ (se eliminó x-data) ===================== --}}
         <div x-show="isManualModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
-             class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full" 
-             x-data="manualEntryForm()">
+             class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+        {{-- ===================== FIN DEL CAMBIO ===================== --}}
             
             <form :action="editFormAction" method="POST">
                 @csrf
@@ -23,7 +23,6 @@
 
                 <div class="px-4 sm:p-6 max-h-[60vh] overflow-y-auto">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Campos del Embarque -->
                         <div>
                             <label for="type" class="block text-sm font-medium text-gray-700">Tipo</label>
                             <select name="type" x-model="shipmentData.type" class="mt-1 block w-full form-select rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
@@ -44,7 +43,6 @@
                             <input type="text" name="pedimento" x-model="shipmentData.pedimento" class="mt-1 block w-full form-input rounded-md shadow-sm border-gray-300">
                         </div>
                         
-                        <!-- Origen Dinámico -->
                         <div>
                             <label for="origin" class="block text-sm font-medium text-gray-700">Origen</label>
                             <select name="origin" x-model="shipmentData.origin" class="mt-1 block w-full form-select rounded-md shadow-sm border-gray-300">
@@ -71,7 +69,6 @@
                             </select>
                         </div>
 
-                        <!-- Destino Dinámico -->
                         <div>
                             <label for="destination_type" class="block text-sm font-medium text-gray-700">Destino</label>
                             <template x-if="shipmentData.type === 'Entrega'">
@@ -97,7 +94,6 @@
                             <input type="text" name="license_plate" x-model="shipmentData.license_plate" class="mt-1 block w-full form-input rounded-md shadow-sm border-gray-300">
                         </div>
                     </div>
-                    <!-- Facturas Dinámicas -->
                     <div class="mt-6">
                         <h4 class="text-md font-medium text-gray-800">Facturas</h4>
                         <div class="mt-2 space-y-4">
@@ -120,9 +116,11 @@
                     <button type="button" @click="isManualModalOpen = false" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50">
                         Cancelar
                     </button>
+                    {{-- ===================== CAMBIO REALIZADO AQUÍ ===================== --}}
                     <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#2c3856] text-base font-medium text-white hover:bg-[#ff9c00]">
-                        Guardar Cambios
+                         <span x-text="isEditing ? 'Guardar Cambios' : 'Crear Embarque'"></span>
                     </button>
+                    {{-- ===================== FIN DEL CAMBIO ===================== --}}
                 </div>
             </form>
         </div>

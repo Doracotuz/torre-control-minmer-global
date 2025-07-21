@@ -6,33 +6,15 @@
     <title>Seguimiento de Envío - Minmer Global</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    {{-- Leaflet CSS y JS --}}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <style>
-        body { background-color: #f3f4f6; font-family: sans-serif; }
-        .map-container { height: 40vh; border-radius: 0.5rem; z-index: 1; }
-        [x-cloak] { display: none !important; }
-    </style>
+    <style> body { background-color: #f3f4f6; font-family: sans-serif; } .map-container { height: 40vh; border-radius: 0.5rem; z-index: 1; } [x-cloak] { display: none !important; } </style>
     <script>
-        // Definimos los colores de la paleta para usarlos en Tailwind
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'minmer-blue': '#2c3856',
-                        'minmer-orange': '#ff9c00',
-                        'minmer-gray': '#666666',
-                        'minmer-dark-gray': '#2b2b2b',
-                    }
-                }
-            }
-        }
+        tailwind.config = { theme: { extend: { colors: { 'minmer-blue': '#2c3856', 'minmer-orange': '#ff9c00', 'minmer-gray': '#666666', 'minmer-dark-gray': '#2b2b2b', } } } }
     </script>
 </head>
 <body>
-
     <div class="container mx-auto max-w-3xl p-4">
         <div class="text-center my-8">
             <img src="{{ Storage::disk('s3')->url('LogoAzul.png') }}" alt="Logotipo Minmer Global" class="mx-auto h-20 w-auto mb-4">
@@ -88,14 +70,15 @@
                         </div>
                     </div>
                 @endif
-
-
-                @if($invoiceData['route_status'] === 'En transito' && $invoiceData['polyline'])
+                
+                {{-- ===================== CAMBIO 2: LÓGICA DE VISUALIZACIÓN DEL MAPA ===================== --}}
+                @if(!empty($invoiceData['polyline']))
                 <div class="mt-6 pt-6 border-t border-gray-200">
-                    <h3 class="font-semibold text-minmer-dark-gray mb-2">Ubicación en tiempo real</h3>
+                    <h3 class="font-semibold text-minmer-dark-gray mb-2">Ubicación de la Entrega</h3>
                     <div id="map-{{ $invoiceData['invoice_number'] }}" class="map-container" x-ref="mapContainer"></div>
                 </div>
                 @endif
+                {{-- ===================== FIN DEL CAMBIO ===================== --}}
             </div>
             @endforeach
         </div>
@@ -108,14 +91,12 @@
             map: null,
             data: initialData,
             init() {
-                if (this.data.route_status === 'En transito' && this.data.polyline) {
-                    // Inicializar el mapa solo si hay datos para mostrar
+                if (this.data.polyline && this.data.polyline.length > 0) {
                     this.$nextTick(() => this.initializeMap());
                 }
             },
             initializeMap() {
-                if (!this.$refs.mapContainer || this.map) return; // Evitar reinicialización
-                
+                if (!this.$refs.mapContainer || this.map) return;
                 try {
                     const lastEvent = this.data.last_event || {};
                     const initialCoords = [lastEvent.latitude || 19.4326, lastEvent.longitude || -99.1332];
@@ -129,17 +110,26 @@
                         L.polyline(this.data.polyline, { color: '#2c3856', weight: 5 }).addTo(this.map);
                     }
 
-                    const truckIcon = L.divIcon({ 
+                    // ===================== CAMBIO 3: LÓGICA DEL ÍCONO DINÁMICO =====================
+                    let iconHtml = '<i class="fas fa-truck text-3xl text-minmer-orange"></i>'; // Ícono por defecto
+                    if (lastEvent.type === 'Entrega') {
+                        iconHtml = '<i class="fas fa-check-circle text-3xl text-green-500"></i>';
+                    } else if (lastEvent.type === 'No Entregado') {
+                         iconHtml = '<i class="fas fa-times-circle text-3xl text-red-500"></i>';
+                    }
+
+                    const customIcon = L.divIcon({ 
                         className: 'custom-icon', 
-                        html: '<i class="fas fa-truck text-3xl text-[#ff9c00]"></i>', 
+                        html: iconHtml, 
                         iconSize: [30, 30],
                         iconAnchor: [15, 30],
                     });
                     
-                    L.marker(initialCoords, { icon: truckIcon })
+                    L.marker(initialCoords, { icon: customIcon })
                         .addTo(this.map)
                         .bindPopup(`<b>Último evento:</b> ${lastEvent.type || 'N/A'}<br>${lastEvent.timestamp || 'N/A'}`);
-                    
+                    // ===================== FIN DEL CAMBIO =====================
+
                 } catch (error) {
                     console.error('Error al inicializar el mapa:', error);
                     this.$refs.mapContainer.innerHTML = '<p class="text-red-500">No se pudo cargar el mapa.</p>';

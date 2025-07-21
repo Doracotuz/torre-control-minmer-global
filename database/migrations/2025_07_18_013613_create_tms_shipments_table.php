@@ -20,7 +20,7 @@ return new class extends Migration
             $table->text('destination_address')->nullable();
             $table->string('operator')->nullable();
             $table->string('license_plate')->nullable();
-            $table->enum('status', ['Por asignar', 'Transito', 'Entregado', 'Revisar', 'Cancelado'])->default('Por asignar');
+            $table->enum('status', ['Por asignar', 'Asignado','Transito', 'Entregado', 'Revisar', 'Cancelado'])->default('Por asignar');
             $table->timestamps();
         });
     }

@@ -103,8 +103,7 @@ class OperatorViewController extends Controller
             'status' => 'required|in:Entregado,No entregado',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
-            // Valida ambos posibles campos de fotos
-            'photos.*' => 'image|mimes:jpeg,png,jpg|max:5120', // Máximo 5MB por foto
+            'photos.*' => 'image|mimes:jpeg,png,jpg|max:5120',
             'photos_gallery.*' => 'image|mimes:jpeg,png,jpg|max:5120',
         ]);
 
@@ -112,7 +111,6 @@ class OperatorViewController extends Controller
             return back()->withErrors($validator)->withInput();
         }
         
-        // Combina los archivos de ambos inputs
         $files = $request->file('photos') ?? $request->file('photos_gallery');
 
         $invoice = Invoice::with('shipment.route')->findOrFail($request->invoice_id);
@@ -120,8 +118,10 @@ class OperatorViewController extends Controller
 
         DB::beginTransaction();
         try {
+            // 1. Se actualiza el estado de la factura individual
             $invoice->update(['status' => $request->status]);
 
+            // 2. Se crea el evento de entrega/no entrega
             $event = RouteEvent::create([
                 'route_id' => $route->id,
                 'event_type' => $request->status == 'Entregado' ? 'Entrega' : 'No Entregado',
@@ -130,37 +130,49 @@ class OperatorViewController extends Controller
                 'notes' => 'Factura: ' . $invoice->invoice_number,
             ]);
 
-            // Guarda las fotos de EVIDENCIAS en S3
+            // 3. Se guardan las fotos de evidencia
             if ($files) {
                 foreach ($files as $photo) {
-                    // Guarda en el disco 's3' en la carpeta 'tms_evidencias'
                     $path = $photo->store('tms_evidencias', 's3');
                     $event->media()->create(['file_path' => $path]);
                 }
             }
 
-            // Lógica corregida para verificar si la ruta se ha completado
-            $allInvoicesCompleted = true;
-            $route->load('shipments.invoices');
+            // ==================================================================
+            // INICIO DE LA NUEVA LÓGICA: Actualizar estado del Shipment
+            // ==================================================================
+            
+            // 4. Se revisa si aún quedan facturas pendientes para ESTE embarque en particular.
+            $shipment = $invoice->shipment;
+            $pendingInvoicesForShipment = Invoice::where('shipment_id', $shipment->id)
+                                                 ->where('status', 'Pendiente')
+                                                 ->exists();
 
-            foreach ($route->shipments as $shipment) {
-                foreach ($shipment->invoices as $inv) {
-                    if ($inv->status === 'Pendiente') {
-                        $allInvoicesCompleted = false;
-                        break 2; // Rompe ambos bucles (shipments e invoices)
-                    }
-                }
+            // Si ya no hay facturas pendientes, el embarque se marca como Entregado.
+            if (!$pendingInvoicesForShipment) {
+                $shipment->update(['status' => 'Entregado']);
             }
+            
+            // ==================================================================
+            // FIN DE LA NUEVA LÓGICA
+            // ==================================================================
 
-            if ($allInvoicesCompleted) {
+            // 5. Lógica existente: se revisa si la RUTA completa ha terminado
+            $allInvoicesOnRouteCompleted = !Invoice::whereIn('shipment_id', $route->shipments->pluck('id'))
+                                                   ->where('status', 'Pendiente')
+                                                   ->exists();
+
+            if ($allInvoicesOnRouteCompleted) {
                 $route->update(['status' => 'Completada']);
             }            
 
             DB::commit();
 
             $message = 'Estado de la factura actualizado.';
-            if ($allInvoicesCompleted) {
+            if ($allInvoicesOnRouteCompleted) {
                 $message .= ' ¡Ruta completada!';
+            } elseif (!$pendingInvoicesForShipment) {
+                $message .= ' ¡Embarque completado!';
             }
 
             return back()->with('success', $message);

@@ -372,7 +372,7 @@ class TmsController extends Controller
                 ->where('status', 'Por asignar')
                 ->update([
                     'route_id' => $route->id,
-                    'status' => 'Transito' // El status del embarque ahora cambia a 'Transito'
+                    'status' => 'Asignado' // El status del embarque ahora cambia a 'Transito'
                 ]);
 
             // Actualizar el estado de la ruta a "Asignada"

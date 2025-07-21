@@ -8,68 +8,82 @@ use Illuminate\Support\Facades\Storage;
 
 class ClientViewController extends Controller
 {
-    /**
-     * Muestra la vista de seguimiento para una o varias facturas.
-     */
     public function index($invoice_numbers_str = null)
     {
         $invoicesData = [];
 
         if ($invoice_numbers_str) {
             $invoice_numbers = array_map('trim', explode(',', $invoice_numbers_str));
-
-            // ========================================================== //
-            // INICIO DEL CAMBIO: Consulta simplificada para evitar el error
-            // ========================================================== //
             $invoices = Invoice::whereIn('invoice_number', $invoice_numbers)
-                ->with('shipment.route.events.media') // Cargamos todo: ruta, eventos y sus fotos
+                ->with('shipment.route.events.media')
                 ->get();
-            // ========================================================== //
-            // FIN DEL CAMBIO
-            // ========================================================== //
 
             if ($invoices->isEmpty()) {
                 return redirect()->route('tracking.index')->with('error', 'No se encontraron facturas con los números proporcionados.');
             }
 
             foreach ($invoices as $invoice) {
-                if (!$invoice->shipment || !$invoice->shipment->route) {
-                    continue;
-                }
+                if (!$invoice->shipment || !$invoice->shipment->route) continue;
 
                 $route = $invoice->shipment->route;
-                // Ordenamos los eventos en PHP para encontrar el más reciente
-                $sortedEvents = $route->events->sortByDesc('created_at');
-                $lastEvent = $sortedEvents->first();
+                $lastEvent = $route->events->sortByDesc('created_at')->first();
                 
-                // Extraer las evidencias de entrega (esta lógica no cambia)
+                // ===================== CAMBIO 1: LÓGICA DE EVIDENCIAS Y ESTATUS =====================
+                
+                // Buscamos el evento de entrega específico para ESTA factura
+                $deliveryEvent = $route->events->first(function ($event) use ($invoice) {
+                    return in_array($event->event_type, ['Entrega', 'No Entregado']) && 
+                           isset($event->notes) && 
+                           str_contains($event->notes, $invoice->invoice_number);
+                });
+
+                // Extraemos las evidencias solo de ese evento específico
                 $evidence = [];
-                foreach ($route->events as $event) {
-                    if (in_array($event->event_type, ['Entrega', 'No Entregado']) && $event->media->isNotEmpty()) {
-                        foreach ($event->media as $mediaItem) {
-                            $evidence[] = Storage::disk('s3')->url($mediaItem->file_path);
-                        }
+                if ($deliveryEvent && $deliveryEvent->media->isNotEmpty()) {
+                    foreach ($deliveryEvent->media as $mediaItem) {
+                        $evidence[] = Storage::disk('s3')->url($mediaItem->file_path);
                     }
                 }
+                
+                // Determinamos el estatus a mostrar de forma más inteligente
+                $displayShipmentStatus = $invoice->shipment->status; // Estatus por defecto
+                if ($lastEvent) {
+                    if ($deliveryEvent && $deliveryEvent->event_type === 'Entrega') {
+                        $displayShipmentStatus = 'Entregado';
+                    } elseif ($deliveryEvent && $deliveryEvent->event_type === 'No Entregado') {
+                        $displayShipmentStatus = 'Incidencia en Entrega';
+                    }
+                    // Si no hay evento de entrega específico, se queda con el estatus del envío ('En transito', 'Asignado', etc.)
+                }
+
+                // Lógica de truncado de la ruta (ya estaba correcta)
+                $fullPolyline = json_decode($route->polyline, true);
+                $truncatedPolyline = $fullPolyline;
+                if ($lastEvent && is_array($fullPolyline) && !empty($fullPolyline)) {
+                    $targetPoint = ['lat' => $lastEvent->latitude, 'lng' => $lastEvent->longitude];
+                    $truncatedPolyline = $this->_truncatePolylineToPoint($fullPolyline, $targetPoint);
+                }
+                
+                // ===================== FIN DEL CAMBIO =====================
 
                 $invoicesData[] = [
                     'invoice_number' => $invoice->invoice_number,
-                    'invoice_status' => $invoice->status,
+                    'invoice_status' => $invoice->shipment->status === 'En transito' ? 'En tránsito' : $invoice->status,
                     'box_quantity' => $invoice->box_quantity,
                     'bottle_quantity' => $invoice->bottle_quantity,
-                    'shipment_status' => $invoice->shipment->status,
+                    'shipment_status' => $displayShipmentStatus, // <-- Usamos la nueva variable
                     'origin' => $invoice->shipment->origin,
                     'destination' => $invoice->shipment->destination_type,
                     'route_status' => $route->status,
                     'route_name' => $route->name,
-                    'polyline' => json_decode($route->polyline),
+                    'polyline' => $truncatedPolyline,
                     'last_event' => $lastEvent ? [
                         'type' => $lastEvent->event_type,
                         'latitude' => $lastEvent->latitude,
                         'longitude' => $lastEvent->longitude,
                         'timestamp' => $lastEvent->created_at->format('d/m/Y H:i'),
                     ] : null,
-                    'evidence' => $evidence,
+                    'evidence' => $evidence, // <-- Usamos las evidencias filtradas
                 ];
             }
         }
@@ -77,12 +91,24 @@ class ClientViewController extends Controller
         return view('tms.client-tracking', ['invoicesData' => $invoicesData]);
     }
 
-    /**
-     * Procesa la búsqueda y redirige.
-     */
     public function search(Request $request)
     {
         $request->validate(['invoice_number' => 'required|string|max:255']);
         return redirect()->route('tracking.index', ['invoice_number' => $request->invoice_number]);
+    }
+
+    private function _truncatePolylineToPoint(array $polyline, array $targetPoint)
+    {
+        $closestIndex = 0;
+        $minDistance = PHP_INT_MAX;
+        foreach ($polyline as $index => $point) {
+            if (!isset($point['lat']) || !isset($point['lng'])) continue;
+            $distance = pow($point['lat'] - $targetPoint['lat'], 2) + pow($point['lng'] - $targetPoint['lng'], 2);
+            if ($distance < $minDistance) {
+                $minDistance = $distance;
+                $closestIndex = $index;
+            }
+        }
+        return array_slice($polyline, 0, $closestIndex + 1);
     }
 }

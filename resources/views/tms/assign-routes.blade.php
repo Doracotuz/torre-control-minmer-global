@@ -19,17 +19,19 @@
     .status-entregado { background-color: #198754; } /* Verde */
     .status-revisar { background-color: #dc3545; } /* Rojo */
     .status-cancelado { background-color: #2b2b2b; } /* Negro */
+    .status-asignado { background-color: #201c5cff; } /* Negro */
 </style>
 
 <div class="container mx-auto px-4" x-data="shipmentAssigner()">
-    <!-- Cabecera -->
     <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 class="text-2xl font-bold text-gray-800">Asignar Rutas</h1>
         <div class="flex items-center space-x-2">
-            <button @click="isManualModalOpen = true" class="bg-[#ff9c00] text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-opacity-80 transition-colors duration-300 flex items-center">
+            {{-- ===================== CAMBIO REALIZADO AQUÍ ===================== --}}
+            <button @click="openNewModal()" class="bg-[#ff9c00] text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-opacity-80 transition-colors duration-300 flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Añadir Manualmente
             </button>
+            {{-- ===================== FIN DEL CAMBIO ===================== --}}
             <button @click="isImportModalOpen = true" class="bg-[#2c3856] text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-opacity-80 transition-colors duration-300 flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 Importar desde CSV
@@ -41,7 +43,6 @@
         </div>
     </div>
 
-    <!-- Notificaciones -->
     @if (session('success'))
         <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert"><p>{{ session('success') }}</p></div>
     @endif
@@ -55,18 +56,15 @@
         </div>
     @endif
 
-    <!-- Tabla de Embarques -->
     <div class="bg-white shadow-xl rounded-lg overflow-hidden">
         <div class="px-6 py-4 bg-[#2c3856] text-white">
             <h2 class="text-lg font-bold">Listado de Embarques</h2>
         </div>
         <div class="p-6">
-            <!-- Filtros y Búsqueda -->
             <div class="mb-4">
                 <input type="text" x-model="searchTerm" @keyup.debounce="filterRows" class="w-full md:w-1/3 form-input rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="Buscar por guía, factura, operador...">
             </div>
 
-            <!-- Tabla -->
             <div class="overflow-x-auto">
                 <table class="w-full whitespace-nowrap" id="shipmentsTable">
                     <thead class="bg-gray-50">
@@ -128,7 +126,6 @@
         </div>
     </div>
 
-    <!-- Sección de Asignación Fija -->
     <div class="sticky bottom-0 left-0 right-0 bg-white p-4 border-t-2 border-[#ff9c00] shadow-2xl mt-8" x-show="selectedShipments.length > 0" x-transition>
         <div class="flex flex-wrap items-center justify-between max-w-7xl mx-auto">
             <p class="text-lg font-semibold"><span x-text="selectedShipments.length"></span> embarques seleccionados</p>
@@ -144,26 +141,12 @@
         </div>
     </div>
 
-    <!-- Modales -->
     @include('tms.partials.modal-import')
     @include('tms.partials.modal-manual-entry')
 
 </div>
 
 <script>
-    function manualEntryForm() {
-        return {
-            type: 'Entrega',
-            invoices: [{ invoice_number: '', box_quantity: '', bottle_quantity: '' }],
-            addInvoice() {
-                this.invoices.push({ invoice_number: '', box_quantity: '', bottle_quantity: '' });
-            },
-            removeInvoice(index) {
-                this.invoices.splice(index, 1);
-            }
-        }
-    }
-
     function shipmentAssigner() {
         return {
             isImportModalOpen: false,
@@ -195,7 +178,7 @@
             openNewModal() {
                 this.isEditing = false;
                 this.editFormAction = '{{ route("tms.storeShipment") }}';
-                this.shipmentData = { type: 'Entrega', invoices: [{ invoice_number: '', box_quantity: '', bottle_quantity: '' }] };
+                this.shipmentData = { type: 'Entrega', guide_number: '', so_number: '', pedimento: '', origin: 'MEX', destination_type: 'Cliente Final', operator: '', license_plate: '', invoices: [{ invoice_number: '', box_quantity: '', bottle_quantity: '' }] };
                 this.isManualModalOpen = true;
             },
 
@@ -218,7 +201,14 @@
             
             init() {
                 // Si hay errores de validación de Laravel, abre el modal de registro manual automáticamente
+                // y preserva los datos antiguos si es posible (Laravel lo hace por nosotros con la función old())
                 @if ($errors->any())
+                    @if(session('is_editing'))
+                        // Aquí podrías tener lógica para rellenar con datos de edición
+                        // Pero por ahora, solo abrimos el modal.
+                    @else
+                         this.openNewModal(); // Restablece para asegurar un formulario limpio si no es edición
+                    @endif
                     this.isManualModalOpen = true;
                 @endif
             },
