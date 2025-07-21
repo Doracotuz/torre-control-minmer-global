@@ -84,27 +84,54 @@
 
             const config = { 
                 fps: 10, 
-                qrbox: { width: 250, height: 250 },
-                facingMode: "environment" // Usar la cámara trasera
+                qrbox: (viewfinderWidth, viewfinderHeight) => {
+                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                    return { width: minEdge * 0.8, height: minEdge * 0.8 };
+                }
             };
 
             startScanBtn.addEventListener('click', () => {
                 startScanBtn.style.display = 'none';
                 scannerStatus.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Solicitando permiso de cámara...`;
 
-                // Iniciar el escáner
-                html5QrCode.start(
-                    { facingMode: "environment" }, // Pedir la cámara trasera
-                    config,
-                    qrCodeSuccessCallback,
-                    (errorMessage) => {
-                        // Se ignora el error de "QR no encontrado"
-                    })
-                .catch((err) => {
-                    // Mostrar un error si el permiso es denegado
+                // 1. Pedir permisos y obtener la lista de cámaras
+                Html5Qrcode.getCameras().then(cameras => {
+                    scannerStatus.innerHTML = `<i class="fas fa-camera"></i> Permiso concedido. Iniciando...`;
+                    
+                    if (cameras && cameras.length) {
+                        let cameraId = cameras[0].id; // Usar la primera cámara por defecto
+                        
+                        // Intentar encontrar la cámara trasera
+                        const rearCamera = cameras.find(camera => 
+                            camera.label.toLowerCase().includes('back') || 
+                            camera.label.toLowerCase().includes('rear') || 
+                            camera.label.toLowerCase().includes('trasera')
+                        );
+                        if (rearCamera) {
+                            cameraId = rearCamera.id;
+                        }
+                        
+                        // 2. Iniciar el escáner con el ID de la cámara seleccionada
+                        html5QrCode.start(
+                            cameraId, 
+                            config,
+                            qrCodeSuccessCallback,
+                            (errorMessage) => { /* ignorar errores de "QR no encontrado" */ }
+                        ).catch((err) => {
+                            scannerStatus.innerHTML = `<i class="fas fa-times-circle text-red-500"></i> Error al iniciar el escáner.`;
+                            console.error(`No se pudo iniciar el escáner: ${err}`);
+                            startScanBtn.style.display = 'block';
+                        });
+
+                    } else {
+                        scannerStatus.innerHTML = `<i class="fas fa-times-circle text-red-500"></i> Error: No se encontraron cámaras en este dispositivo.`;
+                        startScanBtn.style.display = 'block';
+                    }
+                }).catch(err => {
+                    // Mostrar un error si el permiso es denegado por el usuario o el navegador
                     scannerStatus.innerHTML = `<i class="fas fa-times-circle text-red-500"></i> Error: No se pudo acceder a la cámara. Por favor, concede los permisos.`;
-                    console.error(`No se pudo iniciar el escáner: ${err}`);
-                    startScanBtn.style.display = 'block'; // Mostrar el botón de nuevo
+                    console.error(`Error al obtener cámaras: ${err}`);
+                    startScanBtn.style.display = 'block';
                 });
             });
         });
