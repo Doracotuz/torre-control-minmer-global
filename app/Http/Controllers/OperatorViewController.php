@@ -103,8 +103,8 @@ class OperatorViewController extends Controller
             'status' => 'required|in:Entregado,No entregado',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
-            'photos.*' => 'image|mimes:jpeg,png,jpg|max:5120',
-            'photos_gallery.*' => 'image|mimes:jpeg,png,jpg|max:5120',
+            'photos.*' => 'image|mimes:jpeg,png,jpg|max:50120',
+            'photos_gallery.*' => 'image|mimes:jpeg,png,jpg|max:50120',
         ]);
 
         if ($validator->fails()) {
@@ -195,8 +195,8 @@ class OperatorViewController extends Controller
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
             // Valida ambos posibles campos de foto
-            'photo_camera' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
-            'photo_gallery' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'photo_camera' => 'nullable|image|mimes:jpeg,png,jpg|max:50120',
+            'photo_gallery' => 'nullable|image|mimes:jpeg,png,jpg|max:50120',
         ]);
 
         if ($validator->fails()) {
