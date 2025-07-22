@@ -15,7 +15,6 @@ use Illuminate\Support\Str;
 use App\Http\Controllers\FileLinkController;
 use App\Http\Controllers\Admin\OrganigramPositionController;
 use App\Models\FileLink;
-use App\Http\Controllers\TmsController;
 use App\Http\Controllers\OperatorViewController;
 use App\Http\Controllers\ClientViewController;
 use App\Http\Controllers\VisitController;
@@ -220,21 +219,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::prefix('tms')->name('tms.')->group(function () {
-        Route::get('/', [TmsController::class, 'index'])->name('index');
-        Route::get('/ver-rutas', [TmsController::class, 'viewRoutes'])->name('viewRoutes');
-        Route::get('/crear-ruta', [TmsController::class, 'createRoute'])->name('createRoute');
-        Route::post('/crear-ruta', [TmsController::class, 'storeRoute'])->name('storeRoute');
-        Route::get('/asignar-rutas', [TmsController::class, 'assignRoutes'])->name('assignRoutes');
-        Route::post('/import-shipments', [TmsController::class, 'importShipments'])->name('importShipments');
-        Route::post('/store-shipment', [TmsController::class, 'storeShipment'])->name('storeShipment');
-        Route::post('/assign-shipments', [TmsController::class, 'assignShipmentsToRoute'])->name('assignShipmentsToRoute');
-        Route::patch('/shipments/{shipment}', [TmsController::class, 'updateShipment'])->name('shipments.update');
-        Route::delete('/routes/{route}', [TmsController::class, 'destroyRoute'])->name('routes.destroy');
-        Route::get('/export-shipments', [TmsController::class, 'exportShipments'])->name('exportShipments');
-        Route::delete('/shipments/{shipment}', [TmsController::class, 'destroyShipment'])->name('shipments.destroy');
 
-    });    
 });
 
 Route::prefix('operator')->name('operator.')->group(function () {

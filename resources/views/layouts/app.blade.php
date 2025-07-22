@@ -165,13 +165,6 @@
                         <span class="nav-text">{{ __('Gestión de Visitas') }}</span>
                     </x-nav-link>                    
 
-                    <x-nav-link :href="route('tms.index')" :active="request()->routeIs('tms.*')" class="nav-link-custom {{ request()->routeIs('tms.*') ? 'active-link' : '' }}">
-                        {{-- Icono de Camión (Truck) en formato SVG para mantener la consistencia --}}
-                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V14.25m-17.25 4.5v-1.875a3.375 3.375 0 013.375-3.375h9.75a3.375 3.375 0 013.375 3.375v1.875m-17.25 4.5h16.5M5.625 9h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
-                        </svg>
-                        <span class="nav-text">{{ __('Rutas') }}</span>
-                    </x-nav-link>               
 
                     {{-- Super Admin Collapsible Menu --}}
                     @if (Auth::user()->is_area_admin && Auth::user()->area?->name === 'Administración')

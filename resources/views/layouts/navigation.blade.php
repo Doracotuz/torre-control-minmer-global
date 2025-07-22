@@ -156,9 +156,6 @@
             <x-responsive-nav-link :href="route('area_admin.visits.index')" :active="request()->routeIs('area_admin.visits.*')">
                 {{ __('Gestión de Visitas') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('tms.index')" :active="request()->routeIs('tms.*')">
-                {{ __('Rutas') }}
-            </x-responsive-nav-link>
         </div>
 
         {{-- Menús de Administrador (replicados de app.blade.php) --}}
