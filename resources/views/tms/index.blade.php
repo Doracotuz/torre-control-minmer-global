@@ -15,9 +15,9 @@
 <div class="container mx-auto px-4">
     <!-- Navegación: Botones en una fila -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <a href="{{ route('tms.viewRoutes') }}" class="nav-card p-4 flex items-center"><svg class="w-8 h-8 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 16.382V5.618a1 1 0 00-1.447-.894L15 7m-6 13v-6.5m6 10V7"></path></svg><div><p class="font-bold">Ver Rutas</p><p class="text-sm opacity-80">Monitoreo en mapa.</p></div></a>
         <a href="{{ route('tms.createRoute') }}" class="nav-card p-4 flex items-center"><svg class="w-8 h-8 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg><div><p class="font-bold">Crear Ruta</p><p class="text-sm opacity-80">Planifica un trayecto.</p></div></a>
         <a href="{{ route('tms.assignRoutes') }}" class="nav-card p-4 flex items-center"><svg class="w-8 h-8 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg><div><p class="font-bold">Asignar Rutas</p><p class="text-sm opacity-80">Gestiona embarques.</p></div></a>
+        <a href="{{ route('tms.viewRoutes') }}" class="nav-card p-4 flex items-center"><svg class="w-8 h-8 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 16.382V5.618a1 1 0 00-1.447-.894L15 7m-6 13v-6.5m6 10V7"></path></svg><div><p class="font-bold">Ver Rutas</p><p class="text-sm opacity-80">Monitoreo en mapa.</p></div></a>
     </div>
 
     <!-- Cabecera y Filtros -->
