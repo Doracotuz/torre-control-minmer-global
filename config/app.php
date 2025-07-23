@@ -15,6 +15,9 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+
+    'Maps_api_key' => env('Maps_API_KEY'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

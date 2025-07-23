@@ -16,6 +16,10 @@ use App\Http\Controllers\FileLinkController;
 use App\Http\Controllers\Admin\OrganigramPositionController;
 use App\Models\FileLink;
 use App\Http\Controllers\VisitController;
+use App\Http\Controllers\Rutas\RutasDashboardController;
+use App\Http\Controllers\Rutas\RutaController;
+use App\Http\Controllers\Rutas\AsignacionController;
+use App\Http\Controllers\Rutas\MonitoreoController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -208,7 +212,46 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('area-admin')->name
         Route::post('/', [App\Http\Controllers\VisitController::class, 'store'])->name('store');
         Route::get('/', [VisitController::class, 'index'])->name('index');
         Route::delete('/{visit}', [VisitController::class, 'destroy'])->name('destroy');
-    });    
+    });
+    
+});
+
+Route::middleware(['auth', 'check.area:area_admin'])->prefix('rutas')->name('rutas.')->group(function () {
+    // Rutas principales del módulo
+    Route::get('/dashboard', [RutasDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/export', [RutasDashboardController::class, 'exportCsv'])->name('dashboard.export');
+    Route::get('/monitoreo', [MonitoreoController::class, 'index'])->name('monitoreo.index');
+
+    // --- GRUPO PARA GESTIÓN DE PLANTILLAS DE RUTA ---
+    Route::prefix('plantillas')->name('plantillas.')->group(function() {
+        Route::get('/', [RutaController::class, 'index'])->name('index');
+        Route::get('/create', [RutaController::class, 'create'])->name('create');
+        Route::post('/', [RutaController::class, 'store'])->name('store');
+        Route::get('/{ruta}/edit', [RutaController::class, 'edit'])->name('edit');
+        Route::put('/{ruta}', [RutaController::class, 'update'])->name('update');
+        Route::delete('/{ruta}', [RutaController::class, 'destroy'])->name('destroy');
+        Route::post('/{ruta}/duplicate', [RutaController::class, 'duplicate'])->name('duplicate');
+        Route::get('/export', [RutaController::class, 'exportCsv'])->name('export');
+        Route::get('/search', [RutaController::class, 'search'])->name('search'); // Para el modal de asignación
+    });
+
+
+    // --- NUEVO GRUPO: Para todo lo relacionado con Asignaciones ---
+    Route::prefix('asignaciones')->name('asignaciones.')->group(function () {
+        Route::get('/', [AsignacionController::class, 'index'])->name('index');
+        Route::get('/create', [AsignacionController::class, 'create'])->name('create');
+        Route::post('/', [AsignacionController::class, 'store'])->name('store');
+        Route::post('/{guia}/assign', [AsignacionController::class, 'assignRoute'])->name('assign');
+        Route::post('/import', [AsignacionController::class, 'importCsv'])->name('import');
+        Route::get('/template', [AsignacionController::class, 'downloadTemplate'])->name('template');
+    });
+
+    Route::prefix('monitoreo')->name('monitoreo.')->group(function () {
+        Route::get('/', [MonitoreoController::class, 'index'])->name('index');
+        
+        // NUEVA RUTA PARA GUARDAR EVENTOS
+        Route::post('/{guia}/events', [MonitoreoController::class, 'storeEvent'])->name('events.store');
+    });
 });
 
 
