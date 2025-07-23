@@ -286,10 +286,14 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('monitoringManager', () => ({
         // El array con los IDs de las guías seleccionadas. Es la "única fuente de verdad".
-        selectedGuias: [],
+        selectedGuias: JSON.parse(sessionStorage.getItem('selectedGuias')) || [],
+
         
         // Propiedades para el modal de eventos.
         isEventModalOpen: false,
+        isDetailsModalOpen: false, // <-- NUEVO ESTADO
+        selectedGuia: null, // <-- NUEVO ESTADO para guardar la guía completa
+        
         evento: { tipo: 'Entrega', subtipo: 'Factura Entregada', lat: '', lng: '' },
         eventSubtypes: {
             'Entrega': ['Factura Entregada', 'Factura no entregada'],
@@ -334,6 +338,16 @@ document.addEventListener('alpine:init', () => {
                     if (this.selectedGuias.length !== 1) return;
                     this.isEventModalOpen = true;
                 },
+
+                openDetailsModal(guiaId) {
+                    this.selectedGuia = window.guiasData[guiaId];
+                    this.isDetailsModalOpen = true;
+                },
+                closeAllModals() {
+                    this.isEventModalOpen = false;
+                    this.isDetailsModalOpen = false;
+                },
+
                 getSelectedGuiaFacturas() {
                     if (this.selectedGuias.length !== 1) return [];
                     const guiaId = this.selectedGuias[0];

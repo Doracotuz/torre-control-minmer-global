@@ -58,6 +58,9 @@ class MonitoreoController extends Controller
                 'placas' => $guia->placas,
                 'ruta_nombre' => $guia->ruta->nombre ?? 'N/A',
                 'facturas' => $guia->facturas,
+                'estatus' => $guia->estatus, // Añadimos el estatus para el modal
+                'fecha_inicio_ruta' => $guia->fecha_inicio_ruta?->format('d/m/Y H:i A'), // <-- AÑADIR
+                'fecha_fin_ruta' => $guia->fecha_fin_ruta?->format('d/m/Y H:i A'),
                 'eventos' => $guia->eventos->map(function ($evento) {
                     return [
                         'lat' => (float)$evento->latitud,
