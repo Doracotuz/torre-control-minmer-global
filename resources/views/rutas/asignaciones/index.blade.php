@@ -13,7 +13,7 @@
                     &larr; Volver al Dashboard
                 </a>
                 <div class="flex items-center gap-4">
-                    <button @click="isAssignModalOpen = true" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700">
+                    <button @click="isImportModalOpen = true" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700">
                         Cargar CSV
                     </button>
                     <a href="{{ route('rutas.asignaciones.create') }}" class="inline-flex items-center px-4 py-2 bg-[#ff9c00] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-orange-600">
@@ -109,11 +109,11 @@
                                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" x-text="ruta.region"></td>
                                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" x-text="ruta.distancia_total_km + ' km'"></td>
                                         <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                                            <form :action="`/rutas/asignaciones/${selectedGuia.id}/assign`" method="POST">
-                                                @csrf
-                                                <input type="hidden" name="ruta_id" :value="ruta.id">
-                                                <button type="submit" class="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-md hover:bg-green-700">Seleccionar</button>
-                                            </form>
+                                        <form :action="`/rutas/asignaciones/${selectedGuia.guia}/assign`" method="POST">
+                                            @csrf
+                                            <input type="hidden" name="ruta_id" :value="ruta.id">
+                                            <button type="submit" class="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-md hover:bg-green-700">Seleccionar</button>
+                                        </form>
                                         </td>
                                     </tr>
                                 </template>
@@ -166,7 +166,29 @@
                     </div>
                 </div>
             </div>
+            <div x-show="isImportModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" @keydown.escape.window="closeAllModals()">
+                <div @click.outside="closeAllModals()" class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+                    <h3 class="text-xl font-bold text-[#2c3856] mb-4">Cargar Guías por CSV</h3>
+                    <form action="{{ route('rutas.asignaciones.import') }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <div class="mb-4">
+                            <label for="csv_file" class="block text-sm font-medium text-gray-700">Seleccionar archivo CSV</label>
+                            <input type="file" name="csv_file" id="csv_file" required class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        </div>
+                        <div class="mb-6 text-sm text-gray-600">
+                            Descarga la plantilla de ejemplo para asegurar el formato correcto.
+                            <a href="{{ route('rutas.asignaciones.template') }}" class="text-blue-600 hover:underline">Descargar plantilla</a>
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" @click="closeAllModals()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                            <button type="submit" class="px-4 py-2 bg-[#ff9c00] text-white rounded-md hover:bg-orange-600">Subir CSV</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
+        </div>
+    </div>
         </div>
     </div>
 
@@ -176,6 +198,7 @@
             return {
                 isAssignModalOpen: false,
                 isDetailsModalOpen: false,
+                isImportModalOpen: false,
                 selectedGuia: null,
                 availableRoutes: [],
                 searchTerm: '',
@@ -183,6 +206,7 @@
                 openAssignModal(guia) {
                     this.selectedGuia = guia;
                     this.isAssignModalOpen = true;
+                    this.searchTerm = '';
                     this.searchRoutes();
                 },
                 openDetailsModal(guia) {
@@ -192,6 +216,7 @@
                 closeAllModals() {
                     this.isAssignModalOpen = false;
                     this.isDetailsModalOpen = false;
+                    this.isImportModalOpen = false;
                     this.selectedGuia = null;
                     this.searchTerm = '';
                     this.availableRoutes = [];

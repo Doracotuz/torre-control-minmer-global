@@ -20,6 +20,8 @@ use App\Http\Controllers\Rutas\RutasDashboardController;
 use App\Http\Controllers\Rutas\RutaController;
 use App\Http\Controllers\Rutas\AsignacionController;
 use App\Http\Controllers\Rutas\MonitoreoController;
+use App\Http\Controllers\Rutas\OperadorController;
+use App\Http\Controllers\Rutas\ClienteController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -263,13 +265,43 @@ Route::middleware('auth')->group(function () {
 
 });
 
-
+Route::prefix('tracking')->name('tracking.')->group(function() {
+    // Vista para consultar una o varias facturas
+    Route::get('/', [App\Http\Controllers\Rutas\ClienteController::class, 'index'])->name('index');
+    
+    // API para obtener datos de seguimiento de facturas
+    Route::get('/search', [App\Http\Controllers\Rutas\ClienteController::class, 'search'])->name('search');
+});
 
 Route::prefix('v')->name('visits.')->group(function () {
     // Página que muestra la cámara para escanear
     Route::get('/scan', [App\Http\Controllers\VisitController::class, 'showScanPage'])->name('scan.page');
     // Página a la que redirige el QR para validar el token
     Route::get('/validate/{token}', [App\Http\Controllers\VisitController::class, 'showValidationResult'])->name('validate.show');
+});
+
+Route::prefix('operador')->name('operador.')->group(function() {
+    // Página para ingresar el número de guía
+    Route::get('/', [OperadorController::class, 'index'])->name('index'); //
+
+    // Ruta para verificar la guía y redirigir a los detalles
+    Route::post('/check', [OperadorController::class, 'checkGuia'])->name('check'); //
+
+    // Importante: Agrupa todas las rutas que usan el parámetro {guia} para que Route Model Binding funcione correctamente
+    // Esto le dice a Laravel que dentro de este grupo, {guia} debe resolverse usando getRouteKeyName() del modelo Guia
+    Route::scopeBindings()->group(function () {
+        // Rutas para la vista de detalles del operador (mostrando los datos de la guía)
+        Route::get('/{guia}', [OperadorController::class, 'show'])->name('show'); //
+
+        // Ruta para iniciar la ruta
+        Route::post('/{guia}/start-trip', [App\Http\Controllers\Rutas\OperadorController::class, 'startTrip'])->name('start-trip'); //
+
+        // Rutas para eventos de facturas (Entrega / No Entrega)
+        Route::post('/{guia}/facturas/{factura}/event', [OperadorController::class, 'storeFacturaEvent'])->name('facturas.event'); //
+
+        // Rutas para eventos de notificación
+        Route::post('/{guia}/notifications/event', [OperadorController::class, 'storeNotificationEvent'])->name('notifications.event'); //
+    });
 });
 
 

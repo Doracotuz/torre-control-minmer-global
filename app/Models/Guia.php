@@ -39,4 +39,10 @@ class Guia extends Model
     {
         return $this->hasMany(Evento::class)->orderBy('fecha_evento');
     }
+
+    public function getRouteKeyName()
+    {
+        return 'guia'; // Indica a Laravel que use la columna 'guia' para la resolución de rutas
+    }
+
 }
