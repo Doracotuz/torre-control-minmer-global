@@ -136,7 +136,7 @@
         window.initMap = function() {
             if (!document.getElementById('map')) return;
             if (window.initialParadas) { paradas = window.initialParadas; delete window.initialParadas; } else { paradas = []; }
-            map = new google.maps.Map(document.getElementById("map"), { center: { lat: 19.4326, lng: -99.1332 }, zoom: 12, mapTypeControl: false, streetViewControl: false });
+            map = new google.maps.Map(document.getElementById("map"), { center: { lat: 19.4326, lng: -99.1332 }, zoom: 12, mapTypeControl: false, streetViewControl: false, gestureHandling: 'greedy',});
             directionsService = new google.maps.DirectionsService();
             directionsRenderer = new google.maps.DirectionsRenderer({ map: map, draggable: true, markerOptions: { draggable: true } });
             google.maps.event.addListener(directionsRenderer, 'directions_changed', () => { const result = directionsRenderer.getDirections(); if (result && result.routes.length > 0) { const newRoute = result.routes[0]; actualizarDistancia(newRoute); const newParadas = newRoute.legs.map((leg, index) => ({ lat: leg.start_location.lat(), lng: leg.start_location.lng(), nombre: (paradas[index] && paradas[index].nombre.includes("Punto")) ? `Punto ${index + 1}` : leg.start_address.split(',')[0] })); const lastLeg = newRoute.legs[newRoute.legs.length - 1]; newParadas.push({ lat: lastLeg.end_location.lat(), lng: lastLeg.end_location.lng(), nombre: (paradas[newParadas.length] && paradas[newParadas.length].nombre.includes("Punto")) ? `Punto ${newParadas.length + 1}` : lastLeg.end_address.split(',')[0] }); paradas = newParadas; actualizarVistaParadas(); } });
@@ -151,7 +151,7 @@
         // ========= MAPA DEL INDEX =========
         window.initIndexMap = function() {
             if (!document.getElementById('map-panel')) return;
-            indexMap = new google.maps.Map(document.getElementById("map-panel"), { center: { lat: 19.4326, lng: -99.1332 }, zoom: 10, mapTypeControl: false });
+            indexMap = new google.maps.Map(document.getElementById("map-panel"), { center: { lat: 19.4326, lng: -99.1332 }, zoom: 10, mapTypeControl: false, gestureHandling: 'greedy', });
             directionsService = new google.maps.DirectionsService();
             document.querySelectorAll('.route-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', (event) => {
@@ -165,7 +165,10 @@
         window.initMonitoreoMap = function() {
             if (!document.getElementById('monitoreo-map')) return;
             monitoreoMap = new google.maps.Map(document.getElementById("monitoreo-map"), {
-                center: { lat: 23.6345, lng: -102.5528 }, zoom: 5, mapTypeControl: false,
+                center: { lat: 23.6345, lng: -102.5528 },
+                zoom: 5,
+                mapTypeControl: false,
+                gestureHandling: 'greedy',
             });
             directionsService = new google.maps.DirectionsService();
         };
@@ -189,11 +192,51 @@
                 directionsService.route(request, (result, status) => {
                     if (status == 'OK') {
                         const color = routeColors[guiaId % routeColors.length];
-                        const renderer = new google.maps.DirectionsRenderer({ map: monitoreoMap, directions: result, suppressMarkers: false, polylineOptions: { strokeColor: color, strokeWeight: 5, strokeOpacity: 0.7 } });
+                        const renderer = new google.maps.DirectionsRenderer({ 
+                            map: monitoreoMap,
+                            directions: result,
+                            suppressMarkers: true,
+                            polylineOptions: { strokeColor: color, strokeWeight: 5, strokeOpacity: 0.7 } 
+                        });
                         activeRenderers[guiaId].renderer = renderer;
                     }
                 });
             }
+
+            paradas.forEach((parada, index) => {
+                const stopMarker = new google.maps.Marker({
+                    position: { lat: parada.lat, lng: parada.lng },
+                    map: monitoreoMap,
+                    label: {
+                        text: `${index + 1}`, // Etiqueta con el número de la parada (1, 2, 3...)
+                        color: "white",
+                        fontSize: "12px",
+                        fontWeight: "bold"
+                    },
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 12,
+                        fillColor: "#2c3856", // Azul oscuro de tu paleta
+                        fillOpacity: 1,
+                        strokeWeight: 2,
+                        strokeColor: "white"
+                    },
+                    title: `Parada ${index + 1}: ${parada.nombre_lugar}`
+                });
+
+                // Añadimos un InfoWindow para mostrar el nombre al hacer clic
+                stopMarker.addListener("click", () => {
+                    const contentString = `<div style="font-family: Montserrat, sans-serif; padding: 5px;">
+                                            <p style="font-weight: 600; color: #2c3856;">Parada ${index + 1}</p>
+                                            <p>${parada.nombre_lugar}</p>
+                                        </div>`;
+                    activeRenderers[guiaId].infoWindow.setContent(contentString);
+                    activeRenderers[guiaId].infoWindow.open({ anchor: stopMarker, map: monitoreoMap });
+                });
+
+                // Guardamos el marcador para poder borrarlo después
+                activeRenderers[guiaId].markers.push(stopMarker);
+            });
 
             // Se dibujan marcadores de eventos con iconos SVG
             guiaData.eventos.forEach(evento => {
@@ -386,8 +429,70 @@ document.addEventListener('alpine:init', () => {
         });
 
             // --- Mapa del INDEX ---
-            function drawRoute(rutaId) { const paradasParaRuta = window.rutasJson[rutaId]; if (!paradasParaRuta || paradasParaRuta.length < 2) return; const waypoints = paradasParaRuta.slice(1, -1).map(p => ({ location: {lat: p.lat, lng: p.lng}, stopover: true })); const request = { origin: {lat: paradasParaRuta[0].lat, lng: paradasParaRuta[0].lng}, destination: {lat: paradasParaRuta[paradasParaRuta.length - 1].lat, lng: paradasParaRuta[paradasParaRuta.length - 1].lng}, waypoints: waypoints, travelMode: 'DRIVING' }; directionsService.route(request, (result, status) => { if (status == 'OK') { const color = routeColors[rutaId % routeColors.length]; const renderer = new google.maps.DirectionsRenderer({ map: indexMap, directions: result, suppressMarkers: true, polylineOptions: { strokeColor: color, strokeWeight: 5, strokeOpacity: 0.8 } }); activeRenderers[rutaId] = renderer; } }); }
-            function removeRoute(rutaId) { if (activeRenderers[rutaId]) { activeRenderers[rutaId].setMap(null); delete activeRenderers[rutaId]; } }
+            function drawRoute(rutaId) {
+                const paradasParaRuta = window.rutasJson[rutaId];
+                if (!paradasParaRuta || paradasParaRuta.length < 2) return;
+                const waypoints = paradasParaRuta.slice(1, -1).map(p => ({ location: {lat: p.lat, lng: p.lng}, stopover: true }));
+                const request = {
+                    origin: {lat: paradasParaRuta[0].lat, lng: paradasParaRuta[0].lng},
+                    destination: {lat: paradasParaRuta[paradasParaRuta.length - 1].lat, lng: paradasParaRuta[paradasParaRuta.length - 1].lng},
+                    waypoints: waypoints,
+                    travelMode: 'DRIVING'
+                }; 
+                directionsService.route(request, (result, status) => {
+                    if (status == 'OK') {
+                        const color = routeColors[rutaId % routeColors.length];
+                        const renderer = new google.maps.DirectionsRenderer({
+                            map: indexMap,
+                            directions: result,
+                            suppressMarkers: true,
+                            polylineOptions: { strokeColor: color, strokeWeight: 5, strokeOpacity: 0.8 }
+                        });
+                        
+                        activeRenderers[rutaId] = { renderer: renderer, markers: [] };
+
+                        // AÑADIDO: Bucle para crear un marcador para cada parada
+                        paradasParaRuta.forEach((parada, index) => {
+                            const stopMarker = new google.maps.Marker({
+                                position: { lat: parada.lat, lng: parada.lng },
+                                map: indexMap,
+                                label: {
+                                    text: `${index + 1}`, // Etiqueta con el número de parada
+                                    color: "white",
+                                    fontSize: "11px",
+                                    fontWeight: "bold"
+                                },
+                                icon: {
+                                    path: google.maps.SymbolPath.CIRCLE,
+                                    scale: 10,
+                                    fillColor: color, // Usa el mismo color que la línea de la ruta
+                                    fillOpacity: 1,
+                                    strokeWeight: 1.5,
+                                    strokeColor: "white"
+                                },
+                                title: `Parada ${index + 1}`
+                            });
+                            // Guardamos el marcador para poder borrarlo después
+                            activeRenderers[rutaId].markers.push(stopMarker);
+                        });
+                    }
+                });
+            }
+
+            function removeRoute(rutaId) {
+                if (activeRenderers[rutaId]) {
+                    // Elimina la línea de la ruta
+                    if (activeRenderers[rutaId].renderer) {
+                        activeRenderers[rutaId].renderer.setMap(null);
+                    }
+                    // Elimina cada marcador de parada asociado
+                    if (activeRenderers[rutaId].markers) {
+                        activeRenderers[rutaId].markers.forEach(marker => marker.setMap(null));
+                    }
+                    // Limpia el registro
+                    delete activeRenderers[rutaId];
+                }
+            }
 
             // --- Funciones para el mapa de CREAR/EDITAR ---
             function agregarParada(location, nombre) { paradas.push({ lat: location.lat(), lng: location.lng(), nombre: nombre }); actualizarVistaParadas(); trazarRuta(); }
