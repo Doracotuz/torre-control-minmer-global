@@ -91,59 +91,74 @@
                 </div>
             </div>
 
-            <div x-show="isEventModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div @click.outside="isEventModalOpen = false" class="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg">
-                    <h3 class="text-xl font-bold text-[#2c3856] mb-4">Registrar Nuevo Evento</h3>
-                    <form :action="selectedGuias.length === 1 ? `/rutas/monitoreo/${selectedGuias[0]}/events` : '#'" method="POST" enctype="multipart/form-data" x-show="selectedGuias.length === 1">
+            <div x-show="isEventModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4" style="display: none;">
+                <div @click.outside="closeAllModals()" class="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg">
+                    <h3 class="text-xl font-bold text-[#2c3856] mb-6 border-b pb-3">Registrar Nuevo Evento</h3>
+                    
+                    <form x-show="selectedGuia" :action="'/rutas/monitoreo/' + selectedGuia.id + '/events'" method="POST" enctype="multipart/form-data">
                         @csrf
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-2 gap-6">
+
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Tipo de Evento</label>
-                                <select name="tipo" x-model="evento.tipo" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
-                                    <option value="Entrega">Entrega</option>
+                                <label for="event_type" class="block text-sm font-medium text-gray-700">Categoría</label>
+                                <select name="tipo" id="event_type" x-model="evento.tipo" 
+                                        @change="evento.subtipo = eventSubtypes[evento.tipo] ? eventSubtypes[evento.tipo][0] : ''" 
+                                        class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="Notificacion">Notificación</option>
+                                    <option value="Incidencias">Incidencias</option>
+                                    <option value="Entrega">Entrega</option>
                                 </select>
                             </div>
+
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Evento</label>
-                                <select name="subtipo" x-model="evento.subtipo" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
-                                    <template x-for="subtipo in eventSubtypes[evento.tipo]" :key="subtipo">
-                                        <option :value="subtipo" x-text="subtipo"></option>
+                                <label for="event_subtype" class="block text-sm font-medium text-gray-700">Detalle del Evento</label>
+                                <select name="subtipo" id="event_subtype" x-model="evento.subtipo" 
+                                        class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <template x-for="subtype in eventSubtypes[evento.tipo]" :key="subtype">
+                                        <option :value="subtype" x-text="subtype"></option>
                                     </template>
                                 </select>
                             </div>
-                            <div class="col-span-2" x-show="evento.tipo === 'Entrega'">
-                                <label class="block text-sm font-medium text-gray-700">Factura Afectada</label>
-                                <select name="factura_id" class="mt-1 w-full rounded-md border-gray-300 shadow-sm" :disabled="getSelectedGuiaFacturas().length === 0">
-                                    <template x-if="getSelectedGuiaFacturas().length === 0">
-                                        <option>No hay facturas pendientes para esta guía.</option>
+
+                            <div class="col-span-2" x-show="evento.tipo === 'Entrega'" x-transition>
+                                <label for="factura_id" class="block text-sm font-medium text-gray-700">Factura Afectada</label>
+                                <select name="factura_id" id="factura_id" :required="evento.tipo === 'Entrega'" 
+                                        class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
+                                        :disabled="!getSelectedGuiaFacturas() || getSelectedGuiaFacturas().length === 0">
+                                    <template x-if="!getSelectedGuiaFacturas() || getSelectedGuiaFacturas().length === 0">
+                                        <option>No hay facturas pendientes</option>
                                     </template>
                                     <template x-for="factura in getSelectedGuiaFacturas()" :key="factura.id">
-                                        <option :value="factura.id" x-text="factura.numero_factura + ' - ' + factura.destino"></option>
+                                        <option :value="factura.id" x-text="factura.numero_factura"></option>
                                     </template>
                                 </select>
                             </div>
-                            <div class="col-span-2 text-xs text-gray-500">Haz clic derecho en el mapa para obtener la ubicación o ingrésala manualmente.</div>
+
+                            <div class="col-span-2 text-xs text-gray-500 -mt-2">
+                                <p>Haz clic derecho en el mapa para obtener la ubicación o ingrésala manualmente.</p>
+                            </div>
+
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Latitud</label>
-                                <input type="text" name="latitud" x-model="evento.lat" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                                <label for="latitud" class="block text-sm font-medium text-gray-700">Latitud</label>
+                                <input type="text" name="latitud" x-model="evento.lat" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Longitud</label>
-                                <input type="text" name="longitud" x-model="evento.lng" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                                <label for="longitud" class="block text-sm font-medium text-gray-700">Longitud</label>
+                                <input type="text" name="longitud" x-model="evento.lng" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             </div>
                             <div class="col-span-2">
-                                <label class="block text-sm font-medium text-gray-700">Nota (Opcional)</label>
-                                <textarea name="nota" rows="2" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></textarea>
+                                <label for="nota" class="block text-sm font-medium text-gray-700">Nota (Opcional)</label>
+                                <textarea name="nota" rows="2" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                             </div>
                             <div class="col-span-2">
-                                <label class="block text-sm font-medium text-gray-700">Evidencia (Opcional)</label>
-                                <input type="file" name="evidencia" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#ff9c00]/20 file:text-[#ff9c00] hover:file:bg-[#ff9c00]/30">
+                                <label class="block text-sm font-medium text-gray-700">Evidencia</label>
+                                <input type="file" name="evidencia[]" multiple class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#ff9c00]/20 file:text-[#ff9c00] hover:file:bg-[#ff9c00]/30">
                             </div>
                         </div>
-                        <div class="mt-6 flex justify-end gap-4">
-                            <button type="button" @click="isEventModalOpen = false" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
-                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Guardar Evento</button>
+
+                        <div class="mt-8 flex justify-end gap-4">
+                            <button type="button" @click="closeAllModals()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-medium">Cancelar</button>
+                            <button type="submit" class="px-4 py-2 bg-[#2c3856] text-white rounded-md hover:bg-[#1a2b41] font-medium">Guardar Evento</button>
                         </div>
                     </form>
                 </div>

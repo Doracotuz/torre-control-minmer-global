@@ -21,9 +21,11 @@ class Evento extends Model
         'longitud',
         'fecha_evento',
     ];
+    
 
     protected $casts = [
         'fecha_evento' => 'datetime',
+        'url_evidencia' => 'array',
     ];
 
     public function guia()
@@ -38,8 +40,22 @@ class Evento extends Model
 
     public function getUrlEvidenciaAttribute($value)
     {
-        // Si el valor en la BD existe, genera la URL de S3. Si no, devuelve null.
-        return $value ? Storage::disk('s3')->url($value) : null;
+        if (is_null($value)) {
+            return [];
+        }
+
+        $paths = json_decode($value, true);
+
+        if (!is_array($paths)) {
+            return [];
+        }
+
+        return collect($paths)->map(function ($path) {
+            if (is_string($path)) {
+                return Storage::disk('s3')->url($path);
+            }
+            return null;
+        })->filter()->all();
     }
 
 }

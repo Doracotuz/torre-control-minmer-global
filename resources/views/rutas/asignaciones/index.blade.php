@@ -109,7 +109,7 @@
                                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" x-text="ruta.region"></td>
                                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" x-text="ruta.distancia_total_km + ' km'"></td>
                                         <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                                        <form :action="`/rutas/asignaciones/${selectedGuia.guia}/assign`" method="POST">
+                                        <form :action="`/rutas/asignaciones/${selectedGuia.id}/assign`" method="POST">
                                             @csrf
                                             <input type="hidden" name="ruta_id" :value="ruta.id">
                                             <button type="submit" class="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-md hover:bg-green-700">Seleccionar</button>

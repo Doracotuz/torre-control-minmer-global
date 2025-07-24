@@ -87,53 +87,77 @@ class MonitoreoController extends Controller
     public function storeEvent(Request $request, Guia $guia)
     {
         $validatedData = $request->validate([
-            'tipo' => 'required|in:Entrega,Notificacion',
+            'tipo' => 'required|in:Entrega,Notificacion,Incidencias',
             'subtipo' => 'required|string|max:255',
             'nota' => 'nullable|string',
             'latitud' => 'required|numeric',
             'longitud' => 'required|numeric',
             'factura_id' => 'nullable|required_if:tipo,Entrega|exists:facturas,id',
-            'evidencia' => 'nullable|file|max:51200', // max 50MB
+            // --- VALIDACIÓN MEJORADA PARA MÚLTIPLES ARCHIVOS ---
+            'evidencia' => 'nullable|array', // Ahora puede ser un array (o no venir)
+            'evidencia.*' => 'file|max:51200', // max 50MB por archivo
         ]);
 
+        // Validación de cantidad de fotos por tipo de evento
+        if ($request->hasFile('evidencia')) {
+            $fileCount = count($validatedData['evidencia']);
+            if ($validatedData['tipo'] === 'Entrega' && $fileCount > 10) {
+                return back()->with('error', 'Solo se permiten hasta 10 fotos para eventos de entrega.');
+            }
+            if ($validatedData['tipo'] === 'Notificacion' && $fileCount > 1) {
+                return back()->with('error', 'Solo se permite 1 foto para eventos de notificación.');
+            }
+        }
+
         try {
-            $path = null;
+            $paths = [];
             if ($request->hasFile('evidencia')) {
                 $directory = $validatedData['tipo'] === 'Entrega' ? 'tms_evidencias' : 'tms_events';
-                $path = $request->file('evidencia')->store($directory, 's3');
+                
+                $facturaNumero = 'evento';
+                if ($validatedData['tipo'] === 'Entrega') {
+                    $factura = Factura::find($validatedData['factura_id']);
+                    $facturaNumero = $factura->numero_factura;
+                }
+
+                foreach ($request->file('evidencia') as $index => $file) {
+                    $extension = $file->getClientOriginalExtension();
+                    $suffix = ($index > 0) ? '-' . ($index + 1) : '';
+                    $fileName = "{$facturaNumero}{$suffix}.{$extension}";
+                    
+                    $paths[] = $file->storeAs($directory, $fileName, 's3');
+                }
             }
 
-            // Crear el evento
             Evento::create([
                 'guia_id' => $guia->id,
                 'factura_id' => $validatedData['factura_id'] ?? null,
                 'tipo' => $validatedData['tipo'],
                 'subtipo' => $validatedData['subtipo'],
-                'nota' => $validatedData['nota'] ?? $validatedData['subtipo'], // Nota por default
+                'nota' => $validatedData['nota'] ?? $validatedData['subtipo'],
                 'latitud' => $validatedData['latitud'],
                 'longitud' => $validatedData['longitud'],
-                'url_evidencia' => $path,
+                'url_evidencia' => $paths, // Guardamos el array de rutas
                 'fecha_evento' => now(),
             ]);
 
-            // Si es un evento de entrega, actualizar el estatus de la factura
             if ($validatedData['tipo'] === 'Entrega') {
                 $factura = Factura::find($validatedData['factura_id']);
                 $factura->estatus_entrega = ($validatedData['subtipo'] === 'Factura Entregada') ? 'Entregada' : 'No Entregada';
                 $factura->save();
 
-                // Revisar si todas las facturas de la guía ya fueron procesadas
+                $guia->load('facturas');
                 $conteoPendientes = $guia->facturas()->where('estatus_entrega', 'Pendiente')->count();
+
                 if ($conteoPendientes === 0) {
                     $guia->estatus = 'Completada';
                     $guia->save();
                 }
             }
-             if ($guia->estatus == 'Planeada') {
+            if ($guia->estatus == 'Planeada') {
                 $guia->estatus = 'En Transito';
                 $guia->save();
-             }
-
+            }
 
         } catch (\Exception $e) {
             Log::error("Error al guardar evento: " . $e->getMessage());

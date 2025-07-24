@@ -93,12 +93,6 @@
                     <button type="button" @click="currentTab = 'facturas'" :class="{'tab-button active': currentTab === 'facturas', 'tab-button text-gray-500 hover:text-gray-700': currentTab !== 'facturas'}" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                         Facturas
                     </button>
-                    <button type="button" @click="currentTab = 'notificaciones'" :class="{'tab-button active': currentTab === 'notificaciones', 'tab-button text-gray-500 hover:text-gray-700': currentTab !== 'notificaciones'}" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                        Notificaciones
-                    </button>
-                    <button type="button" @click="currentTab = 'mapa'" :class="{'tab-button active': currentTab === 'mapa', 'tab-button text-gray-500 hover:text-gray-700': currentTab !== 'mapa'}" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                        Mapa de Ruta
-                    </button>
                 </nav>
             </div>
 
@@ -131,6 +125,7 @@
                 {{-- Contenido de la Tab de Facturas --}}
                 <div x-show="currentTab === 'facturas'" class="mt-6">
                     <h3 class="text-xl font-semibold text-[#2c3856] mb-4">Facturas de la Guía</h3>
+                    
                     <div class="space-y-4">
                         @forelse ($facturas as $factura)
                             <div class="bg-gray-50 p-4 rounded-lg shadow flex flex-col sm:flex-row justify-between items-center">
@@ -164,45 +159,16 @@
                         @endforelse
                     </div>
                 </div>
-
-                {{-- Contenido de la Tab de Notificaciones --}}
-                <div x-show="currentTab === 'notificaciones'" class="mt-6">
-                    <h3 class="text-xl font-semibold text-[#2c3856] mb-4">Registro de Notificaciones</h3>
+                <br>
                     @if($showEventButtons)
-                        <button @click="showNotificationModal = true" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700">
-                            + Notificar Evento
-                        </button>
+                        <div class="flex justify-center">
+                            <button type="button" @click="openNotificationModal()" class="px-4 py-2 bg-[#2c3856] text-white text-sm rounded-md hover:bg-[#1e263d] disabled:opacity-50 disabled:cursor-not-allowed">
+                                + Agregar Evento
+                            </button>
+                        </div>
                     @else
-                        <p class="text-gray-500 text-sm">Inicia la ruta para poder registrar notificaciones.</p>
-                    @endif
-
-                    <div class="mt-6 space-y-4">
-                        <h4 class="font-semibold text-lg text-gray-700">Historial de Notificaciones</h4>
-                        @forelse($guia->eventos->where('tipo', 'Notificacion') as $evento)
-                            <div class="bg-gray-50 p-3 rounded-lg shadow flex items-start space-x-3">
-                                <i class="fa-solid {{ $eventIcons[$evento->subtipo] ?? $eventIcons['Otro'] }} text-[#2c3856] mt-1 text-lg"></i>
-                                <div>
-                                    <p class="font-bold text-gray-800">{{ $evento->subtipo }}</p>
-                                    <p class="text-sm text-gray-700">{{ $evento->nota }}</p>
-                                    <p class="text-xs text-gray-500">{{ $evento->fecha_evento->format('d/m/Y H:i A') }}</p>
-                                    @if($evento->url_evidencia)
-                                        <a href="{{ $evento->url_evidencia }}" target="_blank" class="text-blue-500 hover:underline text-xs">Ver Evidencia</a>
-                                    @endif
-                                </div>
-                            </div>
-                        @empty
-                            <p class="text-center text-gray-500 text-sm">No hay notificaciones registradas para esta guía.</p>
-                        @endforelse
-                    </div>
-                </div>
-
-                {{-- Contenido de la Tab de Mapa --}}
-                <div x-show="currentTab === 'mapa'" class="mt-6">
-                    <h3 class="text-xl font-semibold text-[#2c3856] mb-4">Mapa de Ruta</h3>
-                    <div id="operator-map" class="w-full h-[60vh] rounded-lg shadow-md bg-gray-200"></div>
-                     <p class="text-sm text-gray-600 mt-2">Trazo de la ruta asignada y puntos de interés.</p>
-                </div>
-
+                        <p class="text-gray-500 text-sm mb-4">Inicia la ruta para poder registrar eventos.</p>
+                    @endif                    
 
                 {{-- Modal para Evento de Factura --}}
                 <div x-show="showFacturaModal" x-transition.opacity class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

@@ -12,23 +12,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Lista de tablas y sus columnas de texto a actualizar
         $tables = [
-            'rutas' => ['nombre', 'region'],
-            'paradas' => ['nombre_lugar'],
-            'guias' => ['guia', 'operador', 'placas', 'pedimento'],
-            'facturas' => ['numero_factura', 'destino'],
-            'eventos' => ['subtipo', 'nota', 'url_evidencia']
+            'rutas' => ['nombre' => 'VARCHAR(255)', 'region' => 'VARCHAR(255)'],
+            'paradas' => ['nombre_lugar' => 'VARCHAR(255)'],
+            'guias' => ['guia' => 'VARCHAR(255)', 'operador' => 'VARCHAR(255)', 'placas' => 'VARCHAR(255)', 'pedimento' => 'VARCHAR(255)'],
+            'facturas' => ['numero_factura' => 'VARCHAR(255)', 'destino' => 'TEXT'], // Especificamos TEXT
+            'eventos' => ['subtipo' => 'VARCHAR(255)', 'nota' => 'TEXT'] // Especificamos TEXT
         ];
 
-        // Cambiamos la codificación para cada tabla y columna
         foreach ($tables as $tableName => $columns) {
-            // Convierte toda la tabla a utf8mb4
-            DB::statement("ALTER TABLE {$tableName} CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-            
-            // Asegura que las columnas de texto también tengan la codificación correcta
-            foreach ($columns as $column) {
-                DB::statement("ALTER TABLE {$tableName} MODIFY {$column} VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            DB::statement("ALTER TABLE `{$tableName}` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+
+            foreach ($columns as $columnName => $columnType) {
+                DB::statement("ALTER TABLE `{$tableName}` MODIFY `{$columnName}` {$columnType} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
             }
         }
     }
@@ -38,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // No es necesario revertir estos cambios de codificación
+
     }
 };

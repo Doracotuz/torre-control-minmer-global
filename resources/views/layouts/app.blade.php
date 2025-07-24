@@ -16,9 +16,6 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
          
         <style>
-            /* ==== REFINED STYLES FOR ELEGANCE AND INTERACTIVITY ==== */
-
-            /* --- General Nav Link Style --- */
             .nav-link-custom {
                 position: relative;
                 display: flex;
@@ -30,7 +27,6 @@
                 transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
             }
 
-            /* --- Left Border Indicator for Hover/Active --- */
             .nav-link-custom::before {
                 content: '';
                 position: absolute;
@@ -39,12 +35,11 @@
                 transform: translateY(-50%);
                 height: 0;
                 width: 4px;
-                background-color: #ff9c00; /* Brand Orange */
+                background-color: #ff9c00;
                 border-radius: 2px;
                 transition: height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             }
 
-            /* --- Hover State (Non-Active) --- */
             .nav-link-custom:hover:not(.active-link) {
                 background-color: rgba(255, 255, 255, 0.05);
                 color: #ffffff;
@@ -53,9 +48,8 @@
                 height: 60%;
             }
 
-            /* --- Active Link State --- */
             .nav-link-custom.active-link {
-                background-color: #ff9c00; /* Brand Orange */
+                background-color: #ff9c00;
                 color: #ffffff;
                 font-weight: 600;
                 box-shadow: 0 4px 12px rgba(255, 156, 0, 0.2);
@@ -64,7 +58,7 @@
                 height: 100%;
             }
 
-            /* --- Icon and Text Styling --- */
+
             .nav-link-custom .nav-icon {
                 flex-shrink: 0;
                 width: 1.25rem;
@@ -77,7 +71,7 @@
                 transform: translateX(4px);
             }
 
-            /* --- Elegant Logo Hover Effect --- */
+
             .logo-container {
                 transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s ease;
                 border-radius: 8px;
@@ -93,7 +87,7 @@
                 font-family: 'Montserrat', sans-serif;
             }
 
-            /* --- Dropdown Styles --- */
+
             .dropdown-toggle {
                 display: flex;
                 justify-content: space-between;
@@ -119,8 +113,8 @@
             .sticky-sidebar {
                 position: sticky;
                 top: 0;
-                min-height: 100vh; /* Asegura que la sidebar tenga al menos la altura de la ventana */
-                align-self: flex-start; /* Ayuda a que sticky funcione correctamente dentro de un flex container */
+                min-height: 100vh;
+                align-self: flex-start;
             }
 
 
@@ -138,7 +132,7 @@
             activeRenderers = {};
         });
 
-        // ========= INICIALIZADOR PARA EL MAPA DE CREAR/EDITAR =========
+        // ========= CREAR/EDITAR =========
         window.initMap = function() {
             if (!document.getElementById('map')) return;
             if (window.initialParadas) { paradas = window.initialParadas; delete window.initialParadas; } else { paradas = []; }
@@ -154,7 +148,7 @@
             trazarRuta();
         };
 
-        // ========= INICIALIZADOR PARA EL MAPA DEL INDEX =========
+        // ========= MAPA DEL INDEX =========
         window.initIndexMap = function() {
             if (!document.getElementById('map-panel')) return;
             indexMap = new google.maps.Map(document.getElementById("map-panel"), { center: { lat: 19.4326, lng: -99.1332 }, zoom: 10, mapTypeControl: false });
@@ -167,7 +161,7 @@
             });
         };
 
-        // ========= INICIALIZADOR PARA EL MAPA DE MONITOREO =========
+        // ========= MAPA DE MONITOREO =========
         window.initMonitoreoMap = function() {
             if (!document.getElementById('monitoreo-map')) return;
             monitoreoMap = new google.maps.Map(document.getElementById("monitoreo-map"), {
@@ -176,14 +170,14 @@
             directionsService = new google.maps.DirectionsService();
         };
 
-        // ========= FUNCIONES PARA DIBUJAR EN MONITOREO (MEJORADAS) =========
+        // ========= DIBUJAR EN MONITOREO =========
         function drawMonitoreoRoute(guiaId) {
             const guiaData = window.guiasData[guiaId];
             if (!guiaData) return;
 
             activeRenderers[guiaId] = { renderer: null, markers: [], infoWindow: new google.maps.InfoWindow() };
             
-            // 1. Dibujar el trazo de la ruta (sin cambios)
+            // Se dibuja el trazo de la ruta
             const paradas = guiaData.paradas;
             if (paradas.length >= 2) {
                 const request = {
@@ -201,38 +195,24 @@
                 });
             }
 
-            // 2. Dibujar marcadores de eventos con ICONOS SVG PERSONALIZADOS
+            // Se dibujan marcadores de eventos con iconos SVG
             guiaData.eventos.forEach(evento => {
-                // --- NUEVO OBJETO DE ICONOS ALUSIVOS ---
-                // Usamos SVG Paths para tener control total
+                // SVG Paths
                 const icons = {
-                    'Factura Entregada': {
-                        path: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z', // Checkmark
-                        fillColor: '#28a745', fillOpacity: 1, strokeWeight: 1, strokeColor: '#fff', scale: 1.5
-                    },
-                    'Factura no entregada': {
-                        path: 'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z', // Cross (X)
-                        fillColor: '#dc3545', fillOpacity: 1, strokeWeight: 1, strokeColor: '#fff', scale: 1
-                    },
-                    'Sanitario': {
-                        path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z', // Pin
-                        fillColor: '#17a2b8', fillOpacity: 1, strokeWeight: 2, strokeColor: '#fff', scale: 1.8, anchor: new google.maps.Point(12, 24)
-                    },
-                    'Alimentos': {
-                        path: 'M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 5z', // Fork and Knife
-                        fillColor: '#fd7e14', fillOpacity: 1, strokeWeight: 0, scale: 0.8
-                    },
-                    'Combustible': {
-                        path: 'M12,3c-0.55,0-1,0.45-1,1v1h-1c-0.55,0-1,0.45-1,1v10c0,1.1,0.9,2,2,2h2c0.55,0,1-0.45,1-1v-1h1c0.55,0,1-0.45,1-1V9c0-1.1-0.9-2-2-2h-3V4c0-0.55-0.45-1-1-1z M14,15h-2V9h2V15z', // Gas Pump
-                        fillColor: '#ffc107', fillOpacity: 1, strokeWeight: 0, scale: 0.8
-                    },
-                    'Percance': {
-                        path: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z', // Warning Triangle
-                        fillColor: '#dc3545', fillOpacity: 1, strokeWeight: 0, scale: 0.9
-                    },
-                    'default': {
-                        path: google.maps.SymbolPath.CIRCLE, fillColor: '#6c757d', fillOpacity: 1, strokeColor: '#fff', scale: 6, strokeWeight: 1
-                    }
+                    'Factura Entregada': { path: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z', fillColor: '#28a745', fillOpacity: 1, strokeWeight: 0, scale: 1.2 },
+                    'Factura no entregada': { path: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z', fillColor: '#dc3545', fillOpacity: 1, strokeWeight: 0, scale: 1.2 },
+                    'Sanitario': { path: 'M14 11v1h-4v-1c0-1.1.9-2 2-2s2 .9 2 2zM9.5 11c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5V12h-5v-.5C9.5 11.22 9.5 11 9.5 11zM20 12v-1.5c0-1.38-1.12-2.5-2.5-2.5S15 9.12 15 10.5V12h5zM4 12v-1.5C4 9.12 5.12 8 6.5 8S9 9.12 9 10.5V12H4zm15 2H5c-1.1 0-2 .9-2 2v2h18v-2c0-1.1-.9-2-2-2z', fillColor: '#007bff', fillOpacity: 1, strokeWeight: 0, scale: 0.9 },
+                    'Alimentos': { path: 'M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 5z', fillColor: '#007bff', fillOpacity: 1, strokeWeight: 0, scale: 0.8 },
+                    'Combustible': { path: 'M18 6.09C17.83 6.03 17.66 6 17.5 6h-11C6.22 6 6 6.22 6 6.5v9C6 15.78 6.22 16 6.5 16h11c.28 0 .5-.22.5-.5V7l-4-1h3.5zM12 4c0-1.1-.9-2-2-2s-2 .9-2 2v1h4V4z', fillColor: '#007bff', fillOpacity: 1, strokeWeight: 0, scale: 0.9 },
+                    'Pernocta': { path: 'M21.5 10.5c-1.1 0-2 .9-2 2v3H4.5v-3c0-1.1-.9-2-2-2s-2 .9-2 2v5h2c0 1.66 1.34 3 3 3s3-1.34 3-3h8c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5c0-1.1-.9-2-2-2zM7.5 10c.83 0 1.5-.67 1.5-1.5S8.33 7 7.5 7 6 7.67 6 8.5 6.67 10 7.5 10zm9 0c.83 0 1.5-.67 1.5-1.5S17.33 7 16.5 7 15 7.67 15 8.5s.67 1.5 1.5 1.5z', fillColor: '#007bff', fillOpacity: 1, strokeWeight: 0, scale: 0.9 },
+                    'Llegada a carga': { path: 'M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zM18 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z', fillColor: '#ffc107', fillOpacity: 1, strokeWeight: 0, scale: 0.9 },
+                    'Fin de carga': { path: 'M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zM18 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z', fillColor: '#28a745', fillOpacity: 1, strokeWeight: 0, scale: 0.9 },
+                    'En ruta': { path: 'M22.43 10.59l-9.01-9.01c-.75-.75-2.07-.75-2.82 0l-9.01 9.01c-.75.75-.75 2.07 0 2.82l9.01 9.01c.75.75 2.07.75 2.82 0l9.01-9.01c.76-.75.76-2.07.01-2.82zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z', fillColor: '#007bff', fillOpacity: 1, strokeWeight: 0, scale: 0.9 },
+                    'Llegada a cliente': { path: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z', fillColor: '#28a745', fillOpacity: 1, strokeWeight: 0, scale: 0.9 },
+                    'Proceso de entrega': { path: 'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z', fillColor: '#007bff', fillOpacity: 1, strokeWeight: 0, scale: 0.9 },
+                    'Rechazo': { path: 'M19.83 9.17l-1-1-1.42 1.42-1.41-1.41-1-1-1.42 1.42-1.41-1.41-1-1L10 8.17 8.59 6.76l-1 1 1.42 1.42-1.42 1.41 1 1 1.41-1.41 1.42 1.42 1-1 1.41 1.41 1.42-1.42 1-1-1.42-1.41 1.42-1.42zM3 21.5h12V20H3v1.5zM4.44 19l.83-2H14v-1H5.83l-.83-2H14v-1H6.83l-.83-2H14v-1H7.83l-.83-2H14V9H8.83l-.83-2H14V6H3l1.44 3z', fillColor: '#dc3545', fillOpacity: 1, strokeWeight: 0, scale: 0.9 },
+                    'Percance': { path: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z', fillColor: '#dc3545', fillOpacity: 1, strokeWeight: 0, scale: 0.9 },
+                    'default': { path: google.maps.SymbolPath.CIRCLE, fillColor: '#6c757d', fillOpacity: 1, strokeColor: '#fff', scale: 6, strokeWeight: 1 }
                 };
 
                 const marker = new google.maps.Marker({
@@ -244,7 +224,7 @@
 
                 let facturaAfectadaHtml = '';
                 if (evento.tipo === 'Entrega' && evento.factura_id) {
-                    // Buscamos la factura en los datos de la guía
+                    // factura en los datos de la guía
                     const factura = guiaData.facturas.find(f => f.id === evento.factura_id);
                     if (factura) {
                         facturaAfectadaHtml = `<p style="font-size: 12px; color: #666; margin: 0 0 8px 0;"><strong>Factura:</strong> ${factura.numero_factura}</p>`;
@@ -268,7 +248,7 @@
             });
         }
 
-            // CORRECCIÓN: Lógica para remover rutas del mapa
+            // Lógica para remover rutas del mapa
             function removeMonitoreoRoute(guiaId) {
                 if (activeRenderers[guiaId]) {
                     if (activeRenderers[guiaId].renderer) {
@@ -282,29 +262,46 @@
                 }
             }
         
-        // ========= COMPONENTE ALPINE.JS PARA LA VISTA DE MONITOREO =========
+        // ========= ALPINE.JS PARA MONITOREO =========
 document.addEventListener('alpine:init', () => {
     Alpine.data('monitoringManager', () => ({
         // El array con los IDs de las guías seleccionadas. Es la "única fuente de verdad".
         selectedGuias: JSON.parse(sessionStorage.getItem('selectedGuias')) || [],
 
         
-        // Propiedades para el modal de eventos.
+        // Modal de eventos
         isEventModalOpen: false,
-        isDetailsModalOpen: false, // <-- NUEVO ESTADO
-        selectedGuia: null, // <-- NUEVO ESTADO para guardar la guía completa
+        isDetailsModalOpen: false,
+        selectedGuia: null,
         
         evento: { tipo: 'Entrega', subtipo: 'Factura Entregada', lat: '', lng: '' },
         eventSubtypes: {
             'Entrega': ['Factura Entregada', 'Factura no entregada'],
-            'Notificacion': ['Sanitario', 'Alimentos', 'Combustible', 'Pernocta', 'Percance']
+            'Notificacion': ['Sanitario', 'Alimentos', 'Combustible', 'Pernocta', 'Percance'],
+            'Incidencias': [
+                'Rechazo', 'Percance', 'Cambios de datos de unidad', 'Datos Incorrectos', 
+                'Datos Incompletos', 'Cambio de dirección de entrega', 'Capacidad de unidad errónea', 
+                'Carga Tardía', 'Daños al cliente', 'Datos incompletos en planeación', 
+                'Desvío de ruta', 'Entrega en dirección errónea', 'Extravío del producto', 
+                'Falla mecánica', 'Falta de maniobristas', 'Falta de evidencia', 
+                'Incidencia con transito', 'Ingreso de unidades a resguardo', 'Llegada tardía de custodia', 
+                'Mercancía robada', 'No comparten datos de unidad', 'No cuenta con herramientas de embarque', 
+                'No cuenta con herramientas de entrega', 'No cumple con capacidad requerida', 
+                'No cumple con solicitud de unidad', 'No envía estatus', 'No envía evidencias de entrega', 
+                'No llega a tiempo a embarque', 'No llega a tiempo de entrega', 'No lleva gastos', 
+                'No lleva combustible', 'No presenta checklist', 'No regresa producto', 
+                'No reporta incidencias en tiempo', 'No respeta especificaciones del cliente', 
+                'No respeta instrucciones de custodia', 'No valido carga', 'No valido documentos de entrega', 
+                'Salió sin custodia', 'Solicitud de unidades sin antelación', 'Transporte accidentado'
+            ]
+            
         },
         
-        // Se ejecuta cuando el componente se carga en la página.
+        // Cuando carga en la página.
             init() {
                 this.selectedGuias = JSON.parse(sessionStorage.getItem('selectedGuias')) || [];
                 
-                // MEJORA: La forma más limpia de manejar el clic derecho
+
                 if (monitoreoMap) {
                     monitoreoMap.addListener('rightclick', (event) => {
                         this.handleMapRightClick(event.latLng);
@@ -323,10 +320,9 @@ document.addEventListener('alpine:init', () => {
                 updateSelection(checkbox, guiaId) {
                     guiaId = String(guiaId);
                     if (checkbox.checked) {
-                        // Usamos un truco para evitar duplicados y forzar al observador a reaccionar.
-                        this.selectedGuias = [...new Set([...this.selectedGuias, guiaId])];
+                      this.selectedGuias = [...new Set([...this.selectedGuias, guiaId])];
                     } else {
-                        // Reasignamos el array para que el observador reaccione.
+
                         this.selectedGuias = this.selectedGuias.filter(id => id !== guiaId);
                     }
                 },
@@ -335,7 +331,15 @@ document.addEventListener('alpine:init', () => {
                     this.selectedGuias = [];
                 },
                 openEventModal() {
-                    if (this.selectedGuias.length !== 1) return;
+                    if (this.selectedGuias.length !== 1) {
+                        alert("Por favor, selecciona solo una guía para registrar un evento.");
+                        return;
+                    }
+                    
+                    const guiaId = this.selectedGuias[0];
+                    
+                    this.selectedGuia = window.guiasData[guiaId];
+                    
                     this.isEventModalOpen = true;
                 },
 
@@ -355,11 +359,9 @@ document.addEventListener('alpine:init', () => {
                     
                     if (!guiaData) return [];
 
-                    // --- FILTRO AÑADIDO AQUÍ ---
-                    // Devolvemos solo las facturas cuyo estatus de entrega sea 'Pendiente'
+                    // Filtros de facturas de la guía seleccionada
                     return guiaData.facturas.filter(factura => factura.estatus_entrega === 'Pendiente');
                 },
-                // CORRECCIÓN: Añadimos la función que faltaba
                 setEventLocationFromMapClick(event) {
                     if(this.selectedGuias.length !== 1) {
                         alert("Por favor, selecciona solo una guía para añadir un evento.");
@@ -383,11 +385,11 @@ document.addEventListener('alpine:init', () => {
             }));
         });
 
-            // --- Funciones auxiliares para el mapa del INDEX ---
+            // --- Mapa del INDEX ---
             function drawRoute(rutaId) { const paradasParaRuta = window.rutasJson[rutaId]; if (!paradasParaRuta || paradasParaRuta.length < 2) return; const waypoints = paradasParaRuta.slice(1, -1).map(p => ({ location: {lat: p.lat, lng: p.lng}, stopover: true })); const request = { origin: {lat: paradasParaRuta[0].lat, lng: paradasParaRuta[0].lng}, destination: {lat: paradasParaRuta[paradasParaRuta.length - 1].lat, lng: paradasParaRuta[paradasParaRuta.length - 1].lng}, waypoints: waypoints, travelMode: 'DRIVING' }; directionsService.route(request, (result, status) => { if (status == 'OK') { const color = routeColors[rutaId % routeColors.length]; const renderer = new google.maps.DirectionsRenderer({ map: indexMap, directions: result, suppressMarkers: true, polylineOptions: { strokeColor: color, strokeWeight: 5, strokeOpacity: 0.8 } }); activeRenderers[rutaId] = renderer; } }); }
             function removeRoute(rutaId) { if (activeRenderers[rutaId]) { activeRenderers[rutaId].setMap(null); delete activeRenderers[rutaId]; } }
 
-            // --- Funciones auxiliares para el mapa de CREAR/EDITAR ---
+            // --- Funciones para el mapa de CREAR/EDITAR ---
             function agregarParada(location, nombre) { paradas.push({ lat: location.lat(), lng: location.lng(), nombre: nombre }); actualizarVistaParadas(); trazarRuta(); }
             function eliminarParada(index) { paradas.splice(index, 1); actualizarVistaParadas(); trazarRuta(); }
             function actualizarVistaParadas() { const container = document.getElementById('paradas-container'); if (!container) return; container.innerHTML = paradas.length === 0 ? '<p class="text-sm text-gray-500">Aún no hay paradas.</p>' : ''; paradas.forEach((parada, index) => { const el = document.createElement('div'); el.className = 'flex items-center justify-between p-2 bg-gray-100 rounded-md border'; el.setAttribute('data-id', index); el.innerHTML = `<div class="flex items-center"><svg class="w-5 h-5 text-gray-400 mr-2 cursor-move" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg><input type="text" value="${parada.nombre}" class="text-sm font-medium text-gray-800 bg-transparent border-0 p-1 focus:ring-1 focus:ring-indigo-500 focus:bg-white rounded" onchange="actualizarNombreParada(${index}, this.value)"></div><button type="button" onclick="eliminarParada(${index})" class="text-red-500 hover:text-red-700">&times;</button>`; container.appendChild(el); }); if (document.getElementById('paradas-container') && paradas.length > 0) { new Sortable(document.getElementById('paradas-container'), { animation: 150, onEnd: (evt) => { const [item] = paradas.splice(evt.oldIndex, 1); paradas.splice(evt.newIndex, 0, item); actualizarVistaParadas(); trazarRuta(); }, }); } }
@@ -395,7 +397,6 @@ document.addEventListener('alpine:init', () => {
             function trazarRuta() { if (paradas.length < 2) { if (directionsRenderer) directionsRenderer.setDirections({ routes: [] }); actualizarDistancia(null); return; } const waypoints = paradas.slice(1, -1).map(p => ({ location: new google.maps.LatLng(p.lat, p.lng), stopover: true })); const request = { origin: new google.maps.LatLng(paradas[0].lat, paradas[0].lng), destination: new google.maps.LatLng(paradas[paradas.length - 1].lat, paradas[paradas.length - 1].lng), waypoints: waypoints, travelMode: 'DRIVING' }; if (directionsService) { directionsService.route(request, (result, status) => { if (status == 'OK') { directionsRenderer.setDirections(result); directionsRenderer.setOptions({ draggable: true }); } }); } }
             function validarYEnviarFormulario() { const form = document.getElementById('rutaForm'); const paradasContainer = document.getElementById('paradas-hidden-inputs'); const errorContainer = document.getElementById('paradas-error'); if (!form || !paradasContainer || !errorContainer) { alert("Error: No se encontró el formulario."); return; } if (paradas.length < 2) { errorContainer.classList.remove('hidden'); return; } errorContainer.classList.add('hidden'); paradasContainer.innerHTML = ''; paradas.forEach((parada, index) => { paradasContainer.innerHTML += `<input type="hidden" name="paradas[${index}][nombre_lugar]" value="${parada.nombre.replace(/"/g, "'")}"><input type="hidden" name="paradas[${index}][latitud]" value="${parada.lat}"><input type="hidden" name="paradas[${index}][longitud]" value="${parada.lng}">`; }); form.submit(); }
             
-            // ======== FUNCIÓN RESTAURADA ========
             function actualizarDistancia(route) { 
                 const distEl = document.getElementById('distancia-total'); 
                 const inputEl = document.getElementById('distancia-total-input'); 
@@ -454,7 +455,7 @@ document.addEventListener('alpine:init', () => {
                     </x-nav-link>
 
 
-                    {{-- Super Admin Collapsible Menu --}}
+                    {{-- Menu Super Admin --}}
                     @if (Auth::user()->is_area_admin && Auth::user()->area?->name === 'Administración')
                         <div class="pt-4 mt-2 border-t border-white/10">
                             <button @click="isSuperAdminMenuOpen = !isSuperAdminMenuOpen" class="dropdown-toggle text-xs">
@@ -475,7 +476,7 @@ document.addEventListener('alpine:init', () => {
                                         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-1.621-1.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                         <span class="nav-text">{{ __('Panel General') }}</span>
                                     </x-nav-link>
-                                    {{-- El resto de los links de admin... --}}
+                                    {{-- Agregar mas links de admin... --}}
                                 </div>
                             </div>
                         </div>
@@ -496,7 +497,7 @@ document.addEventListener('alpine:init', () => {
                                 <div class="pl-4 mt-2 space-y-2">
                                     {{-- Links para Admin de Área --}}
                                     <x-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="nav-link-custom {{ request()->routeIs('area_admin.dashboard') ? 'active-link' : '' }}">
-                                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-1.621-1.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> {{-- Icono de ejemplo, puedes usar otro --}}
+                                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-1.621-1.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                         <span class="nav-text">{{ __('Panel de Área') }}</span>
                                     </x-nav-link>
 

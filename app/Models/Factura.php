@@ -22,4 +22,9 @@ class Factura extends Model
     {
         return $this->belongsTo(Guia::class);
     }
+
+    public function eventos()
+    {
+        return $this->hasMany(Evento::class);
+    }
 }

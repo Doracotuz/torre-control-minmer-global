@@ -256,22 +256,13 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('rutas')->name('rut
     });
 });
 
-
-// Rutas de perfil de Breeze
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-});
-
-Route::prefix('tracking')->name('tracking.')->group(function() {
-    // Vista para consultar una o varias facturas
-    Route::get('/', [App\Http\Controllers\Rutas\ClienteController::class, 'index'])->name('index');
+// Route::prefix('tracking')->name('tracking.')->group(function() {
+//     // Vista para consultar una o varias facturas
+//     Route::get('/', [App\Http\Controllers\Rutas\ClienteController::class, 'index'])->name('index');
     
-    // API para obtener datos de seguimiento de facturas
-    Route::get('/search', [App\Http\Controllers\Rutas\ClienteController::class, 'search'])->name('search');
-});
+//     // API para obtener datos de seguimiento de facturas
+//     Route::get('/search', [App\Http\Controllers\Rutas\ClienteController::class, 'search'])->name('search');
+// });
 
 Route::prefix('v')->name('visits.')->group(function () {
     // Página que muestra la cámara para escanear
@@ -280,28 +271,56 @@ Route::prefix('v')->name('visits.')->group(function () {
     Route::get('/validate/{token}', [App\Http\Controllers\VisitController::class, 'showValidationResult'])->name('validate.show');
 });
 
-Route::prefix('operador')->name('operador.')->group(function() {
-    // Página para ingresar el número de guía
-    Route::get('/', [OperadorController::class, 'index'])->name('index'); //
+Route::prefix('operador')->name('operador.')->group(function () {
+    // Muestra el formulario para ingresar el número de guía
+    Route::get('/', [App\Http\Controllers\Rutas\OperadorController::class, 'showLoginForm'])->name('login');
 
-    // Ruta para verificar la guía y redirigir a los detalles
-    Route::post('/check', [OperadorController::class, 'checkGuia'])->name('check'); //
+    // Valida el número de guía y redirige a la vista de la ruta
+    Route::post('/guia', [App\Http\Controllers\Rutas\OperadorController::class, 'accessGuia'])->name('access');
 
-    // Importante: Agrupa todas las rutas que usan el parámetro {guia} para que Route Model Binding funcione correctamente
-    // Esto le dice a Laravel que dentro de este grupo, {guia} debe resolverse usando getRouteKeyName() del modelo Guia
-    Route::scopeBindings()->group(function () {
-        // Rutas para la vista de detalles del operador (mostrando los datos de la guía)
-        Route::get('/{guia}', [OperadorController::class, 'show'])->name('show'); //
+    // La vista principal del operador para una guía específica
+    // Usaremos un parámetro simple por ahora, luego podemos asegurarlo más
+    Route::get('/guia/{guia:guia}', [App\Http\Controllers\Rutas\OperadorController::class, 'showGuia'])->name('guia.show');
 
-        // Ruta para iniciar la ruta
-        Route::post('/{guia}/start-trip', [App\Http\Controllers\Rutas\OperadorController::class, 'startTrip'])->name('start-trip'); //
+    Route::post('/guia/{guia:guia}/start', [App\Http\Controllers\Rutas\OperadorController::class, 'startRoute'])->name('guia.start');
 
-        // Rutas para eventos de facturas (Entrega / No Entrega)
-        Route::post('/{guia}/facturas/{factura}/event', [OperadorController::class, 'storeFacturaEvent'])->name('facturas.event'); //
+    Route::post('/guia/{guia:guia}/event', [App\Http\Controllers\Rutas\OperadorController::class, 'storeEvent'])->name('guia.event.store');
+    
+});
 
-        // Rutas para eventos de notificación
-        Route::post('/{guia}/notifications/event', [OperadorController::class, 'storeNotificationEvent'])->name('notifications.event'); //
-    });
+    Route::get('/tracking', [App\Http\Controllers\Rutas\TrackingController::class, 'index'])->name('tracking.index');
+
+
+// Route::prefix('operador')->name('operador.')->group(function() {
+//     // Página para ingresar el número de guía
+//     Route::get('/', [OperadorController::class, 'index'])->name('index'); //
+
+//     // Ruta para verificar la guía y redirigir a los detalles
+//     Route::post('/check', [OperadorController::class, 'checkGuia'])->name('check'); //
+
+//     // Importante: Agrupa todas las rutas que usan el parámetro {guia} para que Route Model Binding funcione correctamente
+//     // Esto le dice a Laravel que dentro de este grupo, {guia} debe resolverse usando getRouteKeyName() del modelo Guia
+//     Route::scopeBindings()->group(function () {
+//         // Rutas para la vista de detalles del operador (mostrando los datos de la guía)
+//         Route::get('/{guia}', [OperadorController::class, 'show'])->name('show'); //
+
+//         // Ruta para iniciar la ruta
+//         Route::post('/{guia}/start-trip', [App\Http\Controllers\Rutas\OperadorController::class, 'startTrip'])->name('start-trip'); //
+
+//         // Rutas para eventos de facturas (Entrega / No Entrega)
+//         Route::post('/{guia}/facturas/{factura}/event', [OperadorController::class, 'storeFacturaEvent'])->name('facturas.event'); //
+
+//         // Rutas para eventos de notificación
+//         Route::post('/{guia}/notifications/event', [OperadorController::class, 'storeNotificationEvent'])->name('notifications.event'); //
+//     });
+// });
+
+// Rutas de perfil de Breeze
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
 });
 
 

@@ -2,19 +2,16 @@
     {{-- Estilos CSS para la animación del logotipo --}}
     <style>
         .logo-coin-flip {
-            /* Prepara el elemento para transformaciones 3D y añade una transición suave */
             transition: transform 0.8s;
             transform-style: preserve-3d;
         }
 
         .logo-coin-flip:hover {
-            /* Al pasar el cursor, gira el logo 360 grados en el eje Y */
             transform: rotateY(360deg);
         }
     </style>
 
     <div class="flex flex-col items-center justify-center mb-6">
-        {{-- Se cambió la clase de altura de h-20 a h-32 para hacer el logo más grande --}}
         <img src="{{ Storage::disk('s3')->url('LogoAzul.png') }}" alt="Minmer Global Logo" class="h-32 mb-3 filter logo-coin-flip">
         <h1 class="text-3xl font-extrabold text-[#2c3856] mb-1" style="font-family: 'Raleway', sans-serif;">CONTROL TOWER</h1>
         <p class="text-sm text-gray-600" style="font-family: 'Montserrat', sans-serif;">MINMER GLOBAL</p>
