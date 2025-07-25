@@ -167,4 +167,66 @@ class MonitoreoController extends Controller
         return redirect()->route('rutas.monitoreo.index')->with('success', 'Evento registrado exitosamente.');
     }
 
+    public function filter(Request $request)
+    {
+        $query = Guia::query()->with(['ruta.paradas', 'eventos', 'facturas']);
+
+        // Búsqueda (sin cambios)
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->search . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('guia', 'like', $searchTerm)
+                  ->orWhere('operador', 'like', $searchTerm)
+                  ->orWhereHas('ruta', function ($rutaQuery) use ($searchTerm) {
+                      $rutaQuery->where('nombre', 'like', $searchTerm);
+                  });
+            });
+        }
+
+        // --- LÓGICA DE FILTRADO CORREGIDA PARA AJAX ---
+        if ($request->filled('estatus')) {
+            $query->where('estatus', $request->estatus);
+        }
+
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
+        }
+
+        $guias = $query->withCount('facturas')->orderBy('updated_at', 'desc')->get();
+        
+        $paginator = $query->withCount('facturas')->orderBy('updated_at', 'desc')->paginate(20);
+
+        $guiasJson = $guias->keyBy('id')->map(function ($guia) {
+            return [
+                'id' => $guia->id,
+                'guia' => $guia->guia,
+                'operador' => $guia->operador,
+                'placas' => $guia->placas,
+                'ruta_nombre' => $guia->ruta->nombre ?? 'N/A',
+                'facturas' => $guia->facturas,
+                'estatus' => $guia->estatus,
+                'fecha_inicio_ruta' => $guia->fecha_inicio_ruta?->format('d/m/Y H:i A'),
+                'fecha_fin_ruta' => $guia->fecha_fin_ruta?->format('d/m/Y H:i A'),
+                'eventos' => $guia->eventos->map(function ($evento) {
+                    return [
+                        'lat' => (float)$evento->latitud, 'lng' => (float)$evento->longitud,
+                        'tipo' => $evento->tipo, 'subtipo' => $evento->subtipo,
+                        'nota' => $evento->nota, 'url_evidencia' => $evento->url_evidencia,
+                        'fecha_evento' => $evento->fecha_evento->format('d/m/Y H:i A'),
+                        'factura_id' => $evento->factura_id,
+                    ];
+                }),
+                'paradas' => $guia->ruta ? $guia->ruta->paradas->map(function ($parada) {
+                    return ['lat' => (float)$parada->latitud, 'lng' => (float)$parada->longitud, 'nombre_lugar' => $parada->nombre_lugar];
+                }) : [],
+            ];
+        });
+
+        // Devolvemos los datos en formato JSON
+        return response()->json([
+            'paginator' => $paginator,
+            'guiasJson' => $guiasJson,
+        ]);
+    }
+
 }

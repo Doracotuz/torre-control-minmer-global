@@ -250,8 +250,7 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('rutas')->name('rut
 
     Route::prefix('monitoreo')->name('monitoreo.')->group(function () {
         Route::get('/', [MonitoreoController::class, 'index'])->name('index');
-        
-        // NUEVA RUTA PARA GUARDAR EVENTOS
+        Route::get('/filter', [MonitoreoController::class, 'filter'])->name('filter');
         Route::post('/{guia}/events', [MonitoreoController::class, 'storeEvent'])->name('events.store');
     });
 });
