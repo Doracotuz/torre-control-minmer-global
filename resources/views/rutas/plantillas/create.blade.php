@@ -33,7 +33,17 @@
                         
                         <div>
                             <label for="region" class="block text-sm font-medium text-gray-700">Región</label>
-                            <input type="text" name="region" id="region" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <select name="origen" id="origen" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="">Selecciona un origen</option>
+                                <option value="MEX" {{ old('origen') == 'MEX' ? 'selected' : '' }}>MEX</option>
+                                <option value="SJD" {{ old('origen') == 'SJD' ? 'selected' : '' }}>SJD</option>
+                                <option value="GDL" {{ old('origen') == 'GDL' ? 'selected' : '' }}>GDL</option>
+                                <option value="MTY" {{ old('origen') == 'MTY' ? 'selected' : '' }}>MTY</option>
+                                <option value="CUN" {{ old('origen') == 'CUN' ? 'selected' : '' }}>CUN</option>
+                                <option value="MIN" {{ old('origen') == 'MIN' ? 'selected' : '' }}>MIN</option>
+                                <option value="MZN" {{ old('origen') == 'MZN' ? 'selected' : '' }}>MZN</option>
+                                <option value="VER" {{ old('origen') == 'VER' ? 'selected' : '' }}>VER</option>
+                            </select>
                         </div>
 
                         <div>

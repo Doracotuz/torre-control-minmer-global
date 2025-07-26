@@ -3,88 +3,73 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Asignación de Guías a Rutas') }}</h2>
     </x-slot>
 
-    {{-- Inicializamos Alpine.js con el manejador para ambos modales --}}
     <div class="py-12" x-data="assignmentManager()">
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
             
-            {{-- Botones y Filtros (código completo) --}}
-            <div class="flex justify-between items-center mb-6">
-                <a href="{{ route('rutas.dashboard') }}" class="inline-flex items-center px-4 py-2 bg-gray-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-600">
-                    &larr; Volver al Dashboard
-                </a>
-                <div class="flex items-center gap-4">
-                    <button @click="isImportModalOpen = true" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700">
-                        Cargar CSV
-                    </button>
-                    <a href="{{ route('rutas.asignaciones.create') }}" class="inline-flex items-center px-4 py-2 bg-[#ff9c00] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-orange-600">
-                        Añadir Guía
-                    </a>
-                </div>
-            </div>
-
+            {{-- Botones y Filtros --}}
             <div class="bg-white p-4 rounded-lg shadow-md mb-6">
-                 <form action="{{ route('rutas.asignaciones.index') }}" method="GET">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <input type="text" name="search" placeholder="Buscar por Guía, Operador, Placas..." value="{{ request('search') }}" class="rounded-md border-gray-300 shadow-sm">
-                        <select name="estatus" class="rounded-md border-gray-300 shadow-sm">
-                            <option value="">Todos los Estatus</option>
-                            <option value="En Espera" {{ request('estatus') == 'En Espera' ? 'selected' : '' }}>En Espera</option>
-                            <option value="Planeada" {{ request('estatus') == 'Planeada' ? 'selected' : '' }}>Planeada</option>
-                            <option value="En Transito" {{ request('estatus') == 'En Transito' ? 'selected' : '' }}>En Tránsito</option>
-                            <option value="Completada" {{ request('estatus') == 'Completada' ? 'selected' : '' }}>Completada</option>
-                        </select>
-                        <div>
-                            <button type="submit" class="w-full justify-center inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#2c3856] hover:bg-[#1a2b41]">Filtrar</button>
-                        </div>
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="flex items-center gap-4">
+                        <a href="{{ route('rutas.dashboard') }}" class="text-sm font-semibold text-gray-600 hover:text-gray-800">&larr; Volver</a>
+                        <a href="{{ route('rutas.asignaciones.create') }}" class="px-4 py-2 bg-[#ff9c00] text-white rounded-md text-sm font-semibold">Añadir Manualmente</a>
+                        <button @click="isImportModalOpen = true" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold">Cargar CSV</button>
+                        <a href="{{ route('rutas.asignaciones.export', request()->query()) }}" class="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-semibold">Exportar Vista</a>
                     </div>
-                </form>
-            </div>
-
-            {{-- TABLA PRINCIPAL (CÓDIGO COMPLETO) --}}
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Guía</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Facturas</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Operador</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ruta Asignada</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estatus</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @forelse ($guias as $guia)
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ $guia->guia }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $guia->facturas_count }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $guia->operador }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $guia->ruta->nombre ?? 'Sin Asignar' }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full @if($guia->estatus == 'En Espera') bg-yellow-100 text-yellow-800 @elseif($guia->estatus == 'Planeada') bg-blue-100 text-blue-800 @elseif($guia->estatus == 'En Transito') bg-purple-100 text-purple-800 @elseif($guia->estatus == 'Completada') bg-green-100 text-green-800 @endif">
-                                            {{ $guia->estatus }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-                                        <button @click="openDetailsModal({{ $guia }})" class="text-gray-500 hover:text-gray-800">Ver Detalles</button>
-                                        <button @click="openAssignModal({{ $guia }})" class="text-indigo-600 hover:text-indigo-900" 
-                                            :disabled="{{ $guia->estatus !== 'En Espera' ? 'true' : 'false' }}"
-                                            :class="{ 'opacity-50 cursor-not-allowed': {{ $guia->estatus !== 'En Espera' ? 'true' : 'false' }} }">
-                                            Asignar
-                                        </button>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No se encontraron guías.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                    <form action="{{ route('rutas.asignaciones.index') }}" method="GET" class="flex items-center gap-2">
+                        <input type="text" name="search" placeholder="Buscar..." value="{{ request('search') }}" class="rounded-md border-gray-300 shadow-sm text-sm">
+                        <input type="text" name="origen" placeholder="Origen..." value="{{ request('origen') }}" class="rounded-md border-gray-300 shadow-sm text-sm w-24">
+                        <select name="estatus" class="rounded-md border-gray-300 shadow-sm text-sm">
+                            <option value="">Todos los Estatus</option>
+                            <option value="En Espera" @if(request('estatus') == 'En Espera') selected @endif>En Espera</option>
+                            <option value="Planeada" @if(request('estatus') == 'Planeada') selected @endif>Planeada</option>
+                            <option value="En Transito" @if(request('estatus') == 'En Transito') selected @endif>En Tránsito</option>
+                            <option value="Completada" @if(request('estatus') == 'Completada') selected @endif>Completada</option>
+                        </select>
+                        <button type="submit" class="px-4 py-2 bg-[#2c3856] text-white rounded-md text-sm font-semibold">Filtrar</button>
+                    </form>
                 </div>
             </div>
 
-            {{-- Paginación --}}
-            <div class="mt-6">{{ $guias->appends(request()->query())->links() }}</div>
+            {{-- Tabla de Guías --}}
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Guía</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Operador / Placas</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Origen</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fecha Asignación</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Custodia</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Hora Planeada</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ruta Asignada</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Estatus</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @forelse ($guias as $guia)
+                            <tr>
+                                <td class="px-4 py-3"><button @click="openDetailsModal({{ $guia }})" class="font-bold text-blue-600 hover:underline">{{ $guia->guia }}</button></td>
+                                <td class="px-4 py-3">{{ $guia->operador }} <br> <span class="text-gray-500">{{ $guia->placas }}</span></td>
+                                <td class="px-4 py-3">{{ $guia->origen }}</td>
+                                <td class="px-4 py-3">{{ $guia->fecha_asignacion ? \Carbon\Carbon::parse($guia->fecha_asignacion)->format('d/m/Y') : 'N/A' }}</td>
+                                <td class="px-4 py-3">{{ $guia->custodia ?? 'N/A' }}</td>
+                                <td class="px-4 py-3">{{ $guia->hora_planeada ?? 'N/A' }}</td>
+                                <td class="px-4 py-3">{{ $guia->ruta->nombre ?? 'Sin asignar' }}</td>
+                                <td class="px-4 py-3"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ...">{{ $guia->estatus }}</span></td>
+                                <td class="px-4 py-3 flex items-center gap-2">
+                                    <button @click="openAssignModal({{ $guia }})" :disabled="{{ $guia->estatus !== 'En Espera' ? 'true' : 'false' }}" class="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50">Asignar</button>
+                                    <button @click="openEditModal({{ $guia->id }})" class="text-sm text-gray-600 hover:text-gray-800">Editar</button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="8" class="text-center py-4 text-gray-500">No se encontraron guías.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4">{{ $guias->appends(request()->query())->links() }}</div>
+        </div>
 
             <div x-show="isAssignModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" @keydown.escape.window="closeAllModals()">
                 <div @click.outside="closeAllModals()" class="bg-white rounded-lg shadow-xl p-8 w-full max-w-2xl max-h-[90vh] flex flex-col">
@@ -123,47 +108,57 @@
                 </div>
             </div>
             
-            <div x-show="isDetailsModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" @keydown.escape.window="closeAllModals()">
-                <div @click.outside="closeAllModals()" class="bg-white rounded-lg shadow-xl p-8 w-full max-w-4xl max-h-[90vh] flex flex-col">
-                    <div class="flex justify-between items-center border-b pb-4 mb-4">
-                         <h3 class="text-xl font-bold text-[#2c3856]">Detalles de la Guía <span x-text="selectedGuia?.guia" class="text-[#ff9c00]"></span></h3>
-                         <button @click="closeAllModals()" class="text-gray-500 hover:text-gray-800">&times;</button>
-                    </div>
-                   
-                    <div class="flex-grow overflow-y-auto">
-                        <div x-show="selectedGuia">
-                            {{-- Info General --}}
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-sm">
-                                <div><strong class="block text-gray-500">Operador:</strong> <span x-text="selectedGuia.operador"></span></div>
-                                <div><strong class="block text-gray-500">Placas:</strong> <span x-text="selectedGuia.placas"></span></div>
-                                <div><strong class="block text-gray-500">Ruta Asignada:</strong> <span x-text="selectedGuia.ruta?.nombre || 'Sin Asignar'"></span></div>
-                                <div><strong class="block text-gray-500">Estatus:</strong> <span x-text="selectedGuia.estatus"></span></div>
+            <div x-show="isDetailsModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" @keydown.escape.window="closeAllModals()">
+                <div @click.outside="closeAllModals()" class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                    <template x-if="selectedGuia">
+                        <div>
+                            <div class="flex justify-between items-center border-b p-4">
+                                <h3 class="text-xl font-bold text-[#2c3856]">Detalles de la Guía <span x-text="selectedGuia.guia" class="text-[#ff9c00]"></span></h3>
+                                <button @click="closeAllModals()" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
                             </div>
+                            <div class="p-6 flex-grow overflow-y-auto">
+                                {{-- Información General de la Guía --}}
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 mb-6 bg-gray-50 p-4 rounded-lg border text-sm">
+                                    <div><strong class="block text-gray-500">Operador:</strong> <span x-text="selectedGuia.operador || 'N/A'"></span></div>
+                                    <div><strong class="block text-gray-500">Placas:</strong> <span x-text="selectedGuia.placas || 'N/A'"></span></div>
+                                    <div><strong class="block text-gray-500">Origen:</strong> <span x-text="selectedGuia.origen || 'N/A'"></span></div>
+                                    <div><strong class="block text-gray-500">Fecha Asignación:</strong> <span x-text="formatDate(selectedGuia.fecha_asignacion)"></span></div>
+                                    <div><strong class="block text-gray-500">Custodia:</strong> <span x-text="selectedGuia.custodia || 'N/A'"></span></div>
+                                    <div><strong class="block text-gray-500">Hora Planeada:</strong> <span x-text="selectedGuia.hora_planeada || 'N/A'"></span></div>
+                                    <div><strong class="block text-gray-500">Pedimento:</strong> <span x-text="selectedGuia.pedimento || 'N/A'"></span></div>
+                                    <div><strong class="block text-gray-500">Ruta Asignada:</strong> <span x-text="selectedGuia.ruta?.nombre || 'Sin Asignar'"></span></div>
+                                    <div><strong class="block text-gray-500">Estatus:</strong> <span x-text="selectedGuia.estatus"></span></div>
+                                </div>
 
-                            {{-- Tabla de Facturas --}}
-                            <h4 class="text-md font-semibold text-gray-700 mb-2">Facturas Incluidas</h4>
-                            <table class="min-w-full divide-y divide-gray-200 border">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"># Factura</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Destino</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cajas</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Botellas</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <template x-for="factura in selectedGuia.facturas" :key="factura.id">
-                                        <tr>
-                                            <td class="px-4 py-3 text-sm text-gray-800" x-text="factura.numero_factura"></td>
-                                            <td class="px-4 py-3 text-sm text-gray-600" x-text="factura.destino"></td>
-                                            <td class="px-4 py-3 text-sm text-gray-600" x-text="factura.cajas"></td>
-                                            <td class="px-4 py-3 text-sm text-gray-600" x-text="factura.botellas"></td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
+                                {{-- Tabla de Facturas --}}
+                                <h4 class="text-md font-semibold text-gray-700 mb-2">Facturas Incluidas</h4>
+                                <div class="border rounded-lg overflow-hidden">
+                                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"># Factura</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Destino</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cajas</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Botellas</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Hora Cita</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200">
+                                            <template x-for="factura in selectedGuia.facturas" :key="factura.id">
+                                                <tr>
+                                                    <td class="px-4 py-3" x-text="factura.numero_factura"></td>
+                                                    <td class="px-4 py-3" x-text="factura.destino"></td>
+                                                    <td class="px-4 py-3" x-text="factura.cajas"></td>
+                                                    <td class="px-4 py-3" x-text="factura.botellas"></td>
+                                                    <td class="px-4 py-3" x-text="factura.hora_cita || 'N/A'"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </template>
                 </div>
             </div>
             <div x-show="isImportModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" @keydown.escape.window="closeAllModals()">
@@ -187,22 +182,69 @@
                 </div>
             </div>
 
-        </div>
-    </div>
-        </div>
+        <div x-show="isEditModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div @click.outside="closeAllModals()" class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                {{-- Usamos x-if para renderizar solo cuando hay datos --}}
+                <template x-if="editData.id">
+                    <div>
+                        <div class="flex justify-between items-center border-b p-4">
+                            <h3 class="text-xl font-bold text-[#2c3856]">Editando Guía: <span x-text="editData.guia"></span></h3>
+                            <button @click="closeAllModals()" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+                        </div>
+                        <div class="p-6 flex-grow overflow-y-auto">
+                            <form @submit.prevent="submitEditForm()">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div><label class="block text-sm font-medium">Operador</label><input type="text" x-model="editData.operador" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
+                                    <div><label class="block text-sm font-medium">Placas</label><input type="text" x-model="editData.placas" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
+                                    <div><label class="block text-sm font-medium">Origen</label><input type="text" x-model="editData.origen" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
+                                    <div><label class="block text-sm font-medium">Fecha Asignación</label><input type="date" x-model="editData.fecha_asignacion" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
+                                    <div><label class="block text-sm font-medium">Pedimento</label><input type="text" x-model="editData.pedimento" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
+                                    <div><label class="block text-sm font-medium">Custodia</label><input type="text" x-model="editData.custodia" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
+                                    <div><label class="block text-sm font-medium">Hora Planeada</label><input type="text" x-model="editData.hora_planeada" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
+                                </div>
+                                <h4 class="text-lg font-semibold text-[#2c3856] border-b mt-6 pb-2 mb-4">Facturas</h4>
+                                <div class="space-y-3">
+                                    <template x-for="(factura, index) in editData.facturas" :key="index">
+                                        <div class="grid grid-cols-5 gap-4 items-end bg-gray-50 p-3 rounded-md border">
+                                            <div class="col-span-2"><label class="text-xs"># Factura</label><input type="text" x-model="factura.numero_factura" class="w-full rounded-md border-gray-300 text-sm"></div>
+                                            <div><label class="text-xs">Destino</label><input type="text" x-model="factura.destino" class="w-full rounded-md border-gray-300 text-sm"></div>
+                                            <div><label class="text-xs">Hora Cita</label><input type="text" x-model="factura.hora_cita" class="w-full rounded-md border-gray-300 text-sm"></div>
+                                            <button type="button" @click="editData.facturas.splice(index, 1)" class="bg-red-500 text-white rounded-md py-2 text-sm">Eliminar</button>
+                                        </div>
+                                    </template>
+                                </div>
+                                <button type="button" @click="editData.facturas.push({numero_factura: '', destino: '', hora_cita: ''})" class="mt-2 text-sm text-blue-600">+ Añadir Factura</button>
+                                
+                                <div class="mt-6 pt-4 border-t flex justify-end gap-4">
+                                    <button type="button" @click="closeAllModals()" class="px-4 py-2 bg-gray-200 rounded-md">Cancelar</button>
+                                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md">Guardar Cambios</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </template>
+                {{-- Muestra un estado de carga mientras se obtienen los datos --}}
+                <template x-if="isLoading">
+                    <div class="p-6 text-center">Cargando datos para editar...</div>
+                </template>
+            </div>
+        </div>         
     </div>
 
     {{-- SCRIPT MANEJADOR DE ALPINE.JS --}}
     <script>
-        function assignmentManager() {
-            return {
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('assignmentManager', () => ({
                 isAssignModalOpen: false,
                 isDetailsModalOpen: false,
                 isImportModalOpen: false,
+                isEditModalOpen: false,
                 selectedGuia: null,
+                editData: {},
                 availableRoutes: [],
                 searchTerm: '',
                 isLoading: false,
+                
                 openAssignModal(guia) {
                     this.selectedGuia = guia;
                     this.isAssignModalOpen = true;
@@ -217,21 +259,50 @@
                     this.isAssignModalOpen = false;
                     this.isDetailsModalOpen = false;
                     this.isImportModalOpen = false;
+                    this.isEditModalOpen = false;
                     this.selectedGuia = null;
-                    this.searchTerm = '';
-                    this.availableRoutes = [];
+                    this.editData = {};
                 },
                 searchRoutes() {
                     this.isLoading = true;
-                    // Asegúrate de que el nombre de la ruta es correcto
                     fetch(`{{ route('rutas.plantillas.search') }}?search=${this.searchTerm}`)
                         .then(response => response.json())
                         .then(data => {
                             this.availableRoutes = data;
                             this.isLoading = false;
                         });
+                },
+                openEditModal(guiaId) {
+                    this.isLoading = true;
+                    this.isEditModalOpen = true;
+                    this.editData = {};
+                    fetch(`/rutas/asignaciones/${guiaId}/edit`)
+                        .then(res => res.json())
+                        .then(data => {
+                            this.editData = data;
+                            this.isLoading = false;
+                        });
+                },
+                submitEditForm() {
+                    fetch(`/rutas/asignaciones/${this.editData.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify(this.editData)
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.success) {
+                            alert(data.message);
+                            window.location.reload();
+                        } else {
+                            alert(data.message || 'Ocurrió un error.');
+                        }
+                    });
                 }
-            }
-        }
+            }));
+        });
     </script>
 </x-app-layout>

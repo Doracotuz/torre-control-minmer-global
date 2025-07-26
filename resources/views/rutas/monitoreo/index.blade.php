@@ -15,9 +15,15 @@
                         <a href="{{ route('rutas.dashboard') }}" class="inline-flex items-center text-sm font-semibold text-gray-600 hover:text-gray-800">
                             &larr; Volver al Dashboard
                         </a>
-                        <button @click="openEventModal()" :disabled="selectedGuias.length !== 1" class="px-4 py-2 bg-[#ff9c00] text-white rounded-md text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
-                            Agregar Evento
-                        </button>
+                        <div class="flex gap-2">
+                            <button @click="openEventModal()" :disabled="selectedGuias.length !== 1" class="px-4 py-2 bg-[#ff9c00] text-white rounded-md text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                                Evento
+                            </button>
+                            {{-- BOTÓN PARA ABRIR EL REPORTE --}}
+                            <button @click="openReportModal()" :disabled="pagination.total === 0" class="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                                Generar Reporte
+                            </button>
+                        </div>
                     </div>
                     
                     {{-- Panel de Filtros Dinámicos --}}
@@ -53,41 +59,44 @@
                         </div>
                     </div>
 
-                    {{-- Lista de Guías Dinámica --}}
-                    <div class="bg-white rounded-lg shadow-md max-h-[60vh] overflow-y-auto">
-                        <ul class="divide-y divide-gray-200">
-                            <template x-if="isLoading">
-                                <li class="p-4 text-center text-sm text-gray-500">Cargando guías...</li>
-                            </template>
-                            <template x-if="!isLoading && guias.length === 0">
-                                <li class="p-4 text-center text-sm text-gray-500">No se encontraron guías con los filtros aplicados.</li>
-                            </template>
-                            <template x-for="guia in guias" :key="guia.id">
-                                <li class="p-4 hover:bg-gray-50 flex justify-between items-center">
-                                    <label class="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" 
-                                               class="h-5 w-5 rounded border-gray-300 text-[#ff9c00] focus:ring-[#ff9c00]"
-                                               @change="updateSelection($el, guia.id)"
-                                               :checked="selectedGuias.includes(String(guia.id))">
-                                        <div>
-                                            <p class="text-sm font-bold text-gray-900"><span x-text="guia.guia"></span> <span class="font-normal text-gray-600">| </span><span x-text="guia.operador"></span></p>
-                                            <p class="text-xs text-gray-500" x-text="guia.ruta ? guia.ruta.nombre : 'Ruta no definida'"></p>
-                                        </div>
-                                    </label>
-                                    <button @click="openDetailsModal(guia.id)" class="text-sm text-blue-600 hover:underline flex-shrink-0 ml-4">
-                                        Detalles
-                                    </button>
-                                </li>
-                            </template>
-                        </ul>
-                    </div>
+                    {{-- Lista de Guías Dinámica con Paginación --}}
+                    <div class="bg-white rounded-lg shadow-md">
+                        <div class="max-h-[60vh] overflow-y-auto">
+                            <ul class="divide-y divide-gray-200">
+                                <template x-if="isLoading">
+                                    <li class="p-4 text-center text-sm text-gray-500">Cargando guías...</li>
+                                </template>
+                                <template x-if="!isLoading && guias.length === 0">
+                                    <li class="p-4 text-center text-sm text-gray-500">No se encontraron guías con los filtros aplicados.</li>
+                                </template>
+                                <template x-for="guia in guias" :key="guia.id">
+                                    <li class="p-4 hover:bg-gray-50 flex justify-between items-center">
+                                        <label class="flex items-center space-x-3 cursor-pointer">
+                                            <input type="checkbox" 
+                                                   class="h-5 w-5 rounded border-gray-300 text-[#ff9c00] focus:ring-[#ff9c00]"
+                                                   @change="updateSelection($el, guia.id)"
+                                                   :checked="selectedGuias.includes(String(guia.id))">
+                                            <div>
+                                                <p class="text-sm font-bold text-gray-900"><span x-text="guia.guia"></span> <span class="font-normal text-gray-600">| </span><span x-text="guia.operador"></span></p>
+                                                <p class="text-xs text-gray-500" x-text="guia.ruta ? guia.ruta.nombre : 'Ruta no definida'"></p>
+                                            </div>
+                                        </label>
+                                        <button @click="openDetailsModal(guia.id)" class="text-sm text-blue-600 hover:underline flex-shrink-0 ml-4">
+                                            Detalles
+                                        </button>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+                        {{-- Controles de Paginación --}}
                         <div x-show="!isLoading && pagination.total > 0" class="p-4 border-t flex items-center justify-between text-sm text-gray-600">
                             <p>Mostrando <span x-text="pagination.from"></span> a <span x-text="pagination.to"></span> de <span x-text="pagination.total"></span> resultados</p>
                             <div class="flex gap-2">
                                 <button @click="changePage(pagination.prev_page_url)" :disabled="!pagination.prev_page_url" class="px-3 py-1 border rounded-md disabled:opacity-50">Anterior</button>
                                 <button @click="changePage(pagination.next_page_url)" :disabled="!pagination.next_page_url" class="px-3 py-1 border rounded-md disabled:opacity-50">Siguiente</button>
                             </div>
-                        </div>                    
+                        </div>
+                    </div>
                 </div>
 
                 {{-- Columna Derecha: Mapa --}}
@@ -167,7 +176,15 @@
                 <div @click.outside="closeAllModals()" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[90vh] flex flex-col">
                     <div class="flex justify-between items-center border-b pb-3 mb-4">
                         <h3 class="text-2xl font-bold text-[#2c3856]">Detalles de la Guía <span x-text="selectedGuia?.guia" class="text-[#ff9c00]"></span></h3>
-                        <button @click="closeAllModals()" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+                        <div class="flex items-center gap-4">
+                            {{-- NUEVO BOTÓN "INICIAR RUTA" --}}
+                            <template x-if="selectedGuia?.estatus === 'Planeada'">
+                                <button @click="startRouteFromMonitor()" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-semibold hover:bg-green-700">
+                                    Iniciar Ruta
+                                </button>
+                            </template>
+                            <button @click="closeAllModals()" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+                        </div>
                     </div>
                     <div class="flex-grow overflow-y-auto" x-show="selectedGuia">
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6 bg-gray-50 p-4 rounded-lg">
@@ -209,16 +226,100 @@
                     </div>
                 </div>
             </div>
+
+            <div x-show="isReportModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4" style="display: none;">
+                <div @click.outside="isReportModalOpen = false" class="bg-white rounded-lg shadow-xl w-[98%] max-h-[90vh] flex flex-col">
+                    <div class="flex justify-between items-center border-b p-4">
+                        <div class="flex items-center gap-4">
+                            <img src="{{ Storage::disk('s3')->url('LogoAzul.png') }}" alt="Logo" class="h-10">
+                            <h3 class="text-2xl font-bold text-[#2c3856]">Estatus Actualizado <span class="text-base font-normal text-gray-500" x-text="reportDate"></span></h3>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label for="report_region_filter" class="text-sm font-medium text-gray-700">Región:</label>
+                            <select id="report_region_filter" x-model="reportRegionFilter" @change="fetchReportData()" class="rounded-md border-gray-300 shadow-sm text-sm">
+                                <option value="">Todas</option>
+                                <template x-for="region in availableRegions" :key="region">
+                                    <option :value="region" x-text="region"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <button @click="isReportModalOpen = false" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+                    </div>
+
+                    <div class="p-6 flex-grow overflow-y-auto bg-gray-50">
+                        <template x-if="isReportLoading">
+                            <div class="text-center py-12 text-gray-500">Generando reporte, por favor espera...</div>
+                        </template>
+                        <template x-if="!isReportLoading && reportData">
+                            <div class="space-y-6">
+                                {{-- Gráficos --}}
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div class="bg-white p-4 rounded-lg shadow-md border w-[500px] h-[300px]">
+                                        <canvas id="reportChartStatus" width="500" height="300"></canvas>
+                                    </div>
+                                    <div class="bg-white p-4 rounded-lg shadow-md border w-[500px] h-[300px]">
+                                        <canvas id="reportChartInvoices" width="500" height="300"></canvas>
+                                    </div>
+                                    <div class="bg-white p-4 rounded-lg shadow-md border w-[500px] h-[300px]">
+                                        <canvas id="reportChartRegions" width="500" height="300"></canvas>
+                                    </div>
+                                </div>
+
+                                {{-- Tabla de Datos --}}
+                                <div class="bg-white p-4 rounded-lg shadow-md border">
+                                    <div class="max-h-[40vh] overflow-y-auto">
+                                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                            <thead class="bg-gray-100 sticky top-0">
+                                                <tr class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <th class="px-4 py-2">Fecha Carga</th>
+                                                    <th class="px-4 py-2">Hora Carga</th>
+                                                    <th class="px-4 py-2">Arribo Carga</th>
+                                                    <th class="px-4 py-2">Hora Inicio Ruta</th>
+                                                    <th class="px-4 py-2">Dato de Entregada</th>
+                                                    <th class="px-4 py-2">Placas</th>
+                                                    <th class="px-4 py-2">Operador</th>
+                                                    <th class="px-4 py-2">Destino</th>
+                                                    <th class="px-4 py-2">Factura</th>
+                                                    <th class="px-4 py-2">Estatus</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white divide-y divide-gray-200">
+                                                <template x-for="(row, index) in reportData.tableData" :key="index">
+                                                    <tr>
+                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.fecha_carga"></td>
+                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.hora_carga"></td>
+                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.arribo_carga"></td>
+                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.hora_inicio_ruta"></td>
+                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.dato_entregada"></td>
+                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.placas"></td>
+                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.operador"></td>
+                                                        <td class="px-4 py-2" x-text="row.destino"></td>
+                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.factura"></td>
+                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.estatus"></td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
     
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Pasamos los valores iniciales de los filtros desde PHP a JS
         const initialFilters = {
             search: "{{ request('search', '') }}",
             estatus: "{{ request('estatus', 'En Transito') }}",
             start_date: "{{ request('start_date', '') }}",
-            end_date: "{{ request('end_date', '') }}"
+            end_date: "{{ request('end_date', '') }}",
+            page: 1
         };
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key={{ $googleMapsApiKey }}&libraries=places,drawing&callback=initMonitoreoMap" async defer></script>
@@ -231,6 +332,13 @@
                 selectedGuias: JSON.parse(sessionStorage.getItem('selectedGuias')) || [],
                 isEventModalOpen: false,
                 isDetailsModalOpen: false,
+                isReportModalOpen: false,
+                isReportLoading: false,
+                reportData: null,
+                reportDate: '',
+                charts: {},
+                availableRegions: [],
+                reportRegionFilter: '',
                 selectedGuia: null,
                 evento: { tipo: 'Notificacion', subtipo: '', lat: '', lng: '' },
                 eventSubtypes: {
@@ -242,28 +350,24 @@
                 pagination: {},
                 filters: initialFilters,
                 debounce: null,
+                isSubmitting: false,
+                notification: { show: false, message: '', type: 'success' },
 
                 init() {
                     this.applyFilters();
-                    
-                    // CORRECCIÓN: Se añade el listener para el clic derecho en el mapa
+                    this.loadAvailableRegions();
+
                     if (typeof monitoreoMap !== 'undefined' && monitoreoMap) {
-                        monitoreoMap.addListener('rightclick', (event) => {
-                            this.handleMapRightClick(event.latLng);
-                        });
+                        monitoreoMap.addListener('rightclick', (event) => this.handleMapRightClick(event.latLng));
                     } else {
-                        // Si el mapa no está listo, esperamos un poco y lo intentamos de nuevo.
                         setTimeout(() => {
                             if (typeof monitoreoMap !== 'undefined' && monitoreoMap) {
-                                monitoreoMap.addListener('rightclick', (event) => {
-                                    this.handleMapRightClick(event.latLng);
-                                });
+                                monitoreoMap.addListener('rightclick', (event) => this.handleMapRightClick(event.latLng));
                             }
                         }, 500);
                     }
 
                     this.$watch('filters', (newValue, oldValue) => {
-                        // Si cambia cualquier filtro que no sea la página, reseteamos a la página 1
                         if (newValue.search !== oldValue.search || newValue.estatus !== oldValue.estatus || newValue.start_date !== oldValue.start_date || newValue.end_date !== oldValue.end_date) {
                             this.filters.page = 1;
                         }
@@ -274,6 +378,7 @@
                         sessionStorage.setItem('selectedGuias', JSON.stringify(newSelection));
                         this.redrawMap();
                     });
+                    
                 },
 
                 applyFilters() {
@@ -289,15 +394,13 @@
                             this.redrawMap();
                         });
                 },
-
+                
                 changePage(url) {
                     if (!url) return;
-                    // Extraemos el número de página de la URL que nos da Laravel
                     const pageNumber = new URL(url).searchParams.get('page');
                     this.filters.page = pageNumber;
-                    // applyFilters se llamará automáticamente gracias al $watch
-                },                
-                
+                },
+
                 redrawMap() {
                     Object.keys(activeRenderers).forEach(id => removeMonitoreoRoute(id));
                     this.selectedGuias.forEach(id => {
@@ -318,31 +421,11 @@
                 
                 deselectAll() { this.selectedGuias = []; },
                 
-                // CORRECCIÓN: Nueva función para manejar el clic derecho
-                handleMapRightClick(latLng) {
-                    if(this.selectedGuias.length !== 1) {
-                        alert("Por favor, selecciona solo una guía para añadir un evento desde el mapa.");
-                        return;
-                    }
-                    this.evento.lat = latLng.lat().toFixed(6);
-                    this.evento.lng = latLng.lng().toFixed(6);
-                    this.openEventModal(); // Reutilizamos la función de abrir modal
-                },
-
                 openEventModal() {
-                    if (this.selectedGuias.length !== 1) { 
-                        // Solo mostramos alerta si no fue activado por el mapa
-                        if(!this.evento.lat) {
-                           alert("Por favor, selecciona solo una guía para registrar un evento.");
-                        }
-                        return; 
-                    }
+                    if (this.selectedGuias.length !== 1) { alert("Selecciona solo una guía."); return; }
                     const guiaId = this.selectedGuias[0];
                     this.selectedGuia = window.guiasData[guiaId];
-                    // Si no hay un subtipo ya definido, asignamos el primero de la lista
-                    if(!this.evento.subtipo) {
-                        this.evento.subtipo = this.eventSubtypes[this.evento.tipo][0];
-                    }
+                    this.evento.subtipo = this.eventSubtypes[this.evento.tipo][0];
                     this.isEventModalOpen = true;
                 },
 
@@ -354,15 +437,145 @@
                 closeAllModals() {
                     this.isEventModalOpen = false;
                     this.isDetailsModalOpen = false;
-                    // Limpiamos las coordenadas al cerrar el modal
-                    this.evento.lat = '';
-                    this.evento.lng = '';
+                    this.isReportModalOpen = false;
                 },
 
                 getSelectedGuiaFacturas() {
                     if (!this.selectedGuia) return [];
                     return this.selectedGuia.facturas.filter(f => f.estatus_entrega === 'Pendiente');
+                },
+
+                handleMapRightClick(latLng) {
+                    if(this.selectedGuias.length !== 1) {
+                        alert("Por favor, selecciona solo una guía para añadir un evento desde el mapa.");
+                        return;
+                    }
+                    this.evento.lat = latLng.lat().toFixed(6);
+                    this.evento.lng = latLng.lng().toFixed(6);
+                    this.openEventModal();
+                },
+
+                loadAvailableRegions() {
+                    fetch(`{{ route('rutas.monitoreo.regions') }}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            this.availableRegions = data;
+                        });
+                },
+
+                openReportModal() {
+                    this.isReportModalOpen = true;
+                    this.reportRegionFilter = ''; // Reseteamos el filtro al abrir
+                    this.fetchReportData(); // Llamamos a la nueva función
+                },
+
+                fetchReportData() {
+                    this.isReportLoading = true;
+                    this.reportData = null;
+                    this.reportDate = new Date().toLocaleString('es-MX');
+
+                    // Creamos los parámetros combinando los filtros principales y el del reporte
+                    const params = new URLSearchParams({
+                        ...this.filters,
+                        region: this.reportRegionFilter
+                    }).toString();
+
+                    fetch(`{{ route('rutas.monitoreo.report') }}?${params}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            this.reportData = data;
+                            this.isReportLoading = false;
+                            this.$nextTick(() => this.renderReportCharts());
+                        });
+                },
+
+                renderReportCharts() {
+                    Object.values(this.charts).forEach(chart => chart.destroy());
+
+                    const colorAzul = 'rgba(44, 60, 86, 0.8)';
+                    const colorNaranja = 'rgba(255, 156, 0, 0.8)';
+                    const colorGris = 'rgba(102, 102, 102, 0.8)';
+                    const colorVerde = 'rgba(40, 167, 69, 0.8)';
+                    const colorRojo = 'rgba(220, 53, 69, 0.8)';
+
+                    // Gráfico 1: Guías por Estatus
+                    const ctx1 = document.getElementById('reportChartStatus').getContext('2d');
+                    this.charts.status = new Chart(ctx1, {
+                        type: 'doughnut',
+                        data: {
+                            labels: this.reportData.charts.guiasPorEstatus.labels,
+                            datasets: [{ data: this.reportData.charts.guiasPorEstatus.data, backgroundColor: [colorVerde, colorNaranja, colorAzul, colorGris] }]
+                        },
+                        options: { plugins: { title: { display: true, text: 'Guías por Estatus' } } }
+                    });
+
+                    // Gráfico 2: Facturas por Estatus
+                    const ctx2 = document.getElementById('reportChartInvoices').getContext('2d');
+                    this.charts.invoices = new Chart(ctx2, {
+                        type: 'pie',
+                        data: {
+                            labels: this.reportData.charts.facturasPorEstatus.labels,
+                            datasets: [{ data: this.reportData.charts.facturasPorEstatus.data, backgroundColor: [colorVerde, colorRojo, colorGris] }]
+                        },
+                        options: { plugins: { title: { display: true, text: 'Facturas por Estatus' } } }
+                    });
+
+                    // Gráfico 3: Facturas por Región
+                    const ctx3 = document.getElementById('reportChartRegions').getContext('2d');
+                    this.charts.regions = new Chart(ctx3, {
+                        type: 'bar',
+                        data: {
+                            labels: this.reportData.charts.facturasPorRegion.labels,
+                            datasets: [{ label: 'Total de Facturas', data: this.reportData.charts.facturasPorRegion.data, backgroundColor: colorAzul }]
+                        },
+                        options: { 
+                            indexAxis: 'y', // Hace que el gráfico sea horizontal
+                            plugins: { title: { display: true, text: 'Facturas por Región' } } 
+                        }
+                    });
+                },
+
+                startRouteFromMonitor() {
+                    if (!this.selectedGuia) return;
+                    if (!confirm(`¿Estás seguro de que deseas iniciar la ruta para la guía ${this.selectedGuia.guia}?`)) return;
+
+                    this.isSubmitting = true;
+                    
+                    fetch(`/rutas/monitoreo/${this.selectedGuia.id}/start`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.showNotification(data.message, 'success');
+                            this.closeAllModals();
+                            this.applyFilters(); // Recarga los datos para reflejar el cambio
+                        } else {
+                            this.showNotification(data.message || 'Ocurrió un error.', 'error');
+                        }
+                    })
+                    .catch(() => {
+                        this.showNotification('Error de conexión. Inténtalo de nuevo.', 'error');
+                    })
+                    .finally(() => {
+                        this.isSubmitting = false;
+                    });
+                },
+
+                // --- FUNCIÓN PARA MOSTRAR NOTIFICACIONES ---
+                showNotification(message, type = 'success') {
+                    this.notification.message = message;
+                    this.notification.type = type;
+                    this.notification.show = true;
+                    setTimeout(() => {
+                        this.notification.show = false;
+                    }, 3000);
                 }
+
             }));
         });
     </script>

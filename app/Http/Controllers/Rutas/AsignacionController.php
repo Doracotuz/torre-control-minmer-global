@@ -13,31 +13,35 @@ class AsignacionController extends Controller
     /**
      * Muestra la lista de guías para asignación.
      */
-public function index(Request $request)
-{
-    // CAMBIO: Usamos with() para cargar las relaciones completas de ruta y facturas
-    $query = Guia::query()->with('ruta', 'facturas'); 
+    public function index(Request $request)
+    {
+        // CAMBIO: Usamos with() para cargar las relaciones completas de ruta y facturas
+        $query = Guia::query()->with('ruta', 'facturas'); 
 
-    // Búsqueda (sin cambios)
-    if ($request->filled('search')) {
-        $searchTerm = '%' . $request->search . '%';
-        $query->where(function($q) use ($searchTerm) {
-            $q->where('guia', 'like', $searchTerm)
-              ->orWhere('operador', 'like', $searchTerm)
-              ->orWhere('placas', 'like', $searchTerm);
-        });
+        // Búsqueda (sin cambios)
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->search . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('guia', 'like', $searchTerm)
+                ->orWhere('operador', 'like', $searchTerm)
+                ->orWhere('placas', 'like', $searchTerm);
+            });
+        }
+
+        // Filtro por estatus (sin cambios)
+        if ($request->filled('estatus')) {
+            $query->where('estatus', $request->estatus);
+        }
+
+        if ($request->filled('origen')) {
+            $query->where('origen', 'like', '%' . $request->origen . '%');
+        }
+
+        // Usamos withCount para obtener el número de facturas para la columna de la tabla
+        $guias = $query->withCount('facturas')->orderBy('created_at', 'desc')->paginate(20);
+
+        return view('rutas.asignaciones.index', compact('guias'));
     }
-
-    // Filtro por estatus (sin cambios)
-    if ($request->filled('estatus')) {
-        $query->where('estatus', $request->estatus);
-    }
-
-    // Usamos withCount para obtener el número de facturas para la columna de la tabla
-    $guias = $query->withCount('facturas')->orderBy('created_at', 'desc')->paginate(20);
-
-    return view('rutas.asignaciones.index', compact('guias'));
-}
 
     public function downloadTemplate()
     {
@@ -49,16 +53,15 @@ public function index(Request $request)
             "Expires"             => "0"
         ];
 
-        $callback = function() {
+        $callback = function () {
             $file = fopen('php://output', 'w');
-            // Columnas de la plantilla
+            // ACTUALIZADO: Nuevas columnas en la plantilla
             fputcsv($file, [
-                'guia', 'operador', 'placas', 'pedimento', 'custodia',
-                'factura', 'destino', 'cajas', 'botellas'
+                'guia', 'operador', 'placas', 'pedimento', 'custodia', 'hora_planeada', 'fecha_asignacion',
+                'factura', 'destino', 'cajas', 'botellas', 'hora_cita'
             ]);
             fclose($file);
         };
-
         return response()->stream($callback, 200, $headers);
     }
 
@@ -87,27 +90,32 @@ public function index(Request $request)
         fgetcsv($file); // Omitir la cabecera
 
         $guiasData = [];
+        $firstDestino = null;
         while (($row = fgetcsv($file, 1000, ",")) !== FALSE) {
-            // Asegurarse de que la fila no esté completamente vacía
-            if (count(array_filter($row)) == 0) {
-                continue;
-            }
+            if (count(array_filter($row)) == 0) continue;
             $guiaNum = trim($row[0]);
-            if (empty($guiaNum)) continue; // Saltar filas sin número de guía
+            if (empty($guiaNum)) continue;
 
             if (!isset($guiasData[$guiaNum])) {
+                // Capturamos el primer destino para usarlo como origen
+                $firstDestino = trim($row[7]);
                 $guiasData[$guiaNum] = [
                     'operador' => trim($row[1]),
                     'placas' => trim($row[2]),
                     'pedimento' => trim($row[3]),
+                    'custodia' => trim($row[4]), // NUEVO
+                    'hora_planeada' => trim($row[5]), // NUEVO
+                    'fecha_asignacion' => trim($row[6]),
+                    'origen' => substr($firstDestino, 0, 3), // NUEVO: Extraer origen
                     'facturas' => []
                 ];
             }
             $guiasData[$guiaNum]['facturas'][] = [
-                'numero_factura' => trim($row[5]),
-                'destino' => trim($row[6]),
-                'cajas' => (int)trim($row[7]),
-                'botellas' => (int)trim($row[8]),
+                'numero_factura' => trim($row[6]),
+                'destino' => trim($row[7]),
+                'cajas' => (int)trim($row[8]),
+                'botellas' => (int)trim($row[9]),
+                'hora_cita' => trim($row[10]), // NUEVO
             ];
         }
         fclose($file);
@@ -124,6 +132,10 @@ public function index(Request $request)
                     'operador' => $data['operador'],
                     'placas' => $data['placas'],
                     'pedimento' => $data['pedimento'],
+                    'custodia' => $data['custodia'],
+                    'hora_planeada' => $data['hora_planeada'],
+                    'fecha_asignacion' => $data['fecha_asignacion'] ?: null,
+                    'origen' => $data['origen'],
                     'estatus' => 'En Espera',
                 ]);
                 $guia->facturas()->createMany($data['facturas']);
@@ -154,24 +166,22 @@ public function index(Request $request)
             'placas' => 'required|string|max:255',
             'pedimento' => 'nullable|string|max:255',
             'facturas' => 'required|array|min:1',
+            'custodia' => 'nullable|string|max:255',
+            'hora_planeada' => 'nullable|string|max:255',
+            'fecha_asignacion' => 'nullable|date', // NUEVO
+            'origen' => 'required|string|max:3',
+            'facturas' => 'required|array|min:1',
             'facturas.*.numero_factura' => 'required|string|max:255',
             'facturas.*.destino' => 'required|string|max:255',
             'facturas.*.cajas' => 'required|integer|min:0',
             'facturas.*.botellas' => 'required|integer|min:0',
+            'facturas.*.hora_cita' => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
         try {
-            $guia = Guia::create([
-                'guia' => $validatedData['guia'],
-                'operador' => $validatedData['operador'],
-                'placas' => $validatedData['placas'],
-                'pedimento' => $validatedData['pedimento'],
-                'estatus' => 'En Espera',
-            ]);
-
+            $guia = Guia::create($validatedData);
             $guia->facturas()->createMany($validatedData['facturas']);
-
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -181,6 +191,126 @@ public function index(Request $request)
 
         return redirect()->route('rutas.asignaciones.index')->with('success', 'Guía ' . $guia->guia . ' creada exitosamente.');
     }
+
+
+    public function edit(Guia $guia)
+    {
+        $guia->load('facturas');
+        return response()->json($guia);
+    }
+
+    public function update(Request $request, Guia $guia)
+    {
+        $validatedData = $request->validate([
+            'operador' => 'required|string|max:255',
+            'placas' => 'required|string|max:255',
+            'pedimento' => 'nullable|string|max:255',
+            'custodia' => 'nullable|string|max:255',
+            'hora_planeada' => 'nullable|string|max:255',
+            'fecha_asignacion' => 'nullable|date',
+            'origen' => 'required|string|max:3',
+            'facturas' => 'required|array|min:1',
+            'facturas.*.id' => 'nullable|integer',
+            'facturas.*.numero_factura' => 'required|string|max:255',
+            'facturas.*.destino' => 'required|string|max:255',
+            'facturas.*.cajas' => 'required|integer|min:0',
+            'facturas.*.botellas' => 'required|integer|min:0',
+            'facturas.*.hora_cita' => 'nullable|string|max:255',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $guia->update($validatedData);
+
+            $facturasIdsActuales = [];
+            foreach ($validatedData['facturas'] as $facturaData) {
+                if (isset($facturaData['id'])) {
+                    // Actualizar factura existente
+                    $factura = $guia->facturas()->find($facturaData['id']);
+                    if ($factura) {
+                        $factura->update($facturaData);
+                        $facturasIdsActuales[] = $factura->id;
+                    }
+                } else {
+                    // Crear nueva factura
+                    $nuevaFactura = $guia->facturas()->create($facturaData);
+                    $facturasIdsActuales[] = $nuevaFactura->id;
+                }
+            }
+            // Eliminar facturas que ya no están en la lista
+            $guia->facturas()->whereNotIn('id', $facturasIdsActuales)->delete();
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error al actualizar guía: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Ocurrió un error al actualizar.'], 500);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Guía actualizada exitosamente.']);
+    }
+
+    // --- NUEVO MÉTODO PARA EXPORTAR ---
+    public function exportCsv(Request $request)
+    {
+        $query = Guia::query()->with('facturas');
+        
+        // Re-aplicamos los mismos filtros que en el index
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->search . '%';
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('guia', 'like', $searchTerm)
+                  ->orWhere('operador', 'like', $searchTerm)
+                  ->orWhere('placas', 'like', $searchTerm);
+            });
+        }
+        if ($request->filled('estatus')) {
+            $query->where('estatus', $request->estatus);
+        }
+        if ($request->filled('origen')) {
+            $query->where('origen', 'like', '%' . $request->origen . '%');
+        }
+
+        $guias = $query->get();
+        
+        $fileName = "export_asignaciones_" . date('Y-m-d') . ".csv";
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use($guias) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, [
+                'Guia', 'Operador', 'Placas', 'Pedimento', 'Custodia', 'Hora Planeada', 'Fecha Asignacion', 'Origen', 'Estatus', // NUEVO
+                '# Factura', 'Destino', 'Cajas', 'Botellas', 'Hora Cita'
+            ]);
+
+            foreach ($guias as $guia) {
+                if ($guia->facturas->count() > 0) {
+                    foreach($guia->facturas as $factura) {
+                        fputcsv($file, [
+                            $guia->guia, $guia->operador, $guia->placas, $guia->pedimento, $guia->custodia, $guia->hora_planeada, $guia->fecha_asignacion, $guia->origen, $guia->estatus, // NUEVO
+                            $factura->numero_factura, $factura->destino, $factura->cajas, $factura->botellas, $factura->hora_cita
+                        ]);
+                    }
+                } else {
+                    fputcsv($file, [
+                        $guia->guia, $guia->operador, $guia->placas, $guia->pedimento, $guia->custodia, $guia->hora_planeada, $guia->fecha_asignacion, $guia->origen, $guia->estatus, // NUEVO
+                        'N/A', 'N/A', 'N/A', 'N/A', 'N/A'
+                    ]);
+                }
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    
 
     public function assignRoute(Request $request, Guia $guia)
     {

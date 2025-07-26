@@ -246,11 +246,18 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('rutas')->name('rut
         Route::post('/{guia}/assign', [AsignacionController::class, 'assignRoute'])->name('assign');
         Route::post('/import', [AsignacionController::class, 'importCsv'])->name('import');
         Route::get('/template', [AsignacionController::class, 'downloadTemplate'])->name('template');
+        Route::get('/export', [AsignacionController::class, 'exportCsv'])->name('export');
+        Route::get('/{guia}/edit', [AsignacionController::class, 'edit'])->name('edit');
+        Route::put('/{guia}', [AsignacionController::class, 'update'])->name('update');
+
     });
 
     Route::prefix('monitoreo')->name('monitoreo.')->group(function () {
         Route::get('/', [MonitoreoController::class, 'index'])->name('index');
         Route::get('/filter', [MonitoreoController::class, 'filter'])->name('filter');
+        Route::get('/report', [MonitoreoController::class, 'getReportData'])->name('report');
+        Route::get('/regions', [MonitoreoController::class, 'getAvailableRegions'])->name('regions');
+        Route::post('/{guia}/start', [MonitoreoController::class, 'startRoute'])->name('start'); 
         Route::post('/{guia}/events', [MonitoreoController::class, 'storeEvent'])->name('events.store');
     });
 });

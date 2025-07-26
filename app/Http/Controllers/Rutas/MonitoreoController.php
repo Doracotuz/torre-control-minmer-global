@@ -10,6 +10,9 @@ use App\Models\Factura;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use App\Models\Ruta;
 
 class MonitoreoController extends Controller
 {
@@ -227,6 +230,154 @@ class MonitoreoController extends Controller
             'paginator' => $paginator,
             'guiasJson' => $guiasJson,
         ]);
+    }
+
+    public function getReportData(Request $request)
+    {
+        // Se reutiliza la misma lógica de consulta que en el método filter, pero sin paginación
+        $query = Guia::query()->with(['facturas', 'eventos', 'ruta']);
+
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->search . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('guia', 'like', $searchTerm)
+                  ->orWhere('operador', 'like', 'searchTerm');
+            });
+        }
+        if ($request->filled('estatus')) {
+            $query->where('estatus', $request->estatus);
+        }
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
+        }
+
+        if ($request->filled('region')) {
+            $query->whereHas('ruta', function ($q) use ($request) {
+                $q->where('region', $request->region);
+            });
+        }
+
+        // Obtenemos todos los resultados que coinciden con los filtros
+        $guias = $query->get();
+        
+        // 1. PROCESAR DATOS PARA LA TABLA
+        $tableData = [];
+        foreach ($guias as $guia) {
+            $llegadaCargaEvent = $guia->eventos->firstWhere('subtipo', 'Llegada a carga');
+            $finCargaEvent = $guia->eventos->firstWhere('subtipo', 'Fin de carga');
+
+            foreach ($guia->facturas as $factura) {
+
+                $entregaEvent = $guia->eventos
+                    ->where('tipo', 'Entrega')
+                    ->where('factura_id', $factura->id)
+                    ->sortBy('fecha_evento') // Ordenamos por si hay varios, aunque no debería
+                    ->first();                
+                $tableData[] = [
+                    'fecha_carga' => $finCargaEvent ? $finCargaEvent->fecha_evento->format('d/m/Y') : 'Pendiente',
+                    'hora_carga' => $finCargaEvent ? $finCargaEvent->fecha_evento->format('h:i A') : 'Pendiente',
+                    'arribo_carga' => $llegadaCargaEvent ? $llegadaCargaEvent->fecha_evento->format('d/m/Y h:i A') : 'Pendiente',
+                    'hora_inicio_ruta' => $guia->fecha_inicio_ruta ? $guia->fecha_inicio_ruta->format('d/m/Y h:i A') : 'Pendiente',
+                    'dato_entregada' => $entregaEvent ? $entregaEvent->fecha_evento->format('d/m/Y h:i A') : 'Pendiente',
+                    'placas' => $guia->placas,
+                    'operador' => $guia->operador,
+                    'destino' => $factura->destino,
+                    'factura' => $factura->numero_factura,
+                    'estatus' => $factura->estatus_entrega,
+                ];
+            }
+        }
+
+        // --- INICIA CORRECCIÓN ---
+        // 2. PROCESAR DATOS PARA LOS GRÁFICOS DE FORMA SEGURA
+        $todasLasFacturas = $guias->pluck('facturas')->flatten();
+
+        // Gráfico 1: Guías por estatus
+        $guiasPorEstatus = $guias->countBy('estatus');
+        // Gráfico 2: Facturas por estatus de entrega
+        $facturasPorEstatus = $todasLasFacturas->countBy('estatus_entrega');
+        // Gráfico 3: Eventos por tipo
+        $facturasPorRegion = $guias->filter(fn($guia) => $guia->ruta) // Solo guías con ruta asignada
+                                   ->groupBy('ruta.region') // Agrupamos las guías por la región de su ruta
+                                   ->map(fn($guiasEnRegion) => $guiasEnRegion->sum(fn($g) => $g->facturas->count())) // Sumamos las facturas de cada grupo
+                                   ->sortDesc();
+
+
+        // Devolvemos todos los datos procesados en formato JSON
+        return response()->json([
+            'tableData' => $tableData,
+            'charts' => [
+                'guiasPorEstatus' => [
+                    'labels' => $guiasPorEstatus->keys(),
+                    'data' => $guiasPorEstatus->values(),
+                ],
+                'facturasPorEstatus' => [
+                    'labels' => $facturasPorEstatus->keys(),
+                    'data' => $facturasPorEstatus->values(),
+                ],
+                'facturasPorRegion' => [ // Nuevo dato para el gráfico
+                    'labels' => $facturasPorRegion->keys(),
+                    'data' => $facturasPorRegion->values(),
+                ],
+            ]
+        ]);
+    }
+
+
+        public function startRoute(Request $request, Guia $guia)
+    {
+        // 1. Validar que la ruta esté en el estado correcto
+        if ($guia->estatus !== 'Planeada') {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Esta ruta no puede ser iniciada porque no está en estatus "Planeada".'
+            ], 409); // 409 Conflict
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // 2. Actualizar el estado de la guía
+            $guia->estatus = 'En Transito';
+            $guia->fecha_inicio_ruta = now();
+            $guia->save();
+
+            // 3. Crear el evento de "Inicio de Ruta"
+            // Se usan las coordenadas de la primera parada como ubicación del evento
+            $firstStop = $guia->ruta ? $guia->ruta->paradas()->orderBy('secuencia')->first() : null;
+
+            Evento::create([
+                'guia_id' => $guia->id,
+                'tipo' => 'Sistema',
+                'subtipo' => 'Inicio de Ruta',
+                'latitud' => $firstStop ? $firstStop->latitud : 0,
+                'longitud' => $firstStop ? $firstStop->longitud : 0,
+                'fecha_evento' => now(),
+                'nota' => 'Ruta iniciada desde el panel de monitoreo.'
+            ]);
+
+            DB::commit();
+
+            return response()->json(['success' => true, 'message' => 'Ruta iniciada exitosamente.']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error al iniciar ruta desde monitoreo: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Ocurrió un error en el servidor.'], 500);
+        }
+    }
+
+    public function getAvailableRegions()
+    {
+        $regions = Ruta::query()
+            ->select('region')
+            ->whereNotNull('region')
+            ->where('region', '!=', '')
+            ->distinct()
+            ->orderBy('region')
+            ->pluck('region');
+            
+        return response()->json($regions);
     }
 
 }
