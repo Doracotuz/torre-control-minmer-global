@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Evento;
 use App\Models\Factura;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OperadorController extends Controller
 {
@@ -34,20 +35,15 @@ class OperadorController extends Controller
             return back()->with('error', 'Esta guía ya ha sido completada.');
         }
 
-        // Si es válida ('Planeada' o 'En Transito'), redirigimos
         return redirect()->route('operador.guia.show', ['guia' => $guia->guia]);
     }
 
     public function showGuia(Guia $guia)
     {
-        // Cargamos las facturas para mostrarlas en la lista
         $guia->load('facturas');
         return view('rutas.operador.show', compact('guia'));
     }
 
-    /**
-     * Cambia el estatus de la guía a "En Transito" y registra el primer evento.
-     */
     public function startRoute(Request $request, Guia $guia)
     {
         $request->validate([
@@ -59,12 +55,10 @@ class OperadorController extends Controller
             return back()->with('error', 'Esta ruta no puede ser iniciada.');
         }
 
-        // 1. Actualizamos la guía
         $guia->estatus = 'En Transito';
         $guia->fecha_inicio_ruta = now();
         $guia->save();
 
-        // 2. Creamos el primer evento "Inicio de Ruta"
         Evento::create([
             'guia_id' => $guia->id,
             'tipo' => 'Sistema',
@@ -74,12 +68,11 @@ class OperadorController extends Controller
             'fecha_evento' => now(),
         ]);
 
-        return redirect()->route('operador.guia.show', $guia)->with('success', '¡Ruta iniciada! Buen viaje.');
+        return redirect()->route('operador.guia.show', $guia->guia)->with('success', '¡Ruta iniciada! Buen viaje.');
     }
 
     public function storeEvent(Request $request, Guia $guia)
     {
-        // --- VALIDACIÓN CORREGIDA ---
         $validatedData = $request->validate([
             'tipo' => 'required|in:Entrega,Notificacion,Incidencias',
             'subtipo' => 'required|string|max:255',
@@ -87,24 +80,27 @@ class OperadorController extends Controller
             'latitud' => 'required|numeric',
             'longitud' => 'required|numeric',
             'factura_id' => 'nullable|required_if:tipo,Entrega|exists:facturas,id',
-            'evidencia' => 'required|array', // Se asegura de que 'evidencia' sea un array
-            'evidencia.*' => 'required|file|max:51200', // Valida CADA archivo dentro del array
+            // La evidencia es obligatoria para Entregas, y opcional para los demás.
+            'evidencia' => 'required_if:tipo,Entrega|nullable|array', 
+            'evidencia.*' => 'file|max:51200',
         ]);
-
-        // Validación de cantidad de fotos por tipo de evento
-        $fileCount = count($validatedData['evidencia']);
-        if ($validatedData['tipo'] === 'Entrega' && $fileCount > 10) {
-            return back()->with('error', 'Solo se permiten hasta 10 fotos para eventos de entrega.');
-        }
-        if ($validatedData['tipo'] === 'Notificacion' && $fileCount > 1) {
-            return back()->with('error', 'Solo se permite 1 foto para eventos de notificación.');
-        }
 
         try {
             DB::beginTransaction();
 
             $paths = [];
+            // --- INICIA CORRECCIÓN ---
+            // Solo procesamos archivos si el campo 'evidencia' fue enviado y contiene archivos.
             if ($request->hasFile('evidencia')) {
+                // Validación de cantidad de fotos por tipo de evento
+                $fileCount = count($validatedData['evidencia']);
+                if ($validatedData['tipo'] === 'Entrega' && $fileCount > 10) {
+                    return back()->with('error', 'Solo se permiten hasta 10 fotos para eventos de entrega.');
+                }
+                if (($validatedData['tipo'] === 'Notificacion' || $validatedData['tipo'] === 'Incidencias') && $fileCount > 1) {
+                    return back()->with('error', 'Solo se permite 1 foto para eventos de notificación o incidencia.');
+                }
+
                 $directory = $validatedData['tipo'] === 'Entrega' ? 'tms_evidencias' : 'tms_events';
                 
                 $facturaNumero = 'evento';
@@ -113,13 +109,12 @@ class OperadorController extends Controller
                     $facturaNumero = $factura->numero_factura;
                 }
 
-                // --- LÓGICA DE SUBIDA MEJORADA ---
                 foreach ($request->file('evidencia') as $file) {
-                    // Generamos un nombre único para evitar sobreescrituras
                     $fileName = $facturaNumero . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                     $paths[] = $file->storeAs($directory, $fileName, 's3');
                 }
             }
+            // --- TERMINA CORRECCIÓN ---
 
             Evento::create([
                 'guia_id' => $guia->id,
@@ -129,7 +124,7 @@ class OperadorController extends Controller
                 'nota' => $validatedData['nota'] ?? $validatedData['subtipo'],
                 'latitud' => $validatedData['latitud'],
                 'longitud' => $validatedData['longitud'],
-                'url_evidencia' => $paths, // Guardamos el array de rutas
+                'url_evidencia' => $paths,
                 'fecha_evento' => now(),
             ]);
 
@@ -138,7 +133,6 @@ class OperadorController extends Controller
                 $factura->estatus_entrega = ($validatedData['subtipo'] === 'Factura Entregada') ? 'Entregada' : 'No Entregada';
                 $factura->save();
 
-                // Recargamos la relación para obtener el conteo actualizado
                 $guia->load('facturas');
                 $conteoPendientes = $guia->facturas()->where('estatus_entrega', 'Pendiente')->count();
 
@@ -153,13 +147,10 @@ class OperadorController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            // Usamos Log para un mejor registro de errores en producción
-            \Illuminate\Support\Facades\Log::error("Error al guardar evento desde operador: " . $e->getMessage());
+            Log::error("Error al guardar evento desde operador: " . $e->getMessage());
             return redirect()->back()->with('error', 'Ocurrió un error al guardar el evento.');
         }
 
         return redirect()->route('operador.guia.show', ['guia' => $guia->guia])->with('success', 'Evento registrado exitosamente.');
     }
-
-
 }

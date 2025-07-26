@@ -5,91 +5,66 @@
         </h2>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-12" x-data="plantillasManager()">
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
-            {{-- Usamos un grid para dividir la pantalla en dos paneles --}}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
                 <div class="space-y-6">
                     {{-- Botones de Navegación y Acción --}}
-                    <div class="flex justify-between items-center">
-                        <a href="{{ route('rutas.dashboard') }}" class="inline-flex items-center px-4 py-2 bg-gray-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-600">
-                            &larr; Volver al Dashboard
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <a href="{{ route('rutas.dashboard') }}" class="inline-flex items-center px-4 py-2 bg-[#2c3856] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#1e2638] transition-colors">
+                            &larr; Volver
                         </a>
-                        <div class="flex items-center gap-4">
-                            <a href="{{ route('rutas.plantillas.export', request()->query()) }}" class="inline-flex items-center px-4 py-2 bg-teal-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-teal-700">
-                                Exportar Vista
-                            </a>
-                            <a href="{{ route('rutas.plantillas.export') }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
+                        <div class="flex items-center gap-2 sm:gap-4">
+                            <a href="{{ route('rutas.plantillas.export') }}" class="inline-flex items-center px-4 py-2 bg-[#666666] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#2b2b2b] transition-colors">
                                 Exportar Todo
                             </a>
-                            <a href="{{ route('rutas.plantillas.create') }}" class="inline-flex items-center px-4 py-2 bg-[#ff9c00] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-orange-600">
+                            <a href="{{ route('rutas.plantillas.create') }}" class="inline-flex items-center px-4 py-2 bg-[#ff9c00] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#e68c00] transition-colors">
                                 Crear Nueva Ruta
                             </a>
                         </div>
                     </div>
 
-                    {{-- Filtros de Búsqueda --}}
+                    {{-- Filtros Dinámicos --}}
                     <div class="bg-white p-4 rounded-lg shadow-md">
-                        <form action="{{ route('rutas.plantillas.index') }}" method="GET">
-                            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                                <input type="text" name="search" placeholder="Buscar por nombre..." value="{{ request('search') }}" class="rounded-md border-gray-300 shadow-sm">
-                                <input type="text" name="region" placeholder="Filtrar por región..." value="{{ request('region') }}" class="rounded-md border-gray-300 shadow-sm">
-                                <select name="tipo_ruta" class="rounded-md border-gray-300 shadow-sm">
-                                    <option value="">Todos los tipos</option>
-                                    <option value="Entrega" {{ request('tipo_ruta') == 'Entrega' ? 'selected' : '' }}>Entrega</option>
-                                    <option value="Traslado" {{ request('tipo_ruta') == 'Traslado' ? 'selected' : '' }}>Traslado</option>
-                                    <option value="Importacion" {{ request('tipo_ruta') == 'Importacion' ? 'selected' : '' }}>Importación</option>
-                                </select>
-                                <div>
-                                    <button type="submit" class="w-full justify-center inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#2c3856] hover:bg-[#1a2b41]">Filtrar</button>
-                                </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                            <input type="text" x-model.debounce.300ms="filters.search" placeholder="Buscar por nombre..." class="rounded-md border-gray-300 shadow-sm text-sm">
+                            <select x-model="filters.region" class="rounded-md border-gray-300 shadow-sm text-sm">
+                                <option value="">Todas las regiones</option>
+                                <option value="MEX">MEX</option>
+                                <option value="MIN">MIN</option>
+                                <option value="GDL">GDL</option>
+                                <option value="MTY">MTY</option>
+                                <option value="SJD">SJD</option>
+                                <option value="CUN">CUN</option>
+                                <option value="MZN">MZN</option>
+                                <option value="VER">VER</option>
+                            </select>
+                            <select x-model="filters.tipo_ruta" class="rounded-md border-gray-300 shadow-sm text-sm">
+                                <option value="">Todos los tipos</option>
+                                <option value="Entrega">Entrega</option>
+                                <option value="Traslado">Traslado</option>
+                                <option value="Importacion">Importación</option>
+                            </select>
+                            <div>
+                                <button @click="clearFilters()" class="w-full justify-center inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50">
+                                    Quitar Filtros
+                                </button>
                             </div>
-                        </form>
-                    </div>
-
-                    {{-- Notificaciones Flash --}}
-                    <div id="flash-container">
-                        <div id="flash-success" class="fixed top-5 right-5 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center" role="alert" style="display: none; min-width: 300px;">
-                            <strong class="font-bold mr-1">¡Éxito!</strong>
-                            <span id="flash-success-message" class="block sm:inline"></span>
                         </div>
                     </div>
-
-                    {{-- Tabla de Rutas --}}
-                    <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="p-4"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg></th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paradas</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @forelse ($rutas as $ruta)
-                                    <tr>
-                                        <td class="p-4"><input type="checkbox" class="route-checkbox rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" data-ruta-id="{{ $ruta->id }}"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $ruta->nombre }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $ruta->tipo_ruta }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $ruta->paradas_count }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="{{ route('rutas.plantillas.edit', $ruta) }}" class="text-indigo-600 hover:text-indigo-900">Editar</a>
-                                            <form action="{{ route('rutas.plantillas.duplicate', $ruta) }}" method="POST" class="inline ml-4" onsubmit="event.preventDefault(); duplicarRuta(this, '{{ $ruta->nombre }}');">@csrf<input type="hidden" name="new_name"><button type="submit" class="text-green-600 hover:text-green-900">Duplicar</button></form>
-                                            <form action="{{ route('rutas.plantillas.destroy', $ruta) }}" method="POST" class="inline ml-4" onsubmit="return confirm('¿Estás seguro?');">@csrf @method('DELETE')<button type="submit" class="text-red-600 hover:text-red-900">Eliminar</button></form>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No se encontraron rutas.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
                     
-                    {{-- Paginación --}}
-                    <div class="mt-6">{{ $rutas->appends(request()->query())->links() }}</div>
+                    {{-- Controles de Selección --}}
+                    <div class="flex items-center gap-4">
+                        <button @click="selectVisible()" class="text-sm font-semibold text-blue-600 hover:text-blue-800">Seleccionar Visibles</button>
+                        <button @click="deselectVisible()" class="text-sm font-semibold text-gray-600 hover:text-gray-800">Deseleccionar Visibles</button>
+                    </div>
+
+                    {{-- Contenedor para la Tabla y Paginación Dinámica --}}
+                    <div id="table-container" x-html="tableView">
+                        {{-- La tabla inicial se carga aquí para el primer renderizado --}}
+                        @include('rutas.plantillas.partials.table', ['rutas' => $rutas])
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-lg shadow-md sticky top-8">
@@ -116,4 +91,144 @@
 {{-- SCRIPT QUE CARGA GOOGLE MAPS Y LLAMA A LA FUNCIÓN CORRECTA --}}
 <script src="https://maps.googleapis.com/maps/api/js?key={{ $googleMapsApiKey }}&libraries=places,drawing&callback=initIndexMap" async defer></script>
 
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('plantillasManager', () => ({
+                filters: {
+                    search: '{{ request('search', '') }}',
+                    region: '{{ request('region', '') }}',
+                    tipo_ruta: '{{ request('tipo_ruta', '') }}',
+                    page: '{{ request('page', 1) }}'
+                },
+                tableView: '',
+                isLoading: false,
+                selectedRutas: [],
+                visibleRutaIds: [],
+                debounce: null,
+                
+                init() {
+                    this.tableView = document.getElementById('table-container').innerHTML;
+                    this.updateVisibleRutaIds();
+
+                    this.$watch('filters', (newValue, oldValue) => {
+                        if (newValue.search !== oldValue.search || newValue.region !== oldValue.region || newValue.tipo_ruta !== oldValue.tipo_ruta) {
+                            this.filters.page = 1;
+                        }
+                        this.applyFilters();
+                    });
+
+                    this.$watch('selectedRutas', (newSelection, oldSelection) => {
+                        const toAdd = newSelection.filter(id => !oldSelection.includes(id));
+                        const toRemove = oldSelection.filter(id => !newSelection.includes(id));
+                        toAdd.forEach(id => this.drawRouteOnMap(id));
+                        toRemove.forEach(id => this.removeRouteFromMap(id));
+                    });
+
+                    this.$nextTick(() => {
+                        document.getElementById('table-container').addEventListener('click', (e) => {
+                            if (e.target.tagName === 'A' && e.target.closest('.pagination')) {
+                                e.preventDefault();
+                                const url = new URL(e.target.href);
+                                this.filters.page = url.searchParams.get('page');
+                            }
+                        });
+                    });
+                },
+
+                applyFilters() {
+                    this.isLoading = true;
+                    clearTimeout(this.debounce);
+                    this.debounce = setTimeout(() => {
+                        const params = new URLSearchParams(this.filters).toString();
+                        fetch(`{{ route('rutas.plantillas.filter') }}?${params}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                this.tableView = data.tableView;
+                                window.rutasJson = JSON.parse(data.rutasJson);
+                                this.updateVisibleRutaIds();
+                                const currentSelection = this.selectedRutas;
+                                this.selectedRutas = currentSelection.filter(id => this.visibleRutaIds.includes(id));
+                                history.pushState({}, '', `?${params}`);
+                                this.isLoading = false;
+                            });
+                    }, 300);
+                },
+
+                clearFilters() {
+                    this.filters.search = '';
+                    this.filters.region = '';
+                    this.filters.tipo_ruta = '';
+                    this.filters.page = 1;
+                },
+
+                updateVisibleRutaIds() {
+                    this.$nextTick(() => {
+                        const checkboxes = document.querySelectorAll('#table-container .route-checkbox');
+                        this.visibleRutaIds = Array.from(checkboxes).map(cb => cb.value);
+                    });
+                },
+
+                selectVisible() {
+                    this.selectedRutas = [...new Set([...this.selectedRutas, ...this.visibleRutaIds])];
+                },
+
+                deselectVisible() {
+                    this.selectedRutas = this.selectedRutas.filter(id => !this.visibleRutaIds.includes(id));
+                },
+
+                drawRouteOnMap(rutaId) {
+                    const paradasParaRuta = window.rutasJson[rutaId];
+                    if (!paradasParaRuta || paradasParaRuta.length < 2) return;
+
+                    activeRenderers[rutaId] = { renderer: null, markers: [] };
+
+                    const waypoints = paradasParaRuta.slice(1, -1).map(p => ({ location: { lat: p.lat, lng: p.lng }, stopover: true }));
+                    const request = {
+                        origin: { lat: paradasParaRuta[0].lat, lng: paradasParaRuta[0].lng },
+                        destination: { lat: paradasParaRuta[paradasParaRuta.length - 1].lat, lng: paradasParaRuta[paradasParaRuta.length - 1].lng },
+                        waypoints: waypoints,
+                        travelMode: 'DRIVING'
+                    };
+                    
+                    directionsService.route(request, (result, status) => {
+                        if (status == 'OK') {
+                            const color = routeColors[rutaId % routeColors.length];
+                            const renderer = new google.maps.DirectionsRenderer({ map: indexMap, directions: result, suppressMarkers: true, polylineOptions: { strokeColor: color, strokeWeight: 5, strokeOpacity: 0.8 } });
+                            activeRenderers[rutaId].renderer = renderer;
+
+                            paradasParaRuta.forEach((parada, index) => {
+                                const stopMarker = new google.maps.Marker({
+                                    position: { lat: parada.lat, lng: parada.lng },
+                                    map: indexMap,
+                                    label: { text: `${index + 1}`, color: "white", fontSize: "11px", fontWeight: "bold" },
+                                    icon: {
+                                        path: google.maps.SymbolPath.CIRCLE,
+                                        scale: 10,
+                                        fillColor: color,
+                                        fillOpacity: 1,
+                                        strokeWeight: 1.5,
+                                        strokeColor: "white"
+                                    },
+                                    title: `Parada ${index + 1}`
+                                });
+                                activeRenderers[rutaId].markers.push(stopMarker);
+                            });
+                        }
+                    });
+                },
+
+                removeRouteFromMap(rutaId) {
+                    if (activeRenderers[rutaId]) {
+                        if (activeRenderers[rutaId].renderer) {
+                            activeRenderers[rutaId].renderer.setMap(null);
+                        }
+                        if (activeRenderers[rutaId].markers) {
+                            activeRenderers[rutaId].markers.forEach(marker => marker.setMap(null));
+                        }
+                        delete activeRenderers[rutaId];
+                    }
+                }
+            }));
+        });
+    </script>
 </x-app-layout>

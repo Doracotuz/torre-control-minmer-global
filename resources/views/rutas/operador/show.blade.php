@@ -8,21 +8,21 @@
             <p class="mt-1 text-gray-600">Operador: {{ $guia->operador }}</p>
         </div>
 
+        {{-- Notificaciones de Sesión --}}
         @if(session('success'))
-            <div class="bg-green-100 text-green-800 p-4 rounded-md mb-4 text-sm">{{ session('success') }}</div>
+            <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 3000)" x-transition class="bg-green-100 text-green-800 p-4 rounded-md mb-4 text-sm">{{ session('success') }}</div>
         @endif
         @if(session('error'))
-            <div class="bg-red-100 text-red-600 p-4 rounded-md mb-4 text-sm">{{ session('error') }}</div>
+            <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 3000)" x-transition class="bg-red-100 text-red-600 p-4 rounded-md mb-4 text-sm">{{ session('error') }}</div>
         @endif
 
-        {{-- ===================== SECCIÓN DE BOTONES ACTUALIZADA ===================== --}}
+        {{-- Botones de Acción --}}
         @if($guia->estatus === 'Planeada')
             <div class="mb-6">
                 <form id="start-route-form" action="{{ route('operador.guia.start', ['guia' => $guia->guia]) }}" method="POST">
                     @csrf
                     <input type="hidden" name="latitud" id="latitud-input">
                     <input type="hidden" name="longitud" id="longitud-input">
-                    
                     <button type="button" @click="startRoute()" :disabled="isLoading" class="w-full justify-center inline-flex items-center px-6 py-4 bg-green-600 text-white rounded-lg font-semibold text-lg hover:bg-green-700 disabled:opacity-50">
                         <span x-show="!isLoading">Iniciar Ruta</span>
                         <span x-show="isLoading">Obteniendo ubicación...</span>
@@ -32,11 +32,9 @@
             </div>
         @elseif($guia->estatus === 'En Transito')
             <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {{-- Botón para Notificaciones de Rutina --}}
                 <button @click="openNotificationModal()" class="w-full justify-center inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold text-lg hover:bg-blue-700">
                     Notificar Evento
                 </button>
-                {{-- Botón para Incidencias --}}
                 <button @click="openIncidenceModal()" class="w-full justify-center inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg font-semibold text-lg hover:bg-red-700">
                     Reportar Incidencia
                 </button>
@@ -51,9 +49,7 @@
                     <p class="mt-2 text-sm">La guía fue completada el: {{ $guia->fecha_fin_ruta->format('d/m/Y h:i A') }}</p>
                 @endif
             </div>
-
         @endif
-        {{-- ========================================================================= --}}
         
         <div class="space-y-4">
             <h3 class="font-bold text-gray-700">Entregas</h3>
@@ -82,13 +78,12 @@
             @endforeach
         </div>
 
-        {{-- ===================== MODAL ÚNICO ACTUALIZADO ===================== --}}
+        {{-- Modal Único para Eventos --}}
         <div x-show="isModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
             <div @click.outside="isModalOpen = false" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
                 <h3 class="text-lg font-bold text-[#2c3856] mb-4" x-text="modalTitle"></h3>
                 <form id="event-form" action="{{ route('operador.guia.event.store', ['guia' => $guia->guia]) }}" method="POST" enctype="multipart/form-data">
                     @csrf
-                    {{-- Inputs ocultos que guardan el estado del evento --}}
                     <input type="hidden" name="tipo" x-model="evento.tipo">
                     <input type="hidden" name="subtipo" x-model="evento.subtipo">
                     <input type="hidden" name="factura_id" x-model="evento.facturaId">
@@ -96,24 +91,25 @@
                     <input type="hidden" name="longitud" id="event-longitud-input">
                     
                     <div class="space-y-4">
-                        {{-- Este selector solo aparece para Notificaciones e Incidencias --}}
                         <div x-show="evento.tipo === 'Notificacion' || evento.tipo === 'Incidencias'" x-transition>
                             <label for="event_subtype_selector" class="block text-sm font-medium text-gray-700">Selecciona el Detalle</label>
-                            <select name="subtipo_selector" id="event_subtype_selector" x-model="evento.subtipo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <select name="subtipo" id="event_subtype_selector" x-model="evento.subtipo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                                 <template x-for="subtype in eventSubtypes[evento.tipo]" :key="subtype">
                                     <option :value="subtype" x-text="subtype"></option>
                                 </template>
                             </select>
                         </div>
                         
-                        {{-- Campo de Evidencia --}}
                         <div>
-                            <label for="evidencia" class="block text-sm font-medium text-gray-700">Evidencia (Foto)</label>
-                            <input type="file" name="evidencia[]" id="evidencia" required accept="image/*" multiple 
+                            <label for="evidencia" class="block text-sm font-medium text-gray-700">
+                                Evidencia (Foto)
+                                <span x-show="evento.tipo === 'Entrega'" class="text-red-500">*</span>
+                            </label>
+                            <input type="file" name="evidencia[]" id="evidencia" accept="image/*" multiple 
                             class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#ff9c00]/20 file:text-[#ff9c00] hover:file:bg-[#ff9c00]/30">
+                            <p x-show="evento.tipo === 'Entrega'" class="text-xs text-gray-500 mt-1">La foto de evidencia es obligatoria para las entregas.</p>
                         </div>
 
-                        {{-- Campo de Notas --}}
                         <div>
                             <label for="nota" class="block text-sm font-medium text-gray-700">Nota (Opcional)</label>
                             <textarea name="nota" id="nota" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
@@ -131,7 +127,6 @@
                 </form>
             </div>
         </div>
-        {{-- ================================================================= --}}
     </div>
 @endsection
 
@@ -144,8 +139,6 @@
             isModalOpen: false,
             modalTitle: '',
             evento: { tipo: '', subtipo: '', facturaId: null },
-            
-            // --- ESTRUCTURA DE EVENTOS ACTUALIZADA ---
             eventSubtypes: {
                 'Entrega': ['Factura Entregada', 'Factura no entregada'],
                 'Notificacion': ['Sanitario', 'Alimentos', 'Combustible', 'Pernocta', 'Llegada a carga', 'Fin de carga', 'En ruta', 'Llegada a cliente', 'Proceso de entrega'],
@@ -193,11 +186,24 @@
             submitEventForm() {
                 this.isLoading = true;
                 this.locationError = '';
-                // Asignamos el valor del selector al input oculto antes de enviar
-                // Esto es por si el usuario no cambia el valor por defecto
+
+                // --- INICIA CORRECCIÓN: Validación de evidencia en el frontend ---
+                const fileInput = document.getElementById('evidencia');
+                if (this.evento.tipo === 'Entrega' && (!fileInput.files || fileInput.files.length === 0)) {
+                    alert('Por favor, adjunta al menos una foto de evidencia para la entrega.');
+                    this.isLoading = false;
+                    return; // Detiene el envío del formulario
+                }
+                // --- TERMINA CORRECCIÓN ---
+
                 const selector = document.getElementById('event_subtype_selector');
-                if (selector) {
-                    this.evento.subtipo = selector.value;
+                if (selector && (this.evento.tipo === 'Notificacion' || this.evento.tipo === 'Incidencias')) {
+                    // Creamos un input oculto para enviar el subtipo correcto
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'subtipo';
+                    hiddenInput.value = this.evento.subtipo;
+                    document.getElementById('event-form').appendChild(hiddenInput);
                 }
 
                 if (!navigator.geolocation) { this.locationError = 'Geolocalización no soportada.'; this.isLoading = false; return; }

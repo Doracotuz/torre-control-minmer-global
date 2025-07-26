@@ -33,16 +33,16 @@
                         
                         <div>
                             <label for="region" class="block text-sm font-medium text-gray-700">Región</label>
-                            <select name="origen" id="origen" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <select name="region" id="region" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                                 <option value="">Selecciona un origen</option>
-                                <option value="MEX" {{ old('origen') == 'MEX' ? 'selected' : '' }}>MEX</option>
-                                <option value="SJD" {{ old('origen') == 'SJD' ? 'selected' : '' }}>SJD</option>
-                                <option value="GDL" {{ old('origen') == 'GDL' ? 'selected' : '' }}>GDL</option>
-                                <option value="MTY" {{ old('origen') == 'MTY' ? 'selected' : '' }}>MTY</option>
-                                <option value="CUN" {{ old('origen') == 'CUN' ? 'selected' : '' }}>CUN</option>
-                                <option value="MIN" {{ old('origen') == 'MIN' ? 'selected' : '' }}>MIN</option>
-                                <option value="MZN" {{ old('origen') == 'MZN' ? 'selected' : '' }}>MZN</option>
-                                <option value="VER" {{ old('origen') == 'VER' ? 'selected' : '' }}>VER</option>
+                                <option value="MEX" {{ old('region') == 'MEX' ? 'selected' : '' }}>MEX</option>
+                                <option value="SJD" {{ old('region') == 'SJD' ? 'selected' : '' }}>SJD</option>
+                                <option value="GDL" {{ old('region') == 'GDL' ? 'selected' : '' }}>GDL</option>
+                                <option value="MTY" {{ old('region') == 'MTY' ? 'selected' : '' }}>MTY</option>
+                                <option value="CUN" {{ old('region') == 'CUN' ? 'selected' : '' }}>CUN</option>
+                                <option value="MIN" {{ old('region') == 'MIN' ? 'selected' : '' }}>MIN</option>
+                                <option value="MZN" {{ old('region') == 'MZN' ? 'selected' : '' }}>MZN</option>
+                                <option value="VER" {{ old('region') == 'VER' ? 'selected' : '' }}>VER</option>
                             </select>
                         </div>
 

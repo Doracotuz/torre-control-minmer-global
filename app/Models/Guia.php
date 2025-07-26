@@ -18,11 +18,16 @@ class Guia extends Model
         'estatus',
         'fecha_inicio_ruta',
         'fecha_fin_ruta',
+        'custodia',
+        'hora_planeada',
+        'fecha_asignacion',
+        'origen',
     ];
 
     protected $casts = [
         'fecha_inicio_ruta' => 'datetime',
         'fecha_fin_ruta' => 'datetime',
+        'fecha_asignacion' => 'date',
     ];
 
     public function ruta()

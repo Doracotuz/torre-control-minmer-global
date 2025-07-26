@@ -325,4 +325,35 @@ public function index(Request $request)
         return response()->json($rutas);
     }
 
+    public function filter(Request $request)
+    {
+        $query = Ruta::query()->with('paradas')->withCount('paradas');
+
+        if ($request->filled('search')) {
+            $query->where('nombre', 'like', '%' . $request->search . '%');
+        }
+        if ($request->filled('tipo_ruta')) {
+            $query->where('tipo_ruta', $request->tipo_ruta);
+        }
+        if ($request->filled('region')) {
+            $query->where('region', 'like', '%' . $request->region . '%');
+        }
+
+        $rutas = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        $rutasJson = $rutas->mapWithKeys(function ($ruta) {
+            return [$ruta->id => $ruta->paradas->map(function ($parada) {
+                return ['lat' => (float)$parada->latitud, 'lng' => (float)$parada->longitud];
+            })];
+        })->toJson();
+
+        // Renderizamos solo la parte de la tabla y la paginación
+        $tableView = view('rutas.plantillas.partials.table', compact('rutas'))->render();
+
+        return response()->json([
+            'tableView' => $tableView,
+            'rutasJson' => $rutasJson,
+        ]);
+    }
+
 }

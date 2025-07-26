@@ -228,20 +228,26 @@
             </div>
 
             <div x-show="isReportModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4" style="display: none;">
-                <div @click.outside="isReportModalOpen = false" class="bg-white rounded-lg shadow-xl w-[98%] max-h-[90vh] flex flex-col">
+                <div @click.outside="isReportModalOpen = false" class="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[90vh] flex flex-col">
                     <div class="flex justify-between items-center border-b p-4">
                         <div class="flex items-center gap-4">
                             <img src="{{ Storage::disk('s3')->url('LogoAzul.png') }}" alt="Logo" class="h-10">
                             <h3 class="text-2xl font-bold text-[#2c3856]">Estatus Actualizado <span class="text-base font-normal text-gray-500" x-text="reportDate"></span></h3>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <label for="report_region_filter" class="text-sm font-medium text-gray-700">Región:</label>
-                            <select id="report_region_filter" x-model="reportRegionFilter" @change="fetchReportData()" class="rounded-md border-gray-300 shadow-sm text-sm">
-                                <option value="">Todas</option>
-                                <template x-for="region in availableRegions" :key="region">
-                                    <option :value="region" x-text="region"></option>
-                                </template>
-                            </select>
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2">
+                                <label for="report_region_filter" class="text-sm font-medium text-gray-700">Región:</label>
+                                <select id="report_region_filter" x-model="reportRegionFilter" @change="fetchReportData()" class="rounded-md border-gray-300 shadow-sm text-sm">
+                                    <option value="">Todas</option>
+                                    <template x-for="region in availableRegions" :key="region">
+                                        <option :value="region" x-text="region"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            {{-- NUEVO BOTÓN PARA ABRIR EL MODAL DE COLUMNAS --}}
+                            <button @click="isColumnSelectorOpen = true" class="p-2 bg-gray-200 text-gray-600 rounded-md hover:bg-gray-300">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            </button>
                         </div>
                         <button @click="isReportModalOpen = false" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
                     </div>
@@ -254,15 +260,9 @@
                             <div class="space-y-6">
                                 {{-- Gráficos --}}
                                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div class="bg-white p-4 rounded-lg shadow-md border w-[500px] h-[300px]">
-                                        <canvas id="reportChartStatus" width="500" height="300"></canvas>
-                                    </div>
-                                    <div class="bg-white p-4 rounded-lg shadow-md border w-[500px] h-[300px]">
-                                        <canvas id="reportChartInvoices" width="500" height="300"></canvas>
-                                    </div>
-                                    <div class="bg-white p-4 rounded-lg shadow-md border w-[500px] h-[300px]">
-                                        <canvas id="reportChartRegions" width="500" height="300"></canvas>
-                                    </div>
+                                    <div class="bg-white p-4 rounded-lg shadow-md border"><canvas id="reportChartStatus"></canvas></div>
+                                    <div class="bg-white p-4 rounded-lg shadow-md border"><canvas id="reportChartInvoices"></canvas></div>
+                                    <div class="bg-white p-4 rounded-lg shadow-md border"><canvas id="reportChartRegions"></canvas></div>
                                 </div>
 
                                 {{-- Tabla de Datos --}}
@@ -271,31 +271,17 @@
                                         <table class="min-w-full divide-y divide-gray-200 text-sm">
                                             <thead class="bg-gray-100 sticky top-0">
                                                 <tr class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    <th class="px-4 py-2">Fecha Carga</th>
-                                                    <th class="px-4 py-2">Hora Carga</th>
-                                                    <th class="px-4 py-2">Arribo Carga</th>
-                                                    <th class="px-4 py-2">Hora Inicio Ruta</th>
-                                                    <th class="px-4 py-2">Dato de Entregada</th>
-                                                    <th class="px-4 py-2">Placas</th>
-                                                    <th class="px-4 py-2">Operador</th>
-                                                    <th class="px-4 py-2">Destino</th>
-                                                    <th class="px-4 py-2">Factura</th>
-                                                    <th class="px-4 py-2">Estatus</th>
+                                                    <template x-for="column in visibleColumns" :key="column">
+                                                        <th class="px-4 py-2" x-text="getColumnLabel(column)"></th>
+                                                    </template>
                                                 </tr>
                                             </thead>
                                             <tbody class="bg-white divide-y divide-gray-200">
                                                 <template x-for="(row, index) in reportData.tableData" :key="index">
                                                     <tr>
-                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.fecha_carga"></td>
-                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.hora_carga"></td>
-                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.arribo_carga"></td>
-                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.hora_inicio_ruta"></td>
-                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.dato_entregada"></td>
-                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.placas"></td>
-                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.operador"></td>
-                                                        <td class="px-4 py-2" x-text="row.destino"></td>
-                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.factura"></td>
-                                                        <td class="px-4 py-2 whitespace-nowrap" x-text="row.estatus"></td>
+                                                        <template x-for="columnKey in visibleColumns" :key="columnKey">
+                                                            <td class="px-4 py-2 whitespace-nowrap" x-text="row[columnKey]"></td>
+                                                        </template>
                                                     </tr>
                                                 </template>
                                             </tbody>
@@ -308,6 +294,28 @@
                 </div>
             </div>
 
+            {{-- ===================== NUEVO MODAL PARA SELECCIONAR COLUMNAS ===================== --}}
+            <div x-show="isColumnSelectorOpen" x-transition class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 p-4" style="display: none;">
+                <div @click.outside="isColumnSelectorOpen = false" class="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+                    <div class="flex justify-between items-center border-b p-4">
+                        <h3 class="text-lg font-bold text-[#2c3856]">Configurar Columnas del Reporte</h3>
+                        <button @click="isColumnSelectorOpen = false" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-sm">
+                            <template x-for="column in allColumns" :key="column.key">
+                                <label class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100">
+                                    <input type="checkbox" x-model="visibleColumns" :value="column.key" class="rounded text-[#ff9c00] focus:ring-[#ff9c00]">
+                                    <span x-text="column.label"></span>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-gray-50 border-t text-right">
+                        <button @click="isColumnSelectorOpen = false" class="px-4 py-2 bg-[#2c3856] text-white rounded-md text-sm font-semibold">Cerrar</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -333,12 +341,27 @@
                 isEventModalOpen: false,
                 isDetailsModalOpen: false,
                 isReportModalOpen: false,
+                isColumnSelectorOpen: false,
                 isReportLoading: false,
                 reportData: null,
                 reportDate: '',
                 charts: {},
                 availableRegions: [],
                 reportRegionFilter: '',
+                allColumns: [
+                    { key: 'fecha_carga', label: 'Fecha Carga' },
+                    { key: 'hora_planeada', label: 'Hora Planeada' },
+                    { key: 'hora_arribo', label: 'Hora Arribo' },
+                    { key: 'inicio_ruta', label: 'Inicio Ruta' },
+                    { key: 'operador', label: 'Operador' },
+                    { key: 'destino', label: 'Destino' },
+                    { key: 'factura', label: 'Factura' },
+                    { key: 'estatus_f', label: 'Estatus F' },
+                    { key: 'estatus_r', label: 'Estatus R' },
+                    { key: 'entregada', label: 'Entregada' },
+                    { key: 'custodia', label: 'Custodia' }
+                ],
+                visibleColumns: [],
                 selectedGuia: null,
                 evento: { tipo: 'Notificacion', subtipo: '', lat: '', lng: '' },
                 eventSubtypes: {
@@ -354,6 +377,11 @@
                 notification: { show: false, message: '', type: 'success' },
 
                 init() {
+                    const savedColumns = localStorage.getItem('visibleReportColumns');
+                    this.visibleColumns = savedColumns ? JSON.parse(savedColumns) : ['fecha_carga', 'operador', 'destino', 'factura', 'estatus_f', 'estatus_r', 'entregada'];                    
+                    this.$watch('visibleColumns', (value) => {
+                        localStorage.setItem('visibleReportColumns', JSON.stringify(value));
+                    });
                     this.applyFilters();
                     this.loadAvailableRegions();
 
@@ -378,7 +406,6 @@
                         sessionStorage.setItem('selectedGuias', JSON.stringify(newSelection));
                         this.redrawMap();
                     });
-                    
                 },
 
                 applyFilters() {
@@ -534,6 +561,10 @@
                         }
                     });
                 },
+                getColumnLabel(key) {
+                    const column = this.allColumns.find(c => c.key === key);
+                    return column ? column.label : '';
+                },                
 
                 startRouteFromMonitor() {
                     if (!this.selectedGuia) return;

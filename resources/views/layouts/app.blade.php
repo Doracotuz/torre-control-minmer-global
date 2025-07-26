@@ -429,70 +429,70 @@ document.addEventListener('alpine:init', () => {
         });
 
             // --- Mapa del INDEX ---
-            function drawRoute(rutaId) {
-                const paradasParaRuta = window.rutasJson[rutaId];
-                if (!paradasParaRuta || paradasParaRuta.length < 2) return;
-                const waypoints = paradasParaRuta.slice(1, -1).map(p => ({ location: {lat: p.lat, lng: p.lng}, stopover: true }));
-                const request = {
-                    origin: {lat: paradasParaRuta[0].lat, lng: paradasParaRuta[0].lng},
-                    destination: {lat: paradasParaRuta[paradasParaRuta.length - 1].lat, lng: paradasParaRuta[paradasParaRuta.length - 1].lng},
-                    waypoints: waypoints,
-                    travelMode: 'DRIVING'
-                }; 
-                directionsService.route(request, (result, status) => {
-                    if (status == 'OK') {
-                        const color = routeColors[rutaId % routeColors.length];
-                        const renderer = new google.maps.DirectionsRenderer({
-                            map: indexMap,
-                            directions: result,
-                            suppressMarkers: true,
-                            polylineOptions: { strokeColor: color, strokeWeight: 5, strokeOpacity: 0.8 }
-                        });
+            // function drawRoute(rutaId) {
+            //     const paradasParaRuta = window.rutasJson[rutaId];
+            //     if (!paradasParaRuta || paradasParaRuta.length < 2) return;
+            //     const waypoints = paradasParaRuta.slice(1, -1).map(p => ({ location: {lat: p.lat, lng: p.lng}, stopover: true }));
+            //     const request = {
+            //         origin: {lat: paradasParaRuta[0].lat, lng: paradasParaRuta[0].lng},
+            //         destination: {lat: paradasParaRuta[paradasParaRuta.length - 1].lat, lng: paradasParaRuta[paradasParaRuta.length - 1].lng},
+            //         waypoints: waypoints,
+            //         travelMode: 'DRIVING'
+            //     }; 
+            //     directionsService.route(request, (result, status) => {
+            //         if (status == 'OK') {
+            //             const color = routeColors[rutaId % routeColors.length];
+            //             const renderer = new google.maps.DirectionsRenderer({
+            //                 map: indexMap,
+            //                 directions: result,
+            //                 suppressMarkers: true,
+            //                 polylineOptions: { strokeColor: color, strokeWeight: 5, strokeOpacity: 0.8 }
+            //             });
                         
-                        activeRenderers[rutaId] = { renderer: renderer, markers: [] };
+            //             activeRenderers[rutaId] = { renderer: renderer, markers: [] };
 
-                        // AÑADIDO: Bucle para crear un marcador para cada parada
-                        paradasParaRuta.forEach((parada, index) => {
-                            const stopMarker = new google.maps.Marker({
-                                position: { lat: parada.lat, lng: parada.lng },
-                                map: indexMap,
-                                label: {
-                                    text: `${index + 1}`, // Etiqueta con el número de parada
-                                    color: "white",
-                                    fontSize: "11px",
-                                    fontWeight: "bold"
-                                },
-                                icon: {
-                                    path: google.maps.SymbolPath.CIRCLE,
-                                    scale: 10,
-                                    fillColor: color, // Usa el mismo color que la línea de la ruta
-                                    fillOpacity: 1,
-                                    strokeWeight: 1.5,
-                                    strokeColor: "white"
-                                },
-                                title: `Parada ${index + 1}`
-                            });
-                            // Guardamos el marcador para poder borrarlo después
-                            activeRenderers[rutaId].markers.push(stopMarker);
-                        });
-                    }
-                });
-            }
+            //             // AÑADIDO: Bucle para crear un marcador para cada parada
+            //             paradasParaRuta.forEach((parada, index) => {
+            //                 const stopMarker = new google.maps.Marker({
+            //                     position: { lat: parada.lat, lng: parada.lng },
+            //                     map: indexMap,
+            //                     label: {
+            //                         text: `${index + 1}`, // Etiqueta con el número de parada
+            //                         color: "white",
+            //                         fontSize: "11px",
+            //                         fontWeight: "bold"
+            //                     },
+            //                     icon: {
+            //                         path: google.maps.SymbolPath.CIRCLE,
+            //                         scale: 10,
+            //                         fillColor: color, // Usa el mismo color que la línea de la ruta
+            //                         fillOpacity: 1,
+            //                         strokeWeight: 1.5,
+            //                         strokeColor: "white"
+            //                     },
+            //                     title: `Parada ${index + 1}`
+            //                 });
+            //                 // Guardamos el marcador para poder borrarlo después
+            //                 activeRenderers[rutaId].markers.push(stopMarker);
+            //             });
+            //         }
+            //     });
+            // }
 
-            function removeRoute(rutaId) {
-                if (activeRenderers[rutaId]) {
-                    // Elimina la línea de la ruta
-                    if (activeRenderers[rutaId].renderer) {
-                        activeRenderers[rutaId].renderer.setMap(null);
-                    }
-                    // Elimina cada marcador de parada asociado
-                    if (activeRenderers[rutaId].markers) {
-                        activeRenderers[rutaId].markers.forEach(marker => marker.setMap(null));
-                    }
-                    // Limpia el registro
-                    delete activeRenderers[rutaId];
-                }
-            }
+            // function removeRoute(rutaId) {
+            //     if (activeRenderers[rutaId]) {
+            //         // Elimina la línea de la ruta
+            //         if (activeRenderers[rutaId].renderer) {
+            //             activeRenderers[rutaId].renderer.setMap(null);
+            //         }
+            //         // Elimina cada marcador de parada asociado
+            //         if (activeRenderers[rutaId].markers) {
+            //             activeRenderers[rutaId].markers.forEach(marker => marker.setMap(null));
+            //         }
+            //         // Limpia el registro
+            //         delete activeRenderers[rutaId];
+            //     }
+            // }
 
             // --- Funciones para el mapa de CREAR/EDITAR ---
             function agregarParada(location, nombre) { paradas.push({ lat: location.lat(), lng: location.lng(), nombre: nombre }); actualizarVistaParadas(); trazarRuta(); }

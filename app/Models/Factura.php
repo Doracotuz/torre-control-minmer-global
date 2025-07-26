@@ -16,6 +16,7 @@ class Factura extends Model
         'cajas',
         'botellas',
         'estatus_entrega',
+        'hora_cita',
     ];
 
     public function guia()

@@ -234,7 +234,9 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('rutas')->name('rut
         Route::delete('/{ruta}', [RutaController::class, 'destroy'])->name('destroy');
         Route::post('/{ruta}/duplicate', [RutaController::class, 'duplicate'])->name('duplicate');
         Route::get('/export', [RutaController::class, 'exportCsv'])->name('export');
-        Route::get('/search', [RutaController::class, 'search'])->name('search'); // Para el modal de asignación
+        Route::get('/search', [RutaController::class, 'search'])->name('search');
+        Route::get('/filter', [RutaController::class, 'filter'])->name('filter');
+
     });
 
 

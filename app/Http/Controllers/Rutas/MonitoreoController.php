@@ -271,19 +271,20 @@ class MonitoreoController extends Controller
                 $entregaEvent = $guia->eventos
                     ->where('tipo', 'Entrega')
                     ->where('factura_id', $factura->id)
-                    ->sortBy('fecha_evento') // Ordenamos por si hay varios, aunque no debería
+                    ->sortBy('fecha_evento')
                     ->first();                
                 $tableData[] = [
-                    'fecha_carga' => $finCargaEvent ? $finCargaEvent->fecha_evento->format('d/m/Y') : 'Pendiente',
-                    'hora_carga' => $finCargaEvent ? $finCargaEvent->fecha_evento->format('h:i A') : 'Pendiente',
-                    'arribo_carga' => $llegadaCargaEvent ? $llegadaCargaEvent->fecha_evento->format('d/m/Y h:i A') : 'Pendiente',
-                    'hora_inicio_ruta' => $guia->fecha_inicio_ruta ? $guia->fecha_inicio_ruta->format('d/m/Y h:i A') : 'Pendiente',
-                    'dato_entregada' => $entregaEvent ? $entregaEvent->fecha_evento->format('d/m/Y h:i A') : 'Pendiente',
-                    'placas' => $guia->placas,
+                    'fecha_carga' => $guia->fecha_asignacion ? \Carbon\Carbon::parse($guia->fecha_asignacion)->format('d/m/Y') : 'N/A',
+                    'hora_planeada' => $guia->hora_planeada ?? 'N/A',
+                    'hora_arribo' => $llegadaCargaEvent ? $llegadaCargaEvent->fecha_evento->format('d/m/Y h:i A') : 'N/A',
+                    'inicio_ruta' => $guia->fecha_inicio_ruta ? $guia->fecha_inicio_ruta->format('d/m/Y h:i A') : 'N/A',
                     'operador' => $guia->operador,
                     'destino' => $factura->destino,
                     'factura' => $factura->numero_factura,
-                    'estatus' => $factura->estatus_entrega,
+                    'estatus_f' => $entregaEvent ? $entregaEvent->subtipo : $factura->estatus_entrega,
+                    'estatus_r' => $guia->estatus,
+                    'entregada' => $entregaEvent && $entregaEvent->subtipo == 'Factura Entregada' ? $entregaEvent->fecha_evento->format('d/m/Y h:i A') : 'N/A',
+                    'custodia' => $guia->custodia ?? 'N/A',
                 ];
             }
         }
@@ -297,9 +298,9 @@ class MonitoreoController extends Controller
         // Gráfico 2: Facturas por estatus de entrega
         $facturasPorEstatus = $todasLasFacturas->countBy('estatus_entrega');
         // Gráfico 3: Eventos por tipo
-        $facturasPorRegion = $guias->filter(fn($guia) => $guia->ruta) // Solo guías con ruta asignada
-                                   ->groupBy('ruta.region') // Agrupamos las guías por la región de su ruta
-                                   ->map(fn($guiasEnRegion) => $guiasEnRegion->sum(fn($g) => $g->facturas->count())) // Sumamos las facturas de cada grupo
+        $facturasPorRegion = $guias->filter(fn($guia) => $guia->ruta)
+                                   ->groupBy('ruta.region')
+                                   ->map(fn($guiasEnRegion) => $guiasEnRegion->sum(fn($g) => $g->facturas->count()))
                                    ->sortDesc();
 
 
