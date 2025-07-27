@@ -122,6 +122,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/search-suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
     Route::get('/dashboard-data', [App\Http\Controllers\DashboardController::class, 'data'])->name('dashboard.data');
+    Route::get('/organigrama-interactivo', [OrganigramController::class, 'interactiveOrganigram'])->name('client.organigram.interactive');
+    Route::get('/organigrama-data', [OrganigramController::class, 'getInteractiveOrganigramData'])->name('client.organigram.data');
+    Route::get('/organigrama-data-sin-areas', [OrganigramController::class, 'getInteractiveOrganigramDataWithoutAreas'])->name('client.organigram.data.without-areas');
 });
 
 // Rutas de administración (solo accesibles por el área de Administración)

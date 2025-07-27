@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
+  
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Organigrama Interactivo') }}
         </h2>
@@ -74,9 +75,11 @@
     <div class="bg-gray-100 w-full h-full flex flex-col p-6">
         <div class="bg-white w-full h-full shadow-xl sm:rounded-lg border border-gray-200 flex flex-col">
             <div class="flex justify-between items-center p-4 border-b border-gray-200">
-                <a href="{{ route('admin.organigram.index') }}" class="inline-flex items-center px-5 py-2 bg-gray-200 border border-transparent rounded-full font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300">
-                    {{ __('Volver a Gestión de Miembros') }}
-                </a>
+                @if(!Auth::user()->is_client)
+                    <a href="{{ route('admin.organigram.index') }}" class="inline-flex items-center px-5 py-2 bg-gray-200 border border-transparent rounded-full font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300">
+                        {{ __('Volver a Gestión de Miembros') }}
+                    </a>
+                @endif
                 <div class="flex items-center">
                     <input type="checkbox" id="toggleAreaNodes" class="form-checkbox h-5 w-5 text-[#2c3856] rounded focus:ring-[#ff9c00]">
                     <label for="toggleAreaNodes" class="ml-2 text-gray-700 select-none">{{ __('Mostrar Nodos de Área') }}</label>
@@ -383,9 +386,20 @@
             });
         }
 
-        const dataUrl = showAreaNodesInitially ?
-            `{{ route('admin.organigram.interactive.data') }}` :
-            `{{ route('admin.organigram.interactive.data.without-areas') }}`;
+        // const showAreaNodesInitially = !(new URLSearchParams(window.location.search).get('show_areas') === 'false');
+        let dataUrl;
+
+        @if (Auth::check() && Auth::user()->is_client)
+            // Si el usuario es un cliente, usa las rutas seguras para clientes
+            dataUrl = showAreaNodesInitially
+                ? `{{ route('client.organigram.data') }}`
+                : `{{ route('client.organigram.data.without-areas') }}`;
+        @else
+            // Si no, usa las rutas de administrador como antes
+            dataUrl = showAreaNodesInitially
+                ? `{{ route('admin.organigram.interactive.data') }}`
+                : `{{ route('admin.organigram.interactive.data.without-areas') }}`;
+        @endif
 
         const loadingMessageDiv = $('<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-500">Cargando organigrama...</div>');
         chartContainer.append(loadingMessageDiv);

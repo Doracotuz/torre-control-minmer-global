@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use App\Models\OrganigramTrajectory;
+use Illuminate\Support\Facades\Auth;
 
 class OrganigramController extends Controller
 {
@@ -379,6 +380,99 @@ class OrganigramController extends Controller
      */
     public function getInteractiveOrganigramData()
     {
+        $user = Auth::user();
+
+        if ($user && $user->is_client) {
+            $customerServiceArea = Area::where('name', 'Customer Service')->first();
+
+            // Si no existe el área, no se muestra nada.
+            if (!$customerServiceArea) {
+                return response()->json(null);
+            }
+
+            $allMembers = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])->get();
+
+            // Encontrar los miembros que son raíz dentro del área de Customer Service
+            $rootMembersCS = $allMembers->where('area_id', $customerServiceArea->id)->filter(function ($member) {
+                return is_null($member->manager_id) || $member->manager->area_id != $member->area_id;
+            });
+
+            // Si no hay una raíz clara, podría devolverse vacío o manejarlo según la lógica de negocio.
+            if ($rootMembersCS->isEmpty()) {
+                return response()->json(null);
+            }
+
+            // Obtener todos los descendientes de esas raíces
+            $membersInHierarchy = collect();
+            foreach ($rootMembersCS as $rootMember) {
+                $membersInHierarchy = $membersInHierarchy->merge($this->getDescendants($rootMember, $allMembers));
+            }
+            $membersInHierarchy = $membersInHierarchy->unique('id');
+
+            $flatNodes = [];
+
+            // 1. Nodo Raíz principal (opcional, pero mantiene la consistencia)
+            $flatNodes[] = [
+                'id' => 'org_root',
+                'pid' => null,
+                'name' => 'MINMER GLOBAL',
+                'title' => 'Organigrama Principal',
+                'type' => 'root',
+                'img' => asset('images/LogoAzul.png'),
+            ];
+
+            // 2. Nodo del Área de Customer Service
+            $flatNodes[] = [
+                'id' => 'area_' . $customerServiceArea->id,
+                'pid' => 'org_root', // Cuelga del nodo raíz
+                'name' => $customerServiceArea->name,
+                'title' => 'Área',
+                'type' => 'area',
+                'img' => $customerServiceArea->icon_path ? Storage::disk('s3')->url($customerServiceArea->icon_path) : null,
+                'description' => $customerServiceArea->description,
+            ];
+
+            // 3. Nodos de Miembros de la jerarquía filtrada
+            foreach ($membersInHierarchy as $member) {
+                $parentId = $member->manager_id ? (string)$member->manager_id : 'area_' . $member->area_id;
+
+                // Si el jefe de un miembro no está en la jerarquía visible, se le asigna como padre el área.
+                if ($member->manager_id && !$membersInHierarchy->contains('id', $member->manager_id)) {
+                    $parentId = 'area_' . $member->area_id;
+                }
+
+                $flatNodes[] = [
+                    'id' => (string)$member->id,
+                    'pid' => $parentId,
+                    'name' => $member->name,
+                    'title' => $member->position->name ?? 'Sin Posición',
+                    'img' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
+                    'type' => 'member',
+                    'is_proxy' => false,
+                    // ▼▼ AÑADE ESTE BLOQUE COMPLETO ▼▼
+                    'full_details' => [
+                        'name' => $member->name,
+                        'email' => $member->email,
+                        'cell_phone' => $member->cell_phone,
+                        'position_name' => $member->position->name ?? 'N/A',
+                        'area_name' => $member->area->name ?? 'N/A',
+                        'manager_name' => $member->manager->name ?? 'N/A',
+                        'manager_id' => $member->manager_id,
+                        'profile_photo_path' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
+                        'activities' => $member->activities->map(fn($a) => ['id' => $a->id, 'name' => $a->name]),
+                        'skills' => $member->skills->map(fn($s) => ['id' => $s->id, 'name' => $s->name]),
+                        'trajectories' => $member->trajectories->map(fn($t) => [
+                            'id' => $t->id, 'title' => $t->title, 'description' => $t->description,
+                            'start_date' => optional($t->start_date)->format('Y-m-d'), 'end_date' => optional($t->end_date)->format('Y-m-d'),
+                        ]),
+                    ]
+                ];
+            }
+
+            $nestedTree = $this->buildNestedTree($flatNodes);
+            return response()->json($nestedTree[0] ?? null);
+        }
+
         $members = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])->get();
         $areas = Area::all();
 
@@ -497,6 +591,65 @@ class OrganigramController extends Controller
      */
     public function getInteractiveOrganigramDataWithoutAreas()
     {
+        $user = Auth::user();
+
+        if ($user && $user->is_client) {
+            $customerServiceArea = Area::where('name', 'Customer Service')->first();
+
+            if (!$customerServiceArea) {
+                return response()->json(null);
+            }
+
+            $allMembers = OrganigramMember::with(['area', 'manager.position', 'position'])->get();
+            
+            // Encontrar al jefe del área de Customer Service
+            $headOfService = $allMembers->where('area_id', $customerServiceArea->id)->first(function ($member) {
+                return is_null($member->manager_id) || $member->manager->area_id != $member->area_id;
+            });
+
+            if (!$headOfService) {
+                return response()->json(null); // No se encontró un jefe para el área
+            }
+
+            // Obtener todos los descendientes del jefe de servicio
+            $membersInHierarchy = $this->getDescendants($headOfService, $allMembers);
+
+            $flatNodesForMembersOnly = [];
+
+            foreach ($membersInHierarchy as $member) {
+                // El jefe de servicio es el nodo raíz en esta vista
+                $parentId = ($member->id === $headOfService->id) ? null : (string)$member->manager_id;
+
+                $flatNodesForMembersOnly[] = [
+                    'id' => (string)$member->id,
+                    'pid' => $parentId,
+                    'name' => $member->name,
+                    'title' => $member->position->name ?? 'Sin Posición',
+                    'img' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
+                    'type' => 'member',
+                    'is_proxy' => false,
+                        'full_details' => [
+                            'name' => $member->name,
+                            'email' => $member->email,
+                            'cell_phone' => $member->cell_phone,
+                            'position_name' => $member->position->name ?? 'N/A',
+                            'area_name' => $member->area->name ?? 'N/A',
+                            'manager_name' => $member->manager->name ?? 'N/A',
+                            'manager_id' => $member->manager_id,
+                            'profile_photo_path' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
+                            'activities' => $member->activities->map(fn($a) => ['id' => $a->id, 'name' => $a->name]),
+                            'skills' => $member->skills->map(fn($s) => ['id' => $s->id, 'name' => $s->name]),
+                            'trajectories' => $member->trajectories->map(fn($t) => [
+                                'id' => $t->id, 'title' => $t->title, 'description' => $t->description,
+                                'start_date' => optional($t->start_date)->format('Y-m-d'), 'end_date' => optional($t->end_date)->format('Y-m-d'),
+                            ]),
+                        ]
+                    ];
+                }
+
+            $nestedTree = $this->buildNestedTree($flatNodesForMembersOnly);
+            return response()->json($nestedTree[0] ?? null);
+        }        
         $members = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])->get();
 
         $flatNodesForMembersOnly = [];
@@ -600,4 +753,17 @@ class OrganigramController extends Controller
         }
         return $branch;
     }
+
+    protected function getDescendants($member, $allMembers)
+    {
+        $descendants = collect([$member]);
+        $children = $allMembers->where('manager_id', $member->id);
+
+        foreach ($children as $child) {
+            $descendants = $descendants->merge($this->getDescendants($child, $allMembers));
+        }
+
+        return $descendants;
+    }
+
 }
