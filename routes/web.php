@@ -45,6 +45,12 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
+    if (Auth::user()->is_client) {
+        // Si el usuario es un cliente, redirige a la ruta del tablero
+        return redirect()->route('tablero.index');
+    }
+
+    // Si no, muestra el dashboard normal
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 

@@ -241,7 +241,7 @@
                                     <p><span class="font-semibold">{{ __('Elementos Totales:') }}</span> {{ $folderItem->items_count ?? 0 }}</p>
                                 </div>
                                 {{-- FIN INFO ADICIONAL --}}
-
+                                @if(!Auth::user()->is_client)
                                 {{-- Acciones (botones con estilo mejorado y responsivo) --}}
                                 <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full justify-center">
                                     <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center justify-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-wider hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
@@ -255,6 +255,7 @@
                                         </button>
                                     </form>
                                 </div>
+                                @endif
                             </div>
                         @endforeach
 
@@ -338,6 +339,7 @@
                                 {{-- FIN INFO ADICIONAL --}}
 
                                 {{-- Acciones (botones con estilo mejorado y responsivo) --}}
+                                @if(!Auth::user()->is_client)
                                 <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full justify-center">
                                     <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center justify-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-wider hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                         {{ __('Editar') }}
@@ -350,6 +352,7 @@
                                         </button>
                                     </form>
                                 </div>
+                                @endif
                             </div>
                         @endforeach
                     </div>
@@ -376,9 +379,11 @@
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             {{ __('Fecha de Carga') }}
                                         </th>
+                                        @if(!Auth::user()->is_client)
                                         <th scope="col" class="relative px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">
                                             {{ __('Acciones') }}
                                         </th>
+                                        @endif
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
@@ -425,6 +430,7 @@
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                                 {{ $folderItem->created_at->format('d M Y, H:i') }}
                                             </td>
+                                            @if(!Auth::user()->is_client)
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
                                                 <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                                     {{ __('Editar') }}
@@ -437,6 +443,7 @@
                                                     </button>
                                                 </form>
                                             </td>
+                                            @endif
                                         </tr>
                                     @endforeach
 
@@ -511,6 +518,7 @@
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                                 {{ $fileLink->created_at->format('d M Y, H:i') }}
                                             </td>
+                                            @if(!Auth::user()->is_client)
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
                                                 <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                                     {{ __('Editar') }}
@@ -523,6 +531,7 @@
                                                     </button>
                                                 </form>
                                             </td>
+                                            @endif
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -558,6 +567,7 @@
                                         <p><span class="font-medium text-gray-600">{{ __('Creado Por:') }}</span> {{ $folderItem->user->name ?? 'N/A' }}</p>
                                         <p><span class="font-medium text-gray-600">{{ __('Fecha:') }}</span> {{ $folderItem->created_at->format('d M Y, H:i') }}</p>
                                     </div>
+                                    @if(!Auth::user()->is_client)
                                     <div class="flex justify-end gap-2 mt-4">
                                         <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center px-3 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
                                             {{ __('Editar') }}
@@ -570,6 +580,7 @@
                                             </button>
                                         </form>
                                     </div>
+                                    @endif
                                 </div>
                             @endforeach
 
@@ -639,6 +650,7 @@
                                         <p><span class="font-medium text-gray-600">{{ __('Creado Por:') }}</span> {{ $fileLink->user->name ?? 'N/A' }}</p>
                                         <p><span class="font-medium text-gray-600">{{ __('Fecha:') }}</span> {{ $fileLink->created_at->format('d M Y, H:i') }}</p>
                                     </div>
+                                    @if(!Auth::user()->is_client)
                                     <div class="flex justify-end gap-2 mt-4">
                                         <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center px-3 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
                                             {{ __('Editar') }}
@@ -651,6 +663,7 @@
                                             </button>
                                         </form>
                                     </div>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>

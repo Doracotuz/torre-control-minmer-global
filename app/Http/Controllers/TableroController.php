@@ -19,41 +19,48 @@ class TableroController extends Controller
 
         $accessibleRootFolders = $user->accessibleFolders()->whereNull('parent_id')->with('area')->get();
         
-        $mesesOrden = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        $kpiGeneralesData = KpiGeneral::all();
+        $kpisTimeData = KpiTiempo::all();
 
         $chartData = [];
-        
-        // Gráfico 1: Cantidad por Mes (Líneas)
-        $cantidadPorMes = KpiGeneral::select(DB::raw('mes, SUM(cantidad) as total'))
-            ->groupBy('mes')->orderBy(DB::raw('FIELD(mes, "'.implode('","', $mesesOrden).'")'))->pluck('total', 'mes');
-        $chartData['linea_mes_labels'] = $cantidadPorMes->keys();
-        $chartData['linea_mes_data'] = $cantidadPorMes->values();
-        
-        // Gráfico 2: Cantidad por Zona (Barras)
-        $cantidadPorZona = KpiGeneral::select(DB::raw('zona, SUM(cantidad) as total'))->groupBy('zona')->pluck('total', 'zona');
-        $chartData['barras_zona_labels'] = $cantidadPorZona->keys();
-        $chartData['barras_zona_data'] = $cantidadPorZona->values();
-        
-        // Gráfico 3: Cantidad por Área (Pastel)
-        $cantidadPorArea = KpiGeneral::select(DB::raw('area, SUM(cantidad) as total'))->groupBy('area')->pluck('total', 'area');
-        $chartData['pastel_area_labels'] = $cantidadPorArea->keys();
-        $chartData['pastel_area_data'] = $cantidadPorArea->values();
+        if ($kpiGeneralesData->isNotEmpty() && $kpisTimeData->isNotEmpty()) {
+            
+            $mesesOrden = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            $zonas = $kpiGeneralesData->pluck('zona')->unique()->sort()->values();
+            $años = $kpiGeneralesData->pluck('ano')->unique()->sort()->values();
+            $colores = ['#2c3856', '#ff9c00', '#4a5d8c', '#ffc107', '#6c757d'];
 
-        // Gráfico 4: Porcentaje por Concepto (Dona)
-        $porcentajePorConcepto = KpiTiempo::select(DB::raw('concepto, AVG(porcentaje) as promedio'))->groupBy('concepto')->pluck('promedio', 'concepto');
-        $chartData['dona_concepto_labels'] = $porcentajePorConcepto->keys();
-        $chartData['dona_concepto_data'] = $porcentajePorConcepto->values();
+            // ▼▼ CORRECCIÓN AQUÍ: Se añade "use ($colores)" ▼▼
+            $pivotData = function($data, $filtroConcepto, $groupByCol, $seriesCol, $valueCol, $labels) use ($colores) {
+                $datasets = [];
+                $seriesValues = $data->where('concepto', $filtroConcepto)->pluck($seriesCol)->unique()->sort()->values();
+                
+                foreach($seriesValues as $index => $serie) {
+                    $pivoted = $data->where('concepto', $filtroConcepto)->where($seriesCol, $serie)->groupBy($groupByCol)->map(fn($group) => $group->sum($valueCol));
+                    $datasetData = $labels->map(fn($label) => $pivoted->get($label, 0))->values();
+                    $datasets[] = [
+                        'label' => $serie,
+                        'data' => $datasetData,
+                        'borderColor' => $colores[$index % count($colores)],
+                        'backgroundColor' => $colores[$index % count($colores)],
+                        'tension' => 0.1,
+                        'fill' => false,
+                    ];
+                }
+                return ['labels' => $labels, 'datasets' => $datasets];
+            };
 
-        // Gráfico 5: Porcentaje Promedio por Mes (Barras Horizontales)
-        $porcentajePorMes = KpiTiempo::select(DB::raw('mes, AVG(porcentaje) as promedio'))
-            ->groupBy('mes')->orderBy(DB::raw('FIELD(mes, "'.implode('","', $mesesOrden).'")'))->pluck('promedio', 'mes');
-        $chartData['barras_h_mes_labels'] = $porcentajePorMes->keys();
-        $chartData['barras_h_mes_data'] = $porcentajePorMes->values();
-
-        // Gráfico 6: Cantidad por Concepto (Área Polar)
-        $cantidadPorConcepto = KpiGeneral::select(DB::raw('concepto, SUM(cantidad) as total'))->groupBy('concepto')->pluck('total', 'concepto');
-        $chartData['polar_concepto_labels'] = $cantidadPorConcepto->keys();
-        $chartData['polar_concepto_data'] = $cantidadPorConcepto->values();
+            // --- KPIGENERALES ---
+            $chartData['embarquesPorZonaAño'] = $pivotData($kpiGeneralesData, 'Cantidad de embarques', 'zona', 'ano', 'cantidad', $zonas);
+            $chartData['expeditadosPorZonaAño'] = $pivotData($kpiGeneralesData, 'Expeditados requeridos por cliente', 'zona', 'ano', 'cantidad', $zonas);
+            $chartData['documentosPorZonaAño'] = $pivotData($kpiGeneralesData, 'Documentos', 'zona', 'ano', 'cantidad', $zonas);
+            $chartData['embarquesPorMesZona'] = $pivotData($kpiGeneralesData, 'Cantidad de embarques', 'mes', 'zona', 'cantidad', collect($mesesOrden));
+            $chartData['expeditadosPorMesZona'] = $pivotData($kpiGeneralesData, 'Expeditados requeridos por cliente', 'mes', 'zona', 'cantidad', collect($mesesOrden));
+            
+            // --- KPIS_TIME ---
+            $chartData['tiempoPorZonaAño'] = $pivotData($kpisTimeData, 'Entregas a tiempo', 'zona', 'ano', 'porcentaje', $zonas);
+            $chartData['tiempoPorMesAño'] = $pivotData($kpisTimeData, 'Entregas a tiempo', 'mes', 'ano', 'porcentaje', collect($mesesOrden));
+        }
 
         return view('tablero.index', ['accessibleRootFolders' => $accessibleRootFolders, 'chartData' => $chartData]);
     }

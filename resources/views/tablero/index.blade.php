@@ -49,19 +49,22 @@
                 <div class="p-6 sm:p-10">
                     @if(!empty($chartData))
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {{-- Columna Izquierda --}}
                             <div class="space-y-8">
-                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad por Mes</h4><canvas id="graficoLineaMes"></canvas></div>
-                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad por Zona</h4><canvas id="graficoBarraZona"></canvas></div>
-                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Distribución por Área</h4><canvas id="graficoPastelArea"></canvas></div>
+                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Embarques por Zona (por Año)</h4><canvas id="graficoEmbarquesZona"></canvas></div>
+                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Expeditados por Zona (por Año)</h4><canvas id="graficoExpeditadosZona"></canvas></div>
+                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Documentos por Zona (por Año)</h4><canvas id="graficoDocumentosZona"></canvas></div>
+                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Entregas a Tiempo por Zona (por Año)</h4><canvas id="graficoTiempoZona"></canvas></div>
                             </div>
+                            {{-- Columna Derecha --}}
                             <div class="space-y-8">
-                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Porcentaje por Concepto</h4><canvas id="graficoDonaConcepto"></canvas></div>
-                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Porcentaje Promedio por Mes</h4><canvas id="graficoBarraHMes"></canvas></div>
-                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad por Concepto</h4><canvas id="graficoPolarConcepto"></canvas></div>
+                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Embarques por Mes (por Zona)</h4><canvas id="graficoEmbarquesMes"></canvas></div>
+                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Expeditados por Mes (por Zona)</h4><canvas id="graficoExpeditadosMes"></canvas></div>
+                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Entregas a Tiempo por Mes (por Año)</h4><canvas id="graficoTiempoMes"></canvas></div>
                             </div>
                         </div>
                     @else
-                        <p class="text-center text-gray-500 py-8">No hay datos de KPIs disponibles.</p>
+                        <p class="text-center text-gray-500 py-8">No hay datos de KPIs disponibles para generar los gráficos.</p>
                     @endif
                 </div>
             </div>
@@ -103,14 +106,25 @@
         document.addEventListener('DOMContentLoaded', function () {
             const chartData = @json($chartData ?? []);
             if (Object.keys(chartData).length === 0) return;
-            const colores = ['#2c3856', '#ff9c00', '#4a5d8c', '#ffc107', '#6c757d', '#17a2b8', '#28a745'];
 
-            new Chart(document.getElementById('graficoLineaMes'),{type:'line',data:{labels:chartData.linea_mes_labels,datasets:[{label:'Cantidad',data:chartData.linea_mes_data,borderColor:'#2c3856',tension:0.1}]}});
-            new Chart(document.getElementById('graficoBarraZona'),{type:'bar',data:{labels:chartData.barras_zona_labels,datasets:[{label:'Cantidad',data:chartData.barras_zona_data,backgroundColor:colores}]}});
-            new Chart(document.getElementById('graficoPastelArea'),{type:'pie',data:{labels:chartData.pastel_area_labels,datasets:[{label:'Cantidad',data:chartData.pastel_area_data,backgroundColor:colores}]}});
-            new Chart(document.getElementById('graficoDonaConcepto'),{type:'doughnut',data:{labels:chartData.dona_concepto_labels,datasets:[{label:'Porcentaje Promedio',data:chartData.dona_concepto_data,backgroundColor:colores}]}});
-            new Chart(document.getElementById('graficoBarraHMes'),{type:'bar',data:{labels:chartData.barras_h_mes_labels,datasets:[{label:'Porcentaje Promedio',data:chartData.barras_h_mes_data,backgroundColor:'#ff9c00'}]},options:{indexAxis:'y'}});
-            new Chart(document.getElementById('graficoPolarConcepto'),{type:'polarArea',data:{labels:chartData.polar_concepto_labels,datasets:[{label:'Cantidad',data:chartData.polar_concepto_data,backgroundColor:colores}]}});
+            // --- GRÁFICOS CON TIPOS VARIADOS ---
+
+            // CAMBIO: De 'line' a 'bar' para comparar mejor las zonas.
+            new Chart(document.getElementById('graficoEmbarquesZona'),{type:'bar', data: chartData.embarquesPorZonaAño, options:{responsive:true}});
+
+            // CAMBIO: De 'line' a 'bar' para comparar mejor las zonas.
+            new Chart(document.getElementById('graficoExpeditadosZona'),{type:'bar', data: chartData.expeditadosPorZonaAño, options:{responsive:true}});
+            
+            // CAMBIO: De 'line' a 'bar' para comparar mejor las zonas.
+            new Chart(document.getElementById('graficoDocumentosZona'),{type:'bar', data: chartData.documentosPorZonaAño, options:{responsive:true}});
+
+            // SIN CAMBIO: Las barras son adecuadas para esta comparación.
+            new Chart(document.getElementById('graficoTiempoZona'),{type:'bar', data: chartData.tiempoPorZonaAño, options:{responsive:true}});
+            
+            // SIN CAMBIO: Las líneas son ideales para mostrar tendencias por mes.
+            new Chart(document.getElementById('graficoEmbarquesMes'),{type:'line', data: chartData.embarquesPorMesZona, options:{responsive:true}});
+            new Chart(document.getElementById('graficoExpeditadosMes'),{type:'line', data: chartData.expeditadosPorMesZona, options:{responsive:true}});
+            new Chart(document.getElementById('graficoTiempoMes'),{type:'line', data: chartData.tiempoPorMesAño, options:{responsive:true}});
         });
     </script>
 
