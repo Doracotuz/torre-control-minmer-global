@@ -22,6 +22,7 @@ use App\Http\Controllers\Rutas\AsignacionController;
 use App\Http\Controllers\Rutas\MonitoreoController;
 use App\Http\Controllers\Rutas\OperadorController;
 use App\Http\Controllers\Rutas\ClienteController;
+use App\Http\Controllers\TableroController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -125,6 +126,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/organigrama-interactivo', [OrganigramController::class, 'interactiveOrganigram'])->name('client.organigram.interactive');
     Route::get('/organigrama-data', [OrganigramController::class, 'getInteractiveOrganigramData'])->name('client.organigram.data');
     Route::get('/organigrama-data-sin-areas', [OrganigramController::class, 'getInteractiveOrganigramDataWithoutAreas'])->name('client.organigram.data.without-areas');
+    Route::get('/tablero', [TableroController::class, 'index'])->name('tablero.index');
+    Route::post('/tablero/upload-kpis', [TableroController::class, 'uploadKpis'])->name('tablero.uploadKpis');
+
+
 });
 
 // Rutas de administración (solo accesibles por el área de Administración)
