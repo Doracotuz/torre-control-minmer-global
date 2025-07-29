@@ -23,6 +23,7 @@ use App\Http\Controllers\Rutas\MonitoreoController;
 use App\Http\Controllers\Rutas\OperadorController;
 use App\Http\Controllers\Rutas\ClienteController;
 use App\Http\Controllers\TableroController;
+use App\Http\Controllers\IndicadoresController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -94,6 +95,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Ruta para descarga directa de archivos (usada por la búsqueda predictiva y clics en tabla)
     Route::get('/files/{fileLink}/download', [FileLinkController::class, 'download'])->name('files.download');
+    Route::get('/indicadores/{folder}', [IndicadoresController::class, 'show'])->name('indicadores.show')->middleware('auth');
+
 
     // Route::get('/files/{fileLink}/download', function (FileLink $fileLink) {
     //     if ($fileLink->type === 'file' && Storage::disk('public')->exists($fileLink->path)) {

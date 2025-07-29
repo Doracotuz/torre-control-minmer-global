@@ -22,7 +22,9 @@ class AreaSeeder extends Seeder
             'POSM',
             'Brokerage',
             'Innovación y Desarrollo',
-            'Administración', // ¡Nueva área!
+            'Administración',
+            'Tráfico Importaciones',
+            'Proyectos',
         ];
 
         foreach ($areas as $areaName) {

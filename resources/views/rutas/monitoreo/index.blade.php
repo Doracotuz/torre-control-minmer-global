@@ -228,7 +228,7 @@
             </div>
 
             <div x-show="isReportModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4" style="display: none;">
-                <div @click.outside="isReportModalOpen = false" class="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[90vh] flex flex-col">
+                <div @click.outside="isReportModalOpen = false" class="bg-white rounded-lg shadow-xl w-[98%] max-h-[90vh] flex flex-col">
                     <div class="flex justify-between items-center border-b p-4">
                         <div class="flex items-center gap-4">
                             <img src="{{ Storage::disk('s3')->url('LogoAzul.png') }}" alt="Logo" class="h-10">
@@ -259,11 +259,17 @@
                         <template x-if="!isReportLoading && reportData">
                             <div class="space-y-6">
                                 {{-- Gráficos --}}
-                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div class="bg-white p-4 rounded-lg shadow-md border"><canvas id="reportChartStatus"></canvas></div>
-                                    <div class="bg-white p-4 rounded-lg shadow-md border"><canvas id="reportChartInvoices"></canvas></div>
-                                    <div class="bg-white p-4 rounded-lg shadow-md border"><canvas id="reportChartRegions"></canvas></div>
-                                </div>
+                                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        <div class="bg-white p-4 rounded-lg shadow-md border w-100 h-56"> <!-- 256px x 192px -->
+                                            <canvas id="reportChartStatus"></canvas>
+                                        </div>
+                                        <div class="bg-white p-4 rounded-lg shadow-md border w-100 h-56">
+                                            <canvas id="reportChartInvoices"></canvas>
+                                        </div>
+                                        <div class="bg-white p-4 rounded-lg shadow-md border w-100 h-56">
+                                            <canvas id="reportChartRegions"></canvas>
+                                        </div>
+                                    </div>
 
                                 {{-- Tabla de Datos --}}
                                 <div class="bg-white p-4 rounded-lg shadow-md border">

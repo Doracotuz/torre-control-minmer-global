@@ -28,6 +28,15 @@ class FolderController extends Controller
         $currentFolder = $folder;
         $searchQuery = $request->input('search');
 
+        $breadcrumbs = collect();
+        if ($currentFolder) {
+            $parent = $currentFolder->parent;
+            while ($parent) {
+                $breadcrumbs->prepend($parent);
+                $parent = $parent->parent;
+            }
+        }        
+
         $folderQuery = Folder::query();
         $fileLinkQuery = FileLink::query();
 
@@ -118,7 +127,7 @@ class FolderController extends Controller
             }
         }
 
-        return view('folders.index', compact('folders', 'currentFolder', 'fileLinks', 'searchQuery'));
+        return view('folders.index', compact('folders', 'currentFolder', 'fileLinks', 'searchQuery', 'breadcrumbs'));
     }
 
     /**
