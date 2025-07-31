@@ -21,7 +21,7 @@
                 display: flex;
                 align-items: center;
                 padding: 12px 16px;
-                border-radius: 8px;
+                border-radius: 5px;
                 font-weight: 500;
                 color: #e5e7eb;
                 transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
@@ -35,7 +35,7 @@
                 transform: translateY(-50%);
                 height: 0;
                 width: 4px;
-                background-color: #ff9c00;
+                background-color: #BECEF5;
                 border-radius: 2px;
                 transition: height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             }
@@ -49,10 +49,11 @@
             }
 
             .nav-link-custom.active-link {
-                background-color: #ff9c00;
+                background-color: #BECEF5;
                 color: #ffffff;
                 font-weight: 600;
-                box-shadow: 0 4px 12px rgba(255, 156, 0, 0.2);
+                color: #1F222B;
+                /* box-shadow: 0 4px 12px rgba(255, 156, 0, 0.2); */
             }
             .nav-link-custom.active-link::before {
                 height: 100%;
@@ -103,7 +104,7 @@
                 transition: background-color 0.3s ease;
             }
             .dropdown-toggle:hover {
-                background-color: rgba(255, 255, 255, 0.05);
+                background-color: rgba(255, 255, 255, 0.07);
                 color: #cbd5e0;
             }
             .dropdown-toggle .chevron-icon {
@@ -526,30 +527,27 @@ document.addEventListener('alpine:init', () => {
             <!-- <div class="w-64 bg-[#2c3856] text-white flex-col min-h-screen shadow-2xl relative z-10 hidden lg:flex"> -->
                 <div class="p-6 text-center">
                     <div class="logo-container py-4">
-                        <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" alt="Minmer Global Logo" class="h-20 mx-auto mb-3">
-                        <span class="text-xl font-extrabold text-white tracking-wide logo-text">CONTROL TOWER</span>
-                        <span class="text-xs text-gray-300 mt-1 block logo-subtitle">MINMER GLOBAL</span>
+                        <img src="{{ Storage::disk('s3')->url('escudoMinmer.png') }}" alt="Minmer Global Logo" class="h-20 mx-auto mb-3">
+                        <!-- <span class="text-xl font-extrabold text-white tracking-wide logo-text">CONTROL TOWER</span>
+                        <span class="text-xs text-gray-300 mt-1 block logo-subtitle">MINMER GLOBAL</span> -->
                     </div>
                 </div>
 
-                <div class="px-6"><div class="border-t border-white/10"></div></div>
+                <!-- <div class="px-6"><div class="border-t border-white/10"></div></div> -->
 
                 <nav class="flex-1 px-4 py-6 space-y-2">
                     {{-- ENLACE AL DASHBOARD (Visible para todos) --}}
                     @if(!Auth::user()->is_client)
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="nav-link-custom {{ request()->routeIs('dashboard') ? 'active-link' : '' }}">
-                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.2099 15.89C20.5737 17.3945 19.5787 18.7202 18.3118 19.7513C17.0449 20.7824 15.5447 21.4874 13.9424 21.8048C12.34 22.1221 10.6843 22.0421 9.12006 21.5718C7.55578 21.1014 6.13054 20.2551 4.96893 19.1067C3.80733 17.9582 2.94473 16.5428 2.45655 14.9839C1.96837 13.4251 1.86948 11.7705 2.16851 10.1646C2.46755 8.55878 3.15541 7.05063 4.17196 5.77203C5.18851 4.49343 6.5028 3.48332 7.99992 2.83M21.9999 12C21.9999 10.6868 21.7413 9.38642 21.2387 8.17317C20.7362 6.95991 19.9996 5.85752 19.071 4.92893C18.1424 4.00035 17.04 3.26375 15.8267 2.7612C14.6135 2.25866 13.3131 2 11.9999 2V12H21.9999Z" /></svg>
                         <span class="nav-text">{{ __('Dashboard') }}</span>
                     </x-nav-link>
                     @endif
                     @if (Auth::user()->is_client)
 
                         <x-nav-link :href="route('tablero.index')" :active="request()->routeIs('tablero.index')" class="nav-link-custom {{ request()->routeIs('tablero.index') ? 'active-link' : '' }}">
-                            {{-- Icono de Gráfico de Barras --}}
-                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                            </svg>
-                            <span class="nav-text">{{ __('Panel') }}</span>
+                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.2099 15.89C20.5737 17.3945 19.5787 18.7202 18.3118 19.7513C17.0449 20.7824 15.5447 21.4874 13.9424 21.8048C12.34 22.1221 10.6843 22.0421 9.12006 21.5718C7.55578 21.1014 6.13054 20.2551 4.96893 19.1067C3.80733 17.9582 2.94473 16.5428 2.45655 14.9839C1.96837 13.4251 1.86948 11.7705 2.16851 10.1646C2.46755 8.55878 3.15541 7.05063 4.17196 5.77203C5.18851 4.49343 6.5028 3.48332 7.99992 2.83M21.9999 12C21.9999 10.6868 21.7413 9.38642 21.2387 8.17317C20.7362 6.95991 19.9996 5.85752 19.071 4.92893C18.1424 4.00035 17.04 3.26375 15.8267 2.7612C14.6135 2.25866 13.3131 2 11.9999 2V12H21.9999Z" /></svg>
+                            <span class="nav-text">{{ __('Dashboard') }}</span>
                         </x-nav-link>
                     @endif                    
 
@@ -557,7 +555,7 @@ document.addEventListener('alpine:init', () => {
 
                     {{-- ENLACE A ARCHIVOS (Texto cambia para clientes) --}}
                     <x-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="nav-link-custom {{ request()->routeIs('folders.index') ? 'active-link' : '' }}">
-                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8V21H3V8M10 12H14M1 3H23V8H1V3Z" /></svg>
                         <span class="nav-text">
                             @if (Auth::user()->is_client)
                                 {{ __('Archivos') }}
@@ -571,17 +569,14 @@ document.addEventListener('alpine:init', () => {
                     @if (Auth::user()->is_client)
 
                         <x-nav-link :href="route('client.organigram.interactive')" :active="request()->routeIs('client.organigram.interactive')" class="nav-link-custom {{ request()->routeIs('client.organigram.interactive') ? 'active-link' : '' }}">
-                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
-                            </svg>
+                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
                             <span class="nav-text">{{ __('Organigrama') }}</span>
                         </x-nav-link>
 
                         {{-- ▼▼ BOTÓN DE TRACKING AÑADIDO ▼▼ --}}
                         <x-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="nav-link-custom {{ request()->routeIs('tracking.index') ? 'active-link' : '' }}" target="_blank" rel="noopener noreferrer">
                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 16V3H1V16H16ZM16 16H23V11L20 8H16V16ZM8 18.5C8 19.8807 6.88071 21 5.5 21C4.11929 21 3 19.8807 3 18.5C3 17.1193 4.11929 16 5.5 16C6.88071 16 8 17.1193 8 18.5ZM21 18.5C21 19.8807 19.8807 21 18.5 21C17.1193 21 16 19.8807 16 18.5C16 17.1193 17.1193 16 18.5 16C19.8807 16 21 17.1193 21 18.5Z" />
                             </svg>
                             <span class="nav-text">{{ __('Tracking') }}</span>
                         </x-nav-link>
@@ -671,11 +666,13 @@ document.addEventListener('alpine:init', () => {
             <div class="flex-1 flex flex-col bg-gray-100 w-full lg:w-auto">
                 @include('layouts.navigation', ['currentFolder' => $currentFolder ?? null])
                 @if (isset($header))
-                    <header class="bg-white shadow-sm">
-                        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">{{ $header }}</div>
-                    </header>
+<div class="bg-[#2C3856]">
+    <header class="bg-[#E8ECF7] rounded-tl-3xl">
+        <div class="w-[95%] py-6 pl-6 pr-4 sm:pl-8 lg:pl-10">{{ $header }}</div>
+    </header>
+</div>
                 @endif
-                <main class="flex-1 p-8">
+                <main class="bg-[#E8ECF7] flex-1 p-8">
                     @if (isset($slot))
                         {{ $slot }}
                     @else

@@ -1,71 +1,54 @@
 <x-guest-layout>
-    {{-- Estilos CSS para la animación del logotipo --}}
-    <style>
-        .logo-coin-flip {
-            transition: transform 0.8s;
-            transform-style: preserve-3d;
-        }
-
-        .logo-coin-flip:hover {
-            transform: rotateY(360deg);
-        }
-    </style>
-
-    <div class="flex flex-col items-center justify-center mb-6">
-        <img src="{{ Storage::disk('s3')->url('LogoAzul.png') }}" alt="Minmer Global Logo" class="h-32 mb-3 filter logo-coin-flip">
-        <h1 class="text-3xl font-extrabold text-[#2c3856] mb-1" style="font-family: 'Raleway', sans-serif;">CONTROL TOWER</h1>
-        <p class="text-sm text-gray-600" style="font-family: 'Montserrat', sans-serif;">MINMER GLOBAL</p>
-    </div>
-
-    <x-auth-session-status class="mb-4 text-center text-sm text-red-600" :status="session('status')" />
-
+    {{-- El logo y footer se eliminan de aquí, ya que los gestiona el layout --}}
+    
+    <h2 class="text-3xl font-bold text-gray-800 mb-8">Inicio de sesión</h2>
+    
     <form method="POST" action="{{ route('login') }}">
         @csrf
 
-        <div class="mb-5">
-            <x-input-label for="email" :value="__('Email')" class="text-gray-700 font-medium" />
-            <x-text-input id="email" class="block mt-2 w-full px-4 py-2 rounded-lg border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] transition-all duration-200 shadow-sm" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2 text-red-500 text-sm" />
-        </div>
-
+        {{-- Correo Electrónico --}}
         <div class="mb-6">
-            <x-input-label for="password" :value="__('Contraseña')" class="text-gray-700 font-medium" />
-            <x-text-input id="password" class="block mt-2 w-full px-4 py-2 rounded-lg border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] transition-all duration-200 shadow-sm"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-            <x-input-error :messages="$errors->get('password')" class="mt-2 text-red-500 text-sm" />
+            <label for="email" class="block mb-2 text-sm font-medium text-gray-600">Correo electrónico</label>
+            <div class="relative">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6M22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6M22 6L12 13L2 6" stroke="#2C3856" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <input id="email" type="email" name="email" required autocomplete="email" placeholder="Ingrese su correo electrónico"
+                       class="w-full px-4 py-3 pr-10 border-t-0 border-l-0 border-r-0 border-b-2 border-[#CAD2D9] rounded-t-lg rounded-b-none focus:ring-orange-500 focus:border-orange-500">
+                <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            </div>
         </div>
 
-        <div class="flex justify-between items-center mb-6">
-            <label for="remember_me" class="inline-flex items-center text-sm text-gray-600">
-                <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" name="remember">
-                <span class="ms-2">{{ __('Recordarme') }}</span>
-            </label>
-
-            @if (Route::has('password.request'))
-                <a class="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200 font-medium" href="{{ route('password.request') }}">
-                    {{ __('¿Olvidaste tu contraseña?') }}
-                </a>
-            @endif
-        </div>
-
-        <div class="flex items-center justify-center mt-6">
-            <button type="submit" class="w-full py-3 bg-[#ff9c00] text-white rounded-lg font-semibold text-lg uppercase tracking-wider hover:bg-orange-600 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-lg">
-                {{ __('Iniciar Sesión') }}
-            </button>
+        {{-- Contraseña --}}
+        <div class="mb-6">
+            <label for="password" class="block mb-2 text-sm font-medium text-gray-600">Contraseña</label>
+            <div class="relative">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20.9998 2L18.9998 4M18.9998 4L21.9998 7L18.4998 10.5L15.4998 7.5M18.9998 4L15.4998 7.5M11.3898 11.61C11.9061 12.1195 12.3166 12.726 12.5975 13.3948C12.8785 14.0635 13.0244 14.7813 13.0268 15.5066C13.0292 16.232 12.8882 16.9507 12.6117 17.6213C12.3352 18.2919 11.9288 18.9012 11.4159 19.4141C10.903 19.9271 10.2937 20.3334 9.62309 20.6099C8.95247 20.8864 8.23379 21.0275 7.50842 21.025C6.78305 21.0226 6.06533 20.8767 5.39658 20.5958C4.72782 20.3148 4.12125 19.9043 3.61179 19.388C2.60992 18.3507 2.05555 16.9614 2.06808 15.5193C2.08061 14.0772 2.65904 12.6977 3.67878 11.678C4.69853 10.6583 6.078 10.0798 7.52008 10.0673C8.96216 10.0548 10.3515 10.6091 11.3888 11.611L11.3898 11.61ZM11.3898 11.61L15.4998 7.5" stroke="#2C3856" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                    <input id="password" type="password" name="password" required autocomplete="current-password" placeholder="Ingrese su contraseña" class="w-full px-4 py-3 pr-10 border-t-0 border-l-0 border-r-0 border-b-2 border-[#E58C00] rounded-t-lg rounded-b-none focus:ring-orange-500 focus:border-orange-500">
+                    <x-input-error :messages="$errors->get('password')" class="mt-2" />
+            </div>
         </div>
         
+        {{-- Opciones --}}
+        <div class="flex items-center justify-between mb-8">
+            <label for="remember_me" class="flex items-center">
+                <input id="remember_me" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500" name="remember">
+                <span class="ml-2 text-sm text-gray-600">Recordarme</span>
+            </label>
+            <a href="{{ route('password.request') }}" class="text-sm text-blue-600 hover:underline font-medium">¿Olvidó su contraseña?</a>
+        </div>
+
+        {{-- Botón --}}
+        <div class="flex items-center justify-center">
+            <button type="submit" class="w-full flex items-center justify-center py-3.5 px-4 bg-[#FF9C00] hover:bg-orange-600 text[#2C3856] font-bold rounded-full focus:outline-none transition duration-300">
+                Iniciar sesión →
+            </button>
+        </div>
     </form>
-
-    <div class="mt-8 pt-6 border-t border-gray-200 text-center space-y-3">
-        <p class="text-sm text-gray-500 mb-4">© 2025 Minmer Global. Todos los derechos reservados.</p>
-        <p class="text-sm text-gray-600">
-            <a href="{{ route('terms.conditions') }}" class="text-blue-600 hover:text-blue-800 transition-colors duration-200 font-medium">Términos y Condiciones</a>
-        </p>
-        <p class="text-sm text-gray-600">
-            <a href="{{ route('privacy.policy') }}" class="text-blue-600 hover:text-blue-800 transition-colors duration-200 font-medium">Política de Privacidad</a>
-        </p>
-    </div>
-
 </x-guest-layout>

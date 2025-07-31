@@ -4,7 +4,7 @@
             <div>
                 <h2 class="text-2xl font-semibold text-gray-700">
                     @if ($currentFolder)
-                        <a href="{{ route('folders.index') }}" class="text-blue-600 hover:text-blue-800">Raíz</a>
+                        <a href="{{ route('tablero.index') }}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
                         @foreach ($breadcrumbs as $breadcrumb)
                             <span class="text-gray-500">/</span>
                             <a href="{{ route('folders.index', ['folder' => $breadcrumb->id]) }}" class="text-blue-600 hover:text-blue-800">{{ $breadcrumb->name }}</a>
@@ -13,20 +13,17 @@
                         <span class="text-gray-800">{{ $currentFolder->name }}</span>
                     @endif
                 </h2>
-                <span class="text-sm text-gray-500">
+                <span class="text-md text[#2C3856]">
                     Bienvenido, {{ Auth::user()->name }}
                 </span>
             </div>
             <div class="flex items-center space-x-4">
-                {{-- ▼▼ INICIO: CÓDIGO AÑADIDO Y MODIFICADO ▼▼ --}}
                 @if ($currentFolder)
-                    {{-- Botón nuevo "Ver Indicadores" --}}
-                    <a href="{{ route('indicadores.show', ['folder' => $currentFolder->id]) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-500 active:bg-blue-700 focus:outline-none focus:border-blue-700 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
+                    <a href="{{ route('indicadores.show', ['folder' => $currentFolder->id]) }}" class="inline-flex items-center px-4 py-2 bg-[#FF9C00] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#2C3856] active:bg-[#9CB3ED] focus:outline-none focus:border-blue-700 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
                         <svg class="w-4 h-4 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                         Ver Indicadores
                     </a>
                 @endif
-                {{-- ▲▲ FIN: CÓDIGO AÑADIDO Y MODIFICADO ▲▲ --}}
             </div>
         </div>
     </x-slot>
@@ -43,7 +40,7 @@
     </script>
 
     {{-- Main content wrapper, now with simple x-data reference --}}
-    <div class="py-6 sm:py-12 bg-gray-100" x-data="fileManager()">
+    <div class="py-6 sm:py-12 bg-[#E8ECF7]" x-data="fileManager()">
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             {{-- Notificaciones Flash (Estilo y Posición Mejorados) --}}
             <div id="flash-success"
@@ -72,7 +69,7 @@
             </div>
 
 
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-4 sm:p-8"
+            <div class="bg-[#F0F3FA] overflow-hidden shadow-xl rounded-[40px] border border-gray-200 p-4 sm:p-8"
                  @dragover.prevent="handleDragOver($event, {{ $currentFolder ? $currentFolder->id : 'null' }})"
                  @dragleave="handleDragLeave($event)"
                  @dragenter.self="handleMainDragEnter($event)"
@@ -119,7 +116,7 @@
                         </div>
                         {{-- Botón Eliminar Seleccionados --}}
                         <button @click="deleteSelected()" x-show="isAnySelected()"
-                                class="inline-flex items-center px-3 py-1.5 bg-red-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-wider hover:bg-red-700 focus:bg-red-700 active:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
+                                class="inline-flex items-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-wider hover:bg-red-700 focus:bg-red-700 active:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
                             <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             <span class="hidden sm:inline">{{ __('Eliminar Seleccionados') }}</span>
                             <span class="sm:hidden">{{ __('Eliminar') }}</span>
@@ -127,7 +124,7 @@
 
                         {{-- Botón Mover Seleccionados (NUEVO) --}}
                         <button @click="openMoveModal()" x-show="isAnySelected()"
-                                class="inline-flex items-center px-3 py-1.5 bg-blue-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-wider hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
+                                class="inline-flex items-center px-3 py-1.5 bg-[#BECEF5] border border-transparent rounded-full font-semibold text-xs text-black uppercase tracking-wider hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
                             <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
                             <span class="hidden sm:inline">{{ __('Mover Seleccionados') }}</span>
                             <span class="sm:hidden">{{ __('Mover') }}</span>
@@ -207,7 +204,7 @@
                          }">
                         {{-- Mosaicos de Carpetas --}}
                         @foreach ($folders as $folderItem)
-                            <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
+                            <div class="bg-white rounded-3xl shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
                                         hover:bg-gray-50 transform hover:scale-105 relative"
                                  draggable="true"
                                  x-on:dragstart="handleDragStart($event, {{ $folderItem->id }}, 'folder')"
@@ -228,7 +225,7 @@
                             >
                                 {{-- Checkbox para selección múltiple --}}
                                 <input type="checkbox"
-                                    class="absolute top-2 left-2 rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] z-10"
+                                    class="absolute top-2 left-2 rounded border-gray-300 text-[black] shadow-sm focus:ring-[black] z-10"
                                     @click.stop="toggleSelection({{ $folderItem->id }}, 'folder')"
                                     :checked="isSelected({{ $folderItem->id }}, 'folder')"
                                 >
@@ -238,9 +235,25 @@
                                    class="flex flex-col items-center justify-center w-full"
                                    onclick="event.stopPropagation()"
                                 >
-                                    <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-[#ff9c00] mb-2 sm:mb-3 group-hover:text-orange-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
-                                    </svg>
+                                    <div class="inline-flex items-center justify-center rounded-full bg-blue-100 p-2"
+                                        :class="{
+                                            'w-14 h-14': tileSize === 'small',
+                                            'w-20 h-20': tileSize === 'medium',
+                                            'w-24 h-24': tileSize === 'large'
+                                        }">
+                                        <svg :class="{
+                                                'w-8 h-8': tileSize === 'small',
+                                                'w-12 h-12': tileSize === 'medium',
+                                                'w-16 h-16': tileSize === 'large'
+                                            }" 
+                                            class="text-[Black] group-hover:text-orange-500 transition-colors duration-200" 
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24" 
+                                            xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                                        </svg>
+                                    </div>
                                     <span :class="{ 'text-base': tileSize === 'small', 'text-lg': tileSize === 'medium', 'text-xl': tileSize === 'large' }" class="font-semibold text-[#2c3856] mb-1 truncate w-full px-1 sm:px-2">
                                         {{ $folderItem->name }}
                                     </span>
@@ -305,7 +318,7 @@
                             >
                                 {{-- Checkbox para selección múltiple --}}
                                 <input type="checkbox"
-                                    class="absolute top-2 left-2 rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] z-10"
+                                    class="absolute top-2 left-2 rounded border-gray-300 text-[black] shadow-sm focus:ring-[black] z-10"
                                     @click.stop="toggleSelection({{ $fileLink->id }}, 'file_link')"
                                     :checked="isSelected({{ $fileLink->id }}, 'file_link')"
                                 >
@@ -383,7 +396,7 @@
                         {{-- Tabla para pantallas medianas y grandes --}}
                         <div class="overflow-x-auto hidden sm:block">
                             <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
+                                <thead class="bg-[#F0F3FA]">
                                     <tr>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">
                                             <input type="checkbox" @change="selectAll($event)"
@@ -407,7 +420,7 @@
                                         @endif
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
+                                <tbody class="bg-[#F8F9FD] divide-y divide-gray-200">
                                     @foreach ($folders as $folderItem)
                                         <tr class="hover:bg-gray-100 transition-colors duration-150"
                                             draggable="true"
@@ -429,14 +442,30 @@
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="flex items-center">
                                                     <input type="checkbox"
-                                                        class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2"
+                                                        class="rounded border-gray-300 text-[Black] shadow-sm focus:ring-[Black] mr-2"
                                                         @click.stop="toggleSelection({{ $folderItem->id }}, 'folder')"
                                                         :checked="isSelected({{ $folderItem->id }}, 'folder')"
                                                     >
                                                     <a href="{{ route('folders.index', $folderItem) }}" class="flex items-center" onclick="event.stopPropagation()">
-                                                        <svg class="w-7 h-7 text-[#ff9c00] mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
-                                                        </svg>
+                                                            <div class="inline-flex items-center justify-center rounded-full bg-blue-100 p-2"
+                                                                :class="{
+                                                                    'w-14 h-14': tileSize === 'small',
+                                                                    'w-20 h-20': tileSize === 'medium',
+                                                                    'w-24 h-24': tileSize === 'large'
+                                                                }">
+                                                                <svg :class="{
+                                                                        'w-8 h-8': tileSize === 'small',
+                                                                        'w-12 h-12': tileSize === 'medium',
+                                                                        'w-16 h-16': tileSize === 'large'
+                                                                    }" 
+                                                                    class="text-[Black] group-hover:text-orange-500 transition-colors duration-200" 
+                                                                    fill="none" 
+                                                                    stroke="currentColor" 
+                                                                    viewBox="0 0 24 24" 
+                                                                    xmlns="http://www.w3.org/2000/svg">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                                                                </svg>
+                                                            </div>
                                                         <span class="text-lg font-medium text-[#2c3856] truncate">{{ $folderItem->name }}</span>
                                                         <span class="ml-2 text-sm text-gray-500">({{ $folderItem->items_count ?? 0 }} elementos)</span>
                                                     </a>
@@ -565,13 +594,13 @@
                                 <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 p-4 relative">
                                     {{-- Checkbox para selección múltiple --}}
                                     <input type="checkbox"
-                                        class="absolute top-2 left-2 rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] z-10"
+                                        class="absolute top-2 left-2 rounded border-gray-300 text-[black] shadow-sm focus:ring-[black] z-10"
                                         @click.stop="toggleSelection({{ $folderItem->id }}, 'folder')"
                                         :checked="isSelected({{ $folderItem->id }}, 'folder')"
                                     >
                                     <div class="flex items-center space-x-3 mb-2">
                                         <a href="{{ route('folders.index', $folderItem) }}" class="flex items-center flex-shrink-0" onclick="event.stopPropagation()">
-                                            <svg class="w-7 h-7 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <svg class="w-7 h-7 text-[Black]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
                                             </svg>
                                         </a>
@@ -614,12 +643,12 @@
                                     $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
                                 @endphp
                                 <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 p-4 relative"
-                                     draggable="true" {{-- ¡AÑADIDO PARA HACER EL ARCHIVO ARRASTRABLE! --}}
-                                     x-on:dragstart="handleDragStart($event, {{ $fileLink->id }}, 'file_link')" {{-- ¡AÑADIDO Y MODIFICADO! --}}
+                                     draggable="true" {{--  --}}
+                                     x-on:dragstart="handleDragStart($event, {{ $fileLink->id }}, 'file_link')" {{--  --}}
                                 >
                                     {{-- Checkbox para selección múltiple --}}
                                     <input type="checkbox"
-                                        class="absolute top-2 left-2 rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] z-10"
+                                        class="absolute top-2 left-2 rounded border-gray-300 text-[black] shadow-sm focus:ring-[black] z-10"
                                         @click.stop="toggleSelection({{ $fileLink->id }}, 'file_link')"
                                         :checked="isSelected({{ $fileLink->id }}, 'file_link')"
                                     >
@@ -797,7 +826,7 @@
                                 <li class="flex items-center justify-between p-2 rounded-md hover:bg-gray-100 cursor-pointer"
                                     @click="browseMoveFolder(folder)">
                                     <div class="flex items-center">
-                                        <svg class="w-5 h-5 text-[#ff9c00] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                        <svg class="w-5 h-5 text-[Black] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
                                         <span class="text-gray-800" x-text="folder.name"></span>
                                     </div>
                                     <span class="text-xs text-gray-500" x-text="folder.items_count + ' elementos'"></span>

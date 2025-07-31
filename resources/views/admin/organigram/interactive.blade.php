@@ -72,7 +72,7 @@
     </style>
 
     {{-- Layout y Modales (sin cambios en la estructura principal del layout) --}}
-    <div class="bg-gray-100 w-full h-full flex flex-col p-6">
+    <div class="bg-[#E8ECF7] w-full h-full flex flex-col p-6">
         <div class="bg-white w-full h-full shadow-xl sm:rounded-lg border border-gray-200 flex flex-col">
             <div class="flex justify-between items-center p-4 border-b border-gray-200">
                 @if(!Auth::user()->is_client)

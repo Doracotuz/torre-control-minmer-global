@@ -30,12 +30,12 @@
          }
      })"
      @click.away="showSuggestions = false"
-     class="bg-white border-b border-gray-100 shadow-md relative z-20 sticky top-0">
-    {{-- Contenido de la barra de navegación (sin cambios) --}}
+     class="bg-[#2c3856] border-gray-100 relative z-20 sticky top-0">
+
     <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16 items-center">
             <div class="flex items-center space-x-2 sm:space-x-4">
-                <div class="flex items-center text-gray-700 text-sm font-medium">
+                <div class="flex items-center text-white text-sm font-medium">
                     @if (Auth::user()->area)
                         @php
                             $areaName = Auth::user()->area->name;
@@ -74,7 +74,7 @@
                     <input type="text" name="search" placeholder="Buscar documentos..."
                            x-model="search"
                            x-on:focus="showSuggestions = suggestions.length > 0 && search.length > 2"
-                           class="w-full pl-8 pr-2 py-1.5 sm:pl-10 sm:pr-4 sm:py-2 rounded-full border-2 border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] transition-all duration-300 ease-in-out shadow-sm
+                           class="w-full pl-8 pr-2 py-1.5 sm:pl-10 sm:pr-4 sm:py-2 rounded-md border-2 border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] transition-all duration-300 ease-in-out shadow-sm
                                   hover:border-[#2c3856] focus:shadow-lg text-sm sm:text-base"
                            value="{{ request('search') }}">
                     <button type="submit" class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#2c3856] sm:left-3">
@@ -112,7 +112,7 @@
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                        <button class="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white hover:text-gray-200 focus:outline-none transition ease-in-out duration-150">
                             @if (Auth::user()->profile_photo_path)
                                 <img class="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover mr-2 object-center" src="{{ Storage::disk('s3')->url(Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()->name }}">
                             @else
@@ -134,7 +134,7 @@
             </div>
 
             <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
+                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-white hover:text-gray-200 hover:bg-gray-700 focus:outline-none focus:bg-gray-700 focus:text-gray-200 transition duration-150 ease-in-out">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

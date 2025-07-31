@@ -1,16 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Tablero General') }}
+            {{ __('Dashboard ') }}
         </h2>
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-12">
+        <div class="max-w-10xl mx-auto sm:px-6 lg:px-8 space-y-12">
 
             {{-- 1. SECCIÓN DE ÁREAS ACCESIBLES --}}
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                <div class="p-6 sm:px-10 bg-white border-b border-gray-200">
+            <div class="bg-[#FFF1DC] overflow-hidden shadow-xl rounded-[40px]">
+                <div class="bg-[#FFF1DC] p-6 sm:px-10 border-gray-200">
                     <h3 class="text-2xl font-bold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">Áreas Disponibles</h3>
                     <p class="mt-2 text-gray-500">Acceso rápido a las áreas de tus proyectos principales.</p>
                 </div>
@@ -18,7 +18,7 @@
                 <div class="p-6 sm:p-10">
                     {{-- Usa la variable correcta: $accessibleRootFolders --}}
                     @if($accessibleRootFolders->isNotEmpty())
-                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                             @foreach($accessibleRootFolders as $folder)
                                 {{-- El enlace ahora apunta a la ruta de las carpetas, pasando el ID de la carpeta --}}
                                 <a href="{{ route('folders.index', ['folder' => $folder->id]) }}" class="group block p-6 bg-gray-50 rounded-xl border border-gray-200 hover:bg-[#ff9c00] hover:border-[#ff9c00] transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-2xl">
@@ -42,8 +42,8 @@
             </div>
 
 
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                <div class="p-6 sm:px-10 bg-white border-b border-gray-200">
+            <div class="bg-white overflow-hidden shadow-xl rounded-[40px]">
+                <div class="p-6 sm:px-10 bg-white border-gray-200">
                     <h3 class="text-2xl font-bold text-[#2c3856]">Indicadores Clave de Rendimiento</h3>
                 </div>
                 <div class="p-6 sm:p-10">
@@ -71,7 +71,7 @@
 
             {{-- 3. SECCIÓN PARA CARGAR PLANTILLAS --}}
             @if(Auth::user()->is_area_admin && Auth::user()->area?->name === 'Administración')
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+            <div class="bg-white overflow-hidden shadow-xl rounded-[40px]">
                 <div class="p-6 sm:px-10 bg-white border-b border-gray-200">
                     <h3 class="text-2xl font-bold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">Actualizar Datos de KPIs</h3>
                 </div>

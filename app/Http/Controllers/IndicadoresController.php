@@ -21,12 +21,13 @@ class IndicadoresController extends Controller
             'Recursos Humanos' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
             'Customer Service' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
             'Tráfico' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
-            'Almacén' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
+            'Almacén' => 'https://app.powerbi.com/view?r=eyJrIjoiZTU5MjliODQtMzZiYy00NTkwLWExMGYtOTZlM2FkYzYxYmE3IiwidCI6IjBlMjk4MTZlLTExNmUtNGFiMi1iZjQyLWQyYjgxNWU4NjI4NCIsImMiOjR9',
             'Valor Agregado' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
             'Innovación y Desarrollo' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
             'Administración' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
             'Tráfico Importaciones' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
             'Proyectos' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
+            'Brokerage' => 'https://app.powerbi.com/view?r=eyJrIjoiNDJiMjNiMjgtZjAxMC00ZDdlLThhZTQtNGNjNzI3ZDUzNWU3IiwidCI6IjBlMjk4MTZlLTExNmUtNGFiMi1iZjQyLWQyYjgxNWU4NjI4NCIsImMiOjR9',
             // Añade aquí todas las demás áreas y sus URLs correspondientes
         ];
 

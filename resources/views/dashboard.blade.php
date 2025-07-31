@@ -5,7 +5,7 @@
         </h2>
     </x-slot>
 
-    <div class="py-12 bg-gray-100">
+    <div class="py-12 bg-[#E8ECF7]">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-8"> {{-- Contenedor principal con sombra y padding --}}
                 <h3 class="text-2xl font-extrabold text-[#2c3856] mb-8 text-center" style="font-family: 'Raleway', sans-serif;">{{ __('Métricas Generales de la Torre de Control') }}</h3>
