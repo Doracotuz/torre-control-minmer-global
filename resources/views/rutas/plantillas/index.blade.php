@@ -67,7 +67,7 @@
                     </div>
                 </div>
 
-                <div class="bg-[#E8ECF7] rounded-lg shadow-md sticky top-8">
+                <div class="bg-[#E8ECF7] rounded-lg sticky top-8">
                     <div id="map-panel" class="w-full h-[80vh] rounded-lg bg-gray-200"></div>
                 </div>
             </div>
