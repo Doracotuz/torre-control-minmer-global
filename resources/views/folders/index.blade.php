@@ -4,7 +4,11 @@
             <div>
                 <h2 class="text-2xl font-semibold text-gray-700">
                     @if ($currentFolder)
+                        @if (!Auth::user()->is_client)
+                        <a href="{{ route('folders.index') }}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
+                        @else
                         <a href="{{ route('tablero.index') }}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
+                        @endif
                         @foreach ($breadcrumbs as $breadcrumb)
                             <span class="text-gray-500">/</span>
                             <a href="{{ route('folders.index', ['folder' => $breadcrumb->id]) }}" class="text-blue-600 hover:text-blue-800">{{ $breadcrumb->name }}</a>

@@ -18,7 +18,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                             @foreach($accessibleRootFolders as $folder)
                                 <a href="{{ route('folders.index', ['folder' => $folder->id]) }}" class="group bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-2">
-                                    <div class="bg-gray-100 p-6 rounded-full transition-colors duration-300 group-hover:bg-[#ff9c00]">
+                                    <div class="bg-[#DFE5F5] p-6 rounded-full transition-colors duration-300 group-hover:bg-[#ff9c00]">
                                         @if($folder->area?->icon_path)
                                             <img src="{{ Storage::disk('s3')->url($folder->area->icon_path) }}" alt="Icono de {{ $folder->area->name }}" class="w-12 h-12 object-contain">
                                         @else

@@ -17,15 +17,15 @@ class IndicadoresController extends Controller
 
         // URLs para insertar reportes.
         $powerBiUrls = [
-            'Recursos Humanos' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
-            'Customer Service' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
-            'Tráfico' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
+            'Recursos Humanos' => 'https://app.powerbi.com/view?r=eyJrIjoiYTA5Y2RlNTgtYWFmZS00YmVkLWE4YmUtMTNhNTc0ZDIxM2ExIiwidCI6IjBlMjk4MTZlLTExNmUtNGFiMi1iZjQyLWQyYjgxNWU4NjI4NCIsImMiOjR9',
+            'Customer Service' => 'https://app.powerbi.com/reportEmbed?reportId=e028adcd-c4e7-41bc-ac4d-824d5b6c41c6&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
+            'Tráfico' => 'https://app.powerbi.com/reportEmbed?reportId=e028adcd-c4e7-41bc-ac4d-824d5b6c41c6&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
             'Almacén' => 'https://app.powerbi.com/view?r=eyJrIjoiZTU5MjliODQtMzZiYy00NTkwLWExMGYtOTZlM2FkYzYxYmE3IiwidCI6IjBlMjk4MTZlLTExNmUtNGFiMi1iZjQyLWQyYjgxNWU4NjI4NCIsImMiOjR9',
-            'Valor Agregado' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
-            'Innovación y Desarrollo' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
-            'Administración' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
-            'Tráfico Importaciones' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
-            'Proyectos' => 'https://app.powerbi.com/reportEmbed?reportId=2bf89056-692c-40ec-910e-6ced646e8c82&autoAuth=true&ctid=0e29816e-116e-4ab2-bf42-d2b815e86284',
+            'Valor Agregado' => 'https://app.powerbi.com/view?r=eyJrIjoiYmQ3ZDQyZDctOThlMS00ZjdmLWI3ZDMtZmZkZDYwMGIwMjdiIiwidCI6IjBlMjk4MTZlLTExNmUtNGFiMi1iZjQyLWQyYjgxNWU4NjI4NCIsImMiOjR9',
+            'Innovación y Desarrollo' => '',
+            'Administración' => '',
+            'Tráfico Importaciones' => '',
+            'Proyectos' => '',
             'Brokerage' => 'https://app.powerbi.com/view?r=eyJrIjoiNDJiMjNiMjgtZjAxMC00ZDdlLThhZTQtNGNjNzI3ZDUzNWU3IiwidCI6IjBlMjk4MTZlLTExNmUtNGFiMi1iZjQyLWQyYjgxNWU4NjI4NCIsImMiOjR9',
         ];
 
