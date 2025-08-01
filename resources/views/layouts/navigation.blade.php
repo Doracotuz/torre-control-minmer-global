@@ -59,12 +59,19 @@
                         @endphp
                         
                         @if ($areaCustomIconPath)
-                            <img src="{{ Storage::disk('s3')->url($areaCustomIconPath) }}" alt="{{ $areaName }} Icon" class="h-5 w-5 sm:h-6 sm:w-6 mr-3 object-contain">
+                            <div class="flex items-center justify-center rounded-full p-1.5 mr-3" style="background-color: #DFE5F5;">
+                                <img 
+                                    src="{{ Storage::disk('s3')->url($areaCustomIconPath) }}" 
+                                    alt="{{ $areaName }} Icon" 
+                                    class="h-4 w-4 sm:h-5 sm:w-5 object-contain"
+                                    style="filter: brightness(0) saturate(100%) invert(15%) sepia(15%) saturate(1000%) hue-rotate(180deg) brightness(90%) contrast(90%);"
+                                >
+                            </div>
                         @else
                             {!! $areaIconSvg !!}
                         @endif
 
-                        <span class="text-[#2c3856] text-base sm:text-lg font-semibold" style="font-family: 'Raleway', sans-serif;">{{ $areaName }}</span>
+                        <span class="text-white text-base sm:text-lg font-semibold" style="font-family: 'Raleway', sans-serif;">{{ $areaName }}</span>
                     @endif
                 </div>
             </div>
