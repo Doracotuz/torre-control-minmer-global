@@ -9,7 +9,7 @@
         <div class="max-w-10xl mx-auto sm:px-6 lg:px-8 space-y-12">
 
             {{-- 1. SECCIÓN DE ÁREAS ACCESIBLES --}}
-            <div class="bg-white overflow-hidden shadow-xl rounded-[40px] p-6 sm:p-10">
+            <div class="bg-[#FFF1DC] overflow-hidden shadow-xl rounded-[40px] p-6 sm:p-10">
                 <h3 class="text-2xl font-bold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">Áreas Disponibles</h3>
                 <p class="mt-2 text-gray-500">Acceso rápido a las áreas de tus proyectos principales.</p>
 
@@ -43,8 +43,8 @@
             </div>
 
 
-            <div class="bg-white overflow-hidden shadow-xl rounded-[40px]">
-                <div class="p-6 sm:px-10 bg-white border-gray-200">
+            <div class="bg-[#F0F3FA] overflow-hidden shadow-xl rounded-[40px]">
+                <div class="p-6 sm:px-10 bg-[#F0F3FA] border-gray-200">
                     <h3 class="text-2xl font-bold text-[#2c3856]">Indicadores Clave de Rendimiento</h3>
                 </div>
                 <div class="p-6 sm:p-10">
