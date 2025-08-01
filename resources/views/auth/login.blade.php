@@ -1,12 +1,10 @@
 <x-guest-layout>
-    {{-- El logo y footer se eliminan de aquí, ya que los gestiona el layout --}}
     
     <h2 class="text-3xl font-bold text-gray-800 mb-8">Inicio de sesión</h2>
     
     <form method="POST" action="{{ route('login') }}">
         @csrf
 
-        {{-- Correo Electrónico --}}
         <div class="mb-6">
             <label for="email" class="block mb-2 text-sm font-medium text-gray-600">Correo electrónico</label>
             <div class="relative">
@@ -21,7 +19,6 @@
             </div>
         </div>
 
-        {{-- Contraseña --}}
         <div class="mb-6">
             <label for="password" class="block mb-2 text-sm font-medium text-gray-600">Contraseña</label>
             <div class="relative">
@@ -35,7 +32,6 @@
             </div>
         </div>
         
-        {{-- Opciones --}}
         <div class="flex items-center justify-between mb-8">
             <label for="remember_me" class="flex items-center">
                 <input id="remember_me" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500" name="remember">
@@ -44,7 +40,6 @@
             <a href="{{ route('password.request') }}" class="text-sm text-blue-600 hover:underline font-medium">¿Olvidó su contraseña?</a>
         </div>
 
-        {{-- Botón --}}
         <div class="flex items-center justify-center">
             <button type="submit" class="w-full flex items-center justify-center py-3.5 px-4 bg-[#FF9C00] hover:bg-orange-600 text[#2C3856] font-bold rounded-full focus:outline-none transition duration-300">
                 Iniciar sesión →

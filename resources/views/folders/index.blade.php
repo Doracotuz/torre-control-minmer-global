@@ -109,10 +109,12 @@
                     <div class="flex flex-wrap items-center justify-start sm:justify-end gap-3">
                         {{-- Casilla de verificación "Seleccionar Todos" - AHORA SIEMPRE VISIBLE --}}
                         <div class="flex items-center">
+                            @if(!Auth::user()->is_client)
                             <input type="checkbox" @change="selectAll($event)"
                                    :checked="selectedItems.length > 0 && selectedItems.length === ({{ count($folders) }} + {{ count($fileLinks) }})"
                                    class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
                             <label class="text-sm text-gray-700">{{ __('Seleccionar Todos') }}</label>
+                            @endif
                         </div>
                         {{-- Botón Eliminar Seleccionados --}}
                         <button @click="deleteSelected()" x-show="isAnySelected()"
@@ -224,12 +226,13 @@
                                  x-data="{ showDetails: false }"
                             >
                                 {{-- Checkbox para selección múltiple --}}
+                                @if(!Auth::user()->is_client)
                                 <input type="checkbox"
                                     class="absolute top-2 left-2 rounded border-gray-300 text-[black] shadow-sm focus:ring-[black] z-10"
                                     @click.stop="toggleSelection({{ $folderItem->id }}, 'folder')"
                                     :checked="isSelected({{ $folderItem->id }}, 'folder')"
                                 >
-
+                                @endif
                                 {{-- ENVOLVER ICONO Y NOMBRE EN UN <a> PARA LA ACCIÓN PRINCIPAL --}}
                                 <a href="{{ route('folders.index', $folderItem) }}"
                                    class="flex flex-col items-center justify-center w-full"
@@ -317,11 +320,13 @@
                                  x-data="{ showDetails: false }"
                             >
                                 {{-- Checkbox para selección múltiple --}}
+                                @if(!Auth::user()->is_client)
                                 <input type="checkbox"
                                     class="absolute top-2 left-2 rounded border-gray-300 text-[black] shadow-sm focus:ring-[black] z-10"
                                     @click.stop="toggleSelection({{ $fileLink->id }}, 'file_link')"
                                     :checked="isSelected({{ $fileLink->id }}, 'file_link')"
                                 >
+                                @endif
 
                                 {{-- CAMBIO AQUÍ: Añadido el atributo download="{{ $fileLink->name }}" para el caso de descarga --}}
                                 <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
@@ -399,9 +404,11 @@
                                 <thead class="bg-[#F0F3FA]">
                                     <tr>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">
+                                            @if(!Auth::user()->is_client)
                                             <input type="checkbox" @change="selectAll($event)"
                                                    :checked="selectedItems.length > 0 && selectedItems.length === ({{ count($folders) }} + {{ count($fileLinks) }})"
                                                    class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
+                                            @endif
                                             {{ __('Nombre del Elemento') }}
                                         </th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -441,11 +448,13 @@
                                         >
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="flex items-center">
+                                                    @if(!Auth::user()->is_client)
                                                     <input type="checkbox"
                                                         class="rounded border-gray-300 text-[Black] shadow-sm focus:ring-[Black] mr-2"
                                                         @click.stop="toggleSelection({{ $folderItem->id }}, 'folder')"
                                                         :checked="isSelected({{ $folderItem->id }}, 'folder')"
                                                     >
+                                                    @endif
                                                     <a href="{{ route('folders.index', $folderItem) }}" class="flex items-center" onclick="event.stopPropagation()">
                                                             <div class="inline-flex items-center justify-center rounded-full bg-blue-100 p-2"
                                                                 :class="{
@@ -519,11 +528,13 @@
                                         >
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="flex items-center">
+                                                    @if(!Auth::user()->is_client)
                                                     <input type="checkbox"
                                                         class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2"
                                                         @click.stop="toggleSelection({{ $fileLink->id }}, 'file_link')"
                                                         :checked="isSelected({{ $fileLink->id }}, 'file_link')"
                                                     >
+                                                    @endif
                                                     {{-- CAMBIO AQUÍ: Añadido el atributo download="{{ $fileLink->name }}" para el caso de descarga --}}
                                                     <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
                                                        @if ($fileLink->type == 'file' && !$isImage && !$isPdf) download="{{ $fileLink->name }}" @endif
@@ -593,11 +604,13 @@
                             @foreach ($folders as $folderItem)
                                 <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 p-4 relative">
                                     {{-- Checkbox para selección múltiple --}}
+                                    @if(!Auth::user()->is_client)
                                     <input type="checkbox"
                                         class="absolute top-2 left-2 rounded border-gray-300 text-[black] shadow-sm focus:ring-[black] z-10"
                                         @click.stop="toggleSelection({{ $folderItem->id }}, 'folder')"
                                         :checked="isSelected({{ $folderItem->id }}, 'folder')"
                                     >
+                                    @endif
                                     <div class="flex items-center space-x-3 mb-2">
                                         <a href="{{ route('folders.index', $folderItem) }}" class="flex items-center flex-shrink-0" onclick="event.stopPropagation()">
                                             <svg class="w-7 h-7 text-[Black]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -647,11 +660,13 @@
                                      x-on:dragstart="handleDragStart($event, {{ $fileLink->id }}, 'file_link')" {{--  --}}
                                 >
                                     {{-- Checkbox para selección múltiple --}}
+                                    @if(!Auth::user()->is_client)
                                     <input type="checkbox"
                                         class="absolute top-2 left-2 rounded border-gray-300 text-[black] shadow-sm focus:ring-[black] z-10"
                                         @click.stop="toggleSelection({{ $fileLink->id }}, 'file_link')"
                                         :checked="isSelected({{ $fileLink->id }}, 'file_link')"
                                     >
+                                    @endif
                                     <div class="flex items-center space-x-3 mb-2">
                                         {{-- CAMBIO AQUÍ: Añadido el atributo download="{{ $fileLink->name }}" para el caso de descarga --}}
                                         <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"

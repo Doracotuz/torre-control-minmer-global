@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -28,32 +29,50 @@ class TableroController extends Controller
             $mesesOrden = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
             $zonas = $kpiGeneralesData->pluck('zona')->unique()->sort()->values();
             $años = $kpiGeneralesData->pluck('ano')->unique()->sort()->values();
-            $colores = ['#2c3856', '#ff9c00', '#4a5d8c', '#ffc107', '#6c757d'];
+            $colores = ['#2c3856', '#ff9c00', '#4a5d8c', '#ffc107', '#6c757d', '#f86c6b', '#20c997'];
 
-            // ▼▼ CORRECCIÓN AQUÍ: Se añade "use ($colores)" ▼▼
             $pivotData = function($data, $filtroConcepto, $groupByCol, $seriesCol, $valueCol, $labels) use ($colores) {
                 $datasets = [];
-                $seriesValues = $data->where('concepto', $filtroConcepto)->pluck($seriesCol)->unique()->sort()->values();
+                $seriesValues = $data->where('concepto', 'like', $filtroConcepto)->pluck($seriesCol)->unique()->sort()->values();
                 
                 foreach($seriesValues as $index => $serie) {
-                    $pivoted = $data->where('concepto', $filtroConcepto)->where($seriesCol, $serie)->groupBy($groupByCol)->map(fn($group) => $group->sum($valueCol));
+                    $pivoted = $data->where('concepto', 'like', $filtroConcepto)->where($seriesCol, $serie)->groupBy($groupByCol)->map(fn($group) => $group->sum($valueCol));
                     $datasetData = $labels->map(fn($label) => $pivoted->get($label, 0))->values();
                     $datasets[] = [
-                        'label' => $serie,
-                        'data' => $datasetData,
-                        'borderColor' => $colores[$index % count($colores)],
+                        'label'           => $serie,
+                        'data'            => $datasetData,
+                        'borderColor'     => $colores[$index % count($colores)],
                         'backgroundColor' => $colores[$index % count($colores)],
-                        'tension' => 0.1,
-                        'fill' => false,
+                        'tension'         => 0.4, // Interpolación suave
+                        'fill'            => false,
                     ];
                 }
                 return ['labels' => $labels, 'datasets' => $datasets];
+            };
+            
+            $doughnutData = function($data, $filtroConcepto, $labelCol, $valueCol) use ($colores) {
+                $pivoted = $data->where('concepto', 'like', $filtroConcepto)
+                                ->groupBy($labelCol)
+                                ->map(fn($group) => $group->sum($valueCol));
+
+                $labels = $pivoted->keys()->sort()->values();
+                $datasetData = $labels->map(fn($label) => $pivoted->get($label, 0))->values();
+                $bgColors = $labels->map(fn($label, $index) => $colores[$index % count($colores)])->values();
+
+                return [
+                    'labels' => $labels,
+                    'datasets' => [[
+                        'data' => $datasetData,
+                        'backgroundColor' => $bgColors,
+                        'borderColor' => '#ffffff',
+                    ]]
+                ];
             };
 
             // --- KPIGENERALES ---
             $chartData['embarquesPorZonaAño'] = $pivotData($kpiGeneralesData, 'Cantidad de embarques', 'zona', 'ano', 'cantidad', $zonas);
             $chartData['expeditadosPorZonaAño'] = $pivotData($kpiGeneralesData, 'Expeditados requeridos por cliente', 'zona', 'ano', 'cantidad', $zonas);
-            $chartData['documentosPorZonaAño'] = $pivotData($kpiGeneralesData, 'Documentos', 'zona', 'ano', 'cantidad', $zonas);
+            $chartData['documentosPorZonaAño'] = $doughnutData($kpiGeneralesData, 'Documentos', 'zona', 'cantidad'); // Gráfico de dona
             $chartData['embarquesPorMesZona'] = $pivotData($kpiGeneralesData, 'Cantidad de embarques', 'mes', 'zona', 'cantidad', collect($mesesOrden));
             $chartData['expeditadosPorMesZona'] = $pivotData($kpiGeneralesData, 'Expeditados requeridos por cliente', 'mes', 'zona', 'cantidad', collect($mesesOrden));
             

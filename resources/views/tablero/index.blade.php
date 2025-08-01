@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Dashboard ') }}
+            {{ __('Dashboard') }}
         </h2>
     </x-slot>
 
@@ -9,29 +9,30 @@
         <div class="max-w-10xl mx-auto sm:px-6 lg:px-8 space-y-12">
 
             {{-- 1. SECCIÓN DE ÁREAS ACCESIBLES --}}
-            <div class="bg-[#FFF1DC] overflow-hidden shadow-xl rounded-[40px]">
-                <div class="bg-[#FFF1DC] p-6 sm:px-10 border-gray-200">
-                    <h3 class="text-2xl font-bold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">Áreas Disponibles</h3>
-                    <p class="mt-2 text-gray-500">Acceso rápido a las áreas de tus proyectos principales.</p>
-                </div>
+            <div class="bg-white overflow-hidden shadow-xl rounded-[40px] p-6 sm:p-10">
+                <h3 class="text-2xl font-bold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">Áreas Disponibles</h3>
+                <p class="mt-2 text-gray-500">Acceso rápido a las áreas de tus proyectos principales.</p>
 
-                <div class="p-6 sm:p-10">
-                    {{-- Usa la variable correcta: $accessibleRootFolders --}}
+                <div class="mt-8">
                     @if($accessibleRootFolders->isNotEmpty())
-                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                             @foreach($accessibleRootFolders as $folder)
-                                {{-- El enlace ahora apunta a la ruta de las carpetas, pasando el ID de la carpeta --}}
-                                <a href="{{ route('folders.index', ['folder' => $folder->id]) }}" class="group block p-6 bg-gray-50 rounded-xl border border-gray-200 hover:bg-[#ff9c00] hover:border-[#ff9c00] transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-2xl">
-                                    <div class="flex justify-center mb-4">
-                                        {{-- El ícono se toma del área asociada a la carpeta --}}
+                                <a href="{{ route('folders.index', ['folder' => $folder->id]) }}" class="group bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-2">
+                                    <div class="bg-gray-100 p-6 rounded-full transition-colors duration-300 group-hover:bg-[#ff9c00]">
                                         @if($folder->area?->icon_path)
-                                            <img src="{{ Storage::disk('s3')->url($folder->area->icon_path) }}" alt="Icono de {{ $folder->area->name }}" class="h-16 w-16 object-contain transition-transform duration-300 group-hover:scale-110">
+                                            <img src="{{ Storage::disk('s3')->url($folder->area->icon_path) }}" alt="Icono de {{ $folder->area->name }}" class="w-12 h-12 object-contain">
                                         @else
-                                            {{-- Icono por defecto si el área no tiene uno --}}
-                                            <svg class="h-16 w-16 text-gray-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                            <svg class="w-12 h-12 text-[#2c3856] transition-colors duration-300 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+                                            </svg>
                                         @endif
                                     </div>
-                                    <h4 class="text-center font-bold text-lg text-[#2c3856] group-hover:text-white">{{ $folder->area?->name ?? $folder->name }}</h4>
+                                    <h4 class="mt-4 text-lg font-semibold text-[#2c3856]">
+                                        {{ $folder->area?->name ?? $folder->name }}
+                                    </h4>
+                                    <!-- <p class="mt-2 text-sm text-gray-600">
+                                        Accede a los archivos y documentos de esta área.
+                                    </p> -->
                                 </a>
                             @endforeach
                         </div>
@@ -51,16 +52,37 @@
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             {{-- Columna Izquierda --}}
                             <div class="space-y-8">
-                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Embarques por Zona (por Año)</h4><canvas id="graficoEmbarquesZona"></canvas></div>
-                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Expeditados por Zona (por Año)</h4><canvas id="graficoExpeditadosZona"></canvas></div>
-                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Documentos por Zona (por Año)</h4><canvas id="graficoDocumentosZona"></canvas></div>
-                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Entregas a Tiempo por Zona (por Año)</h4><canvas id="graficoTiempoZona"></canvas></div>
+                                <div class="p-4 border rounded-lg shadow-md">
+                                    <h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Embarques por Zona (por Año)</h4>
+                                    <div class="relative h-80"><canvas id="graficoEmbarquesZona"></canvas></div>
+                                </div>
+                                <div class="p-4 border rounded-lg shadow-md">
+                                    <h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Documentos por Zona</h4>
+                                    <div class="relative h-80"><canvas id="graficoDocumentosZona"></canvas></div>
+                                </div>
+                                <div class="p-4 border rounded-lg shadow-md">
+                                    <h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Expeditados por Zona (por Año)</h4>
+                                    <div class="relative h-80"><canvas id="graficoExpeditadosZona"></canvas></div>
+                                </div>
+                                <div class="p-4 border rounded-lg shadow-md">
+                                    <h4 class="text-center font-semibold text-gray-600 mb-2">Entregas a Tiempo por Zona (por Año)</h4>
+                                    <div class="relative h-80"><canvas id="graficoTiempoZona"></canvas></div>
+                                </div>
                             </div>
                             {{-- Columna Derecha --}}
                             <div class="space-y-8">
-                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Embarques por Mes (por Zona)</h4><canvas id="graficoEmbarquesMes"></canvas></div>
-                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Expeditados por Mes (por Zona)</h4><canvas id="graficoExpeditadosMes"></canvas></div>
-                                <div class="p-4 border rounded-lg shadow-md"><h4 class="text-center font-semibold text-gray-600 mb-2">Entregas a Tiempo por Mes (por Año)</h4><canvas id="graficoTiempoMes"></canvas></div>
+                                <div class="p-4 border rounded-lg shadow-md">
+                                    <h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Embarques por Mes (por Zona)</h4>
+                                    <div class="relative h-80"><canvas id="graficoEmbarquesMes"></canvas></div>
+                                </div>
+                                <div class="p-4 border rounded-lg shadow-md">
+                                    <h4 class="text-center font-semibold text-gray-600 mb-2">Cantidad de Expeditados por Mes (por Zona)</h4>
+                                    <div class="relative h-80"><canvas id="graficoExpeditadosMes"></canvas></div>
+                                </div>
+                                <div class="p-4 border rounded-lg shadow-md">
+                                    <h4 class="text-center font-semibold text-gray-600 mb-2">Entregas a Tiempo por Mes (por Año)</h4>
+                                    <div class="relative h-80"><canvas id="graficoTiempoMes"></canvas></div>
+                                </div>
                             </div>
                         </div>
                     @else
@@ -107,25 +129,16 @@
             const chartData = @json($chartData ?? []);
             if (Object.keys(chartData).length === 0) return;
 
-            // --- GRÁFICOS CON TIPOS VARIADOS ---
+            const chartOptions = { responsive: true, maintainAspectRatio: false };
 
-            // CAMBIO: De 'line' a 'bar' para comparar mejor las zonas.
-            new Chart(document.getElementById('graficoEmbarquesZona'),{type:'bar', data: chartData.embarquesPorZonaAño, options:{responsive:true}});
-
-            // CAMBIO: De 'line' a 'bar' para comparar mejor las zonas.
-            new Chart(document.getElementById('graficoExpeditadosZona'),{type:'bar', data: chartData.expeditadosPorZonaAño, options:{responsive:true}});
+            new Chart(document.getElementById('graficoEmbarquesZona'),{type:'bar', data: chartData.embarquesPorZonaAño, options: chartOptions });
+            new Chart(document.getElementById('graficoExpeditadosZona'),{type:'bar', data: chartData.expeditadosPorZonaAño, options: chartOptions });
+            new Chart(document.getElementById('graficoDocumentosZona'),{type:'doughnut', data: chartData.documentosPorZonaAño, options: chartOptions });
+            new Chart(document.getElementById('graficoTiempoZona'),{type:'bar', data: chartData.tiempoPorZonaAño, options: chartOptions });
             
-            // CAMBIO: De 'line' a 'bar' para comparar mejor las zonas.
-            new Chart(document.getElementById('graficoDocumentosZona'),{type:'bar', data: chartData.documentosPorZonaAño, options:{responsive:true}});
-
-            // SIN CAMBIO: Las barras son adecuadas para esta comparación.
-            new Chart(document.getElementById('graficoTiempoZona'),{type:'bar', data: chartData.tiempoPorZonaAño, options:{responsive:true}});
-            
-            // SIN CAMBIO: Las líneas son ideales para mostrar tendencias por mes.
-            new Chart(document.getElementById('graficoEmbarquesMes'),{type:'line', data: chartData.embarquesPorMesZona, options:{responsive:true}});
-            new Chart(document.getElementById('graficoExpeditadosMes'),{type:'line', data: chartData.expeditadosPorMesZona, options:{responsive:true}});
-            new Chart(document.getElementById('graficoTiempoMes'),{type:'line', data: chartData.tiempoPorMesAño, options:{responsive:true}});
+            new Chart(document.getElementById('graficoEmbarquesMes'),{type:'line', data: chartData.embarquesPorMesZona, options: chartOptions });
+            new Chart(document.getElementById('graficoExpeditadosMes'),{type:'line', data: chartData.expeditadosPorMesZona, options: chartOptions });
+            new Chart(document.getElementById('graficoTiempoMes'),{type:'line', data: chartData.tiempoPorMesAño, options: chartOptions });
         });
     </script>
-
 </x-app-layout>

@@ -25,7 +25,6 @@
     <main class="flex-grow flex items-center justify-center p-4">
         <div class="w-full max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
             
-            {{-- Columna Izquierda: Logo e Información --}}
             <div class="hidden lg:flex flex-col items-start justify-center p-12">
                 <h1 class="text-4xl font-extrabold text-[#FF9C00] mb-4" style="font-family: 'Montserrat', sans-serif;">CONTROL TOWER</h1>
                 <img src="{{ Storage::disk('s3')->url('LogoBlanco1.PNG') }}" alt="Minmer Global Logo" class="h-24 mb-4">
@@ -33,9 +32,7 @@
                 <p class="text-3xl text-white mt-2">en un solo sitio</p>
             </div>
 
-            {{-- Columna Derecha: Contenido Dinámico (Formulario) --}}
             <div class="w-full max-w-md mx-auto bg-[#f0f3fa] rounded-md shadow-lg p-6 sm:p-8">
-                {{-- Logo para vista móvil --}}
                 <div class="lg:hidden flex flex-col items-center justify-center mb-6 text-center">
                     <h1 class="text-2xl font-extrabold text-[#2c3856] mb-2" style="font-family: 'Raleway', sans-serif;">CONTROL TOWER</h1>
                     <img src="{{ Storage::disk('s3')->url('LogoAzulm.PNG') }}" alt="Minmer Global Logo" class="h-20">
