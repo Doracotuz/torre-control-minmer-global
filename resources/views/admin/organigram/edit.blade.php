@@ -5,14 +5,13 @@
         </h2>
     </x-slot>
 
-    <div class="py-12 bg-gray-100">
+    <div class="py-12 bg-[#E8ECF7]">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            {{-- Pre-procesa las trayectorias para Alpine.js --}}
             @php
                 $trajectories = $organigramMember->trajectories->map(function ($t) {
                     return [
-                        'id' => (int) $t->id, // Asegura que el ID sea un entero
+                        'id' => (int) $t->id,
                         'title' => htmlspecialchars($t->title ?? '', ENT_QUOTES, 'UTF-8'),
                         'description' => htmlspecialchars($t->description ?? '', ENT_QUOTES, 'UTF-8'),
                         'start_date' => optional($t->start_date)->format('Y-m-d') ?? '',
@@ -25,10 +24,9 @@
                 <form method="POST" action="{{ route('admin.organigram.update', $organigramMember) }}" enctype="multipart/form-data"
                     x-data="{
                         photoName: null,
-                        // Inicializa photoPreview con la ruta existente o null si no hay foto
                         photoPreview: '{{ $organigramMember->profile_photo_path ? Storage::disk('s3')->url($organigramMember->profile_photo_path) : null }}',
-                        trajectories: {{ $trajectories->toJson() }}, // Carga las trayectorias existentes
-                        removingExistingPhoto: false // Para el checkbox de eliminar foto
+                        trajectories: {{ $trajectories->toJson() }},
+                        removingExistingPhoto: false
                     }"
                     x-on:change="
                         if ($refs.photo && $refs.photo.files.length > 0) {
@@ -37,14 +35,13 @@
                             reader.onload = (e) => {
                                 photoPreview = e.target.result;
                             };
-                            reader.readAsDataURL(this.$refs.photo.files[0]); // CORRECCIÓN AQUÍ: Usar this.$refs.photo
-                            removingExistingPhoto = false; // Desmarcar si se selecciona una nueva foto
+                            reader.readAsDataURL(this.$refs.photo.files[0]);
+                            removingExistingPhoto = false;
                         } else {
                             photoName = null;
-                            // Si no hay nueva foto y no se ha marcado para eliminar la existente
                             if (!removingExistingPhoto && '{{ $organigramMember->profile_photo_path }}') {
                                 photoPreview = '{{ Storage::disk('s3')->url($organigramMember->profile_photo_path) }}';
-                            } else { // Si se marcó para eliminar o no hay foto existente
+                            } else {
                                 photoPreview = null;
                             }
                         }
@@ -63,7 +60,6 @@
                                     <template x-if="photoPreview">
                                         <img :src="photoPreview" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md">
                                     </template>
-                                    {{-- Muestra la foto existente si no hay preview y no se ha marcado para eliminar --}}
                                     <template x-if="!photoPreview && '{{ $organigramMember->profile_photo_path }}' && !removingExistingPhoto">
                                         <img src="{{ Storage::disk('s3')->url($organigramMember->profile_photo_path) }}" alt="{{ $organigramMember->name }}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md">
                                     </template>
@@ -149,34 +145,40 @@
                         <div>
                             <h3 class="text-lg font-semibold text-[#2c3856] mb-4">{{ __('Detalles Adicionales') }}</h3>
 
+                            {{-- SECCIÓN ACTIVIDADES MODIFICADA --}}
                             <div class="mb-6">
                                 <x-input-label :value="__('Actividades')" class="mb-2" />
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    @forelse ($activities as $activity)
-                                        <label for="activity_{{ $activity->id }}" class="inline-flex items-center">
-                                            <input type="checkbox" name="activities_ids[]" id="activity_{{ $activity->id }}" value="{{ $activity->id }}" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]"
-                                                {{ in_array($activity->id, old('activities_ids', $memberActivitiesIds)) ? 'checked' : '' }}>
-                                            <span class="ml-2 text-sm text-gray-700">{{ $activity->name }}</span>
-                                        </label>
-                                    @empty
-                                        <p class="text-sm text-gray-500 col-span-2">No hay actividades registradas. Crea algunas desde "Gestionar Actividades".</p>
-                                    @endforelse
+                                <div class="max-h-56 overflow-y-auto p-4 border border-gray-200 rounded-md">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        @forelse ($activities as $activity)
+                                            <label for="activity_{{ $activity->id }}" class="inline-flex items-center">
+                                                <input type="checkbox" name="activities_ids[]" id="activity_{{ $activity->id }}" value="{{ $activity->id }}" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]"
+                                                    {{ in_array($activity->id, old('activities_ids', $memberActivitiesIds)) ? 'checked' : '' }}>
+                                                <span class="ml-2 text-sm text-gray-700">{{ $activity->name }}</span>
+                                            </label>
+                                        @empty
+                                            <p class="text-sm text-gray-500 col-span-2">No hay actividades registradas. Crea algunas desde "Gestionar Actividades".</p>
+                                        @endforelse
+                                    </div>
                                 </div>
                                 <x-input-error class="mt-2" :messages="$errors->get('activities_ids') ?? []" />
                             </div>
 
+                            {{-- SECCIÓN HABILIDADES MODIFICADA --}}
                             <div class="mb-6">
                                 <x-input-label :value="__('Habilidades')" class="mb-2" />
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    @forelse ($skills as $skill)
-                                        <label for="skill_{{ $skill->id }}" class="inline-flex items-center">
-                                            <input type="checkbox" name="skills_ids[]" id="skill_{{ $skill->id }}" value="{{ $skill->id }}" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]"
-                                                {{ in_array($skill->id, old('skills_ids', $memberSkillsIds)) ? 'checked' : '' }}>
-                                            <span class="ml-2 text-sm text-gray-700">{{ $skill->name }}</span>
-                                        </label>
-                                    @empty
-                                        <p class="text-sm text-gray-500 col-span-2">No hay habilidades registradas. Crea algunas desde "Gestionar Habilidades".</p>
-                                    @endforelse
+                                <div class="max-h-56 overflow-y-auto p-4 border border-gray-200 rounded-md">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        @forelse ($skills as $skill)
+                                            <label for="skill_{{ $skill->id }}" class="inline-flex items-center">
+                                                <input type="checkbox" name="skills_ids[]" id="skill_{{ $skill->id }}" value="{{ $skill->id }}" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]"
+                                                    {{ in_array($skill->id, old('skills_ids', $memberSkillsIds)) ? 'checked' : '' }}>
+                                                <span class="ml-2 text-sm text-gray-700">{{ $skill->name }}</span>
+                                            </label>
+                                        @empty
+                                            <p class="text-sm text-gray-500 col-span-2">No hay habilidades registradas. Crea algunas desde "Gestionar Habilidades".</p>
+                                        @endforelse
+                                    </div>
                                 </div>
                                 <x-input-error class="mt-2" :messages="$errors->get('skills_ids') ?? []" />
                             </div>

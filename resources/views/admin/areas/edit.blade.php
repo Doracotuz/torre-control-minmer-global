@@ -13,10 +13,10 @@
                     @csrf
                     @method('PUT')
 
-                    {{-- Usamos un grid para un layout responsivo --}}
+                    {{-- usamos un grid para un layout responsivo --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-                        {{-- Columna 1: Campos de texto --}}
+                        {{-- columna para campos de texto --}}
                         <div class="space-y-6">
                             <div>
                                 <x-input-label for="name" :value="__('Nombre del Área')" class="font-semibold" />
@@ -31,13 +31,13 @@
                             </div>
                         </div>
 
-                        {{-- Columna 2: Icono del Área --}}
+                        {{-- columna para icono del área --}}
                         <div class="space-y-6">
                             <div>
                                 <x-input-label :value="__('Icono del Área (Opcional)')" class="font-semibold mb-3 text-center" />
                                 
                                 <div class="flex flex-col items-center space-y-4">
-                                    {{-- Previsualización del Icono Actual --}}
+                                    {{-- previsualización del icono actual --}}
                                     <div class="w-32 h-32 rounded-full bg-gray-100 border-4 border-gray-200 flex items-center justify-center overflow-hidden shadow-md">
                                         <img src="{{ $area->icon_path ? Storage::disk('s3')->url($area->icon_path) : Storage::disk('s3')->url('images/placeholder_user.jpg') }}" 
                                              alt="{{ $area->name }} Icon" 
@@ -63,7 +63,7 @@
                                     <p class="mt-1 text-xs text-gray-500">{{ __('JPG, PNG, GIF, SVG. Máx: 2MB.') }}</p>
                                     <x-input-error :messages="$errors->get('icon')" class="mt-2" />
                                     
-                                    {{-- Opción para eliminar el icono --}}
+                                    {{-- opción para eliminar el icono --}}
                                     @if ($area->icon_path)
                                         <div class="pt-2">
                                             <label for="remove_icon" class="inline-flex items-center">

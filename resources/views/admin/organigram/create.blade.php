@@ -5,11 +5,10 @@
         </h2>
     </x-slot>
 
-    <div class="py-12 bg-gray-100">
+    <div class="py-12 bg-[#E8ECF7]">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-8">
                 
-                {{-- ELIMINADO: El evento x-on:change se ha movido de aquí --}}
                 <form method="POST" action="{{ route('admin.organigram.store') }}" enctype="multipart/form-data"
                     x-data="{
                         photoName: null,
@@ -35,7 +34,6 @@
                                     </template>
                                 </div>
 
-                                {{-- AÑADIDO: El evento x-on:change ahora está aquí --}}
                                 <input type="file" class="hidden" x-ref="photo" name="profile_photo" id="profile_photo" accept="image/*"
                                     x-on:change="
                                         if ($refs.photo.files.length > 0) {
@@ -58,7 +56,6 @@
                                 <x-input-error class="mt-2" :messages="$errors->get('profile_photo') ?? []" />
                             </div>
 
-                            {{-- El resto de los campos del formulario no cambian --}}
                             <div class="mb-4">
                                 <x-input-label for="name" :value="__('Nombre Completo')" />
                                 <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name')" required />
@@ -116,37 +113,42 @@
                         </div>
 
                         <div>
-                            {{-- ... resto del formulario sin cambios ... --}}
                             <h3 class="text-lg font-semibold text-[#2c3856] mb-4">{{ __('Detalles Adicionales') }}</h3>
 
+                            {{-- SECCIÓN ACTIVIDADES MODIFICADA --}}
                             <div class="mb-6">
                                 <x-input-label :value="__('Actividades')" class="mb-2" />
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    @forelse ($activities as $activity)
-                                        <label for="activity_{{ $activity->id }}" class="inline-flex items-center">
-                                            <input type="checkbox" name="activities_ids[]" id="activity_{{ $activity->id }}" value="{{ $activity->id }}" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]"
-                                                {{ in_array($activity->id, old('activities_ids', [])) ? 'checked' : '' }}>
-                                            <span class="ml-2 text-sm text-gray-700">{{ $activity->name }}</span>
-                                        </label>
-                                    @empty
-                                        <p class="text-sm text-gray-500 col-span-2">No hay actividades registradas. Crea algunas desde "Gestionar Actividades".</p>
-                                    @endforelse
+                                <div class="max-h-56 overflow-y-auto p-4 border border-gray-200 rounded-md">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        @forelse ($activities as $activity)
+                                            <label for="activity_{{ $activity->id }}" class="inline-flex items-center">
+                                                <input type="checkbox" name="activities_ids[]" id="activity_{{ $activity->id }}" value="{{ $activity->id }}" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]"
+                                                    {{ in_array($activity->id, old('activities_ids', [])) ? 'checked' : '' }}>
+                                                <span class="ml-2 text-sm text-gray-700">{{ $activity->name }}</span>
+                                            </label>
+                                        @empty
+                                            <p class="text-sm text-gray-500 col-span-2">No hay actividades registradas. Crea algunas desde "Gestionar Actividades".</p>
+                                        @endforelse
+                                    </div>
                                 </div>
                                 <x-input-error class="mt-2" :messages="$errors->get('activities_ids') ?? []" />
                             </div>
 
+                            {{-- SECCIÓN HABILIDADES MODIFICADA --}}
                             <div class="mb-6">
                                 <x-input-label :value="__('Habilidades')" class="mb-2" />
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    @forelse ($skills as $skill)
-                                        <label for="skill_{{ $skill->id }}" class="inline-flex items-center">
-                                            <input type="checkbox" name="skills_ids[]" id="skill_{{ $skill->id }}" value="{{ $skill->id }}" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]"
-                                                {{ in_array($skill->id, old('skills_ids', [])) ? 'checked' : '' }}>
-                                            <span class="ml-2 text-sm text-gray-700">{{ $skill->name }}</span>
-                                        </label>
-                                    @empty
-                                        <p class="text-sm text-gray-500 col-span-2">No hay habilidades registradas. Crea algunas desde "Gestionar Habilidades".</p>
-                                    @endforelse
+                                <div class="max-h-56 overflow-y-auto p-4 border border-gray-200 rounded-md">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        @forelse ($skills as $skill)
+                                            <label for="skill_{{ $skill->id }}" class="inline-flex items-center">
+                                                <input type="checkbox" name="skills_ids[]" id="skill_{{ $skill->id }}" value="{{ $skill->id }}" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]"
+                                                    {{ in_array($skill->id, old('skills_ids', [])) ? 'checked' : '' }}>
+                                                <span class="ml-2 text-sm text-gray-700">{{ $skill->name }}</span>
+                                            </label>
+                                        @empty
+                                            <p class="text-sm text-gray-500 col-span-2">No hay habilidades registradas. Crea algunas desde "Gestionar Habilidades".</p>
+                                        @endforelse
+                                    </div>
                                 </div>
                                 <x-input-error class="mt-2" :messages="$errors->get('skills_ids') ?? []" />
                             </div>

@@ -12,10 +12,10 @@
                 <form method="POST" action="{{ route('admin.areas.store') }}" enctype="multipart/form-data" class="p-6 md:p-8">
                     @csrf
 
-                    {{-- Usamos un grid para un layout responsivo de dos columnas --}}
+                    {{-- grid para un layout responsivo de dos columnas --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-                        {{-- Columna 1: Campos de texto --}}
+                        {{-- columna para campos de texto --}}
                         <div class="space-y-6">
                             <div>
                                 <x-input-label for="name" :value="__('Nombre del Área')" class="font-semibold" />
@@ -30,13 +30,13 @@
                             </div>
                         </div>
 
-                        {{-- Columna 2: Icono del Área --}}
+                        {{-- columna para icono del área --}}
                         <div class="space-y-6">
                             <div>
                                 <x-input-label :value="__('Icono del Área (Opcional)')" class="font-semibold mb-3 text-center" />
                                 
                                 <div class="flex flex-col items-center space-y-4">
-                                    {{-- Previsualización del Icono --}}
+                                    {{-- previsualización del icono --}}
                                     <div class="w-32 h-32 rounded-full bg-gray-100 border-4 border-gray-200 flex items-center justify-center overflow-hidden shadow-md">
                                         <img src="{{ Storage::disk('s3')->url('/images/placeholder_user.jpg') }}" 
                                              alt="Previsualización del icono" 
@@ -44,13 +44,13 @@
                                              id="iconPreview">
                                     </div>
 
-                                    {{-- Botón para seleccionar archivo --}}
+                                    {{-- botón para seleccionar archivo --}}
                                     <label for="icon" class="inline-flex items-center px-5 py-2 bg-[#ff9c00] text-white rounded-full font-semibold text-xs uppercase tracking-widest hover:bg-orange-600 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md cursor-pointer">
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                         <span id="iconName">Seleccionar Icono</span>
                                     </label>
 
-                                    {{-- Input de archivo oculto con JS para previsualización --}}
+                                    {{-- input de archivo oculto con JS para previsualización --}}
                                     <input id="icon" name="icon" type="file" class="hidden" 
                                            onchange="
                                                 const file = this.files[0];
@@ -68,7 +68,7 @@
                         </div>
                     </div>
 
-                    {{-- Botones de Acción --}}
+                    {{-- botones de acción --}}
                     <div class="flex items-center justify-end mt-8 border-t pt-6">
                         <a href="{{ route('admin.areas.index') }}" class="text-sm text-gray-600 hover:text-gray-900 underline mr-6">
                             Cancelar
