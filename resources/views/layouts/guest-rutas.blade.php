@@ -14,11 +14,11 @@
         </title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased bg-gray-100">
+    <body class="font-sans antialiased bg-[#E8ECF7]">
         <div class="min-h-screen flex flex-col items-center justify-center p-4">
             {{-- Logo --}}
             <div class="mb-8">
-                <img src="{{ Storage::disk('s3')->url('LogoAzul.png') }}" alt="Minmer Global Logo" class="h-24 mx-auto">
+                <img src="{{ Storage::disk('s3')->url('LogoAzulm.PNG') }}" alt="Minmer Global Logo" class="h-24 mx-auto">
             </div>
             {{-- Contenido de la página --}}
             <div class="w-full sm:max-w-md bg-white shadow-md rounded-lg p-8">
