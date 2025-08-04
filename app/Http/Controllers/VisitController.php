@@ -22,6 +22,8 @@ use Endroid\QrCode\Color\Color;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\RoundBlockSizeMode\RoundBlockSizeModeMargin;
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 use Endroid\QrCode\RoundBlockSizeMode;
 
@@ -180,28 +182,133 @@ public function index(Request $request)
      */
     private function performValidation(Visit $visit)
     {
-        if ($visit->status !== 'Programada') {
-            return [
-                'status' => 'warning',
-                'message' => 'Este código QR ya fue procesado. Estatus actual: ' . $visit->status,
-            ];
-        }
+        switch ($visit->status) {
+            case 'Programada':
+                // Da un margen de 24 horas después de la hora programada para permitir el ingreso.
+                if (Carbon::now()->gt($visit->visit_datetime->copy()->addHours(24))) {
+                    $visit->status = 'No ingresado';
+                    $visit->save();
+                    return ['status' => 'error', 'message' => 'ACCESO DENEGADO: El tiempo para esta visita ha expirado.'];
+                }
+                $visit->status = 'Ingresado';
+                $visit->save();
+                return ['status' => 'success', 'message' => 'ACCESO AUTORIZADO: ¡Bienvenido(a)!'];
 
-        if (Carbon::now()->gt($visit->visit_datetime)) {
-            $visit->status = 'No ingresado';
-            $visit->save();
-            return [
-                'status' => 'error',
-                'message' => 'ACCESO DENEGADO: El tiempo para esta visita ha expirado.',
-            ];
-        }
+            case 'Ingresado':
+                $visit->status = 'Finalizada';
+                $visit->exit_datetime = Carbon::now();
+                $visit->save();
+                return ['status' => 'success', 'message' => 'SALIDA REGISTRADA: ¡Hasta luego!'];
 
-        $visit->status = 'Ingresado';
-        $visit->save();
-        return [
-            'status' => 'success',
-            'message' => 'ACCESO AUTORIZADO: ¡Bienvenido(a)!',
+            case 'Finalizada':
+            case 'Cancelada':
+            case 'No ingresado':
+                return ['status' => 'warning', 'message' => 'Este código QR ya no es válido. Estado de la visita: ' . $visit->status];
+
+            default:
+                return ['status' => 'error', 'message' => 'Estado no reconocido.'];
+        }
+    }
+
+    /**
+     * Exporta las visitas filtradas a un archivo CSV.
+     */
+    public function exportCsv(Request $request)
+    {
+        $fileName = 'visitas-' . Carbon::now()->format('Ymd-His') . '.csv';
+        // Reutiliza la misma lógica de consulta del método index
+        $query = Visit::query();
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->search . '%';
+            $query->where(fn($q) => $q->where('visitor_name', 'like', $searchTerm)->orWhere('email', 'like', $searchTerm)->orWhere('company', 'like', $searchTerm));
+        }
+        if ($request->filled('start_date')) $query->whereDate('visit_datetime', '>=', $request->start_date);
+        if ($request->filled('end_date')) $query->whereDate('visit_datetime', '<=', $request->end_date);
+        if ($request->filled('status') && $request->status != '') $query->where('status', $request->status);
+
+        $visits = $query->orderBy('visit_datetime', 'desc')->get();
+
+        $headers = [
+            'Content-type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=$fileName",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0'
         ];
+
+        $callback = function() use ($visits) {
+            $file = fopen('php://output', 'w');
+            // Encabezados del CSV
+            fputcsv($file, ['ID', 'Nombre', 'Apellido', 'Email', 'Empresa', 'Fecha Entrada', 'Fecha Salida', 'Placa', 'Estatus']);
+
+            foreach ($visits as $visit) {
+                fputcsv($file, [
+                    $visit->id,
+                    $visit->visitor_name,
+                    $visit->visitor_last_name,
+                    $visit->email,
+                    $visit->company,
+                    $visit->visit_datetime->format('Y-m-d H:i:s'),
+                    $visit->exit_datetime ? $visit->exit_datetime->format('Y-m-d H:i:s') : 'N/A',
+                    $visit->license_plate ?? 'N/A',
+                    $visit->status,
+                ]);
+            }
+            fclose($file);
+        };
+        return new StreamedResponse($callback, 200, $headers);
+    }
+
+    /**
+     * Proporciona datos para los gráficos del dashboard.
+     */
+    public function getChartData()
+    {
+        // 1. Visitas por día (últimos 30 días)
+        $visitsPerDay = Visit::select(
+                DB::raw('DATE(visit_datetime) as date'),
+                DB::raw('count(*) as count')
+            )
+            ->where('visit_datetime', '>=', Carbon::now()->subDays(30))
+            ->groupBy('date')
+            ->orderBy('date', 'asc')
+            ->get();
+
+        // 2. Conteo de visitas por estatus
+        $visitsByStatus = Visit::select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        // 3. Top 5 empresas con más visitas
+        $visitsByCompany = Visit::select('company', DB::raw('count(*) as count'))
+            ->whereNotNull('company')
+            ->where('company', '!=', '')
+            ->groupBy('company')
+            ->orderBy('count', 'desc')
+            ->limit(5)
+            ->pluck('count', 'company');
+
+        // 4. Duración promedio de la visita en minutos
+        $averageDuration = Visit::where('status', 'Finalizada')
+            ->whereNotNull('exit_datetime')
+            ->select(DB::raw('AVG(TIMESTAMPDIFF(MINUTE, visit_datetime, exit_datetime)) as avg_duration'))
+            ->value('avg_duration');
+
+        return response()->json([
+            'visitsPerDay' => [
+                'labels' => $visitsPerDay->pluck('date'),
+                'data' => $visitsPerDay->pluck('count'),
+            ],
+            'visitsByStatus' => [
+                'labels' => $visitsByStatus->keys(),
+                'data' => $visitsByStatus->values(),
+            ],
+            'visitsByCompany' => [
+                'labels' => $visitsByCompany->keys(),
+                'data' => $visitsByCompany->values(),
+            ],
+            'averageDuration' => round($averageDuration) // en minutos
+        ]);
     }
 
     public function destroy(Visit $visit)

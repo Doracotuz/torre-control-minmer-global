@@ -231,6 +231,8 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('area-admin')->name
         Route::post('/', [App\Http\Controllers\VisitController::class, 'store'])->name('store');
         Route::get('/', [VisitController::class, 'index'])->name('index');
         Route::delete('/{visit}', [VisitController::class, 'destroy'])->name('destroy');
+        Route::get('/export', [App\Http\Controllers\VisitController::class, 'exportCsv'])->name('export');
+        Route::get('/charts', [App\Http\Controllers\VisitController::class, 'getChartData'])->name('charts');
     });
     
 });

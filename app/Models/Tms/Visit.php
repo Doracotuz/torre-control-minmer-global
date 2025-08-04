@@ -35,6 +35,7 @@ class Visit extends Model
         'qr_code_token',
         'status',
         'created_by_user_id',
+        'exit_datetime',
     ];
 
     /**
@@ -44,7 +45,8 @@ class Visit extends Model
      */
     protected $casts = [
         'visit_datetime' => 'datetime',
-        'companions' => 'array', // Le decimos a Laravel que trate esta columna como un array
+        'exit_datetime' => 'datetime',
+        'companions' => 'array',
     ];
 
     /**
