@@ -20,7 +20,7 @@
                                 <a href="{{ route('folders.index', ['folder' => $folder->id]) }}" class="group bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-2">
                                     <div class="bg-[#DFE5F5] p-6 rounded-full transition-colors duration-300 group-hover:bg-[#ff9c00]">
                                         @if($folder->area?->icon_path)
-                                            <img src="{{ Storage::disk('s3')->url($folder->area->icon_path) }}" alt="Icono de {{ $folder->area->name }}" class="w-12 h-12 object-contain">
+                                            <img src="{{ Storage::disk('s3')->url($folder->area->icon_path) }}" alt="Icono de {{ $folder->area->name }}" class="w-20 h-20 object-contain">
                                         @else
                                             <svg class="w-12 h-12 text-[#2c3856] transition-colors duration-300 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />

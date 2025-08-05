@@ -16,6 +16,15 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
          
         <style>
+
+            a.nav-link-custom:visited {
+                color: #e5e7eb;
+            }
+
+
+            a.nav-link-custom.active-link:visited {
+                color: #1F222B;
+            }
             .nav-link-custom {
                 position: relative;
                 display: flex;
@@ -82,7 +91,7 @@
                 background-color: rgba(255, 255, 255, 0.03);
             }
             .logo-container .logo-text {
-                font-family: 'Raleway', sans-serif;
+                font-family: 'Montserrat', sans-serif;
             }
             .logo-container .logo-subtitle {
                 font-family: 'Montserrat', sans-serif;
@@ -528,8 +537,8 @@ document.addEventListener('alpine:init', () => {
                 <div class="p-6 text-center">
                     <div class="logo-container py-4">
                         <img src="{{ Storage::disk('s3')->url('escudoMinmer.png') }}" alt="Minmer Global Logo" class="h-20 mx-auto mb-3">
-                        <!-- <span class="text-xl font-extrabold text-white tracking-wide logo-text">CONTROL TOWER</span>
-                        <span class="text-xs text-gray-300 mt-1 block logo-subtitle">MINMER GLOBAL</span> -->
+                        <span class="text-xl font-extrabold text-white tracking-wide logo-text">CONTROL TOWER</span>
+                        <span class="text-xs text-gray-300 mt-1 block logo-subtitle">MINMER GLOBAL</span>
                     </div>
                 </div>
 
@@ -578,6 +587,35 @@ document.addEventListener('alpine:init', () => {
                             <span class="nav-text">{{ __('Tracking') }}</span>
                         </x-nav-link>
                     @endif
+
+                    <div class="pt-4 mt-4 border-t border-white/10 space-y-2">
+                        <x-nav-link href="#" class="nav-link-custom">
+                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" d="M12 4c3.5 0 6.5 4 6.5 8s-4.5 8.5-6.5 10.5c-2-2-6.5-6.5-6.5-10.5S8.5 4 12 4z"/>
+                                <path stroke-linecap="round" d="M12 14.5l-3-6m3 6l3-6m-3 6l-1.5-3m1.5 3l1.5-3"/>
+                            </svg>
+                            <span class="nav-text">{{ __('Huella de Carbono') }}</span>
+                        </x-nav-link>
+
+                        <x-nav-link href="#" class="nav-link-custom">
+                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M 9 12.75 L 11.25 15 L 15 9.75 M 12 3 A 11.959 11.959 0 0 1 3.598 6 A 11.99 11.99 0 0 0 3 9.749 C 3 15.341 6.824 20.039 12 21.371 C 17.176 20.039 21 15.341 21 9.749 C 21 8.439 20.79 7.178 20.398 5.998 C 18 6 17 6 12 3 L 12 3" />
+                            </svg>
+                            <span class="nav-text">{{ __('Certificaciones') }}</span>
+                        </x-nav-link>
+
+                        @php
+                            $whatsappNumber = "5215536583392";
+                            $whatsappMessage = urlencode("Hola, me gustaría recibir asistencia para la plataforma \"Control Tower - Minmer Global\"");
+                            $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
+                        @endphp
+                        <x-nav-link :href="$whatsappLink" target="_blank" class="nav-link-custom">
+                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="nav-text">{{ __('Asistencia') }}</span>
+                        </x-nav-link>
+                    </div>                    
 
                     {{-- BOTONES OCULTOS PARA CLIENTES --}}
                     @if (!Auth::user()->is_client)

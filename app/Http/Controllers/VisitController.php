@@ -184,29 +184,51 @@ public function index(Request $request)
     {
         switch ($visit->status) {
             case 'Programada':
-                // Da un margen de 24 horas después de la hora programada para permitir el ingreso.
-                if (Carbon::now()->gt($visit->visit_datetime->copy()->addHours(24))) {
+                if (\Carbon\Carbon::now()->gt($visit->visit_datetime->copy()->endOfDay())) {
                     $visit->status = 'No ingresado';
                     $visit->save();
-                    return ['status' => 'error', 'message' => 'ACCESO DENEGADO: El tiempo para esta visita ha expirado.'];
+                    return [
+                        'status' => 'error',
+                        'message' => 'ACCESO DENEGADO: El código QR para esta visita ha expirado.',
+                    ];
                 }
+
                 $visit->status = 'Ingresado';
                 $visit->save();
-                return ['status' => 'success', 'message' => 'ACCESO AUTORIZADO: ¡Bienvenido(a)!'];
+                return [
+                    'status' => 'success',
+                    'message' => 'ACCESO AUTORIZADO: ¡Bienvenido(a)!',
+                ];
 
             case 'Ingresado':
-                $visit->status = 'Finalizada';
-                $visit->exit_datetime = Carbon::now();
+                // --- CORRECCIÓN AQUÍ ---
+                // Se usa 'Finalizada' como una cadena de texto con comillas.
+                $visit->status = 'Finalizada'; 
+                
+                // Asumimos que tienes una columna 'exit_datetime'
+                // Si no la tienes, puedes comentar o eliminar la siguiente línea.
+                if (Schema::hasColumn('tms_visits', 'exit_datetime')) {
+                    $visit->exit_datetime = \Carbon\Carbon::now();
+                }
+                
                 $visit->save();
-                return ['status' => 'success', 'message' => 'SALIDA REGISTRADA: ¡Hasta luego!'];
+                return [
+                    'status' => 'success',
+                    'message' => 'SALIDA REGISTRADA: ¡Hasta luego!',
+                ];
 
             case 'Finalizada':
-            case 'Cancelada':
             case 'No ingresado':
-                return ['status' => 'warning', 'message' => 'Este código QR ya no es válido. Estado de la visita: ' . $visit->status];
+                return [
+                    'status' => 'warning',
+                    'message' => 'Este código QR ya no es válido. Estatus actual: ' . $visit->status,
+                ];
 
             default:
-                return ['status' => 'error', 'message' => 'Estado no reconocido.'];
+                return [
+                    'status' => 'error',
+                    'message' => 'Estatus de visita no reconocido.',
+                ];
         }
     }
 

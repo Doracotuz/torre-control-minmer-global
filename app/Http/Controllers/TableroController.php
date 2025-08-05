@@ -18,7 +18,14 @@ class TableroController extends Controller
             abort(403, 'Acceso no autorizado.');
         }
 
-        $accessibleRootFolders = $user->accessibleFolders()->whereNull('parent_id')->with('area')->get();
+        $folders = $user->accessibleFolders()->whereNull('parent_id')->with('area')->get();
+
+        // 2. Ordenamos la colección para que "Brockerage" aparezca primero.
+        $accessibleRootFolders = $folders->sortBy(function ($folder) {
+            // Si la carpeta pertenece al área "Brockerage", se le da prioridad (0).
+            // A todas las demás se les da una prioridad menor (1).
+            return ($folder->area && $folder->area->name === 'Brokerage') ? 0 : 1;
+        });
         
         $kpiGeneralesData = KpiGeneral::all();
         $kpisTimeData = KpiTiempo::all();
