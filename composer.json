@@ -11,7 +11,8 @@
         "laravel/breeze": "^2.3",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
-        "league/flysystem-aws-s3-v3": "^3.29"
+        "league/flysystem-aws-s3-v3": "^3.29",
+        "openai-php/laravel": "^0.15.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

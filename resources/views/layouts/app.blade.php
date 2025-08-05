@@ -725,5 +725,6 @@ document.addEventListener('alpine:init', () => {
 
             </div>
         </div>
+        <x-chat-assistant />
     </body>
 </html>
