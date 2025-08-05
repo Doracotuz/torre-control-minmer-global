@@ -43,10 +43,10 @@
         });
     </script>
 
-    {{-- Main content wrapper, now with simple x-data reference --}}
+
     <div class="py-6 sm:py-12 bg-[#E8ECF7]" x-data="fileManager()">
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-            {{-- Notificaciones Flash (Estilo y Posición Mejorados) --}}
+
             <div id="flash-success"
                  class="fixed top-4 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]"
                  role="alert" style="display: none;">
@@ -111,7 +111,7 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 space-y-4 sm:space-y-0">
                     <h3 class="text-xl font-semibold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">{{ __('Contenido Actual') }}</h3>
                     <div class="flex flex-wrap items-center justify-start sm:justify-end gap-3">
-                        {{-- Casilla de verificación "Seleccionar Todos" - AHORA SIEMPRE VISIBLE --}}
+
                         <div class="flex items-center">
                             @if(!Auth::user()->is_client)
                             <input type="checkbox" @change="selectAll($event)"
@@ -120,7 +120,7 @@
                             <label class="text-sm text-gray-700">{{ __('Seleccionar Todos') }}</label>
                             @endif
                         </div>
-                        {{-- Botón Eliminar Seleccionados --}}
+
                         <button @click="deleteSelected()" x-show="isAnySelected()"
                                 class="inline-flex items-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-wider hover:bg-red-700 focus:bg-red-700 active:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
                             <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -128,7 +128,7 @@
                             <span class="sm:hidden">{{ __('Eliminar') }}</span>
                         </button>
 
-                        {{-- Botón Mover Seleccionados (NUEVO) --}}
+
                         <button @click="openMoveModal()" x-show="isAnySelected()"
                                 class="inline-flex items-center px-3 py-1.5 bg-[#BECEF5] border border-transparent rounded-full font-semibold text-xs text-black uppercase tracking-wider hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
                             <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
@@ -136,7 +136,7 @@
                             <span class="sm:hidden">{{ __('Mover') }}</span>
                         </button>
 
-                        {{-- Botones de Alternancia de Vista --}}
+
                         <div class="flex rounded-full border border-gray-300 overflow-hidden">
                             <button @click="isTileView = true"
                                     :class="{'bg-[#ff9c00] text-white': isTileView, 'bg-gray-100 text-gray-700 hover:bg-gray-200': !isTileView}"
@@ -152,7 +152,6 @@
                             </button>
                         </div>
 
-                        {{-- Botones de Control de Tamaño de Mosaico (NUEVO) --}}
                         <div x-show="isTileView" class="flex rounded-full border border-gray-300 overflow-hidden">
                             <button @click="tileSize = 'small'"
                                     :class="{'bg-[#2c3856] text-white': tileSize === 'small', 'bg-gray-100 text-gray-700 hover:bg-gray-200': tileSize !== 'small'}"
@@ -181,7 +180,6 @@
                         </a>
                         @endif
 
-                        {{-- Botón para añadir un nuevo elemento (solo visible para administradores de área o administración) --}}
                         @if (Auth::user()->is_area_admin || (Auth::user()->area && Auth::user()->area->name === 'Administración'))
                             @if ($currentFolder)
                                 <a href="{{ route('file_links.create', $currentFolder) }}" class="inline-flex items-center px-4 py-2 bg-[#ff9c00] border border-transparent rounded-full font-semibold text-xxs sm:text-xs text-white uppercase tracking-widest hover:bg-orange-600 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
@@ -201,14 +199,12 @@
                         <p class="text-lg text-gray-600 py-8 text-center" style="font-family: 'Montserrat', sans-serif;">Esta carpeta está vacía.</p>
                     @endif
                 @else
-                    {{-- VISTA DE MOSAICO (con x-show y clases dinámicas) --}}
                     <div x-show="isTileView"
                          :class="{
                              'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4': tileSize === 'small',
                              'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6': tileSize === 'medium',
                              'grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8': tileSize === 'large'
                          }">
-                        {{-- Mosaicos de Carpetas --}}
                         @foreach ($folders as $folderItem)
                             <div class="bg-white rounded-3xl shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
                                         hover:bg-gray-50 transform hover:scale-105 relative"
@@ -229,7 +225,6 @@
                                  :class="{'border-blue-400 border-dashed bg-blue-100': dropTargetFolderId == {{ $folderItem->id }}}"
                                  x-data="{ showDetails: false }"
                             >
-                                {{-- Checkbox para selección múltiple --}}
                                 @if(!Auth::user()->is_client)
                                 <input type="checkbox"
                                     class="absolute top-2 left-2 rounded border-gray-300 text-[black] shadow-sm focus:ring-[black] z-10"
@@ -237,7 +232,6 @@
                                     :checked="isSelected({{ $folderItem->id }}, 'folder')"
                                 >
                                 @endif
-                                {{-- ENVOLVER ICONO Y NOMBRE EN UN <a> PARA LA ACCIÓN PRINCIPAL --}}
                                 <a href="{{ route('folders.index', $folderItem) }}"
                                    class="flex flex-col items-center justify-center w-full"
                                    onclick="event.stopPropagation()"
@@ -269,19 +263,16 @@
                                     {{-- Contador de elementos en carpeta --}}
                                     </a> {{-- FIN DEL <a> --}}
 
-                                {{-- Botón para desplegar/ocultar Detalles (VUELVE AQUÍ) --}}
                                 <button @click.stop="showDetails = !showDetails" class="mt-2 text-xs text-gray-500 hover:text-gray-700 focus:outline-none px-2 py-1 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors duration-150">
                                     <span x-text="showDetails ? '{{ __('Ocultar Detalles') }}' : '{{ __('Ver Detalles') }}'"></span>
                                 </button>
 
-                                {{-- INFO DE CREADO POR, TIPO, FECHA (ahora condicional de nuevo) --}}
                                 <div x-show="showDetails" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-y-0" x-transition:enter-end="opacity-100 transform scale-y-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-y-100" x-transition:leave-end="opacity-0 transform scale-y-0" class="text-center text-gray-600 text-xxs sm:text-xs mt-2 space-y-1 opacity-75 origin-top" style="display: none;">
                                     <p><span class="font-semibold">{{ __('Creado por:') }}</span> {{ $folderItem->user->name ?? 'N/A' }}</p>
                                     <p><span class="font-semibold">{{ __('Tipo:') }}</span> Carpeta</p>
                                     <p><span class="font-semibold">{{ __('Fecha:') }}</span> {{ $folderItem->created_at->format('d M Y') }}</p>
                                     <p><span class="font-semibold">{{ __('Elementos Totales:') }}</span> {{ $folderItem->items_count ?? 0 }}</p>
                                 </div>
-                                {{-- FIN INFO ADICIONAL --}}
                                 @if(!Auth::user()->is_client)
                                 {{-- Acciones (botones con estilo mejorado y responsivo) --}}
                                 <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full justify-center">
@@ -300,7 +291,6 @@
                             </div>
                         @endforeach
 
-                        {{-- Mosaicos de Archivos y Enlaces (con checkbox) --}}
                         @foreach ($fileLinks as $fileLink)
                             @php
                                 $fileExtension = $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : null;
@@ -323,7 +313,6 @@
                                  })"
                                  x-data="{ showDetails: false }"
                             >
-                                {{-- Checkbox para selección múltiple --}}
                                 @if(!Auth::user()->is_client)
                                 <input type="checkbox"
                                     class="absolute top-2 left-2 rounded border-gray-300 text-[black] shadow-sm focus:ring-[black] z-10"
@@ -332,7 +321,6 @@
                                 >
                                 @endif
 
-                                {{-- CAMBIO AQUÍ: Añadido el atributo download="{{ $fileLink->name }}" para el caso de descarga --}}
                                 <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
                                    @if ($fileLink->type == 'file' && !$isImage && !$isPdf) download="{{ $fileLink->name }}" @endif
                                    target="_blank"
@@ -368,20 +356,16 @@
                                     @endif
                                     <span class="text-xxs text-gray-400 mt-1" :class="{'text-xxs': tileSize === 'small', 'text-xs': tileSize === 'medium', 'text-sm': tileSize === 'large'}">{{ $fileLink->created_at->format('d M Y') }}</span>
                                 </a>
-                                {{-- Botón para desplegar/ocultar Detalles (VUELVE AQUÍ) --}}
                                 <button @click.stop="showDetails = !showDetails" class="mt-2 text-xxs sm:text-xs text-gray-500 hover:text-gray-700 focus:outline-none px-2 py-1 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors duration-150">
                                     <span x-text="showDetails ? '{{ __('Ocultar Detalles') }}' : '{{ __('Ver Detalles') }}'"></span>
                                 </button>
 
-                                {{-- INFO DE CREADO POR, TIPO, FECHA (ahora condicional de nuevo) --}}
                                 <div x-show="showDetails" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-y-0" x-transition:enter-end="opacity-100 transform scale-y-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-y-100" x-transition:leave-end="opacity-0 transform scale-y-0" class="text-center text-gray-600 text-xxs sm:text-xs mt-2 space-y-1 opacity-75 origin-top" style="display: none;">
                                     <p><span class="font-semibold">{{ __('Creado por:') }}</span> {{ $fileLink->user->name ?? 'N/A' }}</p>
                                     <p><span class="font-semibold">{{ __('Tipo:') }}</span> {{ $fileLink->type == 'file' ? 'Archivo' : 'Enlace' }}</p>
                                     <p><span class="font-semibold">{{ __('Fecha:') }}</span> {{ $fileLink->created_at->format('d M Y') }}</p>
                                 </div>
-                                {{-- FIN INFO ADICIONAL --}}
 
-                                {{-- Acciones (botones con estilo mejorado y responsivo) --}}
                                 @if(!Auth::user()->is_client)
                                 <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full justify-center">
                                     <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center justify-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-wider hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
@@ -519,7 +503,7 @@
                                             $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
                                         @endphp
                                         <tr class="hover:bg-gray-100 transition-colors duration-150"
-                                            draggable="true" {{-- ¡AÑADIDO PARA HACER EL ARCHIVO ARRASTRABLE! --}}
+                                            draggable="true" 
                                             x-on:dragstart="handleDragStart($event, {{ $fileLink->id }}, 'file_link')" {{-- ¡AÑADIDO Y MODIFICADO! --}}
                                             x-on:contextmenu.prevent="openPropertiesModal({
                                                 name: '{{ $fileLink->name }}',
@@ -539,7 +523,7 @@
                                                         :checked="isSelected({{ $fileLink->id }}, 'file_link')"
                                                     >
                                                     @endif
-                                                    {{-- CAMBIO AQUÍ: Añadido el atributo download="{{ $fileLink->name }}" para el caso de descarga --}}
+                                                    
                                                     <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
                                                        @if ($fileLink->type == 'file' && !$isImage && !$isPdf) download="{{ $fileLink->name }}" @endif
                                                        target="_blank"
@@ -672,7 +656,7 @@
                                     >
                                     @endif
                                     <div class="flex items-center space-x-3 mb-2">
-                                        {{-- CAMBIO AQUÍ: Añadido el atributo download="{{ $fileLink->name }}" para el caso de descarga --}}
+                                        
                                         <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
                                            @if ($fileLink->type == 'file' && !$isImage && !$isPdf) download="{{ $fileLink->name }}" @endif
                                            target="_blank"
@@ -741,7 +725,7 @@
             </div>
         </div>
 
-        {{-- INICIO DEL MODAL DE PROPIEDADES --}}
+        {{-- MODAL DE PROPIEDADES --}}
         <div x-show="showPropertiesModal"
              x-transition:enter="transition ease-out duration-300"
              x-transition:enter-start="opacity-0"
@@ -791,9 +775,9 @@
                 </div>
             </div>
         </div>
-        {{-- FIN DEL MODAL DE PROPIEDADES --}}
+        {{-- FIN DEL MODAL --}}
 
-        {{-- INICIO DEL MODAL DE MOVER ELEMENTOS (NUEVO) --}}
+        {{-- INICIO DEL MODAL DE MOVER ELEMENTOS --}}
         <div x-show="showMoveModal"
              x-transition:enter="transition ease-out duration-300"
              x-transition:enter-start="opacity-0"
@@ -868,7 +852,7 @@
                 </div>
             </div>
         </div>
-        {{-- FIN DEL MODAL DE MOVER ELEMENTOS --}}
+        {{-- FIN DEL MODAL --}}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.8/dist/axios.min.js"></script>

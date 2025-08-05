@@ -14,17 +14,15 @@
                         @csrf
                         @method('PUT')
 
-                        <!-- Nombre de la Carpeta -->
+
                         <div>
                             <x-input-label for="name" :value="__('Nombre de la Carpeta')" />
                             <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name', $folder->name)" required autofocus />
                             <x-input-error :messages="$errors->get('name')" class="mt-2" />
                         </div>
 
-                        <!-- Información del Área (solo lectura) -->
                         <div class="mt-4">
                             <x-input-label for="area_name" :value="__('Área de la Carpeta')" />
-                            {{-- CAMBIO AQUÍ: Usar $user->area->name en lugar de $userArea->name --}}
                             <x-text-input id="area_name" class="block mt-1 w-full bg-gray-100" type="text" name="area_name" :value="$user->area->name" readonly />
                         </div>
 

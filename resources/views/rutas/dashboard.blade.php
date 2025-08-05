@@ -70,6 +70,9 @@
                         <a href="{{ route('rutas.dashboard.export', ['start_date' => request('start_date', $startDate), 'end_date' => request('end_date', $endDate)]) }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                             Exportar a CSV
                         </a>
+                        <a href="{{ route('rutas.dashboard.exportTiempos', ['start_date' => request('start_date', $startDate), 'end_date' => request('end_date', $endDate)]) }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                            Reporte de Tiempos
+                        </a>
                     </div>
                 </form>
             </div>       

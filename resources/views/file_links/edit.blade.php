@@ -14,20 +14,20 @@
                         @csrf
                         @method('PUT')
 
-                        <!-- Nombre del Elemento -->
+
                         <div>
                             <x-input-label for="name" :value="__('Nombre del Elemento')" />
                             <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name', $fileLink->name)" required autofocus />
                             <x-input-error :messages="$errors->get('name')" class="mt-2" />
                         </div>
 
-                        <!-- Tipo de Elemento (solo lectura) -->
+
                         <div class="mt-4">
                             <x-input-label for="type_display" :value="__('Tipo de Elemento')" />
                             <x-text-input id="type_display" class="block mt-1 w-full bg-gray-100" type="text" name="type_display" :value="$fileLink->type == 'file' ? 'Archivo Local' : 'Enlace Externo'" readonly />
                         </div>
 
-                        <!-- Campo para URL (solo editable si es un enlace) -->
+
                         @if ($fileLink->type == 'link')
                             <div class="mt-4">
                                 <x-input-label for="url" :value="__('URL del Enlace')" />
@@ -35,7 +35,7 @@
                                 <x-input-error :messages="$errors->get('url')" class="mt-2" />
                             </div>
                         @else
-                            <!-- Mostrar la ruta del archivo si es un archivo (no editable) -->
+
                             <div class="mt-4">
                                 <x-input-label for="path_display" :value="__('Ruta del Archivo')" />
                                 <x-text-input id="path_display" class="block mt-1 w-full bg-gray-100" type="text" name="path_display" :value="$fileLink->path ? basename($fileLink->path) : 'N/A'" readonly />
@@ -44,7 +44,7 @@
                         @endif
 
                         <div class="flex items-center justify-end mt-4">
-                            {{-- CAMBIO AQUÍ: folders.show a folders.index --}}
+
                             <a href="{{ route('folders.index', $fileLink->folder) }}" class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mr-4">
                                 {{ __('Cancelar') }}
                             </a>

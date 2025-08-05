@@ -66,8 +66,6 @@
 <body>
     <div class="container">
         <div class="header">
-            {{-- Nota: Storage::disk('s3')->url() no funciona en correos. Debes usar una URL pública completa. --}}
-            {{-- Reemplaza 'URL_PUBLICA_DE_TU_LOGO' con la URL accesible desde internet. --}}
             <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" alt="Logotipo Minmer Global">
         </div>
         <div class="content">

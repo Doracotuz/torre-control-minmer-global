@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Models\ManiobraEvento;
 
 class RutasDashboardController extends Controller
 {
@@ -110,4 +111,89 @@ class RutasDashboardController extends Controller
 
         return $response;
     }
+
+    public function exportTiemposReport(Request $request)
+    {
+        $endDate = $request->input('end_date', \Carbon\Carbon::today()->format('Y-m-d'));
+        $startDate = $request->input('start_date', \Carbon\Carbon::today()->subMonth()->format('Y-m-d'));
+        $startCarbon = \Carbon\Carbon::parse($startDate)->startOfDay();
+        $endCarbon = \Carbon\Carbon::parse($endDate)->endOfDay();
+
+        $guias = Guia::with(['facturas.evidenciasManiobra', 'eventos.factura', 'maniobraEventos'])
+            ->whereBetween('created_at', [$startCarbon, $endCarbon])
+            ->get();
+            
+        $fileName = "reporte_tiempos_" . date('Y-m-d') . ".csv";
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use ($guias) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, [
+                'Fecha', 'Hora', 'No. Empleado', 'Coordenadas', 'Municipio', 
+                'Evento', 'Guia', 'Facturas', 'Destino', 'Operador'
+            ]);
+
+            foreach ($guias as $guia) {
+                // Eventos del Operador
+                foreach ($guia->eventos as $evento) {
+                    $factura = $evento->factura;
+                    fputcsv($file, [
+                        $evento->fecha_evento->format('d/m/Y'), $evento->fecha_evento->format('H:i:s'),
+                        'N/A (Operador)', "{$evento->latitud}, {$evento->longitud}", 'N/A',
+                        $evento->subtipo, $guia->guia,
+                        $factura ? $factura->numero_factura : 'N/A',
+                        $factura ? $factura->destino : 'N/A',
+                        $guia->operador,
+                    ]);
+                }
+                // Eventos del Maniobrista
+                foreach ($guia->maniobraEventos as $evento) {
+                    if ($evento->evento_tipo === 'Entrega de evidencias') {
+                        // Facturas que SÍ tienen evidencia de este empleado para esta guía
+                        $facturasConEvidencia = $guia->facturas->filter(function($factura) use ($evento) {
+                            return $factura->evidenciasManiobra->where('numero_empleado', $evento->numero_empleado)->isNotEmpty();
+                        });
+
+                        foreach ($facturasConEvidencia as $factura) {
+                            fputcsv($file, [
+                                $evento->created_at->format('d/m/Y'),
+                                $evento->created_at->format('H:i:s'),
+                                $evento->numero_empleado,
+                                "{$evento->latitud}, {$evento->longitud}",
+                                $evento->municipio ?? 'N/A',
+                                'Evidencia entregada p/factura',
+                                $guia->guia,
+                                $factura->numero_factura,
+                                $factura->destino,
+                                $guia->operador,
+                            ]);
+                        }
+                    } else {
+                        // Para los otros eventos (Llegada a carga, etc.), concatenamos todas las facturas.
+                        fputcsv($file, [
+                            $evento->created_at->format('d/m/Y'),
+                            $evento->created_at->format('H:i:s'),
+                            $evento->numero_empleado,
+                            "{$evento->latitud}, {$evento->longitud}",
+                            $evento->municipio ?? 'N/A',
+                            $evento->evento_tipo,
+                            $guia->guia,
+                            $guia->facturas->pluck('numero_factura')->join(' | '), 
+                            $guia->facturas->pluck('destino')->unique()->join(' | '),
+                            $guia->operador,
+                        ]);
+                    }
+                }
+            }
+            fclose($file);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
 }

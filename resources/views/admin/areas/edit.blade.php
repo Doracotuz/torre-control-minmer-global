@@ -13,7 +13,7 @@
                     @csrf
                     @method('PUT')
 
-                    {{-- usamos un grid para un layout responsivo --}}
+                    {{-- grid para un layout responsivo --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
                         {{-- columna para campos de texto --}}

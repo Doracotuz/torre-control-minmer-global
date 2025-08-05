@@ -26,6 +26,7 @@ use App\Http\Controllers\TableroController;
 use App\Http\Controllers\IndicadoresController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\Admin\TicketCategoryController;
+use App\Http\Controllers\Rutas\ManiobristaController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -247,6 +248,8 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('rutas')->name('rut
     Route::get('/dashboard', [RutasDashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/export', [RutasDashboardController::class, 'exportCsv'])->name('dashboard.export');
     Route::get('/monitoreo', [MonitoreoController::class, 'index'])->name('monitoreo.index');
+    Route::get('/dashboard/export-tiempos', [RutasDashboardController::class, 'exportTiemposReport'])->name('dashboard.exportTiempos');
+
 
     // --- GRUPO PARA GESTIÓN DE PLANTILLAS DE RUTA ---
     Route::prefix('plantillas')->name('plantillas.')->group(function() {
@@ -337,6 +340,13 @@ Route::middleware(['auth', 'not_client'])->group(function () {
 
     Route::get('/tracking', [App\Http\Controllers\Rutas\TrackingController::class, 'index'])->name('tracking.index');
 
+Route::prefix('maniobrista')->name('maniobrista.')->group(function () {
+    Route::get('/', [ManiobristaController::class, 'showLoginForm'])->name('login');
+    Route::post('/acceder', [ManiobristaController::class, 'accessGuia'])->name('access');
+    Route::get('/guia/{guia:guia}/{empleado}', [ManiobristaController::class, 'showGuia'])->name('guia.show');
+    Route::post('/guia/{guia:guia}/{empleado}/evento', [ManiobristaController::class, 'storeEvent'])->name('guia.event.store');
+    Route::post('/guia/{guia:guia}/{empleado}/evidencias', [ManiobristaController::class, 'storeFacturaEvidencias'])->name('guia.evidencias.store');
+});
 
 // Route::prefix('operador')->name('operador.')->group(function() {
 //     // Página para ingresar el número de guía

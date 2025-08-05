@@ -28,4 +28,9 @@ class Factura extends Model
     {
         return $this->hasMany(Evento::class);
     }
+
+    public function evidenciasManiobra() {
+        return $this->hasMany(\App\Models\FacturaEvidencia::class);
+    }
+
 }
