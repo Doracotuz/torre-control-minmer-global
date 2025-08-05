@@ -536,22 +536,21 @@ document.addEventListener('alpine:init', () => {
                 <!-- <div class="px-6"><div class="border-t border-white/10"></div></div> -->
 
                 <nav class="flex-1 px-4 py-6 space-y-2">
-                    {{-- ENLACE AL DASHBOARD (Visible para todos) --}}
+                    {{-- ENLACE AL DASHBOARD (Visible para todos los empleados) --}}
                     @if(!Auth::user()->is_client)
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="nav-link-custom {{ request()->routeIs('dashboard') ? 'active-link' : '' }}">
                         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.2099 15.89C20.5737 17.3945 19.5787 18.7202 18.3118 19.7513C17.0449 20.7824 15.5447 21.4874 13.9424 21.8048C12.34 22.1221 10.6843 22.0421 9.12006 21.5718C7.55578 21.1014 6.13054 20.2551 4.96893 19.1067C3.80733 17.9582 2.94473 16.5428 2.45655 14.9839C1.96837 13.4251 1.86948 11.7705 2.16851 10.1646C2.46755 8.55878 3.15541 7.05063 4.17196 5.77203C5.18851 4.49343 6.5028 3.48332 7.99992 2.83M21.9999 12C21.9999 10.6868 21.7413 9.38642 21.2387 8.17317C20.7362 6.95991 19.9996 5.85752 19.071 4.92893C18.1424 4.00035 17.04 3.26375 15.8267 2.7612C14.6135 2.25866 13.3131 2 11.9999 2V12H21.9999Z" /></svg>
                         <span class="nav-text">{{ __('Dashboard ') }}</span>
                     </x-nav-link>
                     @endif
-                    @if (Auth::user()->is_client)
 
+                    {{-- ENLACE AL DASHBOARD (Visible solo para clientes) --}}
+                    @if (Auth::user()->is_client)
                         <x-nav-link :href="route('tablero.index')" :active="request()->routeIs('tablero.index')" class="nav-link-custom {{ request()->routeIs('tablero.index') ? 'active-link' : '' }}">
                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.2099 15.89C20.5737 17.3945 19.5787 18.7202 18.3118 19.7513C17.0449 20.7824 15.5447 21.4874 13.9424 21.8048C12.34 22.1221 10.6843 22.0421 9.12006 21.5718C7.55578 21.1014 6.13054 20.2551 4.96893 19.1067C3.80733 17.9582 2.94473 16.5428 2.45655 14.9839C1.96837 13.4251 1.86948 11.7705 2.16851 10.1646C2.46755 8.55878 3.15541 7.05063 4.17196 5.77203C5.18851 4.49343 6.5028 3.48332 7.99992 2.83M21.9999 12C21.9999 10.6868 21.7413 9.38642 21.2387 8.17317C20.7362 6.95991 19.9996 5.85752 19.071 4.92893C18.1424 4.00035 17.04 3.26375 15.8267 2.7612C14.6135 2.25866 13.3131 2 11.9999 2V12H21.9999Z" /></svg>
                             <span class="nav-text">{{ __('Dashboard ') }}</span>
                         </x-nav-link>
                     @endif                    
-
-                    {{-- ENLACE A RUTAS (Visible para todos) --}}
 
                     {{-- ENLACE A ARCHIVOS (Texto cambia para clientes) --}}
                     <x-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="nav-link-custom {{ request()->routeIs('folders.index') ? 'active-link' : '' }}">
@@ -567,13 +566,11 @@ document.addEventListener('alpine:init', () => {
 
                     {{-- BOTONES EXCLUSIVOS PARA CLIENTES --}}
                     @if (Auth::user()->is_client)
-
                         <x-nav-link :href="route('client.organigram.interactive')" :active="request()->routeIs('client.organigram.interactive')" class="nav-link-custom {{ request()->routeIs('client.organigram.interactive') ? 'active-link' : '' }}">
                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
                             <span class="nav-text">{{ __('Organigrama') }}</span>
                         </x-nav-link>
 
-                        {{-- ▼▼ BOTÓN DE TRACKING AÑADIDO ▼▼ --}}
                         <x-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="nav-link-custom {{ request()->routeIs('tracking.index') ? 'active-link' : '' }}" target="_blank" rel="noopener noreferrer">
                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 16V3H1V16H16ZM16 16H23V11L20 8H16V16ZM8 18.5C8 19.8807 6.88071 21 5.5 21C4.11929 21 3 19.8807 3 18.5C3 17.1193 4.11929 16 5.5 16C6.88071 16 8 17.1193 8 18.5ZM21 18.5C21 19.8807 19.8807 21 18.5 21C17.1193 21 16 19.8807 16 18.5C16 17.1193 17.1193 16 18.5 16C19.8807 16 21 17.1193 21 18.5Z" />
@@ -597,31 +594,39 @@ document.addEventListener('alpine:init', () => {
                             </svg>
                             <span class="nav-text">{{ __('Gestión de Rutas') }}</span>
                         </x-nav-link>
+
+                        <x-nav-link :href="route('tickets.index')" :active="request()->routeIs('tickets.*')" class="nav-link-custom {{ request()->routeIs('tickets.*') ? 'active-link' : '' }}">
+                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
+                            </svg>
+                            <span class="nav-text">{{ __('Tickets de Soporte') }}</span>
+                        </x-nav-link>
                     @endif
 
 
                     {{-- Menu Super Admin --}}
-                    @if (Auth::user()->is_area_admin && Auth::user()->area?->name === 'Administración')
+                    @if (Auth::user()->isSuperAdmin())
                         <div class="pt-4 mt-2 border-t border-white/10">
                             <button @click="isSuperAdminMenuOpen = !isSuperAdminMenuOpen" class="dropdown-toggle text-xs">
                                 <span>Super Admin</span>
                                 <svg class="chevron-icon w-4 h-4" :class="{'rotate-180': isSuperAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                             </button>
 
-                            <div x-show="isSuperAdminMenuOpen"
-                                x-transition:enter="transition ease-out duration-200"
-                                x-transition:enter-start="opacity-0 transform -translate-y-2"
-                                x-transition:enter-end="opacity-100 transform translate-y-0"
-                                x-transition:leave="transition ease-in duration-150"
-                                x-transition:leave-start="opacity-100 transform translate-y-0"
-                                x-transition:leave-end="opacity-0 transform -translate-y-2"
-                                class="overflow-hidden">
+                            <div x-show="isSuperAdminMenuOpen" x-transition:enter="transition ease-out duration-200" ...>
                                 <div class="pl-4 mt-2 space-y-2">
                                     <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="nav-link-custom {{ request()->routeIs('admin.dashboard') ? 'active-link' : '' }}">
-                                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-1.621-1.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        <svg class="nav-icon" ...></svg>
                                         <span class="nav-text">{{ __('Panel General') }}</span>
                                     </x-nav-link>
-                                    {{-- Agregar mas links de admin... --}}
+
+                                    <x-nav-link :href="route('admin.ticket-categories.index')" :active="request()->routeIs('admin.ticket-categories.*')" class="nav-link-custom {{ request()->routeIs('admin.ticket-categories.*') ? 'active-link' : '' }}">
+                                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+                                        </svg>
+                                        <span class="nav-text">{{ __('Categorías de Tickets') }}</span>
+                                    </x-nav-link>
+                                    
                                 </div>
                             </div>
                         </div>

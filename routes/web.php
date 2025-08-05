@@ -24,6 +24,8 @@ use App\Http\Controllers\Rutas\OperadorController;
 use App\Http\Controllers\Rutas\ClienteController;
 use App\Http\Controllers\TableroController;
 use App\Http\Controllers\IndicadoresController;
+use App\Http\Controllers\TicketController;
+use App\Http\Controllers\Admin\TicketCategoryController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -146,6 +148,9 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/dashboard', function () { //
         return view('admin.dashboard'); //
     })->name('dashboard'); //
+
+    Route::resource('ticket-categories', TicketCategoryController::class);
+
 
     // Rutas para la gestión de Áreas
     Route::get('/areas', [AreaController::class, 'index'])->name('areas.index');
@@ -313,6 +318,21 @@ Route::prefix('operador')->name('operador.')->group(function () {
 
     Route::post('/guia/{guia:guia}/event', [App\Http\Controllers\Rutas\OperadorController::class, 'storeEvent'])->name('guia.event.store');
     
+});
+
+Route::middleware(['auth', 'not_client'])->group(function () {
+    Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
+    Route::get('/tickets/create', [TicketController::class, 'create'])->name('tickets.create');
+    Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');
+    Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+    Route::post('/tickets/{ticket}/reply', [TicketController::class, 'storeReply'])->name('tickets.reply.store');
+    Route::post('/tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.status.update');
+    Route::post('/tickets/{ticket}/approve-closure', [TicketController::class, 'approveClosure'])->name('tickets.approve-closure');
+    Route::post('/tickets/{ticket}/assign', [TicketController::class, 'assignAgent'])->name('tickets.assign');
+    Route::get('/tickets-dashboard', [App\Http\Controllers\TicketDashboardController::class, 'index'])->name('tickets.dashboard');
+    Route::get('/tickets-dashboard/charts', [App\Http\Controllers\TicketDashboardController::class, 'getChartData'])->name('tickets.charts');
+
+
 });
 
     Route::get('/tracking', [App\Http\Controllers\Rutas\TrackingController::class, 'index'])->name('tracking.index');

@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'check.area' => \App\Http\Middleware\CheckUserArea::class,
             'super.admin' => \App\Http\Middleware\CheckSuperAdmin::class,
+            'not_client' => \App\Http\Middleware\CheckIfNotClient::class,
 
         ]);
         

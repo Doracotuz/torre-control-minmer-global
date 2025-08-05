@@ -102,4 +102,11 @@ class User extends Authenticatable
     {
         $this->notify(new CustomResetPasswordNotification($token));
     }
+
+    public function isSuperAdmin(): bool
+    {
+        // Verifica si el usuario es admin de área y si el nombre de su área es 'Administración'
+        return $this->is_area_admin && $this->area?->name === 'Administración';
+    }
+
 }
