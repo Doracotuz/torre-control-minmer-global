@@ -163,13 +163,13 @@ document.addEventListener('alpine:init', () => {
 
         toggleChat() {
             this.isOpen = !this.isOpen;
-            // Si estamos abriendo el chat, reiniciamos la conversación en el servidor
+
             if (this.isOpen) {
                 fetch('{{ route("assistant.reset") }}', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
                 });
-                // Reseteamos también los mensajes en la interfaz, dejando solo el saludo inicial
+
                 this.messages = [{
                     id: Date.now(),
                     role: 'assistant',

@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-
 {{-- Estilos --}}
 <style>
     :root {
@@ -35,11 +34,9 @@
     <header class="flex flex-col sm:flex-row items-center justify-between mb-8">
         <h1 class="text-4xl font-bold text-[var(--color-text-primary)]">Tickets de Soporte IT</h1>
         <div class="flex items-center space-x-2 mt-4 sm:mt-0">
-            
             <a href="{{ route('tickets.dashboard') }}" class="btn bg-white text-[var(--color-primary)] border border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors duration-300">
                 <i class="fas fa-chart-bar mr-2"></i> Ver Indicadores
             </a>
-
             <a href="{{ route('tickets.create') }}" class="btn btn-accent">
                 <i class="fas fa-plus mr-2"></i> Crear Ticket
             </a>
@@ -107,23 +104,17 @@
                             <td class="p-4 font-bold text-[var(--color-text-primary)]">{{ $ticket->title }}</td>
                             <td class="p-4 text-[var(--color-text-secondary)]">{{ $ticket->user->name }}</td>
                             <td class="p-4 text-[var(--color-text-secondary)]">{{ $ticket->agent->name ?? 'Sin asignar' }}</td>
-                            <td class="p-4 text-[var(--color-text-secondary)]">{{ $ticket->category->name ?? 'Sin categoría' }}</td>
+                            <td class="p-4 text-[var(--color-text-secondary)]">{{ $ticket->subCategory->category->name ?? 'Sin categoría' }}</td>
                             <td class="p-4">
-                                <span class="status-{{ strtolower(str_replace(' ', '-', $ticket->status)) }}">
-                                    {{ $ticket->status }}
-                                </span>
+                                <span class="status-{{ strtolower(str_replace(' ', '-', $ticket->status)) }}">{{ $ticket->status }}</span>
                             </td>
                             <td class="p-4">
-                                <span class="badge badge-{{ strtolower($ticket->priority) }}">
-                                    {{ $ticket->priority }}
-                                </span>
+                                <span class="badge badge-{{ strtolower($ticket->priority) }}">{{ $ticket->priority }}</span>
                             </td>
                             <td class="p-4 text-[var(--color-text-secondary)]">{{ $ticket->created_at->format('d/m/Y h:i A') }}</td>
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="8" class="text-center p-8 text-gray-500">No se encontraron tickets con los filtros seleccionados.</td>
-                        </tr>
+                        <tr><td colspan="8" class="text-center p-8 text-gray-500">No se encontraron tickets.</td></tr>
                     @endforelse
                 </tbody>
             </table>

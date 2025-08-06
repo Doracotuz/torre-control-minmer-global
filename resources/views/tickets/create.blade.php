@@ -37,45 +37,51 @@
             <div class="space-y-6">
                 <div>
                     <label for="title" class="form-label">Título</label>
-                    <input type="text" id="title" name="title" class="form-input" placeholder="Ej: Problema con la impresora del 2º piso" value="{{ old('title') }}" required>
-                    @error('title') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                    <input type="text" id="title" name="title" class="form-input" required value="{{ old('title') }}">
                 </div>
 
-                <div>
-                    <label for="category_id" class="form-label">Categoría</label>
-                    <select id="category_id" name="category_id" class="form-input" required>
-                        <option value="">-- Selecciona una categoría --</option>
-                        @forelse($categories as $category)
-                            <option value="{{ $category->id }}" @selected(old('category_id') == $category->id)>
-                                {{ $category->name }}
-                            </option>
-                        @empty
-                            <option value="" disabled>No hay categorías disponibles. Contacta a un administrador.</option>
-                        @endforelse
-                    </select>
-                    @error('category_id') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                <div x-data="{ selectedCategory: '{{ old('category_id') }}', categories: {{ $categories->toJson() }}, subCategories: [] }"
+                     x-init="if(selectedCategory) { subCategories = categories.find(c => c.id == selectedCategory)?.sub_categories || [] }">
+                    <div>
+                        <label for="category_id" class="form-label">Categoría</label>
+                        <select id="category_id" name="category_id" class="form-input" required
+                                x-model="selectedCategory"
+                                @change="subCategories = categories.find(c => c.id == selectedCategory)?.sub_categories || []">
+                            <option value="">-- Selecciona una categoría --</option>
+                            <template x-for="category in categories" :key="category.id">
+                                <option :value="category.id" x-text="category.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div x-show="subCategories.length > 0" x-transition class="mt-6">
+                        <label for="ticket_sub_category_id" class="form-label">Subcategoría</label>
+                        <select id="ticket_sub_category_id" name="ticket_sub_category_id" class="form-input" required>
+                            <option value="">-- Selecciona una subcategoría --</option>
+                            <template x-for="subCategory in subCategories" :key="subCategory.id">
+                                <option :value="subCategory.id" x-text="subCategory.name" :selected="subCategory.id == '{{ old('ticket_sub_category_id') }}'"></option>
+                            </template>
+                        </select>
+                        @error('ticket_sub_category_id') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                    </div>
                 </div>
                 
                 <div>
                     <label for="description" class="form-label">Descripción Detallada</label>
-                    <textarea id="description" name="description" rows="6" class="form-input" placeholder="Por favor, sé lo más específico posible. Incluye mensajes de error, qué estabas haciendo, etc." required>{{ old('description') }}</textarea>
-                    @error('description') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                    <textarea id="description" name="description" rows="6" class="form-input" required>{{ old('description') }}</textarea>
                 </div>
 
                 <div>
                     <label for="priority" class="form-label">Prioridad</label>
                     <select id="priority" name="priority" class="form-input" required>
-                        <option value="Baja" @selected(old('priority') == 'Baja')>Baja</option>
-                        <option value="Media" @selected(old('priority', 'Media') == 'Media')>Media</option>
-                        <option value="Alta" @selected(old('priority') == 'Alta')>Alta</option>
+                        <option value="Baja">Baja</option>
+                        <option value="Media" selected>Media</option>
+                        <option value="Alta">Alta</option>
                     </select>
-                    @error('priority') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
                 </div>
 
                 <div>
                     <label for="attachment" class="form-label">Adjuntar Fotografía (Opcional)</label>
-                    <input type="file" id="attachment" name="attachment" class="form-input" accept="image/png, image/jpeg, image/gif">
-                    @error('attachment') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                    <input type="file" id="attachment" name="attachment" class="form-input">
                 </div>
             </div>
 

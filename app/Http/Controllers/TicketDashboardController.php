@@ -23,8 +23,9 @@ class TicketDashboardController extends Controller
             ->groupBy('status')->pluck('count', 'status');
         
         // Métrica 3: Tickets por categoría (sin cambios)
-        $ticketsByCategory = Ticket::join('ticket_categories', 'tickets.category_id', '=', 'ticket_categories.id')
-            ->select('ticket_categories.name', DB::raw('count(*) as count'))
+        $ticketsByCategory = Ticket::join('ticket_sub_categories', 'tickets.ticket_sub_category_id', '=', 'ticket_sub_categories.id')
+            ->join('ticket_categories', 'ticket_sub_categories.ticket_category_id', '=', 'ticket_categories.id')
+            ->select('ticket_categories.name', DB::raw('count(tickets.id) as count'))
             ->groupBy('ticket_categories.name')->pluck('count', 'name');
 
         // --- NUEVAS MÉTRICAS ---

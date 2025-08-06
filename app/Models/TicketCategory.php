@@ -1,23 +1,15 @@
 <?php
-
 namespace App\Models;
-
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TicketCategory extends Model
 {
     use HasFactory;
-
     protected $fillable = ['name'];
 
-    /**
-     * Define la relación con los tickets.
-     * Le especificamos que la clave foránea en la tabla 'tickets' es 'category_id'.
-     */
-    public function tickets(): HasMany
+    public function subCategories()
     {
-        return $this->hasMany(Ticket::class, 'category_id');
+        return $this->hasMany(TicketSubCategory::class);
     }
 }

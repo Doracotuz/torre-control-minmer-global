@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AreaSeeder::class,
             OrganigramSkillsActivitiesSeeder::class,
+            TicketCategorySeeder::class,
         ]);
 
         // Crea un usuario de prueba y asigna un área

@@ -81,7 +81,7 @@ class ManiobristaController extends Controller
             'latitud' => 'required|numeric',
             'longitud' => 'required|numeric',
             'municipio' => 'nullable|string',
-            'evidencia' => 'required|image|max:20480',
+            'evidencia' => 'required|image|max:500480',
         ]);
         
         // La validación de duplicados ya no aplica para "Llegada a destino"
@@ -118,7 +118,7 @@ class ManiobristaController extends Controller
             'municipio' => 'nullable|string',
             'evidencias' => 'nullable|array',
             'evidencias.*' => 'array|max:3',
-            'evidencias.*.*' => 'image|max:20480',
+            'evidencias.*.*' => 'image|max:500480',
         ]);
 
         DB::transaction(function () use ($validated, $guia, $empleado) {

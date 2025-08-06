@@ -152,6 +152,9 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
     })->name('dashboard'); //
 
     Route::resource('ticket-categories', TicketCategoryController::class);
+    Route::post('ticket-sub-categories', [TicketCategoryController::class, 'storeSubCategory'])->name('ticket-sub-categories.store');
+    Route::put('ticket-sub-categories/{subCategory}', [TicketCategoryController::class, 'updateSubCategory'])->name('ticket-sub-categories.update');
+    Route::delete('ticket-sub-categories/{subCategory}', [TicketCategoryController::class, 'destroySubCategory'])->name('ticket-sub-categories.destroy');
 
 
     // Rutas para la gestión de Áreas
@@ -335,6 +338,7 @@ Route::middleware(['auth', 'not_client'])->group(function () {
     Route::post('/tickets/{ticket}/assign', [TicketController::class, 'assignAgent'])->name('tickets.assign');
     Route::get('/tickets-dashboard', [App\Http\Controllers\TicketDashboardController::class, 'index'])->name('tickets.dashboard');
     Route::get('/tickets-dashboard/charts', [App\Http\Controllers\TicketDashboardController::class, 'getChartData'])->name('tickets.charts');
+    Route::post('/tickets/{ticket}/rate', [TicketController::class, 'storeRating'])->name('tickets.rating.store');
 
 
 });

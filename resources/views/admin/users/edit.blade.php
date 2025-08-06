@@ -5,7 +5,7 @@
         </h2>
     </x-slot>
 
-    <div class="py-12 bg-gray-100">
+    <div class="py-12 bg-[#E8ECF7]">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200">
                 
@@ -176,63 +176,41 @@
                                 <x-input-label :value="__('Carpetas Accesibles (para clientes)')" class="font-semibold mb-2" />
                                 <div class="border border-gray-300 rounded-md p-3 max-h-60 overflow-y-auto bg-white">
                                     <p x-show="loadingFolders" class="text-sm text-gray-500">Cargando carpetas...</p>
-                                    <ul class="space-y-1">
+    
+                                    <ul class="space-y-1" x-show="!loadingFolders">
                                         <template x-for="folder in folders" :key="folder.id">
-                                            <li class="flex items-start">
-                                                <div class="flex items-center">
-                                                    <template x-if="folder.has_children">
-                                                        <button type="button" @click.prevent="toggleFolder(folder)" class="mr-1 text-gray-500 hover:text-gray-700 focus:outline-none">
-                                                            <svg x-show="!folder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                                                            <svg x-show="folder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                                        </button>
-                                                    </template>
-                                                    <template x-if="!folder.has_children">
-                                                        <span class="mr-1 w-4 h-4 inline-block"></span>
-                                                    </template>
-                                                    <input type="checkbox" :id="'folder_' + folder.id" :value="folder.id" x-model="selectedFolderIds" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
-                                                    <label :for="'folder_' + folder.id" x-text="folder.name" class="text-sm text-gray-700 cursor-pointer"></label>
-                                                </div>
-                                                <ul x-show="folder.isOpen" x-transition.opacity class="ml-6 mt-1 w-full space-y-1">
-                                                    <template x-for="childFolder in folder.children" :key="childFolder.id">
-                                                        <li class="flex items-start">
-                                                            <div class="flex items-center">
-                                                                <template x-if="childFolder.has_children">
-                                                                    <button type="button" @click.prevent="toggleFolder(childFolder)" class="mr-1 text-gray-500 hover:text-gray-700 focus:outline-none">
-                                                                        <svg x-show="!childFolder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                                                                        <svg x-show="childFolder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                                                    </button>
-                                                                </template>
-                                                                <template x-if="!childFolder.has_children">
-                                                                    <span class="mr-1 w-4 h-4 inline-block"></span>
-                                                                </template>
-                                                                <input type="checkbox" :id="'folder_' + childFolder.id" :value="childFolder.id" x-model="selectedFolderIds" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
-                                                                <label :for="'folder_' + childFolder.id" x-text="childFolder.name" class="text-sm text-gray-700 cursor-pointer"></label>
-                                                            </div>
-                                                            <ul x-show="childFolder.isOpen" x-transition.opacity class="ml-6 mt-1 w-full space-y-1">
-                                                                <template x-for="grandchildFolder in childFolder.children" :key="grandchildFolder.id">
-                                                                    <li class="flex items-start">
-                                                                        <div class="flex items-center">
-                                                                            <template x-if="grandchildFolder.has_children">
-                                                                                <button type="button" @click.prevent="toggleFolder(grandchildFolder)" class="mr-1 text-gray-500 hover:text-gray-700 focus:outline-none">
-                                                                                    <svg x-show="!grandchildFolder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                                                                                    <svg x-show="grandchildFolder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                                                                </button>
-                                                                            </template>
-                                                                            <template x-if="!grandchildFolder.has_children">
-                                                                                <span class="mr-1 w-4 h-4 inline-block"></span>
-                                                                            </template>
-                                                                            <input type="checkbox" :id="'folder_' + grandchildFolder.id" :value="grandchildFolder.id" x-model="selectedFolderIds" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
-                                                                            <label :for="'folder_' + grandchildFolder.id" x-text="grandchildFolder.name" class="text-sm text-gray-700 cursor-pointer"></label>
-                                                                        </div>
-                                                                    </li>
-                                                                </template>
-                                                            </ul>
-                                                        </li>
-                                                    </template>
-                                                </ul>
-                                            </li>
+                                            <li x-data="{ currentFolder: folder }" x-init="$nextTick(() => { 
+                                                const template = document.getElementById('folder-item-template').content.cloneNode(true);
+                                                $el.appendChild(template);
+                                            })"></li>
                                         </template>
                                     </ul>
+
+                                    <template id="folder-item-template">
+                                        <div class="flex items-start">
+                                            <div class="flex items-center">
+                                                <template x-if="currentFolder.has_children">
+                                                    <button type="button" @click.prevent="toggleFolder(currentFolder)" class="mr-1 text-gray-500 hover:text-gray-700 focus:outline-none">
+                                                        <svg x-show="!currentFolder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                                        <svg x-show="currentFolder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                    </button>
+                                                </template>
+                                                <template x-if="!currentFolder.has_children">
+                                                    <span class="mr-1 w-4 h-4 inline-block"></span>
+                                                </template>
+                                                <input type="checkbox" :id="'folder_' + currentFolder.id" :value="currentFolder.id" x-model="selectedFolderIds" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
+                                                <label :for="'folder_' + currentFolder.id" x-text="currentFolder.name" class="text-sm text-gray-700 cursor-pointer"></label>
+                                            </div>
+                                        </div>
+                                        <ul x-show="currentFolder.isOpen" x-transition.opacity class="ml-6 mt-1 w-full space-y-1">
+                                            <template x-for="childFolder in currentFolder.children" :key="childFolder.id">
+                                                <li x-data="{ currentFolder: childFolder }" x-init="$nextTick(() => {
+                                                    const template = document.getElementById('folder-item-template').content.cloneNode(true);
+                                                    $el.appendChild(template);
+                                                })"></li>
+                                            </template>
+                                        </ul>
+                                    </template>
                                 </div>
                                 <input type="hidden" name="accessible_folder_ids[]" :value="selectedFolderIds.join(',')">
                                 <p class="mt-1 text-xs text-gray-500">Selecciona las carpetas a las que este usuario cliente tendrá acceso.</p>
