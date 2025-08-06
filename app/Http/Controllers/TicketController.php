@@ -355,14 +355,17 @@ class TicketController extends Controller
             ]);
 
             // 3. Añadir el motivo como una respuesta pública en el chat
-            $ticket->replies()->create([
+            $reply = $ticket->replies()->create([
                 'user_id' => Auth::id(),
                 'body' => "Motivo del Rechazo:\n" . $request->rejection_reason,
                 'is_internal' => false
             ]);
 
-            // 4. (Opcional) Notificar al agente y/o admins
-            // ... Aquí iría la lógica para enviar una NewReplyNotification ...
+            // 4. Notificar al agente y/o admins
+            $recipients = collect([$ticket->agent])->merge($this->getSuperAdmins())->whereNotNull()->unique('id');
+            if ($recipients->isNotEmpty()) {
+                Notification::send($recipients, new NewReplyNotification($reply));
+            }
         });
 
         return redirect()->route('tickets.show', $ticket)->with('success', 'El cierre ha sido rechazado. El ticket vuelve a estar "En Proceso".');

@@ -339,6 +339,7 @@ Route::middleware(['auth', 'not_client'])->group(function () {
     Route::get('/tickets-dashboard', [App\Http\Controllers\TicketDashboardController::class, 'index'])->name('tickets.dashboard');
     Route::get('/tickets-dashboard/charts', [App\Http\Controllers\TicketDashboardController::class, 'getChartData'])->name('tickets.charts');
     Route::post('/tickets/{ticket}/rate', [TicketController::class, 'storeRating'])->name('tickets.rating.store');
+    Route::post('/tickets/{ticket}/reject-closure', [TicketController::class, 'rejectClosure'])->name('tickets.reject-closure');
 
 
 });
