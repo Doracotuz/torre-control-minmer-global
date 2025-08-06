@@ -371,4 +371,12 @@ class TicketController extends Controller
         return redirect()->route('tickets.show', $ticket)->with('success', 'El cierre ha sido rechazado. El ticket vuelve a estar "En Proceso".');
     }
 
+    private function getSuperAdmins()
+    {
+        return User::where('is_area_admin', true)
+            ->whereHas('area', function ($query) {
+                $query->where('name', 'Administración');
+            })->get();
+    }
+
 }
