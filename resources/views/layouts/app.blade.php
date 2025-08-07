@@ -586,7 +586,6 @@ document.addEventListener('alpine:init', () => {
                             </svg>
                             <span class="nav-text">{{ __('Tracking') }}</span>
                         </x-nav-link>
-                    @endif
 
                     <div class="pt-4 mt-4 border-t border-white/10 space-y-2">
                         <x-nav-link href="#" class="nav-link-custom">
@@ -615,7 +614,9 @@ document.addEventListener('alpine:init', () => {
                             </svg>
                             <span class="nav-text">{{ __('Asistencia') }}</span>
                         </x-nav-link>
-                    </div>                    
+                    </div>      
+
+                    @endif              
 
                     {{-- BOTONES OCULTOS PARA CLIENTES --}}
                     @if (!Auth::user()->is_client)
@@ -655,14 +656,6 @@ document.addEventListener('alpine:init', () => {
                                     <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="nav-link-custom {{ request()->routeIs('admin.dashboard') ? 'active-link' : '' }}">
                                         <svg class="nav-icon" ...></svg>
                                         <span class="nav-text">{{ __('Panel General') }}</span>
-                                    </x-nav-link>
-
-                                    <x-nav-link :href="route('admin.ticket-categories.index')" :active="request()->routeIs('admin.ticket-categories.*')" class="nav-link-custom {{ request()->routeIs('admin.ticket-categories.*') ? 'active-link' : '' }}">
-                                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
-                                        </svg>
-                                        <span class="nav-text">{{ __('Categorías de Tickets') }}</span>
                                     </x-nav-link>
                                     
                                 </div>

@@ -67,6 +67,26 @@
                     </p>
                 </a>
 
+                {{-- TARJETA AÑADIDA --}}
+                @if (Auth::user()->isSuperAdmin())
+                <a href="{{ route('admin.ticket-categories.index') }}" 
+                   class="group bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-2">
+
+                    <div class="bg-gray-100 p-4 rounded-full transition-colors duration-300 group-hover:bg-[#ff9c00]">
+                        <svg class="w-8 h-8 text-[#2c3856] transition-colors duration-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+                        </svg>
+                    </div>
+
+                    <h4 class="mt-4 text-lg font-semibold text-[#2c3856]">
+                        Gestionar Categorías de Tickets
+                    </h4>
+                    <p class="mt-2 text-sm text-[#666666]">
+                        Define los tipos de tickets para el sistema de soporte.
+                    </p>
+                </a>
+                @endif
             </div>
         </div>
     </div>
