@@ -16,7 +16,7 @@ class SearchController extends Controller
         $user = Auth::user();
         $suggestions = collect();
 
-        if (strlen($query) < 3) { // Require at least 3 characters for suggestions
+        if (strlen($query) < 3) {
             return response()->json([]);
         }
 
@@ -25,30 +25,46 @@ class SearchController extends Controller
         $fileLinkQuery = FileLink::query();
 
         if ($user->area && $user->area->name === 'Administración') {
-            // Super Admin: No se aplica ninguna restricción de área o permiso explícito
+            // Super Admin: Sin restricciones.
         } elseif ($user->is_area_admin) {
-            // Administrador de Área: Sugerencias solo de su propia área
+            // Administrador de Área: Sugerencias solo de su propia área.
             $folderQuery->where('area_id', $user->area_id);
             $fileLinkQuery->whereHas('folder', function($q) use ($user) {
                 $q->where('area_id', $user->area_id);
             });
+
+        // --- 👇 INICIO DEL CAMBIO ---
+
+        } elseif ($user->isClient()) {
+            // NUEVO: Lógica para usuarios tipo Cliente.
+            // Búsqueda solo en carpetas a las que tiene acceso explícito, sin importar el área.
+            $folderQuery->whereHas('usersWithAccess', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+            $fileLinkQuery->whereHas('folder', function($q) use ($user) {
+                $q->whereHas('usersWithAccess', function ($q2) use ($user) {
+                    $q2->where('user_id', $user->id);
+                });
+            });
+
         } else {
-            // Usuario Normal: Sugerencias solo de su área y con acceso explícito
+            // Usuario Normal (NO cliente): Sugerencias de su área y con acceso explícito.
             $folderQuery->where('area_id', $user->area_id)
                         ->whereHas('usersWithAccess', function ($q) use ($user) {
                             $q->where('user_id', $user->id);
                         });
             $fileLinkQuery->whereHas('folder', function($q) use ($user) {
                 $q->where('area_id', $user->area_id)
-                  ->whereHas('usersWithAccess', function ($q2) use ($user) {
-                      $q2->where('user_id', $user->id);
-                  });
+                ->whereHas('usersWithAccess', function ($q2) use ($user) {
+                    $q2->where('user_id', $user->id);
+                });
             });
         }
 
         // Buscar carpetas
         $folders = $folderQuery->where('name', 'like', '%' . $query . '%')
-                               ->limit(5) // Limitar número de sugerencias
+                               ->with('parent') 
+                               ->limit(5)
                                ->get()
                                ->map(function ($folder) {
                                    return [
@@ -56,23 +72,26 @@ class SearchController extends Controller
                                        'name' => $folder->name,
                                        'type' => 'folder',
                                        'area' => $folder->area->name ?? 'N/A',
-                                       'folder_id' => null, // No aplica para carpetas
+                                       'folder_id' => null,
+                                       'full_path' => $folder->full_path, // <-- AJUSTE AQUÍ
                                    ];
                                });
         $suggestions = $suggestions->concat($folders);
 
         // Buscar archivos y enlaces
         $fileLinks = $fileLinkQuery->where('name', 'like', '%' . $query . '%')
-                                   ->with('folder.area') // Cargar la relación de carpeta y área de la carpeta
-                                   ->limit(5) // Limitar número de sugerencias
+                                   ->with('folder.area', 'folder.parent') 
+                                   ->limit(5)
                                    ->get()
                                    ->map(function ($fileLink) {
                                        return [
                                            'id' => $fileLink->id,
                                            'name' => $fileLink->name,
-                                           'type' => $fileLink->type,
+                                           'type' => $fileLink->type, 
+                                           'url' => $fileLink->type === 'link' ? $fileLink->url : null,
                                            'area' => $fileLink->folder->area->name ?? 'N/A',
                                            'folder_id' => $fileLink->folder_id,
+                                           'full_path' => $fileLink->full_path, // <-- AJUSTE AQUÍ
                                        ];
                                    });
         $suggestions = $suggestions->concat($fileLinks);

@@ -40,90 +40,69 @@ class FolderController extends Controller
         $folderQuery = Folder::query();
         $fileLinkQuery = FileLink::query();
 
-        // Lógica de Permisos para ver Carpetas y Contenido
-        if ($user->area && $user->area->name === 'Administración') {
-            // Super Administrador: No se aplica ninguna restricción de área o permiso explícito
-        } elseif ($user->is_area_admin) {
-            // Administrador de Área: Ve todas las carpetas y archivos de su propia área
+        if ($user->isSuperAdmin()) {
+            // Super Admin ve todo, no se aplican filtros de permisos.
+        } elseif ($user->isClient()) {
+            // Cliente solo ve carpetas y archivos a los que tiene acceso explícito.
+            $accessibleFolderIds = $user->accessibleFolders()->pluck('id');
+            
+            // Se aplica el filtro de permisos a nivel general.
+            $folderQuery->whereIn('id', $accessibleFolderIds);
+            $fileLinkQuery->whereIn('folder_id', $accessibleFolderIds);
+
+            // Si el cliente intenta NAVEGAR a una carpeta sin permiso, se le redirige.
+            if ($currentFolder && !$accessibleFolderIds->contains($currentFolder->id)) {
+                return redirect()->route('dashboard')->with('error', 'No tienes permiso para ver esta carpeta.');
+            }
+
+        } else { // Administradores de Área y Usuarios Normales
+            // Todos los demás usuarios están restringidos a su propia área.
             $folderQuery->where('area_id', $user->area_id);
             $fileLinkQuery->whereHas('folder', function($q) use ($user) {
                 $q->where('area_id', $user->area_id);
             });
-        } elseif ($user->isClient()) { // Lógica para Clientes
-            $accessibleFolderIds = $user->accessibleFolders->pluck('id')->toArray();
 
-            // Los clientes solo deben ver las carpetas que son hijas de la carpeta actual O que son la carpeta raíz
-            // y a las que tienen acceso.
-            $folderQuery->whereIn('id', $accessibleFolderIds)
-                        ->where('parent_id', $currentFolder ? $currentFolder->id : null);
-            
-            // Los fileLinks deben pertenecer a la carpeta actual y ser accesibles para el cliente
-            $fileLinkQuery->whereIn('folder_id', $accessibleFolderIds)
-                          ->where('folder_id', $currentFolder ? $currentFolder->id : null);
-
-            // Si el cliente intenta acceder a una carpeta a la que no tiene acceso, redirigir
-            if ($currentFolder && !in_array($currentFolder->id, $accessibleFolderIds)) {
-                return redirect()->route('dashboard')->with('error', 'No tienes permiso para ver esta carpeta.');
+            // Los usuarios normales (no admins de área) además requieren acceso explícito
+            if (!$user->is_area_admin) {
+                $accessibleFolderIds = $user->accessibleFolders()->pluck('id');
+                $folderQuery->whereIn('id', $accessibleFolderIds);
+                $fileLinkQuery->whereIn('folder_id', $accessibleFolderIds);
             }
-
-        } else {
-            // Usuario Normal: Solo ve carpetas y archivos de su área con acceso explícito
-            $folderQuery->where('area_id', $user->area_id)
-                        ->whereHas('usersWithAccess', function ($q) use ($user) {
-                            $q->where('user_id', $user->id);
-                        });
-            $fileLinkQuery->whereHas('folder', function($q) use ($user) {
-                $q->where('area_id', $user->area_id)
-                  ->whereHas('usersWithAccess', function ($q2) use ($user) {
-                      $q2->where('user_id', $user->id);
-                  });
-            });
         }
 
-        // Lógica de Búsqueda
+        // ---------------------------------------------------------------
+        // PASO 2: APLICAR FILTRO DE BÚSQUEDA O DE NAVEGACIÓN
+        // ---------------------------------------------------------------
         if ($searchQuery) {
-            // Si hay un término de búsqueda, buscamos en todas las carpetas y archivos accesibles
-            $folders = $folderQuery->where('name', 'like', '%' . $searchQuery . '%')
-                                   ->orderBy('name')
-                                   ->get();
-            $fileLinks = $fileLinkQuery->where('name', 'like', '%' . $searchQuery . '%')
-                                       ->orderBy('name')
-                                       ->get();
-            $currentFolder = null; // En modo búsqueda, no estamos en una carpeta específica
+            // MODO BÚSQUEDA: Busca por nombre en los resultados ya filtrados por permisos.
+            $folders = $folderQuery->where('name', 'like', '%' . $searchQuery . '%')->orderBy('name')->get();
+            $fileLinks = $fileLinkQuery->where('name', 'like', '%' . $searchQuery . '%')->orderBy('name')->get();
+            
+            $currentFolder = null; // En modo búsqueda, no hay carpeta actual.
+            $breadcrumbs = collect(); // No hay breadcrumbs en la búsqueda.
+
         } else {
-            // Si no hay término de búsqueda, aplicamos la lógica de jerarquía normal
-            // Si el usuario es un cliente, ya aplicamos el filtro parent_id y accessibleFolderIds arriba
-            // por lo que solo necesitamos obtener los resultados.
+            // MODO NAVEGACIÓN: Muestra el contenido de la carpeta actual.
             $folders = $folderQuery->where('parent_id', $currentFolder ? $currentFolder->id : null)
-                                   ->withCount(['children', 'fileLinks'])
-                                   ->get()
-                                   ->map(function ($folder) {
-                                       $folder->items_count = $folder->children_count + $folder->file_links_count;
-                                       return $folder;
-                                   });
+                                ->withCount(['children', 'fileLinks'])
+                                ->get()
+                                ->map(function ($folder) {
+                                    $folder->items_count = $folder->children_count + $folder->file_links_count;
+                                    return $folder;
+                                });
+            
+            $fileLinks = $fileLinkQuery->where('folder_id', $currentFolder ? $currentFolder->id : null)
+                                    ->orderBy('name')
+                                    ->get();
 
-            $fileLinks = collect();
+            // Generar breadcrumbs para la navegación
+            $breadcrumbs = collect();
             if ($currentFolder) {
-                // Verificar permisos para la carpeta actual antes de mostrar su contenido
-                $hasAccessToCurrentFolder = false;
-                if ($user->area && $user->area->name === 'Administración') {
-                    $hasAccessToCurrentFolder = true;
-                } elseif ($user->is_area_admin && $currentFolder->area_id === $user->area_id) {
-                    $hasAccessToCurrentFolder = true;
-                } elseif ($user->isClient() && in_array($currentFolder->id, $accessibleFolderIds)) { // Cliente: acceso explícito a la carpeta actual
-                    $hasAccessToCurrentFolder = true;
-                } elseif ($currentFolder->area_id === $user->area_id && $user->accessibleFolders->contains($currentFolder->id)) {
-                    $hasAccessToCurrentFolder = true;
+                $parent = $currentFolder->parent;
+                while ($parent) {
+                    $breadcrumbs->prepend($parent);
+                    $parent = $parent->parent;
                 }
-
-                if (!$hasAccessToCurrentFolder) {
-                    return redirect()->route('dashboard')->with('error', 'No tienes permiso para ver esta carpeta o su contenido.');
-                }
-
-                // Si es un cliente, $fileLinkQuery ya está filtrado por accessibleFolderIds y folder_id
-                $fileLinks = $fileLinkQuery->where('folder_id', $currentFolder->id)
-                                           ->orderBy('name')
-                                           ->get();
             }
         }
 

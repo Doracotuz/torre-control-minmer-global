@@ -3,32 +3,39 @@
         search: '',
         suggestions: [],
         showSuggestions: false,
+        loading: false,
         timeout: null,
         /* Nuevos estados para los menús colapsables en móvil */
         isMobileSuperAdminMenuOpen: {{ request()->routeIs('admin.*') ? 'true' : 'false' }},
         isMobileAreaAdminMenuOpen: {{ request()->routeIs('area_admin.*') ? 'true' : 'false' }}
      }"
-     x-init="$watch('search', value => {
-         clearTimeout(this.timeout);
-         if (value.length > 2) {
-             this.timeout = setTimeout(() => {
-                 fetch(`{{ route('search.suggestions') }}?query=${value}`)
-                     .then(response => response.json())
-                     .then(data => {
-                         this.suggestions = data;
-                         this.showSuggestions = data.length > 0;
-                     })
-                     .catch(error => {
-                         console.error('Error fetching search suggestions:', error);
-                         this.suggestions = [];
-                         this.showSuggestions = false;
-                     });
-             }, 300);
-         } else {
-             this.suggestions = [];
-             this.showSuggestions = false;
-         }
-     })"
+x-init="$watch('search', value => {
+    clearTimeout(timeout);
+    suggestions = []; // Limpiar resultados anteriores
+
+    if (value.length > 2) {
+        loading = true;
+        showSuggestions = true; // Mostrar el contenedor principal
+
+        timeout = setTimeout(() => {
+            fetch(`{{ route('search.suggestions') }}?query=${value}`)
+                .then(response => response.json())
+                .then(data => {
+                    suggestions = data; // Asignar los nuevos resultados
+                })
+                .catch(error => {
+                    console.error('Error en la búsqueda:', error);
+                    showSuggestions = false; // Ocultar todo si hay un error
+                })
+                .finally(() => {
+                    loading = false; // La carga ha terminado (con o sin resultados)
+                });
+        }, 300);
+    } else {
+        loading = false;
+        showSuggestions = false;
+    }
+})"
      @click.away="showSuggestions = false"
      class="bg-[#2c3856] border-gray-100 relative z-20 sticky top-0">
 
@@ -63,7 +70,7 @@
                                 <img 
                                     src="{{ Storage::disk('s3')->url($areaCustomIconPath) }}" 
                                     alt="{{ $areaName }} Icon" 
-                                    class="h-4 w-4 sm:h-5 sm:w-5 object-contain"
+                                    class="h-7 w-7 sm:h-8 sm:w-8 object-contain"
                                     style="filter: brightness(0) saturate(100%) invert(15%) sepia(15%) saturate(1000%) hue-rotate(180deg) brightness(90%) contrast(90%);"
                                 >
                             </div>
@@ -79,8 +86,8 @@
             <div class="flex-1 max-w-md mx-4 sm:mx-8 relative">
                 <form action="{{ route('folders.index') }}" method="GET" class="relative">
                     <input type="text" name="search" placeholder="Buscar documentos..."
-                           x-model="search"
-                           x-on:focus="showSuggestions = suggestions.length > 0 && search.length > 2"
+                        x-model="search"
+                        x-on:focus="if (suggestions.length > 0) showSuggestions = true"
                            class="w-full pl-8 pr-2 py-1.5 sm:pl-10 sm:pr-4 sm:py-2 rounded-md border-2 border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] transition-all duration-300 ease-in-out shadow-sm
                                   hover:border-[#2c3856] focus:shadow-lg text-sm sm:text-base"
                            value="{{ request('search') }}">
@@ -90,14 +97,14 @@
                 </form>
 
                 <div x-show="showSuggestions"
-                     x-transition:enter="transition ease-out duration-200"
-                     x-transition:enter-start="opacity-0 transform scale-95"
-                     x-transition:enter-end="opacity-100 transform scale-100"
-                     x-transition:leave="transition ease-in duration-150"
-                     x-transition:leave-start="opacity-100 transform scale-100"
-                     x-transition:leave-end="opacity-0 transform scale-95"
-                     class="absolute z-30 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto"
-                     style="display: none;">
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 transform scale-95"
+                    x-transition:enter-end="opacity-100 transform scale-100"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100 transform scale-100"
+                    x-transition:leave-end="opacity-0 transform scale-95"
+                    class="absolute z-30 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto">
+                    <div x-show="loading" class="px-3 py-2 sm:px-4 sm:py-2 text-gray-500 text-sm">Buscando...</div>
                     <template x-for="suggestion in suggestions" :key="suggestion.id">
                         <a :href="suggestion.type === 'folder' ? `{{ url('/folders') }}/${suggestion.id}` : (suggestion.type === 'file' ? `{{ url('/files') }}/${suggestion.id}/download` : suggestion.url)"
                            @click="search = suggestion.name; showSuggestions = false;"
@@ -112,7 +119,9 @@
                             <div class="mt-0.5 text-xxs sm:text-xs text-gray-500 truncate" x-text="suggestion.full_path"></div>
                         </a>
                     </template>
-                    <div x-show="suggestions.length === 0 && search.length > 2" class="px-3 py-2 sm:px-4 sm:py-2 text-gray-500 text-sm">No hay sugerencias.</div>
+                        <div x-show="!loading && suggestions.length === 0 && search.length > 2" class="px-3 py-2 sm:px-4 sm:py-2 text-gray-500 text-sm">
+                            No hay sugerencias.
+                        </div>
                 </div>
             </div>
 
