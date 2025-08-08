@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 
 // ==========================================================
 // USO DE endroid/qr-code (VERSIÓN ACTUALIZADA Y MÁS MANTENIDA)
