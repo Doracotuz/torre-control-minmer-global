@@ -25,6 +25,7 @@ use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\RoundBlockSizeMode\RoundBlockSizeModeMargin;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Models\User;
 
 use Endroid\QrCode\RoundBlockSizeMode;
 
@@ -45,7 +46,11 @@ class VisitController extends Controller
 public function index(Request $request)
 {
     // Inicia la consulta base
-    $query = Visit::query();
+    $creatorIds = Visit::select('created_by_user_id')->distinct()->pluck('created_by_user_id');
+
+    // Ahora, buscamos a esos usuarios por su ID para poblar el dropdown.
+    $creators = User::whereIn('id', $creatorIds)->orderBy('name')->get();
+    $query = Visit::with('creator');
 
     // 1. Filtro de búsqueda por texto (nombre, email, empresa)
     if ($request->filled('search')) {
@@ -71,6 +76,10 @@ public function index(Request $request)
     if ($request->filled('status') && $request->status != '') {
         $query->where('status', $request->status);
     }
+    // 4. Filtro por Creador
+    if ($request->filled('creator_id')) {
+        $query->where('created_by_user_id', $request->creator_id);
+    }
 
     // Ordenar los resultados y paginar
     $visits = $query->orderBy('visit_datetime', 'desc')->paginate(15);
@@ -78,6 +87,7 @@ public function index(Request $request)
     // Renderizar la vista pasando las visitas y los valores de los filtros
     return view('tms.visits.index', [
         'visits' => $visits,
+        'creators' => $creators,
         'filters' => $request->all() // Envía los filtros actuales para rellenar el formulario
     ]);
 }    
@@ -195,6 +205,7 @@ public function index(Request $request)
                 }
 
                 $visit->status = 'Ingresado';
+                $visit->entry_datetime = now();
                 $visit->save();
                 return [
                     'status' => 'success',
@@ -238,21 +249,39 @@ public function index(Request $request)
      */
     public function exportCsv(Request $request)
     {
-        $fileName = 'visitas-' . Carbon::now()->format('Ymd-His') . '.csv';
-        // Reutiliza la misma lógica de consulta del método index
-        $query = Visit::query();
+        $fileName = 'visitas-' . now()->format('Ymd-His') . '.csv';
+
+        // 1. Eager load al creador para un rendimiento óptimo
+        $query = Visit::with('creator');
+
+        // Reutilizamos la misma lógica de filtrado del método index
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';
-            $query->where(fn($q) => $q->where('visitor_name', 'like', $searchTerm)->orWhere('email', 'like', $searchTerm)->orWhere('company', 'like', $searchTerm));
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('visitor_name', 'like', $searchTerm)
+                ->orWhere('visitor_last_name', 'like', $searchTerm)
+                ->orWhere('email', 'like', $searchTerm)
+                ->orWhere('company', 'like', $searchTerm)
+                ->orWhere('license_plate', 'like', $searchTerm);
+            });
         }
-        if ($request->filled('start_date')) $query->whereDate('visit_datetime', '>=', $request->start_date);
-        if ($request->filled('end_date')) $query->whereDate('visit_datetime', '<=', $request->end_date);
-        if ($request->filled('status') && $request->status != '') $query->where('status', $request->status);
+        if ($request->filled('start_date')) {
+            $query->whereDate('visit_datetime', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('visit_datetime', '<=', $request->end_date);
+        }
+        if ($request->filled('status') && $request->status != '') {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('creator_id')) {
+            $query->where('created_by_user_id', $request->creator_id);
+        }
 
         $visits = $query->orderBy('visit_datetime', 'desc')->get();
 
         $headers = [
-            'Content-type'        => 'text/csv',
+            'Content-type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=$fileName",
             'Pragma'              => 'no-cache',
             'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
@@ -261,24 +290,54 @@ public function index(Request $request)
 
         $callback = function() use ($visits) {
             $file = fopen('php://output', 'w');
-            // Encabezados del CSV
-            fputcsv($file, ['ID', 'Nombre', 'Apellido', 'Email', 'Empresa', 'Fecha Entrada', 'Fecha Salida', 'Placa', 'Estatus']);
+            
+            // Ponemos un BOM para asegurar la correcta interpretación de caracteres UTF-8 en Excel
+            fputs($file, "\xEF\xBB\xBF");
+
+            // 2. Encabezados del CSV actualizados con toda la información
+            fputcsv($file, [
+                'ID',
+                'Estatus',
+                'Nombre Visitante',
+                'Apellido Visitante',
+                'Email Visitante',
+                'Empresa',
+                'Fecha Programada',
+                'Ingreso Real',
+                'Salida Registrada',
+                'Motivo',
+                'Acompañantes',
+                'Vehículo (Marca y Modelo)',
+                'Placas',
+                'Creado Por'
+            ]);
 
             foreach ($visits as $visit) {
+                // Se decodifica el JSON de acompañantes para mostrarlo como texto plano
+                $companionsList = json_decode($visit->companions);
+                $companionsText = is_array($companionsList) ? implode(', ', $companionsList) : '';
+
+                // 3. Fila de datos con todos los campos requeridos
                 fputcsv($file, [
                     $visit->id,
+                    $visit->status,
                     $visit->visitor_name,
                     $visit->visitor_last_name,
                     $visit->email,
-                    $visit->company,
+                    $visit->company ?? 'N/A',
                     $visit->visit_datetime->format('Y-m-d H:i:s'),
+                    $visit->entry_datetime ? $visit->entry_datetime->format('Y-m-d H:i:s') : 'N/A',
                     $visit->exit_datetime ? $visit->exit_datetime->format('Y-m-d H:i:s') : 'N/A',
+                    $visit->reason,
+                    $companionsText,
+                    ($visit->vehicle_make || $visit->vehicle_model) ? "{$visit->vehicle_make} {$visit->vehicle_model}" : 'N/A',
                     $visit->license_plate ?? 'N/A',
-                    $visit->status,
+                    $visit->creator->name ?? 'Usuario no encontrado'
                 ]);
             }
             fclose($file);
         };
+        
         return new StreamedResponse($callback, 200, $headers);
     }
 
@@ -348,9 +407,7 @@ public function index(Request $request)
 
     public function show(\App\Models\Tms\Visit $visit)
     {
-        // Carga relaciones si las tuvieras, por ejemplo, el anfitrión
-        // $visit->load('hostUser'); 
-
+        $visit->load('creator');
         return view('tms.visits.show', compact('visit'));
     }
 

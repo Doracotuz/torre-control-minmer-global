@@ -105,10 +105,26 @@
                             </span>
                         </span>
                     </div>
+
+                    <div class="detail-item">
+                        <span class="detail-label">Creado Por:</span>
+                        <span class="detail-value">{{ $visit->creator->name ?? 'Usuario no encontrado' }}</span>
+                    </div>
+
                     <div class="detail-item">
                         <span class="detail-label">Fecha y Hora Programada:</span>
                         <span class="detail-value">{{ $visit->visit_datetime->format('d/m/Y h:i A') }}</span>
                     </div>
+
+                    @if($visit->entry_datetime)
+                        <div class="detail-item">
+                            <span class="detail-label">Ingreso Real:</span>
+                            <span class="detail-value font-bold text-green-600">
+                                {{ \Carbon\Carbon::parse($visit->entry_datetime)->format('d/m/Y h:i A') }}
+                            </span>
+                        </div>
+                    @endif
+
                     <div class="detail-item">
                         <span class="detail-label">Hora de Salida:</span>
                         <span class="detail-value">{{ $visit->exit_datetime ? $visit->exit_datetime->format('d/m/Y h:i A') : '—' }}</span>

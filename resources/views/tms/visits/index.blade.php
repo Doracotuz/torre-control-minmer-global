@@ -46,7 +46,7 @@
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
     }
     .btn-export {
-        background-color: var(--color-success);
+        background-color: var(--color-accent);
         color: var(--color-surface);
     }
 
@@ -98,7 +98,7 @@
 
     <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
         <h3 class="text-xl font-bold text-[var(--color-primary)] mb-4">Filtros de Búsqueda</h3>
-        <form action="{{ route('area_admin.visits.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-center">
+        <form id="visitsFilterForm" action="{{ route('area_admin.visits.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-center">
             
             <input type="text" class="form-input form-input-sm" name="search" placeholder="Nombre, empresa..." value="{{ $filters['search'] ?? '' }}">
             <input type="date" class="form-input form-input-sm" name="start_date" value="{{ $filters['start_date'] ?? '' }}">
@@ -112,8 +112,16 @@
                 <option value="Cancelada" @selected(($filters['status'] ?? '') == 'Cancelada')>Cancelada</option>
             </select>
 
+            <select name="creator_id" class="form-input form-input-sm">
+                <option value="">Todos los Creadores</option>
+                @foreach($creators as $creator)
+                    <option value="{{ $creator->id }}" @selected(isset($filters['creator_id']) && $filters['creator_id'] == $creator->id)>
+                        {{ $creator->name }}
+                    </option>
+                @endforeach
+            </select>            
+
             <div class="flex items-center space-x-2">
-                <button type="submit" class="btn btn-sm btn-primary w-full text-center">Filtrar</button>
                 <a href="{{ route('area_admin.visits.index') }}" class="btn btn-sm bg-gray-200 text-gray-700 hover:bg-gray-300 w-full text-center">Limpiar</a>
                 <a href="{{ route('area_admin.visits.export', request()->query()) }}" class="btn btn-sm btn-export w-full text-center">CSV</a>
             </div>
@@ -126,6 +134,7 @@
                 <thead class="bg-[var(--color-primary)] text-white">
                     <tr>
                         <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Visitante</th>
+                        <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Creado Por</th>
                         <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Empresa</th>
                         <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Entrada</th>
                         <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Salida</th>
@@ -137,8 +146,17 @@
                     @forelse ($visits as $visit)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="p-4 whitespace-nowrap"><p class="font-bold text-[var(--color-text-primary)]">{{ $visit->visitor_name }} {{ $visit->visitor_last_name }}</p><p class="text-xs text-[var(--color-text-secondary)]">{{ $visit->email }}</p></td>
+                            <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)] text-sm">
+                                {{ $visit->creator->name ?? 'Usuario no encontrado' }}
+                            </td>                            
                             <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)]">{{ $visit->company ?? 'N/A' }}</td>
-                            <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)]">{{ $visit->visit_datetime->format('d/m/Y h:i A') }}</td>
+                            <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)]">
+                                @if($visit->entry_datetime)
+                                    {{ \Carbon\Carbon::parse($visit->entry_datetime)->format('d/m/Y h:i A') }}
+                                @else
+                                    <span class="text-xs italic text-gray-400">(Programado para {{ $visit->visit_datetime->format('d/m/Y h:i A') }})</span>
+                                @endif
+                            </td>
                             <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)]">{{ $visit->exit_datetime ? $visit->exit_datetime->format('d/m/Y h:i A') : '—' }}</td>
                             <td class="p-4 whitespace-nowrap">
                                 <span class="badge badge-{{ strtolower(str_replace(' ', '-', $visit->status)) }}">
@@ -245,6 +263,31 @@
                 });
             })
             .catch(error => console.error('Error al cargar datos de gráficos:', error));
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('visitsFilterForm');
+        const inputs = form.querySelectorAll('input, select');
+        let timer;
+
+        inputs.forEach(input => {
+            // Para los campos de texto, esperamos un poco después de que el usuario deja de teclear.
+            if (input.type === 'text') {
+                input.addEventListener('keyup', () => {
+                    clearTimeout(timer);
+                    timer = setTimeout(() => {
+                        form.submit();
+                    }, 500); // Espera 500ms (medio segundo)
+                });
+            } else {
+                // Para selects y fechas, el cambio es inmediato.
+                input.addEventListener('change', () => {
+                    form.submit();
+                });
+            }
+        });
     });
 </script>
 @endsection
