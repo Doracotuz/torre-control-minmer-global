@@ -346,4 +346,12 @@ public function index(Request $request)
                         ->with('success', 'Visita eliminada exitosamente.');
     }
 
+    public function show(\App\Models\tms\Visit $visit)
+    {
+        // Carga relaciones si las tuvieras, por ejemplo, el anfitrión
+        // $visit->load('hostUser'); 
+
+        return view('tms.visits.show', compact('visit'));
+    }
+
 }

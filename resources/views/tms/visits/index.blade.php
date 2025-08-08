@@ -146,10 +146,19 @@
                                 </span>
                             </td>
                             <td class="p-4 whitespace-nowrap text-center">
-                                <form action="{{ route('area_admin.visits.destroy', $visit) }}" method="POST" onsubmit="return confirm('¿Confirmas la eliminación de esta visita?');">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors" title="Eliminar"><i class="fas fa-trash-alt fa-lg"></i></button>
-                                </form>
+                                <div class="flex items-center justify-center space-x-4">
+                                    <a href="{{ route('area_admin.visits.show', $visit) }}" class="text-gray-400 hover:text-blue-500 transition-colors" title="Ver Detalles">
+                                        <i class="fas fa-eye fa-lg"></i>
+                                    </a>
+
+                                    <form action="{{ route('area_admin.visits.destroy', $visit) }}" method="POST" onsubmit="return confirm('¿Confirmas la eliminación de esta visita?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors" title="Eliminar">
+                                            <i class="fas fa-trash-alt fa-lg"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
