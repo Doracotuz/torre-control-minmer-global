@@ -66,7 +66,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" alt="Logotipo Minmer Global">
+            <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" alt="Logotipo Minmer Global" style="height: 60px; width: auto;">
         </div>
         <div class="content">
             <h1>Invitación de Visita</h1>
