@@ -33,12 +33,17 @@ class AsignacionController extends Controller
         }
 
         if ($request->filled('origen')) {
-            $query->where('origen', 'like', '%' . $request->origen . '%');
+            // El filtro de origen ahora usa el valor del select
+            $query->where('origen', $request->origen);
         }
 
         $guias = $query->withCount('facturas')->orderBy('created_at', 'desc')->paginate(20);
 
-        return view('rutas.asignaciones.index', compact('guias'));
+        // --- INICIA CAMBIO: Obtener orígenes para el dropdown ---
+        $origenes = Guia::select('origen')->whereNotNull('origen')->where('origen', '!=', '')->distinct()->orderBy('origen')->pluck('origen');
+        // --- TERMINA CAMBIO ---
+
+        return view('rutas.asignaciones.index', compact('guias', 'origenes')); // <-- Se pasa la variable $origenes
     }
 
     /**
@@ -47,15 +52,16 @@ class AsignacionController extends Controller
     public function downloadTemplate()
     {
         $headers = [
-            "Content-type"        => "text/csv",
+            "Content-type" => "text/csv",
             "Content-Disposition" => "attachment; filename=plantilla_guias.csv",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
         ];
 
         $callback = function () {
             $file = fopen('php://output', 'w');
+            // --- INICIA CAMBIO: Nuevas columnas en la plantilla CSV ---
             fputcsv($file, [
                 'guia',             // 0
                 'fecha_asignacion', // 1
@@ -69,30 +75,26 @@ class AsignacionController extends Controller
                 'custodia',         // 9
                 'operador',         // 10
                 'placas',           // 11
-                'pedimento'         // 12
+                'pedimento',        // 12
+                'so',               // 13 <-- AÑADIDO
+                'fecha_entrega'     // 14 <-- AÑADIDO (Formato YYYY-MM-DD o DD/MM/YYYY)
             ]);
+            // --- TERMINA CAMBIO ---
             fclose($file);
         };
         return response()->stream($callback, 200, $headers);
     }
 
-    /**
-     * Importa guías y facturas desde un archivo CSV.
-     */
     public function importCsv(Request $request)
     {
         $request->validate(['csv_file' => 'required|mimes:csv,txt']);
-
         $path = $request->file('csv_file')->getRealPath();
-        
         $fileContent = file_get_contents($path);
         $utf8Content = mb_convert_encoding($fileContent, 'UTF-8', mb_detect_encoding($fileContent, 'UTF-8, ISO-8859-1', true));
-        
         $file = fopen("php://memory", 'r+');
         fwrite($file, $utf8Content);
         rewind($file);
-
-        fgetcsv($file); // Omitir la cabecera
+        fgetcsv($file); // Omitir cabecera
 
         $guiasData = [];
         while (($row = fgetcsv($file, 1000, ",")) !== FALSE) {
@@ -112,13 +114,33 @@ class AsignacionController extends Controller
                     'facturas'         => []
                 ];
             }
+            
+            // --- INICIA CAMBIO: Leer nuevos campos del CSV ---
+            $fechaEntrega = null;
+            if (!empty(trim($row[14]))) {
+                try {
+                    // Intenta con formato 'd/m/Y' primero, luego 'Y-m-d'
+                    $fechaEntrega = Carbon::createFromFormat('d/m/Y', trim($row[14]))->format('Y-m-d');
+                } catch (\Exception $e) {
+                    try {
+                        $fechaEntrega = Carbon::parse(trim($row[14]))->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        Log::warning("Formato de fecha de entrega inválido: ". $row[14]);
+                        $fechaEntrega = null;
+                    }
+                }
+            }
+
             $guiasData[$guiaNum]['facturas'][] = [
                 'destino'          => trim($row[4]),
                 'hora_cita'        => trim($row[5]),
                 'numero_factura'   => trim($row[6]),
                 'botellas'         => (int)trim($row[7]),
                 'cajas'            => (int)trim($row[8]),
+                'so'               => is_numeric(trim($row[13])) ? (int)trim($row[13]) : null,
+                'fecha_entrega'    => $fechaEntrega,
             ];
+            // --- TERMINA CAMBIO ---
         }
         fclose($file);
         
@@ -126,15 +148,11 @@ class AsignacionController extends Controller
         try {
             foreach ($guiasData as $guiaNum => $data) {
                 if (Guia::where('guia', $guiaNum)->exists()) continue;
-
                 $fechaAsignacion = null;
                 if (!empty($data['fecha_asignacion'])) {
                     try {
                         $fechaAsignacion = Carbon::createFromFormat('d/m/Y', $data['fecha_asignacion'])->format('Y-m-d');
-                    } catch (\Exception $e) {
-                        Log::warning("Formato de fecha inválido para guía {$guiaNum}: " . $data['fecha_asignacion']);
-                        $fechaAsignacion = null;
-                    }
+                    } catch (\Exception $e) { $fechaAsignacion = null; }
                 }
 
                 $guia = Guia::create([
@@ -160,19 +178,14 @@ class AsignacionController extends Controller
         return redirect()->route('rutas.asignaciones.index')->with('success', 'Archivo importado exitosamente.');
     }
 
-    /**
-     * Muestra el formulario para crear una guía manualmente.
-     */
     public function create()
     {
         return view('rutas.asignaciones.create');
     }
 
-    /**
-     * Guarda una nueva guía y sus facturas en la base de datos.
-     */
     public function store(Request $request)
     {
+        // --- INICIA CAMBIO: Validación para los nuevos campos ---
         $validatedData = $request->validate([
             'guia' => 'required|string|max:255|unique:guias,guia',
             'operador' => 'required|string|max:255',
@@ -188,7 +201,10 @@ class AsignacionController extends Controller
             'facturas.*.cajas' => 'required|integer|min:0',
             'facturas.*.botellas' => 'required|integer|min:0',
             'facturas.*.hora_cita' => 'nullable|string|max:255',
+            'facturas.*.so' => 'nullable|numeric',
+            'facturas.*.fecha_entrega' => 'nullable|date',
         ]);
+        // --- TERMINA CAMBIO ---
 
         DB::beginTransaction();
         try {
@@ -204,20 +220,15 @@ class AsignacionController extends Controller
         return redirect()->route('rutas.asignaciones.index')->with('success', 'Guía ' . $guia->guia . ' creada exitosamente.');
     }
 
-    /**
-     * Obtiene los datos de una guía para editar.
-     */
     public function edit(Guia $guia)
     {
         $guia->load('facturas');
         return response()->json($guia);
     }
 
-    /**
-     * Actualiza una guía existente.
-     */
     public function update(Request $request, Guia $guia)
     {
+        // --- INICIA CAMBIO: Validación para los nuevos campos en la actualización ---
         $validatedData = $request->validate([
             'operador' => 'required|string|max:255',
             'placas' => 'required|string|max:255',
@@ -233,12 +244,14 @@ class AsignacionController extends Controller
             'facturas.*.cajas' => 'required|integer|min:0',
             'facturas.*.botellas' => 'required|integer|min:0',
             'facturas.*.hora_cita' => 'nullable|string|max:255',
+            'facturas.*.so' => 'nullable|numeric',
+            'facturas.*.fecha_entrega' => 'nullable|date_format:Y-m-d', // Se espera el formato Y-m-d del date picker
         ]);
+        // --- TERMINA CAMBIO ---
 
         DB::beginTransaction();
         try {
             $guia->update($validatedData);
-
             $facturasIdsActuales = [];
             foreach ($validatedData['facturas'] as $facturaData) {
                 if (isset($facturaData['id'])) {
@@ -253,7 +266,6 @@ class AsignacionController extends Controller
                 }
             }
             $guia->facturas()->whereNotIn('id', $facturasIdsActuales)->delete();
-
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -299,9 +311,10 @@ class AsignacionController extends Controller
 
         $callback = function() use($guias) {
             $file = fopen('php://output', 'w');
+            // --- INICIA CAMBIO: Nuevas columnas en la exportación CSV ---
             fputcsv($file, [
                 'Guia', 'Operador', 'Placas', 'Pedimento', 'Custodia', 'Hora Planeada', 'Fecha Asignacion', 'Origen', 'Estatus',
-                '# Factura', 'Destino', 'Cajas', 'Botellas', 'Hora Cita'
+                '# Factura', 'Destino', 'Cajas', 'Botellas', 'Hora Cita', 'SO', 'Fecha Entrega'
             ]);
 
             foreach ($guias as $guia) {
@@ -309,7 +322,9 @@ class AsignacionController extends Controller
                     foreach($guia->facturas as $factura) {
                         fputcsv($file, [
                             $guia->guia, $guia->operador, $guia->placas, $guia->pedimento, $guia->custodia, $guia->hora_planeada, $guia->fecha_asignacion, $guia->origen, $guia->estatus,
-                            $factura->numero_factura, $factura->destino, $factura->cajas, $factura->botellas, $factura->hora_cita
+                            $factura->numero_factura, $factura->destino, $factura->cajas, $factura->botellas, $factura->hora_cita,
+                            $factura->so ?? 'N/A', // <-- AÑADIDO
+                            $factura->fecha_entrega ? $factura->fecha_entrega->format('d/m/Y') : 'N/A' // <-- AÑADIDO
                         ]);
                     }
                 } else {

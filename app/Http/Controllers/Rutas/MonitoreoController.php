@@ -24,6 +24,14 @@ class MonitoreoController extends Controller
         $query = Guia::query()
             ->with(['ruta.paradas', 'eventos', 'facturas']);
 
+        // --- INICIA CAMBIO: Excluir estatus 'En Espera' por defecto ---
+        // Si no se especifica un filtro de estatus, se muestran todos menos 'En Espera'.
+        if ($request->filled('estatus')) {
+            $query->where('estatus', $request->estatus);
+        } else {
+            $query->where('estatus', '!=', 'En Espera');
+        }
+
         // Búsqueda
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';
@@ -90,84 +98,119 @@ class MonitoreoController extends Controller
     public function storeEvent(Request $request, Guia $guia)
     {
         $validatedData = $request->validate([
-            'tipo' => 'required|in:Entrega,Notificacion,Incidencias',
+            'tipo' => 'required|in:Notificacion,Incidencias,Entrega,Sistema', // Se añade 'Sistema'
             'subtipo' => 'required|string|max:255',
             'nota' => 'nullable|string',
             'latitud' => 'required|numeric',
             'longitud' => 'required|numeric',
-            'factura_id' => 'nullable|required_if:tipo,Entrega|exists:facturas,id',
-            // --- VALIDACIÓN MEJORADA PARA MÚLTIPLES ARCHIVOS ---
-            'evidencia' => 'nullable|array', // Ahora puede ser un array (o no venir)
-            'evidencia.*' => 'file|max:51200', // max 50MB por archivo
+            'municipio' => 'nullable|string',
+            'factura_ids' => 'nullable|array', // Para eventos que afectan facturas específicas
+            'factura_ids.*' => 'exists:facturas,id',
+            'evidencia' => 'nullable|array',
+            // La evidencia es obligatoria solo si el subtipo es Entregada o No Entregada
+            'evidencia.*' => 'required_if:subtipo,Entregada|required_if:subtipo,No Entregada|file|max:20480', // 20MB
         ]);
 
-        // Validación de cantidad de fotos por tipo de evento
-        if ($request->hasFile('evidencia')) {
-            $fileCount = count($validatedData['evidencia']);
-            if ($validatedData['tipo'] === 'Entrega' && $fileCount > 10) {
-                return back()->with('error', 'Solo se permiten hasta 10 fotos para eventos de entrega.');
-            }
-            if ($validatedData['tipo'] === 'Notificacion' && $fileCount > 1) {
-                return back()->with('error', 'Solo se permite 1 foto para eventos de notificación.');
-            }
-        }
-
         try {
+            DB::beginTransaction();
+            $subtipo = $validatedData['subtipo'];
+
+            // 1. Lógica de cambio de estatus
+            switch ($subtipo) {
+                case 'Llegada a carga':
+                    $guia->estatus = 'En espera de carga';
+                    $guia->facturas()->update(['estatus_entrega' => 'En espera de carga']);
+                    break;
+                case 'Fin de carga':
+                    $guia->estatus = 'Por iniciar ruta';
+                    $guia->facturas()->update(['estatus_entrega' => 'Por iniciar ruta']);
+                    break;
+                case 'En ruta':
+                    $guia->estatus = 'En tránsito';
+                    // Solo actualiza las facturas que no han llegado al cliente o están en pernocta
+                    $guia->facturas()->whereIn('estatus_entrega', ['Por iniciar ruta', 'En Pernocta'])->update(['estatus_entrega' => 'En tránsito']);
+                    break;
+                case 'Pernocta':
+                    $guia->estatus = 'En Pernocta';
+                    $guia->facturas()->where('estatus_entrega', 'En tránsito')->update(['estatus_entrega' => 'En Pernocta']);
+                    break;
+                case 'Llegada a cliente':
+                    if (!empty($validatedData['factura_ids'])) {
+                        Factura::whereIn('id', $validatedData['factura_ids'])->update(['estatus_entrega' => 'En cliente']);
+                    }
+                    break;
+                case 'Proceso de entrega':
+                     if (!empty($validatedData['factura_ids'])) {
+                        Factura::whereIn('id', $validatedData['factura_ids'])->update(['estatus_entrega' => 'Entregando']);
+                    }
+                    break;
+                case 'Entregada':
+                case 'No entregada':
+                    if (empty($validatedData['factura_ids'])) {
+                        return back()->with('error', 'Debes seleccionar al menos una factura para esta acción.');
+                    }
+                     if (empty($validatedData['evidencia'])) {
+                        return back()->with('error', 'La evidencia es obligatoria para entregas.');
+                    }
+                    Factura::whereIn('id', $validatedData['factura_ids'])->update(['estatus_entrega' => $subtipo]);
+                    break;
+            }
+            $guia->save();
+
+
+            // 2. Procesamiento de Evidencias
             $paths = [];
             if ($request->hasFile('evidencia')) {
-                $directory = $validatedData['tipo'] === 'Entrega' ? 'tms_evidencias' : 'tms_events';
-                
-                $facturaNumero = 'evento';
-                if ($validatedData['tipo'] === 'Entrega') {
-                    $factura = Factura::find($validatedData['factura_id']);
-                    $facturaNumero = $factura->numero_factura;
+                // Validación de cantidad
+                $fileCount = count($validatedData['evidencia']);
+                if (($subtipo === 'Entregada' || $subtipo === 'No entregada') && $fileCount > 10) {
+                     return back()->with('error', 'Solo se permiten hasta 10 fotos por factura para eventos de entrega.');
                 }
+                
+                $directory = 'tms_evidencias';
+                $facturaNumero = count($validatedData['factura_ids'] ?? []) === 1 ? Factura::find($validatedData['factura_ids'][0])->numero_factura : 'multi';
 
-                foreach ($request->file('evidencia') as $index => $file) {
-                    $extension = $file->getClientOriginalExtension();
-                    $suffix = ($index > 0) ? '-' . ($index + 1) : '';
-                    $fileName = "{$facturaNumero}{$suffix}.{$extension}";
-                    
+                foreach ($request->file('evidencia') as $file) {
+                    $fileName = $facturaNumero . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                     $paths[] = $file->storeAs($directory, $fileName, 's3');
                 }
             }
-
+            
+            // 3. Creación del Evento
             Evento::create([
                 'guia_id' => $guia->id,
-                'factura_id' => $validatedData['factura_id'] ?? null,
+                // Si el evento afecta múltiples facturas, no se asocia a una sola.
+                'factura_id' => (count($validatedData['factura_ids'] ?? []) === 1) ? $validatedData['factura_ids'][0] : null,
                 'tipo' => $validatedData['tipo'],
-                'subtipo' => $validatedData['subtipo'],
-                'nota' => $validatedData['nota'] ?? $validatedData['subtipo'],
+                'subtipo' => $subtipo,
+                'nota' => $validatedData['nota'] ?? $subtipo,
                 'latitud' => $validatedData['latitud'],
                 'longitud' => $validatedData['longitud'],
-                'url_evidencia' => $paths, // Guardamos el array de rutas
+                'municipio' => $validatedData['municipio'],
+                'url_evidencia' => $paths,
                 'fecha_evento' => now(),
             ]);
 
-            if ($validatedData['tipo'] === 'Entrega') {
-                $factura = Factura::find($validatedData['factura_id']);
-                $factura->estatus_entrega = ($validatedData['subtipo'] === 'Factura Entregada') ? 'Entregada' : 'No Entregada';
-                $factura->save();
+            // 4. Verificar si la guía se ha completado
+            $conteoPendientes = $guia->facturas()
+                                     ->whereNotIn('estatus_entrega', ['Entregada', 'No entregada'])
+                                     ->count();
 
-                $guia->load('facturas');
-                $conteoPendientes = $guia->facturas()->where('estatus_entrega', 'Pendiente')->count();
-
-                if ($conteoPendientes === 0) {
-                    $guia->estatus = 'Completada';
-                    $guia->save();
-                }
-            }
-            if ($guia->estatus == 'Planeada') {
-                $guia->estatus = 'En Transito';
+            if ($conteoPendientes === 0) {
+                $guia->estatus = 'Completada';
+                $guia->fecha_fin_ruta = now();
                 $guia->save();
             }
-
+            
+            DB::commit();
         } catch (\Exception $e) {
-            Log::error("Error al guardar evento: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Ocurrió un error al guardar el evento.');
+            DB::rollBack();
+            Log::error("Error al guardar evento desde operador: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Ocurrió un error al guardar el evento: '.$e->getMessage());
         }
+        // --- TERMINA CAMBIO ---
 
-        return redirect()->route('rutas.monitoreo.index')->with('success', 'Evento registrado exitosamente.');
+        return redirect()->route('operador.guia.show', ['guia' => $guia->guia])->with('success', 'Evento registrado exitosamente.');
     }
 
     public function filter(Request $request)

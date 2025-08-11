@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-8">
                 <form action="{{ route('rutas.asignaciones.store') }}" method="POST">
                     @csrf
@@ -71,40 +71,51 @@
                     </div>
 
                     {{-- SECCIÓN DE FACTURAS ACTUALIZADA --}}
-                    <div class="mt-10" x-data="{ facturas: {{ json_encode(old('facturas', [['numero_factura' => '', 'destino' => '', 'cajas' => 0, 'botellas' => 0, 'hora_cita' => '']])) }} }">
+                    <div class="mt-10" x-data="{ facturas: {{ json_encode(old('facturas', [['numero_factura' => '', 'destino' => '', 'cajas' => 0, 'botellas' => 0, 'hora_cita' => '', 'so' => '', 'fecha_entrega' => '']])) }} }">
                         <h3 class="text-lg font-semibold text-[#2c3856] border-b pb-2 mb-6">Facturas de la Guía</h3>
                         
                         <template x-for="(factura, index) in facturas" :key="index">
-                            <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end bg-gray-50 p-4 rounded-md mb-4 border">
+                            {{-- Se ajusta el grid a 10 columnas para todos los campos --}}
+                            <div class="grid grid-cols-1 md:grid-cols-10 gap-4 items-end bg-gray-50 p-4 rounded-md mb-4 border">
                                 <div class="md:col-span-2">
                                     <label :for="'factura_num_' + index" class="block text-sm font-medium text-gray-700"># Factura</label>
-                                    <input type="text" :name="'facturas[' + index + '][numero_factura]'" :id="'factura_num_' + index" x-model="factura.numero_factura" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    <input type="text" :name="'facturas[' + index + '][numero_factura]'" :id="'factura_num_' + index" x-model="factura.numero_factura" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
                                 </div>
                                 <div class="md:col-span-2">
                                     <label :for="'factura_dest_' + index" class="block text-sm font-medium text-gray-700">Destino</label>
-                                    <input type="text" :name="'facturas[' + index + '][destino]'" :id="'factura_dest_' + index" x-model="factura.destino" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    <input type="text" :name="'facturas[' + index + '][destino]'" :id="'factura_dest_' + index" x-model="factura.destino" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                </div>
+                                <div>
+                                    <label :for="'factura_so_' + index" class="block text-sm font-medium text-gray-700">SO</label>
+                                    <input type="number" :name="'facturas[' + index + '][so]'" :id="'factura_so_' + index" x-model.number="factura.so" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                </div>
+                                <div>
+                                    <label :for="'factura_fecha_entrega_' + index" class="block text-sm font-medium text-gray-700">F. Entrega</label>
+                                    <input type="date" :name="'facturas[' + index + '][fecha_entrega]'" :id="'factura_fecha_entrega_' + index" x-model="factura.fecha_entrega" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                </div>
+                                {{-- INICIO DE CAMPOS REINTEGRADOS --}}
+                                <div>
+                                    <label :for="'factura_hora_cita_' + index" class="block text-sm font-medium text-gray-700">Hora Cita</label>
+                                    <input type="text" :name="'facturas[' + index + '][hora_cita]'" :id="'factura_hora_cita_' + index" x-model="factura.hora_cita" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
                                 </div>
                                 <div>
                                     <label :for="'factura_cajas_' + index" class="block text-sm font-medium text-gray-700">Cajas</label>
-                                    <input type="number" :name="'facturas[' + index + '][cajas]'" :id="'factura_cajas_' + index" x-model.number="factura.cajas" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    <input type="number" :name="'facturas[' + index + '][cajas]'" :id="'factura_cajas_' + index" x-model.number="factura.cajas" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
                                 </div>
                                 <div>
                                     <label :for="'factura_botellas_' + index" class="block text-sm font-medium text-gray-700">Botellas</label>
-                                    <input type="number" :name="'facturas[' + index + '][botellas]'" :id="'factura_botellas_' + index" x-model.number="factura.botellas" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    <input type="number" :name="'facturas[' + index + '][botellas]'" :id="'factura_botellas_' + index" x-model.number="factura.botellas" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
                                 </div>
-                                <div>
-                                    <label :for="'factura_hora_cita_' + index" class="block text-sm font-medium text-gray-700">Hora Cita</label>
-                                    <input type="text" :name="'facturas[' + index + '][hora_cita]'" :id="'factura_hora_cita_' + index" x-model="factura.hora_cita" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                                </div>
+                                {{-- FIN DE CAMPOS REINTEGRADOS --}}
                                 <div class="md:col-span-1">
-                                    <button type="button" @click="if (facturas.length > 1) facturas.splice(index, 1)" class="w-full justify-center inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50" :disabled="facturas.length <= 1">
+                                    <button type="button" @click="if (facturas.length > 1) facturas.splice(index, 1)" class="w-full justify-center inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 text-sm" :disabled="facturas.length <= 1">
                                         Eliminar
                                     </button>
                                 </div>
                             </div>
                         </template>
 
-                        <button type="button" @click="facturas.push({numero_factura: '', destino: '', cajas: 0, botellas: 0, hora_cita: ''})" class="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-800">
+                        <button type="button" @click="facturas.push({numero_factura: '', destino: '', cajas: 0, botellas: 0, hora_cita: '', so: '', fecha_entrega: ''})" class="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-800">
                             + Añadir otra factura
                         </button>
                     </div>

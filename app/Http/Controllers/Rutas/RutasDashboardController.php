@@ -75,31 +75,43 @@ class RutasDashboardController extends Controller
         $response = new StreamedResponse(function() use ($startCarbon, $endCarbon) {
             $handle = fopen('php://output', 'w');
             
-            // Encabezados del CSV
+            // --- INICIA CAMBIO: Nuevas columnas para el reporte de eventos ---
             fputcsv($handle, [
-                'Guia', 'Estatus', 'Operador', 'Placas', 'Ruta Asignada', 'Pedimento',
-                'Fecha Creacion', 'Fecha Inicio', 'Fecha Fin', 'Total Facturas', 'Total Eventos'
+                'Guia', 'Estatus Guia', 'Operador', 'Placas', 'Ruta Asignada', 'Pedimento',
+                'Fecha Creacion Guia', 'Fecha Evento', 'Tipo Evento', 'Detalle Evento', 
+                'Nota Evento', 'Latitud', 'Longitud', 'Municipio'
             ]);
 
-            // Obtenemos los datos con eager loading para optimizar
-            $guias = Guia::with(['ruta', 'facturas', 'eventos'])
+            $guias = Guia::with(['ruta', 'eventos'])
                 ->whereBetween('created_at', [$startCarbon, $endCarbon])
                 ->get();
 
             foreach ($guias as $guia) {
-                fputcsv($handle, [
-                    $guia->guia,
-                    $guia->estatus,
-                    $guia->operador,
-                    $guia->placas,
-                    $guia->ruta ? $guia->ruta->nombre : 'N/A', // Nombre de la ruta o N/A
-                    $guia->pedimento ?? 'N/A',
-                    $guia->created_at->format('Y-m-d H:i:s'),
-                    $guia->fecha_inicio_ruta ? $guia->fecha_inicio_ruta->format('Y-m-d H:i:s') : 'N/A',
-                    $guia->fecha_fin_ruta ? $guia->fecha_fin_ruta->format('Y-m-d H:i:s') : 'N/A',
-                    $guia->facturas->count(), // Conteo de facturas
-                    $guia->eventos->count()  // Conteo de eventos
-                ]);
+                // Si una guía no tiene eventos, se exporta una línea con la info de la guía
+                if ($guia->eventos->isEmpty()) {
+                     fputcsv($handle, [
+                        $guia->guia, $guia->estatus, $guia->operador, $guia->placas,
+                        $guia->ruta->nombre ?? 'N/A', $guia->pedimento ?? 'N/A',
+                        $guia->created_at->format('Y-m-d H:i:s'), 'N/A', 'N/A', 'N/A',
+                        'N/A', 'N/A', 'N/A', 'N/A'
+                    ]);
+                } else {
+                    // Se itera sobre cada evento y se crea una fila por cada uno
+                    foreach($guia->eventos as $evento) {
+                         fputcsv($handle, [
+                            $guia->guia, $guia->estatus, $guia->operador, $guia->placas,
+                            $guia->ruta->nombre ?? 'N/A', $guia->pedimento ?? 'N/A',
+                            $guia->created_at->format('Y-m-d H:i:s'),
+                            $evento->fecha_evento->format('Y-m-d H:i:s'),
+                            $evento->tipo,
+                            $evento->subtipo,
+                            $evento->nota,
+                            $evento->latitud,
+                            $evento->longitud,
+                            $evento->municipio ?? 'N/A'
+                        ]);
+                    }
+                }
             }
 
             fclose($handle);

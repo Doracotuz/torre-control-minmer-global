@@ -17,6 +17,12 @@ class Factura extends Model
         'botellas',
         'estatus_entrega',
         'hora_cita',
+        'so',
+        'fecha_entrega',
+    ];
+
+    protected $casts = [
+        'fecha_entrega' => 'date:Y-m-d',
     ];
 
     public function guia()

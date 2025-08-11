@@ -27,7 +27,7 @@ class Guia extends Model
     protected $casts = [
         'fecha_inicio_ruta' => 'datetime',
         'fecha_fin_ruta' => 'datetime',
-        'fecha_asignacion' => 'date',
+        'fecha_asignacion' => 'date:Y-m-d',
     ];
 
     public function ruta()

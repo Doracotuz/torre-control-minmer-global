@@ -1,127 +1,150 @@
 @extends('layouts.guest-rutas')
 
 @section('content')
-    <div x-data="operatorView()">
+    {{-- Se inicializa el componente AlpineJS con todos los datos necesarios de la guía y sus facturas --}}
+    <div x-data="operatorView({{ json_encode($guia->load('facturas')) }})">
         <div class="text-center mb-6">
-            <p class="text-sm text-gray-500">Guía No.</p>
+            <p class="text-sm text-gray-500">Guía No. / Estatus Actual</p>
             <h2 class="text-3xl font-bold text-[#2c3856] tracking-wider">{{ $guia->guia }}</h2>
-            <p class="mt-1 text-gray-600">Operador: {{ $guia->operador }}</p>
+            {{-- El estatus se actualiza dinámicamente con AlpineJS --}}
+            <p class="mt-1 text-lg font-semibold" :class="getBadgeClass(guia.estatus, true)" x-text="guia.estatus"></p>
         </div>
 
-        {{-- Notificaciones de Sesión --}}
         @if(session('success'))
-            <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 3000)" x-transition class="bg-green-100 text-green-800 p-4 rounded-md mb-4 text-sm">{{ session('success') }}</div>
+            <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition class="bg-green-100 text-green-800 p-4 rounded-md mb-4 text-sm font-semibold">{{ session('success') }}</div>
         @endif
         @if(session('error'))
-            <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 3000)" x-transition class="bg-red-100 text-red-600 p-4 rounded-md mb-4 text-sm">{{ session('error') }}</div>
+            <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition class="bg-red-100 text-red-700 p-4 rounded-md mb-4 text-sm font-semibold">{{ session('error') }}</div>
         @endif
 
-        {{-- Botones de Acción --}}
-        @if($guia->estatus === 'Planeada')
-            <div class="mb-6">
-                <form id="start-route-form" action="{{ route('operador.guia.start', ['guia' => $guia->guia]) }}" method="POST">
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            
+            <div x-show="guia.estatus === 'Planeada'">
+                <h3 class="font-bold text-lg text-center text-gray-700 mb-4">Paso 1: Iniciar Viaje a Carga</h3>
+                <form id="start-form" action="{{ route('operador.guia.start', $guia->guia) }}" method="POST">
                     @csrf
-                    <input type="hidden" name="latitud" id="latitud-input">
-                    <input type="hidden" name="longitud" id="longitud-input">
-                    <button type="button" @click="startRoute()" :disabled="isLoading" class="w-full justify-center inline-flex items-center px-6 py-4 bg-green-600 text-white rounded-lg font-semibold text-lg hover:bg-green-700 disabled:opacity-50">
-                        <span x-show="!isLoading">Iniciar Ruta</span>
-                        <span x-show="isLoading">Obteniendo ubicación...</span>
+                    <input type="hidden" name="latitud" id="start-latitud">
+                    <input type="hidden" name="longitud" id="start-longitud">
+                    <input type="hidden" name="municipio" id="start-municipio">
+                    <button type="button" @click="submitStartForm()" :disabled="isLoading" class="w-full justify-center inline-flex items-center px-6 py-4 bg-green-600 text-white rounded-lg font-semibold text-lg hover:bg-green-700 disabled:opacity-50">
+                        <span x-show="!isLoading">Iniciar Viaje</span>
+                        <span x-show="isLoading" class="flex items-center"><svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Enviando...</span>
                     </button>
                 </form>
-                <p x-show="locationError" x-text="locationError" class="text-red-600 text-sm mt-2 text-center"></p>
             </div>
-        @elseif($guia->estatus === 'En Transito')
-            <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button @click="openNotificationModal()" class="w-full justify-center inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold text-lg hover:bg-blue-700">
-                    Notificar Evento
-                </button>
-                <button @click="openIncidenceModal()" class="w-full justify-center inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg font-semibold text-lg hover:bg-red-700">
-                    Reportar Incidencia
-                </button>
+
+            <div x-show="guia.estatus === 'Camino a carga'">
+                <h3 class="font-bold text-lg text-center text-gray-700 mb-4">Paso 2: Llegada a punto de Carga</h3>
+                <button @click="openModal('Sistema', 'Llegada a carga')" class="w-full justify-center inline-flex items-center px-6 py-4 bg-[#2c3856] text-white rounded-lg font-semibold text-lg hover:bg-opacity-90">Registrar Llegada a Carga</button>
             </div>
-        @elseif($guia->estatus === 'Completada')
-            <div class="mb-6 bg-green-100 border-l-4 border-green-500 text-green-800 p-6 rounded-lg text-center">
-                <div class="flex items-center justify-center">
-                    <svg class="w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <h3 class="text-xl font-bold">¡Ruta Finalizada!</h3>
+
+            <div x-show="guia.estatus === 'En espera de carga'">
+                <h3 class="font-bold text-lg text-center text-gray-700 mb-4">Paso 3: Finalizar Carga de Unidad</h3>
+                <button @click="openModal('Sistema', 'Fin de carga')" class="w-full justify-center inline-flex items-center px-6 py-4 bg-[#2c3856] text-white rounded-lg font-semibold text-lg hover:bg-opacity-90">Registrar Fin de Carga</button>
+            </div>
+
+            <div x-show="guia.estatus === 'Por iniciar ruta'">
+                 <h3 class="font-bold text-lg text-center text-gray-700 mb-4">Paso 4: Iniciar Ruta a Destino</h3>
+                <button @click="openModal('Sistema', 'En ruta')" class="w-full justify-center inline-flex items-center px-6 py-4 bg-green-600 text-white rounded-lg font-semibold text-lg hover:bg-green-700">Confirmar Inicio de Ruta</button>
+            </div>
+
+            <div x-show="guia.estatus === 'En tránsito' || guia.estatus === 'En Pernocta'">
+                <h3 class="font-bold text-lg text-center text-gray-700 mb-4">Acciones en Ruta</h3>
+                <div class="mb-6 grid grid-cols-2 gap-4">
+                    <button x-show="guia.estatus === 'En Pernocta'" @click="openModal('Sistema', 'En ruta')" class="w-full justify-center inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700">Reanudar Ruta</button>
+                    <button x-show="guia.estatus === 'En tránsito'" @click="openModal('Notificacion', 'Pernocta')" class="w-full justify-center inline-flex items-center px-6 py-3 bg-yellow-500 text-black rounded-lg font-semibold hover:bg-yellow-600">Registrar Pernocta</button>
+                    <button @click="openModal('Sistema', 'Llegada a cliente', true)" class="w-full justify-center inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">Llegada a Cliente</button>
+                    
+                    <button @click="openEventSelectionModal('Notificacion')" class="col-span-1 w-full justify-center inline-flex items-center px-6 py-3 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600">
+                        Notificar Evento
+                    </button>
+                    <button @click="openEventSelectionModal('Incidencias')" class="col-span-1 w-full justify-center inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700">
+                        Reportar Incidencia
+                    </button>
                 </div>
-                @if($guia->fecha_fin_ruta)
-                    <p class="mt-2 text-sm">La guía fue completada el: {{ $guia->fecha_fin_ruta->format('d/m/Y h:i A') }}</p>
-                @endif
-            </div>
-        @endif
-        
-        <div class="space-y-4">
-            <h3 class="font-bold text-gray-700">Entregas</h3>
-            @foreach($guia->facturas as $factura)
-                <div class="bg-white border rounded-lg p-4">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <p class="font-bold text-gray-800">{{ $factura->numero_factura }}</p>
-                            <p class="text-sm text-gray-600">{{ $factura->destino }}</p>
+                
+                <h4 class="font-semibold text-gray-600 mb-2 border-b pb-2">Estado de Facturas</h4>
+                <div class="space-y-2 mt-4">
+                     <template x-for="factura in guia.facturas" :key="factura.id">
+                        <div class="p-3 rounded-lg flex justify-between items-center bg-gray-50 border">
+                            <div>
+                                <p class="font-bold text-gray-800" x-text="factura.numero_factura"></p>
+                                <p class="text-xs" x-text="factura.destino"></p>
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full" :class="getBadgeClass(factura.estatus_entrega, false)" x-text="factura.estatus_entrega"></span>
+                            </div>
+                            <div class="flex flex-col items-end gap-2">
+                                <button x-show="factura.estatus_entrega === 'En cliente'" @click="openModal('Sistema', 'Proceso de entrega', false, [factura.id])" class="text-xs bg-indigo-600 text-white px-3 py-1 rounded-full font-semibold">Iniciar Entrega</button>
+                                <button x-show="factura.estatus_entrega === 'Entregando'" @click="openModal('Entrega', 'Entregada', false, [factura.id])" class="text-xs bg-green-600 text-white px-3 py-1 rounded-full font-semibold">Entregada OK</button>
+                                <button x-show="factura.estatus_entrega === 'Entregando'" @click="openModal('Entrega', 'No entregada', false, [factura.id])" class="text-xs bg-red-600 text-white px-3 py-1 rounded-full font-semibold">No Entregada</button>
+                            </div>
                         </div>
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            @if($factura->estatus_entrega == 'Pendiente') bg-yellow-100 text-yellow-800
-                            @elseif($factura->estatus_entrega == 'Entregada') bg-green-100 text-green-800
-                            @else bg-red-100 text-red-800
-                            @endif">
-                            {{ $factura->estatus_entrega }}
-                        </span>
-                    </div>
-                    @if($guia->estatus === 'En Transito' && $factura->estatus_entrega === 'Pendiente')
-                    <div class="grid grid-cols-2 gap-2 mt-2">
-                        <button @click="openDeliveryModal({{ $factura->id }}, 'Factura Entregada')" class="w-full text-sm py-2 px-3 bg-green-100 text-green-800 rounded-md hover:bg-green-200">Entregada</button>
-                        <button @click="openDeliveryModal({{ $factura->id }}, 'Factura no entregada')" class="w-full text-sm py-2 px-3 bg-red-100 text-red-800 rounded-md hover:bg-red-200">No Entregada</button>
-                    </div>
-                    @endif
+                    </template>
                 </div>
-            @endforeach
+            </div>
+
+            <div x-show="guia.estatus === 'Completada'">
+                 <div class="bg-green-100 border-l-4 border-green-500 text-green-800 p-6 rounded-lg text-center">
+                    <h3 class="text-xl font-bold">¡Ruta Finalizada!</h3>
+                    <p class="mt-2 text-sm">Has concluido todas las entregas de esta guía. Gracias.</p>
+                </div>
+            </div>
         </div>
 
-        {{-- Modal Único para Eventos --}}
-        <div x-show="isModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-            <div @click.outside="isModalOpen = false" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
-                <h3 class="text-lg font-bold text-[#2c3856] mb-4" x-text="modalTitle"></h3>
-                <form id="event-form" action="{{ route('operador.guia.event.store', ['guia' => $guia->guia]) }}" method="POST" enctype="multipart/form-data">
+        <div x-show="isModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" @keydown.escape.window="isModalOpen = false">
+            <div @click.outside="isModalOpen = false" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg max-h-[90vh] flex flex-col">
+                <h3 class="text-lg font-bold text-[#2c3856] mb-4" x-text="modal.title"></h3>
+                <form id="event-form" action="{{ route('operador.guia.event.store', $guia->guia) }}" method="POST" enctype="multipart/form-data" class="flex-grow flex flex-col">
                     @csrf
-                    <input type="hidden" name="tipo" x-model="evento.tipo">
-                    <input type="hidden" name="subtipo" x-model="evento.subtipo">
-                    <input type="hidden" name="factura_id" x-model="evento.facturaId">
-                    <input type="hidden" name="latitud" id="event-latitud-input">
-                    <input type="hidden" name="longitud" id="event-longitud-input">
-                    
-                    <div class="space-y-4">
-                        <div x-show="evento.tipo === 'Notificacion' || evento.tipo === 'Incidencias'" x-transition>
-                            <label for="event_subtype_selector" class="block text-sm font-medium text-gray-700">Selecciona el Detalle</label>
-                            <select name="subtipo" id="event_subtype_selector" x-model="evento.subtipo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                                <template x-for="subtype in eventSubtypes[evento.tipo]" :key="subtype">
+                    <input type="hidden" name="tipo" x-model="modal.tipo">
+                    <input type="hidden" name="subtipo" x-model="modal.subtipo">
+                    <input type="hidden" name="latitud" id="event-latitud">
+                    <input type="hidden" name="longitud" id="event-longitud">
+                    <input type="hidden" name="municipio" id="event-municipio">
+
+                    <div class="flex-grow overflow-y-auto pr-2">
+                        
+                        <div x-show="modal.isSelection" class="mb-4">
+                            <label for="subtipo_select" class="block text-sm font-medium text-gray-700">Selecciona el tipo de evento</label>
+                            <select id="subtipo_select" x-model="modal.subtipo" name="subtipo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                <template x-for="subtype in availableSubtypes" :key="subtype">
                                     <option :value="subtype" x-text="subtype"></option>
                                 </template>
                             </select>
                         </div>
                         
-                        <div>
-                            <label for="evidencia" class="block text-sm font-medium text-gray-700">
-                                Evidencia (Foto)
-                                <span x-show="evento.tipo === 'Entrega'" class="text-red-500">*</span>
-                            </label>
-                            <input type="file" name="evidencia[]" id="evidencia" accept="image/*" multiple 
-                            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#ff9c00]/20 file:text-[#ff9c00] hover:file:bg-[#ff9c00]/30">
-                            <p x-show="evento.tipo === 'Entrega'" class="text-xs text-gray-500 mt-1">La foto de evidencia es obligatoria para las entregas.</p>
+                        <div x-show="modal.needsInvoices" class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700">Seleccionar Facturas Afectadas</label>
+                            <div class="max-h-40 overflow-y-auto border rounded-md p-2 mt-1 space-y-1">
+                                <template x-for="factura in availableInvoicesForModal" :key="factura.id">
+                                    <div>
+                                        <label class="inline-flex items-center w-full p-2 hover:bg-gray-100 rounded-md">
+                                            <input type="checkbox" name="factura_ids[]" :value="factura.id" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                            <span class="ml-2 text-sm" x-text="factura.numero_factura + ' (' + factura.destino + ')'"></span>
+                                        </label>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700">Evidencia Fotográfica</label>
+                            <input type="file" name="evidencia[]" accept="image/*" multiple class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100">
+                            <p class="text-xs text-gray-500 mt-1" x-text="modal.evidenceRequired ? 'Evidencia obligatoria (máx. 10 fotos).' : 'Evidencia opcional.'"></p>
                         </div>
 
-                        <div>
-                            <label for="nota" class="block text-sm font-medium text-gray-700">Nota (Opcional)</label>
-                            <textarea name="nota" id="nota" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
+                        <div class="mb-4">
+                            <label for="nota" class="block text-sm font-medium text-gray-700">Notas (Opcional)</label>
+                            <textarea name="nota" id="nota" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
                         </div>
-                        <p x-show="locationError" x-text="locationError" class="text-red-600 text-sm"></p>
                     </div>
 
-                    <div class="mt-6 flex justify-end gap-4">
-                        <button type="button" @click="isModalOpen = false" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md">Cancelar</button>
+                    <p x-show="locationError" x-text="locationError" class="text-red-600 text-sm mt-2"></p>
+                    
+                    <div class="mt-6 flex justify-end gap-4 border-t pt-4">
+                        <button type="button" @click="isModalOpen = false" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
                         <button type="button" @click="submitEventForm()" :disabled="isLoading" class="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50">
                              <span x-show="!isLoading">Confirmar</span>
-                             <span x-show="isLoading">Enviando...</span>
+                             <span x-show="isLoading" class="flex items-center"><svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Enviando...</span>
                         </button>
                     </div>
                 </form>
@@ -131,89 +154,170 @@
 @endsection
 
 @push('scripts')
+<script src="https://maps.googleapis.com/maps/api/js?key={{ $googleMapsApiKey }}&libraries=places" async defer></script>
+
 <script>
     document.addEventListener('alpine:init', () => {
-        Alpine.data('operatorView', () => ({
+        Alpine.data('operatorView', (guiaData) => ({
+            guia: guiaData,
+            isModalOpen: false,
             isLoading: false,
             locationError: '',
-            isModalOpen: false,
-            modalTitle: '',
-            evento: { tipo: '', subtipo: '', facturaId: null },
+            modal: { title: '', tipo: '', subtipo: '', needsInvoices: false, evidenceRequired: false, isSelection: false },
+
             eventSubtypes: {
-                'Entrega': ['Factura Entregada', 'Factura no entregada'],
-                'Notificacion': ['Sanitario', 'Alimentos', 'Combustible', 'Pernocta', 'Llegada a carga', 'Fin de carga', 'En ruta', 'Llegada a cliente', 'Proceso de entrega'],
-                'Incidencias': ['Rechazo', 'Percance', 'Cambios de datos de unidad', 'Datos Incorrectos', 'Datos Incompletos', 'Cambio de dirección de entrega', 'Capacidad de unidad errónea', 'Carga Tardía', 'Daños al cliente', 'Datos incompletos en planeación', 'Desvío de ruta', 'Entrega en dirección errónea', 'Extravío del producto', 'Falla mecánica', 'Falta de maniobristas', 'Falta de evidencia', 'Incidencia con transito', 'Ingreso de unidades a resguardo', 'Llegada tardía de custodia', 'Mercancía robada', 'No comparten datos de unidad', 'No cuenta con herramientas de embarque', 'No cuenta con herramientas de entrega', 'No cumple con capacidad requerida', 'No cumple con solicitud de unidad', 'No envía estatus', 'No envía evidencias de entrega', 'No llega a tiempo a embarque', 'No llega a tiempo de entrega', 'No lleva gastos', 'No lleva combustible', 'No presenta checklist', 'No regresa producto', 'No reporta incidencias en tiempo', 'No respeta especificaciones del cliente', 'No respeta instrucciones de custodia', 'No valido carga', 'No valido documentos de entrega', 'Salió sin custodia', 'Solicitud de unidades sin antelación', 'Transporte accidentado']
+                'Notificacion': ['Alimentos', 'Combustible', 'Sanitario', 'Otro'],
+                'Incidencias': ['Rechazo', 'Percance', 'Tráfico', 'Falla mecánica', 'Incidencia con autoridad', 'Otro']
+            },
+            availableSubtypes: [],
+
+            openModal(tipo, subtipo, needsInvoices = false, fixedFacturaIds = []) {
+                this.modal = {
+                    title: `Registrar: ${subtipo}`,
+                    tipo: tipo,
+                    subtipo: subtipo,
+                    needsInvoices: needsInvoices,
+                    evidenceRequired: (subtipo === 'Entregada' || subtipo === 'No entregada'),
+                    fixedFacturaIds: fixedFacturaIds,
+                    isSelection: false 
+                };
+                
+                if(fixedFacturaIds.length > 0){
+                    this.modal.needsInvoices = false;
+                }
+
+                this.isModalOpen = true;
+            },
+
+            openEventSelectionModal(tipo) {
+                this.availableSubtypes = this.eventSubtypes[tipo] || [];
+                this.modal = {
+                    title: `Seleccionar ${tipo}`,
+                    tipo: tipo,
+                    subtipo: this.availableSubtypes[0],
+                    needsInvoices: false,
+                    evidenceRequired: false,
+                    fixedFacturaIds: [],
+                    isSelection: true
+                };
+                this.isModalOpen = true;
             },
             
-            // Lógica para el botón Iniciar Ruta (sin cambios)
-            startRoute() {
-                this.isLoading = true;
-                this.locationError = '';
-                if (!navigator.geolocation) { this.locationError = 'Geolocalización no soportada.'; this.isLoading = false; return; }
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        document.getElementById('latitud-input').value = position.coords.latitude;
-                        document.getElementById('longitud-input').value = position.coords.longitude;
-                        document.getElementById('start-route-form').submit();
-                    },
-                    () => { this.locationError = 'Activa el GPS y otorga los permisos.'; this.isLoading = false; }
-                );
+            get availableInvoicesForModal() {
+                if (this.modal.subtipo === 'Llegada a cliente') {
+                    return this.guia.facturas.filter(f => f.estatus_entrega === 'En tránsito');
+                }
+                if (this.modal.subtipo === 'Proceso de entrega') {
+                    return this.guia.facturas.filter(f => f.estatus_entrega === 'En cliente');
+                }
+                return this.guia.facturas;
+            },
+            
+            getBadgeClass(status, isGuia) {
+                const colors = {
+                    'Planeada': 'bg-gray-200 text-gray-800',
+                    'Camino a carga': 'bg-cyan-100 text-cyan-800',
+                    'En espera de carga': 'bg-yellow-100 text-yellow-800',
+                    'Por iniciar ruta': 'bg-orange-100 text-orange-800',
+                    'En tránsito': 'bg-blue-100 text-blue-800',
+                    'En Pernocta': 'bg-indigo-100 text-indigo-800',
+                    'En cliente': 'bg-purple-100 text-purple-800',
+                    'Entregando': 'bg-fuchsia-100 text-fuchsia-800',
+                    'Entregada': 'bg-green-100 text-green-800',
+                    'No entregada': 'bg-red-100 text-red-800',
+                    'Completada': 'bg-green-200 text-green-900 font-bold',
+                    'default': 'bg-gray-200 text-gray-800'
+                };
+                if (isGuia) {
+                    return `px-3 py-1 text-lg rounded-full transition-colors duration-300 ${colors[status] || colors.default}`;
+                }
+                return colors[status] || colors.default;
             },
 
-            // --- LÓGICA DE MODALES ACTUALIZADA ---
-            openDeliveryModal(facturaId, subtipo) {
-                this.modalTitle = subtipo;
-                this.evento.tipo = 'Entrega';
-                this.evento.subtipo = subtipo;
-                this.evento.facturaId = facturaId;
-                this.isModalOpen = true;
-            },
-            openNotificationModal() {
-                this.modalTitle = 'Notificar Evento';
-                this.evento.tipo = 'Notificacion';
-                this.evento.subtipo = this.eventSubtypes['Notificacion'][0]; // Selecciona el primer subtipo por defecto
-                this.evento.facturaId = null;
-                this.isModalOpen = true;
-            },
-            // NUEVA FUNCIÓN PARA ABRIR EL MODAL DE INCIDENCIAS
-            openIncidenceModal() {
-                this.modalTitle = 'Reportar Incidencia';
-                this.evento.tipo = 'Incidencias';
-                this.evento.subtipo = this.eventSubtypes['Incidencias'][0]; // Selecciona el primer subtipo por defecto
-                this.evento.facturaId = null;
-                this.isModalOpen = true;
-            },
             submitEventForm() {
+                const form = document.getElementById('event-form');
+                const evidenceInput = form.querySelector('input[name="evidencia[]"]');
+                const facturasCheckboxes = form.querySelectorAll('input[name="factura_ids[]"]:checked');
+
+                if (this.modal.evidenceRequired && evidenceInput.files.length === 0) {
+                    alert('La evidencia fotográfica es obligatoria para este evento.');
+                    return;
+                }
+                if (this.modal.needsInvoices && facturasCheckboxes.length === 0) {
+                    alert('Debes seleccionar al menos una factura para esta acción.');
+                    return;
+                }
+
                 this.isLoading = true;
                 this.locationError = '';
+                this.getLocationAndSubmit('event-form', this.modal.fixedFacturaIds);
+            },
+            
+            submitStartForm() {
+                this.isLoading = true;
+                this.locationError = '';
+                this.getLocationAndSubmit('start-form');
+            },
 
-                // --- INICIA CORRECCIÓN: Validación de evidencia en el frontend ---
-                const fileInput = document.getElementById('evidencia');
-                if (this.evento.tipo === 'Entrega' && (!fileInput.files || fileInput.files.length === 0)) {
-                    alert('Por favor, adjunta al menos una foto de evidencia para la entrega.');
+            getLocationAndSubmit(formId, fixedFacturaIds = []) {
+                if (!navigator.geolocation) {
+                    this.locationError = 'Geolocalización no está disponible en tu navegador.';
                     this.isLoading = false;
-                    return; // Detiene el envío del formulario
-                }
-                // --- TERMINA CORRECCIÓN ---
-
-                const selector = document.getElementById('event_subtype_selector');
-                if (selector && (this.evento.tipo === 'Notificacion' || this.evento.tipo === 'Incidencias')) {
-                    // Creamos un input oculto para enviar el subtipo correcto
-                    const hiddenInput = document.createElement('input');
-                    hiddenInput.type = 'hidden';
-                    hiddenInput.name = 'subtipo';
-                    hiddenInput.value = this.evento.subtipo;
-                    document.getElementById('event-form').appendChild(hiddenInput);
+                    return;
                 }
 
-                if (!navigator.geolocation) { this.locationError = 'Geolocalización no soportada.'; this.isLoading = false; return; }
                 navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        document.getElementById('event-latitud-input').value = position.coords.latitude;
-                        document.getElementById('event-longitud-input').value = position.coords.longitude;
-                        document.getElementById('event-form').submit();
+                    async (position) => {
+                        const form = document.getElementById(formId);
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        form.querySelector(`input[name="latitud"]`).value = lat;
+                        form.querySelector(`input[name="longitud"]`).value = lng;
+                        
+                        // Asegurarse de que el objeto 'google' exista antes de usarlo
+                        if (typeof google !== 'undefined' && google.maps) {
+                            const geocoder = new google.maps.Geocoder();
+                            const latlng = { lat: parseFloat(lat), lng: parseFloat(lng) };
+                            try {
+                                const { results } = await geocoder.geocode({ location: latlng });
+                                let municipio = 'N/A';
+                                if (results[0]) {
+                                    for (const component of results[0].address_components) {
+                                        if (component.types.includes("locality")) {
+                                            municipio = component.long_name;
+                                            break;
+                                        }
+                                    }
+                                }
+                                form.querySelector(`input[name="municipio"]`).value = municipio;
+                            } catch (e) {
+                                 console.error("Error de Geocodificación: ", e);
+                                 form.querySelector(`input[name="municipio"]`).value = "Error al obtener municipio";
+                            }
+                        } else {
+                            form.querySelector(`input[name="municipio"]`).value = "API de Google no disponible";
+                        }
+                        
+                        // Limpiar y añadir IDs de factura fijos si existen
+                        form.querySelectorAll('input[type="hidden"][name="factura_ids[]"]').forEach(el => el.remove());
+                        if (fixedFacturaIds.length > 0) {
+                            fixedFacturaIds.forEach(id => {
+                                const hiddenInput = document.createElement('input');
+                                hiddenInput.type = 'hidden';
+                                hiddenInput.name = 'factura_ids[]';
+                                hiddenInput.value = id;
+                                form.appendChild(hiddenInput);
+                            });
+                        }
+                        
+                        form.submit();
                     },
-                    () => { this.locationError = 'Activa el GPS y otorga los permisos.'; this.isLoading = false; }
+                    () => {
+                        this.locationError = 'No se pudo obtener la ubicación. Por favor, activa el GPS y otorga los permisos necesarios.';
+                        this.isLoading = false;
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 );
             }
         }));

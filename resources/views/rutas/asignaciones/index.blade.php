@@ -17,8 +17,12 @@
                     </div>
                     <form action="{{ route('rutas.asignaciones.index') }}" method="GET" class="flex items-center gap-2">
                         <input type="text" name="search" placeholder="Buscar..." value="{{ request('search') }}" class="rounded-md border-gray-300 shadow-sm text-sm">
-                        <input type="text" name="origen" placeholder="Origen..." value="{{ request('origen') }}" class="rounded-md border-gray-300 shadow-sm text-sm w-24">
-                        <select name="estatus" class="rounded-md border-gray-300 shadow-sm text-sm">
+                        <select name="origen" class="rounded-md border-gray-300 shadow-sm text-sm">
+                            <option value="">Todos los Orígenes</option>
+                            @foreach($origenes as $origen)
+                                <option value="{{ $origen }}" @if(request('origen') == $origen) selected @endif>{{ $origen }}</option>
+                            @endforeach
+                        </select>                        <select name="estatus" class="rounded-md border-gray-300 shadow-sm text-sm">
                             <option value="">Todos los Estatus</option>
                             <option value="En Espera" @if(request('estatus') == 'En Espera') selected @endif>En Espera</option>
                             <option value="Planeada" @if(request('estatus') == 'Planeada') selected @endif>Planeada</option>
@@ -132,25 +136,25 @@
 
                                 {{-- Tabla de Facturas --}}
                                 <h4 class="text-md font-semibold text-gray-700 mb-2">Facturas Incluidas</h4>
-                                <div class="border rounded-lg overflow-hidden">
+                                <div class="border rounded-lg overflow-hidden max-h-64 overflow-y-auto">
                                     <table class="min-w-full divide-y divide-gray-200 text-sm">
-                                        <thead class="bg-gray-50">
+                                        <thead class="bg-gray-100 sticky top-0">
                                             <tr>
                                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"># Factura</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">SO</th>
                                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Destino</th>
-                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cajas</th>
-                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Botellas</th>
-                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Hora Cita</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cajas / Botellas</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fecha Entrega</th>
                                             </tr>
                                         </thead>
                                         <tbody class="bg-white divide-y divide-gray-200">
                                             <template x-for="factura in selectedGuia.facturas" :key="factura.id">
                                                 <tr>
                                                     <td class="px-4 py-3" x-text="factura.numero_factura"></td>
+                                                    <td class="px-4 py-3" x-text="factura.so || 'N/A'"></td>
                                                     <td class="px-4 py-3" x-text="factura.destino"></td>
-                                                    <td class="px-4 py-3" x-text="factura.cajas"></td>
-                                                    <td class="px-4 py-3" x-text="factura.botellas"></td>
-                                                    <td class="px-4 py-3" x-text="factura.hora_cita || 'N/A'"></td>
+                                                    <td class="px-4 py-3" x-text="`${factura.cajas} / ${factura.botellas}`"></td>
+                                                    <td class="px-4 py-3" x-text="formatDate(factura.fecha_entrega)"></td>
                                                 </tr>
                                             </template>
                                         </tbody>
@@ -205,15 +209,22 @@
                                 <h4 class="text-lg font-semibold text-[#2c3856] border-b mt-6 pb-2 mb-4">Facturas</h4>
                                 <div class="space-y-3">
                                     <template x-for="(factura, index) in editData.facturas" :key="index">
-                                        <div class="grid grid-cols-5 gap-4 items-end bg-gray-50 p-3 rounded-md border">
+                                        {{-- Se ajusta el grid para que quepan todos los campos --}}
+                                        <div class="grid grid-cols-10 gap-4 items-end bg-gray-50 p-3 rounded-md border">
                                             <div class="col-span-2"><label class="text-xs"># Factura</label><input type="text" x-model="factura.numero_factura" class="w-full rounded-md border-gray-300 text-sm"></div>
-                                            <div><label class="text-xs">Destino</label><input type="text" x-model="factura.destino" class="w-full rounded-md border-gray-300 text-sm"></div>
+                                            <div class="col-span-2"><label class="text-xs">Destino</label><input type="text" x-model="factura.destino" class="w-full rounded-md border-gray-300 text-sm"></div>
+                                            <div><label class="text-xs">SO</label><input type="text" x-model="factura.so" class="w-full rounded-md border-gray-300 text-sm"></div>
+                                            <div><label class="text-xs">F. Entrega</label><input type="date" x-model="factura.fecha_entrega" class="w-full rounded-md border-gray-300 text-sm"></div>
+                                            {{-- INICIO DE CAMPOS REINTEGRADOS --}}
                                             <div><label class="text-xs">Hora Cita</label><input type="text" x-model="factura.hora_cita" class="w-full rounded-md border-gray-300 text-sm"></div>
+                                            <div><label class="text-xs">Cajas</lebel><input type="number" x-model="factura.cajas" class="w-full rounded-md border-gray-300 text-sm"></div>
+                                            <div><label class="text-xs">Botellas</label><input type="number" x-model="factura.botellas" class="w-full rounded-md border-gray-300 text-sm"></div>
+                                            {{-- FIN DE CAMPOS REINTEGRADOS --}}
                                             <button type="button" @click="editData.facturas.splice(index, 1)" class="bg-red-500 text-white rounded-md py-2 text-sm">Eliminar</button>
                                         </div>
                                     </template>
                                 </div>
-                                <button type="button" @click="editData.facturas.push({numero_factura: '', destino: '', hora_cita: ''})" class="mt-2 text-sm text-blue-600">+ Añadir Factura</button>
+                                <button type="button" @click="editData.facturas.push({numero_factura: '', destino: '', so: '', fecha_entrega: '', hora_cita: '', cajas: 0, botellas: 0})" class="mt-2 text-sm text-blue-600">+ Añadir Factura</button>
                                 
                                 <div class="mt-6 pt-4 border-t flex justify-end gap-4">
                                     <button type="button" @click="closeAllModals()" class="px-4 py-2 bg-gray-200 rounded-md">Cancelar</button>
@@ -223,12 +234,11 @@
                         </div>
                     </div>
                 </template>
-                {{-- Muestra un estado de carga mientras se obtienen los datos --}}
                 <template x-if="isLoading">
                     <div class="p-6 text-center">Cargando datos para editar...</div>
                 </template>
             </div>
-        </div>         
+        </div>
     </div>
 
     {{-- SCRIPT MANEJADOR DE ALPINE.JS --}}
@@ -244,6 +254,30 @@
                 availableRoutes: [],
                 searchTerm: '',
                 isLoading: false,
+
+
+                formatDate(dateString) {
+                    // Si la fecha es nula, indefinida o no es un string, devuelve 'N/A' y evita el error.
+                    if (!dateString || typeof dateString !== 'string') {
+                        return 'N/A';
+                    }
+
+                    const parts = dateString.split('-');
+                    if (parts.length !== 3) return 'N/A';
+
+                    // Creamos la fecha de forma segura
+                    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+                    
+                    if (isNaN(date.getTime())) {
+                        return 'N/A';
+                    }
+
+                    return date.toLocaleDateString('es-MX', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric' 
+                    });
+                },
                 
                 openAssignModal(guia) {
                     this.selectedGuia = guia;
