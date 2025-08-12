@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'check.area' => \App\Http\Middleware\CheckUserArea::class,
             'super.admin' => \App\Http\Middleware\CheckSuperAdmin::class,
             'not_client' => \App\Http\Middleware\CheckIfNotClient::class,
+            'is_area_admin' => \App\Http\Middleware\CheckIsAreaAdmin::class,
 
         ]);
         

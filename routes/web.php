@@ -28,6 +28,14 @@ use App\Http\Controllers\TicketController;
 use App\Http\Controllers\Admin\TicketCategoryController;
 use App\Http\Controllers\Rutas\ManiobristaController;
 use App\Http\Controllers\AssistantController;
+use App\Http\Controllers\CustomerService\CustomerServiceController;
+use App\Http\Controllers\CustomerService\ProductController;
+use App\Http\Controllers\CustomerService\BrandController;
+use App\Http\Controllers\CustomerService\CustomerController;
+use App\Http\Controllers\CustomerService\WarehouseController;
+
+
+
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -385,6 +393,69 @@ Route::prefix('maniobrista')->name('maniobrista.')->group(function () {
 // });
 
 // Rutas de perfil de Breeze
+
+Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico'])->prefix('customer-service')->name('customer-service.')->group(function () {
+    // Ruta para el menú principal de mosaicos
+    Route::get('/', [CustomerServiceController::class, 'index'])->name('index');
+
+    // Rutas para la gestión de productos (solo para admins de área)
+    Route::middleware('is_area_admin')->prefix('products')->name('products.')->group(function() {
+        Route::get('/', [ProductController::class, 'index'])->name('index');
+        Route::get('/filter', [ProductController::class, 'filter'])->name('filter');
+        Route::get('/create', [ProductController::class, 'create'])->name('create');
+        Route::post('/', [ProductController::class, 'store'])->name('store');
+        Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('edit');
+        Route::put('/{product}', [ProductController::class, 'update'])->name('update');
+        Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
+
+        // Rutas para CSV (que usaremos más adelante)
+        Route::get('/export', [ProductController::class, 'exportCsv'])->name('export');
+        Route::post('/import', [ProductController::class, 'importCsv'])->name('import');
+        Route::get('/template', [ProductController::class, 'downloadTemplate'])->name('template');
+        
+        // Ruta para el Dashboard
+        Route::get('/dashboard', [ProductController::class, 'dashboard'])->name('dashboard');
+
+    });
+        Route::middleware('is_area_admin')->prefix('brands')->name('brands.')->group(function() {
+            Route::get('/', [BrandController::class, 'index'])->name('index');
+            Route::post('/', [BrandController::class, 'store'])->name('store');
+            Route::delete('/{brand}', [BrandController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::middleware('is_area_admin')->prefix('customers')->name('customers.')->group(function() {
+            Route::get('/', [CustomerController::class, 'index'])->name('index');
+            Route::get('/filter', [CustomerController::class, 'filter'])->name('filter');
+            Route::get('/create', [CustomerController::class, 'create'])->name('create');
+            Route::post('/', [CustomerController::class, 'store'])->name('store');
+            Route::get('/{customer}/edit', [CustomerController::class, 'edit'])->name('edit');
+            Route::put('/{customer}', [CustomerController::class, 'update'])->name('update');
+            Route::delete('/{customer}', [CustomerController::class, 'destroy'])->name('destroy');
+            Route::get('/export', [CustomerController::class, 'exportCsv'])->name('export');
+            Route::post('/import', [CustomerController::class, 'importCsv'])->name('import');
+            Route::get('/template', [CustomerController::class, 'downloadTemplate'])->name('template');
+            Route::get('/dashboard', [CustomerController::class, 'dashboard'])->name('dashboard');
+    });
+    
+    Route::middleware('is_area_admin')->prefix('warehouses')->name('warehouses.')->group(function() {
+        Route::get('/', [WarehouseController::class, 'index'])->name('index');
+        Route::get('/filter', [WarehouseController::class, 'filter'])->name('filter');
+        Route::get('/create', [WarehouseController::class, 'create'])->name('create');
+        Route::post('/', [WarehouseController::class, 'store'])->name('store');
+        Route::get('/{warehouse}/edit', [WarehouseController::class, 'edit'])->name('edit');
+        Route::put('/{warehouse}', [WarehouseController::class, 'update'])->name('update');
+        Route::delete('/{warehouse}', [WarehouseController::class, 'destroy'])->name('destroy');
+        Route::get('/export', [WarehouseController::class, 'exportCsv'])->name('export');
+        Route::post('/import', [WarehouseController::class, 'importCsv'])->name('import');
+        Route::get('/template', [WarehouseController::class, 'downloadTemplate'])->name('template');
+        Route::get('/dashboard', [WarehouseController::class, 'dashboard'])->name('dashboard');
+
+        // Aquí añadiremos el resto de las rutas (create, store, etc.)
+    });
+
+});
+
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
