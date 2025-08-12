@@ -111,7 +111,9 @@ class ManiobristaController extends Controller
         return back()->with('success', 'Evento "'.$validated['evento_tipo'].'" registrado.');
     }
     
-    public function storeFacturaEvidencias(Request $request, Guia $guia, $empleado) {
+    public function storeFacturaEvidencias(Request $request, Guia $guia, $empleado) 
+    {
+        // Se añade la validación para los nuevos campos
         $validated = $request->validate([
             'latitud' => 'required|numeric',
             'longitud' => 'required|numeric',
@@ -126,9 +128,14 @@ class ManiobristaController extends Controller
                 foreach ($validated['evidencias'] as $facturaId => $files) {
                     foreach ($files as $file) {
                         $path = $file->store('factura_evidencias/' . $guia->guia, 's3');
+                        
+                        // --- INICIA CORRECCIÓN: Se guardan los datos de ubicación ---
                         $guia->facturas()->find($facturaId)->evidenciasManiobra()->create([
                             'numero_empleado' => $empleado,
                             'evidencia_path' => $path,
+                            'latitud' => $validated['latitud'],
+                            'longitud' => $validated['longitud'],
+                            'municipio' => $validated['municipio'],
                         ]);
                     }
                 }

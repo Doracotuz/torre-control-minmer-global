@@ -131,81 +131,104 @@ class RutasDashboardController extends Controller
         $startCarbon = \Carbon\Carbon::parse($startDate)->startOfDay();
         $endCarbon = \Carbon\Carbon::parse($endDate)->endOfDay();
 
-        $guias = Guia::with(['facturas.evidenciasManiobra', 'eventos.factura', 'maniobraEventos'])
+        $guias = Guia::with(['facturas', 'eventos.factura', 'maniobraEventos'])
             ->whereBetween('created_at', [$startCarbon, $endCarbon])
             ->get();
             
-        $fileName = "reporte_tiempos_" . date('Y-m-d') . ".csv";
-        $headers = [
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+        $guias->load('facturas.evidenciasManiobra');
+
+        $csvData = [];
+        $csvData[] = [
+            'Fecha', 'Hora', 'No. Empleado', 'Coordenadas', 'Municipio', 
+            'Evento', 'Guia', 'Facturas', 'Destino', 'Operador'
         ];
 
-        $callback = function() use ($guias) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, [
-                'Fecha', 'Hora', 'No. Empleado', 'Coordenadas', 'Municipio', 
-                'Evento', 'Guia', 'Facturas', 'Destino', 'Operador'
-            ]);
+        foreach ($guias as $guia) {
+            $facturasConcatenadas = $guia->facturas->pluck('numero_factura')->join(' | ');
+            $destinosConcatenados = $guia->facturas->pluck('destino')->unique()->join(' | ');
 
-            foreach ($guias as $guia) {
-                // Eventos del Operador
-                foreach ($guia->eventos as $evento) {
-                    $factura = $evento->factura;
-                    fputcsv($file, [
-                        $evento->fecha_evento->format('d/m/Y'), $evento->fecha_evento->format('H:i:s'),
-                        'N/A (Operador)', "{$evento->latitud}, {$evento->longitud}", 'N/A',
-                        $evento->subtipo, $guia->guia,
-                        $factura ? $factura->numero_factura : 'N/A',
-                        $factura ? $factura->destino : 'N/A',
-                        $guia->operador,
-                    ]);
+            // 1. Eventos del Operador
+            foreach ($guia->eventos as $evento) {
+                $facturaEspecifica = $evento->factura;
+                if ($evento->tipo === 'Entrega' && $facturaEspecifica) {
+                    $facturasParaMostrar = $facturaEspecifica->numero_factura;
+                    $destinoParaMostrar = $facturaEspecifica->destino;
+                } else {
+                    $facturasParaMostrar = $facturasConcatenadas;
+                    $destinoParaMostrar = $destinosConcatenados;
                 }
-                // Eventos del Maniobrista
-                foreach ($guia->maniobraEventos as $evento) {
-                    if ($evento->evento_tipo === 'Entrega de evidencias') {
-                        // Facturas que SÍ tienen evidencia de este empleado para esta guía
-                        $facturasConEvidencia = $guia->facturas->filter(function($factura) use ($evento) {
-                            return $factura->evidenciasManiobra->where('numero_empleado', $evento->numero_empleado)->isNotEmpty();
-                        });
+                $csvData[] = [
+                    $evento->fecha_evento->format('d/m/Y'),
+                    $evento->fecha_evento->format('H:i:s'),
+                    'N/A (Operador)',
+                    "{$evento->latitud}, {$evento->longitud}",
+                    $evento->municipio ?? 'N/A',
+                    $evento->subtipo,
+                    $guia->guia,
+                    $facturasParaMostrar,
+                    $destinoParaMostrar,
+                    $guia->operador,
+                ];
+            }
+            
+            // 2. Eventos generales del Maniobrista
+            foreach ($guia->maniobraEventos as $evento) {
+                if ($evento->evento_tipo === 'Flujo Completado') continue;
+                $csvData[] = [
+                    $evento->created_at->format('d/m/Y'),
+                    $evento->created_at->format('H:i:s'),
+                    $evento->numero_empleado,
+                    "{$evento->latitud}, {$evento->longitud}",
+                    $evento->municipio ?? 'N/A',
+                    $evento->evento_tipo,
+                    $guia->guia,
+                    $facturasConcatenadas,
+                    $destinosConcatenados,
+                    $guia->operador,
+                ];
+            }
 
-                        foreach ($facturasConEvidencia as $factura) {
-                            fputcsv($file, [
-                                $evento->created_at->format('d/m/Y'),
-                                $evento->created_at->format('H:i:s'),
-                                $evento->numero_empleado,
-                                "{$evento->latitud}, {$evento->longitud}",
-                                $evento->municipio ?? 'N/A',
-                                'Evidencia entregada p/factura',
-                                $guia->guia,
-                                $factura->numero_factura,
-                                $factura->destino,
-                                $guia->operador,
-                            ]);
-                        }
-                    } else {
-                        // Para los otros eventos (Llegada a carga, etc.), concatenamos todas las facturas.
-                        fputcsv($file, [
-                            $evento->created_at->format('d/m/Y'),
-                            $evento->created_at->format('H:i:s'),
-                            $evento->numero_empleado,
-                            "{$evento->latitud}, {$evento->longitud}",
-                            $evento->municipio ?? 'N/A',
-                            $evento->evento_tipo,
+            // 3. Eventos de evidencia de maniobra
+            foreach ($guia->facturas as $factura) {
+                if ($factura->evidenciasManiobra->isNotEmpty()) {
+
+                    // --- INICIA CORRECCIÓN: Se reemplaza el método inexistente ---
+                    $evidenciaConUbicacion = $factura->evidenciasManiobra->whereNotNull('latitud')->first();
+                    // --- TERMINA CORRECCIÓN ---
+
+                    $evidenciaParaReporte = $evidenciaConUbicacion ?? $factura->evidenciasManiobra->first();
+                    if ($evidenciaParaReporte) {
+                        $csvData[] = [
+                            $evidenciaParaReporte->created_at->format('d/m/Y'),
+                            $evidenciaParaReporte->created_at->format('H:i:s'),
+                            $evidenciaParaReporte->numero_empleado,
+                            ($evidenciaParaReporte->latitud && $evidenciaParaReporte->longitud) ? "{$evidenciaParaReporte->latitud}, {$evidenciaParaReporte->longitud}" : 'N/A',
+                            $evidenciaParaReporte->municipio ?? 'N/A',
+                            'Evidencia de Entrega (Maniobra)',
                             $guia->guia,
-                            $guia->facturas->pluck('numero_factura')->join(' | '), 
-                            $guia->facturas->pluck('destino')->unique()->join(' | '),
+                            $factura->numero_factura,
+                            $factura->destino,
                             $guia->operador,
-                        ]);
+                        ];
                     }
                 }
             }
-            fclose($file);
-        };
-        return response()->stream($callback, 200, $headers);
-    }
+        }
 
+        $stream = fopen('php://memory', 'w');
+        foreach ($csvData as $row) {
+            fputcsv($stream, $row);
+        }
+        rewind($stream);
+        $csvContent = stream_get_contents($stream);
+        fclose($stream);
+
+        $fileName = "reporte_tiempos_" . date('Y-m-d') . ".csv";
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$fileName",
+        ];
+
+        return response($csvContent, 200, $headers);
+    }
 }

@@ -294,6 +294,10 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('rutas')->name('rut
         Route::get('/regions', [MonitoreoController::class, 'getAvailableRegions'])->name('regions');
         Route::post('/{guia}/start', [MonitoreoController::class, 'startRoute'])->name('start'); 
         Route::post('/{guia}/events', [MonitoreoController::class, 'storeEvent'])->name('events.store');
+        Route::get('/export-report', [MonitoreoController::class, 'exportReportCsv'])->name('export.report');
+        Route::get('/get-statuses', [MonitoreoController::class, 'getAvailableStatuses'])->name('get-statuses');
+
+        
     });
 });
 

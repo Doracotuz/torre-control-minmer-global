@@ -19,6 +19,7 @@ class Evento extends Model
         'url_evidencia',
         'latitud',
         'longitud',
+        'municipio',
         'fecha_evento',
     ];
     
