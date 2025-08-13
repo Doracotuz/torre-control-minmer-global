@@ -1,0 +1,82 @@
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Enriquecer Pedido: <span class="text-blue-600">{{ $order->so_number }}</span></h2>
+    </x-slot>
+
+    <div class="py-12">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-8">
+                <form action="{{ route('customer-service.orders.update', $order) }}" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <div class="bg-blue-50 border-l-4 border-blue-400 text-blue-700 p-4 mb-6">
+                        <p class="font-bold">Nota:</p>
+                        <p>Esta sección es para añadir información logística y de facturación al pedido. Los datos originales de la carga no se pueden modificar aquí.</p>
+                    </div>
+                    @if ($errors->any())<div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert"><p><b>Error:</b> {{ $errors->first() }}</p></div>@endif
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div><label for="bt_oc" class="block text-sm font-medium text-gray-700">Bt de OC</label><input type="text" name="bt_oc" value="{{ old('bt_oc', $order->bt_oc) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label for="invoice_number" class="block text-sm font-medium text-gray-700">Factura</label><input type="text" name="invoice_number" value="{{ old('invoice_number', $order->invoice_number) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label for="invoice_date" class="block text-sm font-medium text-gray-700">Fecha Factura</label><input type="date" name="invoice_date" value="{{ old('invoice_date', $order->invoice_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label for="delivery_date" class="block text-sm font-medium text-gray-700">Fecha de Entrega</label><input type="date" name="delivery_date" value="{{ old('delivery_date', $order->delivery_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label for="schedule" class="block text-sm font-medium text-gray-700">Horario</label><input type="text" name="schedule" value="{{ old('schedule', $order->schedule) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label for="client_contact" class="block text-sm font-medium text-gray-700">Contacto Cliente</label><input type="text" name="client_contact" value="{{ old('client_contact', $order->client_contact) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div class="md:col-span-2"><label for="shipping_address" class="block text-sm font-medium text-gray-700">Dirección de Envío</label><input type="text" name="shipping_address" value="{{ old('shipping_address', $order->shipping_address) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label for="destination_locality" class="block text-sm font-medium text-gray-700">Localidad Destino</label><input type="text" name="destination_locality" value="{{ old('destination_locality', $order->destination_locality) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label for="executive" class="block text-sm font-medium text-gray-700">Ejecutivo</label><input type="text" name="executive" value="{{ old('executive', $order->executive) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label for="evidence_reception_date" class="block text-sm font-medium text-gray-700">Recepción de Evidencia</label><input type="date" name="evidence_reception_date" value="{{ old('evidence_reception_date', $order->evidence_reception_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label for="evidence_cutoff_date" class="block text-sm font-medium text-gray-700">Corte de Evidencias</label><input type="date" name="evidence_cutoff_date" value="{{ old('evidence_cutoff_date', $order->evidence_cutoff_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div class="md:col-span-2"><label for="observations" class="block text-sm font-medium text-gray-700">Observaciones</label><textarea name="observations" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">{{ old('observations', $order->observations) }}</textarea></div>
+                    </div>
+
+                    <h4 class="text-lg font-semibold text-gray-800 mt-8 mb-4">Detalles de SKUs</h4>
+                    <div class="max-h-48 overflow-y-auto border rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50 sticky top-0 z-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left">SKU</th>
+                                    <th class="px-4 py-2 text-left">Descripción</th>
+                                    <th class="px-4 py-2 text-left">Cantidad Pedida</th>
+                                    <th class="px-4 py-2 text-left">Cantidad Enviada</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach($order->details as $index => $detail)
+                                    <tr>
+                                        <td class="px-4 py-2">
+                                            <div x-data="{ open: false, query: '{{ old('details.' . $index . '.sku', $detail->sku) }}', selected: '{{ old('details.' . $index . '.sku', $detail->sku) }}' }" @click.away="open = false" class="relative">
+                                                <input type="hidden" name="details[{{ $index }}][sku]" x-model="selected" required>
+                                                <input type="text" x-model="query" @focus="open = true" @input="open = true" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Buscar SKU..." required>
+                                                <ul x-show="open" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                                    <template x-for="product in {{ json_encode($products) }}" :key="product.id">
+                                                        <li @click="selected = product.sku; query = product.sku; open = false" x-show="product.sku.toLowerCase().includes(query.toLowerCase())" class="px-4 py-2 cursor-pointer hover:bg-gray-100">
+                                                            <span x-text="product.sku"></span> - <span x-text="product.description"></span>
+                                                        </li>
+                                                    </template>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-2">{{ $detail->product->description ?? 'N/A' }}</td>
+                                        <td class="px-4 py-2">{{ $detail->quantity }}</td>
+                                        <td class="px-4 py-2">
+                                            <input type="number" name="details[{{ $index }}][sent]" value="{{ old('details.' . $index . '.sent', $detail->sent ?? 0) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                            <input type="hidden" name="details[{{ $index }}][id]" value="{{ $detail->id }}">
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="flex justify-end gap-4 mt-8">
+                        <a href="{{ route('customer-service.orders.show', $order) }}" class="px-4 py-2 bg-gray-200 rounded-md">Cancelar</a>
+                        <a href="{{ route('customer-service.orders.edit-original', $order) }}" class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600">Editar Datos Originales</a>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Guardar Cambios</button>
+                    
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</x-app-layout>

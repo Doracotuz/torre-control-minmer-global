@@ -1,0 +1,95 @@
+<div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+    <div class="overflow-x-auto">
+        <table class="min-w-full table-fixed">
+            <thead class="bg-[#2c3856]">
+                <tr>
+                    <template x-for="(columnKey, index) in columnOrder" :key="`${columnKey}-${index}`">
+                        <th x-show="visibleColumns[columnKey]"
+                            :data-column="columnKey"
+                            :style="columnWidths[columnKey] ? { width: columnWidths[columnKey] } : {}"
+                            class="px-2 py-1 text-center text-xs font-medium text-white uppercase tracking-wider select-none border border-gray-200">
+                            <span class="drag-handle cursor-move" x-text="allColumns[columnKey]"></span>
+                            <div class="resizer no-drag"></div>
+                        </th>
+                    </template>
+                    <th class="px-2 py-1 text-center text-xs font-medium text-white uppercase tracking-wider no-drag border border-gray-200">
+                        Acciones
+                        <div class="resizer no-drag"></div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white">
+                <template x-for="order in orders" :key="order.id">
+                    <tr class="hover:bg-gray-100">
+                        <template x-for="columnKey in columnOrder" :key="columnKey">
+                            <td x-show="visibleColumns[columnKey]" 
+                                class="px-2 py-1 whitespace-nowrap text-sm text-gray-500 border border-gray-200 truncate max-w-[200px] overflow-hidden text-ellipsis">
+                                <template x-if="columnKey === 'status'">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                                        :class="{
+                                            'bg-red-100 text-red-800': order.status === 'Cancelado',
+                                            'bg-[#2c3856] text-white': order.status === 'En Planificación',
+                                            'bg-gray-100 text-gray-800': !['Cancelado', 'En Planificación'].includes(order.status)
+                                        }"
+                                        x-text="order.status">
+                                    </span>
+                                </template>
+                                <template x-if="columnKey !== 'status'">
+                                    <span :title="order[columnKey]" 
+                                        class="block overflow-hidden text-ellipsis whitespace-nowrap" 
+                                        x-text="getFormattedCell(order, columnKey)">
+                                    </span>
+                                </template>
+                            </td>
+                        </template>
+
+                        <td class="px-2 py-1 whitespace-nowrap text-right text-sm font-medium border border-gray-200">
+                            <a :href="`/customer-service/orders/${order.id}`" class="text-gray-600 hover:text-gray-900" title="Ver Detalle"><i class="fas fa-eye"></i></a>
+                            <template x-if="order.status !== 'Cancelado'">
+                                <span class="ml-4">
+                                    <a :href="`/customer-service/orders/${order.id}/edit`" class="text-indigo-600 hover:text-indigo-900" title="Editar"><i class="fas fa-edit"></i></a>
+                                    <form :action="`/customer-service/orders/${order.id}/cancel`" method="POST" class="inline ml-4" onsubmit="return confirm('¿Estás seguro de que deseas CANCELAR este pedido?');">
+                                        @csrf
+                                        <button type="submit" class="text-red-600 hover:text-red-900" title="Cancelar Pedido"><i class="fas fa-ban"></i></button>
+                                    </form>
+                                    <template x-if="!order.plan">
+                                        <form :action="`/customer-service/orders/${order.id}/plan`" method="POST" class="inline ml-4" onsubmit="return confirm('¿Marcar este pedido como LISTO para enviar a planificación?');">
+                                            @csrf
+                                            <button type="submit" class="px-3 py-1 bg-green-500 text-white rounded-md text-xs font-semibold hover:bg-green-600" title="Marcar como Listo">Listo</button>
+                                        </form>
+                                    </template>
+                                </span>
+                            </template>
+                        </td>
+                    </tr>
+                </template>
+                <template x-if="!isLoading && orders.length === 0">
+                    <tr>
+                        <td :colspan="Object.values(visibleColumns).filter(v => v).length + 1" class="px-2 py-4 text-center text-gray-500 border border-gray-200">
+                            No se encontraron pedidos con los filtros aplicados.
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="mt-6 pagination-container flex justify-between items-center text-sm text-gray-700">
+    <div x-show="pagination.total > 0">
+        Mostrando de <span class="font-medium" x-text="pagination.from"></span> a <span class="font-medium" x-text="pagination.to"></span> de <span class="font-medium" x-text="pagination.total"></span> resultados
+    </div>
+    <nav role="navigation" aria-label="Pagination Navigation" class="flex items-center" x-show="pagination.last_page > 1">
+        <template x-for="(link, index) in pagination.links" :key="index">
+            <button @click="changePage(link.url ? new URL(link.url).searchParams.get('page') : null)"
+                    :disabled="!link.url"
+                    :class="{
+                        'bg-[#ff9c00] text-white': link.active,
+                        'text-gray-500 hover:bg-gray-200': !link.active && link.url,
+                        'text-gray-400 cursor-not-allowed': !link.url
+                    }"
+                    class="px-3 py-1 rounded-md mx-1"
+                    x-html="link.label">
+            </button>
+        </template>
+    </nav>
+</div>

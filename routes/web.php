@@ -33,6 +33,8 @@ use App\Http\Controllers\CustomerService\ProductController;
 use App\Http\Controllers\CustomerService\BrandController;
 use App\Http\Controllers\CustomerService\CustomerController;
 use App\Http\Controllers\CustomerService\WarehouseController;
+use App\Http\Controllers\CustomerService\OrderController;
+
 
 
 
@@ -452,6 +454,34 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
 
         // Aquí añadiremos el resto de las rutas (create, store, etc.)
     });
+
+    Route::prefix('orders')->name('orders.')->group(function() {
+        Route::get('/', [OrderController::class, 'index'])->name('index');
+        Route::get('/filter', [OrderController::class, 'filter'])->name('filter');
+        Route::post('/import', [OrderController::class, 'importCsv'])->name('import');
+        Route::get('/template', [OrderController::class, 'downloadTemplate'])->name('template');
+        Route::get('/download-errors', [OrderController::class, 'downloadImportErrors'])->name('download-errors');
+        Route::post('/clear-import-errors', [OrderController::class, 'clearImportErrorsSession'])->name('clear-import-errors');
+
+        
+        Route::get('/{order}/edit-original', [OrderController::class, 'editOriginalData'])->name('edit-original');
+        Route::put('/{order}/edit-original', [OrderController::class, 'updateOriginalData'])->name('update-original');
+
+    
+        
+        // --- MUEVE LA RUTA DEL DASHBOARD AQUÍ ARRIBA ---
+        Route::get('/dashboard', [OrderController::class, 'dashboard'])->name('dashboard');
+
+        Route::get('/create', [OrderController::class, 'create'])->name('create');
+        Route::post('/', [OrderController::class, 'store'])->name('store');
+        
+        // --- LAS RUTAS CON PARÁMETROS VAN DESPUÉS ---
+        Route::get('/{order}', [OrderController::class, 'show'])->name('show');
+        Route::get('/{order}/edit', [OrderController::class, 'edit'])->name('edit');
+        Route::put('/{order}', [OrderController::class, 'update'])->name('update');
+        Route::post('/{order}/cancel', [OrderController::class, 'cancel'])->name('cancel');
+        Route::post('/{order}/plan', [OrderController::class, 'moveToPlan'])->name('plan');
+    });  
 
 });
 
