@@ -45,7 +45,7 @@
                 </a>
 
                 <!-- Mosaico 4: Gestión de Pedidos -->
-                <a href="{{ route('customer-service.orders.index') }}" class="group relative block aspect-w-1 aspect-h-1 rounded-xl overflow-hidden shadow-lg">
+                <a href="{{ route('customer-service.orders.index') }}" class="group relative block h-64 rounded-xl overflow-hidden shadow-lg">
                     <img src="https://media.glamour.mx/photos/63238e7b11a242c6ed8a73ab/master/w_1600%2Cc_limit/Whispering-Angel-cover.jpg" alt="Gestión de Pedidos" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
                     <div class="relative h-full flex flex-col justify-end p-6 text-white">

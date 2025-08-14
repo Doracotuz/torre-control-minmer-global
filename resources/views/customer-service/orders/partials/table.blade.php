@@ -43,7 +43,7 @@
                             </td>
                         </template>
 
-                        <td class="px-2 py-1 whitespace-nowrap text-right text-sm font-medium border border-gray-200">
+                        <td class="px-2 py-1 whitespace-nowrap text-center text-sm font-medium border border-gray-200">
                             <a :href="`/customer-service/orders/${order.id}`" class="text-gray-600 hover:text-gray-900" title="Ver Detalle"><i class="fas fa-eye"></i></a>
                             <template x-if="order.status !== 'Cancelado'">
                                 <span class="ml-4">

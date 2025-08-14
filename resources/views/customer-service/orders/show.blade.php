@@ -38,6 +38,30 @@
                     <div class="col-span-full"><strong class="block text-gray-500">Subtotal:</strong><span>${{ number_format($order->subtotal, 2) }}</span></div>
                 </div>
 
+                {{-- ✅ INICIA CAMBIO: Cálculo del porcentaje de llenado --}}
+                @php
+                    $fields = [
+                        $order->bt_oc, $order->invoice_number, $order->invoice_date,
+                        $order->delivery_date, $order->schedule, $order->client_contact,
+                        $order->shipping_address, $order->destination_locality, $order->executive,
+                        $order->observations, $order->evidence_reception_date, $order->evidence_cutoff_date
+                    ];
+                    $totalFields = count($fields);
+                    $filledFields = collect($fields)->filter(fn($value) => !empty($value))->count();
+                    $percentage = ($totalFields > 0) ? ($filledFields / $totalFields) * 100 : 0;
+                @endphp
+
+                <div class="my-6">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-base font-medium text-[#2c3856]">Progreso de Información Logística</span>
+                        <span class="text-sm font-medium text-[#2c3856]">{{ number_format($percentage, 0) }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ $percentage }}%"></div>
+                    </div>
+                </div>
+                {{-- ⏹️ TERMINA CAMBIO --}}
+
                 <h4 class="text-lg font-semibold text-gray-800 mt-6 mb-4">Información Logística y Facturación</h4>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm border-b pb-6">
                     <div><strong class="block text-gray-500">Factura:</strong><span>{{ $order->invoice_number ?? 'Sin dato' }}</span></div>
@@ -48,6 +72,12 @@
                     <div><strong class="block text-gray-500">Localidad Destino:</strong><span>{{ $order->destination_locality ?? 'Sin dato' }}</span></div>
                     <div><strong class="block text-gray-500">Contacto Cliente:</strong><span>{{ $order->client_contact ?? 'Sin dato' }}</span></div>
                     <div><strong class="block text-gray-500">Ejecutivo:</strong><span>{{ $order->executive ?? 'Sin dato' }}</span></div>
+                    
+                    {{-- ✅ INICIA CAMBIO: Se añade el nuevo campo --}}
+                    <div><strong class="block text-gray-500">Recepción de Evidencia:</strong><span>{{ $order->evidence_reception_date ? $order->evidence_reception_date->format('d/m/Y') : 'Sin dato' }}</span></div>
+                    <div><strong class="block text-gray-500">Corte de Evidencias:</strong><span>{{ $order->evidence_cutoff_date ? $order->evidence_cutoff_date->format('d/m/Y') : 'Sin dato' }}</span></div>
+                    {{-- ⏹️ TERMINA CAMBIO --}}
+                    
                     <div class="col-span-full"><strong class="block text-gray-500">Observaciones:</strong><p class="mt-1 text-gray-700">{{ $order->observations ?? 'Sin dato' }}</p></div>
                 </div>
                 

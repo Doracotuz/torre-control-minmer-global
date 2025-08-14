@@ -6,9 +6,42 @@
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-8">
-                <form action="{{ route('customer-service.orders.update', $order) }}" method="POST">
+                {{-- Se añade x-data y x-init para la lógica de Alpine.js --}}
+                <form action="{{ route('customer-service.orders.update', $order) }}" method="POST"
+                      x-data="{
+                          delivery_date: '{{ old('delivery_date', $order->delivery_date?->format('Y-m-d')) }}',
+                          destination_locality: '{{ old('destination_locality', $order->destination_locality) }}',
+                          origin_warehouse: '{{ $order->origin_warehouse }}',
+
+                          calculateCutoffDate() {
+                              if (!this.delivery_date || !this.destination_locality) return;
+
+                              const deliveryDate = new Date(this.delivery_date + 'T00:00:00');
+                              let daysToAdd = (3 - deliveryDate.getDay() + 7) % 7;
+                              if (daysToAdd === 0) {
+                                  daysToAdd = 7; // Si es miércoles, saltar al siguiente
+                              }
+                              
+                              // Si origen y destino son diferentes, añadir una semana extra
+                              if (this.origin_warehouse !== this.destination_locality) {
+                                  daysToAdd += 7;
+                              }
+
+                              deliveryDate.setDate(deliveryDate.getDate() + daysToAdd);
+                              
+                              const year = deliveryDate.getFullYear();
+                              const month = String(deliveryDate.getMonth() + 1).padStart(2, '0');
+                              const day = String(deliveryDate.getDate()).padStart(2, '0');
+                              
+                              // Actualiza el campo de fecha de corte
+                              document.querySelector('[name=evidence_cutoff_date]').value = `${year}-${month}-${day}`;
+                          }
+                      }"
+                      x-init="calculateCutoffDate()">
+
                     @csrf
                     @method('PUT')
+                    
                     <div class="bg-blue-50 border-l-4 border-blue-400 text-blue-700 p-4 mb-6">
                         <p class="font-bold">Nota:</p>
                         <p>Esta sección es para añadir información logística y de facturación al pedido. Los datos originales de la carga no se pueden modificar aquí.</p>
@@ -19,14 +52,32 @@
                         <div><label for="bt_oc" class="block text-sm font-medium text-gray-700">Bt de OC</label><input type="text" name="bt_oc" value="{{ old('bt_oc', $order->bt_oc) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div><label for="invoice_number" class="block text-sm font-medium text-gray-700">Factura</label><input type="text" name="invoice_number" value="{{ old('invoice_number', $order->invoice_number) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div><label for="invoice_date" class="block text-sm font-medium text-gray-700">Fecha Factura</label><input type="date" name="invoice_date" value="{{ old('invoice_date', $order->invoice_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
-                        <div><label for="delivery_date" class="block text-sm font-medium text-gray-700">Fecha de Entrega</label><input type="date" name="delivery_date" value="{{ old('delivery_date', $order->delivery_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        
+                        {{-- Campo modificado para activar el cálculo --}}
+                        <div>
+                            <label for="delivery_date" class="block text-sm font-medium text-gray-700">Fecha de Entrega</label>
+                            <input type="date" name="delivery_date" x-model="delivery_date" @change="calculateCutoffDate()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+
                         <div><label for="schedule" class="block text-sm font-medium text-gray-700">Horario</label><input type="text" name="schedule" value="{{ old('schedule', $order->schedule) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div><label for="client_contact" class="block text-sm font-medium text-gray-700">Contacto Cliente</label><input type="text" name="client_contact" value="{{ old('client_contact', $order->client_contact) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div class="md:col-span-2"><label for="shipping_address" class="block text-sm font-medium text-gray-700">Dirección de Envío</label><input type="text" name="shipping_address" value="{{ old('shipping_address', $order->shipping_address) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
-                        <div><label for="destination_locality" class="block text-sm font-medium text-gray-700">Localidad Destino</label><input type="text" name="destination_locality" value="{{ old('destination_locality', $order->destination_locality) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        
+                        {{-- Campo modificado para activar el cálculo --}}
+                        <div>
+                            <label for="destination_locality" class="block text-sm font-medium text-gray-700">Localidad Destino</label>
+                            <input type="text" name="destination_locality" x-model="destination_locality" @change="calculateCutoffDate()" value="{{ old('destination_locality', $order->destination_locality) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+
                         <div><label for="executive" class="block text-sm font-medium text-gray-700">Ejecutivo</label><input type="text" name="executive" value="{{ old('executive', $order->executive) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div><label for="evidence_reception_date" class="block text-sm font-medium text-gray-700">Recepción de Evidencia</label><input type="date" name="evidence_reception_date" value="{{ old('evidence_reception_date', $order->evidence_reception_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
-                        <div><label for="evidence_cutoff_date" class="block text-sm font-medium text-gray-700">Corte de Evidencias</label><input type="date" name="evidence_cutoff_date" value="{{ old('evidence_cutoff_date', $order->evidence_cutoff_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        
+                        {{-- Campo de Fecha de Corte ahora es de solo lectura para evitar modificación manual --}}
+                        <div>
+                            <label for="evidence_cutoff_date" class="block text-sm font-medium text-gray-700">Corte de Evidencias</label>
+                            <input type="date" name="evidence_cutoff_date" value="{{ old('evidence_cutoff_date', $order->evidence_cutoff_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100" readonly>
+                        </div>
+                        
                         <div class="md:col-span-2"><label for="observations" class="block text-sm font-medium text-gray-700">Observaciones</label><textarea name="observations" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">{{ old('observations', $order->observations) }}</textarea></div>
                     </div>
 

@@ -42,7 +42,7 @@
                             <thead class="bg-red-100">
                                 <tr>
                                     @foreach($errorHeaders as $header)
-                                        <th class="px-2 py-1 text-left font-semibold text-red-900">{{ str_replace('_', ' ', $header) }}</th>
+                                        <th class="px-2 py-1 text-center font-semibold text-red-900">{{ str_replace('_', ' ', $header) }}</th>
                                     @endforeach
                                 </tr>
                             </thead>
