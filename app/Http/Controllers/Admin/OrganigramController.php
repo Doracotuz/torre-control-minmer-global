@@ -13,6 +13,18 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use App\Models\OrganigramTrajectory;
 use Illuminate\Support\Facades\Auth;
+use League\Csv\Reader;
+use League\Csv\Writer;
+use League\Csv\CharsetConverter;
+use League\Csv\CannotInsertRecord;
+use League\Csv\Exception;
+use League\Csv\Statement;
+use League\Csv\TabularDataReader;
+use League\Csv\ByteSequence;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+
 
 class OrganigramController extends Controller
 {
@@ -65,6 +77,244 @@ class OrganigramController extends Controller
         $searchQuery = $request->input('search');
 
         return view('admin.organigram.index', compact('members', 'hierarchicalMembers', 'areas', 'positions', 'managers', 'selectedPosition', 'selectedManager', 'selectedArea', 'searchQuery'));
+    }
+
+    public function downloadTemplate()
+    {
+        $headers = [
+            'name',
+            'email',
+            'cell_phone',
+            'position_name',
+            'area_name',
+            'manager_email',
+            'activities',
+            'skills',
+            'trajectory_title_1', 'trajectory_description_1', 'trajectory_start_date_1', 'trajectory_end_date_1',
+            'trajectory_title_2', 'trajectory_description_2', 'trajectory_start_date_2', 'trajectory_end_date_2',
+            'trajectory_title_3', 'trajectory_description_3', 'trajectory_start_date_3', 'trajectory_end_date_3',
+            'trajectory_title_4', 'trajectory_description_4', 'trajectory_start_date_4', 'trajectory_end_date_4',
+            'trajectory_title_5', 'trajectory_description_5', 'trajectory_start_date_5', 'trajectory_end_date_5',
+        ];
+
+        $data = [
+            ['Juan Pérez', 'juan.perez@ejemplo.com', '5512345678', 'Gerente de Ventas', 'Ventas', 'jefe.ejemplo@ejemplo.com', 'Gestión de equipos, Estrategia de ventas', 'Liderazgo, Negociación', 'Gerente de Proyectos', 'Responsable de la planificación y ejecución.', '01-01-2018', '31-12-2020', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ];
+
+        $csv = Writer::createFromString('');
+        // Añadir el BOM de UTF-8 explícitamente
+        $csv->setOutputBOM(Writer::BOM_UTF8); 
+        $csv->insertOne($headers);
+        $csv->insertAll($data);
+        
+        return response((string) $csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8', // Asegurar el charset en la cabecera
+            'Content-Disposition' => 'attachment; filename="organigram_template.csv"',
+        ]);
+    }
+    
+    /**
+     * Importa miembros del organigrama desde un archivo CSV.
+     */
+    public function importCsv(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|mimes:csv,txt|max:2048',
+        ]);
+
+        $path = $request->file('csv_file')->getRealPath();
+        $csv = Reader::createFromPath($path, 'r');
+        $csv->setHeaderOffset(0);
+
+        $csv->addStreamFilter('convert.iconv.UTF-8/UTF-8//IGNORE');
+
+        $records = $csv->getRecords();
+
+        $errors = [];
+        $successCount = 0;
+
+        DB::beginTransaction();
+        try {
+            foreach ($records as $index => $record) {
+                Log::info("--- Procesando Fila CSV: " . ($index + 2) . " ---");
+                
+                // Los valores del registro ahora deberían ser UTF-8 gracias al filtro de stream.
+                Log::info("Datos de la fila (después de filtro de codificación): ", $record);
+
+                // Validación de campos requeridos, limpiando espacios
+                $name = trim($record['name'] ?? '');
+                $positionName = trim($record['position_name'] ?? '');
+                $areaName = trim($record['area_name'] ?? '');
+
+                if (empty($name) || empty($positionName) || empty($areaName)) {
+                    $errors[] = "Fila " . ($index + 2) . ": Faltan campos requeridos (nombre, posición o área).";
+                    Log::warning("Fila " . ($index + 2) . ": Campos requeridos vacíos.");
+                    continue;
+                }
+
+                // Buscar y validar la posición
+                $position = OrganigramPosition::where('name', $positionName)->first();
+                if (!$position) {
+                    $errors[] = "Fila " . ($index + 2) . ": La posición '" . $positionName . "' no existe. Las posiciones deben ser creadas manualmente.";
+                    Log::warning("Fila " . ($index + 2) . ": Posición no encontrada: " . $positionName);
+                    continue;
+                }
+
+                // Buscar el área
+                $area = Area::where('name', $areaName)->first();
+                if (!$area) {
+                    $errors[] = "Fila " . ($index + 2) . ": El área '" . $areaName . "' no existe.";
+                    Log::warning("Fila " . ($index + 2) . ": Área no encontrada: " . $areaName);
+                    continue;
+                }
+
+                // Buscar el manager por email
+                $managerId = null;
+                $managerEmail = trim($record['manager_email'] ?? '');
+                if (!empty($managerEmail)) {
+                    $manager = OrganigramMember::where('email', $managerEmail)->first();
+                    if ($manager) {
+                        $managerId = $manager->id;
+                    } else {
+                        $errors[] = "Fila " . ($index + 2) . ": No se encontró un manager con el email '" . $managerEmail . "'. Se creará sin manager.";
+                        Log::warning("Fila " . ($index + 2) . ": Manager no encontrado por email: " . $managerEmail);
+                    }
+                }
+
+                // Crear o encontrar actividades
+                $activityIds = [];
+                $activitiesCsv = trim($record['activities'] ?? '');
+                if (!empty($activitiesCsv)) {
+                    $activities = explode(',', $activitiesCsv);
+                    foreach ($activities as $activityName) {
+                        $activityName = trim($activityName);
+                        if (!empty($activityName)) {
+                            $activity = OrganigramActivity::firstOrCreate(['name' => $activityName]);
+                            $activityIds[] = $activity->id;
+                        }
+                    }
+                }
+                
+                // Crear o encontrar habilidades
+                $skillIds = [];
+                $skillsCsv = trim($record['skills'] ?? '');
+                if (!empty($skillsCsv)) {
+                    $skills = explode(',', $skillsCsv);
+                    foreach ($skills as $skillName) {
+                        $skillName = trim($skillName);
+                        if (!empty($skillName)) {
+                            $skill = OrganigramSkill::firstOrCreate(['name' => $skillName]);
+                            $skillIds[] = $skill->id;
+                        }
+                    }
+                }
+                
+                // Lógica para actualizar o crear el miembro
+                $member = null;
+                $memberEmail = trim($record['email'] ?? '');
+                if (!empty($memberEmail)) {
+                    $member = OrganigramMember::firstOrNew(['email' => $memberEmail]);
+                } else {
+                    $errors[] = "Fila " . ($index + 2) . ": El email está vacío. Se requiere un email para identificar al miembro o crear uno nuevo.";
+                    Log::warning("Fila " . ($index + 2) . ": Email del miembro vacío.");
+                    continue; // Skip this record if email is empty and cannot identify
+                }
+
+                $member->fill([
+                    'name' => $name,
+                    'email' => !empty($memberEmail) ? $memberEmail : null,
+                    'cell_phone' => trim($record['cell_phone'] ?? '') ?: null,
+                    'position_id' => $position->id,
+                    'area_id' => $area->id,
+                    'manager_id' => $managerId,
+                ])->save();
+                Log::info("Miembro guardado/actualizado: ID " . $member->id . ", Nombre: " . $member->name);
+
+
+                // Sincronizar actividades y habilidades
+                if (!empty($activityIds)) {
+                    $member->activities()->sync($activityIds);
+                    Log::info("Actividades sincronizadas para miembro " . $member->id . ": ", $activityIds);
+                } else {
+                    $member->activities()->detach(); // Eliminar todas si la columna está vacía
+                    Log::info("Actividades desvinculadas para miembro " . $member->id);
+                }
+                if (!empty($skillIds)) {
+                    $member->skills()->sync($skillIds);
+                    Log::info("Habilidades sincronizadas para miembro " . $member->id . ": ", $skillIds);
+                } else {
+                    $member->skills()->detach(); // Eliminar todas si la columna está vacía
+                    Log::info("Habilidades desvinculadas para miembro " . $member->id);
+                }
+
+                // Lógica para la trayectoria (hasta 5 entradas)
+                $member->trajectories()->delete(); // Limpiar la trayectoria anterior para evitar duplicados
+                Log::info("Trayectorias anteriores eliminadas para miembro " . $member->id);
+
+                for ($i = 1; $i <= 5; $i++) {
+                    $titleKey = 'trajectory_title_' . $i;
+                    $descriptionKey = 'trajectory_description_' . $i;
+                    $startDateKey = 'trajectory_start_date_' . $i;
+                    $endDateKey = 'trajectory_end_date_' . $i;
+
+                    // Limpiar y verificar si el título de trayectoria existe
+                    $trajectoryTitle = trim($record[$titleKey] ?? '');
+                    
+                    Log::info("Procesando trayectoria " . $i . " para miembro " . $member->id . ": Título crudo: '" . ($record[$titleKey] ?? 'N/A') . "', Título limpio: '" . $trajectoryTitle . "'");
+
+                    if (!empty($trajectoryTitle)) {
+                        $trajectoryDescription = trim($record[$descriptionKey] ?? '') ?: null;
+                        $trajectoryStartDateRaw = trim($record[$startDateKey] ?? '');
+                        $trajectoryEndDateRaw = trim($record[$endDateKey] ?? '') ?: null;
+
+                        $startDate = null;
+                        $endDate = null;
+
+                        Log::info("Trayectoria " . $i . " - Fechas crudas: Inicio='" . $trajectoryStartDateRaw . "', Fin='" . $trajectoryEndDateRaw . "'");
+
+                        // Validar y parsear las fechas en formato dd/mm/aaaa
+                        try {
+                            if (!empty($trajectoryStartDateRaw)) {
+                                $startDate = Carbon::createFromFormat('d/m/Y', $trajectoryStartDateRaw)->format('Y-m-d');
+                            }
+                            if (!empty($trajectoryEndDateRaw)) {
+                                $endDate = Carbon::createFromFormat('d/m/Y', $trajectoryEndDateRaw)->format('Y-m-d');
+                            }
+                            
+                            $member->trajectories()->create([
+                                'title' => $trajectoryTitle,
+                                'description' => $trajectoryDescription,
+                                'start_date' => $startDate,
+                                'end_date' => $endDate,
+                            ]);
+                            Log::info("Trayectoria " . $i . " creada para miembro " . $member->id . " con título '" . $trajectoryTitle . "' y fechas: " . $startDate . " a " . $endDate);
+
+                        } catch (\Exception $e) {
+                            $errors[] = "Fila " . ($index + 2) . ": Error en el formato de fecha de la trayectoria " . $i . " ('$trajectoryStartDateRaw' o '$trajectoryEndDateRaw'). Se esperaba 'dd/mm/aaaa'. Detalles: " . $e->getMessage();
+                            Log::error("Error al parsear fecha de trayectoria en fila " . ($index + 2) . ", trayectoria " . $i . ": " . $e->getMessage());
+                            // Continúa con la siguiente trayectoria para este miembro, no salta al siguiente miembro.
+                            continue; 
+                        }
+                    } else {
+                        Log::info("Trayectoria " . $i . " no procesada para miembro " . $member->id . " porque el título está vacío.");
+                    }
+                }
+
+                $successCount++;
+            }
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error en importCsv (transacción): " . $e->getMessage() . " en archivo " . $e->getFile() . " linea " . $e->getLine());
+            return redirect()->route('admin.organigram.create')->with('error', 'Ocurrió un error inesperado al procesar el archivo. Ningún miembro fue creado. Detalles: ' . $e->getMessage());
+        }
+
+        if (empty($errors)) {
+            return redirect()->route('admin.organigram.index')->with('success', 'Se han creado/actualizado ' . $successCount . ' miembros exitosamente.');
+        } else {
+            $errorMessage = "Se crearon/actualizaron $successCount miembros, pero ocurrieron errores en las siguientes filas: <br>" . implode('<br>', $errors) . "<br>Por favor, revisa el archivo y los errores específicos.";
+            return redirect()->route('admin.organigram.index')->with('warning', $errorMessage);
+        }
     }
 
     /**
@@ -160,10 +410,31 @@ class OrganigramController extends Controller
 
         $organigramMember->load(['activities', 'skills', 'trajectories', 'position']);
 
+        // Mapear las trayectorias para formatear las fechas a YYYY-MM-DD para el input type="date"
+        // y asegurar que se conviertan a un array de arrays simples para json_encode
+        $trajectories = $organigramMember->trajectories->map(function ($trajectory) {
+            return [
+                'id' => $trajectory->id,
+                'title' => $trajectory->title,
+                'description' => $trajectory->description,
+                'start_date' => optional($trajectory->start_date)->format('Y-m-d'), // Formato YYYY-MM-DD
+                'end_date' => optional($trajectory->end_date)->format('Y-m-d'),     // Formato YYYY-MM-DD
+                // Incluir otros campos si son necesarios en el frontend, pero formatéalos si son fechas
+                'created_at' => optional($trajectory->created_at)->format('Y-m-d H:i:s'),
+                'updated_at' => optional($trajectory->updated_at)->format('Y-m-d H:i:s'),
+                'organigram_member_id' => $trajectory->organigram_member_id,
+            ];
+        })->toArray(); // ¡CAMBIO CLAVE AQUÍ! Convertir a array de arrays PHP
+
+        // === INICIO DE DIAGNÓSTICO ===
+        Log::info('Trayectorias formateadas enviadas a la vista de edición (array final):', $trajectories);
+        // === FIN DE DIAGNÓSTICO ===
+
         $memberActivitiesIds = $organigramMember->activities->pluck('id')->toArray();
         $memberSkillsIds = $organigramMember->skills->pluck('id')->toArray();
 
-        return view('admin.organigram.edit', compact('organigramMember', 'areas', 'managers', 'activities', 'skills', 'memberActivitiesIds', 'memberSkillsIds', 'positions'));
+        // Pasar la variable $trajectories formateada a la vista
+        return view('admin.organigram.edit', compact('organigramMember', 'areas', 'managers', 'activities', 'skills', 'memberActivitiesIds', 'memberSkillsIds', 'positions', 'trajectories'));
     }
 
     /**

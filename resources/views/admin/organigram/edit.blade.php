@@ -1,54 +1,25 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Editar Miembro del Organigrama: ') }} {{ $organigramMember->name }}
+            {{ __('Editar Miembro del Organigrama') }}
         </h2>
     </x-slot>
 
     <div class="py-12 bg-[#E8ECF7]">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-
-            @php
-                $trajectories = $organigramMember->trajectories->map(function ($t) {
-                    return [
-                        'id' => (int) $t->id,
-                        'title' => htmlspecialchars($t->title ?? '', ENT_QUOTES, 'UTF-8'),
-                        'description' => htmlspecialchars($t->description ?? '', ENT_QUOTES, 'UTF-8'),
-                        'start_date' => optional($t->start_date)->format('Y-m-d') ?? '',
-                        'end_date' => optional($t->end_date)->format('Y-m-d') ?? '',
-                    ];
-                });
-            @endphp        
-            
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-8">
+                
                 <form method="POST" action="{{ route('admin.organigram.update', $organigramMember) }}" enctype="multipart/form-data"
                     x-data="{
                         photoName: null,
-                        photoPreview: '{{ $organigramMember->profile_photo_path ? Storage::disk('s3')->url($organigramMember->profile_photo_path) : null }}',
-                        trajectories: {{ $trajectories->toJson() }},
-                        removingExistingPhoto: false
-                    }"
-                    x-on:change="
-                        if ($refs.photo && $refs.photo.files.length > 0) {
-                            photoName = $refs.photo.files[0].name;
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                photoPreview = e.target.result;
-                            };
-                            reader.readAsDataURL(this.$refs.photo.files[0]);
-                            removingExistingPhoto = false;
-                        } else {
-                            photoName = null;
-                            if (!removingExistingPhoto && '{{ $organigramMember->profile_photo_path }}') {
-                                photoPreview = '{{ Storage::disk('s3')->url($organigramMember->profile_photo_path) }}';
-                            } else {
-                                photoPreview = null;
-                            }
-                        }
-                    "
-                >
+                        // Inicializa photoPreview de forma segura: si profile_photo_path es null, usa una cadena vacía
+                        photoPreview: '{{ $organigramMember->profile_photo_path ? Storage::disk('s3')->url($organigramMember->profile_photo_path) : '' }}',
+                        // Carga las trayectorias existentes para la edición, usando la variable formateada del controlador
+                        // y codificándola a JSON directamente (ya es un array PHP)
+                        trajectories: {{ json_encode($trajectories) }}, {{-- ¡CAMBIO CLAVE AQUÍ! --}}
+                    }">
                     @csrf
-                    @method('PUT')
+                    @method('PUT') {{-- Importante: Laravel usa PUT para las actualizaciones --}}
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -60,30 +31,46 @@
                                     <template x-if="photoPreview">
                                         <img :src="photoPreview" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md">
                                     </template>
-                                    <template x-if="!photoPreview && '{{ $organigramMember->profile_photo_path }}' && !removingExistingPhoto">
-                                        <img src="{{ Storage::disk('s3')->url($organigramMember->profile_photo_path) }}" alt="{{ $organigramMember->name }}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md">
-                                    </template>
-                                    <template x-if="!photoPreview && !'{{ $organigramMember->profile_photo_path }}' || removingExistingPhoto">
+                                    {{-- Muestra el placeholder solo si no hay preview Y no hay un nuevo archivo seleccionado --}}
+                                    <template x-if="!photoPreview && !photoName">
                                         <div class="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 border-4 border-gray-300 shadow-md">
                                             <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg>
                                         </div>
                                     </template>
                                 </div>
-                                <input type="file" class="hidden" x-ref="photo" name="profile_photo" id="profile_photo" accept="image/*">
+
+                                <input type="file" class="hidden" x-ref="photo" name="profile_photo" id="profile_photo" accept="image/*"
+                                    x-on:change="
+                                        if ($refs.photo.files.length > 0) {
+                                            photoName = $refs.photo.files[0].name;
+                                            const reader = new FileReader();
+                                            reader.onload = (e) => {
+                                                photoPreview = e.target.result;
+                                            };
+                                            reader.readAsDataURL($refs.photo.files[0]);
+                                        } else {
+                                            photoName = null;
+                                            // Si no se selecciona un nuevo archivo, restablece a la foto existente (si la hay)
+                                            photoPreview = '{{ $organigramMember->profile_photo_path ? Storage::disk('s3')->url($organigramMember->profile_photo_path) : '' }}';
+                                        }
+                                    ">
+
                                 <label for="profile_photo" class="inline-flex items-center px-5 py-2 bg-[#ff9c00] text-white rounded-full font-semibold text-sm uppercase tracking-widest hover:bg-orange-600 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md cursor-pointer">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                    <span x-text="photoName || 'Cambiar Foto'"></span>
+                                    <span x-text="photoName || 'Seleccionar Foto'"></span>
                                 </label>
                                 <x-input-error class="mt-2" :messages="$errors->get('profile_photo') ?? []" />
 
-                                @if ($organigramMember->profile_photo_path)
-                                    <div class="mt-4">
-                                        <label for="remove_profile_photo" class="inline-flex items-center cursor-pointer">
-                                            <input type="checkbox" name="remove_profile_photo" id="remove_profile_photo" value="1" class="rounded border-gray-300 text-red-600 shadow-sm focus:ring-red-500" x-model="removingExistingPhoto">
-                                            <span class="ml-2 text-sm text-red-600 font-medium">{{ __('Eliminar foto de perfil actual') }}</span>
-                                        </label>
-                                    </div>
+                                {{-- Botón para eliminar la foto actual --}}
+                                @if($organigramMember->profile_photo_path)
+                                    <button type="button" 
+                                            @click="photoPreview = null; $refs.photo.value = ''; photoName = null;"
+                                            class="mt-2 text-sm text-red-600 hover:text-red-900 focus:outline-none focus:underline">
+                                        {{ __('Eliminar foto actual') }}
+                                    </button>
                                 @endif
+                                {{-- Input hidden para indicar si se eliminó la foto --}}
+                                <input type="hidden" name="remove_profile_photo" :value="photoPreview === null && '{{ $organigramMember->profile_photo_path }}' !== '' ? 1 : 0">
                             </div>
 
                             <div class="mb-4">
@@ -103,7 +90,7 @@
                                 <x-text-input id="cell_phone" name="cell_phone" type="text" class="mt-1 block w-full" :value="old('cell_phone', $organigramMember->cell_phone)" />
                                 <x-input-error class="mt-2" :messages="$errors->get('cell_phone') ?? []" />
                             </div>
-
+                            
                             <div class="mb-4">
                                 <x-input-label for="position_id" :value="__('Posición')" />
                                 <select id="position_id" name="position_id" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
@@ -127,7 +114,7 @@
                             </div>
 
                             <div class="mb-4">
-                                <x-input-label for="manager_id" :value="__('Jefe Directo (Opcional)')" />
+                                <x-input-label for="manager_id" :value="__('Jefe Directo')" />
                                 <select id="manager_id" name="manager_id" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                                     <option value="">Ninguno</option>
                                     @foreach ($managers as $manager)
@@ -145,7 +132,7 @@
                         <div>
                             <h3 class="text-lg font-semibold text-[#2c3856] mb-4">{{ __('Detalles Adicionales') }}</h3>
 
-                            {{-- SECCIÓN ACTIVIDADES MODIFICADA --}}
+                            {{-- SECCIÓN ACTIVIDADES --}}
                             <div class="mb-6">
                                 <x-input-label :value="__('Actividades')" class="mb-2" />
                                 <div class="max-h-56 overflow-y-auto p-4 border border-gray-200 rounded-md">
@@ -157,14 +144,14 @@
                                                 <span class="ml-2 text-sm text-gray-700">{{ $activity->name }}</span>
                                             </label>
                                         @empty
-                                            <p class="text-sm text-gray-500 col-span-2">No hay actividades registradas. Crea algunas desde "Gestionar Actividades".</p>
+                                            <p class="text-sm text-gray-500 col-span-2">No hay actividades registradas.</p>
                                         @endforelse
                                     </div>
                                 </div>
                                 <x-input-error class="mt-2" :messages="$errors->get('activities_ids') ?? []" />
                             </div>
 
-                            {{-- SECCIÓN HABILIDADES MODIFICADA --}}
+                            {{-- SECCIÓN HABILIDADES --}}
                             <div class="mb-6">
                                 <x-input-label :value="__('Habilidades')" class="mb-2" />
                                 <div class="max-h-56 overflow-y-auto p-4 border border-gray-200 rounded-md">
@@ -176,7 +163,7 @@
                                                 <span class="ml-2 text-sm text-gray-700">{{ $skill->name }}</span>
                                             </label>
                                         @empty
-                                            <p class="text-sm text-gray-500 col-span-2">No hay habilidades registradas. Crea algunas desde "Gestionar Habilidades".</p>
+                                            <p class="text-sm text-gray-500 col-span-2">No hay habilidades registradas.</p>
                                         @endforelse
                                     </div>
                                 </div>
@@ -185,7 +172,7 @@
 
                             <div class="mb-6">
                                 <h4 class="text-base font-semibold text-[#2c3856] mb-2">{{ __('Trayectoria Profesional') }}</h4>
-                                <template x-for="(trajectory, index) in trajectories" :key="index">
+                                <template x-for="(trajectory, index) in trajectories" :key="trajectory.id ? trajectory.id : index">
                                     <div class="bg-gray-50 p-4 rounded-lg shadow-sm mb-3 border border-gray-200">
                                         <div class="flex justify-end">
                                             <button type="button" @click="trajectories.splice(index, 1)" class="text-red-500 hover:text-red-700 text-sm">Eliminar</button>
@@ -228,7 +215,7 @@
                             {{ __('Cancelar') }}
                         </a>
                         <x-primary-button>
-                            {{ __('Actualizar Miembro') }}
+                            {{ __('Guardar Cambios') }}
                         </x-primary-button>
                     </div>
                 </form>

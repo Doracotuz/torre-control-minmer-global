@@ -194,6 +194,10 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
         Route::put('/{organigram_member}', [OrganigramController::class, 'update'])->name('update');
         Route::delete('/{organigram_member}', [OrganigramController::class, 'destroy'])->name('destroy');
 
+        Route::get('/template', [OrganigramController::class, 'downloadTemplate'])->name('download-template');
+        Route::post('/import-csv', [OrganigramController::class, 'importCsv'])->name('import-csv');
+
+
         // Rutas para gestionar Actividades del Organigrama (CRUD)
         Route::prefix('activities')->name('activities.')->group(function () {
             Route::get('/', [OrganigramController::class, 'activitiesIndex'])->name('index');

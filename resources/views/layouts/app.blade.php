@@ -12,7 +12,6 @@
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@800&display=swap" rel="stylesheet">
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
-        <!-- <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script> -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
          
         <style>
@@ -129,6 +128,34 @@
 
 
             [x-cloak] { display: none !important; }
+            
+            .glowing-button {
+                position: relative;
+                overflow: hidden;
+                font-weight: 500;
+            }
+            .glowing-button .nav-text {
+                color: #FF9C00;
+            }
+
+            .glowing-button .nav-icon {
+                color: #FF9C00;
+            }            
+            .glowing-button::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.2);
+                transition: none;
+                animation: swipe 3s infinite linear;
+            }
+            @keyframes swipe {
+                0% { left: -100%; }
+                100% { left: 100%; }
+            }
         </style>
             <script>
         // Variables globales
@@ -433,8 +460,21 @@ document.addEventListener('alpine:init', () => {
                     this.evento.lat = latLng.lat().toFixed(6);
                     this.evento.lng = latLng.lng().toFixed(6);
                     this.isEventModalOpen = true;
+                },
+
+                // Lógica para mostrar el modal de acceso denegado
+                showAccessDeniedModal() {
+                    this.isAccessDeniedModalOpen = true;
                 }
 
+            }));
+
+            // Agregando la lógica de Alpine.js para los modales globales
+            Alpine.data('globalState', () => ({
+                isAccessDeniedModalOpen: false,
+                closeAccessDeniedModal() {
+                    this.isAccessDeniedModalOpen = false;
+                }
             }));
         });
 
@@ -528,21 +568,31 @@ document.addEventListener('alpine:init', () => {
         x-data="{
             /* State for collapsible menus - automatically opens if the current route matches */
             isSuperAdminMenuOpen: {{ request()->routeIs('admin.*') ? 'true' : 'false' }},
-            isAreaAdminMenuOpen: {{ request()->routeIs('area_admin.*') ? 'true' : 'false' }}
+            isAreaAdminMenuOpen: {{ request()->routeIs('area_admin.*') ? 'true' : 'false' }},
+            isAccessDeniedModalOpen: false,
+            
+            showAccessDeniedModal() {
+                this.isAccessDeniedModalOpen = true;
+            },
+            
+            checkAccess(event) {
+                const restrictedUsers = ['24', '25', '26', '27'];
+                if (restrictedUsers.includes(String({{ Auth::id() }}))) {
+                    this.showAccessDeniedModal();
+                    event.preventDefault();
+                }
+            }
         }"
     >
         <div class="min-h-screen bg-gray-100 flex">
             <div class="w-64 bg-[#2c3856] text-white flex-col min-h-screen shadow-2xl relative z-10 hidden lg:flex sticky-sidebar">
-            <!-- <div class="w-64 bg-[#2c3856] text-white flex-col min-h-screen shadow-2xl relative z-10 hidden lg:flex"> -->
-                <div class="p-6 text-center">
+            <div class="p-6 text-center">
                     <div class="logo-container py-4">
                         <img src="{{ Storage::disk('s3')->url('escudoMinmer.png') }}" alt="Minmer Global Logo" class="h-20 mx-auto mb-3">
                         <span class="text-xl font-extrabold text-white tracking-wide logo-text">CONTROL TOWER</span>
                         <span class="text-xs text-gray-300 mt-1 block logo-subtitle">MINMER GLOBAL</span>
                     </div>
                 </div>
-
-                <!-- <div class="px-6"><div class="border-t border-white/10"></div></div> -->
 
                 <nav class="flex-1 px-4 py-6 space-y-2">
                     {{-- ENLACE AL DASHBOARD (Visible para todos los empleados) --}}
@@ -562,7 +612,7 @@ document.addEventListener('alpine:init', () => {
                     @endif                    
 
                     {{-- ENLACE A ARCHIVOS (Texto cambia para clientes) --}}
-                    <x-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="nav-link-custom {{ request()->routeIs('folders.index') ? 'active-link' : '' }}">
+                    <x-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="nav-link-custom {{ request()->routeIs('folders.index') ? 'active-link' : '' }}" @click.prevent="checkAccess($event)">
                         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8V21H3V8M10 12H14M1 3H23V8H1V3Z" /></svg>
                         <span class="nav-text">
                             @if (Auth::user()->is_client)
@@ -575,20 +625,32 @@ document.addEventListener('alpine:init', () => {
 
                     {{-- BOTONES EXCLUSIVOS PARA CLIENTES --}}
                     @if (Auth::user()->is_client)
-                        <x-nav-link :href="route('client.organigram.interactive')" :active="request()->routeIs('client.organigram.interactive')" class="nav-link-custom {{ request()->routeIs('client.organigram.interactive') ? 'active-link' : '' }}">
+                        <x-nav-link :href="route('client.organigram.interactive')" :active="request()->routeIs('client.organigram.interactive')" class="nav-link-custom {{ request()->routeIs('client.organigram.interactive') ? 'active-link' : '' }}" @click.prevent="checkAccess($event)">
                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
                             <span class="nav-text">{{ __('Organigrama') }}</span>
                         </x-nav-link>
 
-                        <x-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="nav-link-custom {{ request()->routeIs('tracking.index') ? 'active-link' : '' }}" target="_blank" rel="noopener noreferrer">
+                        <x-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="nav-link-custom {{ request()->routeIs('tracking.index') ? 'active-link' : '' }}" target="_blank" rel="noopener noreferrer" @click.prevent="checkAccess($event)">
                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 16V3H1V16H16ZM16 16H23V11L20 8H16V16ZM8 18.5C8 19.8807 6.88071 21 5.5 21C4.11929 21 3 19.8807 3 18.5C3 17.1193 4.11929 16 5.5 16C6.88071 16 8 17.1193 8 18.5ZM21 18.5C21 19.8807 19.8807 21 18.5 21C17.1193 21 16 19.8807 16 18.5C16 17.1193 17.1193 16 18.5 16C19.8807 16 21 17.1193 21 18.5Z" />
                             </svg>
                             <span class="nav-text">{{ __('Tracking') }}</span>
                         </x-nav-link>
 
+                        {{-- RFQ Moët Hennessy Button --}}
+                        <x-nav-link href="#" class="nav-link-custom glowing-button">
+                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                            </svg>
+                            <span class="nav-text text-base text-left leading-none">
+                                RFQ
+                                <br>
+                                <span class="nav-text text-sm">Moët Hennessy</span>
+                            </span>
+                        </x-nav-link>
+
                     <div class="pt-4 mt-4 border-t border-white/10 space-y-2">
-                        <x-nav-link href="#" class="nav-link-custom">
+                        <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" d="M12 4c3.5 0 6.5 4 6.5 8s-4.5 8.5-6.5 10.5c-2-2-6.5-6.5-6.5-10.5S8.5 4 12 4z"/>
                                 <path stroke-linecap="round" d="M12 14.5l-3-6m3 6l3-6m-3 6l-1.5-3m1.5 3l1.5-3"/>
@@ -596,7 +658,7 @@ document.addEventListener('alpine:init', () => {
                             <span class="nav-text">{{ __('Huella de Carbono') }}</span>
                         </x-nav-link>
 
-                        <x-nav-link href="#" class="nav-link-custom">
+                        <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M 9 12.75 L 11.25 15 L 15 9.75 M 12 3 A 11.959 11.959 0 0 1 3.598 6 A 11.99 11.99 0 0 0 3 9.749 C 3 15.341 6.824 20.039 12 21.371 C 17.176 20.039 21 15.341 21 9.749 C 21 8.439 20.79 7.178 20.398 5.998 C 18 6 17 6 12 3 L 12 3" />
                             </svg>
@@ -608,7 +670,7 @@ document.addEventListener('alpine:init', () => {
                             $whatsappMessage = urlencode("Hola, me gustaría recibir asistencia para la plataforma \"Control Tower - Minmer Global\"");
                             $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
                         @endphp
-                        <x-nav-link :href="$whatsappLink" target="_blank" class="nav-link-custom">
+                        <x-nav-link :href="$whatsappLink" target="_blank" class="nav-link-custom" @click.prevent="checkAccess($event)">
                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17.423 7.016h-0.303C16.798 3.091 13.695 0 9.921 0 6.146 0 3.043 3.091 2.72 7.016H2.576c-0.776 0 -1.409 0.631 -1.409 1.408v5.53c0 0.778 0.633 1.409 1.409 1.409h1.531c0.778 0 1.409 -0.631 1.409 -1.409v-5.53c0 -0.777 -0.631 -1.408 -1.409 -1.408H3.494c0.318 -3.499 3.079 -6.242 6.427 -6.242 3.348 0 6.109 2.743 6.426 6.242h-0.454c-0.778 0 -1.409 0.631 -1.409 1.408v5.53c0 0.668 0.475 1.248 1.128 1.381l0.687 0.019c0.021 0.459 -0.028 1.353 -0.621 2.065 -0.494 0.593 -1.276 0.951 -2.321 1.077 -0.173 -0.269 -0.475 -0.447 -0.817 -0.447h-1.478c-0.538 0 -0.975 0.436 -0.975 0.975 0 0.539 0.437 0.975 0.975 0.975h1.479c0.457 0 0.838 -0.316 0.944 -0.741 1.235 -0.154 2.176 -0.603 2.796 -1.351 0.734 -0.888 0.819 -1.951 0.796 -2.544h0.349c0.777 0 1.409 -0.631 1.409 -1.41V8.424c0 -0.777 -0.632 -1.408 -1.41 -1.408" />
                             </svg>
@@ -725,6 +787,33 @@ document.addEventListener('alpine:init', () => {
                         @yield('content')
                     @endif
                 </main>
+
+                <div x-show="isAccessDeniedModalOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                        <div x-show="isAccessDeniedModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full sm:p-6">
+                            <div>
+                                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                                    <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.855-1.168 2.855-2.617V6.617C21.938 5.168 20.623 4 19.083 4H4.917C3.377 4 2.062 5.168 2.062 6.617v10.766C2.062 18.832 3.377 20 4.917 20z" />
+                                    </svg>
+                                </div>
+                                <div class="mt-3 text-center sm:mt-5">
+                                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Acceso Denegado</h3>
+                                    <div class="mt-2">
+                                        <p class="text-sm text-gray-500">No tienes acceso a esta función, consulta con tu asesor.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-5 sm:mt-6">
+                                <button type="button" @click="isAccessDeniedModalOpen = false" class="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm">
+                                    Entendido
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
             </div>
         </div>
