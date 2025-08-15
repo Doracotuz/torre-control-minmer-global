@@ -108,7 +108,7 @@
 
             {{-- Modal para Miembros - Actualizado con operador de encadenamiento opcional --}}
             <div x-data="memberModal" @open-member-modal.window="openModal($event.detail)" x-show="showModal" x-transition class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50" style="display: none;" @click.away="closeModalAndResetData()">
-                <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden" @click.stop="">
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden" @click.stop="">
                     <div class="flex justify-between items-center p-4 bg-[#2c3856] text-white">
                         <h3 class="text-xl font-bold" x-text="data?.name + ' - Detalles'"></h3> {{-- Agregado ?. --}}
                         <button @click="closeModalAndResetData()" class="text-gray-300 hover:text-white text-3xl leading-none">&times;</button>
@@ -128,12 +128,26 @@
                                     <div class="pt-2"><p class="font-semibold text-gray-500 block">Email</p><a :href="'mailto:' + data?.email" class="text-blue-600 hover:underline" x-text="data?.email"></a></div> {{-- Agregado ?. --}}
                                     <div><p class="font-semibold text-gray-500 block">Celular</p><p class="text-base text-[#666666]" x-text="data?.cell_phone"></p></div> {{-- Agregado ?. --}}
                                 </div>
+
+                                <div x-show="data?.activities && data?.activities.length > 0">
+                                    <h4 class="font-bold text-lg text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Plan de carrera</h4>
+                                    <ul class="list-inside space-y-1 text-[#2b2b2b]">
+                                        <template x-for="activity in data?.activities" :key="activity.id">
+                                            <li x-text="activity.name"></li>
+                                        </template>
+                                    </ul>
+                                </div>
+
                             </div>
                             <div class="md:col-span-2 space-y-6">
-                                <div><h4 class="font-bold text-lg text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Actividades</h4><ul class="list-disc list-inside space-y-1 text-[#2b2b2b]">
-                                    <template x-for="activity in data?.activities" :key="activity.id"><li x-text="activity.name"></li></template> {{-- Agregado ?. --}}
-                                    <li x-show="!data?.activities || data?.activities.length === 0" class="text-gray-500">No hay actividades asignadas.</li> {{-- Agregado ?. --}}
-                                </ul></div>
+                                <!-- <div x-show="data?.activities && data?.activities.length > 0">
+                                    <h4 class="font-bold text-lg text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Plan de carrera</h4>
+                                    <ul class="list-disc list-inside space-y-1 text-[#2b2b2b]">
+                                        <template x-for="activity in data?.activities" :key="activity.id">
+                                            <li x-text="activity.name"></li>
+                                        </template>
+                                    </ul>
+                                </div> -->
 
                                 <div><h4 class="font-bold text-lg text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Habilidades</h4><ul class="list-disc list-inside space-y-1 text-[#2b2b2b]">
                                     <template x-for="skill in data?.skills" :key="skill.id"><li x-text="skill.name"></li></template> {{-- Agregado ?. --}}
