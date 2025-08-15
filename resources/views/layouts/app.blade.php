@@ -130,31 +130,64 @@
             [x-cloak] { display: none !important; }
             
             .glowing-button {
-                position: relative;
-                overflow: hidden;
-                font-weight: 500;
-            }
-            .glowing-button .nav-text {
-                color: #FF9C00;
+            position: relative;
+            overflow: hidden;
             }
 
-            .glowing-button .nav-icon {
-                color: #FF9C00;
-            }            
+.glowing-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;  /* Cambiado a centro vertical */
+    left: 50%; /* Cambiado a centro horizontal */
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    animation: glow-burst 1s ease-out forwards infinite alternate;
+    transform: translate(-50%, -50%) scale(0); /* Centrado preciso y escala inicial 0 */
+}
+
             .glowing-button::after {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: rgba(255, 255, 255, 0.2);
-                transition: none;
-                animation: swipe 3s infinite linear;
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 0px;
+            height: 0px;
+            background-color: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            pointer-events: none;
+            animation: twinkle 1.5s ease-in-out infinite; /* Animación de parpadeo constante */
             }
-            @keyframes swipe {
-                0% { left: -100%; }
-                100% { left: 100%; }
+
+@keyframes glow-burst {
+    0% {
+        transform: translate(-50%, -50%) scale(0); /* Mantener centrado */
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(5); /* Mantener centrado */
+        opacity: 0;
+    }
+}
+
+            @keyframes twinkle {
+            0%, 100% {
+            opacity: 0.8;
+            transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+            opacity: 0.3;
+            transform: translate(-50%, -50%) scale(1.2);
+            }
+            }
+
+            .glowing-button span {
+            position: relative; /* Asegura que el texto esté encima de los efectos */
             }
         </style>
             <script>
@@ -576,7 +609,7 @@ document.addEventListener('alpine:init', () => {
             },
             
             checkAccess(event) {
-                const restrictedUsers = ['24', '25', '26', '27'];
+                const restrictedUsers = ['24', '25', '26', '27', '4'];
                 if (restrictedUsers.includes(String({{ Auth::id() }}))) {
                     this.showAccessDeniedModal();
                     event.preventDefault();
@@ -612,7 +645,7 @@ document.addEventListener('alpine:init', () => {
                     @endif                    
 
                     {{-- ENLACE A ARCHIVOS (Texto cambia para clientes) --}}
-                    @if(in_array(Auth::id(), ['4', '5', '6']))
+                    @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
                         <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8V21H3V8M10 12H14M1 3H23V8H1V3Z" /></svg>
                             <span class="nav-text">{{ __('Archivos') }}</span>
@@ -632,7 +665,7 @@ document.addEventListener('alpine:init', () => {
 
                     {{-- BOTONES EXCLUSIVOS PARA CLIENTES --}}
                     @if (Auth::user()->is_client)
-                        @if(in_array(Auth::id(), ['4', '5', '6']))
+                        @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
                             <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
                                 <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
                                 <span class="nav-text">{{ __('Organigrama') }}</span>
@@ -659,9 +692,9 @@ document.addEventListener('alpine:init', () => {
                         @endif
 
                         {{-- RFQ Moët Hennessy Button --}}
-                        <x-nav-link href="#" class="nav-link-custom glowing-button">
-                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path d="M14.953 10.597l.898-1.78a2.58 2.58 0 00-.775-3.375l-.901-.901a2.58 2.58 0 00-3.375-.775l-1.78.898a2.58 2.58 0 00-1.777 2.215v1.233c0 .874-.35 1.688-.934 2.296l-2.071 2.071a2.58 2.58 0 00-.756 1.832V18.5a2.58 2.58 0 002.576 2.58h.001a2.58 2.58 0 002.574-2.58v-1.222c0-.875.35-1.689.934-2.296l2.071-2.071a2.58 2.58 0 00.756-1.832v-.001a.375.375 0 00-.375-.375zM12 11a1 1 0 100-2 1 1 0 000 2z"/>
+                        <x-nav-link :href="route('rfq.index')" class="nav-link-custom glowing-button">
+                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                             </svg>
                             <span class="nav-text text-lg leading-none">
                                 RFQ
@@ -671,7 +704,7 @@ document.addEventListener('alpine:init', () => {
                         </x-nav-link>
 
                         <div class="pt-4 mt-4 border-t border-white/10 space-y-2">
-                            @if(in_array(Auth::id(), ['4', '5', '6']))
+                            @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
                                 <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
                                     <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" d="M12 4c3.5 0 6.5 4 6.5 8s-4.5 8.5-6.5 10.5c-2-2-6.5-6.5-6.5-10.5S8.5 4 12 4z"/>

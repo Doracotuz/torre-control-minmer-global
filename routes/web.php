@@ -34,6 +34,7 @@ use App\Http\Controllers\CustomerService\BrandController;
 use App\Http\Controllers\CustomerService\CustomerController;
 use App\Http\Controllers\CustomerService\WarehouseController;
 use App\Http\Controllers\CustomerService\OrderController;
+use App\Http\Controllers\RfqController;
 
 
 
@@ -151,6 +152,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/organigrama-data-sin-areas', [OrganigramController::class, 'getInteractiveOrganigramDataWithoutAreas'])->name('client.organigram.data.without-areas');
     Route::get('/tablero', [TableroController::class, 'index'])->name('tablero.index');
     Route::post('/tablero/upload-kpis', [TableroController::class, 'uploadKpis'])->name('tablero.uploadKpis');
+    Route::get('/rfq', [RfqController::class, 'index'])->name('rfq.index');
 
 
 });

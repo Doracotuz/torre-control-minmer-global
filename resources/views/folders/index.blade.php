@@ -21,14 +21,14 @@
                     Bienvenido, {{ Auth::user()->name }}
                 </span>
             </div>
-            <div class="flex items-center space-x-4">
-                @if ($currentFolder)
-                    <a href="{{ route('indicadores.show', ['folder' => $currentFolder->id]) }}" class="inline-flex items-center px-4 py-2 bg-[#FF9C00] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#2C3856] active:bg-[#9CB3ED] focus:outline-none focus:border-blue-700 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
-                        <svg class="w-4 h-4 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                        Ver Indicadores
-                    </a>
-                @endif
-            </div>
+                <div class="flex items-center space-x-4">
+                    @if ($currentFolder && !in_array(Auth::id(), ['4', '24', '25', '26', '27']))
+                        <a href="{{ route('indicadores.show', ['folder' => $currentFolder->id]) }}" class="inline-flex items-center px-4 py-2 bg-[#FF9C00] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#2C3856] active:bg-[#9CB3ED] focus:outline-none focus:border-blue-700 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
+                            <svg class="w-4 h-4 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            Ver Indicadores
+                        </a>
+                    @endif
+                </div>
         </div>
     </x-slot>
 
