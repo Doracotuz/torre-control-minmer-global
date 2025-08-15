@@ -612,73 +612,122 @@ document.addEventListener('alpine:init', () => {
                     @endif                    
 
                     {{-- ENLACE A ARCHIVOS (Texto cambia para clientes) --}}
-                    <x-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="nav-link-custom {{ request()->routeIs('folders.index') ? 'active-link' : '' }}" @click.prevent="checkAccess($event)">
-                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8V21H3V8M10 12H14M1 3H23V8H1V3Z" /></svg>
-                        <span class="nav-text">
-                            @if (Auth::user()->is_client)
-                                {{ __('Archivos') }}
-                            @else
-                                {{ __('Gestión de Archivos') }}
-                            @endif
-                        </span>
-                    </x-nav-link>
+                    @if(in_array(Auth::id(), ['4', '5', '6']))
+                        <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
+                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8V21H3V8M10 12H14M1 3H23V8H1V3Z" /></svg>
+                            <span class="nav-text">{{ __('Archivos') }}</span>
+                        </x-nav-link>
+                    @else
+                        <x-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="nav-link-custom {{ request()->routeIs('folders.index') ? 'active-link' : '' }}">
+                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8V21H3V8M10 12H14M1 3H23V8H1V3Z" /></svg>
+                            <span class="nav-text">
+                                @if (Auth::user()->is_client)
+                                    {{ __('Archivos') }}
+                                @else
+                                    {{ __('Gestión de Archivos') }}
+                                @endif
+                            </span>
+                        </x-nav-link>
+                    @endif
 
                     {{-- BOTONES EXCLUSIVOS PARA CLIENTES --}}
                     @if (Auth::user()->is_client)
-                        <x-nav-link :href="route('client.organigram.interactive')" :active="request()->routeIs('client.organigram.interactive')" class="nav-link-custom {{ request()->routeIs('client.organigram.interactive') ? 'active-link' : '' }}" @click.prevent="checkAccess($event)">
-                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
-                            <span class="nav-text">{{ __('Organigrama') }}</span>
-                        </x-nav-link>
+                        @if(in_array(Auth::id(), ['4', '5', '6']))
+                            <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
+                                <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+                                <span class="nav-text">{{ __('Organigrama') }}</span>
+                            </x-nav-link>
 
-                        <x-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="nav-link-custom {{ request()->routeIs('tracking.index') ? 'active-link' : '' }}" target="_blank" rel="noopener noreferrer" @click.prevent="checkAccess($event)">
-                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 16V3H1V16H16ZM16 16H23V11L20 8H16V16ZM8 18.5C8 19.8807 6.88071 21 5.5 21C4.11929 21 3 19.8807 3 18.5C3 17.1193 4.11929 16 5.5 16C6.88071 16 8 17.1193 8 18.5ZM21 18.5C21 19.8807 19.8807 21 18.5 21C17.1193 21 16 19.8807 16 18.5C16 17.1193 17.1193 16 18.5 16C19.8807 16 21 17.1193 21 18.5Z" />
-                            </svg>
-                            <span class="nav-text">{{ __('Tracking') }}</span>
-                        </x-nav-link>
+                            <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
+                                <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 16V3H1V16H16ZM16 16H23V11L20 8H16V16ZM8 18.5C8 19.8807 6.88071 21 5.5 21C4.11929 21 3 19.8807 3 18.5C3 17.1193 4.11929 16 5.5 16C6.88071 16 8 17.1193 8 18.5ZM21 18.5C21 19.8807 19.8807 21 18.5 21C17.1193 21 16 19.8807 16 18.5C16 17.1193 17.1193 16 18.5 16C19.8807 16 21 17.1193 21 18.5Z" />
+                                </svg>
+                                <span class="nav-text">{{ __('Tracking') }}</span>
+                            </x-nav-link>
+                        @else
+                            <x-nav-link :href="route('client.organigram.interactive')" :active="request()->routeIs('client.organigram.interactive')" class="nav-link-custom {{ request()->routeIs('client.organigram.interactive') ? 'active-link' : '' }}">
+                                <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+                                <span class="nav-text">{{ __('Organigrama') }}</span>
+                            </x-nav-link>
+
+                            <x-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="nav-link-custom {{ request()->routeIs('tracking.index') ? 'active-link' : '' }}" target="_blank" rel="noopener noreferrer">
+                                <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 16V3H1V16H16ZM16 16H23V11L20 8H16V16ZM8 18.5C8 19.8807 6.88071 21 5.5 21C4.11929 21 3 19.8807 3 18.5C3 17.1193 4.11929 16 5.5 16C6.88071 16 8 17.1193 8 18.5ZM21 18.5C21 19.8807 19.8807 21 18.5 21C17.1193 21 16 19.8807 16 18.5C16 17.1193 17.1193 16 18.5 16C19.8807 16 21 17.1193 21 18.5Z" />
+                                </svg>
+                                <span class="nav-text">{{ __('Tracking') }}</span>
+                            </x-nav-link>
+                        @endif
 
                         {{-- RFQ Moët Hennessy Button --}}
                         <x-nav-link href="#" class="nav-link-custom glowing-button">
-                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path d="M14.953 10.597l.898-1.78a2.58 2.58 0 00-.775-3.375l-.901-.901a2.58 2.58 0 00-3.375-.775l-1.78.898a2.58 2.58 0 00-1.777 2.215v1.233c0 .874-.35 1.688-.934 2.296l-2.071 2.071a2.58 2.58 0 00-.756 1.832V18.5a2.58 2.58 0 002.576 2.58h.001a2.58 2.58 0 002.574-2.58v-1.222c0-.875.35-1.689.934-2.296l2.071-2.071a2.58 2.58 0 00.756-1.832v-.001a.375.375 0 00-.375-.375zM12 11a1 1 0 100-2 1 1 0 000 2z"/>
                             </svg>
-                            <span class="nav-text text-base text-left leading-none">
+                            <span class="nav-text text-lg leading-none">
                                 RFQ
                                 <br>
-                                <span class="nav-text text-sm">Moët Hennessy</span>
+                                <span class="text-sm">Moët Hennessy</span>
                             </span>
                         </x-nav-link>
 
-                    <div class="pt-4 mt-4 border-t border-white/10 space-y-2">
-                        <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
-                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" d="M12 4c3.5 0 6.5 4 6.5 8s-4.5 8.5-6.5 10.5c-2-2-6.5-6.5-6.5-10.5S8.5 4 12 4z"/>
-                                <path stroke-linecap="round" d="M12 14.5l-3-6m3 6l3-6m-3 6l-1.5-3m1.5 3l1.5-3"/>
-                            </svg>
-                            <span class="nav-text">{{ __('Huella de Carbono') }}</span>
-                        </x-nav-link>
+                        <div class="pt-4 mt-4 border-t border-white/10 space-y-2">
+                            @if(in_array(Auth::id(), ['4', '5', '6']))
+                                <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
+                                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" d="M12 4c3.5 0 6.5 4 6.5 8s-4.5 8.5-6.5 10.5c-2-2-6.5-6.5-6.5-10.5S8.5 4 12 4z"/>
+                                        <path stroke-linecap="round" d="M12 14.5l-3-6m3 6l3-6m-3 6l-1.5-3m1.5 3l1.5-3"/>
+                                    </svg>
+                                    <span class="nav-text">{{ __('Huella de Carbono') }}</span>
+                                </x-nav-link>
 
-                        <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
-                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M 9 12.75 L 11.25 15 L 15 9.75 M 12 3 A 11.959 11.959 0 0 1 3.598 6 A 11.99 11.99 0 0 0 3 9.749 C 3 15.341 6.824 20.039 12 21.371 C 17.176 20.039 21 15.341 21 9.749 C 21 8.439 20.79 7.178 20.398 5.998 C 18 6 17 6 12 3 L 12 3" />
-                            </svg>
-                            <span class="nav-text">{{ __('Certificaciones') }}</span>
-                        </x-nav-link>
+                                <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
+                                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M 9 12.75 L 11.25 15 L 15 9.75 M 12 3 A 11.959 11.959 0 0 1 3.598 6 A 11.99 11.99 0 0 0 3 9.749 C 3 15.341 6.824 20.039 12 21.371 C 17.176 20.039 21 15.341 21 9.749 C 21 8.439 20.79 7.178 20.398 5.998 C 18 6 17 6 12 3 L 12 3" />
+                                    </svg>
+                                    <span class="nav-text">{{ __('Certificaciones') }}</span>
+                                </x-nav-link>
 
-                        @php
-                            $whatsappNumber = "5215536583392";
-                            $whatsappMessage = urlencode("Hola, me gustaría recibir asistencia para la plataforma \"Control Tower - Minmer Global\"");
-                            $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
-                        @endphp
-                        <x-nav-link :href="$whatsappLink" target="_blank" class="nav-link-custom" @click.prevent="checkAccess($event)">
-                            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.423 7.016h-0.303C16.798 3.091 13.695 0 9.921 0 6.146 0 3.043 3.091 2.72 7.016H2.576c-0.776 0 -1.409 0.631 -1.409 1.408v5.53c0 0.778 0.633 1.409 1.409 1.409h1.531c0.778 0 1.409 -0.631 1.409 -1.409v-5.53c0 -0.777 -0.631 -1.408 -1.409 -1.408H3.494c0.318 -3.499 3.079 -6.242 6.427 -6.242 3.348 0 6.109 2.743 6.426 6.242h-0.454c-0.778 0 -1.409 0.631 -1.409 1.408v5.53c0 0.668 0.475 1.248 1.128 1.381l0.687 0.019c0.021 0.459 -0.028 1.353 -0.621 2.065 -0.494 0.593 -1.276 0.951 -2.321 1.077 -0.173 -0.269 -0.475 -0.447 -0.817 -0.447h-1.478c-0.538 0 -0.975 0.436 -0.975 0.975 0 0.539 0.437 0.975 0.975 0.975h1.479c0.457 0 0.838 -0.316 0.944 -0.741 1.235 -0.154 2.176 -0.603 2.796 -1.351 0.734 -0.888 0.819 -1.951 0.796 -2.544h0.349c0.777 0 1.409 -0.631 1.409 -1.41V8.424c0 -0.777 -0.632 -1.408 -1.41 -1.408" />
-                            </svg>
-                            <span class="nav-text">{{ __('Asistencia') }}</span>
-                        </x-nav-link>
-                    </div>      
+                                @php
+                                    $whatsappNumber = "5215536583392";
+                                    $whatsappMessage = urlencode("Hola, me gustaría recibir asistencia para la plataforma \"Control Tower - Minmer Global\"");
+                                    $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
+                                @endphp
+                                <x-nav-link :href="$whatsappLink" target="_blank" class="nav-link-custom" @click.prevent="checkAccess($event)">
+                                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.423 7.016h-0.303C16.798 3.091 13.695 0 9.921 0 6.146 0 3.043 3.091 2.72 7.016H2.576c-0.776 0 -1.409 0.631 -1.409 1.408v5.53c0 0.778 0.633 1.409 1.409 1.409h1.531c0.778 0 1.409 -0.631 1.409 -1.409v-5.53c0 -0.777 -0.631 -1.408 -1.409 -1.408H3.494c0.318 -3.499 3.079 -6.242 6.427 -6.242 3.348 0 6.109 2.743 6.426 6.242h-0.454c-0.778 0 -1.409 0.631 -1.409 1.408v5.53c0 0.668 0.475 1.248 1.128 1.381l0.687 0.019c0.021 0.459 -0.028 1.353 -0.621 2.065 -0.494 0.593 -1.276 0.951 -2.321 1.077 -0.173 -0.269 -0.475 -0.447 -0.817 -0.447h-1.478c-0.538 0 -0.975 0.436 -0.975 0.975 0 0.539 0.437 0.975 0.975 0.975h1.479c0.457 0 0.838 -0.316 0.944 -0.741 1.235 -0.154 2.176 -0.603 2.796 -1.351 0.734 -0.888 0.819 -1.951 0.796 -2.544h0.349c0.777 0 1.409 -0.631 1.409 -1.41V8.424c0 -0.777 -0.632 -1.408 -1.41 -1.408" />
+                                    </svg>
+                                    <span class="nav-text">{{ __('Asistencia') }}</span>
+                                </x-nav-link>
+                            @else
+                                <x-nav-link href="#" class="nav-link-custom">
+                                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" d="M12 4c3.5 0 6.5 4 6.5 8s-4.5 8.5-6.5 10.5c-2-2-6.5-6.5-6.5-10.5S8.5 4 12 4z"/>
+                                        <path stroke-linecap="round" d="M12 14.5l-3-6m3 6l3-6m-3 6l-1.5-3m1.5 3l1.5-3"/>
+                                    </svg>
+                                    <span class="nav-text">{{ __('Huella de Carbono') }}</span>
+                                </x-nav-link>
 
-                    @endif              
+                                <x-nav-link href="#" class="nav-link-custom">
+                                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M 9 12.75 L 11.25 15 L 15 9.75 M 12 3 A 11.959 11.959 0 0 1 3.598 6 A 11.99 11.99 0 0 0 3 9.749 C 3 15.341 6.824 20.039 12 21.371 C 17.176 20.039 21 15.341 21 9.749 C 21 8.439 20.79 7.178 20.398 5.998 C 18 6 17 6 12 3 L 12 3" />
+                                    </svg>
+                                    <span class="nav-text">{{ __('Certificaciones') }}</span>
+                                </x-nav-link>
+
+                                @php
+                                    $whatsappNumber = "5215536583392";
+                                    $whatsappMessage = urlencode("Hola, me gustaría recibir asistencia para la plataforma \"Control Tower - Minmer Global\"");
+                                    $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
+                                @endphp
+                                <x-nav-link :href="$whatsappLink" target="_blank" class="nav-link-custom">
+                                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.423 7.016h-0.303C16.798 3.091 13.695 0 9.921 0 6.146 0 3.043 3.091 2.72 7.016H2.576c-0.776 0 -1.409 0.631 -1.409 1.408v5.53c0 0.778 0.633 1.409 1.409 1.409h1.531c0.778 0 1.409 -0.631 1.409 -1.409v-5.53c0 -0.777 -0.631 -1.408 -1.409 -1.408H3.494c0.318 -3.499 3.079 -6.242 6.427 -6.242 3.348 0 6.109 2.743 6.426 6.242h-0.454c-0.778 0 -1.409 0.631 -1.409 1.408v5.53c0 0.668 0.475 1.248 1.128 1.381l0.687 0.019c0.021 0.459 -0.028 1.353 -0.621 2.065 -0.494 0.593 -1.276 0.951 -2.321 1.077 -0.173 -0.269 -0.475 -0.447 -0.817 -0.447h-1.478c-0.538 0 -0.975 0.436 -0.975 0.975 0 0.539 0.437 0.975 0.975 0.975h1.479c0.457 0 0.838 -0.316 0.944 -0.741 1.235 -0.154 2.176 -0.603 2.796 -1.351 0.734 -0.888 0.819 -1.951 0.796 -2.544h0.349c0.777 0 1.409 -0.631 1.409 -1.41V8.424c0 -0.777 -0.632 -1.408 -1.41 -1.408" />
+                                    </svg>
+                                    <span class="nav-text">{{ __('Asistencia') }}</span>
+                                </x-nav-link>
+                            @endif
+                        </div>
+                    @endif
 
                     {{-- BOTONES OCULTOS PARA CLIENTES --}}
                     @if (!Auth::user()->is_client)
