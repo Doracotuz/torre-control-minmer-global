@@ -133,7 +133,7 @@
                             {{-- Este input oculto recibirá las imágenes ya procesadas --}}
                             <input type="hidden" name="evidencia[]" id="processed-evidencia">
                             <p class="text-xs text-gray-500 mt-1" x-text="modal.evidenceRequired ? 'Evidencia obligatoria (máx. 10 fotos).' : 'Evidencia opcional.'"></p>
-                            <label for="nota" class="block text-sm font-medium text-gray-700">Para mas de una fotografia, usa la galeria.</label>
+                            <p class="text-xs text-gray-500 mt-1">Para mas de una fotografia, usa la galeria.<p>
                         </div>
 
                         <div class="mb-4">
