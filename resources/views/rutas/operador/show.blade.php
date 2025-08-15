@@ -133,6 +133,7 @@
                             {{-- Este input oculto recibirá las imágenes ya procesadas --}}
                             <input type="hidden" name="evidencia[]" id="processed-evidencia">
                             <p class="text-xs text-gray-500 mt-1" x-text="modal.evidenceRequired ? 'Evidencia obligatoria (máx. 10 fotos).' : 'Evidencia opcional.'"></p>
+                            <label for="nota" class="block text-sm font-medium text-gray-700">Para mas de una fotografia, usa la galeria.</label>
                         </div>
 
                         <div class="mb-4">
@@ -281,12 +282,11 @@
 
                 // Procesar todos los archivos seleccionados en paralelo
                 Promise.all(Array.from(files).map(processFile)).then(processedBlobs => {
-                    // Usa DataTransfer para crear una lista de archivos
                     const dataTransfer = new DataTransfer();
                     processedBlobs.forEach(blob => {
                         dataTransfer.items.add(blob);
                     });
-                    // Asigna la lista de archivos al input oculto
+                    // Asignar los archivos procesados al input oculto
                     document.getElementById('processed-evidencia').files = dataTransfer.files;
                 });
             },           
