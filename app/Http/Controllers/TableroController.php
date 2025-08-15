@@ -26,7 +26,7 @@ class TableroController extends Controller
             // A todas las demás se les da una prioridad menor (1).
             return ($folder->area && $folder->area->name === 'Brokerage') ? 0 : 1;
         });
-        
+
         $kpiGeneralesData = KpiGeneral::all();
         $kpisTimeData = KpiTiempo::all();
 
@@ -36,24 +36,49 @@ class TableroController extends Controller
             $mesesOrden = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
             $zonas = $kpiGeneralesData->pluck('zona')->unique()->sort()->values();
             $años = $kpiGeneralesData->pluck('ano')->unique()->sort()->values();
-            $colores = ['#2c3856', '#ff9c00', '#4a5d8c', '#ffc107', '#6c757d', '#f86c6b', '#20c997'];
+            $colores = [
+                '#2c3856', '#ff9c00', '#4a5d8c', '#ffc107', '#6c757d', '#f86c6b', '#20c997',
+                '#6f42c1', '#fd7e14', '#e83e8c', '#007bff', '#17a2b8', '#dc3545', '#343a40'
+            ];
 
-            $pivotData = function($data, $filtroConcepto, $groupByCol, $seriesCol, $valueCol, $labels) use ($colores) {
+            $pivotData = function($data, $filtroConcepto, $groupByCol, $seriesCol, $valueCol, $labels, $hasObjective = false) use ($colores) {
                 $datasets = [];
                 $seriesValues = $data->where('concepto', 'like', $filtroConcepto)->pluck($seriesCol)->unique()->sort()->values();
                 
+                // Determinar la operación de agregación correcta
+                $aggregateOperation = ($valueCol === 'porcentaje') ? 'avg' : 'sum';
+
                 foreach($seriesValues as $index => $serie) {
-                    $pivoted = $data->where('concepto', 'like', $filtroConcepto)->where($seriesCol, $serie)->groupBy($groupByCol)->map(fn($group) => $group->sum($valueCol));
+                    $pivoted = $data->where('concepto', 'like', $filtroConcepto)->where($seriesCol, $serie)->groupBy($groupByCol)->map(fn($group) => $group->{$aggregateOperation}($valueCol));
                     $datasetData = $labels->map(fn($label) => $pivoted->get($label, 0))->values();
+                    
                     $datasets[] = [
                         'label'           => $serie,
                         'data'            => $datasetData,
                         'borderColor'     => $colores[$index % count($colores)],
                         'backgroundColor' => $colores[$index % count($colores)],
-                        'tension'         => 0.4, // Interpolación suave
+                        'tension'         => 0.4,
                         'fill'            => false,
                     ];
                 }
+
+                if ($hasObjective) {
+                    $datasets[] = [
+                        'label' => 'Objetivo (90%)',
+                        'data' => $labels->map(fn() => 90)->values(),
+                        'borderColor' => '#dc3545',
+                        'backgroundColor' => '#dc3545',
+                        'tension' => 0,
+                        'fill' => false,
+                        'borderDash' => [5, 5],
+                        // Configuración para ApexCharts (solo muestra la primera etiqueta)
+                        'dataLabels' => [
+                            'enabled' => true,
+                            'formatter' => "function(val, { dataPointIndex }) { return dataPointIndex === 0 ? 'Objetivo (90%)' : ''; }",
+                        ],
+                    ];
+                }
+                
                 return ['labels' => $labels, 'datasets' => $datasets];
             };
             
@@ -76,19 +101,17 @@ class TableroController extends Controller
                 ];
             };
 
-            // --- KPIGENERALES ---
             $chartData['embarquesPorZonaAño'] = $pivotData($kpiGeneralesData, 'Cantidad de embarques', 'zona', 'ano', 'cantidad', $zonas);
             $chartData['expeditadosPorZonaAño'] = $pivotData($kpiGeneralesData, 'Expeditados requeridos por cliente', 'zona', 'ano', 'cantidad', $zonas);
-            $chartData['documentosPorZonaAño'] = $doughnutData($kpiGeneralesData, 'Documentos', 'zona', 'cantidad'); // Gráfico de dona
+            $chartData['documentosPorZonaAño'] = $doughnutData($kpiGeneralesData, 'Documentos', 'zona', 'cantidad');
             $chartData['embarquesPorMesZona'] = $pivotData($kpiGeneralesData, 'Cantidad de embarques', 'mes', 'zona', 'cantidad', collect($mesesOrden));
             $chartData['expeditadosPorMesZona'] = $pivotData($kpiGeneralesData, 'Expeditados requeridos por cliente', 'mes', 'zona', 'cantidad', collect($mesesOrden));
             
-            // --- KPIS_TIME ---
-            $chartData['tiempoPorZonaAño'] = $pivotData($kpisTimeData, 'Entregas a tiempo', 'zona', 'ano', 'porcentaje', $zonas);
-            $chartData['tiempoPorMesAño'] = $pivotData($kpisTimeData, 'Entregas a tiempo', 'mes', 'ano', 'porcentaje', collect($mesesOrden));
+            $chartData['tiempoPorZonaAño'] = $pivotData($kpisTimeData, 'Entregas a tiempo', 'zona', 'ano', 'porcentaje', $zonas, true);
+            $chartData['tiempoPorMesAño'] = $pivotData($kpisTimeData, 'Entregas a tiempo', 'mes', 'ano', 'porcentaje', collect($mesesOrden), true);
         }
 
-        return view('tablero.index', ['accessibleRootFolders' => $accessibleRootFolders, 'chartData' => $chartData]);
+        return view('tablero.index', ['accessibleRootFolders' => $accessibleRootFolders, 'chartData' => $chartData, 'zonas' => $zonas, 'años' => $años, 'meses' => $mesesOrden]);
     }
 
     public function uploadKpis(Request $request)
