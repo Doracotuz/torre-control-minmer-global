@@ -126,18 +126,13 @@
                             </div>
                         </div>
                         
-                        <div x-data="{ filesSelected: false, fileNames: '' }">
+                        <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700">Evidencia Fotográfica</label>
-                            <div class="mt-1 flex items-center space-x-2">
-                                <label for="original-evidencia" class="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                    <span>Seleccionar archivos</span>
-                                </label>
-                                <input type="file" id="original-evidencia" accept="image/*" multiple @change="filesSelected = true; fileNames = Array.from($event.target.files).map(f => f.name).join(', '); processImages($event)" class="sr-only">
-                                <span class="text-sm text-gray-500" x-text="fileNames"></span>
-                            </div>
+                            <input type="file" id="original-evidencia" accept="image/*" multiple @change="processImages" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100">
 
                             {{-- Este input oculto recibirá las imágenes ya procesadas --}}
                             <input type="hidden" name="evidencia[]" id="processed-evidencia">
+                            <p class="text-xs text-gray-500 mt-1" x-text="modal.evidenceRequired ? 'Evidencia obligatoria (máx. 10 fotos).' : 'Evidencia opcional.'"></p>
                         </div>
 
                         <div class="mb-4">
