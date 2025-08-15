@@ -134,20 +134,20 @@
             overflow: hidden;
             }
 
-.glowing-button::before {
-    content: '';
-    position: absolute;
-    top: 50%;  /* Cambiado a centro vertical */
-    left: 50%; /* Cambiado a centro horizontal */
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    opacity: 0;
-    pointer-events: none;
-    animation: glow-burst 1s ease-out forwards infinite alternate;
-    transform: translate(-50%, -50%) scale(0); /* Centrado preciso y escala inicial 0 */
-}
+            .glowing-button::before {
+                content: '';
+                position: absolute;
+                top: 50%;  /* Cambiado a centro vertical */
+                left: 50%; /* Cambiado a centro horizontal */
+                width: 40px;
+                height: 40px;
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                opacity: 0;
+                pointer-events: none;
+                animation: glow-burst 1s ease-out forwards infinite alternate;
+                transform: translate(-50%, -50%) scale(0); /* Centrado preciso y escala inicial 0 */
+            }
 
             .glowing-button::after {
             content: '';
@@ -693,10 +693,10 @@ document.addEventListener('alpine:init', () => {
 
                         {{-- RFQ Moët Hennessy Button --}}
                         <x-nav-link :href="route('rfq.index')" class="nav-link-custom glowing-button">
-                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#FF9C00">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                             </svg>
-                            <span class="nav-text text-lg leading-none">
+                            <span class="nav-text text-lg leading-none text-[#FF9C00]">
                                 RFQ
                                 <br>
                                 <span class="text-sm">Moët Hennessy</span>

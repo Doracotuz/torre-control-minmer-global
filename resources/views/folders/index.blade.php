@@ -2,24 +2,25 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <div>
-                <h2 class="text-2xl font-semibold text-gray-700">
+                <span class="text-2xl text[#2C3856]">
+                    Bienvenido, {{ Auth::user()->name }}
+                </span>
+                <!-- <h2 class="text-base font-semibold text-gray-700">
                     @if ($currentFolder)
                         @if (!Auth::user()->is_client)
-                        <a href="{{ route('folders.index') }}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
+                        <a href="{{ route('folders.index') }}" class="text-[#2C3856] hover:text-blue-800">Dashboard</a>
                         @else
-                        <a href="{{ route('tablero.index') }}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
+                        <a href="{{ route('tablero.index') }}" class="text-[#2C3856] hover:text-blue-800">Dashboard</a>
                         @endif
                         @foreach ($breadcrumbs as $breadcrumb)
                             <span class="text-gray-500">/</span>
-                            <a href="{{ route('folders.index', ['folder' => $breadcrumb->id]) }}" class="text-blue-600 hover:text-blue-800">{{ $breadcrumb->name }}</a>
+                            <a href="{{ route('folders.index', ['folder' => $breadcrumb->id]) }}" class="text-{#2C3856} hover:text-blue-800">{{ $breadcrumb->name }}</a>
                         @endforeach
                         <span class="text-gray-500">/</span>
-                        <span class="text-gray-800">{{ $currentFolder->name }}</span>
+                        <span class="text-[#FF9C00]">{{ $currentFolder->name }}</span>
                     @endif
-                </h2>
-                <span class="text-md text[#2C3856]">
-                    Bienvenido, {{ Auth::user()->name }}
-                </span>
+                </h2> -->
+
             </div>
                 <div class="flex items-center space-x-4">
                     @if ($currentFolder && !in_array(Auth::id(), ['4', '24', '25', '26', '27']))
@@ -46,6 +47,21 @@
 
     <div class="py-6 sm:py-12 bg-[#E8ECF7]" x-data="fileManager()">
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-base font-semibold text-gray-700">
+                @if ($currentFolder)
+                    @if (!Auth::user()->is_client)
+                    <a href="{{ route('folders.index') }}" class="text-[#2C3856] hover:text-blue-800">Dashboard</a>
+                    @else
+                    <a href="{{ route('tablero.index') }}" class="text-[#2C3856] hover:text-blue-800">Dashboard</a>
+                    @endif
+                    @foreach ($breadcrumbs as $breadcrumb)
+                        <span class="text-gray-500">/</span>
+                        <a href="{{ route('folders.index', ['folder' => $breadcrumb->id]) }}" class="text-{#2C3856} hover:text-blue-800">{{ $breadcrumb->name }}</a>
+                    @endforeach
+                    <span class="text-gray-500">/</span>
+                    <span class="text-[#FF9C00]">{{ $currentFolder->name }}</span>
+                @endif
+            </h2>            
 
             <div id="flash-success"
                  class="fixed top-4 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]"
