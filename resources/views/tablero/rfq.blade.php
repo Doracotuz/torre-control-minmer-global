@@ -20,8 +20,13 @@
                                     <div class="bg-[#DFE5F5] p-6 rounded-full transition-colors duration-300 group-hover:bg-[#ff9c00]">
                                         <img src="{{ Storage::disk('s3')->url('RFQ/' . $subfolder->name . '.png') }}" alt="Icono de {{ $subfolder->name }}" class="w-24 h-24 object-contain">
                                     </div>
-                                    <h4 class="mt-4 text-lg font-semibold text-[#2c3856]">
-                                        {{ $subfolder->name }}
+                                    <h4 class="mt-4 text-lg font-semibold text-[#2c3856] text-center">
+                                        @if(strlen($subfolder->name) > 6)
+                                            <div>{{ substr($subfolder->name, 0, 6) }}</div>
+                                            <div>{{ substr($subfolder->name, 6) }}</div>
+                                        @else
+                                            {{ $subfolder->name }}
+                                        @endif
                                     </h4>
                                 </a>
                             @endforeach

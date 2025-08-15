@@ -274,7 +274,7 @@
                                     <span :class="{ 'text-base': tileSize === 'small', 'text-lg': tileSize === 'medium', 'text-xl': tileSize === 'large' }" class="font-semibold text-[#2c3856] mb-1 truncate w-full px-1 sm:px-2">
                                         {{ $folderItem->name }}
                                     </span>
-                                    <span class="text-sm text-gray-500">Carpeta</span>
+                                    <!-- <span class="text-sm text-gray-500">Carpeta</span> -->
                                     <span class="text-xs text-gray-400 mt-1">{{ $folderItem->created_at->format('d M Y') }}</span>
                                     {{-- Contador de elementos en carpeta --}}
                                     </a> {{-- FIN DEL <a> --}}
