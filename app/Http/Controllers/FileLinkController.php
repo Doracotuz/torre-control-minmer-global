@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth; // Para acceder al usuario autenticado
 use Illuminate\Support\Facades\Storage; // Para manejar la eliminación de archivos físicos
 use Illuminate\Support\Str; // Para usar funciones de cadena como Str::endsWith
 use Symfony\Component\HttpFoundation\StreamedResponse; // Necesario para la descarga de archivos
+use App\Models\ActivityLog;
 
 class FileLinkController extends Controller
 {
@@ -123,6 +124,13 @@ class FileLinkController extends Controller
             $fileLink->url = $request->url;
         }
         $fileLink->save();
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'Editó un archivo/enlace',
+            'item_type' => 'file_link',
+            'item_id' => $fileLink->id,
+            'details' => ['old_name' => $fileLink->getOriginal('name'), 'new_name' => $fileLink->name],
+        ]);        
 
         return redirect()->route('folders.index', $fileLink->folder_id)
                          ->with('success', 'Elemento actualizado exitosamente.');
@@ -138,27 +146,41 @@ class FileLinkController extends Controller
     {
         $user = Auth::user();
 
-        // Lógica de permisos para eliminar un FileLink
+        // Logic for deleting a FileLink
         if ($user->area && $user->area->name === 'Administración') {
-            // Super Admin puede eliminar cualquier elemento
+            // Super Admin can delete any element
         } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
-            // Admin de Área puede eliminar elementos en su área
+            // Area Admin can delete elements in their area
         } else {
-            return redirect()->route('folders.index', $fileLink->folder_id)
-                             ->with('error', 'No tienes permiso para eliminar este elemento.');
+            // Normal User and Client do not have permission
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para eliminar este elemento.'
+            ], 403); // Use a 403 Forbidden status code
         }
 
-        $folderId = $fileLink->folder_id; // Guarda el ID de la carpeta antes de eliminar el fileLink
+        $folderId = $fileLink->folder_id; // Save the folder ID before deleting
 
-        // Si es un archivo, elimina el archivo físico del almacenamiento
+        // If it's a file, delete the physical file from storage
         if ($fileLink->type === 'file' && Storage::disk('s3')->exists($fileLink->path)) {
             Storage::disk('s3')->delete($fileLink->path);
         }
 
-        $fileLink->delete(); // Elimina el registro de la base de datos
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'Eliminó un archivo/enlace',
+            'item_type' => 'file_link',
+            'item_id' => $fileLink->id,
+            'details' => ['name' => $fileLink->name],
+        ]);
 
-        return redirect()->route('folders.index', $folderId)
-                         ->with('success', 'Elemento eliminado exitosamente.');
+        $fileLink->delete(); // Delete the record from the database
+
+        // Return a JSON response for a successful deletion
+        return response()->json([
+            'success' => true,
+            'message' => 'Elemento eliminado exitosamente.'
+        ]);
     }
 
     /**
@@ -202,7 +224,13 @@ class FileLinkController extends Controller
         if (!Storage::disk('s3')->exists($fileLink->path)) {
             return back()->with('error', 'El archivo no se encuentra en el almacenamiento.');
         }
-
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'Descargó un archivo',
+            'item_type' => 'file_link',
+            'item_id' => $fileLink->id,
+            'details' => ['name' => $fileLink->name],
+        ]);        
         // 4. Descargar el archivo desde S3
         // El segundo argumento es el nombre deseado del archivo al descargar
         return Storage::disk('s3')->download($fileLink->path, $fileLink->name);

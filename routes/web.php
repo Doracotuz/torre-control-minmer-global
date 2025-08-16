@@ -35,6 +35,7 @@ use App\Http\Controllers\CustomerService\CustomerController;
 use App\Http\Controllers\CustomerService\WarehouseController;
 use App\Http\Controllers\CustomerService\OrderController;
 use App\Http\Controllers\RfqController;
+use App\Http\Controllers\Admin\StatisticsController;
 
 
 
@@ -167,6 +168,11 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
     Route::post('ticket-sub-categories', [TicketCategoryController::class, 'storeSubCategory'])->name('ticket-sub-categories.store');
     Route::put('ticket-sub-categories/{subCategory}', [TicketCategoryController::class, 'updateSubCategory'])->name('ticket-sub-categories.update');
     Route::delete('ticket-sub-categories/{subCategory}', [TicketCategoryController::class, 'destroySubCategory'])->name('ticket-sub-categories.destroy');
+    Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
+    Route::get('/statistics/export-csv', [StatisticsController::class, 'exportCsv'])->name('statistics.export-csv');
+    Route::get('/statistics/charts', [StatisticsController::class, 'charts'])->name('statistics.charts');
+
+
 
 
     // Rutas para la gestión de Áreas

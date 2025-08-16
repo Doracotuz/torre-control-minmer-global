@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use App\Notifications\CustomResetPasswordNotification; // <-- 1. LÍNEA AÑADIDA
+use App\Notifications\CustomResetPasswordNotification;
 
 class User extends Authenticatable
 {
@@ -24,7 +23,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'profile_photo_path', // ¡Añade esta línea!
+        'profile_photo_path',
         'area_id',
         'is_area_admin',
         'is_client',
@@ -98,15 +97,13 @@ class User extends Authenticatable
      * @param  string  $token
      * @return void
      */
-    public function sendPasswordResetNotification($token) // <-- 2. MÉTODO AÑADIDO
+    public function sendPasswordResetNotification($token)
     {
         $this->notify(new CustomResetPasswordNotification($token));
     }
 
     public function isSuperAdmin(): bool
     {
-        // Verifica si el usuario es admin de área y si el nombre de su área es 'Administración'
         return $this->is_area_admin && $this->area?->name === 'Administración';
     }
-
 }

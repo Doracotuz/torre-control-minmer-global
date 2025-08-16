@@ -1,0 +1,304 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
+use App\Models\User;
+use App\Models\Folder;
+use App\Models\FileLink;
+use App\Models\Area;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Str;
+
+class StatisticsController extends Controller
+{
+    /**
+     * Muestra la vista principal de estadísticas con las tarjetas de resumen
+     * y la bitácora de actividad.
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function index(Request $request)
+    {
+        $startDate = $request->input('start_date', now()->subMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->format('Y-m-d'));
+        $filterArea = $request->input('area');
+        $filterUserType = $request->input('user_type');
+        $searchQuery = $request->input('search');
+
+        // Tarjetas de Resumen (Totales, sin filtros de fecha)
+        $totalUsers = User::count();
+        $totalFolders = Folder::count();
+        $totalFiles = FileLink::where('type', 'file')->count();
+        $totalLinks = FileLink::where('type', 'link')->count();
+
+        // Top 3 de Usuarios más activos (filtrado por fecha y otros parámetros)
+        $topUsersQuery = ActivityLog::select('user_id', DB::raw('count(*) as total_activity'))
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->groupBy('user_id')
+            ->orderByDesc('total_activity')
+            ->limit(3);
+
+        if ($filterArea) {
+            $topUsersQuery->whereHas('user', function ($q) use ($filterArea) {
+                $q->where('area_id', $filterArea);
+            });
+        }
+        if ($filterUserType) {
+            $topUsersQuery->whereHas('user', function ($q) use ($filterUserType) {
+                if ($filterUserType === 'super_admin') {
+                    $q->where('is_area_admin', true)->whereHas('area', function ($a) { $a->where('name', 'Administración'); });
+                } elseif ($filterUserType === 'area_admin') {
+                    $q->where('is_area_admin', true)->whereDoesntHave('area', function ($a) { $a->where('name', 'Administración'); });
+                } elseif ($filterUserType === 'client') {
+                    $q->where('is_client', true);
+                } elseif ($filterUserType === 'normal') {
+                    $q->where('is_area_admin', false)->where('is_client', false);
+                }
+            });
+        }
+
+        $topUsers = $topUsersQuery->get()->map(function($item) {
+            $item->user = User::find($item->user_id);
+            return $item;
+        });
+
+        // Bitácora de Actividad
+        $activitiesQuery = ActivityLog::with('user', 'user.area')
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->latest();
+
+        if ($filterArea) {
+            $activitiesQuery->whereHas('user', function ($q) use ($filterArea) {
+                $q->where('area_id', $filterArea);
+            });
+        }
+        if ($filterUserType) {
+            $activitiesQuery->whereHas('user', function ($q) use ($filterUserType) {
+                if ($filterUserType === 'super_admin') {
+                    $q->where('is_area_admin', true)->whereHas('area', function ($a) { $a->where('name', 'Administración'); });
+                } elseif ($filterUserType === 'area_admin') {
+                    $q->where('is_area_admin', true)->whereDoesntHave('area', function ($a) { $a->where('name', 'Administración'); });
+                } elseif ($filterUserType === 'client') {
+                    $q->where('is_client', true);
+                } elseif ($filterUserType === 'normal') {
+                    $q->where('is_area_admin', false)->where('is_client', false);
+                }
+            });
+        }
+        if ($searchQuery) {
+            $activitiesQuery->where(function ($q) use ($searchQuery) {
+                $q->where('action', 'like', '%' . $searchQuery . '%')
+                  ->orWhereHas('user', function ($q) use ($searchQuery) {
+                      $q->where('name', 'like', '%' . $searchQuery . '%')
+                        ->orWhere('email', 'like', '%' . $searchQuery . '%');
+                  });
+            });
+        }
+
+        $activities = $activitiesQuery->paginate(30)->appends($request->except('page'));
+        
+        $areas = Area::all();
+        $userTypes = ['super_admin' => 'Super Admin', 'area_admin' => 'Admin de Área', 'normal' => 'Normal', 'client' => 'Cliente'];
+
+        return view('admin.statistics.index', compact(
+            'totalUsers', 'totalFolders', 'totalFiles', 'totalLinks', 'topUsers',
+            'startDate', 'endDate', 'areas', 'userTypes', 'filterArea', 'filterUserType',
+            'activities', 'searchQuery'
+        ));
+    }
+
+    /**
+     * Muestra la vista con los gráficos de estadísticas.
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function charts(Request $request)
+    {
+        $startDate = $request->input('start_date', now()->subMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->format('Y-m-d'));
+        $filterArea = $request->input('area');
+        $filterUserType = $request->input('user_type');
+
+        // Lógica para obtener los datos de los 10 gráficos
+        // 1. Acciones por Tipo de Actividad
+        $actionData = ActivityLog::select('action', DB::raw('count(*) as total'))
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->groupBy('action')
+            ->get();
+
+        // 2. Actividad por Tipo de Usuario
+        $userTypeData = ActivityLog::select(DB::raw('CASE
+            WHEN users.is_area_admin = 1 AND areas.name = "Administración" THEN "Super Admin"
+            WHEN users.is_area_admin = 1 THEN "Admin de Área"
+            WHEN users.is_client = 1 THEN "Cliente"
+            ELSE "Normal"
+            END AS user_type_label'), DB::raw('count(*) as total_actions'))
+            ->join('users', 'users.id', '=', 'activity_logs.user_id')
+            ->leftJoin('areas', 'users.area_id', '=', 'areas.id')
+            ->whereDate('activity_logs.created_at', '>=', $startDate)
+            ->whereDate('activity_logs.created_at', '<=', $endDate)
+            ->groupBy('user_type_label')
+            ->pluck('total_actions', 'user_type_label');
+        
+        // 3. Carpetas Creadas por Área
+        $foldersByArea = Folder::select('areas.name', DB::raw('count(folders.id) as total_folders'))
+            ->join('areas', 'folders.area_id', '=', 'areas.id')
+            ->groupBy('areas.name')
+            ->pluck('total_folders', 'areas.name');
+
+        // 4. Archivos Subidos por Área
+        $filesByArea = FileLink::select('areas.name', DB::raw('count(file_links.id) as total_files'))
+            ->join('folders', 'file_links.folder_id', '=', 'folders.id')
+            ->join('areas', 'folders.area_id', '=', 'areas.id')
+            ->where('file_links.type', 'file')
+            ->groupBy('areas.name')
+            ->pluck('total_files', 'areas.name');
+
+        // 5. Usuarios Activos por Mes
+        $activeUsersByMonth = ActivityLog::select(DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'), DB::raw('count(distinct user_id) as total_users'))
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('total_users', 'month');
+
+        // 6. Actividad Total por Mes
+        $totalActivityByMonth = ActivityLog::select(DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'), DB::raw('count(*) as total_actions'))
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('total_actions', 'month');
+
+        // 7. Archivos vs. Enlaces
+        $fileLinkComparison = FileLink::select('type', DB::raw('count(*) as total'))
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->groupBy('type')
+            ->pluck('total', 'type');
+
+        // 8. Tipo de Archivo más Común
+$fileTypes = FileLink::select(DB::raw('LOWER(SUBSTR(name, LENGTH(name) - LOCATE(".", REVERSE(name)) + 2)) as file_extension'), DB::raw('count(*) as total'))
+    ->where('type', 'file')
+    ->whereDate('created_at', '>=', $startDate)
+    ->whereDate('created_at', '<=', $endDate)
+    ->groupBy('file_extension')
+    ->orderByDesc('total')
+    ->limit(5)
+    ->pluck('total', 'file_extension');
+
+        // 9. Eliminaciones vs. Creaciones
+        $creationDeletion = ActivityLog::select('action', DB::raw('count(*) as total'))
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->whereIn('action', ['Creó una carpeta', 'Subió un archivo', 'Eliminó una carpeta', 'Eliminó un archivo/enlace', 'Eliminación masiva de carpeta', 'Eliminación masiva de archivo/enlace'])
+            ->groupBy('action') // Agregar esta línea
+            ->get()
+            ->groupBy(function ($item) {
+                return Str::contains($item->action, ['Creó', 'Subió']) ? 'Creaciones' : 'Eliminaciones';
+            })
+            ->map(function ($group) {
+                return $group->sum('total');
+            });
+            
+        // 10. Actividad por Hora del Día
+        $activityByHour = ActivityLog::select(DB::raw('HOUR(created_at) as hour'), DB::raw('count(*) as total_actions'))
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->groupBy('hour')
+            ->orderBy('hour')
+            ->pluck('total_actions', 'hour');
+
+        $areas = Area::all();
+        $userTypes = ['super_admin' => 'Super Admin', 'area_admin' => 'Admin de Área', 'normal' => 'Normal', 'client' => 'Cliente'];
+        
+        return view('admin.statistics.charts', compact(
+            'startDate', 'endDate', 'areas', 'userTypes', 'filterArea', 'filterUserType',
+            'actionData', 'userTypeData', 'foldersByArea', 'filesByArea',
+            'activeUsersByMonth', 'totalActivityByMonth', 'fileLinkComparison',
+            'fileTypes', 'creationDeletion', 'activityByHour'
+        ));
+    }
+
+    public function exportCsv(Request $request)
+    {
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $filterArea = $request->input('area');
+        $filterUserType = $request->input('user_type');
+
+        $activitiesQuery = ActivityLog::with('user', 'user.area')
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->latest();
+
+        // Apply filters
+        if ($filterArea) {
+            $activitiesQuery->whereHas('user', function ($q) use ($filterArea) {
+                $q->where('area_id', $filterArea);
+            });
+        }
+        if ($filterUserType) {
+            $activitiesQuery->whereHas('user', function ($q) use ($filterUserType) {
+                if ($filterUserType === 'super_admin') {
+                    $q->where('is_area_admin', true)->whereHas('area', function ($a) { $a->where('name', 'Administración'); });
+                } elseif ($filterUserType === 'area_admin') {
+                    $q->where('is_area_admin', true)->whereDoesntHave('area', function ($a) { $a->where('name', 'Administración'); });
+                } elseif ($filterUserType === 'client') {
+                    $q->where('is_client', true);
+                } elseif ($filterUserType === 'normal') {
+                    $q->where('is_area_admin', false)->where('is_client', false);
+                }
+            });
+        }
+        
+        $activities = $activitiesQuery->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="bitacora_minmer.csv"',
+        ];
+        
+        $callback = function() use ($activities) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Fecha', 'Usuario', 'Email', 'Area', 'Tipo de Usuario', 'Acción', 'Detalles']);
+            
+            foreach ($activities as $activity) {
+                $userType = 'Normal';
+                if ($activity->user) {
+                    if ($activity->user->is_client) {
+                        $userType = 'Cliente';
+                    } elseif ($activity->user->is_area_admin) {
+                        $userType = 'Admin de Área';
+                        if ($activity->user->area && $activity->user->area->name === 'Administración') {
+                             $userType = 'Super Admin';
+                        }
+                    }
+                }
+                
+                fputcsv($file, [
+                    $activity->created_at->format('d M Y H:i'),
+                    $activity->user->name ?? 'N/A',
+                    $activity->user->email ?? 'N/A',
+                    $activity->user->area->name ?? 'N/A',
+                    $userType,
+                    $activity->action,
+                    json_encode($activity->details),
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return Response::stream($callback, 200, $headers);
+    }
+}

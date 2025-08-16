@@ -811,6 +811,10 @@ document.addEventListener('alpine:init', () => {
                                         <svg class="nav-icon" ...></svg>
                                         <span class="nav-text">{{ __('Panel General') }}</span>
                                     </x-nav-link>
+                                    <x-nav-link :href="route('admin.statistics.index')" :active="request()->routeIs('admin.statistics.*')" class="nav-link-custom {{ request()->routeIs('admin.statistics.*') ? 'active-link' : '' }}">
+                                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.5a9 9 0 019-9.75V15h6.75a9 9 0 01-6.75 6.75V13.5z" /></svg>
+                                        <span class="nav-text">{{ __('Estadísticas') }}</span>
+                                    </x-nav-link>                                    
                                     
                                 </div>
                             </div>
@@ -872,24 +876,29 @@ document.addEventListener('alpine:init', () => {
 
                 <div x-show="isAccessDeniedModalOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
                     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                        {{-- Fondo oscuro del modal --}}
+                        <div class="fixed inset-0 bg-[#2b2b2b] bg-opacity-75 transition-opacity" aria-hidden="true"></div>
                         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                        <div x-show="isAccessDeniedModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full sm:p-6">
+                        
+                        {{-- Contenedor del modal --}}
+                        <div x-show="isAccessDeniedModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-[#ffffff] rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full sm:p-6">
                             <div>
-                                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                                    <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.855-1.168 2.855-2.617V6.617C21.938 5.168 20.623 4 19.083 4H4.917C3.377 4 2.062 5.168 2.062 6.617v10.766C2.062 18.832 3.377 20 4.917 20z" />
-                                    </svg>
-                                </div>
+                                {{-- Contenedor para el logo --}}
+                                    <div class="mx-auto flex items-center justify-center h-16">
+                                        <img 
+                                            src="{{ Storage::disk('s3')->url('LogoAzulm.PNG') }}" 
+                                            alt="Logo" 
+                                            class="h-12 w-auto max-w-[200px]">
+                                    </div>
                                 <div class="mt-3 text-center sm:mt-5">
-                                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Acceso Denegado</h3>
+                                    <h3 class="text-xl leading-6 font-bold text-[#2c3856]" id="modal-title">Acceso Denegado</h3>
                                     <div class="mt-2">
-                                        <p class="text-sm text-gray-500">No tienes acceso a esta función, consulta con tu asesor.</p>
+                                        <p class="text-sm text-[#666666]">No tienes acceso a esta función, consulta con tu asesor.</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="mt-5 sm:mt-6">
-                                <button type="button" @click="isAccessDeniedModalOpen = false" class="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm">
+                                <button type="button" @click="isAccessDeniedModalOpen = false" class="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#ff9c00] text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff9c00] sm:text-sm">
                                     Entendido
                                 </button>
                             </div>

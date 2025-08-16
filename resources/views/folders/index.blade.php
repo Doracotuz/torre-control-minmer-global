@@ -295,13 +295,10 @@
                                     <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center justify-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-wider hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                         {{ __('Editar') }}
                                     </a>
-                                    <form action="{{ route('folders.destroy', $folderItem) }}" method="POST" class="inline-block w-full sm:w-auto" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta carpeta? Esto también eliminará todo su contenido (subcarpetas, archivos y enlaces).'); event.stopPropagation();">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="inline-flex items-center justify-center px-2 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full">
-                                            {{ __('Eliminar') }}
-                                        </button>
-                                    </form>
+                                    <button @click.prevent="deleteSingleItem({{ $folderItem->id }}, 'folder')"
+                                        class="inline-flex items-center justify-center px-2 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-wider hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full">
+                                        {{ __('Eliminar') }}
+                                    </button>
                                 </div>
                                 @endif
                             </div>
@@ -387,13 +384,10 @@
                                     <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center justify-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-wider hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                         {{ __('Editar') }}
                                     </a>
-                                    <form action="{{ route('file_links.destroy', $fileLink) }}" method="POST" class="inline-block w-full sm:w-auto" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este elemento?'); event.stopPropagation();">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="inline-flex items-center justify-center px-2 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full">
-                                            {{ __('Eliminar') }}
-                                        </button>
-                                    </form>
+                                    <button @click.prevent="deleteSingleItem({{ $fileLink->id }}, 'file_link')"
+                                        class="inline-flex items-center justify-center px-2 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-wider hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full">
+                                        {{ __('Eliminar') }}
+                                    </button>
                                 </div>
                                 @endif
                             </div>
@@ -498,13 +492,10 @@
                                                 <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                                     {{ __('Editar') }}
                                                 </a>
-                                                <form action="{{ route('folders.destroy', $folderItem) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta carpeta? Esto también eliminará todo su contenido (subcarpetas, archivos y enlaces).'); event.stopPropagation();">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="inline-flex items-center px-2 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                                        {{ __('Eliminar') }}
-                                                    </button>
-                                                </form>
+                                                <button @click.prevent="deleteSingleItem({{ $folderItem->id }}, 'folder')"
+                                                    class="inline-flex items-center px-2 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                                    {{ __('Eliminar') }}
+                                                </button>
                                             </td>
                                             @endif
                                         </tr>
@@ -588,13 +579,10 @@
                                                 <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                                     {{ __('Editar') }}
                                                 </a>
-                                                <form action="{{ route('file_links.destroy', $fileLink) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este elemento?'); event.stopPropagation();">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="inline-flex items-center px-2 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                                        {{ __('Eliminar') }}
-                                                    </button>
-                                                </form>
+                                                <button @click.prevent="deleteSingleItem({{ $fileLink->id }}, 'file_link')"
+                                                    class="inline-flex items-center px-2 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                                    {{ __('Eliminar') }}
+                                                </button>
                                             </td>
                                             @endif
                                         </tr>
@@ -790,7 +778,17 @@
                     </button>
                 </div>
             </div>
+
         </div>
+        <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-75 hidden">
+            <div class="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center">
+                <svg class="animate-spin h-10 w-10 text-[#2c3856] mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-[#2c3856] font-semibold">Cargando archivos...</p>
+            </div>
+        </div>            
         {{-- FIN DEL MODAL --}}
 
         {{-- INICIO DEL MODAL DE MOVER ELEMENTOS --}}
@@ -960,10 +958,13 @@
                     const draggedData = event.dataTransfer.getData('text/plain'); // Datos del arrastre interno
 
                     let draggedItem = null;
-                    try {
-                        draggedItem = JSON.parse(draggedData);
-                    } catch (e) {
-                        console.warn('Dragged data is not JSON or is empty:', draggedData, e);
+                    // Agrega la verificación para asegurarte de que draggedData no esté vacío
+                    if (draggedData) {
+                        try {
+                            draggedItem = JSON.parse(draggedData);
+                        } catch (e) {
+                            console.warn('Dragged data is not valid JSON or is empty:', draggedData, e);
+                        }
                     }
 
                     // Resetear el estado de drag
@@ -975,6 +976,7 @@
 
                     // Lógica para SOLTAR ARCHIVOS EXTERNOS (subida)
                     if (files.length > 0) {
+                        document.getElementById('loading-overlay').classList.remove('hidden');
                         const actualTargetFolderId = targetFolderId === null ? ({{ $currentFolder ? $currentFolder->id : 'null' }}) : targetFolderId;
                         console.log('Drop: Files detected. Target folder ID:', actualTargetFolderId);
 
@@ -991,6 +993,7 @@
                         })
                         .then(response => response.json())
                         .then(data => {
+                            document.getElementById('loading-overlay').classList.add('hidden');
                             if (data.success) {
                                 sessionStorage.setItem('flash_success', data.message);
                                 window.location.reload();
@@ -1000,6 +1003,7 @@
                             }
                         })
                         .catch(error => {
+                            document.getElementById('loading-overlay').classList.add('hidden');
                             console.error('Error al subir:', error);
                             sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar subir los archivos.');
                             window.location.reload();
@@ -1007,7 +1011,9 @@
 
                     }
                     // Lógica para SOLTAR ELEMENTOS INTERNOS (mover)
-                    else if (draggedItem && draggedItem.id && draggedItem.type && draggedItem.id != targetFolderId) {
+                    // Se elimina la verificación 'draggedItem && draggedItem.id && draggedItem.type'
+                    // porque ya la hicimos en el if superior.
+                    else if (draggedItem && draggedItem.id && draggedItem.id != targetFolderId) {
                         console.log('Drop: Internal item detected. Dragged ID:', draggedItem.id, 'Type:', draggedItem.type, 'Target ID:', targetFolderId);
 
                         let requestBody = {
@@ -1079,10 +1085,77 @@
                         @endforeach
                     }
                 },
+
+deleteSingleItem(id, type) {
+    if (!confirm('¿Estás seguro de que quieres eliminar este elemento?')) {
+        return;
+    }
+
+    // Muestra el spinner de carga
+    document.getElementById('loading-overlay').classList.remove('hidden');
+
+    let url;
+    if (type === 'folder') {
+        // Crea la URL con un marcador de posición para el ID de la carpeta
+        url = `{{ route('folders.destroy', ['folder' => 'ITEM_ID']) }}`.replace('ITEM_ID', id);
+    } else {
+        // Crea la URL con un marcador de posición para el ID del archivo
+        url = `{{ route('file_links.destroy', ['fileLink' => 'ITEM_ID']) }}`.replace('ITEM_ID', id);
+    }
+
+    fetch(url, {
+        method: 'POST', // Usamos POST para enviar los datos del formulario, ya que el método DELETE no admite un cuerpo de datos
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Content-Type': 'application/json',
+            'X-HTTP-Method-Override': 'DELETE' // Le dice a Laravel que interprete esto como una solicitud DELETE
+        },
+        body: JSON.stringify({ _method: 'DELETE' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Oculta el spinner de carga al recibir la respuesta
+        document.getElementById('loading-overlay').classList.add('hidden');
+        
+        if (data.success) {
+            // Muestra la notificación de éxito de inmediato
+            document.getElementById('flash-success-message').innerText = data.message;
+            document.getElementById('flash-success').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('flash-success').style.display = 'none';
+                window.location.reload(); 
+            }, 2000);
+        } else {
+            // Muestra la notificación de error de inmediato
+            document.getElementById('flash-error-message').innerText = data.message;
+            document.getElementById('flash-error').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('flash-error').style.display = 'none';
+                window.location.reload(); 
+            }, 2000);
+        }
+    })
+    .catch(error => {
+        // Oculta el spinner de carga en caso de error
+        document.getElementById('loading-overlay').classList.add('hidden');
+        
+        console.error('Error al eliminar:', error);
+        document.getElementById('flash-error-message').innerText = 'Ocurrió un error de red al intentar eliminar el elemento.';
+        document.getElementById('flash-error').style.display = 'flex';
+        setTimeout(() => {
+            document.getElementById('flash-error').style.display = 'none';
+            window.location.reload();
+        }, 2000);
+    });
+},
+
                 deleteSelected() {
                     if (!confirm('¿Estás seguro de que quieres eliminar los elementos seleccionados?')) {
                         return;
                     }
+
+                    // Muestra el spinner de carga antes de la operación de eliminación
+                    document.getElementById('loading-overlay').classList.remove('hidden');
 
                     const folderIdsToDelete = this.selectedItems.filter(item => item.type === 'folder').map(item => item.id);
                     const fileLinkIdsToDelete = this.selectedItems.filter(item => item.type === 'file_link').map(item => item.id);
@@ -1099,18 +1172,39 @@
                     })
                     .then(response => response.json())
                     .then(data => {
+                        // Oculta el spinner de carga al recibir la respuesta
+                        document.getElementById('loading-overlay').classList.add('hidden');
+                        
                         if (data.success) {
-                            sessionStorage.setItem('flash_success', data.message);
-                            window.location.reload();
+                            // Muestra la notificación de éxito de inmediato
+                            document.getElementById('flash-success-message').innerText = data.message;
+                            document.getElementById('flash-success').style.display = 'flex';
+                            setTimeout(() => {
+                                document.getElementById('flash-success').style.display = 'none';
+                                window.location.reload(); // Recarga después de 2 segundos para que el usuario vea la notificación
+                            }, 2000);
                         } else {
-                            sessionStorage.setItem('flash_error', data.message);
-                            window.location.reload();
+                            // Muestra la notificación de error de inmediato
+                            document.getElementById('flash-error-message').innerText = data.message;
+                            document.getElementById('flash-error').style.display = 'flex';
+                            setTimeout(() => {
+                                document.getElementById('flash-error').style.display = 'none';
+                                window.location.reload(); // Recarga después de 2 segundos para que el usuario vea la notificación
+                            }, 2000);
                         }
                     })
                     .catch(error => {
+                        // Oculta el spinner de carga en caso de error
+                        document.getElementById('loading-overlay').classList.add('hidden');
+                        
                         console.error('Error al eliminar:', error);
-                        sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar eliminar los elementos.');
-                        window.location.reload();
+                        // Muestra una notificación de error genérica
+                        document.getElementById('flash-error-message').innerText = 'Ocurrió un error de red al intentar eliminar los elementos.';
+                        document.getElementById('flash-error').style.display = 'flex';
+                        setTimeout(() => {
+                            document.getElementById('flash-error').style.display = 'none';
+                            window.location.reload(); // Recarga después de 2 segundos
+                        }, 2000);
                     });
                 },
 
@@ -1230,11 +1324,10 @@
                     .then(data => {
                         if (data.success) {
                             sessionStorage.setItem('flash_success', data.message);
-                            window.location.reload();
                         } else {
                             sessionStorage.setItem('flash_error', data.message);
-                            window.location.reload();
                         }
+                        window.location.reload();
                     })
                     .catch(error => {
                         console.error('Error al mover elementos:', error);
@@ -1260,25 +1353,27 @@
                         this.tileSize = savedTileSize;
                     }
 
+                    // Lógica para mostrar mensajes flash de sessionStorage
                     const flashSuccess = sessionStorage.getItem('flash_success');
                     const flashError = sessionStorage.getItem('flash_error');
 
                     if (flashSuccess) {
                         document.getElementById('flash-success-message').innerText = flashSuccess;
                         document.getElementById('flash-success').style.display = 'flex';
+                        // Limpiar la notificación del sessionStorage inmediatamente después de mostrarla
+                        sessionStorage.removeItem('flash_success');
                         setTimeout(() => {
                             document.getElementById('flash-success').style.display = 'none';
-                            sessionStorage.removeItem('flash_success');
-                        }, 5000);
+                        }, 5000); // 5 segundos
                     }
                     if (flashError) {
                         document.getElementById('flash-error-message').innerText = flashError;
                         document.getElementById('flash-error').style.display = 'flex';
-                         setTimeout(() => {
+                        // Limpiar la notificación del sessionStorage inmediatamente después de mostrarla
+                        sessionStorage.removeItem('flash_error');
+                        setTimeout(() => {
                             document.getElementById('flash-error').style.display = 'none';
-                            sessionStorage.removeItem('flash_error');
-                        }, 5000);
-                        
+                        }, 5000); // 5 segundos
                     }
 
                     this.$watch('isTileView', value => {

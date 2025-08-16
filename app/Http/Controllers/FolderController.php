@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Models\ActivityLog;
+
 
 
 class FolderController extends Controller
@@ -153,10 +155,16 @@ class FolderController extends Controller
      */
     public function store(Request $request)
     {
-        $user = Auth::user();
+        // 1. Validar la solicitud
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'parent_id' => 'nullable|exists:folders,id',
+        ]);
 
-        // Determinar el area_id de la nueva carpeta
+        $user = Auth::user();
         $targetAreaId = null;
+
+        // Determinar el área de la nueva carpeta
         if ($request->parent_id) {
             $parentFolder = Folder::find($request->parent_id);
             if (!$parentFolder) {
@@ -164,12 +172,8 @@ class FolderController extends Controller
             }
             $targetAreaId = $parentFolder->area_id;
         } else {
-            // Si es carpeta raíz, usa el área del usuario (o permite al Super Admin elegir)
-            if ($user->area && $user->area->name === 'Administración') {
-                $targetAreaId = $user->area_id; // Super Admin crea en su propia área por defecto
-            } else {
-                $targetAreaId = $user->area_id;
-            }
+            // Si es carpeta raíz, usa el área del usuario
+            $targetAreaId = $user->area_id;
         }
 
         // Verificar permisos para crear
@@ -199,15 +203,24 @@ class FolderController extends Controller
             'parent_id' => 'nullable|exists:folders,id',
         ]);
 
-        Folder::create([
+        $newFolder = Folder::create([
             'name' => $request->name,
             'parent_id' => $request->parent_id,
-            'area_id' => $targetAreaId, // Asigna el área determinada
+            'area_id' => $targetAreaId,
             'user_id' => $user->id,
         ]);
 
-        $redirectPath = $request->parent_id ? route('folders.index', $request->parent_id) : route('folders.index');
+        // 3. REGISTRAR la actividad en el log
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'Creó una carpeta',
+            'item_type' => 'folder',
+            'item_id' => $newFolder->id,
+            'details' => ['name' => $newFolder->name, 'parent_id' => $newFolder->parent_id],
+        ]);
 
+        // 4. Redirigir al usuario
+        $redirectPath = $request->parent_id ? route('folders.index', $request->parent_id) : route('folders.index');
         return redirect($redirectPath)->with('success', 'Carpeta creada exitosamente.');
     }
 
@@ -289,6 +302,14 @@ class FolderController extends Controller
 
         $redirectPath = $folder->parent_id ? route('folders.index', $folder->parent_id) : route('folders.index');
 
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'Editó una carpeta',
+            'item_type' => 'folder',
+            'item_id' => $folder->id,
+            'details' => ['old_name' => $folder->getOriginal('name'), 'new_name' => $folder->name],
+        ]);        
+
         return redirect($redirectPath)->with('success', 'Carpeta actualizada exitosamente.');
     }
 
@@ -310,15 +331,29 @@ class FolderController extends Controller
             // Admin de Área puede eliminar carpetas de su propia área
         } else {
             // Usuario Normal y Cliente NO tienen permiso para eliminar carpetas
-            return redirect()->route('folders.index')->with('error', 'No tienes permiso para eliminar esta carpeta.');
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para eliminar esta carpeta.'
+            ], 403); // Use a 403 Forbidden status code
         }
 
-        $parentFolderId = $folder->parent_id;
+        // Log the activity
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'Eliminó una carpeta',
+            'item_type' => 'folder',
+            'item_id' => $folder->id,
+            'details' => ['name' => $folder->name],
+        ]);
+
+        // Perform the deletion
         $folder->delete();
 
-        $redirectPath = $parentFolderId ? route('folders.index', $parentFolderId) : route('folders.index');
-
-        return redirect($redirectPath)->with('success', 'Carpeta eliminada exitosamente.');
+        // Return a JSON response for a successful deletion
+        return response()->json([
+            'success' => true,
+            'message' => 'Carpeta eliminada exitosamente.'
+        ]);
     }
 
     /**
@@ -428,13 +463,25 @@ class FolderController extends Controller
 
                     try {
                         $path = $file->store('files', 's3');
-                        FileLink::create([
+
+                        // 1. First, create the FileLink record and get the instance.
+                        $fileLink = FileLink::create([
                             'name' => $fileNameToStore,
                             'type' => 'file',
                             'path' => $path,
                             'folder_id' => $folder->id,
                             'user_id' => Auth::id(),
                         ]);
+
+                        // 2. Then, use the created instance to log the activity.
+                        ActivityLog::create([
+                            'user_id' => Auth::id(),
+                            'action' => 'Subió un archivo',
+                            'item_type' => 'file_link',
+                            'item_id' => $fileLink->id, // Now $fileLink is defined and has an ID
+                            'details' => ['name' => $fileLink->name],
+                        ]);
+                        
                         $uploadedCount++;
                     } catch (\Exception $e) {
                         $errors[] = "Error al subir {$originalFileName}: " . $e->getMessage();
@@ -528,7 +575,7 @@ class FolderController extends Controller
         $request->validate([
             'folder_id' => 'nullable|exists:folders,id',
             'files' => 'required|array',
-            'files.*' => 'file|max:500000', // 10MB por archivo
+            'files.*' => 'file|max:500000',
         ]);
 
         $targetFolder = $request->folder_id ? Folder::findOrFail($request->folder_id) : null;
@@ -562,14 +609,27 @@ class FolderController extends Controller
             }
 
             try {
+                // Paso 1: Subir el archivo a S3 y obtener la ruta
                 $path = $file->store('files', 's3');
-                FileLink::create([
+
+                // Paso 2: Crear el registro en la base de datos y OBTENER la instancia
+                $fileLink = FileLink::create([
                     'name' => $fileNameToStore,
                     'type' => 'file',
                     'path' => $path,
                     'folder_id' => $request->folder_id,
                     'user_id' => Auth::id(),
                 ]);
+
+                // Paso 3: Usar la instancia $fileLink para registrar la actividad
+                ActivityLog::create([
+                    'user_id' => Auth::id(),
+                    'action' => 'Subió un archivo',
+                    'item_type' => 'file_link',
+                    'item_id' => $fileLink->id,
+                    'details' => ['name' => $fileLink->name],
+                ]);
+
                 $uploadedCount++;
             } catch (\Exception $e) {
                 $errors[] = "Error al subir {$originalFileName}: " . $e->getMessage();
@@ -613,6 +673,13 @@ class FolderController extends Controller
                 }
 
                 try {
+                    ActivityLog::create([
+                        'user_id' => $user->id,
+                        'action' => 'Eliminación masiva de carpeta',
+                        'item_type' => 'folder',
+                        'item_id' => $folder->id,
+                        'details' => ['name' => $folder->name],
+                    ]);                    
                     $folder->delete();
                     $deletedCount++;
                 } catch (\Exception $e) {
@@ -636,6 +703,13 @@ class FolderController extends Controller
                 }
 
                 try {
+                    ActivityLog::create([
+                        'user_id' => $user->id,
+                        'action' => 'Eliminación masiva de archivo/enlace',
+                        'item_type' => 'file_link',
+                        'item_id' => $fileLink->id,
+                        'details' => ['name' => $fileLink->name],
+                    ]);                    
                     if ($fileLink->type === 'file' && Storage::disk('s3')->exists($fileLink->path)) {
                         Storage::disk('s3')->delete($fileLink->path);
                     }
@@ -807,6 +881,13 @@ class FolderController extends Controller
             }
 
             try {
+                ActivityLog::create([
+                    'user_id' => $user->id,
+                    'action' => 'Movió una carpeta',
+                    'item_type' => 'folder',
+                    'item_id' => $folderToMove->id,
+                    'details' => ['name' => $folderToMove->name, 'target_folder_id' => $targetFolderId],
+                ]);                
                 $folderToMove->parent_id = $targetFolderId;
                 $folderToMove->save();
                 $movedCount++;
@@ -849,6 +930,13 @@ class FolderController extends Controller
             }
 
             try {
+                ActivityLog::create([
+                    'user_id' => $user->id,
+                    'action' => 'Movió un archivo/enlace',
+                    'item_type' => 'file_link',
+                    'item_id' => $fileLinkToMove->id,
+                    'details' => ['name' => $fileLinkToMove->name, 'target_folder_id' => $targetFolderId],
+                ]);                
                 $fileLinkToMove->folder_id = $targetFolderId;
                 $fileLinkToMove->save();
                 $movedCount++;
