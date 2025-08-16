@@ -20,7 +20,7 @@
                                     <div class="bg-[#DFE5F5] p-6 rounded-full transition-colors duration-300 group-hover:bg-[#ff9c00]">
                                         <svg class="w-24 h-24" viewBox="0 0 100 100">
     <image 
-        href="{{ Storage::disk('s3')->url('RFQ/' . $subfolder->name . '.png') }}" 
+        href="{{ Storage::disk('s3')->url('RFQ1/' . $subfolder->name . '.png') }}" 
         width="100" 
         height="100" 
         preserveAspectRatio="xMidYMid meet"
