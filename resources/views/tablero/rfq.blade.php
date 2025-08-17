@@ -19,14 +19,14 @@
                                 <a href="{{ route('folders.index', ['folder' => $subfolder->id]) }}" class="group bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-2">
                                     <div class="bg-[#DFE5F5] p-6 rounded-full transition-colors duration-300 group-hover:bg-[#ff9c00]">
                                         <svg class="w-24 h-24" viewBox="0 0 100 100">
-    <image 
-        href="{{ Storage::disk('s3')->url('RFQ1/' . $subfolder->name . '.png') }}" 
-        width="100" 
-        height="100" 
-        preserveAspectRatio="xMidYMid meet"
-        style="filter: brightness(0) saturate(100%) invert(15%) sepia(30%) saturate(800%) hue-rotate(190deg) brightness(90%) contrast(90%);"
-    />
-</svg>
+                                            <image 
+                                                href="{{ Storage::disk('s3')->url('RFQ1/' . $subfolder->name . '.png') }}" 
+                                                width="100" 
+                                                height="100" 
+                                                preserveAspectRatio="xMidYMid meet"
+                                                style="filter: brightness(0) saturate(100%) invert(15%) sepia(30%) saturate(800%) hue-rotate(190deg) brightness(90%) contrast(90%);"
+                                            />
+                                        </svg>
                                     </div>
                                     <h4 class="mt-4 text-lg font-semibold text-[#2c3856] text-center">
                                         @if(strlen($subfolder->name) > 6)

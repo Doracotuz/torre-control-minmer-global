@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'super.admin' => \App\Http\Middleware\CheckSuperAdmin::class,
             'not_client' => \App\Http\Middleware\CheckIfNotClient::class,
             'is_area_admin' => \App\Http\Middleware\CheckIsAreaAdmin::class,
+            'check.organigram.admin' => \App\Http\Middleware\CheckOrganigramAdmin::class,
 
         ]);
         

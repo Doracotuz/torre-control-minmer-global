@@ -33,13 +33,16 @@
                     <div class="bg-gray-50 p-6 rounded-lg shadow mb-6">
                         <h4 class="font-bold text-gray-700 mb-2">Top 3 de Usuarios con más actividad:</h4>
                         <ul class="list-disc list-inside">
-                            @forelse($topUsers as $topUser)
-                                <li class="text-xl">
-                                    {{ $topUser->user->name ?? 'Usuario Eliminado' }} ({{ $topUser->total_activity }} acciones)
-                                </li>
-                            @empty
+                            {{-- Verificamos si la variable es una colección antes de iterar --}}
+                            @if(is_iterable($topUsers) && count($topUsers) > 0)
+                                @foreach($topUsers as $topUser)
+                                    <li class="text-xl">
+                                        {{ $topUser->user->name ?? 'Usuario Eliminado' }} ({{ $topUser->total_activity }} acciones)
+                                    </li>
+                                @endforeach
+                            @else
                                 <li class="text-xl">No hay actividad registrada en este periodo.</li>
-                            @endforelse
+                            @endif
                         </ul>
                     </div>
 

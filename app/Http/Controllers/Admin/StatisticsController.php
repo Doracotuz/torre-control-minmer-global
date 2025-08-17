@@ -63,10 +63,15 @@ class StatisticsController extends Controller
             });
         }
 
-        $topUsers = $topUsersQuery->get()->map(function($item) {
-            $item->user = User::find($item->user_id);
-            return $item;
-        });
+        $topUsers = $topUsersQuery->get();
+
+        // Verificamos si la colección no está vacía antes de mapear
+        if ($topUsers->isNotEmpty()) {
+            $topUsers = $topUsers->map(function($item) {
+                $item->user = User::find($item->user_id);
+                return $item;
+            });
+        }
 
         // Bitácora de Actividad
         $activitiesQuery = ActivityLog::with('user', 'user.area')
@@ -103,6 +108,14 @@ class StatisticsController extends Controller
         }
 
         $activities = $activitiesQuery->paginate(30)->appends($request->except('page'));
+
+        $activities->getCollection()->transform(function ($activity) {
+            // Verifica si el campo details es una cadena antes de decodificarlo
+            if (is_string($activity->details)) {
+                $activity->details = json_decode($activity->details, true);
+            }
+            return $activity;
+        });    
         
         $areas = Area::all();
         $userTypes = ['super_admin' => 'Super Admin', 'area_admin' => 'Admin de Área', 'normal' => 'Normal', 'client' => 'Cliente'];
@@ -187,14 +200,14 @@ class StatisticsController extends Controller
             ->pluck('total', 'type');
 
         // 8. Tipo de Archivo más Común
-$fileTypes = FileLink::select(DB::raw('LOWER(SUBSTR(name, LENGTH(name) - LOCATE(".", REVERSE(name)) + 2)) as file_extension'), DB::raw('count(*) as total'))
-    ->where('type', 'file')
-    ->whereDate('created_at', '>=', $startDate)
-    ->whereDate('created_at', '<=', $endDate)
-    ->groupBy('file_extension')
-    ->orderByDesc('total')
-    ->limit(5)
-    ->pluck('total', 'file_extension');
+        $fileTypes = FileLink::select(DB::raw('LOWER(SUBSTR(name, LENGTH(name) - LOCATE(".", REVERSE(name)) + 2)) as file_extension'), DB::raw('count(*) as total'))
+            ->where('type', 'file')
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->groupBy('file_extension')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->pluck('total', 'file_extension');
 
         // 9. Eliminaciones vs. Creaciones
         $creationDeletion = ActivityLog::select('action', DB::raw('count(*) as total'))

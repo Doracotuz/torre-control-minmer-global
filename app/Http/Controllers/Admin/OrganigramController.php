@@ -653,36 +653,27 @@ class OrganigramController extends Controller
     {
         $user = Auth::user();
 
+        // Define las áreas permitidas para el cliente.
+        $allowedAreaNames = [
+            'Customer Service',
+            'Comercial',
+            'Operaciones',
+            'Desarrollo y TI',
+            'Finanzas',
+            'Recursos Humanos',
+            'Tráfico',
+            'Brokerage',
+            'Diseño y MKT',
+            'Almacén',
+        ];
+
         if ($user && $user->is_client) {
-            $customerServiceArea = Area::where('name', 'Customer Service')->first();
-
-            // Si no existe el área, no se muestra nada.
-            if (!$customerServiceArea) {
-                return response()->json(null);
-            }
-
             $allMembers = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])->get();
-
-            // Encontrar los miembros que son raíz dentro del área de Customer Service
-            $rootMembersCS = $allMembers->where('area_id', $customerServiceArea->id)->filter(function ($member) {
-                return is_null($member->manager_id) || $member->manager->area_id != $member->area_id;
-            });
-
-            // Si no hay una raíz clara, podría devolverse vacío o manejarlo según la lógica de negocio.
-            if ($rootMembersCS->isEmpty()) {
-                return response()->json(null);
-            }
-
-            // Obtener todos los descendientes de esas raíces
-            $membersInHierarchy = collect();
-            foreach ($rootMembersCS as $rootMember) {
-                $membersInHierarchy = $membersInHierarchy->merge($this->getDescendants($rootMember, $allMembers));
-            }
-            $membersInHierarchy = $membersInHierarchy->unique('id');
+            $areas = Area::whereIn('name', $allowedAreaNames)->get();
 
             $flatNodes = [];
 
-            // 1. Nodo Raíz principal (opcional, pero mantiene la consistencia)
+            // 1. Nodo Raíz principal para la vista de cliente
             $flatNodes[] = [
                 'id' => 'org_root',
                 'pid' => null,
@@ -692,23 +683,76 @@ class OrganigramController extends Controller
                 'img' => asset('images/LogoAzul.png'),
             ];
 
-            // 2. Nodo del Área de Customer Service
+            // Nodo del Consejo Directivo
             $flatNodes[] = [
-                'id' => 'area_' . $customerServiceArea->id,
-                'pid' => 'org_root', // Cuelga del nodo raíz
-                'name' => $customerServiceArea->name,
-                'title' => 'Área',
-                'type' => 'area',
-                'img' => $customerServiceArea->icon_path ? Storage::disk('s3')->url($customerServiceArea->icon_path) : null,
-                'description' => $customerServiceArea->description,
+                'id' => 'consejo_directivo',
+                'pid' => 'org_root',
+                'name' => 'Consejo Directivo',
+                'title' => 'Directiva',
+                'type' => 'council',
+                'img' => Storage::disk('s3')->url('logoNode1.png'),
             ];
 
-            // 3. Nodos de Miembros de la jerarquía filtrada
-            foreach ($membersInHierarchy as $member) {
-                $parentId = $member->manager_id ? (string)$member->manager_id : 'area_' . $member->area_id;
+            // 2. Nodos de Áreas
+            foreach ($areas as $area) {
+                $flatNodes[] = [
+                    'id' => 'area_' . $area->id,
+                    'pid' => 'consejo_directivo',
+                    'name' => $area->name,
+                    'title' => 'Área',
+                    'type' => 'area',
+                    'img' => $area->icon_path ? Storage::disk('s3')->url($area->icon_path) : null,
+                    'description' => $area->description,
+                ];
+            }
 
-                // Si el jefe de un miembro no está en la jerarquía visible, se le asigna como padre el área.
-                if ($member->manager_id && !$membersInHierarchy->contains('id', $member->manager_id)) {
+            // Lógica para mánagers transversales y proxies (clientes)
+            $proxiesToCreate = [];
+            foreach ($allMembers as $member) {
+                // Solo procesar los miembros de las áreas permitidas.
+                if (!in_array($member->area->name, $allowedAreaNames)) {
+                    continue;
+                }
+
+                if ($member->manager && $member->area_id !== $member->manager->area_id) {
+                    $manager = $member->manager;
+                    $targetAreaId = $member->area_id;
+
+                    $proxyKey = 'proxy_' . $manager->id . '_area_' . $targetAreaId;
+
+                    if (!isset($proxiesToCreate[$proxyKey])) {
+                        $proxiesToCreate[$proxyKey] = [
+                            'id' => $proxyKey,
+                            'pid' => 'area_' . $targetAreaId,
+                            'original_id' => (string)$manager->id,
+                            'name' => $manager->name,
+                            'title' => $manager->position->name ?? 'Sin Posición',
+                            'img' => $manager->profile_photo_path ? Storage::disk('s3')->url($manager->profile_photo_path) : null,
+                            'type' => 'member',
+                            'is_proxy' => true,
+                        ];
+                    }
+                }
+            }
+
+            foreach ($proxiesToCreate as $proxyNode) {
+                $flatNodes[] = $proxyNode;
+            }
+
+            // 3. Nodos de Miembros
+            foreach ($allMembers as $member) {
+                if (!in_array($member->area->name, $allowedAreaNames)) {
+                    continue;
+                }
+
+                $parentId = null;
+                if ($member->manager) {
+                    if ($member->area_id !== $member->manager->area_id) {
+                        $parentId = 'proxy_' . $member->manager_id . '_area_' . $member->area_id;
+                    } else {
+                        $parentId = (string)$member->manager_id;
+                    }
+                } else {
                     $parentId = 'area_' . $member->area_id;
                 }
 
@@ -720,12 +764,12 @@ class OrganigramController extends Controller
                     'img' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
                     'type' => 'member',
                     'is_proxy' => false,
-                    // ▼▼ AÑADE ESTE BLOQUE COMPLETO ▼▼
                     'full_details' => [
                         'name' => $member->name,
                         'email' => $member->email,
                         'cell_phone' => $member->cell_phone,
                         'position_name' => $member->position->name ?? 'N/A',
+                        // 'position_description' => $member->position->description ?? 'N/A',
                         'area_name' => $member->area->name ?? 'N/A',
                         'manager_name' => $member->manager->name ?? 'N/A',
                         'manager_id' => $member->manager_id,
@@ -744,6 +788,7 @@ class OrganigramController extends Controller
             return response()->json($nestedTree[0] ?? null);
         }
 
+        // Código para usuarios internos (no clientes)
         $members = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])->get();
         $areas = Area::all();
 
@@ -759,11 +804,20 @@ class OrganigramController extends Controller
             'img' => asset('images/LogoAzul.png'),
         ];
 
+        $flatNodes[] = [
+            'id' => 'consejo_directivo',
+            'pid' => 'org_root',
+            'name' => 'Consejo Directivo',
+            'title' => 'Directiva',
+            'type' => 'council',
+            'img' => Storage::disk('s3')->url('logoNode1.png'),
+        ];
+
         // 2. Nodos de Áreas
         foreach ($areas as $area) {
             $flatNodes[] = [
                 'id' => 'area_' . $area->id,
-                'pid' => 'org_root',
+                'pid' => 'consejo_directivo',
                 'name' => $area->name,
                 'title' => 'Área',
                 'type' => 'area',
@@ -772,71 +826,62 @@ class OrganigramController extends Controller
             ];
         }
 
-        // =================================================================
-        // LÓGICA PARA MÁNAGERS TRANSVERSALES Y PROXIES
-        // =================================================================
-
-        // 3. Identificar mánagers que necesitan un proxy y en qué áreas
+        // Lógica para mánagers transversales y proxies (usuarios internos)
         $proxiesToCreate = [];
         foreach ($members as $member) {
-            // Si el miembro tiene un mánager y están en áreas diferentes
             if ($member->manager && $member->area_id !== $member->manager->area_id) {
                 $manager = $member->manager;
                 $targetAreaId = $member->area_id;
-                
-                // Usamos una clave única para no crear el mismo proxy múltiples veces
+
                 $proxyKey = 'proxy_' . $manager->id . '_area_' . $targetAreaId;
-                
+
                 if (!isset($proxiesToCreate[$proxyKey])) {
                     $proxiesToCreate[$proxyKey] = [
                         'id' => $proxyKey,
-                        'pid' => 'area_' . $targetAreaId, // El proxy cuelga del área foránea
-                        'original_id' => (string)$manager->id, // Guardamos el ID real para futuras referencias
+                        'pid' => 'area_' . $targetAreaId,
+                        'original_id' => (string)$manager->id,
                         'name' => $manager->name,
                         'title' => $manager->position->name ?? 'Sin Posición',
                         'img' => $manager->profile_photo_path ? Storage::disk('s3')->url($manager->profile_photo_path) : null,
                         'type' => 'member',
-                        'is_proxy' => true, // <-- Marca clave para el frontend
+                        'is_proxy' => true,
                     ];
                 }
             }
         }
 
-        // 4. Añadir los nodos proxy a la lista plana
         foreach ($proxiesToCreate as $proxyNode) {
             $flatNodes[] = $proxyNode;
         }
 
-        // 5. Nodos de Miembros (con lógica de 'pid' modificada)
+        // 5. Nodos de Miembros
         foreach ($members as $member) {
             $parentId = null;
-            
+
             if ($member->manager) {
-                // Si el mánager está en una ÁREA DIFERENTE, el padre es el NODO PROXY
                 if ($member->area_id !== $member->manager->area_id) {
                     $parentId = 'proxy_' . $member->manager_id . '_area_' . $member->area_id;
                 } else {
-                // Si el mánager está en la MISMA ÁREA, el padre es el mánager real
                     $parentId = (string)$member->manager_id;
                 }
             } else {
-                // Si NO tiene mánager, el padre es el NODO DE ÁREA
                 $parentId = 'area_' . $member->area_id;
             }
 
             $flatNodes[] = [
-                'id' => (string)$member->id, // El ID del miembro real
-                'pid' => $parentId, // El padre se asigna según la nueva lógica
+                'id' => (string)$member->id,
+                'pid' => $parentId,
                 'name' => $member->name,
                 'title' => $member->position->name ?? 'Sin Posición',
                 'img' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
                 'type' => 'member',
-                'is_proxy' => false, // Este es un nodo real, no un proxy
-                'full_details' => [ // Objeto con toda la información para el modal del miembro
+                'is_proxy' => false,
+                'full_details' => [
                     'name' => $member->name,
                     'email' => $member->email,
                     'cell_phone' => $member->cell_phone,
                     'position_name' => $member->position->name ?? 'N/A',
+                    'position_description' => $member->position->description ?? 'N/A',
                     'area_name' => $member->area->name ?? 'N/A',
                     'manager_name' => $member->manager->name ?? 'N/A',
                     'manager_id' => $member->manager_id,
@@ -865,31 +910,72 @@ class OrganigramController extends Controller
         $user = Auth::user();
 
         if ($user && $user->is_client) {
-            $customerServiceArea = Area::where('name', 'Customer Service')->first();
+            // Define las áreas permitidas para el cliente.
+            $allowedAreaNames = [
+                // 'Customer Service',
+                'Comercial',
+                'Operaciones',
+                'Desarrollo y TI',
+                'Finanzas',
+            ];
 
-            if (!$customerServiceArea) {
+            // Obtener los IDs de las áreas permitidas
+            $allowedAreaIds = Area::whereIn('name', $allowedAreaNames)->pluck('id');
+
+            if ($allowedAreaIds->isEmpty()) {
                 return response()->json(null);
             }
 
             $allMembers = OrganigramMember::with(['area', 'manager.position', 'position'])->get();
             
-            // Encontrar al jefe del área de Customer Service
-            $headOfService = $allMembers->where('area_id', $customerServiceArea->id)->first(function ($member) {
-                return is_null($member->manager_id) || $member->manager->area_id != $member->area_id;
+            // Encontrar a los "jefes" de las áreas permitidas.
+            // Un jefe es un miembro de un área permitida que no tiene manager, o cuyo manager no está en la misma área.
+            $headsOfService = $allMembers->whereIn('area_id', $allowedAreaIds)->filter(function ($member) {
+                return is_null($member->manager_id) || ($member->manager && $member->manager->area_id != $member->area_id);
             });
 
-            if (!$headOfService) {
-                return response()->json(null); // No se encontró un jefe para el área
+            if ($headsOfService->isEmpty()) {
+                return response()->json(null);
             }
 
-            // Obtener todos los descendientes del jefe de servicio
-            $membersInHierarchy = $this->getDescendants($headOfService, $allMembers);
+            $membersInHierarchy = collect();
+            foreach ($headsOfService as $headOfService) {
+                $membersInHierarchy = $membersInHierarchy->merge($this->getDescendants($headOfService, $allMembers));
+            }
+            $membersInHierarchy = $membersInHierarchy->unique('id');
 
             $flatNodesForMembersOnly = [];
 
+            // 1. Nodo Raíz principal (único para toda la jerarquía de clientes)
+            $flatNodesForMembersOnly[] = [
+                'id' => 'org_root',
+                'pid' => null,
+                'name' => 'MINMER GLOBAL',
+                'title' => 'Organigrama Principal',
+                'type' => 'root',
+                'img' => asset('images/LogoAzul.png'),
+            ];
+
+            $flatNodesForMembersOnly[] = [
+                'id' => 'consejo_directivo',
+                'pid' => 'org_root', // El padre es el nodo raíz
+                'name' => 'Consejo Directivo',
+                'title' => 'Directiva',
+                'type' => 'council',
+                'img' => Storage::disk('s3')->url('logoNode1.png'), // Usar la imagen de S3
+            ];            
+
+            // 2. Nodos de Miembros (Re-parenting directo)
             foreach ($membersInHierarchy as $member) {
-                // El jefe de servicio es el nodo raíz en esta vista
-                $parentId = ($member->id === $headOfService->id) ? null : (string)$member->manager_id;
+                $parentId = null;
+
+                // Si es un jefe de servicio, su padre es el nodo raíz principal.
+                if ($headsOfService->contains('id', $member->id)) {
+                    $parentId = 'consejo_directivo';
+                } else {
+                    // Si no es un jefe, su padre es su manager real.
+                    $parentId = (string)$member->manager_id;
+                }
 
                 $flatNodesForMembersOnly[] = [
                     'id' => (string)$member->id,
@@ -899,28 +985,28 @@ class OrganigramController extends Controller
                     'img' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
                     'type' => 'member',
                     'is_proxy' => false,
-                        'full_details' => [
-                            'name' => $member->name,
-                            'email' => $member->email,
-                            'cell_phone' => $member->cell_phone,
-                            'position_name' => $member->position->name ?? 'N/A',
-                            'area_name' => $member->area->name ?? 'N/A',
-                            'manager_name' => $member->manager->name ?? 'N/A',
-                            'manager_id' => $member->manager_id,
-                            'profile_photo_path' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
-                            'activities' => $member->activities->map(fn($a) => ['id' => $a->id, 'name' => $a->name]),
-                            'skills' => $member->skills->map(fn($s) => ['id' => $s->id, 'name' => $s->name]),
-                            'trajectories' => $member->trajectories->map(fn($t) => [
-                                'id' => $t->id, 'title' => $t->title, 'description' => $t->description,
-                                'start_date' => optional($t->start_date)->format('Y-m-d'), 'end_date' => optional($t->end_date)->format('Y-m-d'),
-                            ]),
-                        ]
-                    ];
-                }
+                    'full_details' => [
+                        'name' => $member->name,
+                        'email' => $member->email,
+                        'cell_phone' => $member->cell_phone,
+                        'position_name' => $member->position->name ?? 'N/A',
+                        'area_name' => $member->area->name ?? 'N/A',
+                        'manager_name' => $member->manager->name ?? 'N/A',
+                        'manager_id' => $member->manager_id,
+                        'profile_photo_path' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
+                        'activities' => $member->activities->map(fn($a) => ['id' => $a->id, 'name' => $a->name]),
+                        'skills' => $member->skills->map(fn($s) => ['id' => $s->id, 'name' => $s->name]),
+                        'trajectories' => $member->trajectories->map(fn($t) => [
+                            'id' => $t->id, 'title' => $t->title, 'description' => $t->description,
+                            'start_date' => optional($t->start_date)->format('Y-m-d'), 'end_date' => optional($t->end_date)->format('Y-m-d'),
+                        ]),
+                    ]
+                ];
+            }
 
             $nestedTree = $this->buildNestedTree($flatNodesForMembersOnly);
             return response()->json($nestedTree[0] ?? null);
-        }        
+        }
         $members = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])->get();
 
         $flatNodesForMembersOnly = [];
@@ -935,6 +1021,15 @@ class OrganigramController extends Controller
             'img' => asset('images/LogoAzul.png'),
         ];
 
+        $flatNodesForMembersOnly[] = [
+            'id' => 'consejo_directivo',
+            'pid' => 'org_root', // El padre es el nodo raíz
+            'name' => 'Consejo Directivo',
+            'title' => 'Directiva',
+            'type' => 'council',
+            'img' => Storage::disk('s3')->url('logoNode1.png'), // Usar la imagen de S3
+        ];        
+
         // 2. Nodos de Miembros (Re-parenting directo)
         foreach ($members as $member) {
             $parentId = null;
@@ -944,7 +1039,7 @@ class OrganigramController extends Controller
                 $parentId = (string)$member->manager_id;
             } else {
                 // Si no tiene manager, se asigna al nodo raíz
-                $parentId = 'org_root';
+                $parentId = 'consejo_directivo';
             }
 
             $flatNodesForMembersOnly[] = [

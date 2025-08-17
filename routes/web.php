@@ -194,49 +194,47 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/api/folders-for-client-access', [App\Http\Controllers\FolderController::class, 'getFoldersForClientAccess'])->name('api.folders_for_client_access');
 
     // Rutas para la gestión del Organigrama
-    Route::prefix('organigram')->name('organigram.')->group(function () {
-        Route::get('/', [OrganigramController::class, 'index'])->name('index');
-        Route::get('/create', [OrganigramController::class, 'create'])->name('create');
-        Route::post('/', [OrganigramController::class, 'store'])->name('store');
-        Route::get('/{organigram_member}/edit', [OrganigramController::class, 'edit'])->name('edit');
-        Route::put('/{organigram_member}', [OrganigramController::class, 'update'])->name('update');
-        Route::delete('/{organigram_member}', [OrganigramController::class, 'destroy'])->name('destroy');
-
-        Route::get('/template', [OrganigramController::class, 'downloadTemplate'])->name('download-template');
-        Route::post('/import-csv', [OrganigramController::class, 'importCsv'])->name('import-csv');
-
-
-        // Rutas para gestionar Actividades del Organigrama (CRUD)
-        Route::prefix('activities')->name('activities.')->group(function () {
-            Route::get('/', [OrganigramController::class, 'activitiesIndex'])->name('index');
-            Route::post('/', [OrganigramController::class, 'activitiesStore'])->name('store');
-            Route::put('/{activity}', [OrganigramController::class, 'activitiesUpdate'])->name('update');
-            Route::delete('/{activity}', [OrganigramController::class, 'activitiesDestroy'])->name('destroy');
-        });
-
-        // Rutas para gestionar Habilidades del Organigrama (CRUD)
-        Route::prefix('skills')->name('skills.')->group(function () {
-            Route::get('/', [OrganigramController::class, 'skillsIndex'])->name('index');
-            Route::post('/', [OrganigramController::class, 'skillsStore'])->name('store');
-            Route::put('/{skill}', [OrganigramController::class, 'skillsUpdate'])->name('update');
-            Route::delete('/{skill}', [OrganigramController::class, 'skillsDestroy'])->name('destroy');
-        });
-
-        // Rutas para gestionar Posiciones del Organigrama (CRUD)
-        Route::prefix('positions')->name('positions.')->group(function () {
-            Route::get('/', [OrganigramPositionController::class, 'index'])->name('index');
-            Route::post('/', [OrganigramPositionController::class, 'store'])->name('store');
-            Route::put('/{organigram_position}', [OrganigramPositionController::class, 'update'])->name('update');
-            Route::delete('/{organigram_position}', [OrganigramPositionController::class, 'destroy'])->name('destroy');
-        });
-
-        // Rutas interactivas para el organigrama (consolidadas aquí)
-        Route::get('/interactive', [OrganigramController::class, 'interactiveOrganigram'])->name('interactive');
-        Route::get('/interactive-data', [OrganigramController::class, 'getInteractiveOrganigramData'])->name('interactive.data');
-        Route::get('/interactive-data-without-areas', [OrganigramController::class, 'getInteractiveOrganigramDataWithoutAreas'])->name('interactive.data.without-areas');
-
-    }); // Cierra Route::prefix('organigram')
 }); // Cierra Route::middleware(['auth', 'check.area:Administración'])
+Route::middleware(['auth', 'check.organigram.admin'])->prefix('admin/organigram')->name('admin.organigram.')->group(function () {
+    Route::get('/', [OrganigramController::class, 'index'])->name('index');
+    Route::get('/create', [OrganigramController::class, 'create'])->name('create');
+    Route::post('/', [OrganigramController::class, 'store'])->name('store');
+    Route::get('/{organigram_member}/edit', [OrganigramController::class, 'edit'])->name('edit');
+    Route::put('/{organigram_member}', [OrganigramController::class, 'update'])->name('update');
+    Route::delete('/{organigram_member}', [OrganigramController::class, 'destroy'])->name('destroy');
+
+    Route::get('/template', [OrganigramController::class, 'downloadTemplate'])->name('download-template');
+    Route::post('/import-csv', [OrganigramController::class, 'importCsv'])->name('import-csv');
+
+    // Rutas para gestionar Actividades del Organigrama (CRUD)
+    Route::prefix('activities')->name('activities.')->group(function () {
+        Route::get('/', [OrganigramController::class, 'activitiesIndex'])->name('index');
+        Route::post('/', [OrganigramController::class, 'activitiesStore'])->name('store');
+        Route::put('/{activity}', [OrganigramController::class, 'activitiesUpdate'])->name('update');
+        Route::delete('/{activity}', [OrganigramController::class, 'activitiesDestroy'])->name('destroy');
+    });
+
+    // Rutas para gestionar Habilidades del Organigrama (CRUD)
+    Route::prefix('skills')->name('skills.')->group(function () {
+        Route::get('/', [OrganigramController::class, 'skillsIndex'])->name('index');
+        Route::post('/', [OrganigramController::class, 'skillsStore'])->name('store');
+        Route::put('/{skill}', [OrganigramController::class, 'skillsUpdate'])->name('update');
+        Route::delete('/{skill}', [OrganigramController::class, 'skillsDestroy'])->name('destroy');
+    });
+
+    // Rutas para gestionar Posiciones del Organigrama (CRUD)
+    Route::prefix('positions')->name('positions.')->group(function () {
+        Route::get('/', [OrganigramPositionController::class, 'index'])->name('index');
+        Route::post('/', [OrganigramPositionController::class, 'store'])->name('store');
+        Route::put('/{organigram_position}', [OrganigramPositionController::class, 'update'])->name('update');
+        Route::delete('/{organigram_position}', [OrganigramPositionController::class, 'destroy'])->name('destroy');
+    });
+
+    // Rutas interactivas para el organigrama (consolidadas aquí)
+    Route::get('/interactive', [OrganigramController::class, 'interactiveOrganigram'])->name('interactive');
+    Route::get('/interactive-data', [OrganigramController::class, 'getInteractiveOrganigramData'])->name('interactive.data');
+    Route::get('/interactive-data-without-areas', [OrganigramController::class, 'getInteractiveOrganigramDataWithoutAreas'])->name('interactive.data.without-areas');
+}); // Cierra Route::prefix('organigram')
 
 
 // Rutas para Administradores de Área (solo accesibles por usuarios con is_area_admin = true)

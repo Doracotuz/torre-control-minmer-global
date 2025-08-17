@@ -123,25 +123,22 @@
                                 </div>
                                 <div class="space-y-3 text-sm">
                                     <div><p class="font-semibold text-gray-500 block">Posición</p><p class="text-lg font-bold text-[#2c3856]" x-text="data?.position_name"></p></div> {{-- Agregado ?. --}}
+                                    {{-- INICIO DE CAMBIO --}}
+                                    <div x-show="data?.position_description">
+                                        <!-- <p class="font-semibold text-gray-500 block">Descripción del Puesto</p> -->
+                                        <p class="text-sm text-[#666666]" x-text="data?.position_description"></p>
+                                    </div>
+                                    {{-- FIN DE CAMBIO --}}
                                     <div><p class="font-semibold text-gray-500 block">Área</p><p class="text-base text-[#666666]" x-text="data?.area_name"></p></div> {{-- Agregado ?. --}}
                                     <div><p class="font-semibold text-gray-500 block">Jefe Directo</p><p class="text-base text-[#666666]" x-text="data?.manager_name || 'N/A'"></p></div> {{-- Agregado ?. --}}
                                     <div class="pt-2"><p class="font-semibold text-gray-500 block">Email</p><a :href="'mailto:' + data?.email" class="text-blue-600 hover:underline" x-text="data?.email"></a></div> {{-- Agregado ?. --}}
                                     <div><p class="font-semibold text-gray-500 block">Celular</p><p class="text-base text-[#666666]" x-text="data?.cell_phone"></p></div> {{-- Agregado ?. --}}
                                 </div>
-                                <div x-show="data?.activities && data?.activities.length > 0">
-                                    <h4 class="font-bold text-lg text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Actividades</h4>
-                                    <ul class="list-disc list-inside space-y-1 text-[#2b2b2b]">
-                                        <template x-for="activity in data?.activities" :key="activity.id">
-                                            <li x-text="activity.name"></li>
-                                        </template>
-                                    </ul>
-                                </div>
-
                             </div>
                             <div class="md:col-span-2 space-y-6">
                                 <!-- <div x-show="data?.activities && data?.activities.length > 0">
-                                    <h4 class="font-bold text-lg text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Actividades</h4>
-                                    <ul class="list-disc list-inside space-y-1 text-[#2b2b2b]">
+                                    <h4 class="font-bold text-lg text-center text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Plan de carrera</h4>
+                                    <ul class="list-inside space-y-1 text-[#2b2b2b]">
                                         <template x-for="activity in data?.activities" :key="activity.id">
                                             <li x-text="activity.name"></li>
                                         </template>
@@ -165,6 +162,14 @@
                                 </div></div>
                             </div>
                         </div>
+                        <div x-show="data?.activities && data?.activities.length > 0">
+                            <h4 class="font-bold text-lg text-center text-[#2c3856] border-b-2 border-[#ff9c00] pb-2 mb-3">Plan de carrera</h4>
+                            <ul class="list-inside text-center space-y-1 text-[#2b2b2b]">
+                                <template x-for="activity in data?.activities" :key="activity.id">
+                                    <li x-text="activity.name"></li>
+                                </template>
+                            </ul>
+                        </div>                            
                         <div x-show="!data" class="text-center text-gray-600">Cargando detalles...</div> {{-- Mensaje mientras se carga o si no hay datos --}}
                     </div>
                 </div>
@@ -440,6 +445,9 @@
                                 email: node.full_details.email || '',
                                 cell_phone: node.full_details.cell_phone || '',
                                 position_name: node.full_details.position_name || '',
+                                {{-- INICIO DE CAMBIO: Agregar la descripción de la posición --}}
+                                position_description: node.full_details.position_description || '',
+                                {{-- FIN DE CAMBIO --}}
                                 area_name: node.full_details.area_name || '',
                                 manager_name: node.full_details.manager_name || '',
                                 profile_photo_path: node.full_details.profile_photo_path || null,
