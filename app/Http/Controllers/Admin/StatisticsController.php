@@ -242,10 +242,11 @@ class StatisticsController extends Controller
         ));
     }
 
+
     public function exportCsv(Request $request)
     {
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+        $startDate = $request->input('start_date', now()->subMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->format('Y-m-d'));
         $filterArea = $request->input('area');
         $filterUserType = $request->input('user_type');
 
@@ -254,7 +255,7 @@ class StatisticsController extends Controller
             ->whereDate('created_at', '<=', $endDate)
             ->latest();
 
-        // Apply filters
+        // Aplicar filtros
         if ($filterArea) {
             $activitiesQuery->whereHas('user', function ($q) use ($filterArea) {
                 $q->where('area_id', $filterArea);
@@ -277,12 +278,16 @@ class StatisticsController extends Controller
         $activities = $activitiesQuery->get();
 
         $headers = [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="bitacora_minmer.csv"',
         ];
         
         $callback = function() use ($activities) {
             $file = fopen('php://output', 'w');
+            
+            // Escribe la BOM de UTF-8 para compatibilidad con Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
             fputcsv($file, ['Fecha', 'Usuario', 'Email', 'Area', 'Tipo de Usuario', 'Acción', 'Detalles']);
             
             foreach ($activities as $activity) {
@@ -297,6 +302,17 @@ class StatisticsController extends Controller
                         }
                     }
                 }
+
+                // Decodificar los detalles JSON para una salida legible
+                $details = is_string($activity->details) ? json_decode($activity->details, true) : $activity->details;
+                $detailsString = '';
+
+                if (is_array($details)) {
+                    foreach ($details as $key => $value) {
+                        // Concatenar clave y valor en un formato legible
+                        $detailsString .= Str::title(str_replace('_', ' ', $key)) . ': ' . $value . '; ';
+                    }
+                }
                 
                 fputcsv($file, [
                     $activity->created_at->format('d M Y H:i'),
@@ -305,7 +321,7 @@ class StatisticsController extends Controller
                     $activity->user->area->name ?? 'N/A',
                     $userType,
                     $activity->action,
-                    json_encode($activity->details),
+                    rtrim($detailsString, '; '), // Elimina el último "; "
                 ]);
             }
             

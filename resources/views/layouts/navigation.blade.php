@@ -48,28 +48,28 @@ x-init="$watch('search', value => {
                             $areaName = Auth::user()->area->name;
                             $areaIconSvg = '';
                             $areaCustomIconPath = Auth::user()->area->icon_path;
-                            
+
                             if (!$areaCustomIconPath) {
                                 switch ($areaName) {
-                                    case 'Recursos Humanos': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#2c3856]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h-5v-2a3 3 0 013-3h2a3 3 0 013 3v2h-5zM9 10a3 3 0 11-6 0 3 3 0 016 0zM11 12a3 3 0 10-6 0 3 3 0 006 0z"></path></svg>'; break;
-                                    case 'Customer Service': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#2c3856]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>'; break;
-                                    case 'Tráfico': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#2c3856]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17l-4 4m0 0l-4-4m4 4V3m6 18v-3.586a1 1 0 01.293-.707l2.414-2.414A1 1 0 0115.586 14H18a2 2 0 002-2V7a2 2 0 00-2-2h-3.586a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 0110 2.414V1H4a2 2 0 00-2 2v14a2 2 0 002 2h5z"></path></svg>'; break;
-                                    case 'Almacén': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#2c3856]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>'; break;
-                                    case 'Valor Agregado': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#2c3856]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>'; break;
-                                    case 'POSM': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#2c3856]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>'; break;
-                                    case 'Brokerage': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#2c3856]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l-3 3m3-3V3m3 12h8a2 2 0 002-2V7a2 2 0 00-2-2h-3l-4-3H9a2 2 0 00-2 2v4m-7 10h14a2 2 0 002-2V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4"></path></svg>'; break;
-                                    case 'Innovación y Desarrollo': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#2c3856]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 20v-3m0 0l.688-.688c.482-.482 1.132-.756 1.802-.756h.71a2 2 0 002-2V8.5a2 2 0 00-2-2h-.71c-.67 0-1.32-.274-1.802-.756L12 5m0 15v-3m0 0l-.688-.688c-.482-.482-1.132-.756-1.802-.756H6a2 2 0 01-2-2V8.5a2 2 0 012-2h.71c.67 0 1.32-.274 1.802-.756L12 5m0 15v-3m0 0l.688-.688c.482-.482 1.132-.756 1.802-.756h.71a2 2 0 002-2V8.5a2 2 0 00-2-2h-.71c-.67 0-1.32-.274-1.802-.756L12 5"></path></svg>'; break;
-                                    case 'Administración': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#2c3856]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.827 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.827 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.827-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.827-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>'; break;
-                                    default: $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#2c3856]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>'; break;
+                                    case 'Recursos Humanos': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h-5v-2a3 3 0 013-3h2a3 3 0 013 3v2h-5zM9 10a3 3 0 11-6 0 3 3 0 016 0zM11 12a3 3 0 10-6 0 3 3 0 006 0z"></path></svg>'; break;
+                                    case 'Customer Service': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>'; break;
+                                    case 'Tráfico': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17l-4 4m0 0l-4-4m4 4V3m6 18v-3.586a1 1 0 01.293-.707l2.414-2.414A1 1 0 0115.586 14H18a2 2 0 002-2V7a2 2 0 00-2-2h-3.586a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 0110 2.414V1H4a2 2 0 00-2 2v14a2 2 0 002 2h5z"></path></svg>'; break;
+                                    case 'Almacén': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>'; break;
+                                    case 'Valor Agregado': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>'; break;
+                                    case 'POSM': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>'; break;
+                                    case 'Brokerage': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l-3 3m3-3V3m3 12h8a2 2 0 002-2V7a2 2 0 00-2-2h-3l-4-3H9a2 2 0 00-2 2v4m-7 10h14a2 2 0 002-2V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4"></path></svg>'; break;
+                                    case 'Innovación y Desarrollo': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 20v-3m0 0l.688-.688c.482-.482 1.132-.756 1.802-.756h.71a2 2 0 002-2V8.5a2 2 0 00-2-2h-.71c-.67 0-1.32-.274-1.802-.756L12 5m0 15v-3m0 0l-.688-.688c-.482-.482-1.132-.756-1.802-.756H6a2 2 0 01-2-2V8.5a2 2 0 012-2h.71c.67 0 1.32-.274 1.802-.756L12 5m0 15v-3m0 0l.688-.688c.482-.482 1.132-.756 1.802-.756h.71a2 2 0 002-2V8.5a2 2 0 00-2-2h-.71c-.67 0-1.32-.274-1.802-.756L12 5"></path></svg>'; break;
+                                    case 'Administración': $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.827 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.827 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.827-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.827-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>'; break;
+                                    default: $areaIconSvg = '<svg class="w-5 h-5 sm:w-6 sm:h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>'; break;
                                 }
                             }
                         @endphp
-                        
+
                         @if ($areaCustomIconPath)
                             <div class="flex items-center justify-center rounded-full p-1.5 mr-3" style="background-color: #DFE5F5;">
-                                <img 
-                                    src="{{ Storage::disk('s3')->url($areaCustomIconPath) }}" 
-                                    alt="{{ $areaName }} Icon" 
+                                <img
+                                    src="{{ Storage::disk('s3')->url($areaCustomIconPath) }}"
+                                    alt="{{ $areaName }} Icon"
                                     class="h-7 w-7 sm:h-8 sm:w-8 object-contain"
                                     style="filter: brightness(0) saturate(100%) invert(15%) sepia(15%) saturate(1000%) hue-rotate(180deg) brightness(90%) contrast(90%);"
                                 >
@@ -160,67 +160,172 @@ x-init="$watch('search', value => {
         </div>
     </div>
 
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden bg-[#2c3856] transition-all duration-300 ease-in-out">
         <div class="pt-2 pb-3 space-y-1">
-            {{-- Enlaces estándar --}}
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')">
-                {{ __('Gestión de Archivos') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('area_admin.visits.index')" :active="request()->routeIs('area_admin.visits.*')">
-                {{ __('Gestión de Visitas') }}
-            </x-responsive-nav-link>
-        </div>
+            {{-- Enlaces para todos los empleados --}}
+            @if(!Auth::user()->is_client)
+                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    {{ __('Dashboard') }}
+                </x-responsive-nav-link>
+            @endif
 
-        {{-- Menús de Administrador (replicados de app.blade.php) --}}
-        @if (Auth::user()->is_area_admin)
-        <div class="pt-4 pb-3 border-t border-gray-200">
-             @if (Auth::user()->area?->name === 'Administración')
-                {{-- Botón Colapsable para Super Admin --}}
-                <button @click="isMobileSuperAdminMenuOpen = !isMobileSuperAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 focus:outline-none focus:text-gray-800 focus:bg-gray-50 transition duration-150 ease-in-out">
-                    <span class="font-semibold">Super Admin</span>
-                    <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileSuperAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-                </button>
-                {{-- Contenido Colapsable de Super Admin --}}
-                <div x-show="isMobileSuperAdminMenuOpen" class="mt-2 space-y-1 pl-4 border-l-2 border-gray-200 ml-4">
-                    <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                        {{ __('Panel General') }}
-                    </x-responsive-nav-link>
-                    {{-- Aquí irían otros enlaces de Super Admin si los hubiera --}}
-                </div>
+            {{-- Enlaces para clientes --}}
+            @if (Auth::user()->is_client)
+                <x-responsive-nav-link :href="route('tablero.index')" :active="request()->routeIs('tablero.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    {{ __('Dashboard') }}
+                </x-responsive-nav-link>
+            @endif
+
+            {{-- Enlaces comunes con lógica de acceso --}}
+            @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
+                <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    <span class="nav-text">{{ __('Archivos') }}</span>
+                </x-responsive-nav-link>
             @else
-                {{-- Botón Colapsable para Admin de Área --}}
-                <button @click="isMobileAreaAdminMenuOpen = !isMobileAreaAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 focus:outline-none focus:text-gray-800 focus:bg-gray-50 transition duration-150 ease-in-out">
-                    <span class="font-semibold">Admin de Área</span>
-                    <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileAreaAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-                </button>
-                {{-- Contenido Colapsable de Admin de Área --}}
-                <div x-show="isMobileAreaAdminMenuOpen" class="mt-2 space-y-1 pl-4 border-l-2 border-gray-200 ml-4">
-                     <x-responsive-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')">
-                        {{ __('Panel de Área') }}
+                <x-responsive-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    @if (Auth::user()->is_client)
+                        {{ __('Archivos') }}
+                    @else
+                        {{ __('Gestión de Archivos') }}
+                    @endif
+                </x-responsive-nav-link>
+            @endif
+
+            {{-- Botones exclusivos para CLIENTES --}}
+            @if (Auth::user()->is_client)
+                @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
+                    <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        {{ __('Organigrama') }}
                     </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.*')">
-                        {{ __('Gestión de Usuarios') }}
+
+                    <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        {{ __('Tracking') }}
                     </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('area_admin.folder_permissions.index')" :active="request()->routeIs('area_admin.folder_permissions.*')">
-                        {{ __('Permisos de Carpetas') }}
+                @else
+                    <x-responsive-nav-link :href="route('client.organigram.interactive')" :active="request()->routeIs('client.organigram.interactive')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        {{ __('Organigrama') }}
                     </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        {{ __('Tracking') }}
+                    </x-responsive-nav-link>
+                @endif
+                <x-responsive-nav-link :href="route('rfq.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    {{ __('RFQ Moët Hennessy') }}
+                </x-responsive-nav-link>
+
+                <div class="pt-4 mt-4 border-t border-gray-600/50 space-y-1">
+                    @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
+                        <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Huella de Carbono') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Certificaciones') }}
+                        </x-responsive-nav-link>
+                        @php
+                            $whatsappNumber = "5215536583392";
+                            $whatsappMessage = urlencode("Hola, me gustaría recibir asistencia para la plataforma \"Control Tower - Minmer Global\"");
+                            $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
+                        @endphp
+                        <x-responsive-nav-link :href="$whatsappLink" target="_blank" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Asistencia') }}
+                        </x-responsive-nav-link>
+                    @else
+                        <x-responsive-nav-link href="#" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Huella de Carbono') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link href="#" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Certificaciones') }}
+                        </x-responsive-nav-link>
+                        @php
+                            $whatsappNumber = "5215536583392";
+                            $whatsappMessage = urlencode("Hola, me gustaría recibir asistencia para la plataforma \"Control Tower - Minmer Global\"");
+                            $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
+                        @endphp
+                        <x-responsive-nav-link :href="$whatsappLink" target="_blank" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Asistencia') }}
+                        </x-responsive-nav-link>
+                    @endif
+                </div>
+            @endif
+
+            {{-- Botones Ocultos para CLIENTES --}}
+            @if (!Auth::user()->is_client)
+                <x-responsive-nav-link :href="route('area_admin.visits.index')" :active="request()->routeIs('area_admin.visits.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    {{ __('Gestión de Visitas') }}
+                </x-responsive-nav-link>
+
+                @if(in_array(Auth::user()->area?->name, ['Tráfico', 'Tráfico Importaciones', 'Administración']))
+                <x-responsive-nav-link :href="route('rutas.dashboard')" :active="request()->routeIs('rutas.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    {{ __('Gestión de Rutas') }}
+                </x-responsive-nav-link>
+                @endif
+
+                <x-responsive-nav-link :href="route('tickets.index')" :active="request()->routeIs('tickets.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    {{ __('Tickets de Soporte') }}
+                </x-responsive-nav-link>
+
+                @if(Auth::user()->is_area_admin && Auth::user()->area?->name === 'Recursos Humanos')
+                    <x-responsive-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        {{ __('Organigrama') }}
+                    </x-responsive-nav-link>
+                @endif
+
+                @if(in_array(Auth::user()->area?->name, ['Customer Service', 'Administración']))
+                    <x-responsive-nav-link :href="route('customer-service.index')" :active="request()->routeIs('customer-service.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        {{ __('Customer Service') }}
+                    </x-responsive-nav-link>
+                @endif
+            @endif
+
+            {{-- Menús de Administrador (replicados de app.blade.php) --}}
+            @if (Auth::user()->isSuperAdmin())
+                <div class="pt-4 pb-3 border-t border-gray-600/50">
+                    <button @click="isMobileSuperAdminMenuOpen = !isMobileSuperAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
+                        <span class="font-semibold">Super Admin</span>
+                        <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileSuperAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                    </button>
+                    <div x-show="isMobileSuperAdminMenuOpen" class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
+                        <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Panel General') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('admin.statistics.index')" :active="request()->routeIs('admin.statistics.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Estadísticas') }}
+                        </x-responsive-nav-link>
+                    </div>
+                </div>
+            @endif
+
+            @if (Auth::user()->is_area_admin)
+                <div class="pt-4 pb-3 border-t border-gray-600/50">
+                    <button @click="isMobileAreaAdminMenuOpen = !isMobileAreaAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
+                        <span class="font-semibold">Admin de Área</span>
+                        <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileAreaAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                    </button>
+                    <div x-show="isMobileAreaAdminMenuOpen" class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
+                        <x-responsive-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Panel de Área') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Gestión de Usuarios') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('area_admin.folder_permissions.index')" :active="request()->routeIs('area_admin.folder_permissions.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Permisos de Carpetas') }}
+                        </x-responsive-nav-link>
+                    </div>
                 </div>
             @endif
         </div>
-        @endif
 
-        {{-- Menú de Usuario y Logout (sin cambios) --}}
-        <div class="pt-4 pb-1 border-t border-gray-200">
+        {{-- Menú de Usuario y Logout (sin cambios, excepto en colores) --}}
+        <div class="pt-4 pb-1 border-t border-gray-600/50">
             <div class="px-4">
-                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
+                <div class="font-medium text-base text-white">{{ Auth::user()->name }}</div>
+                <div class="font-medium text-sm text-gray-300">{{ Auth::user()->email }}</div>
             </div>
 
             <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
+                <x-responsive-nav-link :href="route('profile.edit')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
 
@@ -228,7 +333,7 @@ x-init="$watch('search', value => {
                     @csrf
                     <x-responsive-nav-link :href="route('logout')"
                             onclick="event.preventDefault();
-                                        this.closest('form').submit();">
+                                        this.closest('form').submit();" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                         {{ __('Log Out') }}
                     </x-responsive-nav-link>
                 </form>
