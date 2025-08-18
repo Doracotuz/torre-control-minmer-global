@@ -269,7 +269,7 @@
                                 $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
                                 if ($isPdf) {
                                     $fileUrl .= '#toolbar=0';
-                                }                                
+                                }
                             @endphp
                             <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
                                         hover:bg-gray-50 transform hover:scale-105 relative"
@@ -293,31 +293,8 @@
                                 >
                                 @endif
 
-                                <button @click.prevent.stop="openMediaModal('{{ $fileLink->name }}', '{{ $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : 'link' }}', '{{ $fileUrl }}', '{{ route('files.download', $fileLink) }}')"
-                                    class="flex flex-col items-center justify-center w-full">
-                                    @if ($fileLink->type == 'file')
-                                        @if ($isImage)
-                                            <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-green-600 mb-2 sm:mb-3 group-hover:text-green-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                            </svg>
-                                        @elseif ($isPdf)
-                                            <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-red-600 mb-2 sm:mb-3 group-hover:text-red-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                            </svg>
-                                        @elseif ($isVideo || $isAudio)
-                                            <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-indigo-600 mb-2 sm:mb-3 group-hover:text-indigo-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.196l-3.321-2.484a.5.5 0 00-.731.428v4.981a.5.5 0 00.73.429l3.322-2.484a.5.5 0 000-.858zM4 6v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2z"></path>
-                                            </svg>
-                                        @else
-                                            <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-gray-600 mb-2 sm:mb-3 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                            </svg>
-                                        @endif
-                                        <span :class="{ 'text-base': tileSize === 'small', 'text-lg': tileSize === 'medium', 'text-xl': tileSize === 'large' }" class="font-semibold text-[#2c3856] mb-1 truncate w-full px-1 sm:px-2">
-                                            {{ $fileLink->name }}
-                                        </span>
-                                        <span class="text-sm text-gray-500">{{ __('Archivo') }} ({{ strtoupper($fileExtension) }})</span>
-                                    @else
+                                @if ($fileLink->type == 'link')
+                                    <a href="{{ $fileLink->url }}" target="_blank" rel="noopener noreferrer" class="flex flex-col items-center justify-center w-full">
                                         <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-blue-600 mb-2 sm:mb-3 group-hover:text-blue-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                                         </svg>
@@ -325,8 +302,34 @@
                                             {{ $fileLink->name }}
                                         </span>
                                         <span class="text-sm text-gray-500">{{ __('Enlace') }}</span>
-                                    @endif
-                                </button>
+                                    </a>
+                                @else
+                                    <button @click.prevent.stop="openMediaModal('{{ $fileLink->name }}', '{{ $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : 'link' }}', '{{ $fileUrl }}', '{{ route('files.download', $fileLink) }}')"
+                                        class="flex flex-col items-center justify-center w-full">
+                                            @if ($isImage)
+                                                <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-green-600 mb-2 sm:mb-3 group-hover:text-green-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                            @elseif ($isPdf)
+                                                <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-red-600 mb-2 sm:mb-3 group-hover:text-red-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                </svg>
+                                            @elseif ($isVideo || $isAudio)
+                                                <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-indigo-600 mb-2 sm:mb-3 group-hover:text-indigo-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.196l-3.321-2.484a.5.5 0 00-.731.428v4.981a.5.5 0 00.73.429l3.322-2.484a.5.5 0 000-.858zM4 6v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2z"></path>
+                                                </svg>
+                                            @else
+                                                <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-gray-600 mb-2 sm:mb-3 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                </svg>
+                                            @endif
+                                            <span :class="{ 'text-base': tileSize === 'small', 'text-lg': tileSize === 'medium', 'text-xl': tileSize === 'large' }" class="font-semibold text-[#2c3856] mb-1 truncate w-full px-1 sm:px-2">
+                                                {{ $fileLink->name }}
+                                            </span>
+                                            <span class="text-sm text-gray-500">{{ __('Archivo') }} ({{ strtoupper($fileExtension) }})</span>
+                                    </button>
+                                @endif
+
                                 <span class="text-xxs text-gray-400 mt-1" :class="{'text-xxs': tileSize === 'small', 'text-xs': tileSize === 'medium', 'text-sm': tileSize === 'large'}">{{ $fileLink->created_at->format('d M Y') }}</span>
                                 <button @click.stop="showDetails = !showDetails" class="mt-2 text-xxs sm:text-xs text-gray-500 hover:text-gray-700 focus:outline-none px-2 py-1 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors duration-150">
                                     <span x-text="showDetails ? '{{ __('Ocultar Detalles') }}' : '{{ __('Ver Detalles') }}'"></span>
@@ -468,7 +471,7 @@
                                             $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
                                             if ($isPdf) {
                                                 $fileUrl .= '#toolbar=0';
-                                            }                                            
+                                            }
                                         @endphp
                                         <tr class="hover:bg-gray-100 transition-colors duration-150"
                                             draggable="true"
@@ -491,10 +494,18 @@
                                                         :checked="isSelected({{ $fileLink->id }}, 'file_link')"
                                                     >
                                                     @endif
-                                                    <button @click.prevent.stop="openMediaModal('{{ $fileLink->name }}', '{{ $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : 'link' }}', '{{ $fileUrl }}', '{{ route('files.download', $fileLink) }}')"
-                                                            class="flex items-center cursor-pointer"
-                                                    >
-                                                        @if ($fileLink->type == 'file')
+
+                                                    @if ($fileLink->type == 'link')
+                                                        <a href="{{ $fileLink->url }}" target="_blank" rel="noopener noreferrer" class="flex items-center cursor-pointer group">
+                                                            <svg class="w-7 h-7 text-blue-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                                            </svg>
+                                                            <span class="text-lg font-medium text-[#2c3856] truncate group-hover:underline">{{ $fileLink->name }}</span>
+                                                        </a>
+                                                    @else
+                                                        <button @click.prevent.stop="openMediaModal('{{ $fileLink->name }}', '{{ $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : 'link' }}', '{{ $fileUrl }}', '{{ route('files.download', $fileLink) }}')"
+                                                                class="flex items-center cursor-pointer"
+                                                        >
                                                             @if ($isImage)
                                                                 <svg class="w-7 h-7 text-green-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -513,13 +524,8 @@
                                                                 </svg>
                                                             @endif
                                                             <span class="text-lg font-medium text-[#2c3856] truncate">{{ $fileLink->name }}</span>
-                                                        @else
-                                                            <svg class="w-7 h-7 text-blue-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                                            </svg>
-                                                            <span class="text-lg font-medium text-[#2c3856] truncate">{{ $fileLink->name }}</span>
-                                                        @endif
-                                                    </button>
+                                                        </button>
+                                                    @endif
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -622,44 +628,50 @@
                                     >
                                     @endif
                                     <div class="flex items-center space-x-3 mb-2">
-                                        <button @click.prevent.stop="openMediaModal('{{ $fileLink->name }}', '{{ $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : 'link' }}', '{{ $fileUrl }}', '{{ route('files.download', $fileLink) }}')"
-                                                class="flex items-center cursor-pointer">
-                                            @if ($fileLink->type == 'file')
+                                        @if ($fileLink->type == 'link')
+                                            <a href="{{ $fileLink->url }}" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 w-full group">
+                                                <svg class="w-7 h-7 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                                </svg>
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-base font-semibold text-[#2c3856] truncate group-hover:underline">
+                                                        {{ $fileLink->name }}
+                                                    </p>
+                                                    <p class="text-sm text-gray-500 truncate">
+                                                        {{ __('Enlace') }}
+                                                    </p>
+                                                </div>
+                                            </a>
+                                        @else
+                                            <button @click.prevent.stop="openMediaModal('{{ $fileLink->name }}', '{{ pathinfo($fileLink->path, PATHINFO_EXTENSION) }}', '{{ $fileUrl }}', '{{ route('files.download', $fileLink) }}')"
+                                                    class="flex items-center space-x-3 w-full text-left">
                                                 @if ($isImage)
-                                                    <svg class="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <svg class="w-7 h-7 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                                     </svg>
                                                 @elseif ($isPdf)
-                                                    <svg class="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <svg class="w-7 h-7 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                                     </svg>
                                                 @elseif ($isVideo || $isAudio)
-                                                    <svg class="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <svg class="w-7 h-7 text-indigo-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.196l-3.321-2.484a.5.5 0 00-.731.428v4.981a.5.5 0 00.73.429l3.322-2.484a.5.5 0 000-.858zM4 6v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2z"></path>
                                                     </svg>
                                                 @else
-                                                    <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <svg class="w-7 h-7 text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                                                     </svg>
                                                 @endif
-                                            @else
-                                                <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                                </svg>
-                                            @endif
-                                            <div class="flex-1 min-w-0">
-                                                <p class="text-base font-semibold text-[#2c3856] truncate">
-                                                    {{ $fileLink->name }}
-                                                </p>
-                                                <p class="text-sm text-gray-500 truncate">
-                                                    @if ($fileLink->type == 'file')
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-base font-semibold text-[#2c3856] truncate">
+                                                        {{ $fileLink->name }}
+                                                    </p>
+                                                    <p class="text-sm text-gray-500 truncate">
                                                         {{ __('Archivo') }} ({{ strtoupper($fileExtension) }})
-                                                    @else
-                                                        {{ __('Enlace') }}
-                                                    @endif
-                                                </p>
-                                            </div>
-                                        </button>
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        @endif
                                     </div>
                                     <div class="border-t border-gray-100 pt-3 mt-3 space-y-1 text-sm text-gray-700">
                                         <p><span class="font-medium text-gray-600">{{ __('Creado Por:') }}</span> {{ $fileLink->user->name ?? 'N/A' }}</p>
@@ -840,17 +852,14 @@
             @keydown.escape.window="showMediaModal = false"
             x-data="{ fullscreen: false }">
             
-            <!-- Contenedor principal -->
             <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col relative"
                 :class="fullscreen && mediaModalData.type === 'pdf' ? '!max-w-none !rounded-none !max-h-none !h-screen !w-screen !m-0 fixed inset-0' : ''"
                 @click.stop>
                 
-                <!-- Header con título y botón de pantalla completa -->
                 <div class="flex justify-between items-center p-4 border-b border-gray-200"
                     :class="fullscreen && mediaModalData.type === 'pdf' ? 'bg-white/90 backdrop-blur-sm' : ''">
                     <h3 class="text-xl font-semibold text-[#2c3856]" x-text="mediaModalData.name"></h3>
                     
-                    <!-- Botón de pantalla completa (solo para PDF) -->
                     <template x-if="mediaModalData.type === 'pdf'">
                         <button @click="fullscreen = !fullscreen" 
                                 class="text-gray-600 hover:bg-gray-100 p-2 rounded-full transition-all"
@@ -865,7 +874,6 @@
                     </template>
                 </div>
 
-                <!-- Contenido del Modal -->
                 <div class="p-6 overflow-y-auto flex-1 flex flex-col items-center justify-center"
                     :class="fullscreen && mediaModalData.type === 'pdf' ? '!p-2' : ''">
                     <div class="w-full flex-1 flex items-center justify-center">
@@ -898,7 +906,6 @@
                     </div>
                 </div>
 
-                <!-- Botones de Acción (fijos en pantalla completa) -->
                 <div class="flex justify-end p-4 border-t border-gray-200"
                     :class="fullscreen && mediaModalData.type === 'pdf' ? 'bg-white/90 backdrop-blur-sm' : ''">
                     <template x-if="mediaModalData.type === 'other'">
