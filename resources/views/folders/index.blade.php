@@ -231,7 +231,7 @@
                                     </div>
                                         <span :class="{ 
                                                 'text-sm': tileSize === 'small', 
-                                                'text-base': tileSize === 'medium', 
+                                                'text-base': tileSize === 'medium',
                                                 'text-lg': tileSize === 'large' 
                                             }" 
                                             class="font-semibold text-[#2c3856] mb-1 w-full px-1 sm:px-2 break-words text-center">
@@ -333,7 +333,7 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                                                 </svg>
                                             @endif
-                                            <span :class="{ 'text-base': tileSize === 'small', 'text-base': tileSize === 'medium', 'text-base': tileSize === 'large' }" class="font-semibold text-[#2c3856] mb-1 truncate w-full px-1 sm:px-2">
+                                            <span :class="{ 'text-base': tileSize === 'small', 'text-base': tileSize === 'medium', 'text-base': tileSize === 'large' }" class="font-semibold text-[#2c3856] mb-1 break-words w-full px-1 sm:px-2">
                                                 {{ $fileLink->name }}
                                             </span>
                                             <span class="text-sm text-gray-500">{{ __('Archivo') }} ({{ strtoupper($fileExtension) }})</span>
@@ -516,7 +516,7 @@
                                                             <svg class="w-7 h-7 text-blue-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                                                             </svg>
-                                                            <span class="text-base font-medium text-[#2c3856] truncate group-hover:underline">{{ $fileLink->name }}</span>
+                                                            <span class="text-base font-medium text-[#2c3856] break-words group-hover:underline">{{ $fileLink->name }}</span>
                                                         </a>
                                                     @else
                                                         <button @click.prevent.stop="openMediaModal('{{ $fileLink->name }}', '{{ $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : 'link' }}', '{{ $fileUrl }}', '{{ route('files.download', $fileLink) }}')"
@@ -591,7 +591,7 @@
                                             </svg>
                                         </a>
                                         <div class="flex-1 min-w-0">
-                                            <p class="text-base font-semibold text-[#2c3856] truncate">
+                                            <p class="text-base font-semibold text-[#2c3856] break-words">
                                                 <a href="{{ route('folders.index', $folderItem) }}" class="hover:underline" onclick="event.stopPropagation()">
                                                     {{ $folderItem->name }}
                                                 </a>
@@ -650,7 +650,7 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                                                 </svg>
                                                 <div class="flex-1 min-w-0">
-                                                    <p class="text-base font-semibold text-[#2c3856] truncate group-hover:underline">
+                                                    <p class="text-base font-semibold text-[#2c3856] break-words group-hover:underline">
                                                         {{ $fileLink->name }}
                                                     </p>
                                                     <p class="text-sm text-gray-500 truncate">
@@ -679,7 +679,7 @@
                                                     </svg>
                                                 @endif
                                                 <div class="flex-1 min-w-0">
-                                                    <p class="text-base font-semibold text-[#2c3856] truncate">
+                                                    <p class="text-base font-semibold text-[#2c3856] break-words">
                                                         {{ $fileLink->name }}
                                                     </p>
                                                     <p class="text-sm text-gray-500 truncate">
