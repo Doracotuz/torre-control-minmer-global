@@ -214,7 +214,6 @@ class FolderController extends Controller
         ActivityLog::create([
             'user_id' => $user->id,
             'action' => 'Creó una carpeta',
-            'action_key' => 'created_folder',
             'item_type' => 'folder',
             'item_id' => $newFolder->id,
             'details' => ['name' => $newFolder->name, 'parent_id' => $newFolder->parent_id],
@@ -306,7 +305,6 @@ class FolderController extends Controller
         ActivityLog::create([
             'user_id' => $user->id,
             'action' => 'Editó una carpeta',
-            'action_key' => 'updated_folder',
             'item_type' => 'folder',
             'item_id' => $folder->id,
             'details' => ['old_name' => $folder->getOriginal('name'), 'new_name' => $folder->name],
@@ -343,7 +341,6 @@ class FolderController extends Controller
         ActivityLog::create([
             'user_id' => $user->id,
             'action' => 'Eliminó una carpeta',
-            'action_key' => 'deleted_folder',
             'item_type' => 'folder',
             'item_id' => $folder->id,
             'details' => ['name' => $folder->name],
@@ -480,7 +477,6 @@ class FolderController extends Controller
                         ActivityLog::create([
                             'user_id' => Auth::id(),
                             'action' => 'Subió un archivo',
-                            'action_key' => 'uploaded_file',
                             'item_type' => 'file_link',
                             'item_id' => $fileLink->id, // Now $fileLink is defined and has an ID
                             'details' => ['name' => $fileLink->name],
@@ -629,7 +625,6 @@ class FolderController extends Controller
                 ActivityLog::create([
                     'user_id' => Auth::id(),
                     'action' => 'Subió un archivo',
-                    'action_key' => 'uploaded_file',
                     'item_type' => 'file_link',
                     'item_id' => $fileLink->id,
                     'details' => ['name' => $fileLink->name],
@@ -681,7 +676,6 @@ class FolderController extends Controller
                     ActivityLog::create([
                         'user_id' => $user->id,
                         'action' => 'Eliminación masiva de carpeta',
-                        'action_key' => 'deleted_folder_bulk',
                         'item_type' => 'folder',
                         'item_id' => $folder->id,
                         'details' => ['name' => $folder->name],
@@ -712,7 +706,6 @@ class FolderController extends Controller
                     ActivityLog::create([
                         'user_id' => $user->id,
                         'action' => 'Eliminación masiva de archivo/enlace',
-                        'action_key' => 'deleted_file_link_bulk',
                         'item_type' => 'file_link',
                         'item_id' => $fileLink->id,
                         'details' => ['name' => $fileLink->name],
@@ -891,7 +884,6 @@ class FolderController extends Controller
                 ActivityLog::create([
                     'user_id' => $user->id,
                     'action' => 'Movió una carpeta',
-                    'action_key' => 'moved_folder_bulk',
                     'item_type' => 'folder',
                     'item_id' => $folderToMove->id,
                     'details' => ['name' => $folderToMove->name, 'target_folder_id' => $targetFolderId],
@@ -941,7 +933,6 @@ class FolderController extends Controller
                 ActivityLog::create([
                     'user_id' => $user->id,
                     'action' => 'Movió un archivo/enlace',
-                    'action_key' => 'moved_file_link_bulk',
                     'item_type' => 'file_link',
                     'item_id' => $fileLinkToMove->id,
                     'details' => ['name' => $fileLinkToMove->name, 'target_folder_id' => $targetFolderId],

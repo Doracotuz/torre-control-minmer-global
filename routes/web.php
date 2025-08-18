@@ -171,8 +171,6 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
     Route::get('/statistics/export-csv', [StatisticsController::class, 'exportCsv'])->name('statistics.export-csv');
     Route::get('/statistics/charts', [StatisticsController::class, 'charts'])->name('statistics.charts');
-    Route::get('/notification-settings', [App\Http\Controllers\Admin\NotificationSettingsController::class, 'index'])->name('notifications.settings.index');
-    Route::post('/notification-settings', [App\Http\Controllers\Admin\NotificationSettingsController::class, 'store'])->name('notifications.settings.store');    
 
 
 

@@ -87,9 +87,6 @@
                             <a href="{{ route('admin.statistics.export-csv', request()->query()) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:outline-none focus:border-green-700 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
                                 Exportar CSV
                             </a>
-                            <a href="{{ route('admin.notifications.settings.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
-                                Gestionar Notificaciones
-                            </a>                            
                         </div>
                     </div>
                     

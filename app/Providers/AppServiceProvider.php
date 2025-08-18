@@ -4,8 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
-use App\Models\ActivityLog;
-use App\Observers\ActivityLogObserver;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -24,8 +23,6 @@ class AppServiceProvider extends ServiceProvider
         if (app()->isProduction()) {
             URL::forceScheme('https');
         }
-
-        ActivityLog::observe(ActivityLogObserver::class);
     }
 
     protected $listen = [
@@ -33,6 +30,5 @@ class AppServiceProvider extends ServiceProvider
             \App\Listeners\LogSuccessfulLogin::class,
         ],
     ];
-    
 
 }

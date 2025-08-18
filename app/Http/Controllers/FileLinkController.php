@@ -127,7 +127,6 @@ class FileLinkController extends Controller
         ActivityLog::create([
             'user_id' => $user->id,
             'action' => 'Editó un archivo/enlace',
-            'action_key' => 'updated_file_link',
             'item_type' => 'file_link',
             'item_id' => $fileLink->id,
             'details' => ['old_name' => $fileLink->getOriginal('name'), 'new_name' => $fileLink->name],
@@ -170,7 +169,6 @@ class FileLinkController extends Controller
         ActivityLog::create([
             'user_id' => $user->id,
             'action' => 'Eliminó un archivo/enlace',
-            'action_key' => 'deleted_file_link',
             'item_type' => 'file_link',
             'item_id' => $fileLink->id,
             'details' => ['name' => $fileLink->name],
@@ -229,7 +227,6 @@ class FileLinkController extends Controller
         ActivityLog::create([
             'user_id' => $user->id,
             'action' => 'Descargó un archivo',
-            'action_key' => 'downloaded_file',
             'item_type' => 'file_link',
             'item_id' => $fileLink->id,
             'details' => ['name' => $fileLink->name],

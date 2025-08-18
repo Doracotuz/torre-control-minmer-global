@@ -80,12 +80,10 @@
                         {{ __('Volver a Gestión de Miembros') }}
                     </a>
                 @endif
-                @unless(in_array(Auth::user()->id, [4, 24, 25, 26, 27]))
                 <div class="flex items-center">
                     <input type="checkbox" id="toggleAreaNodes" class="form-checkbox h-5 w-5 text-[#2c3856] rounded focus:ring-[#ff9c00]">
                     <label for="toggleAreaNodes" class="ml-2 text-gray-700 select-none">{{ __('Mostrar Nodos de Área') }}</label>
                 </div>
-                @endunless
             </div>
 
             <div id="main-chart-wrapper" class="w-full flex-1">
@@ -193,7 +191,7 @@
 
     // Obtener el estado inicial de "mostrar nodos de área" de la URL
     const urlParams = new URLSearchParams(window.location.search);
-    let showAreaNodesInitially = urlParams.get('show_areas') === 'true';
+    let showAreaNodesInitially = !(urlParams.get('show_areas') === 'false');
 
     // Inicialización de componentes de Alpine.js para los modales
     document.addEventListener('alpine:init', () => {
