@@ -3,23 +3,47 @@
 namespace App\Listeners;
 
 use Illuminate\Auth\Events\Login;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use App\Models\ActivityLog;
+use Illuminate\Http\Request;
 
 class LogSuccessfulLogin
 {
-    public function __construct()
+    /**
+     * La petición HTTP.
+     * @var \Illuminate\Http\Request
+     */
+    protected $request;
+
+    /**
+     * Crea el event listener.
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
+    public function __construct(Request $request)
     {
-        //
+        $this->request = $request;
     }
 
+    /**
+     * Handle the event.
+     *
+     * @param  Login  $event
+     * @return void
+     */
     public function handle(Login $event)
     {
+
         ActivityLog::create([
             'user_id' => $event->user->id,
-            'action' => 'Inició sesión',
-            'details' => json_encode(['email' => $event->user->email]),
+            'action' => 'Inicio de Sesión',
+            'action_key' => 'login',
+
+            // El campo 'details' ahora incluye toda la información (la anterior y la nueva).
+            'details' => [
+                'email' => $event->user->email, // Mantenemos el email para compatibilidad
+                // 'ip_address' => $this->request->ip(),
+                // 'user_agent' => $this->request->header('User-Agent'),
+            ],
         ]);
     }
 }
