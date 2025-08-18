@@ -5,21 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ActivityLog extends Model
+class NotificationSetting extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'event_name',
         'user_id',
-        'action',
-        'action_key',
-        'item_type',
-        'item_id',
-        'details',
-    ];
-
-    protected $casts = [
-        'details' => 'array',
     ];
 
     public function user()
