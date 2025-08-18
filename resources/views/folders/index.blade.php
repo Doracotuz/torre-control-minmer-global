@@ -267,6 +267,9 @@
                                 $isAudio = in_array(strtolower($fileExtension), ['mp3', 'wav', 'ogg']);
                                 $isVideo = in_array(strtolower($fileExtension), ['mp4', 'webm', 'mov']);
                                 $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
+                                if ($isPdf) {
+                                    $fileUrl .= '#toolbar=0';
+                                }                                
                             @endphp
                             <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
                                         hover:bg-gray-50 transform hover:scale-105 relative"
@@ -463,6 +466,9 @@
                                             $isAudio = in_array(strtolower($fileExtension), ['mp3', 'wav', 'ogg']);
                                             $isVideo = in_array(strtolower($fileExtension), ['mp4', 'webm', 'mov']);
                                             $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
+                                            if ($isPdf) {
+                                                $fileUrl .= '#toolbar=0';
+                                            }                                            
                                         @endphp
                                         <tr class="hover:bg-gray-100 transition-colors duration-150"
                                             draggable="true"
@@ -600,6 +606,9 @@
                                     $isAudio = in_array(strtolower($fileExtension), ['mp3', 'wav', 'ogg']);
                                     $isVideo = in_array(strtolower($fileExtension), ['mp4', 'webm', 'mov']);
                                     $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
+                                    if ($isPdf) {
+                                        $fileUrl .= '#toolbar=0';
+                                    }
                                 @endphp
                                 <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 p-4 relative"
                                      draggable="true"
@@ -865,7 +874,7 @@
                         </template>
                         
                         <template x-if="mediaModalData.type === 'video'">
-                            <video :src="mediaModalData.url" controls class="max-w-full max-h-[70vh] rounded-lg shadow-lg"></video>
+                            <video :src="mediaModalData.url" controls controlslist="nodownload" class="max-w-full max-h-[70vh] rounded-lg shadow-lg"></video>
                         </template>
                         
                         <template x-if="mediaModalData.type === 'pdf'">
