@@ -14,7 +14,7 @@
                 
                 <div class="mt-8">
                     @if($rfqSubfolders->isNotEmpty())
-                        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
                             @foreach($rfqSubfolders as $subfolder)
                                 <a href="{{ route('folders.index', ['folder' => $subfolder->id]) }}" class="group bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-2">
                                     <div class="bg-[#DFE5F5] p-6 rounded-full transition-colors duration-300 group-hover:bg-[#ff9c00]">
