@@ -874,7 +874,7 @@
                         </template>
                         
                         <template x-if="mediaModalData.type === 'video'">
-                            <video :src="mediaModalData.url" controls controlslist="nodownload" class="max-w-full max-h-[70vh] rounded-lg shadow-lg"></video>
+                            <video :src="mediaModalData.url" controls class="max-w-full max-h-[70vh] rounded-lg shadow-lg"></video>
                         </template>
                         
                         <template x-if="mediaModalData.type === 'pdf'">
@@ -932,6 +932,9 @@
                     this.showPropertiesModal = true;
                     this.propertiesData = itemData;
                 },
+
+                dropTargetFolderId: null,
+                highlightMainDropArea: false,                
 
                 showMediaModal: false,
                 mediaModalData: {
