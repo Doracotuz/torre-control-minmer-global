@@ -5,22 +5,6 @@
                 <span class="text-2xl text[#2C3856]">
                     Bienvenido, {{ Auth::user()->name }}
                 </span>
-                <!-- <h2 class="text-base font-semibold text-gray-700">
-                    @if ($currentFolder)
-                        @if (!Auth::user()->is_client)
-                        <a href="{{ route('folders.index') }}" class="text-[#2C3856] hover:text-blue-800">Dashboard</a>
-                        @else
-                        <a href="{{ route('tablero.index') }}" class="text-[#2C3856] hover:text-blue-800">Dashboard</a>
-                        @endif
-                        @foreach ($breadcrumbs as $breadcrumb)
-                            <span class="text-gray-500">/</span>
-                            <a href="{{ route('folders.index', ['folder' => $breadcrumb->id]) }}" class="text-{#2C3856} hover:text-blue-800">{{ $breadcrumb->name }}</a>
-                        @endforeach
-                        <span class="text-gray-500">/</span>
-                        <span class="text-[#FF9C00]">{{ $currentFolder->name }}</span>
-                    @endif
-                </h2> -->
-
             </div>
                 <div class="flex items-center space-x-4">
                     @if ($currentFolder && !in_array(Auth::id(), ['4', '24', '25', '26', '27']))
@@ -33,7 +17,7 @@
         </div>
     </x-slot>
 
-        <script>
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             @if (session('success'))
                 sessionStorage.setItem('flash_success', '{{ session('success') }}');
@@ -61,7 +45,7 @@
                     <span class="text-gray-500">/</span>
                     <span class="text-[#FF9C00]">{{ $currentFolder->name }}</span>
                 @endif
-            </h2>            
+            </h2>
 
             <div id="flash-success"
                  class="fixed top-4 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]"
@@ -97,32 +81,6 @@
                  @dragend="handleDragEnd($event)"
                  :class="{ 'border-blue-400 border-dashed bg-blue-100': highlightMainDropArea }"
             >
-                <!-- <nav class="text-sm font-medium text-gray-500 mb-4 sm:mb-6">
-                    <ol class="list-none p-0 inline-flex items-center flex-wrap">
-                        <li class="flex items-center">
-                            <a href="{{ route('folders.index') }}" class="text-[#2c3856] hover:text-[#ff9c00] transition-colors duration-200 font-semibold">{{ __('Raíz') }}</a>
-                            <svg class="fill-current w-3 h-3 mx-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 67.254c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569 9.373 33.941 0L285.476 239.029c9.373 9.372 9.373 24.568 0 33.942z"/></svg>
-                        </li>
-                        @if ($currentFolder)
-                            @php
-                                $path = [];
-                                $tempFolder = $currentFolder;
-                                while ($tempFolder) {
-                                    array_unshift($path, $tempFolder);
-                                    $tempFolder = $tempFolder->parent;
-                                }
-                            @endphp
-                            @foreach ($path as $pFolder)
-                                <li class="flex items-center">
-                                    <a href="{{ route('folders.index', $pFolder) }}" class="text-[#2c3856] hover:text-[#ff9c00] transition-colors duration-200 font-semibold">{{ $pFolder->name }}</a>
-                                    @if (!$loop->last)
-                                        <svg class="fill-current w-3 h-3 mx-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 67.254c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569 9.373 33.941 0L285.476 239.029c9.373 9.372 9.373 24.568 0 33.942z"/></svg>
-                                    @endif
-                                </li>
-                            @endforeach
-                        @endif
-                    </ol>
-                </nav> -->
 
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 space-y-4 sm:space-y-0">
                     <h3 class="text-xl font-semibold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">{{ __('Contenido Actual') }}</h3>
@@ -262,11 +220,11 @@
                                                 'w-8 h-8': tileSize === 'small',
                                                 'w-12 h-12': tileSize === 'medium',
                                                 'w-16 h-16': tileSize === 'large'
-                                            }" 
-                                            class="text-[Black] group-hover:text-orange-500 transition-colors duration-200" 
-                                            fill="none" 
-                                            stroke="currentColor" 
-                                            viewBox="0 0 24 24" 
+                                            }"
+                                            class="text-[Black] group-hover:text-orange-500 transition-colors duration-200"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
                                             xmlns="http://www.w3.org/2000/svg">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
                                         </svg>
@@ -274,10 +232,8 @@
                                     <span :class="{ 'text-base': tileSize === 'small', 'text-lg': tileSize === 'medium', 'text-xl': tileSize === 'large' }" class="font-semibold text-[#2c3856] mb-1 truncate w-full px-1 sm:px-2">
                                         {{ $folderItem->name }}
                                     </span>
-                                    <!-- <span class="text-sm text-gray-500">Carpeta</span> -->
                                     <span class="text-xs text-gray-400 mt-1">{{ $folderItem->created_at->format('d M Y') }}</span>
-                                    {{-- Contador de elementos en carpeta --}}
-                                    </a> {{-- FIN DEL <a> --}}
+                                    </a>
 
                                 <button @click.stop="showDetails = !showDetails" class="mt-2 text-xs text-gray-500 hover:text-gray-700 focus:outline-none px-2 py-1 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors duration-150">
                                     <span x-text="showDetails ? '{{ __('Ocultar Detalles') }}' : '{{ __('Ver Detalles') }}'"></span>
@@ -290,7 +246,6 @@
                                     <p><span class="font-semibold">{{ __('Elementos Totales:') }}</span> {{ $folderItem->items_count ?? 0 }}</p>
                                 </div>
                                 @if(!Auth::user()->is_client)
-                                {{-- Acciones (botones con estilo mejorado y responsivo) --}}
                                 <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full justify-center">
                                     <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center justify-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-wider hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                         {{ __('Editar') }}
@@ -309,13 +264,14 @@
                                 $fileExtension = $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : null;
                                 $isImage = in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
                                 $isPdf = strtolower($fileExtension) == 'pdf';
-                                // CAMBIO AQUÍ: Usar Storage::disk('s3')->url() para generar la URL para previsualización
+                                $isAudio = in_array(strtolower($fileExtension), ['mp3', 'wav', 'ogg']);
+                                $isVideo = in_array(strtolower($fileExtension), ['mp4', 'webm', 'mov']);
                                 $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
                             @endphp
                             <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
                                         hover:bg-gray-50 transform hover:scale-105 relative"
-                                 draggable="true" {{-- ¡AÑADIDO PARA HACER EL ARCHIVO ARRASTRABLE! --}}
-                                 x-on:dragstart="handleDragStart($event, {{ $fileLink->id }}, 'file_link')" {{-- ¡AÑADIDO Y MODIFICADO! --}}
+                                 draggable="true"
+                                 x-on:dragstart="handleDragStart($event, {{ $fileLink->id }}, 'file_link')"
                                  x-on:contextmenu.prevent="openPropertiesModal({
                                      name: '{{ $fileLink->name }}',
                                      type: '{{ $fileLink->type == 'file' ? 'Archivo (' . strtoupper($fileExtension) . ')' : 'Enlace' }}',
@@ -334,12 +290,8 @@
                                 >
                                 @endif
 
-                                <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
-                                   @if ($fileLink->type == 'file' && !$isImage && !$isPdf) download="{{ $fileLink->name }}" @endif
-                                   target="_blank"
-                                   class="flex flex-col items-center justify-center w-full"
-                                   onclick="event.stopPropagation()"
-                                >
+                                <button @click.prevent.stop="openMediaModal('{{ $fileLink->name }}', '{{ $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : 'link' }}', '{{ $fileUrl }}', '{{ route('files.download', $fileLink) }}')"
+                                    class="flex flex-col items-center justify-center w-full">
                                     @if ($fileLink->type == 'file')
                                         @if ($isImage)
                                             <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-green-600 mb-2 sm:mb-3 group-hover:text-green-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -348,6 +300,10 @@
                                         @elseif ($isPdf)
                                             <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-red-600 mb-2 sm:mb-3 group-hover:text-red-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                        @elseif ($isVideo || $isAudio)
+                                            <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-indigo-600 mb-2 sm:mb-3 group-hover:text-indigo-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.196l-3.321-2.484a.5.5 0 00-.731.428v4.981a.5.5 0 00.73.429l3.322-2.484a.5.5 0 000-.858zM4 6v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2z"></path>
                                             </svg>
                                         @else
                                             <svg :class="{ 'w-12 h-12': tileSize === 'small', 'w-16 h-16': tileSize === 'medium', 'w-20 h-20': tileSize === 'large' }" class="text-gray-600 mb-2 sm:mb-3 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -367,8 +323,8 @@
                                         </span>
                                         <span class="text-sm text-gray-500">{{ __('Enlace') }}</span>
                                     @endif
-                                    <span class="text-xxs text-gray-400 mt-1" :class="{'text-xxs': tileSize === 'small', 'text-xs': tileSize === 'medium', 'text-sm': tileSize === 'large'}">{{ $fileLink->created_at->format('d M Y') }}</span>
-                                </a>
+                                </button>
+                                <span class="text-xxs text-gray-400 mt-1" :class="{'text-xxs': tileSize === 'small', 'text-xs': tileSize === 'medium', 'text-sm': tileSize === 'large'}">{{ $fileLink->created_at->format('d M Y') }}</span>
                                 <button @click.stop="showDetails = !showDetails" class="mt-2 text-xxs sm:text-xs text-gray-500 hover:text-gray-700 focus:outline-none px-2 py-1 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors duration-150">
                                     <span x-text="showDetails ? '{{ __('Ocultar Detalles') }}' : '{{ __('Ver Detalles') }}'"></span>
                                 </button>
@@ -394,9 +350,7 @@
                         @endforeach
                     </div>
 
-                    {{-- VISTA DE TABLA/FILAS --}}
                     <div x-show="!isTileView">
-                        {{-- Tabla para pantallas medianas y grandes --}}
                         <div class="overflow-x-auto hidden sm:block">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-[#F0F3FA]">
@@ -429,7 +383,7 @@
                                     @foreach ($folders as $folderItem)
                                         <tr class="hover:bg-gray-100 transition-colors duration-150"
                                             draggable="true"
-                                            x-on:dragstart="handleDragStart($event, {{ $folderItem->id }}, 'folder')" {{-- ¡MODIFICADO! --}}
+                                            x-on:dragstart="handleDragStart($event, {{ $folderItem->id }}, 'folder')"
                                             x-on:dragover.prevent="handleDragOver($event, {{ $folderItem->id }})"
                                             x-on:dragleave="handleDragLeave($event)"
                                             x-on:drop.prevent.stop="handleDrop($event, {{ $folderItem->id }})"
@@ -464,11 +418,11 @@
                                                                         'w-8 h-8': tileSize === 'small',
                                                                         'w-12 h-12': tileSize === 'medium',
                                                                         'w-16 h-16': tileSize === 'large'
-                                                                    }" 
-                                                                    class="text-[Black] group-hover:text-orange-500 transition-colors duration-200" 
-                                                                    fill="none" 
-                                                                    stroke="currentColor" 
-                                                                    viewBox="0 0 24 24" 
+                                                                    }"
+                                                                    class="text-[Black] group-hover:text-orange-500 transition-colors duration-200"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    viewBox="0 0 24 24"
                                                                     xmlns="http://www.w3.org/2000/svg">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
                                                                 </svg>
@@ -506,12 +460,13 @@
                                             $fileExtension = $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : null;
                                             $isImage = in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
                                             $isPdf = strtolower($fileExtension) == 'pdf';
-                                            // CAMBIO AQUÍ: Usar Storage::disk('s3')->url() para generar la URL para previsualización
+                                            $isAudio = in_array(strtolower($fileExtension), ['mp3', 'wav', 'ogg']);
+                                            $isVideo = in_array(strtolower($fileExtension), ['mp4', 'webm', 'mov']);
                                             $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
                                         @endphp
                                         <tr class="hover:bg-gray-100 transition-colors duration-150"
-                                            draggable="true" 
-                                            x-on:dragstart="handleDragStart($event, {{ $fileLink->id }}, 'file_link')" {{-- ¡AÑADIDO Y MODIFICADO! --}}
+                                            draggable="true"
+                                            x-on:dragstart="handleDragStart($event, {{ $fileLink->id }}, 'file_link')"
                                             x-on:contextmenu.prevent="openPropertiesModal({
                                                 name: '{{ $fileLink->name }}',
                                                 type: '{{ $fileLink->type == 'file' ? 'Archivo (' . strtoupper($fileExtension) . ')' : 'Enlace' }}',
@@ -530,12 +485,8 @@
                                                         :checked="isSelected({{ $fileLink->id }}, 'file_link')"
                                                     >
                                                     @endif
-                                                    
-                                                    <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
-                                                       @if ($fileLink->type == 'file' && !$isImage && !$isPdf) download="{{ $fileLink->name }}" @endif
-                                                       target="_blank"
-                                                       class="flex items-center cursor-pointer"
-                                                       onclick="event.stopPropagation()"
+                                                    <button @click.prevent.stop="openMediaModal('{{ $fileLink->name }}', '{{ $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : 'link' }}', '{{ $fileUrl }}', '{{ route('files.download', $fileLink) }}')"
+                                                            class="flex items-center cursor-pointer"
                                                     >
                                                         @if ($fileLink->type == 'file')
                                                             @if ($isImage)
@@ -545,6 +496,10 @@
                                                             @elseif ($isPdf)
                                                                 <svg class="w-7 h-7 text-red-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                                </svg>
+                                                            @elseif ($isVideo || $isAudio)
+                                                                <svg class="w-7 h-7 text-indigo-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.196l-3.321-2.484a.5.5 0 00-.731.428v4.981a.5.5 0 00.73.429l3.322-2.484a.5.5 0 000-.858zM4 6v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2z"></path>
                                                                 </svg>
                                                             @else
                                                                 <svg class="w-7 h-7 text-gray-600 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -558,7 +513,7 @@
                                                             </svg>
                                                             <span class="text-lg font-medium text-[#2c3856] truncate">{{ $fileLink->name }}</span>
                                                         @endif
-                                                    </a>
+                                                    </button>
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -591,11 +546,9 @@
                             </table>
                         </div>
 
-                        {{-- Lista de tarjetas para pantallas pequeñas (copia de la tabla, pero con div's) --}}
                         <div class="sm:hidden space-y-4">
                             @foreach ($folders as $folderItem)
                                 <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 p-4 relative">
-                                    {{-- Checkbox para selección múltiple --}}
                                     @if(!Auth::user()->is_client)
                                     <input type="checkbox"
                                         class="absolute top-2 left-2 rounded border-gray-300 text-[black] shadow-sm focus:ring-[black] z-10"
@@ -644,14 +597,14 @@
                                     $fileExtension = $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : null;
                                     $isImage = in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
                                     $isPdf = strtolower($fileExtension) == 'pdf';
-                                    // CAMBIO AQUÍ: Usar Storage::disk('s3')->url() para generar la URL para previsualización
+                                    $isAudio = in_array(strtolower($fileExtension), ['mp3', 'wav', 'ogg']);
+                                    $isVideo = in_array(strtolower($fileExtension), ['mp4', 'webm', 'mov']);
                                     $fileUrl = $fileLink->type == 'file' ? \Illuminate\Support\Facades\Storage::disk('s3')->url($fileLink->path) : $fileLink->url;
                                 @endphp
                                 <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 p-4 relative"
-                                     draggable="true" {{--  --}}
-                                     x-on:dragstart="handleDragStart($event, {{ $fileLink->id }}, 'file_link')" {{--  --}}
+                                     draggable="true"
+                                     x-on:dragstart="handleDragStart($event, {{ $fileLink->id }}, 'file_link')"
                                 >
-                                    {{-- Checkbox para selección múltiple --}}
                                     @if(!Auth::user()->is_client)
                                     <input type="checkbox"
                                         class="absolute top-2 left-2 rounded border-gray-300 text-[black] shadow-sm focus:ring-[black] z-10"
@@ -660,12 +613,8 @@
                                     >
                                     @endif
                                     <div class="flex items-center space-x-3 mb-2">
-                                        
-                                        <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
-                                           @if ($fileLink->type == 'file' && !$isImage && !$isPdf) download="{{ $fileLink->name }}" @endif
-                                           target="_blank"
-                                           class="flex items-center flex-shrink-0"
-                                           onclick="event.stopPropagation()">
+                                        <button @click.prevent.stop="openMediaModal('{{ $fileLink->name }}', '{{ $fileLink->type == 'file' ? pathinfo($fileLink->path, PATHINFO_EXTENSION) : 'link' }}', '{{ $fileUrl }}', '{{ route('files.download', $fileLink) }}')"
+                                                class="flex items-center cursor-pointer">
                                             @if ($fileLink->type == 'file')
                                                 @if ($isImage)
                                                     <svg class="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -674,6 +623,10 @@
                                                 @elseif ($isPdf)
                                                     <svg class="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                    </svg>
+                                                @elseif ($isVideo || $isAudio)
+                                                    <svg class="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.196l-3.321-2.484a.5.5 0 00-.731.428v4.981a.5.5 0 00.73.429l3.322-2.484a.5.5 0 000-.858zM4 6v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2z"></path>
                                                     </svg>
                                                 @else
                                                     <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -685,23 +638,19 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                                                 </svg>
                                             @endif
-                                        </a>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-base font-semibold text-[#2c3856] truncate">
-                                                <a href="@if ($fileLink->type == 'file') {{ $isImage || $isPdf ? $fileUrl : route('files.download', $fileLink) }} @else {{ $fileUrl }} @endif"
-                                                   @if ($fileLink->type == 'file' && !$isImage && !$isPdf) download="{{ $fileLink->name }}" @endif
-                                                   target="_blank" class="hover:underline" onclick="event.stopPropagation()">
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-base font-semibold text-[#2c3856] truncate">
                                                     {{ $fileLink->name }}
-                                                </a>
-                                            </p>
-                                            <p class="text-sm text-gray-500 truncate">
-                                                @if ($fileLink->type == 'file')
-                                                    {{ __('Archivo') }} ({{ strtoupper($fileExtension) }})
-                                                @else
-                                                    {{ __('Enlace') }}
-                                                @endif
-                                            </p>
-                                        </div>
+                                                </p>
+                                                <p class="text-sm text-gray-500 truncate">
+                                                    @if ($fileLink->type == 'file')
+                                                        {{ __('Archivo') }} ({{ strtoupper($fileExtension) }})
+                                                    @else
+                                                        {{ __('Enlace') }}
+                                                    @endif
+                                                </p>
+                                            </div>
+                                        </button>
                                     </div>
                                     <div class="border-t border-gray-100 pt-3 mt-3 space-y-1 text-sm text-gray-700">
                                         <p><span class="font-medium text-gray-600">{{ __('Creado Por:') }}</span> {{ $fileLink->user->name ?? 'N/A' }}</p>
@@ -788,7 +737,7 @@
                 </svg>
                 <p class="text-[#2c3856] font-semibold">Cargando archivos...</p>
             </div>
-        </div>            
+        </div>
         {{-- FIN DEL MODAL --}}
 
         {{-- INICIO DEL MODAL DE MOVER ELEMENTOS --}}
@@ -867,6 +816,99 @@
             </div>
         </div>
         {{-- FIN DEL MODAL --}}
+
+        {{-- MODAL DE PREVISUALIZACIÓN MULTIMEDIA --}}
+        <div x-show="showMediaModal"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 scale-90"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-90"
+            class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50"
+            style="display: none;"
+            @click.away="showMediaModal = false"
+            @keydown.escape.window="showMediaModal = false"
+            x-data="{ fullscreen: false }">
+            
+            <!-- Contenedor principal -->
+            <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col relative"
+                :class="fullscreen && mediaModalData.type === 'pdf' ? '!max-w-none !rounded-none !max-h-none !h-screen !w-screen !m-0 fixed inset-0' : ''"
+                @click.stop>
+                
+                <!-- Header con título y botón de pantalla completa -->
+                <div class="flex justify-between items-center p-4 border-b border-gray-200"
+                    :class="fullscreen && mediaModalData.type === 'pdf' ? 'bg-white/90 backdrop-blur-sm' : ''">
+                    <h3 class="text-xl font-semibold text-[#2c3856]" x-text="mediaModalData.name"></h3>
+                    
+                    <!-- Botón de pantalla completa (solo para PDF) -->
+                    <template x-if="mediaModalData.type === 'pdf'">
+                        <button @click="fullscreen = !fullscreen" 
+                                class="text-gray-600 hover:bg-gray-100 p-2 rounded-full transition-all"
+                                :title="fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'">
+                            <svg x-show="!fullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                            </svg>
+                            <svg x-show="fullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Contenido del Modal -->
+                <div class="p-6 overflow-y-auto flex-1 flex flex-col items-center justify-center"
+                    :class="fullscreen && mediaModalData.type === 'pdf' ? '!p-2' : ''">
+                    <div class="w-full flex-1 flex items-center justify-center">
+                        <template x-if="mediaModalData.type === 'image'">
+                            <img :src="mediaModalData.url" alt="Vista previa" class="max-w-full max-h-[70vh] rounded-lg shadow-lg object-contain">
+                        </template>
+                        
+                        <template x-if="mediaModalData.type === 'video'">
+                            <video :src="mediaModalData.url" controls class="max-w-full max-h-[70vh] rounded-lg shadow-lg"></video>
+                        </template>
+                        
+                        <template x-if="mediaModalData.type === 'pdf'">
+                            <iframe :src="mediaModalData.url" 
+                                    class="w-full rounded-lg border-2 border-gray-300"
+                                    :class="fullscreen ? '!h-[calc(100vh-10rem)] !border-0 !rounded-none' : 'h-[70vh]'"></iframe>
+                        </template>
+                        
+                        <template x-if="mediaModalData.type === 'audio'">
+                            <audio :src="mediaModalData.url" controls class="w-full max-w-sm"></audio>
+                        </template>
+                        
+                        <template x-if="mediaModalData.type === 'other'">
+                            <div class="text-center p-8">
+                                <svg class="w-24 h-24 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                <p class="text-gray-600 font-semibold text-lg">No se puede previsualizar este archivo</p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción (fijos en pantalla completa) -->
+                <div class="flex justify-end p-4 border-t border-gray-200"
+                    :class="fullscreen && mediaModalData.type === 'pdf' ? 'bg-white/90 backdrop-blur-sm' : ''">
+                    <template x-if="mediaModalData.type === 'other'">
+                        <a :href="mediaModalData.downloadUrl" :download="mediaModalData.name"
+                        class="inline-flex items-center px-4 py-2 bg-[#FF9C00] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-orange-600 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            Descargar
+                        </a>
+                    </template>
+                    <button @click="showMediaModal = false; fullscreen = false"
+                    class="ml-3 inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-full font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 shadow-md">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+        {{-- FIN DEL MODAL DE PREVISUALIZACIÓN --}}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.8/dist/axios.min.js"></script>
@@ -882,41 +924,32 @@
                     this.propertiesData = itemData;
                 },
 
-                // --- Lógica de Drag and Drop Unificada ---
-                draggingItemId: null, // Ahora guarda el ID del elemento (carpeta o archivo)
-                draggingItemType: null, // Nuevo: 'folder' o 'file_link'
-                dropTargetFolderId: null,
-                isDraggingFile: false,
-                highlightMainDropArea: false,
+                showMediaModal: false,
+                mediaModalData: {
+                    name: '',
+                    type: '',
+                    url: '',
+                    downloadUrl: ''
+                },
 
-                handleDragStart(event, itemId, itemType) { // Recibe el tipo
-                    console.log('DragStart:', itemId, itemType);
+                handleDragStart(event, itemId, itemType) {
                     this.draggingItemId = itemId;
                     this.draggingItemType = itemType;
-
-                    // Almacena un objeto JSON en dataTransfer para incluir el ID y el tipo
                     event.dataTransfer.setData('text/plain', JSON.stringify({ id: itemId, type: itemType }));
                     event.dataTransfer.effectAllowed = 'move';
                 },
 
                 handleDragOver(event, targetFolderId) {
                     event.preventDefault();
-                    // Identifica si lo que se arrastra son archivos externos (desde el sistema operativo)
                     const isFileDrag = event.dataTransfer.types.includes('Files');
-                    // Identifica si lo que se arrastra es un elemento interno (carpeta o archivo)
                     const isInternalItemDrag = this.draggingItemId !== null;
 
                     if (isFileDrag || isInternalItemDrag) {
-                        this.dropTargetFolderId = targetFolderId; // La carpeta sobre la que se suelta
-                        this.isDraggingFile = isFileDrag; // Sigue siendo útil para resaltar
-
-                        // Resalta la zona principal de soltar si se arrastra un archivo externo o si es la carpeta actual
+                        this.dropTargetFolderId = targetFolderId;
+                        this.isDraggingFile = isFileDrag;
                         this.highlightMainDropArea = isFileDrag && (targetFolderId === null || targetFolderId === {{ $currentFolder ? $currentFolder->id : 'null' }});
-
-                        // Determina el efecto visual
                         event.dataTransfer.dropEffect = isFileDrag ? 'copy' : 'move';
                     } else {
-                        // Si no es un archivo externo ni un elemento interno válido, no permitir el drop
                         event.dataTransfer.dropEffect = 'none';
                         this.dropTargetFolderId = null;
                         this.isDraggingFile = false;
@@ -934,9 +967,6 @@
                 },
 
                 handleDragLeave(event, targetFolderId = null) {
-                    // Solo resetear si el puntero sale completamente del área de drop o del contenedor principal
-                    // event.relatedTarget es el elemento al que el puntero se mueve
-                    // event.currentTarget es el elemento que recibió el dragleave
                     if (!event.relatedTarget || !event.currentTarget.contains(event.relatedTarget)) {
                         this.dropTargetFolderId = null;
                         this.isDraggingFile = false;
@@ -954,11 +984,10 @@
 
                 handleDrop(event, targetFolderId) {
                     event.preventDefault();
-                    const files = event.dataTransfer.files; // Archivos externos
-                    const draggedData = event.dataTransfer.getData('text/plain'); // Datos del arrastre interno
+                    const files = event.dataTransfer.files;
+                    const draggedData = event.dataTransfer.getData('text/plain');
 
                     let draggedItem = null;
-                    // Agrega la verificación para asegurarte de que draggedData no esté vacío
                     if (draggedData) {
                         try {
                             draggedItem = JSON.parse(draggedData);
@@ -967,19 +996,15 @@
                         }
                     }
 
-                    // Resetear el estado de drag
                     this.dropTargetFolderId = null;
                     this.draggingItemId = null;
                     this.draggingItemType = null;
                     this.isDraggingFile = false;
                     this.highlightMainDropArea = false;
 
-                    // Lógica para SOLTAR ARCHIVOS EXTERNOS (subida)
                     if (files.length > 0) {
                         document.getElementById('loading-overlay').classList.remove('hidden');
                         const actualTargetFolderId = targetFolderId === null ? ({{ $currentFolder ? $currentFolder->id : 'null' }}) : targetFolderId;
-                        console.log('Drop: Files detected. Target folder ID:', actualTargetFolderId);
-
                         const formData = new FormData();
                         formData.append('folder_id', actualTargetFolderId);
                         for (let i = 0; i < files.length; i++) {
@@ -1010,12 +1035,7 @@
                         });
 
                     }
-                    // Lógica para SOLTAR ELEMENTOS INTERNOS (mover)
-                    // Se elimina la verificación 'draggedItem && draggedItem.id && draggedItem.type'
-                    // porque ya la hicimos en el if superior.
                     else if (draggedItem && draggedItem.id && draggedItem.id != targetFolderId) {
-                        console.log('Drop: Internal item detected. Dragged ID:', draggedItem.id, 'Type:', draggedItem.type, 'Target ID:', targetFolderId);
-
                         let requestBody = {
                             target_folder_id: targetFolderId
                         };
@@ -1028,10 +1048,10 @@
                             requestBody.file_link_ids = [draggedItem.id];
                         } else {
                             console.warn('Unknown item type dragged:', draggedItem.type);
-                            return; // No hacer nada si el tipo es desconocido
+                            return;
                         }
 
-                        fetch('{{ route('items.bulk_move') }}', { // Usamos bulk_move para ambos tipos
+                        fetch('{{ route('items.bulk_move') }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1057,7 +1077,6 @@
                     }
                 },
 
-                // --- Lógica de Selección Múltiple ---
                 selectedItems: [],
                 toggleSelection(itemId, itemType) {
                     const index = this.selectedItems.findIndex(item => item.id === itemId && item.type === itemType);
@@ -1086,140 +1105,149 @@
                     }
                 },
 
-deleteSingleItem(id, type) {
-    if (!confirm('¿Estás seguro de que quieres eliminar este elemento?')) {
-        return;
-    }
+                deleteSingleItem(id, type) {
+                    if (!confirm('¿Estás seguro de que quieres eliminar este elemento?')) {
+                        return;
+                    }
 
-    // Muestra el spinner de carga
-    document.getElementById('loading-overlay').classList.remove('hidden');
+                    document.getElementById('loading-overlay').classList.remove('hidden');
 
-    let url;
-    if (type === 'folder') {
-        // Crea la URL con un marcador de posición para el ID de la carpeta
-        url = `{{ route('folders.destroy', ['folder' => 'ITEM_ID']) }}`.replace('ITEM_ID', id);
-    } else {
-        // Crea la URL con un marcador de posición para el ID del archivo
-        url = `{{ route('file_links.destroy', ['fileLink' => 'ITEM_ID']) }}`.replace('ITEM_ID', id);
-    }
+                    let url;
+                    if (type === 'folder') {
+                        url = `{{ route('folders.destroy', ['folder' => 'ITEM_ID']) }}`.replace('ITEM_ID', id);
+                    } else {
+                        url = `{{ route('file_links.destroy', ['fileLink' => 'ITEM_ID']) }}`.replace('ITEM_ID', id);
+                    }
 
-    fetch(url, {
-        method: 'POST', // Usamos POST para enviar los datos del formulario, ya que el método DELETE no admite un cuerpo de datos
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json',
-            'X-HTTP-Method-Override': 'DELETE' // Le dice a Laravel que interprete esto como una solicitud DELETE
-        },
-        body: JSON.stringify({ _method: 'DELETE' })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Oculta el spinner de carga al recibir la respuesta
-        document.getElementById('loading-overlay').classList.add('hidden');
-        
-        if (data.success) {
-            // Muestra la notificación de éxito de inmediato
-            document.getElementById('flash-success-message').innerText = data.message;
-            document.getElementById('flash-success').style.display = 'flex';
-            setTimeout(() => {
-                document.getElementById('flash-success').style.display = 'none';
-                window.location.reload(); 
-            }, 2000);
-        } else {
-            // Muestra la notificación de error de inmediato
-            document.getElementById('flash-error-message').innerText = data.message;
-            document.getElementById('flash-error').style.display = 'flex';
-            setTimeout(() => {
-                document.getElementById('flash-error').style.display = 'none';
-                window.location.reload(); 
-            }, 2000);
-        }
-    })
-    .catch(error => {
-        // Oculta el spinner de carga en caso de error
-        document.getElementById('loading-overlay').classList.add('hidden');
-        
-        console.error('Error al eliminar:', error);
-        document.getElementById('flash-error-message').innerText = 'Ocurrió un error de red al intentar eliminar el elemento.';
-        document.getElementById('flash-error').style.display = 'flex';
-        setTimeout(() => {
-            document.getElementById('flash-error').style.display = 'none';
-            window.location.reload();
-        }, 2000);
-    });
-},
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                            'X-HTTP-Method-Override': 'DELETE'
+                        },
+                        body: JSON.stringify({ _method: 'DELETE' })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('loading-overlay').classList.add('hidden');
+                        if (data.success) {
+                            document.getElementById('flash-success-message').innerText = data.message;
+                            document.getElementById('flash-success').style.display = 'flex';
+                            setTimeout(() => {
+                                document.getElementById('flash-success').style.display = 'none';
+                                window.location.reload();
+                            }, 2000);
+                        } else {
+                            document.getElementById('flash-error-message').innerText = data.message;
+                            document.getElementById('flash-error').style.display = 'flex';
+                            setTimeout(() => {
+                                document.getElementById('flash-error').style.display = 'none';
+                                window.location.reload();
+                            }, 2000);
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById('loading-overlay').classList.add('hidden');
+                        console.error('Error al eliminar:', error);
+                        document.getElementById('flash-error-message').innerText = 'Ocurrió un error de red al intentar eliminar el elemento.';
+                        document.getElementById('flash-error').style.display = 'flex';
+                        setTimeout(() => {
+                            document.getElementById('flash-error').style.display = 'none';
+                            window.location.reload();
+                        }, 2000);
+                    });
+                },
+
+                openMediaModal(name, extension, url, downloadUrl) {
+                    const fileExtension = extension.toLowerCase();
+                    const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi'];
+                    const audioExtensions = ['mp3', 'wav', 'ogg'];
+                    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
+                    const pdfExtension = 'pdf';
+
+                    let mediaType = '';
+                    if (imageExtensions.includes(fileExtension)) {
+                        mediaType = 'image';
+                    } else if (videoExtensions.includes(fileExtension)) {
+                        mediaType = 'video';
+                    } else if (audioExtensions.includes(fileExtension)) {
+                        mediaType = 'audio';
+                    } else if (fileExtension === pdfExtension) {
+                        mediaType = 'pdf';
+                    } else {
+                        mediaType = 'other';
+                    }
+
+                    this.mediaModalData.name = name;
+                    this.mediaModalData.type = mediaType;
+                    this.mediaModalData.url = url;
+                    this.mediaModalData.downloadUrl = downloadUrl;
+                    this.showMediaModal = true;
+                },
 
                 deleteSelected() {
                     if (!confirm('¿Estás seguro de que quieres eliminar los elementos seleccionados?')) {
                         return;
                     }
 
-                    // Muestra el spinner de carga antes de la operación de eliminación
                     document.getElementById('loading-overlay').classList.remove('hidden');
 
                     const folderIdsToDelete = this.selectedItems.filter(item => item.type === 'folder').map(item => item.id);
                     const fileLinkIdsToDelete = this.selectedItems.filter(item => item.type === 'file_link').map(item => item.id);
 
                     const formData = new FormData();
-                    formData.append('_method', 'DELETE'); // Laravel expects _method for DELETE requests
+                    formData.append('_method', 'DELETE');
                     formData.append('folder_ids', JSON.stringify(folderIdsToDelete));
                     formData.append('file_link_ids', JSON.stringify(fileLinkIdsToDelete));
 
                     fetch('{{ route('folders.bulk_delete') }}', {
-                        method: 'POST', // Axios/Fetch doesn't support DELETE with body directly, so POST + _method
+                        method: 'POST',
                         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                         body: formData
                     })
                     .then(response => response.json())
                     .then(data => {
-                        // Oculta el spinner de carga al recibir la respuesta
                         document.getElementById('loading-overlay').classList.add('hidden');
-                        
                         if (data.success) {
-                            // Muestra la notificación de éxito de inmediato
                             document.getElementById('flash-success-message').innerText = data.message;
                             document.getElementById('flash-success').style.display = 'flex';
                             setTimeout(() => {
                                 document.getElementById('flash-success').style.display = 'none';
-                                window.location.reload(); // Recarga después de 2 segundos para que el usuario vea la notificación
+                                window.location.reload();
                             }, 2000);
                         } else {
-                            // Muestra la notificación de error de inmediato
                             document.getElementById('flash-error-message').innerText = data.message;
                             document.getElementById('flash-error').style.display = 'flex';
                             setTimeout(() => {
                                 document.getElementById('flash-error').style.display = 'none';
-                                window.location.reload(); // Recarga después de 2 segundos para que el usuario vea la notificación
+                                window.location.reload();
                             }, 2000);
                         }
                     })
                     .catch(error => {
-                        // Oculta el spinner de carga en caso de error
                         document.getElementById('loading-overlay').classList.add('hidden');
-                        
                         console.error('Error al eliminar:', error);
-                        // Muestra una notificación de error genérica
                         document.getElementById('flash-error-message').innerText = 'Ocurrió un error de red al intentar eliminar los elementos.';
                         document.getElementById('flash-error').style.display = 'flex';
                         setTimeout(() => {
                             document.getElementById('flash-error').style.display = 'none';
-                            window.location.reload(); // Recarga después de 2 segundos
+                            window.location.reload();
                         }, 2000);
                     });
                 },
 
-                // --- Lógica para el modal de MOVER ELEMENTOS (NUEVAS VARIABLES Y FUNCIONES) ---
                 showMoveModal: false,
                 moveTargetFolderId: null,
                 moveTargetFolderName: 'Selecciona una carpeta...',
                 availableMoveFolders: [],
-                currentMoveBrowseFolder: null, // Objeto {id, name, pathSegments: [{folder}, {folder}]}
+                currentMoveBrowseFolder: null,
 
                 openMoveModal() {
                     this.showMoveModal = true;
-                    this.moveTargetFolderId = null; // Representa la raíz para la selección
+                    this.moveTargetFolderId = null;
                     this.moveTargetFolderName = 'Raíz';
-                    this.currentMoveBrowseFolder = null; // Representa que estamos en la raíz para la navegación del modal
+                    this.currentMoveBrowseFolder = null;
                     this.fetchAvailableMoveFolders(null);
                 },
 
@@ -1251,20 +1279,18 @@ deleteSingleItem(id, type) {
                     });
                 },
 
-                // Navega a una subcarpeta dentro del modal
                 browseMoveFolder(folder) {
                     this.currentMoveBrowseFolder = {
                         id: folder.id,
                         name: folder.name,
                         pathSegments: [...(this.currentMoveBrowseFolder ? this.currentMoveBrowseFolder.pathSegments : []), { folder: folder }]
                     };
-                    this.selectMoveTarget(folder.id, folder.name); // Selecciona la carpeta actual como objetivo
+                    this.selectMoveTarget(folder.id, folder.name);
                     this.fetchAvailableMoveFolders(folder.id);
                 },
 
-                // Navega a un segmento de la ruta en el breadcrumb del modal
                 browseMovePathSegment(segmentIndex) {
-                    if (segmentIndex === -1) { // Click en "Raíz"
+                    if (segmentIndex === -1) {
                         this.currentMoveBrowseFolder = null;
                         this.moveTargetFolderId = null;
                         this.moveTargetFolderName = 'Raíz';
@@ -1282,7 +1308,6 @@ deleteSingleItem(id, type) {
                     }
                 },
 
-                // Establece la carpeta seleccionada como destino final
                 selectMoveTarget(folderId, folderName) {
                     this.moveTargetFolderId = folderId;
                     this.moveTargetFolderName = folderName;
@@ -1293,8 +1318,6 @@ deleteSingleItem(id, type) {
                         alert('No hay elementos seleccionados para mover.');
                         return;
                     }
-                    // Si se seleccionó la raíz, moveTargetFolderId será null. Si se seleccionó una carpeta específica, tendrá un ID.
-                    // Si moveTargetFolderId es null y moveTargetFolderName no es 'Raíz', significa que el usuario no eligió un destino válido.
                     if (this.moveTargetFolderId === null && this.moveTargetFolderName !== 'Raíz') {
                          alert('Por favor, selecciona una carpeta de destino o la Raíz.');
                          return;
@@ -1317,7 +1340,7 @@ deleteSingleItem(id, type) {
                         body: JSON.stringify({
                             folder_ids: folderIdsToMove,
                             file_link_ids: fileLinkIdsToMove,
-                            target_folder_id: this.moveTargetFolderId // null si es la raíz
+                            target_folder_id: this.moveTargetFolderId
                         })
                     })
                     .then(response => response.json())
@@ -1339,7 +1362,6 @@ deleteSingleItem(id, type) {
                     });
                 },
 
-                // --- Lógica para mostrar mensajes flash de sessionStorage y guardar preferencia de vista ---
                 init() {
                     const savedView = localStorage.getItem('file_manager_view');
                     if (savedView === 'list') {
@@ -1353,27 +1375,24 @@ deleteSingleItem(id, type) {
                         this.tileSize = savedTileSize;
                     }
 
-                    // Lógica para mostrar mensajes flash de sessionStorage
                     const flashSuccess = sessionStorage.getItem('flash_success');
                     const flashError = sessionStorage.getItem('flash_error');
 
                     if (flashSuccess) {
                         document.getElementById('flash-success-message').innerText = flashSuccess;
                         document.getElementById('flash-success').style.display = 'flex';
-                        // Limpiar la notificación del sessionStorage inmediatamente después de mostrarla
                         sessionStorage.removeItem('flash_success');
                         setTimeout(() => {
                             document.getElementById('flash-success').style.display = 'none';
-                        }, 5000); // 5 segundos
+                        }, 5000);
                     }
                     if (flashError) {
                         document.getElementById('flash-error-message').innerText = flashError;
                         document.getElementById('flash-error').style.display = 'flex';
-                        // Limpiar la notificación del sessionStorage inmediatamente después de mostrarla
                         sessionStorage.removeItem('flash_error');
                         setTimeout(() => {
                             document.getElementById('flash-error').style.display = 'none';
-                        }, 5000); // 5 segundos
+                        }, 5000);
                     }
 
                     this.$watch('isTileView', value => {
