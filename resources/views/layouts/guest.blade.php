@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Control Tower - Minmer Global</title>
 
-    {{-- Se recomienda usar Tailwind CSS para estos estilos --}}
-    <script src="https://cdn.tailwindcss.com"></script>
+    {{-- SE ELIMINA EL SCRIPT DEL CDN Y SE AÑADE LA DIRECTIVA VITE --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Raleway:wght@800&display=swap');
