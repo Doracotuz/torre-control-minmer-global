@@ -46,7 +46,7 @@
                                     <p class="text-xs text-gray-500">{{ $evento->fecha_evento->format('d/m/Y h:i A') }}</p>
                                     @if(!empty($evento->url_evidencia))
                                         <div class="mt-2">
-                                            <p class="text-xs font-semibold text-gray-500">Evidencias:</p>
+                                            <!-- <p class="text-xs font-semibold text-gray-500">Evidencias:</p> -->
                                             <div class="flex flex-wrap gap-2 mt-1">
                                                 @if(!empty($evento->url_evidencia))
                                                     <div class="mt-2">

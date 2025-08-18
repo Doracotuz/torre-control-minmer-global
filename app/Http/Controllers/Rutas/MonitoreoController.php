@@ -133,6 +133,12 @@ class MonitoreoController extends Controller
 
     public function startRoute(Request $request, Guia $guia)
     {
+        $request->validate([
+            'latitud' => 'required|numeric',
+            'longitud' => 'required|numeric',
+            'municipio' => 'nullable|string',
+            'fecha_inicio_ruta' => 'required|date', // Se añade la validación para la fecha y hora
+        ]);
         if ($guia->estatus !== 'Planeada') {
             return response()->json(['success' => false, 'message' => 'Esta ruta no puede ser iniciada.'], 409);
         }
@@ -140,24 +146,22 @@ class MonitoreoController extends Controller
         try {
             DB::beginTransaction();
 
-            $guia->estatus = 'Camino a carga'; // O el estatus inicial que prefieras, ej: 'Camino a carga'
-            $guia->fecha_inicio_ruta = now();
+            $guia->estatus = 'Camino a carga';
+            $guia->fecha_inicio_ruta = $request->fecha_inicio_ruta; // Usa la fecha y hora del request
             $guia->save();
 
-            // --- INICIA CORRECCIÓN: Se obtienen las coordenadas de la primera parada ---
-            $firstStop = $guia->ruta?->paradas()->orderBy('secuencia')->first();
+            $guia->facturas()->update(['estatus_entrega' => 'Por recolectar']);
 
             Evento::create([
                 'guia_id' => $guia->id,
                 'tipo' => 'Sistema',
-                'subtipo' => 'Inicio de Ruta',
-                'latitud' => $firstStop?->latitud ?? 0, // Se usa la latitud de la primera parada
-                'longitud' => $firstStop?->longitud ?? 0, // Se usa la longitud de la primera parada
-                'municipio' => $firstStop?->nombre_lugar ?? 'N/A', // Usamos el nombre del lugar como referencia
-                'fecha_evento' => now(),
+                'subtipo' => 'Inicio de Viaje',
+                'latitud' => $request->latitud,
+                'longitud' => $request->longitud,
+                'municipio' => $request->municipio,
+                'fecha_evento' => $request->fecha_inicio_ruta, // Usa la fecha y hora del request para el evento
                 'nota' => 'Ruta iniciada desde el panel de monitoreo.'
             ]);
-            // --- TERMINA CORRECCIÓN ---
 
             DB::commit();
 
@@ -187,15 +191,74 @@ class MonitoreoController extends Controller
         ]);
 
         try {
-            // Se llama al mismo servicio para manejar la lógica
+            DB::beginTransaction();
+
+            // Lógica para actualizar el estatus de la guía y las facturas
+            $newGuiaStatus = null;
+            $newFacturaStatus = null;
+
+            switch ($validatedData['subtipo']) {
+                case 'Llegada a carga':
+                    $newGuiaStatus = 'En carga';
+                    break;
+                case 'Fin de carga':
+                    $newGuiaStatus = 'En tránsito';
+                    $guia->facturas()->where('estatus_entrega', 'Por recolectar')->update(['estatus_entrega' => 'En tránsito']);
+                    break;
+                case 'Llegada a cliente':
+                    $newFacturaStatus = 'En cliente';
+                    break;
+                case 'Proceso de entrega':
+                    $newFacturaStatus = 'Entregando';
+                    break;
+                case 'Entregada':
+                    $newFacturaStatus = 'Entregada';
+                    break;
+                case 'No entregada':
+                    $newFacturaStatus = 'No entregada';
+                    break;
+            }
+
+            // Aplicar los cambios de estatus si existen
+            if ($newGuiaStatus) {
+                $guia->estatus = $newGuiaStatus;
+                $guia->save();
+            }
+
+            if ($newFacturaStatus && !empty($validatedData['factura_ids'])) {
+                Factura::whereIn('id', $validatedData['factura_ids'])->update(['estatus_entrega' => $newFacturaStatus]);
+            }
+            
             $eventService->handle($guia, $validatedData, $request);
+
+            // Verificar si todas las facturas de la guía están completadas
+            $allFacturasCompleted = $guia->facturas->every(fn($f) => in_array($f->estatus_entrega, ['Entregada', 'No entregada']));
+
+            if ($allFacturasCompleted) {
+                $guia->estatus = 'Completada';
+                $guia->fecha_fin_ruta = now();
+                $guia->save();
+
+                Evento::create([
+                    'guia_id' => $guia->id,
+                    'tipo' => 'Sistema',
+                    'subtipo' => 'Ruta Completada',
+                    'nota' => 'Todas las facturas han sido gestionadas.',
+                    'latitud' => $validatedData['latitud'],
+                    'longitud' => $validatedData['longitud'],
+                    'municipio' => $validatedData['municipio'],
+                    'fecha_evento' => now(),
+                ]);
+            }
+
+            DB::commit();
+
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error("Error al guardar evento desde monitoreo: " . $e->getMessage());
-            // Devuelve una respuesta JSON para AJAX
             return response()->json(['success' => false, 'message' => 'Ocurrió un error al guardar el evento.'], 500);
         }
 
-        // Devuelve una respuesta JSON para AJAX
         return response()->json(['success' => true, 'message' => 'Evento registrado exitosamente.']);
     }
 

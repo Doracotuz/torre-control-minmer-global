@@ -346,11 +346,19 @@
 
                 const contentString = `
                     <div style="font-family: Montserrat, sans-serif; max-width: 250px; padding: 5px;">
-                        <h4 style="font-weight: 700; color: #2c3856; margin-bottom: 5px;">${evento.subtipo}</h4>
-                        ${facturaAfectadaHtml}
-                        <p style="font-size: 13px; margin: 0 0 8px 0;">${evento.nota || 'Sin notas.'}</p>
-                        <p style="font-size: 12px; color: #666; margin: 0 0 8px 0;"><strong>Fecha:</strong> ${evento.fecha_evento}</p>
-                        ${evento.url_evidencia ? `<div><a href="${evento.url_evidencia}" target="_blank" style="color: #007bff; font-weight: 600;">Ver Evidencia</a></div>` : ''}
+                    <h4 style="font-weight: 700; color: #2c3856; margin-bottom: 5px;">${evento.subtipo}</h4>
+                    ${facturaAfectadaHtml}
+                    <p style="font-size: 13px; margin: 0 0 8px 0;">${evento.nota || 'Sin notas.'}</p>
+                    <p style="font-size: 12px; color: #666; margin: 0 0 8px 0;"><strong>Fecha:</strong> ${evento.fecha_evento}</p>
+                    ${evento.url_evidencia && evento.url_evidencia.length > 0 ? `
+                        <div>
+                        ${evento.url_evidencia.map(url => `
+                            <a href="${url}" target="_blank" style="color: #007bff; font-weight: 600; display: block; margin-bottom: 4px;">
+                            Ver Evidencia
+                            </a>
+                        `).join('')}
+                        </div>
+                    ` : ''}
                     </div>`;
                 
                 marker.addListener("click", () => {
