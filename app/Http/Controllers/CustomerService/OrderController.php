@@ -228,9 +228,8 @@ class OrderController extends Controller
         $customers = CsCustomer::select('channel', 'client_id')->distinct()->get()->keyBy('client_id');
 
         $ordersData = [];
-        $errorRows = [];
+        $errorDocs = [];
         $csvDocNumbers = [];
-        $rowDocNumLines = [];
         $rowNumber = 1;
 
         while (($row = fgetcsv($file)) !== FALSE) {
@@ -239,9 +238,11 @@ class OrderController extends Controller
             $row = array_map('trim', $row);
             $rowData = array_combine($header, $row);
             
-            // --- INICIA CORRECCIÓN: Se acumulan todos los errores de la línea ---
-            $rowErrors = [];
+            $docNum = $rowData['Document Number'];
+            $csvDocNumbers[] = $docNum;
             
+            $rowErrors = [];
+
             if (empty($rowData['Item No.'])) {
                 $rowErrors[] = "El campo 'Item No.' es obligatorio.";
             }
@@ -252,49 +253,45 @@ class OrderController extends Controller
                 $rowErrors[] = "El campo 'Customer/Vendor Code' es obligatorio.";
             }
             
-            // Si no hay errores de campos obligatorios, se revisan los datos
-            if (empty($rowErrors)) {
-                if (!isset($products[$rowData['Item No.']])) {
-                    $rowErrors[] = "SKU no encontrado: " . $rowData['Item No.'];
-                }
-                if (!isset($warehouses[$rowData['Warehouse Code']])) {
-                    $rowErrors[] = "Almacén no encontrado: " . $rowData['Warehouse Code'];
-                }
-                if (!isset($customers[$rowData['Customer/Vendor Code']])) {
-                    $rowErrors[] = "Cliente no encontrado: " . $rowData['Customer/Vendor Code'];
-                }
+            if (!isset($products[$rowData['Item No.']])) {
+                $rowErrors[] = "SKU no encontrado: " . $rowData['Item No.'];
+            }
+            if (!isset($warehouses[$rowData['Warehouse Code']])) {
+                $rowErrors[] = "Almacén no encontrado: " . $rowData['Warehouse Code'];
+            }
+            if (!isset($customers[$rowData['Customer/Vendor Code']])) {
+                $rowErrors[] = "Cliente no encontrado: " . $rowData['Customer/Vendor Code'];
             }
             
-            // Si se encontraron errores, se acumulan en $errorRows
             if (!empty($rowErrors)) {
-                $errorMessage = "Línea " . $rowNumber . ": " . implode(' ', $rowErrors);
-                $errorRows[] = array_merge($rowData, ['Motivo del Error' => $errorMessage]);
-                $rowNumber++;
-                continue;
+                $errorDocs[$docNum] = true;
+                $rowData['Motivo del Error'] = "Línea " . $rowNumber . ": " . implode(' ', $rowErrors);
+            } else {
+                $rowData['Motivo del Error'] = '';
             }
-            // --- TERMINA CORRECCIÓN ---
 
-            $docNum = $rowData['Document Number'];
-            $csvDocNumbers[] = $docNum;
-            
             if (!isset($ordersData[$docNum])) {
                 $ordersData[$docNum] = [
                     'header_data' => $rowData,
                     'details' => [],
                     'has_promo_item' => false,
-                    'calculations' => ['total_bottles' => 0, 'total_boxes' => 0, 'subtotal' => 0]
+                    'calculations' => ['total_bottles' => 0, 'total_boxes' => 0, 'subtotal' => 0],
+                    'raw_rows' => []
                 ];
-                $rowDocNumLines[$docNum] = $rowNumber;
             }
             
+            $ordersData[$docNum]['raw_rows'][] = $rowData;
+
             $sku = $rowData['Item No.'];
             $quantity = (int)$rowData['Quantity'];
             $packagingFactor = $products[$sku] ?? 1;
 
+            $rowTotal = str_replace(',', '', $rowData['Row Total']);
+
             $ordersData[$docNum]['details'][] = ['sku' => $sku, 'quantity' => $quantity];
             $ordersData[$docNum]['calculations']['total_bottles'] += $quantity;
             $ordersData[$docNum]['calculations']['total_boxes'] += ($packagingFactor > 0) ? ($quantity / $packagingFactor) : 0;
-            $ordersData[$docNum]['calculations']['subtotal'] += (float)$rowData['Row Total'];
+            $ordersData[$docNum]['calculations']['subtotal'] += (float)$rowTotal;
             
             if (isset($productTypes[$sku]) && $productTypes[$sku] === 'Promocional') {
                 $ordersData[$docNum]['has_promo_item'] = true;
@@ -303,13 +300,23 @@ class OrderController extends Controller
         }
         fclose($file);
 
-        $existingOrders = CsOrder::whereIn('so_number', $csvDocNumbers)->pluck('so_number')->toArray();
+        $existingOrders = CsOrder::whereIn('so_number', array_unique($csvDocNumbers))->pluck('so_number')->toArray();
         $newOrdersData = [];
-        $duplicateSoCount = 0;
+        $errorRows = [];
+        $processedDocNumbers = [];
+
         foreach($ordersData as $docNum => $data) {
             if(in_array($docNum, $existingOrders)) {
-                $errorRows[] = array_merge($data['header_data'], ['Motivo del Error' => "Línea " . $rowDocNumLines[$docNum] . ": El SO {$docNum} ya existe en la base de datos."]);
-                $duplicateSoCount++;
+                $errorDocs[$docNum] = true;
+                foreach($data['raw_rows'] as $idx => $row) {
+                    $data['raw_rows'][$idx]['Motivo del Error'] = "El SO {$docNum} ya existe en la base de datos.";
+                }
+            }
+        }
+        
+        foreach($ordersData as $docNum => $data) {
+            if(isset($errorDocs[$docNum])) {
+                $errorRows = array_merge($errorRows, $data['raw_rows']);
             } else {
                 $newOrdersData[$docNum] = $data;
             }
@@ -356,16 +363,7 @@ class OrderController extends Controller
         
         if (!empty($errorRows)) {
             session()->put('import_error_rows', $errorRows);
-            $warningMessage = '';
-            if ($duplicateSoCount > 0) {
-                $warningMessage .= "Se encontraron {$duplicateSoCount} pedidos con SO que ya existen. ";
-            }
-            $otherErrorsCount = count($errorRows) - $duplicateSoCount;
-            if ($otherErrorsCount > 0) {
-                $warningMessage .= "Se encontraron {$otherErrorsCount} registros con otros errores. ";
-            }
-            $warningMessage .= "Revisa la sección de errores y descarga el reporte.";
-
+            $warningMessage = 'Se encontraron errores en la importación. Revisa la sección de errores y descarga el reporte.';
             if ($successMessage) {
                 session()->flash('success', $successMessage);
             }
@@ -385,12 +383,38 @@ class OrderController extends Controller
             return redirect()->route('customer-service.orders.index')->with('info', 'No hay errores de importación para descargar.');
         }
 
-        $headers = [ "Content-type" => "text/csv", "Content-Disposition" => "attachment; filename=errores_importacion_so.csv" ];
+        // --- CORRECCIÓN: Se añade el BOM (Byte Order Mark) para asegurar la codificación UTF-8 en Excel ---
+        $headers = [
+            'BP Reference No.', 'Document Number', 'Posting Date', 'Customer/Vendor Code',
+            'Customer/Vendor Name', 'Warehouse Code', 'Warehouse Name', 'Item No.',
+            'Item/Service Description', 'Quantity', 'Row Total', 'Gross Total', 'Ship To', 'Motivo del Error'
+        ];
 
-        $callback = function() use ($errorRows) {
+        $processedRows = [];
+        foreach ($errorRows as $row) {
+            $processedRow = [];
+            foreach ($headers as $header) {
+                $processedRow[$header] = $row[$header] ?? '';
+            }
+            $processedRows[] = $processedRow;
+        }
+
+        $responseHeaders = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=errores_importacion_so.csv",
+        ];        
+        
+        $callback = function() use ($processedRows, $headers) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, array_keys($errorRows[0]));
-            foreach ($errorRows as $row) {
+            
+            // Escribir el BOM para Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Escribir el encabezado
+            fputcsv($file, $headers);
+            
+            // Escribir los datos procesados
+            foreach ($processedRows as $row) {
                 fputcsv($file, $row);
             }
             fclose($file);
@@ -399,7 +423,7 @@ class OrderController extends Controller
         // Limpiar los errores de la sesión después de generar la descarga
         session()->forget('import_error_rows');
 
-        return response()->stream($callback, 200, $headers);
+        return response()->stream($callback, 200, $responseHeaders);
     }
 
     /**
@@ -410,6 +434,7 @@ class OrderController extends Controller
         $headers = [ "Content-type" => "text/csv", "Content-Disposition" => "attachment; filename=plantilla_carga_so.csv" ];
         $callback = function() {
             $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($file, [
                 'BP Reference No.', 'Document Number', 'Posting Date', 'Customer/Vendor Code',
                 'Customer/Vendor Name', 'Warehouse Code', 'Warehouse Name', 'Item No.',
