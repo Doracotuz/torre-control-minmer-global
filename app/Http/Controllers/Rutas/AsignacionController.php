@@ -137,7 +137,7 @@ class AsignacionController extends Controller
                 'numero_factura'   => trim($row[6]),
                 'botellas'         => (int)trim($row[7]),
                 'cajas'            => (int)trim($row[8]),
-                'so'               => is_numeric(trim($row[13])) ? (int)trim($row[13]) : null,
+                'so'               => !empty(trim($row[13])) ? trim($row[13]) : null,
                 'fecha_entrega'    => $fechaEntrega,
             ];
             // --- TERMINA CAMBIO ---
@@ -201,7 +201,7 @@ class AsignacionController extends Controller
             'facturas.*.cajas' => 'required|integer|min:0',
             'facturas.*.botellas' => 'required|integer|min:0',
             'facturas.*.hora_cita' => 'nullable|string|max:255',
-            'facturas.*.so' => 'nullable|numeric',
+            'facturas.*.so' => 'nullable|string|max:255',
             'facturas.*.fecha_entrega' => 'nullable|date',
         ]);
         // --- TERMINA CAMBIO ---
@@ -244,7 +244,7 @@ class AsignacionController extends Controller
             'facturas.*.cajas' => 'required|integer|min:0',
             'facturas.*.botellas' => 'required|integer|min:0',
             'facturas.*.hora_cita' => 'nullable|string|max:255',
-            'facturas.*.so' => 'nullable|numeric',
+            'facturas.*.so' => 'nullable|string|max:255',
             'facturas.*.fecha_entrega' => 'nullable|date_format:Y-m-d', // Se espera el formato Y-m-d del date picker
         ]);
         // --- TERMINA CAMBIO ---
