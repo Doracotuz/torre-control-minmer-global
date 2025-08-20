@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Models\Ruta;
 use App\Services\EventRegistrationService;
+use App\Models\CsOrder;
+use App\Models\CsOrderEvent;
+use Illuminate\Support\Facades\Auth;
 
 class MonitoreoController extends Controller
 {

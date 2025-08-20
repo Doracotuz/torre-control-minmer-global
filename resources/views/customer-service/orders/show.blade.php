@@ -4,9 +4,14 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 Detalle del Pedido: <span class="text-blue-600">{{ $order->so_number }}</span>
             </h2>
-            <a href="{{ route('customer-service.orders.index') }}" class="px-4 py-2 bg-gray-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700">
-                &larr; Volver a la Lista
-            </a>
+            <div class="flex space-x-2">
+                <a href="{{ route('customer-service.orders.reverse-logistics.create', $order) }}" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700">
+                    Logística Inversa
+                </a>
+                <a href="{{ route('customer-service.orders.index') }}" class="px-4 py-2 bg-gray-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700">
+                    &larr; Volver a la Lista
+                </a>
+            </div>
         </div>
     </x-slot>
 

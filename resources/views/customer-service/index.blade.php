@@ -55,12 +55,12 @@
                 </a>
 
                 <!-- Mosaico 5 (Placeholder) -->
-                <a href="#" class="group relative block h-64 rounded-xl overflow-hidden shadow-lg">
-                    <img src="https://placehold.co/600x600/9B59B6/FFFFFF?text=Análisis" alt="Mosaico 5" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                <a href="{{ route('customer-service.credit-notes.index') }}" class="group relative block h-64 rounded-xl overflow-hidden shadow-lg">
+                    <img src="https://lmforums.com/Areas/InfoCentre/Content/images/retailpartnernetwork/moethennessy/RPN%20Image%202.jpg" alt="Gestión de Notas de Crédito" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
                     <div class="relative h-full flex flex-col justify-end p-6 text-white">
-                        <h3 class="text-2xl font-bold tracking-tight">Módulo 5 (Próximamente)</h3>
-                        <p class="mt-1 text-gray-300">Descripción del quinto módulo.</p>
+                        <h3 class="text-2xl font-bold tracking-tight">Gestión de Notas de Crédito</h3>
+                        <p class="mt-1 text-gray-300">Administra, visualiza y analiza las notas de crédito.</p>
                     </div>
                 </a>
 

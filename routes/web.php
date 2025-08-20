@@ -36,7 +36,8 @@ use App\Http\Controllers\CustomerService\WarehouseController;
 use App\Http\Controllers\CustomerService\OrderController;
 use App\Http\Controllers\RfqController;
 use App\Http\Controllers\Admin\StatisticsController;
-
+use App\Http\Controllers\CustomerService\ReverseLogisticsController;
+use App\Http\Controllers\CustomerService\CreditNoteController;
 
 
 
@@ -493,7 +494,13 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         Route::put('/{order}', [OrderController::class, 'update'])->name('update');
         Route::post('/{order}/cancel', [OrderController::class, 'cancel'])->name('cancel');
         Route::post('/{order}/plan', [OrderController::class, 'moveToPlan'])->name('plan');
+
+        Route::get('/{order}/logistica-inversa', [ReverseLogisticsController::class, 'create'])->name('reverse-logistics.create');
+        Route::post('/{order}/logistica-inversa', [ReverseLogisticsController::class, 'store'])->name('reverse-logistics.store');
     });  
+        Route::get('credit-notes/export/csv', [CreditNoteController::class, 'exportCsv'])->name('credit-notes.export.csv');
+        Route::get('credit-notes/dashboard', [CreditNoteController::class, 'dashboard'])->name('credit-notes.dashboard');                
+        Route::resource('credit-notes', CreditNoteController::class);
 
 });
 
