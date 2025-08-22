@@ -29,4 +29,9 @@ class CsPlanning extends Model
         return $this->belongsTo(\App\Models\Guia::class, 'guia_id');
     }
 
+    public function events()
+    {
+        return $this->hasMany(CsPlanningEvent::class, 'cs_planning_id')->orderBy('created_at', 'desc');
+    }
+
 }

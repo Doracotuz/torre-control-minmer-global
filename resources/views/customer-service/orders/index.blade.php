@@ -90,7 +90,10 @@
             <div id="orders-table-container" class="overflow-x-auto">
                 @include('customer-service.orders.partials.table')
             </div>
-
+            <div x-show="isLoading" class="text-center py-10">
+                <i class="fas fa-spinner fa-spin text-4xl text-gray-500"></i>
+                <p class="mt-2 text-gray-600">Cargando datos...</p>
+            </div>
             @include('customer-service.orders.partials._column-selector-modal')
             @include('customer-service.orders.partials._import-modal')
             @include('customer-service.orders.partials._advanced-filters-modal')

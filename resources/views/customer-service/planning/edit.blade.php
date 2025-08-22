@@ -1,22 +1,56 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Editar Planificación: <span class="text-blue-600">{{ $planning->so_number }}</span>
+            Editar Registro de Planificación
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-8">
+            <div class="bg-white overflow-hidden shadow-xl sm-rounded-lg p-8">
+                @if(!$planning->order)
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 mb-6">
+                        <p class="font-bold">Nota:</p>
+                        <p>Estás editando un registro de planificación manual. Los cambios aquí guardados afectarán al módulo de Asignaciones.</p>
+                    </div>
+                @endif
+            
                 <form action="{{ route('customer-service.planning.update', $planning) }}" method="POST">
                     @csrf
                     @method('PUT')
-                    
                     @if ($errors->any())
-                        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-                            <p><b>Error:</b> {{ $errors->first() }}</p>
-                        </div>
+                        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert"><p><b>Error:</b> {{ $errors->first() }}</p></div>
                     @endif
+
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Información Principal</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div><label class="block text-sm font-medium text-gray-700">Razón Social / Contacto</label><input type="text" name="razon_social" value="{{ old('razon_social', $planning->razon_social) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Dirección</label><input type="text" name="direccion" value="{{ old('direccion', $planning->direccion) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required></div>
+                        <div><label class="block text-sm font-medium text-gray-700">SO (Opcional)</label><input type="text" name="so_number" value="{{ old('so_number', $planning->so_number) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Factura</label><input type="text" name="factura" value="{{ old('factura', $planning->factura) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Piezas</label><input type="number" name="pzs" value="{{ old('pzs', $planning->pzs) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Cajas</label><input type="number" name="cajas" value="{{ old('cajas', $planning->cajas) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                    </div>
+
+                    <h4 class="text-lg font-semibold text-gray-800 mt-6 mb-4 border-b pb-2">Información de la Ruta</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Origen</label>
+                            <select name="origen" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                                @foreach($options['origenes'] as $origen)
+                                    <option value="{{ $origen }}" {{ old('origen', $planning->origen) == $origen ? 'selected' : '' }}>{{ $origen }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Destino</label>
+                             <select name="destino" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                                @foreach($options['destinos'] as $destino)
+                                    <option value="{{ $destino }}" {{ old('destino', $planning->destino) == $destino ? 'selected' : '' }}>{{ $destino }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div><label class="block text-sm font-medium text-gray-700">Fecha de Carga</label><input type="date" name="fecha_carga" value="{{ old('fecha_carga', $planning->fecha_carga?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>

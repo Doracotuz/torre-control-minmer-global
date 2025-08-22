@@ -505,6 +505,8 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         Route::resource('credit-notes', CreditNoteController::class);
 
     Route::prefix('planning')->name('planning.')->group(function() {
+        Route::get('/create', [App\Http\Controllers\CustomerService\PlanningController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\CustomerService\PlanningController::class, 'store'])->name('store');        
         Route::get('/', [App\Http\Controllers\CustomerService\PlanningController::class, 'index'])->name('index');
         Route::get('/filter', [App\Http\Controllers\CustomerService\PlanningController::class, 'filter'])->name('filter');
         Route::get('/bulk-edit', [App\Http\Controllers\CustomerService\PlanningController::class, 'bulkEdit'])->name('bulk-edit');

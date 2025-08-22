@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('cs_plannings', function (Blueprint $table) {
+            // Hacemos que la columna cs_order_id acepte valores nulos (NULL).
+            // El método change() aplica la modificación.
+            $table->unsignedBigInteger('cs_order_id')->nullable()->change();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('cs_plannings', function (Blueprint $table) {
+            // Esto revierte el cambio, volviendo a hacer la columna obligatoria.
+            // Es buena práctica definir siempre cómo revertir una migración.
+            $table->unsignedBigInteger('cs_order_id')->nullable(false)->change();
+        });
+    }
+};

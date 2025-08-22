@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\CsOrderEvent;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Guia;
+use App\Models\CsPlanningEvent;
 
 class PlanningController extends Controller
 {
@@ -87,7 +88,48 @@ class PlanningController extends Controller
         return back()->with('success', 'La ruta ha sido programada.');
     }
 
-public function addScales(Request $request, CsPlanning $planning)
+
+    public function create()
+    {
+        return view('customer-service.planning.create');
+    }
+
+    /**
+     * Guarda el nuevo registro de planificación manual en la base de datos.
+     */
+    public function store(Request $request)
+    {
+        // Validación de los campos del formulario
+        $validatedData = $request->validate([
+            'razon_social' => 'required|string|max:255',
+            'direccion' => 'required|string|max:255',
+            'so_number' => 'nullable|string|max:255',
+            'factura' => 'required|string|max:255',
+            'origen' => 'required|string|max:255',
+            'destino' => 'required|string|max:255',
+            'fecha_entrega' => 'nullable|date',
+            'hora_cita' => 'nullable|string|max:255',
+            'pzs' => 'nullable|integer',
+            'cajas' => 'nullable|integer',
+            'subtotal' => 'nullable|numeric',
+            'canal' => 'nullable|string|max:255',
+        ]);
+        
+        $planning = CsPlanning::create($validatedData); // Guardamos la instancia en una variable
+
+        // --- INICIA CÓDIGO AÑADIDO ---
+        // Creamos el primer evento para el registro manual
+        CsPlanningEvent::create([
+            'cs_planning_id' => $planning->id,
+            'user_id' => Auth::id(),
+            'description' => 'El usuario ' . Auth::user()->name . ' creó el registro de planificación manualmente.'
+        ]);
+
+        return redirect()->route('customer-service.planning.index')
+                         ->with('success', 'Registro de planificación manual creado exitosamente.');
+    }    
+
+    public function addScales(Request $request, CsPlanning $planning)
     {
         $validated = $request->validate([
             'scales' => 'required|array|min:1',
@@ -142,6 +184,8 @@ public function addScales(Request $request, CsPlanning $planning)
             'devolucion' => ['Si', 'No'],
             'custodia' => ['Sepsa', 'Planus', 'Ninguna'],
             'urgente' => ['Si', 'No'],
+            'origenes' => ['MEX', 'CUN', 'MTY', 'GDL', 'SJD', 'MIN', 'SOTANO 5'],
+            'destinos' => ['AGS', 'BCN', 'CDMX', 'CUU', 'COA', 'CUL', 'CUN', 'CVJ', 'GDL', 'GRO', 'GTO', 'HGO', 'MEX', 'MIC', 'MID', 'MLM', 'MTY', 'MZN', 'NAY', 'DGO', 'ZAC', 'OAX', 'PUE', 'QRO', 'SIN', 'SJD', 'SLP', 'SMA', 'SON', 'TAB', 'TGZ', 'TIJ', 'TLX', 'VER', 'YUC', 'ZAM'],
         ];
 
         return view('customer-service.planning.edit', compact('planning', 'options'));
@@ -153,6 +197,16 @@ public function addScales(Request $request, CsPlanning $planning)
     public function update(Request $request, CsPlanning $planning)
     {
         $validatedData = $request->validate([
+            'razon_social' => 'required|string|max:255',
+            'direccion' => 'required|string|max:255',
+            'so_number' => 'nullable|string|max:255',
+            'factura' => 'required|string|max:255',
+            'pzs' => 'nullable|integer',
+            'cajas' => 'nullable|integer',
+            'origen' => 'required|string|max:255',
+            'destino' => 'required|string|max:255',
+            'fecha_carga' => 'nullable|date',
+            'hora_carga' => 'nullable|date_format:H:i',            
             'fecha_carga' => 'nullable|date',
             'hora_carga' => 'nullable|date_format:H:i',
             'hora_cita' => 'nullable|string|max:255',
@@ -177,10 +231,15 @@ public function addScales(Request $request, CsPlanning $planning)
         // Compara los datos viejos con los nuevos para registrar los cambios
         foreach ($validatedData as $key => $value) {
             if ($originalData[$key] != $value) {
-                $fieldName = ucwords(str_replace('_', ' ', $key));
-                $oldValue = $originalData[$key] ?? 'vacío';
-                $newValue = $value ?? 'vacío';
-                $changes[] = "cambió '{$fieldName}' de '{$oldValue}' a '{$newValue}' en la planificación";
+                // Formateamos la fecha para una comparación correcta
+                $oldValue = $key === 'fecha_carga' && $originalData[$key] ? \Carbon\Carbon::parse($originalData[$key])->format('Y-m-d') : $originalData[$key];
+                
+                if ($oldValue != $value) {
+                    $fieldName = ucwords(str_replace('_', ' ', $key));
+                    $oldValueText = $oldValue ?? 'vacío';
+                    $newValueText = $value ?? 'vacío';
+                    $changes[] = "cambió '{$fieldName}' de '{$oldValueText}' a '{$newValueText}'";
+                }
             }
         }
         
@@ -188,11 +247,22 @@ public function addScales(Request $request, CsPlanning $planning)
         if (!empty($changes)) {
             $planning->update($validatedData);
 
-            CsOrderEvent::create([
-                'cs_order_id' => $planning->cs_order_id, // El evento se asocia a la ORDEN
-                'user_id' => Auth::id(),
-                'description' => 'El usuario ' . Auth::user()->name . ' ' . implode(', ', $changes) . '.'
-            ]);
+            $description = 'El usuario ' . Auth::user()->name . ' ' . implode(', ', $changes);
+
+            // Si tiene un pedido, registra el evento en el pedido. Si no, en sí mismo.
+            if ($planning->order) {
+                \App\Models\CsOrderEvent::create([
+                    'cs_order_id' => $planning->cs_order_id,
+                    'user_id' => Auth::id(),
+                    'description' => $description . ' en la planificación.'
+                ]);
+            } else {
+                \App\Models\CsPlanningEvent::create([
+                    'cs_planning_id' => $planning->id,
+                    'user_id' => Auth::id(),
+                    'description' => $description . '.'
+                ]);
+            }
         }
 
         return redirect()->route('customer-service.planning.show', $planning)->with('success', 'Planificación actualizada exitosamente.');

@@ -26,6 +26,9 @@
                     </div>
                 </div>               
                 <div class="flex items-center space-x-4">
+                    <a href="{{ route('customer-service.planning.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700">
+                        <i class="fas fa-plus mr-2"></i>Añadir Manualmente
+                    </a>                    
                     <button @click="isColumnModalOpen = true" class="px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700">
                         <i class="fas fa-columns mr-2"></i>Seleccionar Columnas
                     </button>
