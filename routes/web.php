@@ -416,6 +416,7 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
     // Rutas para la gestión de productos (solo para admins de área)
     Route::middleware('is_area_admin')->prefix('products')->name('products.')->group(function() {
         Route::get('/', [ProductController::class, 'index'])->name('index');
+        Route::get('/search', [ProductController::class, 'search'])->name('search');        
         Route::get('/filter', [ProductController::class, 'filter'])->name('filter');
         Route::get('/create', [ProductController::class, 'create'])->name('create');
         Route::post('/', [ProductController::class, 'store'])->name('store');

@@ -87,7 +87,7 @@
                     </button>
                 </div>
             </div>
-            <div id="orders-table-container" class="overflow-x-auto">
+            <div id="orders-table-container">
                 @include('customer-service.orders.partials.table')
             </div>
             <div x-show="isLoading" class="text-center py-10">
@@ -104,46 +104,37 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
 <style>
+    /* --- INICIA CÓDIGO CORREGIDO Y MEJORADO --- */
+
+    /* Reglas generales del redimensionador (se mantienen) */
+    th { position: relative; }
     .resizer {
-        position: absolute;
-        right: 0;
-        top: 0;
-        height: 100%;
-        width: 5px;
-        background: transparent;
-        z-index: 10;
-        touch-action: none;
-        cursor: ew-resize; /* Cursor para indicar redimensionamiento */
+        position: absolute; right: 0; top: 0; height: 100%;
+        width: 5px; background: transparent; z-index: 10; cursor: ew-resize;
     }
-    .resizing {
-        background: #ff9c00;
-    }
-    th {
-        position: relative;
-    }
-    .drag-handle {
-        cursor: move;
-        display: block;
-        padding: 4px;
-        user-select: none;
+    .resizing { background: #ff9c00; }
+    
+    /* Encabezados: Permite que el texto se divida en varias líneas si no cabe */
+    th .drag-handle {
+        cursor: move; display: block; padding: 4px; user-select: none;
+        white-space: normal; overflow-wrap: normal;
     }
 
-#orders-table-container {
-    width: fit-content;
-    max-width: 100%;
-    overflow-x: auto;
-}
+    /* Celdas: Prepara el terreno para el truncado de texto */
+    td { max-width: 0; }
 
-table {
-    width: auto;
-    max-width: 100%;
-    border-collapse: collapse; /* Opcional, para un diseño limpio */
-}
+    /* Contenedor de la Tabla: Se le quita el scroll y se permite que su contenido se desborde */
+    #orders-table-container {
+        overflow: visible !important; 
+    }
 
-table th, table td {
-    white-space: nowrap; /* Evita que el texto se divida en varias líneas */
-}
-
+    /* Columna de Acciones: Se le asigna un ancho mínimo fijo */
+    .actions-column {
+        width: 160px !important;      /* Ancho fijo */
+        min-width: 160px !important; /* Ancho mínimo fijo */
+    }
+    
+    /* --- TERMINA CÓDIGO CORREGIDO Y MEJORADO --- */
 </style>
 
 <script>
@@ -327,19 +318,28 @@ table th, table td {
             getFormattedCell(order, columnKey) {
                 const value = order[columnKey];
                 if (value === null || typeof value === 'undefined' || value === '') return '—';
+                
                 try {
                     const dateColumns = ['creation_date', 'authorization_date', 'invoice_date', 'delivery_date', 'evidence_reception_date', 'evidence_cutoff_date'];
                     if (dateColumns.includes(columnKey)) {
+                        // Formateo de fechas
                         const date = new Date(value);
                         if (isNaN(date.getTime())) return '—';
                         return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     }
-                    if (columnKey === 'subtotal') return '$' + new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
-                    if (columnKey === 'total_boxes') return new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
-                    const longTextColumns = ['customer_name', 'shipping_address', 'observations', 'purchase_order', 'bt_oc', 'so_number', 'client_contact', 'executive',
-                        'origin_warehouse', 'destination_locality', 'channel', 'invoice_number'];
-                    if (longTextColumns.includes(columnKey)) return String(value).substring(0, 10) + (String(value).length > 10 ? '...' : '');
+                    if (columnKey === 'subtotal') {
+                        // Formateo de moneda
+                        return '$' + new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+                    }
+                    if (columnKey === 'total_boxes') {
+                        // Formateo de números enteros
+                        return new Intl.NumberFormat('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+                    }
+                    
+                    // --- CAMBIO CLAVE: Se elimina el bloque que cortaba el texto ---
+                    // Ahora, simplemente devolvemos el valor original para todas las demás columnas.
                     return value;
+
                 } catch (e) {
                     console.error(`Error formateando la columna '${columnKey}' con el valor:`, value, e);
                     return 'Error';

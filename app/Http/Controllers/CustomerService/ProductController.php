@@ -29,6 +29,22 @@ class ProductController extends Controller
         ]);
     }
 
+    public function search(Request $request)
+    {
+        $searchTerm = $request->query('term', '');
+
+        if (strlen($searchTerm) < 2) {
+            return response()->json([]);
+        }
+
+        $products = \App\Models\CsProduct::where('sku', 'like', "%{$searchTerm}%")
+            ->orWhere('description', 'like', "%{$searchTerm}%")
+            ->limit(10) // Devolvemos solo los primeros 10 resultados para ser rápidos
+            ->get(['id', 'sku', 'description']);
+
+        return response()->json($products);
+    }       
+
     public function create()
     {
         $brands = CsBrand::orderBy('name')->get();

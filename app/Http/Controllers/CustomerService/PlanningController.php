@@ -11,6 +11,7 @@ use App\Models\CsOrderEvent;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Guia;
 use App\Models\CsPlanningEvent;
+use Carbon\Carbon;
 
 class PlanningController extends Controller
 {
@@ -99,7 +100,6 @@ class PlanningController extends Controller
      */
     public function store(Request $request)
     {
-        // Validación de los campos del formulario
         $validatedData = $request->validate([
             'razon_social' => 'required|string|max:255',
             'direccion' => 'required|string|max:255',
@@ -115,10 +115,9 @@ class PlanningController extends Controller
             'canal' => 'nullable|string|max:255',
         ]);
         
-        $planning = CsPlanning::create($validatedData); // Guardamos la instancia en una variable
+        $validatedData['status'] = 'En Espera';
+        $planning = CsPlanning::create($validatedData);
 
-        // --- INICIA CÓDIGO AÑADIDO ---
-        // Creamos el primer evento para el registro manual
         CsPlanningEvent::create([
             'cs_planning_id' => $planning->id,
             'user_id' => Auth::id(),
@@ -127,7 +126,7 @@ class PlanningController extends Controller
 
         return redirect()->route('customer-service.planning.index')
                          ->with('success', 'Registro de planificación manual creado exitosamente.');
-    }    
+    }
 
     public function addScales(Request $request, CsPlanning $planning)
     {
@@ -205,11 +204,9 @@ class PlanningController extends Controller
             'cajas' => 'nullable|integer',
             'origen' => 'required|string|max:255',
             'destino' => 'required|string|max:255',
-            'fecha_carga' => 'nullable|date',
-            'hora_carga' => 'nullable|date_format:H:i',            
-            'fecha_carga' => 'nullable|date',
-            'hora_carga' => 'nullable|date_format:H:i',
             'hora_cita' => 'nullable|string|max:255',
+            'fecha_carga' => 'nullable|date',
+            'hora_carga' => 'nullable|date_format:H:i', // La validación se mantiene estricta
             'capacidad' => 'nullable|string',
             'transporte' => 'nullable|string|max:255',
             'estado' => 'nullable|string',
@@ -228,45 +225,39 @@ class PlanningController extends Controller
         $originalData = $planning->getOriginal();
         $changes = [];
 
-        // Compara los datos viejos con los nuevos para registrar los cambios
         foreach ($validatedData as $key => $value) {
-            if ($originalData[$key] != $value) {
-                // Formateamos la fecha para una comparación correcta
-                $oldValue = $key === 'fecha_carga' && $originalData[$key] ? \Carbon\Carbon::parse($originalData[$key])->format('Y-m-d') : $originalData[$key];
-                
-                if ($oldValue != $value) {
-                    $fieldName = ucwords(str_replace('_', ' ', $key));
-                    $oldValueText = $oldValue ?? 'vacío';
-                    $newValueText = $value ?? 'vacío';
-                    $changes[] = "cambió '{$fieldName}' de '{$oldValueText}' a '{$newValueText}'";
-                }
+            $oldValue = $originalData[$key] ?? null;
+            $oldValueFormatted = $oldValue;
+            $newValueFormatted = $value;
+
+            if ($key === 'fecha_carga') {
+                $oldValueFormatted = $oldValue ? Carbon::parse($oldValue)->format('Y-m-d') : null;
+            }
+            if ($key === 'hora_carga') {
+                $oldValueFormatted = $oldValue ? Carbon::parse($oldValue)->format('H:i') : null;
+            }
+
+            if ($oldValueFormatted != $newValueFormatted) {
+                $fieldName = ucwords(str_replace('_', ' ', $key));
+                $oldValueText = $oldValue ? ($key === 'hora_carga' ? Carbon::parse($oldValue)->format('H:i') : $oldValue) : 'vacío';
+                $newValueText = $value ? ($key === 'hora_carga' ? Carbon::parse($value)->format('H:i') : $value) : 'vacío';
+                $changes[] = "cambió '{$fieldName}' de '{$oldValueText}' a '{$newValueText}'";
             }
         }
         
-        // Si hubo cambios, actualiza el registro y crea el evento
         if (!empty($changes)) {
             $planning->update($validatedData);
-
             $description = 'El usuario ' . Auth::user()->name . ' ' . implode(', ', $changes);
 
-            // Si tiene un pedido, registra el evento en el pedido. Si no, en sí mismo.
             if ($planning->order) {
-                \App\Models\CsOrderEvent::create([
-                    'cs_order_id' => $planning->cs_order_id,
-                    'user_id' => Auth::id(),
-                    'description' => $description . ' en la planificación.'
-                ]);
+                \App\Models\CsOrderEvent::create(['cs_order_id' => $planning->cs_order_id, 'user_id' => Auth::id(), 'description' => $description . ' en la planificación.']);
             } else {
-                \App\Models\CsPlanningEvent::create([
-                    'cs_planning_id' => $planning->id,
-                    'user_id' => Auth::id(),
-                    'description' => $description . '.'
-                ]);
+                CsPlanningEvent::create(['cs_planning_id' => $planning->id, 'user_id' => Auth::id(), 'description' => $description . '.']);
             }
         }
 
         return redirect()->route('customer-service.planning.show', $planning)->with('success', 'Planificación actualizada exitosamente.');
-    }   
+    }
     
     public function bulkEdit(Request $request)
     {
@@ -330,15 +321,39 @@ class PlanningController extends Controller
         $changesDescription = 'actualización masiva en planificación: ' . implode(', ', array_keys($dataToUpdate));
 
         foreach ($plannings as $planning) {
-            CsOrderEvent::create([
-                'cs_order_id' => $planning->cs_order_id,
-                'user_id' => Auth::id(),
-                'description' => 'El usuario ' . Auth::user()->name . ' realizó una ' . $changesDescription . '.'
-            ]);
+            if ($planning->order) {
+                \App\Models\CsOrderEvent::create([
+                    'cs_order_id' => $planning->cs_order_id,
+                    'user_id' => Auth::id(),
+                    'description' => 'El usuario ' . Auth::user()->name . ' realizó una ' . $changesDescription . '.'
+                ]);
+            } else {
+                \App\Models\CsPlanningEvent::create([
+                    'cs_planning_id' => $planning->id,
+                    'user_id' => Auth::id(),
+                    'description' => 'El usuario ' . Auth::user()->name . ' realizó una ' . $changesDescription . '.'
+                ]);
+            }
         }
 
         return redirect()->route('customer-service.planning.index')->with('success', count($planningIds) . ' registros actualizados exitosamente.');
     }
+
+    protected function prepareForValidation()
+    {
+        if ($this->has('hora_carga') && $this->input('hora_carga')) {
+            try {
+                // Tomamos el valor que envía el navegador (ej: "16:45" o "15:30:00")
+                // y lo convertimos a un formato consistente con segundos (H:i:s).
+                $formattedTime = Carbon::parse($this->input('hora_carga'))->format('H:i');
+                
+                // Reemplazamos el valor en la solicitud para que la validación lo reciba ya limpio.
+                $this->merge(['hora_carga' => $formattedTime]);
+            } catch (\Exception $e) {
+                // Si el formato es inválido, no hacemos nada y dejamos que la validación falle.
+            }
+        }
+    }   
     
     public function markAsDirect(Request $request, CsPlanning $planning)
     {

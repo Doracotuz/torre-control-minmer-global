@@ -120,7 +120,7 @@
                     </div>
 
                     <h4 class="text-lg font-semibold text-gray-800 mt-8 mb-4">Detalles de SKUs</h4>
-                    <div class="max-h-48 overflow-y-auto border rounded-lg">
+                    <div class="max-h-70 overflow-y-auto border rounded-lg">
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50 sticky top-0 z-50">
                                 <tr>
@@ -132,16 +132,32 @@
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach($order->details as $index => $detail)
-                                    <tr>
+                                    {{-- El x-data ahora se mueve a cada fila para gestionar su propia búsqueda --}}
+                                    <tr x-data="{ 
+                                        open: false, 
+                                        query: '{{ old('details.' . $index . '.sku', $detail->sku) }}', 
+                                        selected: '{{ old('details.' . $index . '.sku', $detail->sku) }}',
+                                        results: [],
+                                        search() {
+                                            if (this.query.length < 2) { this.results = []; return; }
+                                            fetch(`{{ route('customer-service.products.search') }}?term=${this.query}`)
+                                                .then(response => response.json())
+                                                .then(data => this.results = data);
+                                        }
+                                    }">
                                         <td class="px-4 py-2">
-                                            <div x-data="{ open: false, query: '{{ old('details.' . $index . '.sku', $detail->sku) }}', selected: '{{ old('details.' . $index . '.sku', $detail->sku) }}' }" @click.away="open = false" class="relative">
+                                            <div @click.away="open = false" class="relative">
                                                 <input type="hidden" name="details[{{ $index }}][sku]" x-model="selected" required>
-                                                <input type="text" x-model="query" @focus="open = true" @input="open = true" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Buscar SKU..." required>
-                                                <ul x-show="open" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                                                    <template x-for="product in {{ json_encode($products) }}" :key="product.id">
-                                                        <li @click="selected = product.sku; query = product.sku; open = false" x-show="product.sku.toLowerCase().includes(query.toLowerCase())" class="px-4 py-2 cursor-pointer hover:bg-gray-100">
+                                                <input type="text" x-model="query" @focus="open = true" @input.debounce.300ms="search()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Buscar SKU..." required>
+                                                <ul x-show="open" class="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                                    {{-- El template ahora itera sobre los resultados de la búsqueda --}}
+                                                    <template x-for="product in results" :key="product.id">
+                                                        <li @click="selected = product.sku; query = product.sku; open = false" class="px-4 py-2 cursor-pointer hover:bg-gray-100">
                                                             <span x-text="product.sku"></span> - <span x-text="product.description"></span>
                                                         </li>
+                                                    </template>
+                                                    <template x-if="results.length === 0 && query.length > 1">
+                                                        <li class="px-4 py-2 text-gray-500">No se encontraron resultados.</li>
                                                     </template>
                                                 </ul>
                                             </div>
@@ -149,8 +165,7 @@
                                         <td class="px-4 py-2">{{ $detail->product->description ?? 'N/A' }}</td>
                                         <td class="px-4 py-2">{{ $detail->quantity }}</td>
                                         <td class="px-4 py-2">
-                                            <input type="number" name="details[{{ $index }}][sent]" value="{{ old('details.' . $index . '.sent', $detail->sent ?? 0) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
-                                            <input type="hidden" name="details[{{ $index }}][id]" value="{{ $detail->id }}">
+                                            <input type="number" name="details[{{ $index }}][sent]" value="{{ old('details.' . $index . '.sent', ($detail->sent > 0) ? $detail->sent : $detail->quantity) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">                                            <input type="hidden" name="details[{{ $index }}][id]" value="{{ $detail->id }}">
                                         </td>
                                     </tr>
                                 @endforeach

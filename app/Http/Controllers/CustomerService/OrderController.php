@@ -85,8 +85,61 @@ class OrderController extends Controller
      */
     public function show(CsOrder $order)
     {
-        $order->load(['details', 'events.user', 'createdBy']);
-        return view('customer-service.orders.show', compact('order'));
+        // Cargamos las relaciones necesarias del pedido
+        $order->load(['details', 'createdBy']);
+
+        // 1. Obtenemos los eventos de cada módulo
+        $orderEvents = $order->events()->with('user')->get();
+        $planningEvents = $order->planningEvents()->with('user')->get();
+        $guiaEvents = $order->guiaEvents()->get();
+
+        // 2. Unificamos todos los eventos en una sola colección
+        $timelineEvents = collect([]);
+
+        $orderEvents->each(function ($event) use ($timelineEvents) {
+            
+            // --- INICIA LÓGICA DE ETIQUETADO INTELIGENTE ---
+            $type = 'Pedido';
+            $color = 'blue';
+            if (str_contains($event->description, 'en la planificación')) {
+                $type = 'Planificación';
+                $color = 'purple';
+            }
+            // --- TERMINA LÓGICA DE ETIQUETADO INTELIGENTE ---
+
+            $timelineEvents->push([
+                'type' => $type,
+                'description' => $event->description,
+                'user_name' => $event->user->name ?? 'Sistema',
+                'date' => $event->created_at,
+                'color' => $color,
+            ]);
+        });
+
+        $planningEvents->each(function ($event) use ($timelineEvents) {
+            $timelineEvents->push([
+                'type' => 'Planificación',
+                'description' => $event->description,
+                'user_name' => $event->user->name ?? 'Sistema',
+                'date' => $event->created_at,
+                'color' => 'purple',
+            ]);
+        });
+
+        $guiaEvents->each(function ($event) use ($timelineEvents) {
+            $timelineEvents->push([
+                'type' => 'Asignación',
+                'description' => "{$event->subtipo}: {$event->nota}",
+                'user_name' => 'Operador/Sistema',
+                'date' => $event->fecha_evento,
+                'color' => 'green',
+            ]);
+        });
+        
+        // 3. Ordenamos la colección final por fecha, de más reciente a más antiguo
+        $timelineEvents = $timelineEvents->sortByDesc('date');
+
+        return view('customer-service.orders.show', compact('order', 'timelineEvents'));
     }
 
     /**
@@ -95,9 +148,9 @@ class OrderController extends Controller
     public function edit(CsOrder $order)
     {
         $order->load(['details.product']);
-        $products = CsProduct::all()->sortBy('sku'); // Obtiene todos los productos
-        return view('customer-service.orders.edit', compact('order', 'products'));
-    }
+        // $products = CsProduct::all()->sortBy('sku');
+        return view('customer-service.orders.edit', compact('order'));
+    } 
 
     /**
      * Actualiza un pedido y registra los cambios en la línea de tiempo.
@@ -446,6 +499,12 @@ class OrderController extends Controller
 
                     $order->details()->createMany($data['details']);
                     $processedDocNumbers[] = $docNum;
+
+                    CsOrderEvent::create([
+                        'cs_order_id' => $order->id,
+                        'user_id' => Auth::id(),
+                        'description' => 'El pedido fue creado por ' . Auth::user()->name . ' mediante una importación masiva (CSV).'
+                    ]);                    
                 }
             });
         }

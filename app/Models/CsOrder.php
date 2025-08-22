@@ -27,4 +27,34 @@ class CsOrder extends Model
     public function plan() { return $this->hasOne(CsPlan::class); }
     public function events() { return $this->hasMany(CsOrderEvent::class)->orderBy('created_at', 'desc'); }
     public function createdBy() { return $this->belongsTo(User::class, 'created_by_user_id'); }
+    public function planningEvents()
+    {
+        return $this->hasManyThrough(
+            \App\Models\CsPlanningEvent::class,
+            \App\Models\CsPlanning::class,
+            'cs_order_id', // Clave foránea en la tabla cs_plannings
+            'cs_planning_id', // Clave foránea en la tabla cs_planning_events
+            'id', // Clave local en la tabla cs_orders
+            'id' // Clave local en la tabla cs_plannings
+        );
+    }
+
+    /**
+     * Obtiene los eventos de la guía (Asignación) a través de su registro de planificación.
+     * Una orden TIENE MUCHOS eventos de guía A TRAVÉS DE su planificación.
+     */
+    public function guiaEvents()
+    {
+        // Esta relación es más compleja, por lo que la construiremos paso a paso.
+        // Primero, obtenemos el ID de la guía asociada a la planificación de esta orden.
+        $guiaId = $this->plan()->first()->guia_id ?? null;
+
+        if ($guiaId) {
+            // Si existe una guía, devolvemos sus eventos.
+            return \App\Models\Evento::where('guia_id', $guiaId)->orderBy('fecha_evento', 'desc');
+        }
+
+        // Si no hay guía, devolvemos una relación vacía.
+        return \App\Models\Evento::where('guia_id', -1); // ID заведомо неверный
+    }    
 }
