@@ -11,6 +11,10 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Event;
+use App\Models\CsPlanning;
+use App\Observers\CsPlanningObserver;
+use App\Models\CsOrder;
+use App\Observers\CsOrderObserver;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -37,6 +41,8 @@ class EventServiceProvider extends ServiceProvider
     {
         // <-- VERIFICA QUE EL OBSERVER ESTÉ REGISTRADO AQUÍ
         ActivityLog::observe(ActivityLogObserver::class);
+        CsPlanning::observe(CsPlanningObserver::class);
+        CsOrder::observe(CsOrderObserver::class); 
     }
 
     /**

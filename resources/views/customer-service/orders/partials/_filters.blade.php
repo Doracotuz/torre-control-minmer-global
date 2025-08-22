@@ -1,5 +1,6 @@
-<div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-    <div class="md:col-span-1">
+<div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+    {{-- Filtros existentes --}}
+    <div class="md:col-span-2">
         <label for="search" class="block text-sm font-medium text-gray-700">Búsqueda Rápida</label>
         <input type="text" x-model.debounce.300ms="filters.search" id="search" placeholder="Buscar por SO, OC, Cliente..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
     </div>
@@ -9,20 +10,8 @@
             <option value="">Todos</option>
             <option value="Pendiente">Pendiente</option>
             <option value="En Planificación">En Planificación</option>
+            <option value="En Planificación">Terminado</option>
             <option value="Cancelado">Cancelado</option>
-        </select>
-    </div>
-    <div>
-        <label for="channel" class="block text-sm font-medium text-gray-700">Canal</label>
-        <select x-model="filters.channel" id="channel" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
-            <option value="">Todos</option>
-            <option value="Corporate">Corporate</option>
-            <option value="Especialista">Especialista</option>
-            <option value="Moderno">Moderno</option>
-            <option value="On">On</option>
-            <option value="On trade">On trade</option>
-            <option value="POSM">POSM</option>
-            <option value="Private">Private</option>
         </select>
     </div>
     <div>
@@ -32,5 +21,14 @@
     <div>
         <label for="date_to" class="block text-sm font-medium text-gray-700">Fecha Hasta</label>
         <input type="date" x-model="filters.date_to" id="date_to" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+    </div>
+
+    {{-- Nuevo Botón de Filtros Avanzados --}}
+    <div class="flex items-end">
+        <button @click="isAdvancedFilterModalOpen = true" class="w-full h-10 px-4 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-semibold shadow-sm hover:bg-gray-50 flex items-center justify-center">
+            <i class="fas fa-filter mr-2"></i>
+            Avanzados
+            <span x-show="advancedFilterCount > 0" x-text="`(${advancedFilterCount})`" class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs"></span>
+        </button>
     </div>
 </div>

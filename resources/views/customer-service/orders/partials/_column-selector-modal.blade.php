@@ -17,7 +17,7 @@
             <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.channel" class="rounded"> <span class="ml-2">Canal</span></label></div>
             <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.delivery_date" class="rounded"> <span class="ml-2">F. Entrega</span></label></div>
             <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.schedule" class="rounded"> <span class="ml-2">Horario</span></label></div>
-            <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.client_contact" class="rounded"> <span class="ml-2">Cliente Contacto</span></label></div>
+            <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.client_contact" class="rounded"> <span class="ml-2">Cliente</span></label></div>
             <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.shipping_address" class="rounded"> <span class="ml-2">Dirección</span></label></div>
             <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.destination_locality" class="rounded"> <span class="ml-2">Localidad Destino</span></label></div>
             <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.executive" class="rounded"> <span class="ml-2">Ejecutivo</span></label></div>

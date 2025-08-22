@@ -178,9 +178,37 @@ class AsignacionController extends Controller
         return redirect()->route('rutas.asignaciones.index')->with('success', 'Archivo importado exitosamente.');
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('rutas.asignaciones.create');
+        $facturasData = [];
+        $guiaData = [
+            'custodia' => $request->query('custodia'),
+            'hora_planeada' => $request->query('hora_planeada'),
+            'origen' => $request->query('origen'),
+            'fecha_asignacion' => $request->query('fecha_asignacion'),
+        ];
+
+        if ($request->has('planning_ids')) {
+            $planningRecords = \App\Models\CsPlanning::find($request->query('planning_ids'));
+            
+            foreach ($planningRecords as $planning) {
+                $facturasData[] = [
+                    'cs_planning_id' => $planning->id,
+                    'numero_factura' => $planning->factura ?? $planning->so_number,
+                    'destino' => $planning->razon_social,
+                    'cajas' => $planning->cajas,
+                    'botellas' => $planning->pzs,
+                    'hora_cita' => $planning->hora_cita,
+                    'so' => $planning->so_number,
+                    'fecha_entrega' => $planning->fecha_entrega?->format('Y-m-d'),
+                ];
+            }
+        }
+        
+        // Pasamos también los IDs para saber qué registros actualizar después
+        $planning_ids = json_encode($request->query('planning_ids', []));
+
+        return view('rutas.asignaciones.create', compact('facturasData', 'guiaData', 'planning_ids'));
     }
 
     public function store(Request $request)
@@ -196,6 +224,7 @@ class AsignacionController extends Controller
             'fecha_asignacion' => 'nullable|date',
             'origen' => 'required|string|max:3',
             'facturas' => 'required|array|min:1',
+            'facturas.*.cs_planning_id' => 'nullable|integer|exists:cs_plannings,id',
             'facturas.*.numero_factura' => 'required|string|max:255',
             'facturas.*.destino' => 'required|string|max:255',
             'facturas.*.cajas' => 'required|integer|min:0',
@@ -210,6 +239,15 @@ class AsignacionController extends Controller
         try {
             $guia = Guia::create($validatedData);
             $guia->facturas()->createMany($validatedData['facturas']);
+            
+            if ($request->filled('planning_ids')) {
+                $planningIds = json_decode($request->planning_ids, true);
+                if (is_array($planningIds) && count($planningIds) > 0) {
+                    // --- CAMBIO CLAVE: Guardamos el ID de la guía ---
+                    \App\Models\CsPlanning::whereIn('id', $planningIds)
+                        ->update(['status' => 'Asignado en Guía', 'guia_id' => $guia->id]);
+                }
+            }
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -253,7 +291,9 @@ class AsignacionController extends Controller
         try {
             $guia->update($validatedData);
             $facturasIdsActuales = [];
+
             foreach ($validatedData['facturas'] as $facturaData) {
+                $factura = null;
                 if (isset($facturaData['id'])) {
                     $factura = $guia->facturas()->find($facturaData['id']);
                     if ($factura) {
@@ -263,6 +303,23 @@ class AsignacionController extends Controller
                 } else {
                     $nuevaFactura = $guia->facturas()->create($facturaData);
                     $facturasIdsActuales[] = $nuevaFactura->id;
+                }
+
+                // --- INICIA CAMBIO: Lógica de Sincronización ---
+                if (isset($facturaData['cs_planning_id']) && $facturaData['cs_planning_id']) {
+                    $planningRecord = \App\Models\CsPlanning::find($facturaData['cs_planning_id']);
+                    if ($planningRecord) {
+                        // Mapeamos los campos de factura a los de planificación
+                        $planningRecord->update([
+                            'factura' => $facturaData['numero_factura'],
+                            'destino' => $facturaData['destino'],
+                            'cajas' => $facturaData['cajas'],
+                            'pzs' => $facturaData['botellas'],
+                            'hora_cita' => $facturaData['hora_cita'],
+                            'so_number' => $facturaData['so'],
+                            'fecha_entrega' => $facturaData['fecha_entrega'],
+                        ]);
+                    }
                 }
             }
             $guia->facturas()->whereNotIn('id', $facturasIdsActuales)->delete();

@@ -65,12 +65,12 @@
                 </a>
 
                 <!-- Mosaico 6 (Placeholder) -->
-                <a href="#" class="group relative block h-64 rounded-xl overflow-hidden shadow-lg">
-                    <img src="https://placehold.co/600x600/1ABC9C/FFFFFF?text=Config" alt="Mosaico 6" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                <a href="{{ route('customer-service.planning.index') }}" class="group relative block h-64 rounded-xl overflow-hidden shadow-lg">
+                    <img src="https://s3.abcstatics.com/abc/www/multimedia/summum/2023/07/12/perignon5-RtTDwmtkhOu586tf3xc56TJ-1200x840@abc.jpg" alt="Planificación de Rutas" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
                     <div class="relative h-full flex flex-col justify-end p-6 text-white">
-                        <h3 class="text-2xl font-bold tracking-tight">Módulo 6 (Próximamente)</h3>
-                        <p class="mt-1 text-gray-300">Descripción del sexto módulo.</p>
+                        <h3 class="text-2xl font-bold tracking-tight">Planificación</h3>
+                        <p class="mt-1 text-gray-300">Gestiona y programa las rutas de entrega.</p>
                     </div>
                 </a>
 

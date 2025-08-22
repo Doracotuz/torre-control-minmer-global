@@ -484,6 +484,8 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         
         // --- MUEVE LA RUTA DEL DASHBOARD AQUÍ ARRIBA ---
         Route::get('/dashboard', [OrderController::class, 'dashboard'])->name('dashboard');
+        Route::get('/bulk-edit', [OrderController::class, 'bulkEdit'])->name('bulk-edit');
+        Route::post('/bulk-update', [OrderController::class, 'bulkUpdate'])->name('bulk-update');        
 
         Route::get('/create', [OrderController::class, 'create'])->name('create');
         Route::post('/', [OrderController::class, 'store'])->name('store');
@@ -501,6 +503,20 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         Route::get('credit-notes/export/csv', [CreditNoteController::class, 'exportCsv'])->name('credit-notes.export.csv');
         Route::get('credit-notes/dashboard', [CreditNoteController::class, 'dashboard'])->name('credit-notes.dashboard');                
         Route::resource('credit-notes', CreditNoteController::class);
+
+    Route::prefix('planning')->name('planning.')->group(function() {
+        Route::get('/', [App\Http\Controllers\CustomerService\PlanningController::class, 'index'])->name('index');
+        Route::get('/filter', [App\Http\Controllers\CustomerService\PlanningController::class, 'filter'])->name('filter');
+        Route::get('/bulk-edit', [App\Http\Controllers\CustomerService\PlanningController::class, 'bulkEdit'])->name('bulk-edit');
+        Route::post('/bulk-update', [App\Http\Controllers\CustomerService\PlanningController::class, 'bulkUpdate'])->name('bulk-update');        
+        Route::get('/{planning}', [App\Http\Controllers\CustomerService\PlanningController::class, 'show'])->name('show');
+        Route::get('/{planning}/edit', [App\Http\Controllers\CustomerService\PlanningController::class, 'edit'])->name('edit');
+        Route::put('/{planning}', [App\Http\Controllers\CustomerService\PlanningController::class, 'update'])->name('update');
+        Route::post('/{planning}/schedule', [App\Http\Controllers\CustomerService\PlanningController::class, 'schedule'])->name('schedule');
+        Route::post('/{planning}/add-scales', [App\Http\Controllers\CustomerService\PlanningController::class, 'addScales'])->name('add-scales');
+        Route::post('/{planning}/mark-as-direct', [App\Http\Controllers\CustomerService\PlanningController::class, 'markAsDirect'])->name('mark-as-direct');
+        
+    });
 
 });
 

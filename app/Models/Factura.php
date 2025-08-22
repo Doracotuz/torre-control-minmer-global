@@ -11,6 +11,7 @@ class Factura extends Model
 
     protected $fillable = [
         'guia_id',
+        'cs_planning_id',
         'numero_factura',
         'destino',
         'cajas',

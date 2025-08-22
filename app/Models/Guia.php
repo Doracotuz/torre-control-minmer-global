@@ -49,6 +49,11 @@ class Guia extends Model
         return $this->hasMany(\App\Models\ManiobraEvento::class);
     }
 
+    public function plannings()
+    {
+        return $this->hasMany(\App\Models\CsPlanning::class, 'guia_id');
+    }    
+
     // public function getRouteKeyName()
     // {
     //     return 'guia'; // Indica a Laravel que use la columna 'guia' para la resolución de rutas

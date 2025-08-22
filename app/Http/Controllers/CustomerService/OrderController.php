@@ -35,20 +35,45 @@ class OrderController extends Controller
     {
         $query = CsOrder::with('plan')->orderBy('creation_date', 'desc');
 
+        // Filtro de búsqueda rápida (se mantiene)
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('so_number', 'like', $searchTerm)
                   ->orWhere('purchase_order', 'like', $searchTerm)
                   ->orWhere('customer_name', 'like', $searchTerm)
-                  ->orWhere('invoice_number', 'like', $searchTerm);
+                  ->orWhere('invoice_number', 'like', $searchTerm)
+                  ->orWhere('client_contact', 'like', $searchTerm);
             });
         }
+        
+        // Filtros básicos (se mantienen)
         if ($request->filled('status')) { $query->where('status', $request->status); }
         if ($request->filled('channel')) { $query->where('channel', $request->channel); }
         if ($request->filled('date_from') && $request->filled('date_to')) {
             $query->whereBetween('creation_date', [$request->date_from, $request->date_to]);
         }
+
+        // --- INICIA CAMBIO: Se añaden los nuevos filtros avanzados ---
+        if ($request->filled('status')) { $query->where('status', $request->status); }
+        if ($request->filled('date_from') && $request->filled('date_to')) {
+            $query->whereBetween('creation_date', [$request->date_from, $request->date_to]);
+        }
+
+        // --- INICIA CAMBIO: Se añaden TODAS las columnas filtrables del modal ---
+        if ($request->filled('purchase_order_adv')) { $query->where('purchase_order', 'like', '%' . $request->purchase_order_adv . '%'); }
+        if ($request->filled('bt_oc')) { $query->where('bt_oc', 'like', '%' . $request->bt_oc . '%'); }
+        if ($request->filled('customer_name_adv')) { $query->where('customer_name', 'like', '%' . $request->customer_name_adv . '%'); }
+        if ($request->filled('channel')) { $query->where('channel', $request->channel); }
+        if ($request->filled('invoice_number_adv')) { $query->where('invoice_number', 'like', '%' . $request->invoice_number_adv . '%'); }
+        if ($request->filled('invoice_date')) { $query->whereDate('invoice_date', $request->invoice_date); }
+        if ($request->filled('origin_warehouse')) { $query->where('origin_warehouse', 'like', '%' . $request->origin_warehouse . '%'); }
+        if ($request->filled('destination_locality')) { $query->where('destination_locality', 'like', '%' . $request->destination_locality . '%'); }
+        if ($request->filled('delivery_date')) { $query->whereDate('delivery_date', $request->delivery_date); }
+        if ($request->filled('executive')) { $query->where('executive', 'like', '%' . $request->executive . '%'); }
+        if ($request->filled('evidence_reception_date')) { $query->whereDate('evidence_reception_date', $request->evidence_reception_date); }
+        if ($request->filled('evidence_cutoff_date')) { $query->whereDate('evidence_cutoff_date', $request->evidence_cutoff_date); }
+        // --- TERMINA CAMBIO ---
 
         $orders = $query->paginate(15)->withQueryString();
 
@@ -162,17 +187,70 @@ class OrderController extends Controller
     /**
      * Marca un pedido como "Cancelado".
      */
-    public function cancel(CsOrder $order)
+    public function cancel(Request $request, CsOrder $order)
     {
-        $order->update(['status' => 'Cancelado', 'updated_by_user_id' => Auth::id()]);
-        
-        CsOrderEvent::create([
-            'cs_order_id' => $order->id,
-            'user_id' => Auth::id(),
-            'description' => 'El usuario ' . Auth::user()->name . ' canceló el pedido.'
-        ]);
+        DB::transaction(function () use ($order, $request) { // Se añade $request para el tipo de respuesta
+            // 1. Actualizar el estatus de la Orden
+            $order->update(['status' => 'Cancelado', 'updated_by_user_id' => Auth::id()]);
 
-        return back()->with('success', 'El pedido ha sido cancelado.');
+            // 2. Buscar TODOS los registros de planificación asociados
+            $planningRecords = \App\Models\CsPlanning::where('cs_order_id', $order->id)->get();
+            
+            if ($planningRecords->isNotEmpty()) {
+                $processedGuiaIds = [];
+
+                // 3. Iterar sobre CADA registro de planificación y cancelarlo
+                foreach ($planningRecords as $planningRecord) {
+                    $planningRecord->update(['status' => 'Cancelado']);
+
+                    // 4. Gestionar la Guía asociada, si existe
+                    if ($planningRecord->guia_id && !in_array($planningRecord->guia_id, $processedGuiaIds)) {
+                        $guia = \App\Models\Guia::with('facturas')->find($planningRecord->guia_id);
+                        
+                        if ($guia) {
+                            // --- INICIA BLOQUE DE CÓDIGO CORREGIDO Y MEJORADO ---
+                            $planning_ids = $planningRecords->pluck('id');
+                            $so_number = $order->so_number; // Obtenemos el SO del pedido que se cancela
+
+                            // Lógica mejorada para encontrar las facturas a eliminar
+                            $facturas_de_la_orden_en_guia = $guia->facturas()
+                                ->where(function ($query) use ($planning_ids, $so_number) {
+                                    $query->whereIn('cs_planning_id', $planning_ids) // Plan A: Buscar por el ID de planificación
+                                          ->orWhere('so', $so_number);             // Plan B: Buscar por el número de SO
+                                });
+                            // --- TERMINA BLOQUE DE CÓDIGO CORREGIDO ---
+                            
+                            $total_facturas_en_guia = $guia->facturas()->count();
+                            $total_facturas_a_eliminar = $facturas_de_la_orden_en_guia->count();
+
+                            // Si al quitar las facturas no queda ninguna, se cancela la guía.
+                            if (($total_facturas_en_guia - $total_facturas_a_eliminar) <= 0) {
+                                $guia->update(['estatus' => 'Cancelado']);
+                            }
+                            
+                            // Se eliminan todas las facturas de la guía que pertenecen a la orden cancelada.
+                            if ($total_facturas_a_eliminar > 0) {
+                                $facturas_de_la_orden_en_guia->delete();
+                            }
+                        }
+                        $processedGuiaIds[] = $planningRecord->guia_id;
+                    }
+                }
+            }
+            
+            // 5. Registrar el evento en la línea de tiempo
+            CsOrderEvent::create([
+                'cs_order_id' => $order->id,
+                'user_id' => Auth::id(),
+                'description' => 'El usuario ' . Auth::user()->name . ' canceló el pedido. El cambio se ha propagado a Planificación y Guías.'
+            ]);
+        });
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['message' => 'El pedido ha sido cancelado exitosamente en todos los módulos.']);
+        }
+
+        return back()->with('success', 'El pedido ha sido cancelado exitosamente en todos los módulos.');
     }
 
     /**
@@ -180,17 +258,30 @@ class OrderController extends Controller
      */
     public function moveToPlan(CsOrder $order)
     {
-        if ($order->plan) {
+        // Usaremos el cs_order_id para verificar si ya existe en planificación
+        if (\App\Models\CsPlanning::where('cs_order_id', $order->id)->exists()) {
             return back()->with('error', 'Este pedido ya ha sido enviado a planificación.');
         }
 
         DB::transaction(function () use ($order) {
             $order->update(['status' => 'En Planificación', 'updated_by_user_id' => Auth::id()]);
 
-            CsPlan::create([
+            // Crear el registro en la nueva tabla de planificación
+            \App\Models\CsPlanning::create([
                 'cs_order_id' => $order->id,
-                'planned_by_user_id' => Auth::id(),
-                'status' => 'Pendiente',
+                'fecha_entrega' => $order->delivery_date,
+                'origen' => $order->origin_warehouse,
+                'direccion' => $order->shipping_address,
+                'razon_social' => $order->client_contact ?: $order->customer_name,
+                'hora_cita' => $order->schedule,
+                'so_number' => $order->so_number,
+                'factura' => $order->invoice_number ?: $order->so_number,
+                'pzs' => $order->total_bottles,
+                'cajas' => $order->total_boxes,
+                'subtotal' => $order->subtotal,
+                'canal' => $order->channel,
+                'destino' => $order->destination_locality,
+                'status' => 'En Espera', // Estatus por default
             ]);
 
             CsOrderEvent::create([
@@ -625,6 +716,56 @@ class OrderController extends Controller
 
         return redirect()->route('customer-service.orders.show', $order)->with('success', 'Datos originales actualizados exitosamente.');
     }
+
+    public function bulkEdit(Request $request)
+    {
+        $request->validate(['ids' => 'required|array|min:1']);
+        $orderIds = $request->query('ids');
+        $ordersCount = count($orderIds);
+
+        return view('customer-service.orders.bulk-edit', compact('orderIds', 'ordersCount'));
+    }
+
+    /**
+     * Procesa la actualización masiva de órdenes.
+     */
+    public function bulkUpdate(Request $request)
+    {
+        $validatedData = $request->validate([
+            'ids' => 'required|string', // Viene como JSON string
+            'invoice_number' => 'nullable|string|max:255',
+            'invoice_date' => 'nullable|date_format:Y-m-d',
+            'delivery_date' => 'nullable|date_format:Y-m-d',
+            'schedule' => 'nullable|string|max:255',
+            'client_contact' => 'nullable|string|max:255',
+            'shipping_address' => 'nullable|string',
+            'destination_locality' => 'nullable|string|max:255',
+            'executive' => 'nullable|string|max:255',
+            'evidence_reception_date' => 'nullable|date_format:Y-m-d',
+            'evidence_cutoff_date' => 'nullable|date_format:Y-m-d',
+        ]);
+
+        $orderIds = json_decode($validatedData['ids']);
+        
+        $dataToUpdate = collect($validatedData)->except('ids')->filter()->all();
+        
+        if (empty($dataToUpdate)) {
+            return redirect()->route('customer-service.orders.index')->with('info', 'No se especificaron cambios para aplicar.');
+        }
+
+        CsOrder::whereIn('id', $orderIds)->update($dataToUpdate);
+
+        $changesDescription = 'actualización masiva: ' . implode(', ', array_keys($dataToUpdate));
+        foreach ($orderIds as $orderId) {
+            CsOrderEvent::create([
+                'cs_order_id' => $orderId,
+                'user_id' => Auth::id(),
+                'description' => 'El usuario ' . Auth::user()->name . ' realizó una ' . $changesDescription . '.'
+            ]);
+        }
+
+        return redirect()->route('customer-service.orders.index')->with('success', count($orderIds) . ' órdenes actualizadas exitosamente.');
+    }    
 
 
 }

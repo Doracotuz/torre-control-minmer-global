@@ -6,6 +6,11 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 use App\Models\ActivityLog;
 use App\Observers\ActivityLogObserver;
+use App\Models\CsOrder;
+use App\Observers\CsOrderObserver;
+use App\Models\CsPlanning;
+use App\Observers\CsPlanningObserver;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -26,6 +31,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         ActivityLog::observe(ActivityLogObserver::class);
+        CsOrder::observe(CsOrderObserver::class);
+        CsPlanning::observe(CsPlanningObserver::class);
     }
 
     protected $listen = [

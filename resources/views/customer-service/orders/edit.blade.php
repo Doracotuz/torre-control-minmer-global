@@ -66,7 +66,45 @@
                         {{-- Campo modificado para activar el cálculo --}}
                         <div>
                             <label for="destination_locality" class="block text-sm font-medium text-gray-700">Localidad Destino</label>
-                            <input type="text" name="destination_locality" x-model="destination_locality" @change="calculateCutoffDate()" value="{{ old('destination_locality', $order->destination_locality) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <select name="destination_locality" x-model="destination_locality" @change="calculateCutoffDate()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="">Selecciona una localidad</option>
+                                <option value="AGS" {{ old('destination_locality', $order->destination_locality) == 'AGS' ? 'selected' : '' }}>AGS</option>
+                                <option value="BCN" {{ old('destination_locality', $order->destination_locality) == 'BCN' ? 'selected' : '' }}>BCN</option>
+                                <option value="CDMX" {{ old('destination_locality', $order->destination_locality) == 'CDMX' ? 'selected' : '' }}>CDMX</option>
+                                <option value="CUU" {{ old('destination_locality', $order->destination_locality) == 'CUU' ? 'selected' : '' }}>CUU</option>
+                                <option value="COA" {{ old('destination_locality', $order->destination_locality) == 'COA' ? 'selected' : '' }}>COA</option>
+                                <option value="CUL" {{ old('destination_locality', $order->destination_locality) == 'CUL' ? 'selected' : '' }}>CUL</option>
+                                <option value="CUN" {{ old('destination_locality', $order->destination_locality) == 'CUN' ? 'selected' : '' }}>CUN</option>
+                                <option value="CVJ" {{ old('destination_locality', $order->destination_locality) == 'CVJ' ? 'selected' : '' }}>CVJ</option>
+                                <option value="GDL" {{ old('destination_locality', $order->destination_locality) == 'GDL' ? 'selected' : '' }}>GDL</option>
+                                <option value="GRO" {{ old('destination_locality', $order->destination_locality) == 'GRO' ? 'selected' : '' }}>GRO</option>
+                                <option value="GTO" {{ old('destination_locality', $order->destination_locality) == 'GTO' ? 'selected' : '' }}>GTO</option>
+                                <option value="HGO" {{ old('destination_locality', $order->destination_locality) == 'HGO' ? 'selected' : '' }}>HGO</option>
+                                <option value="MEX" {{ old('destination_locality', $order->destination_locality) == 'MEX' ? 'selected' : '' }}>MEX</option>
+                                <option value="MIC" {{ old('destination_locality', $order->destination_locality) == 'MIC' ? 'selected' : '' }}>MIC</option>
+                                <option value="MID" {{ old('destination_locality', $order->destination_locality) == 'MID' ? 'selected' : '' }}>MID</option>
+                                <option value="MLM" {{ old('destination_locality', $order->destination_locality) == 'MLM' ? 'selected' : '' }}>MLM</option>
+                                <option value="MTY" {{ old('destination_locality', $order->destination_locality) == 'MTY' ? 'selected' : '' }}>MTY</option>
+                                <option value="MZN" {{ old('destination_locality', $order->destination_locality) == 'MZN' ? 'selected' : '' }}>MZN</option>
+                                <option value="NAY" {{ old('destination_locality', $order->destination_locality) == 'NAY' ? 'selected' : '' }}>NAY</option>
+                                <option value="DGO" {{ old('destination_locality', $order->destination_locality) == 'DGO' ? 'selected' : '' }}>DGO</option>
+                                <option value="ZAC" {{ old('destination_locality', $order->destination_locality) == 'ZAC' ? 'selected' : '' }}>ZAC</option>
+                                <option value="OAX" {{ old('destination_locality', $order->destination_locality) == 'OAX' ? 'selected' : '' }}>OAX</option>
+                                <option value="PUE" {{ old('destination_locality', $order->destination_locality) == 'PUE' ? 'selected' : '' }}>PUE</option>
+                                <option value="QRO" {{ old('destination_locality', $order->destination_locality) == 'QRO' ? 'selected' : '' }}>QRO</option>
+                                <option value="SIN" {{ old('destination_locality', $order->destination_locality) == 'SIN' ? 'selected' : '' }}>SIN</option>
+                                <option value="SJD" {{ old('destination_locality', $order->destination_locality) == 'SJD' ? 'selected' : '' }}>SJD</option>
+                                <option value="SLP" {{ old('destination_locality', $order->destination_locality) == 'SLP' ? 'selected' : '' }}>SLP</option>
+                                <option value="SMA" {{ old('destination_locality', $order->destination_locality) == 'SMA' ? 'selected' : '' }}>SMA</option>
+                                <option value="SON" {{ old('destination_locality', $order->destination_locality) == 'SON' ? 'selected' : '' }}>SON</option>
+                                <option value="TAB" {{ old('destination_locality', $order->destination_locality) == 'TAB' ? 'selected' : '' }}>TAB</option>
+                                <option value="TGZ" {{ old('destination_locality', $order->destination_locality) == 'TGZ' ? 'selected' : '' }}>TGZ</option>
+                                <option value="TIJ" {{ old('destination_locality', $order->destination_locality) == 'TIJ' ? 'selected' : '' }}>TIJ</option>
+                                <option value="TLX" {{ old('destination_locality', $order->destination_locality) == 'TLX' ? 'selected' : '' }}>TLX</option>
+                                <option value="VER" {{ old('destination_locality', $order->destination_locality) == 'VER' ? 'selected' : '' }}>VER</option>
+                                <option value="YUC" {{ old('destination_locality', $order->destination_locality) == 'YUC' ? 'selected' : '' }}>YUC</option>
+                                <option value="ZAM" {{ old('destination_locality', $order->destination_locality) == 'ZAM' ? 'selected' : '' }}>ZAM</option>
+                            </select>
                         </div>
 
                         <div><label for="executive" class="block text-sm font-medium text-gray-700">Ejecutivo</label><input type="text" name="executive" value="{{ old('executive', $order->executive) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>

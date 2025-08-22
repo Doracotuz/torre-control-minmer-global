@@ -66,17 +66,34 @@
 
             <div class="flex justify-between items-center mb-4">
                 <span class="text-sm text-gray-500" x-show="isLoading">Cargando datos...</span>
-                <button @click="isColumnModalOpen = true" class="text-sm text-blue-600 hover:underline">Personalizar Columnas</button>
-                <button @click="isImportModalOpen = true" class="ml-4 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700">Carga de SO</button>
+                <div class="flex items-center space-x-4">
+                    <button @click="isColumnModalOpen = true" class="px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700">
+                        <i class="fas fa-columns mr-2"></i>Seleccionar Columnas
+                    </button>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button @click="isImportModalOpen = true" class="px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700">
+                        <i class="fas fa-file-import mr-2"></i>Carga de SO
+                    </button>
+                </div>
 
             </div>
-
+            <div class="flex justify-between items-center mb-4">
+                {{-- Barra de acciones para selección --}}
+                <div x-show="selectedOrders.length > 0" class="bg-gray-800 text-white p-3 rounded-lg shadow-lg flex justify-between items-center transition-transform w-full" x-transition>
+                    <span x-text="`(${selectedOrders.length}) órdenes seleccionadas.`"></span>
+                    <button @click="bulkEdit()" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700">
+                        <i class="fas fa-edit mr-2"></i>Editar Selección
+                    </button>
+                </div>
+            </div>
             <div id="orders-table-container" class="overflow-x-auto">
                 @include('customer-service.orders.partials.table')
             </div>
 
             @include('customer-service.orders.partials._column-selector-modal')
             @include('customer-service.orders.partials._import-modal')
+            @include('customer-service.orders.partials._advanced-filters-modal')
         </div>
     </div>
 </x-app-layout>
@@ -107,6 +124,23 @@
         padding: 4px;
         user-select: none;
     }
+
+#orders-table-container {
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: auto;
+    max-width: 100%;
+    border-collapse: collapse; /* Opcional, para un diseño limpio */
+}
+
+table th, table td {
+    white-space: nowrap; /* Evita que el texto se divida en varias líneas */
+}
+
 </style>
 
 <script>
@@ -115,7 +149,15 @@
             isLoading: true,
             isColumnModalOpen: false,
             isImportModalOpen: false,
-            filters: { page: 1, search: '', status: '', channel: '', date_from: '', date_to: '' },
+            isAdvancedFilterModalOpen: false,
+            advancedFilterCount: 0,            
+            filters: { 
+                page: 1, search: '', status: '', date_from: '', date_to: '',
+                purchase_order_adv: '', bt_oc: '', customer_name_adv: '', channel: '',
+                invoice_number_adv: '', invoice_date: '', origin_warehouse: '', 
+                destination_locality: '', delivery_date: '', executive: '', 
+                evidence_reception_date: '', evidence_cutoff_date: ''
+            },
             visibleColumns: {},
             columnOrder: [],
             columnWidths: {},
@@ -132,6 +174,7 @@
             orders: [],
             pagination: { currentPage: 1, lastPage: 1, links: [], total: 0, from: 0, to: 0 },
             resizerCleanups: [],
+            selectedOrders: [],
             
             resizingState: {
                 isResizing: false,
@@ -146,8 +189,13 @@
                 const savedWidths = localStorage.getItem('csOrderColumnWidths');
                 const savedVisible = localStorage.getItem('csOrderVisibleColumns');
 
+                this.$watch('filters', () => this.updateAdvancedFilterCount());
+                this.updateAdvancedFilterCount();
                 this.columnOrder = savedOrder ? JSON.parse(savedOrder) : defaultOrder;
                 this.columnWidths = savedWidths ? JSON.parse(savedWidths) : {};
+                this.$el.addEventListener('toggle-all-orders', (e) => {
+                    this.toggleAllOrders(e.detail);
+                });                
                 
                 let visible = savedVisible ? JSON.parse(savedVisible) : {};
                 defaultOrder.forEach(key => {
@@ -285,14 +333,59 @@
                     }
                     if (columnKey === 'subtotal') return '$' + new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
                     if (columnKey === 'total_boxes') return new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
-                    const longTextColumns = ['customer_name', 'shipping_address', 'observations'];
-                    if (longTextColumns.includes(columnKey)) return String(value).substring(0, 35) + (String(value).length > 35 ? '...' : '');
+                    const longTextColumns = ['customer_name', 'shipping_address', 'observations', 'purchase_order', 'bt_oc', 'so_number', 'client_contact', 'executive',
+                        'origin_warehouse', 'destination_locality', 'channel', 'invoice_number'];
+                    if (longTextColumns.includes(columnKey)) return String(value).substring(0, 10) + (String(value).length > 10 ? '...' : '');
                     return value;
                 } catch (e) {
                     console.error(`Error formateando la columna '${columnKey}' con el valor:`, value, e);
                     return 'Error';
                 }
+            },
+
+            updateAdvancedFilterCount() {
+                // CORRECCIÓN: Se actualiza la lista de filtros a contar
+                const advancedKeys = [
+                    'purchase_order_adv', 'bt_oc', 'customer_name_adv', 'channel',
+                    'invoice_number_adv', 'invoice_date', 'origin_warehouse',
+                    'destination_locality', 'delivery_date', 'executive', 
+                    'evidence_reception_date', 'evidence_cutoff_date'
+                ];
+                this.advancedFilterCount = advancedKeys.filter(key => this.filters[key] && this.filters[key] !== '').length;
+            },
+            clearAdvancedFilters() {
+                // CORRECCIÓN: Se limpian todos los nuevos filtros
+                this.filters.purchase_order_adv = '';
+                this.filters.bt_oc = '';
+                this.filters.customer_name_adv = '';
+                this.filters.channel = '';
+                this.filters.invoice_number_adv = '';
+                this.filters.invoice_date = '';
+                this.filters.origin_warehouse = '';
+                this.filters.destination_locality = '';
+                this.filters.delivery_date = '';
+                this.filters.executive = '';
+                this.filters.evidence_reception_date = '';
+                this.filters.evidence_cutoff_date = '';
+            },
+
+            toggleAllOrders(checked) {
+                if (checked) {
+                    this.selectedOrders = this.orders.map(o => o.id);
+                } else {
+                    this.selectedOrders = [];
+                }
+            },
+            bulkEdit() {
+                if (this.selectedOrders.length === 0) {
+                    alert('Por favor, selecciona al menos una orden para editar.');
+                    return;
+                }
+                const params = new URLSearchParams();
+                this.selectedOrders.forEach(id => params.append('ids[]', id));
+                window.location.href = `{{ route('customer-service.orders.bulk-edit') }}?${params.toString()}`;
             }
+
         }
     }
 </script>
