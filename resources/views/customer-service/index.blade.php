@@ -1,80 +1,271 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Módulo de Customer Service') }}
-        </h2>
-    </x-slot>
+    <!-- Se añade ApexCharts desde un CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                
-                <!-- Mosaico 1: Gestión de Productos -->
-                @if(Auth::user()->is_area_admin)
-                <a href="{{ route('customer-service.products.index') }}" class="group relative block h-64 rounded-xl overflow-hidden shadow-lg">
-                    <!-- Imagen de Fondo -->
-                    <img src="https://theluxonomist.20minutos.es/wp-content/uploads/2022/11/Moet-Chandon-LVMH-A.jpg" alt="Gestión de Productos" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <!-- Capa de Color Desvanecido -->
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
-                    <!-- Contenido de Texto -->
-                    <div class="relative h-full flex flex-col justify-end p-6 text-white">
-                        <h3 class="text-2xl font-bold tracking-tight">Gestión de Productos</h3>
-                        <p class="mt-1 text-gray-300">Administra el catálogo de SKUs, marcas y promocionales.</p>
+    <!-- Todos los estilos personalizados están aquí para mantenerlo en un solo archivo -->
+    <style>
+        .bg-aether {
+            background-color: #f4f7fc; /* Un blanco ligeramente más suave que el puro */
+        }
+
+        .card {
+            background-color: #ffffff;
+            transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid #e5e7eb; /* Borde sutil */
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15);
+        }
+
+        /* Animación de entrada */
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(25px);
+            animation: fadeInUp 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Animación de pulso para el dato relevante */
+        .pulse-glow {
+            animation: pulseGlow 3s infinite ease-in-out;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 40px rgba(44, 56, 86, 0.1); }
+            50% { box-shadow: 0 0 60px rgba(44, 56, 86, 0.2); }
+        }
+
+        /* Efecto de hover para la navegación */
+        .nav-item { position: relative; }
+        .nav-item .nav-icon, .nav-item .nav-text, .nav-item .nav-arrow {
+            transition: all 0.3s ease;
+        }
+        .nav-item:hover .nav-icon {
+            color: #ff9c00;
+            transform: scale(1.1);
+        }
+        .nav-item:hover .nav-text {
+            color: #2c3856;
+        }
+        .nav-item:hover .nav-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Línea conectora para la línea de tiempo */
+        .timeline-item:not(:last-child)::after {
+            content: ''; position: absolute; top: 2.5rem; left: 1.25rem;
+            bottom: -0.75rem; width: 2px;
+            background-color: #e5e7eb;
+            transform: translateX(-50%);
+        }
+         /* Estilos para las etiquetas de ApexCharts */
+         .apexcharts-tooltip {
+            background: #ffffff;
+            color: #2b2b2b;
+            border: 1px solid #e5e7eb;
+        }
+        .apexcharts-legend-text {
+            color: #666666 !important;
+            font-family: 'Montserrat', sans-serif;
+        }
+    </style>
+
+    <div class="bg-aether min-h-screen">
+        <x-slot name="header">
+            <div x-data="{
+                greeting: 'Buenas Noches',
+                init() {
+                    const hour = new Date().getHours();
+                    if (hour < 12) this.greeting = 'Buenos Días';
+                    else if (hour < 19) this.greeting = 'Buenas Tardes';
+                }
+            }" class="fade-in-up">
+                <h2 class="font-bold text-3xl text-[#2c3856] leading-tight tracking-tight">
+                    <span x-text="greeting"></span>, {{ Auth::user()->name }}.
+                </h2>
+                <p class="text-md text-[#666666] mt-1">
+                    Bienvenido a tu centro de mando de Customer Service.
+                </p>
+            </div>
+        </x-slot>
+
+        <div class="py-12">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Columna Izquierda: KPIs y Gráficas -->
+                    <div class="lg:col-span-2 space-y-8">
+                        <!-- Stat Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div class="card p-6 rounded-2xl shadow-xl fade-in-up" style="animation-delay: 200ms;">
+                                <div class="flex items-center">
+                                    <div class="bg-[#ff9c00] text-white rounded-lg p-4 pulse-glow">
+                                        <i class="fas fa-file-invoice fa-2x"></i>
+                                    </div>
+                                    <div class="ml-5">
+                                        <p class="text-[#666666] text-sm">Pedidos Pendientes</p>
+                                        <p x-data="countUp({{ $pedidosPendientes }})" x-text="displayValue" class="text-4xl font-bold text-[#2c3856]"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card p-6 rounded-2xl shadow-xl fade-in-up" style="animation-delay: 300ms;">
+                                <div class="flex items-center">
+                                    <div class="bg-[#2c3856] text-white rounded-lg p-4">
+                                        <i class="fas fa-route fa-2x"></i>
+                                    </div>
+                                    <div class="ml-5">
+                                        <p class="text-[#666666] text-sm">En Planificación</p>
+                                        <p x-data="countUp({{ $enPlanificacion }})" x-text="displayValue" class="text-4xl font-bold text-[#2c3856]"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card p-6 rounded-2xl shadow-xl fade-in-up" style="animation-delay: 400ms;">
+                                <div class="flex items-center">
+                                    <div class="bg-gray-200 text-[#2c3856] rounded-lg p-4">
+                                        <i class="fas fa-check-circle fa-2x"></i>
+                                    </div>
+                                    <div class="ml-5">
+                                        <p class="text-[#666666] text-sm">Completados (Mes)</p>
+                                        <p x-data="countUp({{ $pedidosCompletadosMes }})" x-text="displayValue" class="text-4xl font-bold text-[#2c3856]"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gráficas -->
+                        <div class="card p-8 rounded-2xl shadow-xl fade-in-up" style="animation-delay: 500ms;">
+                            <h3 class="font-bold text-[#2c3856] mb-2 text-xl">Top 10 Clientes por Pedidos</h3>
+                            <div id="topClientsChart" class="h-80"></div>
+                        </div>
+                        <div class="card p-8 rounded-2xl shadow-xl fade-in-up" style="animation-delay: 600ms;">
+                            <h3 class="font-bold text-[#2c3856] mb-2 text-xl">Distribución de Órdenes por Canal</h3>
+                            <div id="ordersByChannelChart" class="h-80 flex justify-center"></div>
+                        </div>
                     </div>
-                </a>
-                @endif
 
-                <!-- Mosaico 2: Gestión de Clientes -->
-                <a href="{{ route('customer-service.customers.index') }}" class="group relative block h-64 rounded-xl overflow-hidden shadow-lg">
-                    <img src="https://visionglobal.com.mx/wp-content/uploads/2020/02/belvedere-vodka-comparte-cocteles-para-celebrar-el-14-de-febrero1.jpg" alt="Gestión de Clientes" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
-                    <div class="relative h-full flex flex-col justify-end p-6 text-white">
-                        <h3 class="text-2xl font-bold tracking-tight">Gestión de Clientes</h3>
-                        <p class="mt-1 text-gray-300">Administra el catálogo de clientes y sus canales.</p>
+                    <!-- Columna Derecha: Módulos y Actividad -->
+                    <div class="lg:col-span-1 space-y-8">
+                        <div class="card p-8 rounded-2xl shadow-xl fade-in-up" style="animation-delay: 700ms;">
+                            <h3 class="font-bold text-[#2c3856] mb-6 text-xl">Módulos de Gestión</h3>
+                            <div class="space-y-4">
+                                <a href="{{ route('customer-service.orders.index') }}" class="nav-item flex items-center p-4 rounded-xl group">
+                                    <i class="nav-icon fas fa-box-open fa-fw fa-lg text-gray-400"></i>
+                                    <span class="nav-text ml-4 font-semibold text-[#2b2b2b]">Gestión de Pedidos</span>
+                                    <i class="nav-arrow fas fa-arrow-right text-gray-300 ml-auto opacity-0 transform -translate-x-2"></i>
+                                </a>
+                                <a href="{{ route('customer-service.planning.index') }}" class="nav-item flex items-center p-4 rounded-xl group">
+                                    <i class="nav-icon fas fa-shipping-fast fa-fw fa-lg text-gray-400"></i>
+                                    <span class="nav-text ml-4 font-semibold text-[#2b2b2b]">Planificación</span>
+                                    <i class="nav-arrow fas fa-arrow-right text-gray-300 ml-auto opacity-0 transform -translate-x-2"></i>
+                                </a>
+                                <a href="{{ route('customer-service.credit-notes.index') }}" class="nav-item flex items-center p-4 rounded-xl group">
+                                    <i class="nav-icon fas fa-receipt fa-fw fa-lg text-gray-400"></i>
+                                    <span class="nav-text ml-4 font-semibold text-[#2b2b2b]">Notas de Crédito</span>
+                                    <i class="nav-arrow fas fa-arrow-right text-gray-300 ml-auto opacity-0 transform -translate-x-2"></i>
+                                </a>
+                                @if(Auth::user()->is_area_admin)
+                                <div x-data="{ open: false }" class="relative">
+                                    <button @click="open = !open" class="nav-item w-full flex items-center p-4 rounded-xl group">
+                                        <i class="nav-icon fas fa-book-open fa-fw fa-lg text-gray-400"></i>
+                                        <span class="nav-text ml-4 font-semibold text-[#2b2b2b]">Catálogos (Admin)</span>
+                                        <i class="fas fa-chevron-down text-gray-400 ml-auto transition-transform duration-300" :class="{'rotate-180': open}"></i>
+                                    </button>
+                                    <div x-show="open" x-transition class="mt-2 ml-4 pl-8 border-l-2 border-gray-200 space-y-2">
+                                        <a href="{{ route('customer-service.products.index') }}" class="block text-sm font-semibold text-[#666666] hover:text-[#ff9c00] transition-colors">Productos</a>
+                                        <a href="{{ route('customer-service.customers.index') }}" class="block text-sm font-semibold text-[#666666] hover:text-[#ff9c00] transition-colors">Clientes</a>
+                                        <a href="{{ route('customer-service.warehouses.index') }}" class="block text-sm font-semibold text-[#666666] hover:text-[#ff9c00] transition-colors">Almacenes</a>
+                                    </div>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="card p-8 rounded-2xl shadow-xl fade-in-up" style="animation-delay: 800ms;">
+                            <h3 class="font-bold text-[#2c3856] mb-6">Actividad Reciente</h3>
+                            <!-- Contenedor con altura máxima y scroll -->
+                            <ul class="space-y-6 max-h-[400px] overflow-y-auto pr-4">
+                                @forelse($actividadReciente as $event)
+                                <li class="relative flex items-start timeline-item">
+                                    <div class="bg-gray-100 text-[#2c3856] rounded-full h-10 w-10 flex-shrink-0 flex items-center justify-center z-10 ring-8 ring-white">
+                                        @if(str_contains($event->description, 'creó')) <i class="fas fa-plus"></i>
+                                        @elseif(str_contains($event->description, 'canceló')) <i class="fas fa-ban"></i>
+                                        @else <i class="fas fa-pencil-alt"></i> @endif
+                                    </div>
+                                    <div class="ml-4 text-sm">
+                                        <p class="text-gray-700"><span class="font-semibold text-[#2b2b2b]">{{ $event->user->name ?? 'Sistema' }}</span> {{ Str::after($event->description, $event->user->name ?? 'El usuario') }}</p>
+                                        <p class="text-xs text-gray-400 mt-0.5">{{ $event->created_at->diffForHumans() }}</p>
+                                    </div>
+                                </li>
+                                @empty
+                                <li class="text-sm text-gray-400">No hay actividad reciente.</li>
+                                @endforelse
+                            </ul>
+                        </div>
                     </div>
-                </a>
-
-                <!-- Mosaico 3 (Almacénes) -->
-                <a href="{{ route('customer-service.warehouses.index') }}" class="group relative block h-64 rounded-xl overflow-hidden shadow-lg">
-                    <img src="https://topshelfwineandspirits.com/cdn/shop/products/VeuveClicquotRichCollection-Beautyshot.jpg?v=1628025396&width=3789" alt="Gestión de Almacenes" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
-                    <div class="relative h-full flex flex-col justify-end p-6 text-white">
-                        <h3 class="text-2xl font-bold tracking-tight">Gestión de Almacenes</h3>
-                        <p class="mt-1 text-gray-300">Administra el catálogo de almacenes.</p>
-                    </div>
-                </a>
-
-                <!-- Mosaico 4: Gestión de Pedidos -->
-                <a href="{{ route('customer-service.orders.index') }}" class="group relative block h-64 rounded-xl overflow-hidden shadow-lg">
-                    <img src="https://media.glamour.mx/photos/63238e7b11a242c6ed8a73ab/master/w_1600%2Cc_limit/Whispering-Angel-cover.jpg" alt="Gestión de Pedidos" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
-                    <div class="relative h-full flex flex-col justify-end p-6 text-white">
-                        <h3 class="text-2xl font-bold tracking-tight">Gestión de Pedidos</h3>
-                        <p class="mt-1 text-gray-300">Carga y procesa las órdenes de compra.</p>
-                    </div>
-                </a>
-
-                <!-- Mosaico 5 (Placeholder) -->
-                <a href="{{ route('customer-service.credit-notes.index') }}" class="group relative block h-64 rounded-xl overflow-hidden shadow-lg">
-                    <img src="https://lmforums.com/Areas/InfoCentre/Content/images/retailpartnernetwork/moethennessy/RPN%20Image%202.jpg" alt="Gestión de Notas de Crédito" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
-                    <div class="relative h-full flex flex-col justify-end p-6 text-white">
-                        <h3 class="text-2xl font-bold tracking-tight">Gestión de Notas de Crédito</h3>
-                        <p class="mt-1 text-gray-300">Administra, visualiza y analiza las notas de crédito.</p>
-                    </div>
-                </a>
-
-                <!-- Mosaico 6 (Placeholder) -->
-                <a href="{{ route('customer-service.planning.index') }}" class="group relative block h-64 rounded-xl overflow-hidden shadow-lg">
-                    <img src="https://s3.abcstatics.com/abc/www/multimedia/summum/2023/07/12/perignon5-RtTDwmtkhOu586tf3xc56TJ-1200x840@abc.jpg" alt="Planificación de Rutas" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
-                    <div class="relative h-full flex flex-col justify-end p-6 text-white">
-                        <h3 class="text-2xl font-bold tracking-tight">Planificación</h3>
-                        <p class="mt-1 text-gray-300">Gestiona y programa las rutas de entrega.</p>
-                    </div>
-                </a>
-
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Script para la animación de conteo y las gráficas -->
+    <script>
+        // Componente Alpine.js para la animación de conteo
+        function countUp(target) {
+            return {
+                displayValue: 0,
+                targetValue: target,
+                init() {
+                    const duration = 1500;
+                    const frameRate = 1000 / 60;
+                    const totalFrames = Math.round(duration / frameRate);
+                    let frame = 0;
+                    const counter = setInterval(() => {
+                        frame++;
+                        const progress = frame / totalFrames;
+                        const easedProgress = 1 - Math.pow(1 - progress, 3); 
+                        this.displayValue = Math.round(this.targetValue * easedProgress);
+                        if (frame === totalFrames) {
+                            this.displayValue = this.targetValue;
+                            clearInterval(counter);
+                        }
+                    }, frameRate);
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const chartData = @json($chartData);
+            const apexChartFont = "'Montserrat', sans-serif";
+
+            // Gráfica 1: Top 10 Clientes (Barras Horizontales)
+            if (document.querySelector("#topClientsChart")) {
+                const topClientsOptions = {
+                    series: [{ name: 'Nº de Pedidos', data: chartData.topClientes.series }],
+                    chart: { type: 'bar', height: 320, toolbar: { show: false }, fontFamily: apexChartFont },
+                    plotOptions: { bar: { borderRadius: 4, horizontal: true, } },
+                    colors: ['#2c3856'],
+                    dataLabels: { enabled: false },
+                    xaxis: { categories: chartData.topClientes.labels, labels: { style: { colors: '#666666' } } },
+                    yaxis: { labels: { style: { colors: '#666666', maxWidth: 150 } } },
+                    grid: { borderColor: '#e5e7eb', }
+                };
+                new ApexCharts(document.querySelector("#topClientsChart"), topClientsOptions).render();
+            }
+
+            // Gráfica 2: Órdenes por Canal (Dona)
+            if (document.querySelector("#ordersByChannelChart")) {
+                const ordersByChannelOptions = {
+                    series: chartData.ordenesPorCanal.series,
+                    chart: { type: 'donut', height: 350, fontFamily: apexChartFont },
+                    labels: chartData.ordenesPorCanal.labels,
+                    colors: ['#2c3856', '#ff9c00', '#666666', '#2b2b2b', '#e5e7eb'],
+                    plotOptions: { pie: { donut: { labels: { show: true, total: { show: true, label: 'Total Órdenes', color: '#2c3856' } } } } },
+                    legend: { position: 'bottom' },
+                    responsive: [{ breakpoint: 480, options: { chart: { width: 200 }, legend: { position: 'bottom' } } }]
+                };
+                new ApexCharts(document.querySelector("#ordersByChannelChart"), ordersByChannelOptions).render();
+            }
+        });
+    </script>
 </x-app-layout>

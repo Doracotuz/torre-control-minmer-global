@@ -57,7 +57,7 @@ class PlanningController extends Controller
 
     public function filter(Request $request)
     {
-        $query = CsPlanning::with('guia')->orderBy('created_at', 'desc');
+        $query = CsPlanning::with('guia')->orderBy('guia_id', 'desc')->orderBy('created_at', 'asc');
 
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';

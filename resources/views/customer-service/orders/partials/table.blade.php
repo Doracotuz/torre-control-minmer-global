@@ -83,22 +83,3 @@
         </table>
     </div>
 </div>
-<div class="mt-6 pagination-container flex justify-between items-center text-sm text-gray-700">
-    <div x-show="pagination.total > 0">
-        Mostrando de <span class="font-medium" x-text="pagination.from"></span> a <span class="font-medium" x-text="pagination.to"></span> de <span class="font-medium" x-text="pagination.total"></span> resultados
-    </div>
-    <nav role="navigation" aria-label="Pagination Navigation" class="flex items-center" x-show="pagination.last_page > 1">
-        <template x-for="(link, index) in pagination.links" :key="index">
-            <button @click="changePage(link.url ? new URL(link.url).searchParams.get('page') : null)"
-                    :disabled="!link.url"
-                    :class="{
-                        'bg-[#ff9c00] text-white': link.active,
-                        'text-gray-500 hover:bg-gray-200': !link.active && link.url,
-                        'text-gray-400 cursor-not-allowed': !link.url
-                    }"
-                    class="px-3 py-1 rounded-md mx-1"
-                    x-html="link.label">
-            </button>
-        </template>
-    </nav>
-</div>
