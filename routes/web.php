@@ -470,6 +470,7 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
     });
 
     Route::prefix('orders')->name('orders.')->group(function() {
+        Route::get('/export-csv', [OrderController::class, 'exportCsv'])->name('export-csv');        
         Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::get('/filter', [OrderController::class, 'filter'])->name('filter');
         Route::post('/import', [OrderController::class, 'importCsv'])->name('import');

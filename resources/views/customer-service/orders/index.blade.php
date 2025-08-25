@@ -75,6 +75,11 @@
                     <button @click="isImportModalOpen = true" class="px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700">
                         <i class="fas fa-file-import mr-2"></i>Carga de SO
                     </button>
+                    <a :href="`{{ route('customer-service.orders.export-csv') }}?${new URLSearchParams(filters).toString()}`"
+                       class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-green-700">
+                        <i class="fas fa-file-excel mr-2"></i>Exportar CSV
+                    </a>
+                    </div>                    
                 </div>
 
             </div>
@@ -109,7 +114,6 @@
                     </template>
                 </nav>
             </div>
-            <!-- TERMINA CÓDIGO AÑADIDO -->
 
             <div x-show="isLoading" class="text-center py-10">
                 <i class="fas fa-spinner fa-spin text-4xl text-gray-500"></i>

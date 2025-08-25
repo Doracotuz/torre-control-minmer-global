@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+
 class OrderController extends Controller
 {
     /**
@@ -824,7 +825,93 @@ class OrderController extends Controller
         }
 
         return redirect()->route('customer-service.orders.index')->with('success', count($orderIds) . ' órdenes actualizadas exitosamente.');
-    }    
+    }
+    
+    
+    public function exportCsv(Request $request)
+    {
+        // 1. Se inicia la consulta cargando las relaciones para acceder a los datos heredados.
+        // Usamos 'plannings' que es la relación correcta para un pedido que puede tener escalas.
+        $query = CsOrder::with(['plannings.guia'])->orderBy('creation_date', 'desc');
+
+        // 2. Se aplica la misma lógica de filtrado que en la vista, incluyendo TODOS los filtros.
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->search . '%';
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('so_number', 'like', $searchTerm)
+                  ->orWhere('purchase_order', 'like', $searchTerm)
+                  ->orWhere('customer_name', 'like', $searchTerm)
+                  ->orWhere('invoice_number', 'like', $searchTerm)
+                  ->orWhere('client_contact', 'like', $searchTerm);
+            });
+        }
+        
+        if ($request->filled('status')) { $query->where('status', $request->status); }
+        if ($request->filled('date_from') && $request->filled('date_to')) {
+            $query->whereBetween('creation_date', [$request->date_from, $request->date_to]);
+        }
+
+        // Aplicación de todos los filtros avanzados
+        if ($request->filled('purchase_order_adv')) { $query->where('purchase_order', 'like', '%' . $request->purchase_order_adv . '%'); }
+        if ($request->filled('bt_oc')) { $query->where('bt_oc', 'like', '%' . $request->bt_oc . '%'); }
+        if ($request->filled('customer_name_adv')) { $query->where('customer_name', 'like', '%' . $request->customer_name_adv . '%'); }
+        if ($request->filled('channel')) { $query->where('channel', $request->channel); }
+        if ($request->filled('invoice_number_adv')) { $query->where('invoice_number', 'like', '%' . $request->invoice_number_adv . '%'); }
+        if ($request->filled('invoice_date')) { $query->whereDate('invoice_date', $request->invoice_date); }
+        if ($request->filled('origin_warehouse')) { $query->where('origin_warehouse', 'like', '%' . $request->origin_warehouse . '%'); }
+        if ($request->filled('destination_locality')) { $query->where('destination_locality', 'like', '%' . $request->destination_locality . '%'); }
+        if ($request->filled('delivery_date')) { $query->whereDate('delivery_date', $request->delivery_date); }
+        if ($request->filled('executive')) { $query->where('executive', 'like', '%' . $request->executive . '%'); }
+        if ($request->filled('evidence_reception_date')) { $query->whereDate('evidence_reception_date', $request->evidence_reception_date); }
+        if ($request->filled('evidence_cutoff_date')) { $query->whereDate('evidence_cutoff_date', $request->evidence_cutoff_date); }
+
+        $orders = $query->get();
+        
+        $fileName = "export_pedidos_" . date('Y-m-d_H-i-s') . ".csv";
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use($orders) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM para compatibilidad con Excel y acentos
+
+            // Definimos las columnas del CSV
+            fputcsv($file, [
+                'SO', 'Orden Compra', 'Razón Social', 'Estatus', 'F. Creación', 'Canal', 
+                'Factura', 'F. Factura', 'Almacén Origen', 'Localidad Destino', 'Botellas', 'Cajas', 'Subtotal',
+                'F. Entrega', 'Horario', 'Contacto', 'Dirección', 'Ejecutivo', 'Observaciones',
+                'Guia Asignada', 'Operador', 'Placas', 'Custodia'
+            ]);
+
+            foreach ($orders as $order) {
+                // Tomamos el primer registro de planificación para los datos heredados
+                $planning = $order->plannings->first();
+
+                $row = [
+                    $order->so_number, $order->purchase_order, $order->customer_name, $order->status,
+                    $order->creation_date?->format('Y-m-d'), $order->channel, $order->invoice_number,
+                    $order->invoice_date?->format('Y-m-d'), $order->origin_warehouse, $order->destination_locality,
+                    $order->total_bottles, $order->total_boxes, $order->subtotal,
+                    $order->delivery_date?->format('Y-m-d'), $order->schedule, $order->client_contact,
+                    $order->shipping_address, $order->executive, $order->observations,
+                    // Datos heredados con validación para evitar errores
+                    $planning->guia->guia ?? 'N/A',
+                    $planning->guia->operador ?? 'N/A',
+                    $planning->guia->placas ?? 'N/A',
+                    $planning->guia->custodia ?? 'N/A',
+                ];
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 
 
 }

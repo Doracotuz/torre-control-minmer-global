@@ -25,6 +25,10 @@ class CsOrder extends Model
 
     public function details() { return $this->hasMany(CsOrderDetail::class); }
     public function plan() { return $this->hasOne(CsPlan::class); }
+    public function plannings()
+    {
+        return $this->hasMany(CsPlanning::class, 'cs_order_id');
+    }    
     public function events() { return $this->hasMany(CsOrderEvent::class)->orderBy('created_at', 'desc'); }
     public function createdBy() { return $this->belongsTo(User::class, 'created_by_user_id'); }
     public function planningEvents()
