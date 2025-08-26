@@ -165,6 +165,11 @@
                                     <span class="nav-text ml-4 font-semibold text-[#2b2b2b]">Notas de Crédito</span>
                                     <i class="nav-arrow fas fa-arrow-right text-gray-300 ml-auto opacity-0 transform -translate-x-2"></i>
                                 </a>
+                                <a href="{{ route('customer-service.validation.index') }}" class="nav-item flex items-center p-4 rounded-xl group">
+                                    <i class="nav-icon fas fa-barcode fa-fw fa-lg text-gray-400"></i>
+                                    <span class="nav-text ml-4 font-semibold text-[#2b2b2b]">Validación de UPC</span>
+                                    <i class="nav-arrow fas fa-arrow-right text-gray-300 ml-auto opacity-0 transform -translate-x-2"></i>
+                                </a>                                
                                 @if(Auth::user()->is_area_admin)
                                 <div x-data="{ open: false }" class="relative">
                                     <button @click="open = !open" class="nav-item w-full flex items-center p-4 rounded-xl group">

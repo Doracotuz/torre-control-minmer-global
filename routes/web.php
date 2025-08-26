@@ -522,8 +522,35 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         
     });
 
+    Route::prefix('validation')->name('validation.')->group(function() {
+        Route::get('/', [App\Http\Controllers\CustomerService\ValidationController::class, 'index'])->name('index');
+        Route::post('/', [App\Http\Controllers\CustomerService\ValidationController::class, 'store'])->name('store');
+        Route::get('/template', [App\Http\Controllers\CustomerService\ValidationController::class, 'downloadTemplate'])->name('template');
+        Route::post('/import', [App\Http\Controllers\CustomerService\ValidationController::class, 'importCsv'])->name('importCsv');
+    });    
+
 });
 
+
+Route::middleware(['auth', 'verified'])->prefix('audit')->name('audit.')->group(function () {
+    
+    Route::middleware('check.area:Auditoría')->group(function() {
+
+        Route::get('/', [App\Http\Controllers\AuditController::class, 'index'])->name('index');
+
+        // Fase 1: Almacén
+        Route::get('/warehouse/{order}', [App\Http\Controllers\AuditController::class, 'showWarehouseAudit'])->name('warehouse.show');
+        Route::post('/warehouse/{order}', [App\Http\Controllers\AuditController::class, 'storeWarehouseAudit'])->name('warehouse.store');
+
+        // Fase 2: Patio
+        Route::get('/patio/{guia}', [App\Http\Controllers\AuditController::class, 'showPatioAudit'])->name('patio.show');
+        Route::post('/patio/{guia}', [App\Http\Controllers\AuditController::class, 'storePatioAudit'])->name('patio.store');
+
+        // Fase 3: Carga
+        Route::get('/loading/{guia}', [App\Http\Controllers\AuditController::class, 'showLoadingAudit'])->name('loading.show');
+        Route::post('/loading/{guia}', [App\Http\Controllers\AuditController::class, 'storeLoadingAudit'])->name('loading.store');
+    });
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

@@ -11,6 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+
+        $middleware->web(append: [
+            \App\Http\Middleware\RedirectIfAuditor::class,
+        ]);
+
         $middleware->alias([
             'check.area' => \App\Http\Middleware\CheckUserArea::class,
             'super.admin' => \App\Http\Middleware\CheckSuperAdmin::class,

@@ -2,6 +2,7 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+
 class CsOrderDetail extends Model {
     use HasFactory;
     protected $table = 'cs_order_details';
@@ -12,4 +13,9 @@ class CsOrderDetail extends Model {
     {
         return $this->belongsTo(CsProduct::class, 'sku', 'sku');
     }
+
+    public function upc()
+    {
+        return $this->hasOne(\App\Models\CsOrderDetailUpc::class);
+    }    
 }
