@@ -115,7 +115,7 @@
             </div>
 
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-8">
-                <h4 class="text-lg font-semibold text-gray-800 mb-6">Línea de Tiempo Maestra</h4>
+                <h4 class="text-lg font-semibold text-gray-800 mb-6">Línea de Tiempo</h4>
                 <div class="border-l-2 border-gray-300 pl-6 space-y-8 relative">
                     
                     @forelse($timelineEvents as $event)

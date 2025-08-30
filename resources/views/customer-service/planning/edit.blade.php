@@ -76,7 +76,7 @@
                     @endif
                     {{-- --- TERMINA LÓGICA CONDICIONAL --- --}}
 
-                    <h4 class="text-lg font-semibold text-gray-800 mt-6 mb-4 border-b pb-2">Información de la Ruta y Transporte (Editable)</h4>
+                    <h4 class="text-lg font-semibold text-gray-800 mt-6 mb-4 border-b pb-2">Información de la Ruta y Transporte</h4>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div><label class="block text-sm font-medium text-gray-700">Fecha de Carga</label><input type="date" name="fecha_carga" value="{{ old('fecha_carga', $planning->fecha_carga?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
@@ -95,10 +95,10 @@
                             @foreach($options['region'] as $option) <option value="{{ $option }}" @selected(old('region', $planning->region) == $option)>{{ $option }}</option> @endforeach
                         </select></div>
                         
-                        <div><label class="block text-sm font-medium text-gray-700">Transporte</label><input type="text" name="transporte" value="{{ old('transporte', $planning->transporte) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <!-- <div><label class="block text-sm font-medium text-gray-700">Transporte</label><input type="text" name="transporte" value="{{ old('transporte', $planning->transporte) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div><label class="block text-sm font-medium text-gray-700">Operador</label><input type="text" name="operador" value="{{ old('operador', $planning->operador) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div><label class="block text-sm font-medium text-gray-700">Placas</label><input type="text" name="placas" value="{{ old('placas', $planning->placas) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Teléfono</label><input type="text" name="telefono" value="{{ old('telefono', $planning->telefono) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Teléfono</label><input type="text" name="telefono" value="{{ old('telefono', $planning->telefono) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div> -->
                         <div><label class="block text-sm font-medium text-gray-700">Capacidad</label><select name="capacidad" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                             <option value="">--</option>
                             @foreach($options['capacidad'] as $option) <option value="{{ $option }}" @selected(old('capacidad', $planning->capacidad) == $option)>{{ $option }}</option> @endforeach
@@ -112,7 +112,7 @@
                             <option value="">--</option>
                             @foreach($options['estado'] as $option) <option value="{{ $option }}" @selected(old('estado', $planning->estado) == $option)>{{ $option }}</option> @endforeach
                         </select></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Estatus Entrega</label><input type="text" name="estatus_de_entrega" value="{{ old('estatus_de_entrega', $planning->estatus_de_entrega) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <!-- <div><label class="block text-sm font-medium text-gray-700">Estatus Entrega</label><input type="text" name="estatus_de_entrega" value="{{ old('estatus_de_entrega', $planning->estatus_de_entrega) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div> -->
                         <div><label class="block text-sm font-medium text-gray-700">¿Devolución?</label><select name="devolucion" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                             <option value="">--</option>
                             @foreach($options['devolucion'] as $option) <option value="{{ $option }}" @selected(old('devolucion', $planning->devolucion) == $option)>{{ $option }}</option> @endforeach

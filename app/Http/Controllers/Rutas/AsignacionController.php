@@ -213,49 +213,60 @@ class AsignacionController extends Controller
 
     public function store(Request $request)
     {
-        // --- INICIA CAMBIO: Validación para los nuevos campos ---
         $validatedData = $request->validate([
-            'guia' => 'required|string|max:255|unique:guias,guia',
-            'operador' => 'required|string|max:255',
-            'placas' => 'required|string|max:255',
-            'pedimento' => 'nullable|string|max:255',
-            'custodia' => 'nullable|string|max:255',
-            'hora_planeada' => 'nullable|string|max:255',
-            'fecha_asignacion' => 'nullable|date',
-            'origen' => 'required|string|max:3',
-            'facturas' => 'required|array|min:1',
-            'facturas.*.cs_planning_id' => 'nullable|integer|exists:cs_plannings,id',
-            'facturas.*.numero_factura' => 'required|string|max:255',
-            'facturas.*.destino' => 'required|string|max:255',
-            'facturas.*.cajas' => 'required|integer|min:0',
-            'facturas.*.botellas' => 'required|integer|min:0',
-            'facturas.*.hora_cita' => 'nullable|string|max:255',
-            'facturas.*.so' => 'nullable|string|max:255',
-            'facturas.*.fecha_entrega' => 'nullable|date',
+            'guia' => 'required|string|unique:guias,guia',
+            'operador' => 'required|string',
+            'placas' => 'required|string',
+            'fecha_asignacion' => 'required|date',
+            'planning_ids' => 'required|array|min:1',
+            'planning_ids.*' => 'exists:cs_plannings,id',
+            // Añade aquí otras validaciones para campos de la guía si son necesarios
         ]);
-        // --- TERMINA CAMBIO ---
 
-        DB::beginTransaction();
         try {
-            $guia = Guia::create($validatedData);
-            $guia->facturas()->createMany($validatedData['facturas']);
-            
-            if ($request->filled('planning_ids')) {
-                $planningIds = json_decode($request->planning_ids, true);
-                if (is_array($planningIds) && count($planningIds) > 0) {
-                    // --- CAMBIO CLAVE: Guardamos el ID de la guía ---
-                    \App\Models\CsPlanning::whereIn('id', $planningIds)
-                        ->update(['status' => 'Asignado en Guía', 'guia_id' => $guia->id]);
-                }
+            DB::beginTransaction();
+
+            // 1. Crear la Guía principal
+            $guia = Guia::create([
+                'guia' => $validatedData['guia'],
+                'operador' => $validatedData['operador'],
+                'placas' => $validatedData['placas'],
+                'fecha_asignacion' => $validatedData['fecha_asignacion'],
+                'estatus' => 'En Espera', // O 'Planeada' según tu flujo
+            ]);
+
+            $planningRecords = \App\Models\CsPlanning::find($validatedData['planning_ids']);
+
+            // 2. Iterar sobre CADA registro de planificación para crear facturas y actualizar
+            foreach ($planningRecords as $planning) {
+                // Crear una factura por cada registro de planificación
+                $guia->facturas()->create([
+                    'cs_planning_id' => $planning->id,
+                    'numero_factura' => $planning->factura ?? $planning->so_number,
+                    'destino' => $planning->razon_social,
+                    'cajas' => $planning->cajas,
+                    'botellas' => $planning->pzs,
+                    'hora_cita' => $planning->hora_cita,
+                    'so' => $planning->so_number,
+                    'fecha_entrega' => $planning->fecha_entrega,
+                ]);
+
+                // Actualizar el registro de planificación con el ID de la nueva guía
+                $planning->update([
+                    'guia_id' => $guia->id,
+                    'status' => 'Asignado en Guía',
+                ]);
             }
+
             DB::commit();
+
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error al crear guía manual: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Ocurrió un error al guardar la guía.');
+            Log::error("Error al crear la guía masiva: " . $e->getMessage());
+            return redirect()->route('customer-service.planning.index')->with('error', 'Ocurrió un error al crear la guía.');
         }
 
-        return redirect()->route('rutas.asignaciones.index')->with('success', 'Guía ' . $guia->guia . ' creada exitosamente.');
+        return redirect()->route('rutas.asignaciones.index')->with('success', 'Guía ' . $guia->guia . ' creada exitosamente con ' . count($planningRecords) . ' órdenes.');
     }
 
     public function edit(Guia $guia)
@@ -416,4 +427,74 @@ class AsignacionController extends Controller
         return redirect()->route('rutas.asignaciones.index')
                          ->with('success', 'Ruta asignada a la Guía ' . $guia->guia . ' exitosamente.');
     }
+
+    public function search(Request $request)
+    {
+        $term = $request->query('term', '');
+        if (strlen($term) < 2) {
+            return response()->json([]);
+        }
+
+        $guias = Guia::where(function ($query) use ($term) {
+                        $query->where('guia', 'like', "%{$term}%")
+                              ->orWhere('operador', 'like', "%{$term}%")
+                              ->orWhere('placas', 'like', "%{$term}%");
+                    })
+                    ->whereNotIn('estatus', ['Completada', 'Cancelado']) // Solo guías activas
+                    ->limit(10)
+                    ->get(['id', 'guia', 'operador', 'placas']);
+
+        return response()->json($guias);
+    }
+
+    /**
+     * Añade nuevos registros de planificación (órdenes) a una guía existente.
+     */
+    public function addOrdersToGuia(Request $request)
+    {
+        $validatedData = $request->validate([
+            'guia_id' => 'required|exists:guias,id',
+            'planning_ids' => 'required|string', // Viene como JSON string
+        ]);
+
+        $planningIds = json_decode($validatedData['planning_ids']);
+        if (empty($planningIds)) {
+            return back()->with('error', 'No se seleccionaron órdenes para añadir.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $guia = Guia::findOrFail($validatedData['guia_id']);
+            $planningRecords = \App\Models\CsPlanning::find($planningIds);
+
+            foreach ($planningRecords as $planning) {
+                // Se repite la misma lógica de creación de factura y actualización
+                $guia->facturas()->create([
+                    'cs_planning_id' => $planning->id,
+                    'numero_factura' => $planning->factura ?? $planning->so_number,
+                    'destino' => $planning->razon_social,
+                    'cajas' => $planning->cajas,
+                    'botellas' => $planning->pzs,
+                    'hora_cita' => $planning->hora_cita,
+                    'so' => $planning->so_number,
+                    'fecha_entrega' => $planning->fecha_entrega,
+                ]);
+
+                $planning->update([
+                    'guia_id' => $guia->id,
+                    'status' => 'Asignado en Guía',
+                ]);
+            }
+
+            DB::commit();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error al añadir órdenes a guía existente: " . $e->getMessage());
+            return redirect()->route('customer-service.planning.index')->with('error', 'Ocurrió un error al actualizar la guía.');
+        }
+
+        return redirect()->route('customer-service.planning.index')->with('success', count($planningRecords) . ' órdenes añadidas a la guía ' . $guia->guia . ' exitosamente.');
+    }    
 }

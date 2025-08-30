@@ -198,13 +198,7 @@
             pagination: { currentPage: 1, lastPage: 1, links: [], total: 0, from: 0, to: 0 },
             resizerCleanups: [],
             selectedOrders: [],
-            
-            resizingState: {
-                isResizing: false,
-                currentHeader: null,
-                startX: 0,
-                startW: 0,
-            },
+            resizingState: { isResizing: false, currentHeader: null, startX: 0, startW: 0 },
 
             init() {
                 const defaultOrder = Object.keys(this.allColumns);
@@ -212,13 +206,8 @@
                 const savedWidths = localStorage.getItem('csOrderColumnWidths');
                 const savedVisible = localStorage.getItem('csOrderVisibleColumns');
 
-                this.$watch('filters', () => this.updateAdvancedFilterCount());
-                this.updateAdvancedFilterCount();
                 this.columnOrder = savedOrder ? JSON.parse(savedOrder) : defaultOrder;
                 this.columnWidths = savedWidths ? JSON.parse(savedWidths) : {};
-                this.$el.addEventListener('toggle-all-orders', (e) => {
-                    this.toggleAllOrders(e.detail);
-                });                
                 
                 let visible = savedVisible ? JSON.parse(savedVisible) : {};
                 defaultOrder.forEach(key => {
@@ -228,10 +217,26 @@
                 });
                 this.visibleColumns = visible;
 
-                this.applyFilters();
+                this.applyFilters(); // Carga inicial de datos
                 
-                this.$watch('filters.search', () => this.applyFilters(true));
-                this.$watch('filters.status', () => this.applyFilters(true));
+                // --- INICIA CÓDIGO CORREGIDO Y MÁS ROBUSTO ---
+                // Lista de todos los filtros que deben recargar la tabla desde la página 1
+                const filterKeysToWatch = [
+                    'search', 'status', 'date_from', 'date_to',
+                    'purchase_order_adv', 'bt_oc', 'customer_name_adv', 'channel',
+                    'invoice_number_adv', 'invoice_date', 'origin_warehouse',
+                    'destination_locality', 'delivery_date', 'executive',
+                    'evidence_reception_date', 'evidence_cutoff_date'
+                ];
+
+                // Creamos un observador para cada uno de estos filtros
+                filterKeysToWatch.forEach(key => {
+                    this.$watch(`filters.${key}`, () => {
+                        this.applyFilters(true); // Siempre resetea la página
+                    });
+                });
+                // --- TERMINA CÓDIGO CORREGIDO ---
+
                 this.$watch('visibleColumns', (val) => {
                     localStorage.setItem('csOrderVisibleColumns', JSON.stringify(val));
                     this.$nextTick(() => this.reinitTableInteractions());
@@ -241,11 +246,14 @@
                     this.$nextTick(() => this.reinitTableInteractions());
                 });
                 this.$watch('columnWidths', (val) => localStorage.setItem('csOrderColumnWidths', JSON.stringify(val)), { deep: true });
+                
+                this.$el.addEventListener('toggle-all-orders', (e) => this.toggleAllOrders(e.detail));
             },
 
             applyFilters(resetPage = false) {
                 if (resetPage) this.filters.page = 1;
                 this.isLoading = true;
+                this.updateAdvancedFilterCount();
                 const params = new URLSearchParams(this.filters);
                 
                 fetch(`{{ route('customer-service.orders.filter') }}?${params.toString()}`)
@@ -267,11 +275,12 @@
             },
 
             changePage(page) {
-                if (page && page !== this.filters.page) {
+                if (page && page != this.filters.page) {
                     this.filters.page = page;
-                    this.applyFilters(false); // Llama a la función sin resetear la página
+                    this.applyFilters(false);
                 }
             },
+
 
             reinitTableInteractions() {
                 setTimeout(() => {

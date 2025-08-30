@@ -13,7 +13,9 @@ class ValidationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = CsOrder::where('status', 'Pendiente')
+        // --- INICIA LÓGICA CORREGIDA ---
+        // La consulta ahora busca todas las órdenes que no estén terminadas o canceladas.
+        $query = CsOrder::whereNotIn('status', ['Terminado', 'Cancelado'])
                         ->with('details.product', 'details.upc');
 
         if ($request->filled('search')) {
@@ -37,7 +39,8 @@ class ValidationController extends Controller
         }
 
         $orders = $query->paginate(10);
-        $customers = CsOrder::where('status', 'Pendiente')->distinct()->pluck('customer_name');
+        $customers = CsOrder::whereNotIn('status', ['Terminado', 'Cancelado'])->distinct()->pluck('customer_name');
+        // --- TERMINA LÓGICA CORREGIDA ---
 
         return view('customer-service.validation.index', compact('orders', 'customers'));
     }

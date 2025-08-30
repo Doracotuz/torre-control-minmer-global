@@ -20,15 +20,51 @@ class AuditController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Guia::whereIn('estatus', ['Planeada', 'En Cortina'])
-                     ->with('plannings.order');
+        $query = CsOrder::query()
+            ->with(['plannings.guia'])
+            ->where(function ($q) {
+                $q->whereIn('status', ['Pendiente', 'En Planificación', 'Listo para Enviar'])
+                  ->orWhereHas('plannings.guia', function ($guiaQuery) {
+                      $guiaQuery->whereIn('estatus', ['Planeada', 'En Cortina']);
+                  });
+            })
+            ->whereDoesntHave('plannings.guia', function ($guiaQuery) {
+                $guiaQuery->whereIn('estatus', ['Completada', 'En Tránsito']);
+            });
 
-        $fecha = $request->input('fecha_carga', now()->format('Y-m-d'));
-        $query->whereDate('fecha_asignacion', $fecha);
+        // Filtro por rango de fecha de creación
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('creation_date', [$request->start_date, $request->end_date]);
+        }
 
-        $cargasDelDia = $query->get();
-        return view('audit.index', compact('cargasDelDia', 'fecha'));
+        // Filtro por estatus
+        if ($request->filled('status')) {
+            $status = $request->status;
+            if (in_array($status, ['En Cortina', 'Planeada'])) {
+                $query->whereHas('plannings.guia', function ($guiaQuery) use ($status) {
+                    $guiaQuery->where('estatus', $status);
+                });
+            } else {
+                $query->where('status', $status);
+            }
+        }
+
+        // Filtro por búsqueda de SO o Factura
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('so_number', 'like', "%{$searchTerm}%")
+                  ->orWhere('invoice_number', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        // --- CORRECCIÓN CLAVE: Se usa paginate() en lugar de get() ---
+        $auditableOrders = $query->orderBy('creation_date', 'desc')->paginate(15);
+
+        return view('audit.index', compact('auditableOrders'));
     }
+
+
 
     /**
      * Muestra el formulario para la primera auditoría (Almacén).
@@ -45,44 +81,68 @@ class AuditController extends Controller
     public function storeWarehouseAudit(Request $request, $orderId)
     {
         $order = CsOrder::findOrFail($orderId);
+        
+        // 1. VALIDACIÓN
+        // Se valida que todos los campos requeridos lleguen y que los checkboxes sean booleanos.
         $validated = $request->validate([
             'items' => 'required|array',
             'items.*.calidad' => 'required|string',
             'observaciones' => 'nullable|string',
             'tarimas_cantidad' => 'required|integer|min:0',
             'tarimas_tipo' => 'required|string',
-            'emplayado_correcto' => 'required|boolean',
-            'etiquetado_correcto' => 'required|boolean',
-            'distribucion_correcta' => 'required|boolean',
+            'emplayado_correcto' => 'sometimes|boolean',
+            'etiquetado_correcto' => 'sometimes|boolean',
+            'distribucion_correcta' => 'sometimes|boolean',
+            'items.*.sku_validado' => 'sometimes|boolean',
+            'items.*.piezas_validadas' => 'sometimes|boolean',
+            'items.*.upc_validado' => 'sometimes|boolean',
         ]);
 
-        DB::transaction(function () use ($validated, $order) {
+        // 2. TRANSACCIÓN DE BASE DE DATOS
+        // Usamos una transacción para asegurar que todos los cambios se guarden juntos, o ninguno si algo falla.
+        DB::transaction(function () use ($validated, $order, $request) {
+            
+            // 3. ACTUALIZACIÓN DE DETALLES (SKUs)
+            // Se recorre cada item enviado desde el formulario.
             foreach ($validated['items'] as $detailId => $data) {
                 $detail = $order->details()->find($detailId);
                 if ($detail) {
-                    $detail->update(['audit_calidad' => $data['calidad']]);
+                    $detail->update([
+                        'audit_calidad' => $data['calidad'],
+                        // Se usa $request->input() para manejar correctamente los checkboxes.
+                        // Si un checkbox no está marcado, no se envía, por lo que le asignamos 'false'.
+                        'audit_sku_validado' => $request->input("items.{$detailId}.sku_validado", false),
+                        'audit_piezas_validadas' => $request->input("items.{$detailId}.piezas_validadas", false),
+                        'audit_upc_validado' => $request->input("items.{$detailId}.upc_validado", false),
+                    ]);
                 }
             }
             
+            // 4. ACTUALIZACIÓN DEL PEDIDO PRINCIPAL
+            // Se guardan los datos de la auditoría general y se cambia el estatus.
             $order->audit_almacen_observaciones = $validated['observaciones'];
             $order->status = 'Listo para Enviar';
+            
+            $order->audit_tarimas_cantidad = $validated['tarimas_cantidad'];
+            $order->audit_tarimas_tipo = $validated['tarimas_tipo'];
+            // Se usa $request->has() para los checkboxes principales. Si existen en la petición, es 'true'.
+            $order->audit_emplayado_correcto = $request->has('emplayado_correcto');
+            $order->audit_etiquetado_correcto = $request->has('etiquetado_correcto');
+            $order->audit_distribucion_correcta = $request->has('distribucion_correcta');
+            
             $order->save();
 
-            // Guardar datos adicionales de la auditoría de almacén (necesitarás añadir estas columnas a la tabla cs_orders)
-            // $order->update([
-            //     'audit_tarimas_cantidad' => $validated['tarimas_cantidad'],
-            //     'audit_tarimas_tipo' => $validated['tarimas_tipo'],
-            //     'audit_emplayado_correcto' => $validated['emplayado_correcto'],
-            //     'audit_etiquetado_correcto' => $validated['etiquetado_correcto'],
-            //     'audit_distribucion_correcta' => $validated['distribucion_correcta'],
-            // ]);
-
+            // 5. REGISTRO EN LÍNEA DE TIEMPO
+            // Se crea un evento para que quede constancia de la auditoría.
             CsOrderEvent::create([
-                'cs_order_id' => $order->id, 'user_id' => Auth::id(),
+                'cs_order_id' => $order->id,
+                'user_id' => Auth::id(),
                 'description' => 'Auditoría de almacén completada por ' . Auth::user()->name . '. Pedido listo para enviar.'
             ]);
         });
 
+        // 6. REDIRECCIÓN
+        // Se redirige al usuario de vuelta al dashboard con un mensaje de éxito.
         return redirect()->route('audit.index')->with('success', 'Auditoría de almacén completada para SO: ' . $order->so_number);
     }
 
@@ -102,13 +162,16 @@ class AuditController extends Controller
     {
         $guia = Guia::findOrFail($guiaId);
         $validated = $request->validate([
-            'operador' => 'required|string', 'placas' => 'required|string',
-            'arribo_fecha' => 'required|date', 'arribo_hora' => 'required',
-            'caja_estado' => 'required|string', 'llantas_estado' => 'required|string',
+            'operador' => 'required|string',
+            'placas' => 'required|string',
+            'arribo_fecha' => 'required|date',
+            'arribo_hora' => 'required|date_format:H:i',
+            'caja_estado' => 'required|string',
+            'llantas_estado' => 'required|string',
             'combustible_nivel' => 'required|string',
-            'presenta_maniobra' => 'sometimes|boolean',
+            'presenta_maniobra' => 'sometimes|in:1',
             'equipo_sujecion' => 'required|string',
-            'foto_unidad' => 'required|image|max:5120',
+            'foto_unidad' => 'required|image|max:5120', // 5MB max
             'foto_llantas' => 'required|image|max:5120',
         ]);
 
@@ -117,7 +180,8 @@ class AuditController extends Controller
             $fotoLlantasPath = $request->file('foto_llantas')->store('audit_patio_llantas', 's3');
 
             $guia->update([
-                'operador' => $validated['operador'], 'placas' => $validated['placas'],
+                'operador' => $validated['operador'],
+                'placas' => $validated['placas'],
                 'audit_patio_arribo' => $validated['arribo_fecha'] . ' ' . $validated['arribo_hora'],
                 'audit_patio_caja_estado' => $validated['caja_estado'],
                 'audit_patio_llantas_estado' => $validated['llantas_estado'],
@@ -134,7 +198,8 @@ class AuditController extends Controller
             $order = $guia->plannings->first()->order;
             if ($order) {
                 CsOrderEvent::create([
-                    'cs_order_id' => $order->id, 'user_id' => Auth::id(),
+                    'cs_order_id' => $order->id,
+                    'user_id' => Auth::id(),
                     'description' => 'Auditoría de patio completada por ' . Auth::user()->name . ' para la guía ' . $guia->guia . '. Unidad en cortina.'
                 ]);
             }

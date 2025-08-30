@@ -300,6 +300,8 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('rutas')->name('rut
     Route::prefix('asignaciones')->name('asignaciones.')->group(function () {
         Route::get('/', [AsignacionController::class, 'index'])->name('index');
         Route::get('/create', [AsignacionController::class, 'create'])->name('create');
+        Route::get('/search', [AsignacionController::class, 'search'])->name('search');
+        Route::post('/add-orders-to-guia', [AsignacionController::class, 'addOrdersToGuia'])->name('add-orders-to-guia');        
         Route::post('/', [AsignacionController::class, 'store'])->name('store');
         Route::post('/{guia}/assign', [AsignacionController::class, 'assignRoute'])->name('assign');
         Route::post('/import', [AsignacionController::class, 'importCsv'])->name('import');
