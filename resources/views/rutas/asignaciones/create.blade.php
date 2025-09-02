@@ -5,18 +5,22 @@
         </h2>
     </x-slot>
 
-    {{-- 
-        ****************************************************************
-        * CAMBIO 1 (HTML): Se llama al componente sin paréntesis.       *
-        ****************************************************************
-    --}}
     <div class="py-12" x-data="guiaFormManager">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-8">
                 <form action="{{ route('rutas.asignaciones.store') }}" method="POST">
                     @csrf
-                    <input type="hidden" name="planning_ids" value="{{ $planning_ids ?? '[]' }}">
 
+                    @php
+                        // Decodificamos la cadena JSON de IDs para poder iterarla como un arreglo PHP
+                        $planningIdsArray = json_decode($planning_ids ?? '[]');
+                    @endphp
+
+                    @if(is_array($planningIdsArray))
+                        @foreach($planningIdsArray as $id)
+                            <input type="hidden" name="planning_ids[]" value="{{ $id }}">
+                        @endforeach
+                    @endif
                     @if ($errors->any())
                         <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
                             <p class="font-bold">Hay errores en tu formulario:</p>
@@ -111,7 +115,6 @@
 
                     <div class="flex justify-end gap-4 mt-8">
                         @php
-                            // Se define la ruta de cancelación según el área del usuario
                             $cancel_route = (Auth::user()->area && Auth::user()->area->name == 'Customer Service')
                                 ? route('customer-service.planning.index')
                                 : route('rutas.asignaciones.index');
@@ -127,16 +130,10 @@
         </div>
     </div>
 
-    {{-- 
-        ******************************************************************
-        * CAMBIO 2 (JAVASCRIPT): Se registra el componente con Alpine.data *
-        ******************************************************************
-    --}}
     <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('guiaFormManager', () => {
             const initialFacturas = {!! !empty($facturasData) ? json_encode($facturasData) : json_encode(old('facturas', [['numero_factura' => '', 'destino' => '', 'cajas' => 0, 'botellas' => 0, 'hora_cita' => '', 'so' => '', 'fecha_entrega' => '']])) !!};
-
 
             return {
                 guia: {

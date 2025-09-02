@@ -10,12 +10,14 @@ use App\Models\CsOrderDetail;
 use App\Models\CsPlan;
 use App\Models\CsProduct;
 use App\Models\CsWarehouse;
+use App\Models\Guia;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Models\CsPlanning;
 
 
 class OrderController extends Controller
@@ -243,56 +245,40 @@ class OrderController extends Controller
      */
     public function cancel(Request $request, CsOrder $order)
     {
-        DB::transaction(function () use ($order, $request) { // Se añade $request para el tipo de respuesta
-            // 1. Actualizar el estatus de la Orden
+        DB::transaction(function () use ($order) {
+            // 1. Actualizar el estatus de la Orden principal
             $order->update(['status' => 'Cancelado', 'updated_by_user_id' => Auth::id()]);
 
-            // 2. Buscar TODOS los registros de planificación asociados
-            $planningRecords = \App\Models\CsPlanning::where('cs_order_id', $order->id)->get();
-            
+            // 2. Buscar todos los registros de planificación asociados a esta orden
+            $planningRecords = CsPlanning::where('cs_order_id', $order->id)->get();
+
             if ($planningRecords->isNotEmpty()) {
-                $processedGuiaIds = [];
+                $planningIds = $planningRecords->pluck('id');
+                $guiaIds = $planningRecords->pluck('guia_id')->filter()->unique();
 
-                // 3. Iterar sobre CADA registro de planificación y cancelarlo
-                foreach ($planningRecords as $planningRecord) {
-                    $planningRecord->update(['status' => 'Cancelado']);
+                // 3. Cancelar todos los registros de planificación de una sola vez
+                CsPlanning::whereIn('id', $planningIds)->update(['status' => 'Cancelado']);
 
-                    // 4. Gestionar la Guía asociada, si existe
-                    if ($planningRecord->guia_id && !in_array($planningRecord->guia_id, $processedGuiaIds)) {
-                        $guia = \App\Models\Guia::with('facturas')->find($planningRecord->guia_id);
+                // 4. Procesar cada guía afectada
+                if ($guiaIds->isNotEmpty()) {
+                    $guias = Guia::with('facturas')->whereIn('id', $guiaIds)->get();
+                    
+                    foreach ($guias as $guia) {
+                        // Eliminar las facturas de esta guía que pertenecen a la orden cancelada
+                        $guia->facturas()->whereIn('cs_planning_id', $planningIds)->delete();
                         
-                        if ($guia) {
-                            // --- INICIA BLOQUE DE CÓDIGO CORREGIDO Y MEJORADO ---
-                            $planning_ids = $planningRecords->pluck('id');
-                            $so_number = $order->so_number; // Obtenemos el SO del pedido que se cancela
+                        // Refrescar la relación para contar las facturas restantes
+                        $guia->load('facturas');
 
-                            // Lógica mejorada para encontrar las facturas a eliminar
-                            $facturas_de_la_orden_en_guia = $guia->facturas()
-                                ->where(function ($query) use ($planning_ids, $so_number) {
-                                    $query->whereIn('cs_planning_id', $planning_ids) // Plan A: Buscar por el ID de planificación
-                                          ->orWhere('so', $so_number);             // Plan B: Buscar por el número de SO
-                                });
-                            // --- TERMINA BLOQUE DE CÓDIGO CORREGIDO ---
-                            
-                            $total_facturas_en_guia = $guia->facturas()->count();
-                            $total_facturas_a_eliminar = $facturas_de_la_orden_en_guia->count();
-
-                            // Si al quitar las facturas no queda ninguna, se cancela la guía.
-                            if (($total_facturas_en_guia - $total_facturas_a_eliminar) <= 0) {
-                                $guia->update(['estatus' => 'Cancelado']);
-                            }
-                            
-                            // Se eliminan todas las facturas de la guía que pertenecen a la orden cancelada.
-                            if ($total_facturas_a_eliminar > 0) {
-                                $facturas_de_la_orden_en_guia->delete();
-                            }
+                        // Si la guía se quedó sin facturas, se cancela la guía completa
+                        if ($guia->facturas->isEmpty()) {
+                            $guia->update(['estatus' => 'Cancelado']);
                         }
-                        $processedGuiaIds[] = $planningRecord->guia_id;
                     }
                 }
             }
             
-            // 5. Registrar el evento en la línea de tiempo
+            // 5. Registrar el evento en la línea de tiempo de la orden
             CsOrderEvent::create([
                 'cs_order_id' => $order->id,
                 'user_id' => Auth::id(),
@@ -912,6 +898,75 @@ class OrderController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    public function bulkMoveToPlan(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:cs_orders,id',
+        ]);
+
+        $orderIds = $validated['ids'];
+        $processedCount = 0;
+        $skippedCount = 0;
+        $skippedAlreadyPlanned = 0;
+
+        DB::transaction(function () use ($orderIds, &$processedCount, &$skippedCount, &$skippedAlreadyPlanned) {
+            $orders = CsOrder::whereIn('id', $orderIds)->get();
+
+            foreach ($orders as $order) {
+                // Solo procesamos pedidos que estén en estatus 'Pendiente'
+                if ($order->status !== 'Pendiente') {
+                    $skippedCount++;
+                    continue;
+                }
+
+                // Verificamos si ya existe en planificación para evitar duplicados
+                if (CsPlanning::where('cs_order_id', $order->id)->exists()) {
+                    $skippedAlreadyPlanned++;
+                    continue;
+                }
+
+                $order->update(['status' => 'En Planificación', 'updated_by_user_id' => Auth::id()]);
+
+                // Crear el registro en la tabla de planificación
+                CsPlanning::create([
+                    'cs_order_id' => $order->id,
+                    'fecha_entrega' => $order->delivery_date,
+                    'origen' => $order->origin_warehouse,
+                    'direccion' => $order->shipping_address,
+                    'razon_social' => $order->client_contact ?: $order->customer_name,
+                    'hora_cita' => $order->schedule,
+                    'so_number' => $order->so_number,
+                    'factura' => $order->invoice_number ?: $order->so_number,
+                    'pzs' => $order->total_bottles,
+                    'cajas' => $order->total_boxes,
+                    'subtotal' => $order->subtotal,
+                    'canal' => $order->channel,
+                    'destino' => $order->destination_locality,
+                    'status' => 'En Espera',
+                ]);
+
+                CsOrderEvent::create([
+                    'cs_order_id' => $order->id,
+                    'user_id' => Auth::id(),
+                    'description' => 'El usuario ' . Auth::user()->name . ' envió el pedido a planificación mediante una acción masiva.'
+                ]);
+
+                $processedCount++;
+            }
+        });
+
+        $message = "{$processedCount} pedidos enviados a planificación exitosamente.";
+        if ($skippedCount > 0) {
+            $message .= " Se omitieron {$skippedCount} pedidos por no tener estatus 'Pendiente'.";
+        }
+        if ($skippedAlreadyPlanned > 0) {
+            $message .= " Se omitieron {$skippedAlreadyPlanned} pedidos que ya estaban en planificación.";
+        }
+
+        return redirect()->route('customer-service.orders.index')->with('success', $message);
+    }    
 
 
 }

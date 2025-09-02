@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use App\Mail\UnidadArriboMail;
+
 
 class AuditController extends Controller
 {
@@ -49,16 +51,18 @@ class AuditController extends Controller
             }
         }
 
-        // Filtro por búsqueda de SO o Factura
+        // Filtro por búsqueda de SO, Factura o Guía
         if ($request->filled('search')) {
             $searchTerm = $request->search;
             $query->where(function($q) use ($searchTerm) {
                 $q->where('so_number', 'like', "%{$searchTerm}%")
-                  ->orWhere('invoice_number', 'like', "%{$searchTerm}%");
+                  ->orWhere('invoice_number', 'like', "%{$searchTerm}%")
+                  ->orWhereHas('plannings.guia', function ($guiaQuery) use ($searchTerm) {
+                      $guiaQuery->where('guia', 'like', "%{$searchTerm}%");
+                  });
             });
         }
 
-        // --- CORRECCIÓN CLAVE: Se usa paginate() en lugar de get() ---
         $auditableOrders = $query->orderBy('creation_date', 'desc')->paginate(15);
 
         return view('audit.index', compact('auditableOrders'));
@@ -82,8 +86,6 @@ class AuditController extends Controller
     {
         $order = CsOrder::findOrFail($orderId);
         
-        // 1. VALIDACIÓN
-        // Se valida que todos los campos requeridos lleguen y que los checkboxes sean booleanos.
         $validated = $request->validate([
             'items' => 'required|array',
             'items.*.calidad' => 'required|string',
@@ -98,19 +100,13 @@ class AuditController extends Controller
             'items.*.upc_validado' => 'sometimes|boolean',
         ]);
 
-        // 2. TRANSACCIÓN DE BASE DE DATOS
-        // Usamos una transacción para asegurar que todos los cambios se guarden juntos, o ninguno si algo falla.
         DB::transaction(function () use ($validated, $order, $request) {
             
-            // 3. ACTUALIZACIÓN DE DETALLES (SKUs)
-            // Se recorre cada item enviado desde el formulario.
             foreach ($validated['items'] as $detailId => $data) {
                 $detail = $order->details()->find($detailId);
                 if ($detail) {
                     $detail->update([
                         'audit_calidad' => $data['calidad'],
-                        // Se usa $request->input() para manejar correctamente los checkboxes.
-                        // Si un checkbox no está marcado, no se envía, por lo que le asignamos 'false'.
                         'audit_sku_validado' => $request->input("items.{$detailId}.sku_validado", false),
                         'audit_piezas_validadas' => $request->input("items.{$detailId}.piezas_validadas", false),
                         'audit_upc_validado' => $request->input("items.{$detailId}.upc_validado", false),
@@ -118,22 +114,17 @@ class AuditController extends Controller
                 }
             }
             
-            // 4. ACTUALIZACIÓN DEL PEDIDO PRINCIPAL
-            // Se guardan los datos de la auditoría general y se cambia el estatus.
             $order->audit_almacen_observaciones = $validated['observaciones'];
             $order->status = 'Listo para Enviar';
             
             $order->audit_tarimas_cantidad = $validated['tarimas_cantidad'];
             $order->audit_tarimas_tipo = $validated['tarimas_tipo'];
-            // Se usa $request->has() para los checkboxes principales. Si existen en la petición, es 'true'.
             $order->audit_emplayado_correcto = $request->has('emplayado_correcto');
             $order->audit_etiquetado_correcto = $request->has('etiquetado_correcto');
             $order->audit_distribucion_correcta = $request->has('distribucion_correcta');
             
             $order->save();
 
-            // 5. REGISTRO EN LÍNEA DE TIEMPO
-            // Se crea un evento para que quede constancia de la auditoría.
             CsOrderEvent::create([
                 'cs_order_id' => $order->id,
                 'user_id' => Auth::id(),
@@ -141,8 +132,6 @@ class AuditController extends Controller
             ]);
         });
 
-        // 6. REDIRECCIÓN
-        // Se redirige al usuario de vuelta al dashboard con un mensaje de éxito.
         return redirect()->route('audit.index')->with('success', 'Auditoría de almacén completada para SO: ' . $order->so_number);
     }
 
@@ -204,8 +193,7 @@ class AuditController extends Controller
                 ]);
             }
 
-            // TODO: Implementar Mailable y descomentar la línea de envío de correo.
-            // Mail::to(['auditoria@tuempresa.com', 'trafico@tuempresa.com'])->send(new UnidadArriboMail($guia));
+            Mail::to(['auditoria@tuempresa.com', 'trafico@tuempresa.com'])->send(new UnidadArriboMail($guia));
         });
 
         return redirect()->route('audit.index')->with('success', 'Auditoría de patio completada para Guía: ' . $guia->guia);

@@ -87,10 +87,17 @@
                 {{-- Barra de acciones para selección --}}
                 <div x-show="selectedOrders.length > 0" class="bg-gray-800 text-white p-3 rounded-lg shadow-lg flex justify-between items-center transition-transform w-full" x-transition>
                     <span x-text="`(${selectedOrders.length}) órdenes seleccionadas.`"></span>
-                    <button @click="bulkEdit()" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700">
-                        <i class="fas fa-edit mr-2"></i>Editar Selección
-                    </button>
-                </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <button @click="bulkEdit()" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700">
+                            <i class="fas fa-edit mr-2"></i>Editar Selección
+                        </button>
+
+                        <button @click="bulkPlan()" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-semibold hover:bg-green-700">
+                            <i class="fas fa-shipping-fast mr-2"></i>Enviar a Planificación
+                        </button>
+                    </div>
+                    </div>
             </div>
             <div id="orders-table-container">
                 @include('customer-service.orders.partials.table')
@@ -429,7 +436,44 @@
                 const params = new URLSearchParams();
                 this.selectedOrders.forEach(id => params.append('ids[]', id));
                 window.location.href = `{{ route('customer-service.orders.bulk-edit') }}?${params.toString()}`;
-            }
+            },
+
+            bulkPlan() {
+                if (this.selectedOrders.length === 0) {
+                    alert('Por favor, selecciona al menos un pedido para enviar a planificación.');
+                    return;
+                }
+
+                if (!confirm(`¿Estás seguro de que deseas enviar los ${this.selectedOrders.length} pedidos seleccionados a planificación?`)) {
+                    return;
+                }
+
+                // Creamos un formulario en memoria
+                let form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ route("customer-service.orders.bulk-plan") }}';
+
+                // Añadimos el token CSRF para seguridad
+                let csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = '_token';
+                csrfToken.value = '{{ csrf_token() }}';
+                form.appendChild(csrfToken);
+
+                // Añadimos cada ID seleccionado como un campo oculto
+                this.selectedOrders.forEach(id => {
+                    let input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ids[]';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+
+                // Añadimos el formulario al DOM, lo enviamos y lo removemos.
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+            }            
 
         }
     }

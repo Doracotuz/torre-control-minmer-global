@@ -479,6 +479,8 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         Route::get('/template', [OrderController::class, 'downloadTemplate'])->name('template');
         Route::get('/download-errors', [OrderController::class, 'downloadImportErrors'])->name('download-errors');
         Route::post('/clear-import-errors', [OrderController::class, 'clearImportErrorsSession'])->name('clear-import-errors');
+        Route::post('/bulk-plan', [OrderController::class, 'bulkMoveToPlan'])->name('bulk-plan');
+
 
         
         Route::get('/{order}/edit-original', [OrderController::class, 'editOriginalData'])->name('edit-original');

@@ -19,15 +19,15 @@ class PlanningController extends Controller
     {
         $warehouses = \App\Models\CsWarehouse::orderBy('name')->get();
         
-        // CORRECCIÓN: Se añade la lista completa de columnas.
         $allColumns = [
             'guia' => 'Guía',
             'fecha_carga' => 'F. Carga',
             'hora_carga' => 'H. Carga',
             'fecha_entrega' => 'F. Entrega',
             'origen' => 'Origen',
-            'direccion' => 'Dirección',
+            'destino' => 'Destino',
             'razon_social' => 'Razón Social',
+            'direccion' => 'Dirección',
             'hora_cita' => 'Hora Cita',
             'so_number' => 'SO',
             'factura' => 'Factura',
@@ -35,21 +35,20 @@ class PlanningController extends Controller
             'cajas' => 'Cajas',
             'subtotal' => 'Subtotal',
             'canal' => 'Canal',
-            'capacidad' => 'Capacidad',
             'transporte' => 'Transporte',
-            'destino' => 'Destino',
-            'estado' => 'Estado',
-            'servicio' => 'Servicio',
-            'region' => 'Región',
-            'tipo_ruta' => 'Tipo de Ruta',
-            'devolucion' => 'Devolución',
-            'custodia' => 'Custodia',
             'operador' => 'Operador',
             'placas' => 'Placas',
             'telefono' => 'Teléfono',
-            'estatus_de_entrega' => 'Estatus Entrega',
+            'capacidad' => 'Capacidad',
+            'custodia' => 'Custodia',
+            'servicio' => 'Servicio',
+            'tipo_ruta' => 'Tipo de Ruta',
+            'region' => 'Región',
+            'estado' => 'Estado',
             'urgente' => 'Urgente',
-            'status' => 'Estatus General' // Se renombra para evitar confusión con "Estatus Entrega"
+            'devolucion' => 'Devolución',
+            'estatus_de_entrega' => 'Estatus Entrega',
+            'status' => 'Estatus General'
         ];
 
         return view('customer-service.planning.index', compact('warehouses', 'allColumns'));
@@ -59,6 +58,7 @@ class PlanningController extends Controller
     {
         $query = CsPlanning::with('guia')->orderBy('guia_id', 'desc')->orderBy('created_at', 'asc');
 
+        // Filtro de búsqueda rápida
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';
             $query->where(function ($q) use ($searchTerm) {
@@ -69,14 +69,29 @@ class PlanningController extends Controller
                   ->orWhere('destino', 'like', $searchTerm);
             });
         }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
         
+        // Filtros básicos
+        if ($request->filled('status')) { $query->where('status', $request->status); }
         if ($request->filled('date_from') && $request->filled('date_to')) {
             $query->whereBetween('fecha_entrega', [$request->date_from, $request->date_to]);
         }
+
+        // --- INICIA CORRECCIÓN: Se añaden los nuevos filtros avanzados ---
+        if ($request->filled('fecha_carga_adv')) { $query->whereDate('fecha_carga', $request->fecha_carga_adv); }
+        if ($request->filled('razon_social_adv')) { $query->where('razon_social', 'like', '%' . $request->razon_social_adv . '%'); }
+        if ($request->filled('factura_adv')) { $query->where('factura', 'like', '%' . $request->factura_adv . '%'); }
+        if ($request->filled('origen_adv')) { $query->where('origen', $request->origen_adv); }
+        if ($request->filled('destino_adv')) { $query->where('destino', $request->destino_adv); }
+        if ($request->filled('transporte_adv')) { $query->where('transporte', 'like', '%' . $request->transporte_adv . '%'); }
+        if ($request->filled('operador_adv')) { $query->where('operador', 'like', '%' . $request->operador_adv . '%'); }
+        if ($request->filled('tipo_ruta_adv')) { $query->where('tipo_ruta', $request->tipo_ruta_adv); }
+        if ($request->filled('servicio_adv')) { $query->where('servicio', $request->servicio_adv); }
+        if ($request->filled('guia_adv')) {
+            $query->whereHas('guia', function($q) use ($request) {
+                $q->where('guia', 'like', '%' . $request->guia_adv . '%');
+            });
+        }
+        // --- TERMINA CORRECCIÓN ---
 
         $plannings = $query->paginate(15)->withQueryString();
 

@@ -13,8 +13,6 @@ class ValidationController extends Controller
 {
     public function index(Request $request)
     {
-        // --- INICIA LÓGICA CORREGIDA ---
-        // La consulta ahora busca todas las órdenes que no estén terminadas o canceladas.
         $query = CsOrder::whereNotIn('status', ['Terminado', 'Cancelado'])
                         ->with('details.product', 'details.upc');
 
@@ -26,8 +24,14 @@ class ValidationController extends Controller
             });
         }
         
+        // --- CORRECCIÓN: Se añade el filtro por estatus ---
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+
+        // --- CORRECCIÓN: Se añade el filtro por canal ---
+        if ($request->filled('channel')) {
+            $query->where('channel', $request->channel);
         }
 
         if ($request->filled('customer_name')) {
@@ -39,24 +43,28 @@ class ValidationController extends Controller
         }
 
         $orders = $query->paginate(10);
-        $customers = CsOrder::whereNotIn('status', ['Terminado', 'Cancelado'])->distinct()->pluck('customer_name');
-        // --- TERMINA LÓGICA CORREGIDA ---
+        
+        // --- CORRECCIÓN: Se obtienen los datos para los nuevos filtros ---
+        $baseQuery = CsOrder::whereNotIn('status', ['Terminado', 'Cancelado']);
+        $customers = (clone $baseQuery)->distinct()->orderBy('customer_name')->pluck('customer_name');
+        $channels = (clone $baseQuery)->distinct()->orderBy('channel')->pluck('channel');
+        $statuses = (clone $baseQuery)->distinct()->orderBy('status')->pluck('status');
 
-        return view('customer-service.validation.index', compact('orders', 'customers'));
+        return view('customer-service.validation.index', compact('orders', 'customers', 'channels', 'statuses'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'upcs' => 'required|array',
-            'upcs.*' => 'required|string',
+            'upcs.*' => 'nullable|string',
         ]);
 
         DB::transaction(function () use ($validated) {
             foreach ($validated['upcs'] as $detailId => $upcValue) {
                 $detail = CsOrderDetail::find($detailId);
                 if ($detail) {
-                    $upc = $upcValue ?: $detail->sku; // Si está vacío, usa el SKU
+                    $upc = $upcValue ?: $detail->sku;
                     CsOrderDetailUpc::updateOrCreate(
                         ['cs_order_detail_id' => $detailId],
                         ['upc' => $upc]
@@ -68,51 +76,82 @@ class ValidationController extends Controller
         return back()->with('success', 'UPCs guardados exitosamente.');
     }
 
-    public function downloadTemplate()
+    /**
+     * CORRECCIÓN: Ahora genera la plantilla basada en los IDs de las órdenes seleccionadas.
+     * Si no se seleccionan IDs, genera una plantilla vacía.
+     */
+    public function downloadTemplate(Request $request)
     {
-        $orders = CsOrder::where('status', 'Pendiente')->with('details.product')->get();
-        $fileName = "plantilla_upc.csv";
+        $orderIds = $request->query('ids');
+        $orders = collect(); // Inicia una colección vacía por defecto
+
+        // Si se proporcionaron IDs, busca esas órdenes
+        if (!empty($orderIds) && is_array($orderIds)) {
+            $orders = CsOrder::whereIn('id', $orderIds)->with('details')->get();
+        }
+
+        $fileName = "plantilla_upc_seleccion.csv";
         $headers = ["Content-type" => "text/csv; charset=UTF-8", "Content-Disposition" => "attachment; filename=$fileName"];
 
         $callback = function() use ($orders) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($file, ['order_detail_id', 'so_number', 'sku', 'description', 'upc_a_llenar']);
+            fputcsv($file, ['so_number', 'sku', 'upc_a_llenar']);
 
-            foreach ($orders as $order) {
-                foreach ($order->details as $detail) {
-                    fputcsv($file, [
-                        $detail->id,
-                        $order->so_number,
-                        $detail->sku,
-                        $detail->product->description ?? '',
-                        '' // Columna vacía para llenar
-                    ]);
+            // Si hay órdenes seleccionadas, itera sobre ellas y sus detalles
+            if ($orders->isNotEmpty()) {
+                foreach ($orders as $order) {
+                    foreach ($order->details as $detail) {
+                        fputcsv($file, [
+                            $order->so_number,
+                            $detail->sku,
+                            '' // Columna vacía para llenar el UPC
+                        ]);
+                    }
                 }
             }
+            
             fclose($file);
         };
         return response()->stream($callback, 200, $headers);
     }
 
+    /**
+     * La lógica de importación ya es compatible con el nuevo formato, no requiere cambios.
+     */
     public function importCsv(Request $request)
     {
         $request->validate(['csv_file' => 'required|mimes:csv,txt']);
         $path = $request->file('csv_file')->getRealPath();
         $file = fopen($path, 'r');
-        fgetcsv($file); // Omitir cabecera
+        fgetcsv($file); 
 
         DB::transaction(function () use ($file) {
             while (($row = fgetcsv($file)) !== FALSE) {
-                $detailId = $row[0];
-                $upcValue = $row[4];
-                $detail = CsOrderDetail::find($detailId);
-                if ($detail) {
-                    $upc = $upcValue ?: $detail->sku;
-                    CsOrderDetailUpc::updateOrCreate(
-                        ['cs_order_detail_id' => $detailId],
-                        ['upc' => $upc]
-                    );
+                $soNumber = trim($row[0]);
+                $sku = trim($row[1]);
+                $upcValue = trim($row[2]);
+
+                if (empty($soNumber) || empty($sku)) {
+                    continue;
+                }
+
+                // CORRECCIÓN: Busca TODOS los detalles que coincidan con SO + SKU
+                $details = CsOrderDetail::where('sku', $sku)
+                    ->whereHas('order', function ($query) use ($soNumber) {
+                        $query->where('so_number', $soNumber);
+                    })
+                    ->get(); // Usamos get() en lugar de first()
+
+                // Si encuentra uno o más detalles, los recorre y actualiza
+                if ($details->isNotEmpty()) {
+                    foreach ($details as $detail) {
+                        $upc = $upcValue ?: $detail->sku;
+                        CsOrderDetailUpc::updateOrCreate(
+                            ['cs_order_detail_id' => $detail->id],
+                            ['upc' => $upc]
+                        );
+                    }
                 }
             }
         });

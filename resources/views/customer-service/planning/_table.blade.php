@@ -3,8 +3,8 @@
         <table class="min-w-full table-fixed">
             <thead class="bg-[#2c3856]">
                 <tr>
-                    <th class="px-2 py-1 text-center text-xs font-medium text-white uppercase tracking-wider w-12">
-                        <input type="checkbox" @click="$dispatch('toggle-all-plannings', $event.target.checked)" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <th class="px-2 py-1 text-center text-xs font-medium text-white uppercase tracking-wider w-12 no-drag">
+                        <input type="checkbox" @click="$dispatch('toggle-all-plannings', $event.target.checked)" class="rounded">
                     </th>
 
                     <template x-for="(columnKey, index) in columnOrder" :key="`${columnKey}-${index}`">
@@ -16,7 +16,8 @@
                             <div class="resizer"></div>
                         </th>
                     </template>
-                    <th class="px-2 py-1 text-center text-xs font-medium text-white uppercase tracking-wider border-l border-gray-400">
+                    
+                    <th class="px-2 py-1 text-center text-xs font-medium text-white uppercase tracking-wider border-l border-gray-400 no-drag">
                         Acciones
                     </th>
                 </tr>
@@ -28,17 +29,14 @@
                         'bg-blue-50': selectedPlannings.includes(planning.id)
                     }">
                         <td class="px-2 py-1 border text-center">
-                            <input type="checkbox" :value="planning.id" x-model="selectedPlannings" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <input type="checkbox" :value="planning.id" x-model="selectedPlannings" class="rounded">
                         </td>
 
                         <template x-for="columnKey in columnOrder" :key="columnKey">
                             <td x-show="visibleColumns[columnKey]" 
                                 class="px-2 py-1 whitespace-nowrap text-sm border truncate"
-                                :class="{
-                                    'bg-blue-100 text-blue-800 font-medium': 
-                                        (columnKey === 'guia' || columnKey === 'guia_number' || columnKey === 'numero_guia') && 
-                                        planning.guia?.guia?.startsWith('TEMP-')
-                                }">
+                                :title="getFormattedCell(planning, columnKey)">
+                                
                                 <template x-if="columnKey === 'status'">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                                         :class="{
@@ -48,29 +46,23 @@
                                         }" x-text="planning.status">
                                     </span>
                                 </template>
-                            
-                                
                                 <template x-if="columnKey !== 'status'">
-                                    <span :title="planning[columnKey]" x-text="getFormattedCell(planning, columnKey)"></span>
+                                    <span x-text="getFormattedCell(planning, columnKey)"></span>
                                 </template>
                             </td>
                         </template>
 
                         <td class="px-2 py-1 whitespace-nowrap text-center text-sm font-medium border">
-                           {{-- El contenido de las acciones no cambia --}}
                            <a :href="`/customer-service/planning/${planning.id}`" class="text-gray-600 hover:text-gray-900 mr-2" title="Ver Detalle"><i class="fas fa-eye"></i></a>
                             <a :href="`/customer-service/planning/${planning.id}/edit`" class="text-indigo-600 hover:text-indigo-900 mr-4" title="Editar"><i class="fas fa-edit"></i></a>
                             <template x-if="planning.origen !== planning.destino && !planning.is_scale && !planning.is_direct_route">
                                 <span>
                                     <button @click="openScalesModal(planning)" class="px-3 py-1 bg-purple-600 text-white rounded-md text-xs font-semibold hover:bg-purple-700" title="Dividir en Escalas">Escalas</button>
-                                    <button @click="markAsDirect(planning.id)" class="ml-2 px-3 py-1 bg-gray-500 text-white rounded-md text-xs font-semibold hover:bg-gray-600" title="Marcar como ruta directa y aprobada">No es Escala</button>
+                                    <button @click="markAsDirect(planning.id)" class="ml-2 px-3 py-1 bg-gray-500 text-white rounded-md text-xs font-semibold hover:bg-gray-600" title="Marcar como ruta directa">No Escala</button>
                                 </span>
                             </template>
                             <template x-if="planning.status === 'En Espera'">
-                                <form :action="`/customer-service/planning/${planning.id}/schedule`" method="POST" class="inline ml-2" onsubmit="return confirm('¿Programar esta ruta?');">
-                                    @csrf
-                                    <button type="submit" class="px-3 py-1 bg-green-500 text-white rounded-md text-xs font-semibold hover:bg-green-600">Programar</button>
-                                </form>
+                                <form :action="`/customer-service/planning/${planning.id}/schedule`" method="POST" class="inline ml-2" onsubmit="return confirm('¿Programar esta ruta?');"> @csrf <button type="submit" class="px-3 py-1 bg-green-500 text-white rounded-md text-xs font-semibold hover:bg-green-600">Programar</button> </form>
                             </template>
                         </td>
                     </tr>
@@ -82,4 +74,3 @@
         </table>
     </div>
 </div>
-<div class="mt-4"></div>

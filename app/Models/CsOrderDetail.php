@@ -7,7 +7,7 @@ class CsOrderDetail extends Model {
     use HasFactory;
     protected $table = 'cs_order_details';
     protected $guarded = [];
-    public function order() { return $this->belongsTo(CsOrder::class); }
+    public function order() { return $this->belongsTo(CsOrder::class, 'cs_order_id'); }
     // Nueva relación para obtener la descripción del producto
     public function product()
     {
@@ -18,4 +18,6 @@ class CsOrderDetail extends Model {
     {
         return $this->hasOne(\App\Models\CsOrderDetailUpc::class);
     }    
+
+
 }

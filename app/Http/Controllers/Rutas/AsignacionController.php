@@ -452,12 +452,17 @@ class AsignacionController extends Controller
      */
     public function addOrdersToGuia(Request $request)
     {
+        // --- INICIA CORRECCIÓN: Se ajusta la validación para esperar un arreglo ---
         $validatedData = $request->validate([
             'guia_id' => 'required|exists:guias,id',
-            'planning_ids' => 'required|string', // Viene como JSON string
+            'planning_ids' => 'required|array|min:1', // Se cambia 'string' por 'array'
+            'planning_ids.*' => 'exists:cs_plannings,id' // Se añade validación para cada ID
         ]);
 
-        $planningIds = json_decode($validatedData['planning_ids']);
+        // Ya no es necesario decodificar el JSON, porque ahora recibimos un arreglo directamente
+        $planningIds = $validatedData['planning_ids'];
+        // --- TERMINA CORRECCIÓN ---
+
         if (empty($planningIds)) {
             return back()->with('error', 'No se seleccionaron órdenes para añadir.');
         }
@@ -496,5 +501,5 @@ class AsignacionController extends Controller
         }
 
         return redirect()->route('customer-service.planning.index')->with('success', count($planningRecords) . ' órdenes añadidas a la guía ' . $guia->guia . ' exitosamente.');
-    }    
+    }
 }

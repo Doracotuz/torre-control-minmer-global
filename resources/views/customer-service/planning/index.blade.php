@@ -4,40 +4,49 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('Gestión de Planificación de Rutas') }}
             </h2>
-
         </div>
     </x-slot>
 
     <div class="py-12" x-data="planningManager()">
         <div class="mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
-                <div class="mb-6">
+                
+                {{-- Filtros Básicos --}}
+                <div class="mb-4">
                     @include('customer-service.planning._filters')
                 </div>
-                <div x-show="selectedPlannings.length > 0" class="bg-gray-800 text-white p-3 rounded-lg shadow-lg mb-4 flex justify-between items-center transition-transform" x-transition>
-                    <span x-text="`(${selectedPlannings.length}) registros seleccionados.`"></span>
-                    <div class="flex items-center space-x-4">
-                        <button @click="bulkEdit()" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700">
-                            <i class="fas fa-edit mr-2"></i>Editar Selección
-                        </button>
-                        <button @click="createGuide()" class="px-4 py-2 bg-[#ff9c00] text-white rounded-md text-sm font-semibold hover:bg-orange-600">
-                            <i class="fas fa-plus-circle mr-2"></i>Crear Guía con Selección
-                        </button>
-                        <button @click="openAddToGuiaModal()" class="px-4 py-2 bg-orange-600 text-white rounded-md text-sm font-semibold hover:bg-orange-700">
-                            <i class="fas fa-plus mr-2"></i>Añadir a Guía Existente
-                        </button>                        
-                    </div>
-                </div>               
-                <div class="flex items-center space-x-4">
+
+                {{-- Barra de Acciones y Botones --}}
+                <div class="mb-4">
+                    {{-- Barra de acciones para selección --}}
+                    <div x-show="selectedPlannings.length > 0" class="bg-gray-800 text-white p-3 rounded-lg shadow-lg flex justify-between items-center transition-transform w-full" x-transition>
+                        <span x-text="`(${selectedPlannings.length}) registros seleccionados.`"></span>
+                        <div class="flex items-center space-x-4">
+                            <button @click="bulkEdit()" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700">
+                                <i class="fas fa-edit mr-2"></i>Editar Selección
+                            </button>
+                            <button @click="createGuide()" class="px-4 py-2 bg-[#ff9c00] text-white rounded-md text-sm font-semibold hover:bg-orange-600">
+                                <i class="fas fa-plus-circle mr-2"></i>Crear Guía
+                            </button>
+                            <button @click="openAddToGuiaModal()" class="px-4 py-2 bg-orange-600 text-white rounded-md text-sm font-semibold hover:bg-orange-700">
+                                <i class="fas fa-plus mr-2"></i>Añadir a Guía
+                            </button>                        
+                        </div>
+                    </div>               
+                </div>
+
+                <div class="flex items-center space-x-4 mb-6">
                     <a href="{{ route('customer-service.planning.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700">
                         <i class="fas fa-plus mr-2"></i>Añadir Manualmente
                     </a>                    
                     <button @click="isColumnModalOpen = true" class="px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700">
-                        <i class="fas fa-columns mr-2"></i>Seleccionar Columnas
+                        <i class="fas fa-columns mr-2"></i>Columnas
+                    </button>
+                    <button @click="isAdvancedFilterModalOpen = true" class="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-teal-700">
+                        <i class="fas fa-filter mr-2"></i>Filtros Avanzados
                     </button>
                 </div>
                 
-                <br>
                 <div x-show="!isLoading" style="display: none;">
                     @include('customer-service.planning._table')
                 </div>
@@ -48,43 +57,12 @@
                 </div>
             </div>
         </div>
-        <div x-show="isAddToGuiaModalOpen" @keydown.escape.window="isAddToGuiaModalOpen = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" style="display: none;">
-            <div @click.outside="isAddToGuiaModalOpen = false" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
-                <h3 class="text-xl font-bold text-[#2c3856] mb-4">Añadir a Guía Existente</h3>
-                <form :action="`/rutas/asignaciones/add-orders-to-guia`" method="POST">
-                    @csrf
-                    <input type="hidden" name="planning_ids" :value="JSON.stringify(selectedPlannings)">
-                    
-                    <div>
-                        <label for="guia_search" class="block text-sm font-medium text-gray-700">Buscar Guía (por número, operador o placas)</label>
-                        <input type="text" id="guia_search" x-model="guiaSearch" @input.debounce.300ms="searchGuias()" class="mt-1 block w-full rounded-md border-gray-300" placeholder="Escribe para buscar...">
-                    </div>
-
-                    <div class="mt-4 max-h-60 overflow-y-auto border rounded-lg">
-                        <template x-for="guia in guiaSearchResults" :key="guia.id">
-                            <label class="flex items-center p-3 hover:bg-gray-100 border-b cursor-pointer">
-                                <input type="radio" name="guia_id" :value="guia.id" class="rounded-full text-[#ff9c00] focus:ring-[#ff9c00]">
-                                <div class="ml-3 text-sm">
-                                    <p class="font-semibold" x-text="guia.guia"></p>
-                                    <p class="text-gray-600" x-text="`${guia.operador} - ${guia.placas}`"></p>
-                                </div>
-                            </label>
-                        </template>
-                        <template x-if="guiaSearch.length > 1 && guiaSearchResults.length === 0">
-                            <p class="p-3 text-sm text-gray-500">No se encontraron guías.</p>
-                        </template>
-                    </div>
-
-                    <div class="mt-6 flex justify-end gap-4">
-                        <button type="button" @click="isAddToGuiaModalOpen = false" class="px-4 py-2 bg-gray-200 rounded-md">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-md">Añadir a Guía</button>
-                    </div>
-                </form>
-            </div>
-        </div>        
         
+        {{-- Modales --}}
         @include('customer-service.planning._column-selector-modal')
         @include('customer-service.planning._scales-modal')
+        @include('customer-service.planning._add-to-guia-modal')
+        @include('customer-service.planning._advanced-filters-modal')
     </div>
 
 <style>
@@ -99,39 +77,58 @@ th { position: relative; }
 <script>
 function planningManager() {
     return {
-        // --- ESTADO DE LA TABLA Y DATOS ---
+        // --- ESTADO Y DATOS ---
         plannings: [],
         pagination: {},
         isLoading: true,
-        filters: { search: '', status: '', date_from: '', date_to: '', page: 1 },
+        filters: { 
+            search: new URLSearchParams(window.location.search).get('search') || '', 
+            status: new URLSearchParams(window.location.search).get('status') || '', 
+            date_from: new URLSearchParams(window.location.search).get('date_from') || '', 
+            date_to: new URLSearchParams(window.location.search).get('date_to') || '',
+            // --- CORRECCIÓN: Se añaden los nuevos filtros avanzados al estado ---
+            fecha_carga_adv: new URLSearchParams(window.location.search).get('fecha_carga_adv') || '',
+            razon_social_adv: new URLSearchParams(window.location.search).get('razon_social_adv') || '',
+            factura_adv: new URLSearchParams(window.location.search).get('factura_adv') || '',
+            origen_adv: new URLSearchParams(window.location.search).get('origen_adv') || '',
+            destino_adv: new URLSearchParams(window.location.search).get('destino_adv') || '',
+            transporte_adv: new URLSearchParams(window.location.search).get('transporte_adv') || '',
+            operador_adv: new URLSearchParams(window.location.search).get('operador_adv') || '',
+            tipo_ruta_adv: new URLSearchParams(window.location.search).get('tipo_ruta_adv') || '',
+            servicio_adv: new URLSearchParams(window.location.search).get('servicio_adv') || '',
+            guia_adv: new URLSearchParams(window.location.search).get('guia_adv') || '',
+            page: 1 
+        },
         selectedPlannings: [],
 
-        // --- GESTIÓN DE COLUMNAS ---
+        // --- GESTIÓN DE COLUMNAS (NUEVO) ---
         isColumnModalOpen: false,
         allColumns: @json($allColumns),
         visibleColumns: {},
         columnOrder: [],
         columnWidths: {},
 
-        // --- GESTIÓN DE MODAL DE ESCALAS ---
+        // --- MODALES ---
         isScalesModalOpen: false,
+        isAddToGuiaModalOpen: false,
+        isAdvancedFilterModalOpen: false, // Nuevo
         selectedPlanning: {},
         scalesCount: 1,
         scales: [],
         warehouses: @json($warehouses),
-        isAddToGuiaModalOpen: false,
         guiaSearch: '',
         guiaSearchResults: [],        
-        
-
-        selectedPlannings: [],
 
         // --- INICIALIZACIÓN ---
         init() {
-            this.loadColumnSettings();
+            this.loadColumnSettings(); // Cargar configuración de columnas
             this.fetchPlannings();
             
-            this.$watch('filters', () => { this.filters.page = 1; this.fetchPlannings(); });
+            this.$watch('filters', Alpine.debounce(() => { 
+                this.filters.page = 1; 
+                this.fetchPlannings(); 
+            }, 300));
+
             this.$watch('visibleColumns', () => this.saveColumnSettings());
 
             this.$nextTick(() => {
@@ -142,13 +139,18 @@ function planningManager() {
             this.$el.addEventListener('toggle-all-plannings', (e) => {
                 this.toggleAllPlannings(e.detail);
             });
-
         },
 
         // --- LÓGICA DE DATOS ---
         fetchPlannings() {
             this.isLoading = true;
-            const params = new URLSearchParams(this.filters).toString();
+            // Limpiar filtros vacíos antes de enviar
+            const cleanFilters = Object.fromEntries(Object.entries(this.filters).filter(([_, v]) => v !== null && v !== ''));
+            const params = new URLSearchParams(cleanFilters);
+            
+            // Actualizar URL
+            window.history.pushState({}, '', `${window.location.pathname}?${params}`);
+
             fetch(`{{ route('customer-service.planning.filter') }}?${params}`)
                 .then(response => response.json())
                 .then(data => {
@@ -157,60 +159,24 @@ function planningManager() {
                     this.isLoading = false;
                 });
         },
-        changePage(page) { if (page) { this.filters.page = page; this.fetchPlannings(); } },
+        changePage(page) { if (page) { this.filters.page = page; } },
 
         getFormattedCell(planning, columnKey) {
             const value = planning[columnKey];
-
-            if (columnKey === 'guia') {
-                // Revisa si el registro de planificación tiene una guía asociada y si esa guía tiene un número.
-                if (planning.guia && planning.guia.guia) {
-                    return planning.guia.guia;
-                }
-                return 'Sin Asignar'; // Muestra esto si no tiene guía
-            }            
-
-            // Si el valor está vacío, devuelve 'N/A' inmediatamente
-            if (value === null || value === undefined || value === '') {
-                return 'N/A';
-            }
-
-            // Lógica específica para las columnas de fecha
+            if (columnKey === 'guia') return planning.guia?.guia || 'Sin Asignar';
+            if (value === null || value === undefined || value === '') return 'N/A';
             if (['fecha_carga', 'fecha_entrega'].includes(columnKey)) {
-                try {
-                    // Maneja tanto fechas con hora como sin hora
-                    const date = new Date(value.replace(' ', 'T'));
-                    
-                    if (isNaN(date.getTime())) {
-                        return 'Fecha inválida';
-                    }
-                    
-                    return date.toLocaleDateString('es-MX', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                    });
-                } catch (error) {
-                    return 'Fecha inválida';
-                }
+                return new Date(value.replace(' ', 'T')).toLocaleDateString('es-MX', {day: '2-digit', month: '2-digit', year: 'numeric'});
             }
-
-            if (columnKey === 'hora_carga') {
-                return value.substring(0, 5); // Muestra solo HH:MM
-            }
-
-            if (columnKey === 'subtotal') {
-                return `$${parseFloat(value).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            }
-
+            if (columnKey === 'hora_carga') return value.substring(0, 5);
+            if (columnKey === 'subtotal') return `$${parseFloat(value).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             return value;
         },      
 
-        // --- LÓGICA DE GESTIÓN DE COLUMNAS ---
+        // --- LÓGICA DE GESTIÓN DE COLUMNAS (NUEVO) ---
         loadColumnSettings() {
             const defaultOrder = Object.keys(this.allColumns);
             const defaultVisible = defaultOrder.reduce((acc, key) => ({...acc, [key]: true}), {});
-            
             this.columnOrder = JSON.parse(localStorage.getItem('planning_columnOrder')) || defaultOrder;
             this.visibleColumns = {...defaultVisible, ...JSON.parse(localStorage.getItem('planning_visibleColumns'))};
             this.columnWidths = JSON.parse(localStorage.getItem('planning_columnWidths')) || {};
@@ -225,23 +191,22 @@ function planningManager() {
             Sortable.create(tableHead, {
                 animation: 150,
                 handle: '.drag-handle',
+                filter: '.no-drag',
                 onEnd: (evt) => {
-                    const movedItem = this.columnOrder.splice(evt.oldIndex, 1)[0];
-                    this.columnOrder.splice(evt.newIndex, 0, movedItem);
+                    const movedItem = this.columnOrder.splice(evt.oldIndex-1, 1)[0];
+                    this.columnOrder.splice(evt.newIndex-1, 0, movedItem);
                     this.saveColumnSettings();
                 }
             });
         },
         initResizers() {
-            const headers = this.$el.querySelectorAll('th');
-            headers.forEach(header => {
-                const resizer = header.querySelector('.resizer');
-                if (!resizer) return;
-                
+            this.$el.querySelectorAll('th .resizer').forEach(resizer => {
+                let header = resizer.parentElement;
                 let startX, startWidth;
+                
                 const onMouseMove = (e) => {
                     const newWidth = startWidth + (e.clientX - startX);
-                    if (newWidth > 50) { // Mínimo ancho
+                    if (newWidth > 50) {
                         header.style.width = `${newWidth}px`;
                         this.columnWidths[header.dataset.column] = `${newWidth}px`;
                     }
@@ -252,12 +217,30 @@ function planningManager() {
                     this.saveColumnSettings();
                 };
                 resizer.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
                     startX = e.clientX;
                     startWidth = header.offsetWidth;
                     document.addEventListener('mousemove', onMouseMove);
                     document.addEventListener('mouseup', onMouseUp);
                 });
             });
+        },
+        // --- FIN LÓGICA DE GESTIÓN DE COLUMNAS ---
+
+        // --- LÓGICA DE FILTROS AVANZADOS (NUEVO) ---
+        applyAdvancedFilters() {
+            this.isAdvancedFilterModalOpen = false;
+            // El watcher de 'filters' se encargará de llamar a fetchPlannings
+            this.filters.page = 1; 
+            this.fetchPlannings();
+        },
+        resetAdvancedFilters() {
+             Object.keys(this.filters).forEach(key => {
+                if (key.endsWith('_adv')) {
+                    this.filters[key] = '';
+                }
+            });
+            this.applyAdvancedFilters();
         },
 
         openScalesModal(planning) {
