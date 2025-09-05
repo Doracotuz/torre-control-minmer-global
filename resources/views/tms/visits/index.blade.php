@@ -88,7 +88,7 @@
     }
 </style>
 
-<div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="w-full max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <header class="flex flex-col sm:flex-row items-center justify-between mb-8">
         <h1 class="text-4xl font-bold text-[var(--color-text-primary)]">Bitácora de Visitas</h1>
         <a href="{{ route('area_admin.visits.create') }}" class="btn btn-accent mt-4 sm:mt-0">
@@ -138,6 +138,7 @@
                         <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Empresa</th>
                         <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Entrada</th>
                         <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Salida</th>
+                        <th scope="col" class="p-4 font-semibold text-center uppercase tracking-wider">Acompañantes</th> {{-- ✅ COLUMNA AÑADIDA --}}
                         <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Estatus</th>
                         <th scope="col" class="p-4 font-semibold text-center uppercase tracking-wider">Acciones</th>
                     </tr>
@@ -158,6 +159,11 @@
                                 @endif
                             </td>
                             <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)]">{{ $visit->exit_datetime ? $visit->exit_datetime->format('d/m/Y h:i A') : '—' }}</td>
+                            {{-- ✅ INICIO: CELDA CON EL CONTEO DE ACOMPAÑANTES --}}
+                            <td class="p-4 whitespace-nowrap text-center font-semibold text-gray-700">
+                                {{ $visit->companions ? count($visit->companions) : 0 }}
+                            </td>
+                            {{-- ✅ FIN: CELDA CON EL CONTEO --}}
                             <td class="p-4 whitespace-nowrap">
                                 <span class="badge badge-{{ strtolower(str_replace(' ', '-', $visit->status)) }}">
                                     {{ $visit->status }}
@@ -180,7 +186,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="text-center p-8 text-gray-500">No se encontraron visitas.</td></tr>
+                        <tr><td colspan="8" class="text-center p-8 text-gray-500">No se encontraron visitas.</td></tr>
                     @endforelse
                 </tbody>
             </table>

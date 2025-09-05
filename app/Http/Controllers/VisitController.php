@@ -124,7 +124,8 @@ public function index(Request $request)
             'license_plate' => $request->license_plate,
             'visit_datetime' => Carbon::parse($request->visit_datetime),
             'reason' => $request->reason,
-            'companions' => json_encode(array_filter(preg_split('/\\r\\n|\\r|\\n/', $request->companions))),
+            // ✅ LÍNEA CORREGIDA: Se eliminó json_encode()
+            'companions' => array_filter(preg_split('/\\r\\n|\\r|\\n/', $request->companions)),
             'qr_code_token' => Str::uuid(),
             'created_by_user_id' => Auth::id(),
             'status' => 'Programada',
@@ -135,8 +136,6 @@ public function index(Request $request)
 
                 $logoPath = public_path('images/LogoBlanco.png'); // Ruta al logo
 
-                // 1. Crear y configurar el objeto QrCode
-            // Generar QR con Builder (compatible con endroid/qr-code 6.x)
             $builder = new \Endroid\QrCode\Builder\Builder(
                 writer: new PngWriter(),
                 writerOptions: [],
@@ -144,13 +143,13 @@ public function index(Request $request)
                 data: $validationUrl,
                 encoding: new Encoding('UTF-8'),
                 errorCorrectionLevel: ErrorCorrectionLevel::High,
-                size: 250,
+                size: 800,
                 margin: 10,
                 roundBlockSizeMode: RoundBlockSizeMode::Margin,
                 foregroundColor: new Color(0, 0, 0),
                 backgroundColor: new Color(255, 255, 255),
                 logoPath: $logoPath,
-                logoResizeToWidth: 50,
+                logoResizeToWidth: 450,
                 logoPunchoutBackground: true
             );
             $result = $builder->build();

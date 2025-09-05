@@ -42,6 +42,20 @@
                     <p><strong>Fecha y Hora Programada:</strong> {{ \Carbon\Carbon::parse($visit->visit_datetime)->format('d/m/Y h:i A') }}</p>
                     <p><strong>Estatus Final:</strong> <span class="font-bold text-black">{{ $visit->status }}</span></p>
                 </div>
+
+                {{-- ✅ INICIO: SECCIÓN DE ACOMPAÑANTES --}}
+                @if($visit->companions && count($visit->companions) > 0)
+                <div class="mt-6 pt-4 border-t">
+                    <h2 class="text-lg font-semibold text-[#2b2b2b] mb-3">Acompañantes Autorizados</h2>
+                    <ul class="space-y-2 text-sm text-[#666666] list-disc list-inside">
+                        @foreach($visit->companions as $companion)
+                            <li>{{ $companion }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
+                {{-- ✅ FIN: SECCIÓN DE ACOMPAÑANTES --}}
+
             </div>
         </div>
 

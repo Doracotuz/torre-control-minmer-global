@@ -135,7 +135,17 @@
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Acompañantes:</span>
-                        <span class="detail-value text-left pl-4">{!! nl2br(e($visit->companions ?? 'Ninguno')) !!}</span>
+                        <div class="detail-value text-left pl-4">
+                            @if($visit->companions && count($visit->companions) > 0)
+                                <ul class="list-disc list-inside">
+                                @foreach($visit->companions as $companion)
+                                    <li>{{ $companion }}</li>
+                                @endforeach
+                                </ul>
+                            @else
+                                Ninguno
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>

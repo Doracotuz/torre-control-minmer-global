@@ -66,7 +66,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" alt="Logotipo Minmer Global" style="height: 60px; width: auto;">
+            <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" 
+                 alt="Logotipo Minmer Global" 
+                 style="height: auto; max-height: 60px; display: block; border: 0;" 
+                 width="150">
         </div>
         <div class="content">
             <h1>Invitación de Visita</h1>
@@ -94,20 +97,23 @@
                     <td>{{ $visit->vehicle_make }} {{ $visit->vehicle_model }}, Placas: {{ $visit->license_plate }}</td>
                 </tr>
                 @endif
-                @php
-                    $companions = json_decode($visit->companions);
-                @endphp
-                @if(!empty($companions))
+                @if(!empty($visit->companions))
                 <tr>
                     <td>Acompañantes:</td>
-                    <td>{{ implode(', ', $companions) }}</td>
+                    <td>{{ implode(', ', $visit->companions) }}</td>
                 </tr>
                 @endif
             </table>
 
             <div class="qr-section">
                 <p style="font-weight: bold; color: #2b2b2b;">Por favor, presenta este código QR en el acceso:</p>
-                <img src="{{ $message->embedData($qrCodeImage, 'codigo_qr.png') }}" alt="Código QR de Acceso">
+                <div style="text-align: center; max-width: 300px; margin: 0 auto;">
+                  <img src="{{ $message->embedData($qrCodeImage, 'codigo_qr.png') }}" 
+                         alt="Código QR de Acceso"
+                         style="display: block; height: auto; border: 0; width: 100%; max-width: 300px;"
+                         width="300">
+
+                </div>
                 <p style="font-size: 12px; color: #666666;">Este código es único e intransferible.</p>
             </div>
         </div>

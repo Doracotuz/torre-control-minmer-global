@@ -78,7 +78,9 @@ class OrderController extends Controller
         if ($request->filled('evidence_cutoff_date')) { $query->whereDate('evidence_cutoff_date', $request->evidence_cutoff_date); }
         // --- TERMINA CAMBIO ---
 
-        $orders = $query->paginate(15)->withQueryString();
+        $perPage = $request->input('per_page', 15);
+
+        $orders = $query->paginate($perPage)->withQueryString();
 
         return response()->json($orders);
     }

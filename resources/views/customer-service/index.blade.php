@@ -87,7 +87,7 @@
                     <span x-text="greeting"></span>, {{ Auth::user()->name }}.
                 </h2>
                 <p class="text-md text-[#666666] mt-1">
-                    Bienvenido a tu centro de mando de Customer Service.
+                    Bienvenido al área de Customer Service.
                 </p>
             </div>
         </x-slot>

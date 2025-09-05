@@ -60,7 +60,7 @@
                         </div>
 
                         <div><label for="schedule" class="block text-sm font-medium text-gray-700">Horario</label><input type="text" name="schedule" value="{{ old('schedule', $order->schedule) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
-                        <div><label for="client_contact" class="block text-sm font-medium text-gray-700">Contacto Cliente</label><input type="text" name="client_contact" value="{{ old('client_contact', $order->client_contact) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label for="client_contact" class="block text-sm font-medium text-gray-700">Cliente</label><input type="text" name="client_contact" value="{{ old('client_contact', $order->client_contact) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div class="md:col-span-2"><label for="shipping_address" class="block text-sm font-medium text-gray-700">Dirección de Envío</label><input type="text" name="shipping_address" value="{{ old('shipping_address', $order->shipping_address) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         
                         {{-- Campo modificado para activar el cálculo --}}

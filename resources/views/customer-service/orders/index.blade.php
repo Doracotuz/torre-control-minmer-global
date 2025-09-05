@@ -103,6 +103,16 @@
                 @include('customer-service.orders.partials.table')
             </div>
             <div class="mt-6 pagination-container flex justify-between items-center text-sm text-gray-700" x-show="!isLoading && pagination.total > 0">
+                <div class="flex items-center space-x-2">
+                    <label for="per_page" class="text-sm font-medium">Filas por página:</label>
+                    <select id="per_page" x-model="filters.per_page" class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="30">30</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>                
                 <div>
                     Mostrando de <span class="font-medium" x-text="pagination.from"></span> a <span class="font-medium" x-text="pagination.to"></span> de <span class="font-medium" x-text="pagination.total"></span> resultados
                 </div>
@@ -197,7 +207,7 @@
                 invoice_number: 'Factura', invoice_date: 'F. Factura',
                 origin_warehouse: 'Almacén Origen', destination_locality: 'Localidad Destino',
                 total_bottles: 'Botellas', total_boxes: 'Cajas', subtotal: 'Subtotal',
-                delivery_date: 'F. Entrega', schedule: 'Horario', client_contact: 'Contacto',
+                delivery_date: 'F. Entrega', schedule: 'Horario', client_contact: 'Cliente',
                 shipping_address: 'Dirección', executive: 'Ejecutivo', observations: 'Observaciones',
                 evidence_reception_date: 'Recep. Evidencia', evidence_cutoff_date: 'Corte Evidencia',
             },
@@ -208,10 +218,14 @@
             resizingState: { isResizing: false, currentHeader: null, startX: 0, startW: 0 },
 
             init() {
+                const savedPerPage = localStorage.getItem('csOrderPerPage');
+                if (savedPerPage) {
+                    this.filters.per_page = parseInt(savedPerPage, 10);
+                }                
                 const defaultOrder = Object.keys(this.allColumns);
                 const savedOrder = localStorage.getItem('csOrderColumnOrder');
                 const savedWidths = localStorage.getItem('csOrderColumnWidths');
-                const savedVisible = localStorage.getItem('csOrderVisibleColumns');
+                const savedVisible = localStorage.getItem('csOrderVisibleColumns'); 
 
                 this.columnOrder = savedOrder ? JSON.parse(savedOrder) : defaultOrder;
                 this.columnWidths = savedWidths ? JSON.parse(savedWidths) : {};
@@ -233,7 +247,8 @@
                     'purchase_order_adv', 'bt_oc', 'customer_name_adv', 'channel',
                     'invoice_number_adv', 'invoice_date', 'origin_warehouse',
                     'destination_locality', 'delivery_date', 'executive',
-                    'evidence_reception_date', 'evidence_cutoff_date'
+                    'evidence_reception_date', 'evidence_cutoff_date',
+                    'per_page'
                 ];
 
                 // Creamos un observador para cada uno de estos filtros
@@ -243,7 +258,9 @@
                     });
                 });
                 // --- TERMINA CÓDIGO CORREGIDO ---
-
+                this.$watch('filters.per_page', (newValue) => {
+                    localStorage.setItem('csOrderPerPage', newValue);
+                });
                 this.$watch('visibleColumns', (val) => {
                     localStorage.setItem('csOrderVisibleColumns', JSON.stringify(val));
                     this.$nextTick(() => this.reinitTableInteractions());
