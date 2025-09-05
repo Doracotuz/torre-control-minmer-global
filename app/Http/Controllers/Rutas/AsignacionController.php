@@ -186,10 +186,16 @@ class AsignacionController extends Controller
             'hora_planeada' => $request->query('hora_planeada'),
             'origen' => $request->query('origen'),
             'fecha_asignacion' => $request->query('fecha_asignacion'),
+            'telefono' => '', 
         ];
 
         if ($request->has('planning_ids')) {
             $planningRecords = \App\Models\CsPlanning::find($request->query('planning_ids'));
+
+            $firstPhone = $planningRecords->firstWhere('telefono');
+            if ($firstPhone) {
+                $guiaData['telefono'] = $firstPhone->telefono;
+            }            
             
             foreach ($planningRecords as $planning) {
                 $facturasData[] = [
@@ -220,6 +226,7 @@ class AsignacionController extends Controller
             'fecha_asignacion' => 'required|date',
             'planning_ids' => 'required|array|min:1',
             'planning_ids.*' => 'exists:cs_plannings,id',
+            'telefono' => 'nullable|string|max:20',
             // Añade aquí otras validaciones para campos de la guía si son necesarios
         ]);
 
@@ -277,10 +284,10 @@ class AsignacionController extends Controller
 
     public function update(Request $request, Guia $guia)
     {
-        // --- INICIA CAMBIO: Validación para los nuevos campos en la actualización ---
         $validatedData = $request->validate([
             'operador' => 'required|string|max:255',
             'placas' => 'required|string|max:255',
+            'telefono' => 'nullable|string|max:255',
             'pedimento' => 'nullable|string|max:255',
             'custodia' => 'nullable|string|max:255',
             'hora_planeada' => 'nullable|string|max:255',
@@ -288,15 +295,15 @@ class AsignacionController extends Controller
             'origen' => 'required|string|max:3',
             'facturas' => 'required|array|min:1',
             'facturas.*.id' => 'nullable|integer',
+            'facturas.*.cs_planning_id' => 'nullable|integer|exists:cs_plannings,id',
             'facturas.*.numero_factura' => 'required|string|max:255',
             'facturas.*.destino' => 'required|string|max:255',
             'facturas.*.cajas' => 'required|integer|min:0',
             'facturas.*.botellas' => 'required|integer|min:0',
             'facturas.*.hora_cita' => 'nullable|string|max:255',
             'facturas.*.so' => 'nullable|string|max:255',
-            'facturas.*.fecha_entrega' => 'nullable|date_format:Y-m-d', // Se espera el formato Y-m-d del date picker
+            'facturas.*.fecha_entrega' => 'nullable|date_format:Y-m-d',
         ]);
-        // --- TERMINA CAMBIO ---
 
         DB::beginTransaction();
         try {
@@ -316,14 +323,12 @@ class AsignacionController extends Controller
                     $facturasIdsActuales[] = $nuevaFactura->id;
                 }
 
-                // --- INICIA CAMBIO: Lógica de Sincronización ---
                 if (isset($facturaData['cs_planning_id']) && $facturaData['cs_planning_id']) {
                     $planningRecord = \App\Models\CsPlanning::find($facturaData['cs_planning_id']);
                     if ($planningRecord) {
-                        // Mapeamos los campos de factura a los de planificación
                         $planningRecord->update([
                             'factura' => $facturaData['numero_factura'],
-                            'destino' => $facturaData['destino'],
+                            // 'destino' => $facturaData['destino'],
                             'cajas' => $facturaData['cajas'],
                             'pzs' => $facturaData['botellas'],
                             'hora_cita' => $facturaData['hora_cita'],
@@ -333,7 +338,35 @@ class AsignacionController extends Controller
                     }
                 }
             }
+
+            // --- LÓGICA PARA DESASIGNAR ÓRDENES ELIMINADAS ---
+            $facturasParaEliminar = $guia->facturas()->whereNotIn('id', $facturasIdsActuales)->get();
+            if ($facturasParaEliminar->isNotEmpty()) {
+                $planningIdsParaDesasignar = $facturasParaEliminar->whereNotNull('cs_planning_id')->pluck('cs_planning_id');
+                if ($planningIdsParaDesasignar->isNotEmpty()) {
+                    \App\Models\CsPlanning::whereIn('id', $planningIdsParaDesasignar)->update([
+                        'guia_id' => null,
+                        'status' => 'En Espera',
+                        'operador' => 'Pendiente',
+                        'placas' => 'Pendiente',
+                        'telefono' => 'Pendiente'
+                    ]);
+                }
+            }
             $guia->facturas()->whereNotIn('id', $facturasIdsActuales)->delete();
+            // --- FIN DE LÓGICA PARA DESASIGNAR ---
+
+            // --- LÓGICA PARA SINCRONIZAR DATOS DE GUÍA A PLANNING ---
+            $planningIds = $guia->facturas()->whereNotNull('cs_planning_id')->pluck('cs_planning_id');
+            if ($planningIds->isNotEmpty()) {
+                \App\Models\CsPlanning::whereIn('id', $planningIds)->update([
+                    'operador' => $validatedData['operador'],
+                    'placas' => $validatedData['placas'],
+                    'telefono' => $validatedData['telefono'],
+                ]);
+            }
+            // --- FIN DE LÓGICA DE SINCRONIZACIÓN ---
+
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -341,7 +374,7 @@ class AsignacionController extends Controller
             return response()->json(['success' => false, 'message' => 'Ocurrió un error al actualizar.'], 500);
         }
 
-        return response()->json(['success' => true, 'message' => 'Guía actualizada exitosamente.']);
+        return response()->json(['success' => true, 'message' => 'Guía actualizada y registros de planificación sincronizados exitosamente.']);
     }
 
     /**
@@ -452,29 +485,68 @@ class AsignacionController extends Controller
      */
     public function addOrdersToGuia(Request $request)
     {
-        // --- INICIA CORRECCIÓN: Se ajusta la validación para esperar un arreglo ---
         $validatedData = $request->validate([
             'guia_id' => 'required|exists:guias,id',
-            'planning_ids' => 'required|array|min:1', // Se cambia 'string' por 'array'
-            'planning_ids.*' => 'exists:cs_plannings,id' // Se añade validación para cada ID
+            'planning_ids' => 'required|array|min:1',
+            'planning_ids.*' => 'exists:cs_plannings,id'
         ]);
-
-        // Ya no es necesario decodificar el JSON, porque ahora recibimos un arreglo directamente
-        $planningIds = $validatedData['planning_ids'];
-        // --- TERMINA CORRECCIÓN ---
-
-        if (empty($planningIds)) {
-            return back()->with('error', 'No se seleccionaron órdenes para añadir.');
-        }
 
         try {
             DB::beginTransaction();
 
             $guia = Guia::findOrFail($validatedData['guia_id']);
-            $planningRecords = \App\Models\CsPlanning::find($planningIds);
+            $incomingPlanningIds = collect($validatedData['planning_ids']);
+            
+            // Paso 1: Obtener TODOS los registros de planificación involucrados (los nuevos Y los que ya estaban en la guía)
+            $existingPlanningIds = $guia->plannings()->pluck('cs_plannings.id');
+            $allRelevantIds = $incomingPlanningIds->merge($existingPlanningIds)->unique();
+            $allRelevantPlanningRecords = \App\Models\CsPlanning::find($allRelevantIds);
 
-            foreach ($planningRecords as $planning) {
-                // Se repite la misma lógica de creación de factura y actualización
+            $masterData = [ 'operador' => null, 'placas' => null, 'telefono' => null ];
+            $fields = ['operador', 'placas', 'telefono'];
+
+            // Paso 2: Iterar sobre TODOS los registros para buscar conflictos y datos maestros
+            foreach ($allRelevantPlanningRecords as $planning) {
+                foreach ($fields as $field) {
+                    // Se ignora el valor 'Pendiente' y los vacíos al buscar un dato maestro
+                    if (!empty($planning->$field) && $planning->$field !== 'Pendiente') {
+                        if ($masterData[$field] === null) {
+                            // Se encuentra el primer dato válido y se establece como maestro
+                            $masterData[$field] = $planning->$field;
+                        } elseif ($masterData[$field] !== $planning->$field) {
+                            // Se encuentra un segundo dato válido diferente: ¡Conflicto!
+                            DB::rollBack();
+                            $fieldNameSpanish = ucfirst($field);
+                            return back()->with('error', "Conflicto en '{$fieldNameSpanish}'. Se encontraron datos diferentes ('{$masterData[$field]}' y '{$planning->$field}').");
+                        }
+                    }
+                }
+            }
+            
+            // Paso 3: Identificar solo las órdenes que son realmente nuevas para agregarlas
+            $newPlanningIds = $incomingPlanningIds->diff($existingPlanningIds);
+
+            if ($newPlanningIds->isEmpty()) {
+                DB::rollBack();
+                return back()->with('info', 'Todas las órdenes seleccionadas ya se encuentran en la guía ' . $guia->guia . '.');
+            }
+            
+            $newPlanningRecords = \App\Models\CsPlanning::find($newPlanningIds);
+
+            // Paso 4: Actualizar la Guía con los datos maestros si está vacía o en "Pendiente"
+            if ($masterData['operador'] && (empty($guia->operador) || $guia->operador === 'Pendiente')) $guia->operador = $masterData['operador'];
+            if ($masterData['placas'] && (empty($guia->placas) || $guia->placas === 'Pendiente')) $guia->placas = $masterData['placas'];
+            if ($masterData['telefono'] && empty($guia->telefono)) $guia->telefono = $masterData['telefono'];
+            $guia->save();
+
+            // Paso 5: Iterar sobre las NUEVAS órdenes para propagar datos y asignarlas
+            foreach ($newPlanningRecords as $planning) {
+                // Propagar información a campos vacíos o "Pendiente"
+                if ($masterData['operador'] && (empty($planning->operador) || $planning->operador === 'Pendiente')) $planning->operador = $masterData['operador'];
+                if ($masterData['placas'] && (empty($planning->placas) || $planning->placas === 'Pendiente')) $planning->placas = $masterData['placas'];
+                if ($masterData['telefono'] && (empty($planning->telefono) || $planning->telefono === 'Pendiente')) $planning->telefono = $masterData['telefono'];
+                
+                // Crear la factura
                 $guia->facturas()->create([
                     'cs_planning_id' => $planning->id,
                     'numero_factura' => $planning->factura ?? $planning->so_number,
@@ -486,10 +558,10 @@ class AsignacionController extends Controller
                     'fecha_entrega' => $planning->fecha_entrega,
                 ]);
 
-                $planning->update([
-                    'guia_id' => $guia->id,
-                    'status' => 'Asignado en Guía',
-                ]);
+                // Asignar y guardar TODOS los cambios en el registro de planificación
+                $planning->guia_id = $guia->id;
+                $planning->status = 'Asignado en Guía';
+                $planning->save();
             }
 
             DB::commit();
@@ -500,6 +572,6 @@ class AsignacionController extends Controller
             return redirect()->route('customer-service.planning.index')->with('error', 'Ocurrió un error al actualizar la guía.');
         }
 
-        return redirect()->route('customer-service.planning.index')->with('success', count($planningRecords) . ' órdenes añadidas a la guía ' . $guia->guia . ' exitosamente.');
+        return redirect()->route('customer-service.planning.index')->with('success', $newPlanningIds->count() . ' nuevas órdenes fueron añadidas y sincronizadas con la guía ' . $guia->guia . ' exitosamente.');
     }
 }

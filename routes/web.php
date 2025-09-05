@@ -529,6 +529,7 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         Route::post('/{planning}/schedule', [App\Http\Controllers\CustomerService\PlanningController::class, 'schedule'])->name('schedule');
         Route::post('/{planning}/add-scales', [App\Http\Controllers\CustomerService\PlanningController::class, 'addScales'])->name('add-scales');
         Route::post('/{planning}/mark-as-direct', [App\Http\Controllers\CustomerService\PlanningController::class, 'markAsDirect'])->name('mark-as-direct');
+        Route::post('/{planning}/disassociate-from-guia', [App\Http\Controllers\CustomerService\PlanningController::class, 'disassociateFromGuia'])->name('disassociate-from-guia');
     });
 
     Route::prefix('validation')->name('validation.')->group(function() {

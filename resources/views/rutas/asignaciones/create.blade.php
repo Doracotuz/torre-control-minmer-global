@@ -41,12 +41,16 @@
                         </div>
                         <div>
                             <label for="operador" class="block text-sm font-medium text-gray-700">Operador</label>
-                            <input type="text" name="operador" id="operador" value="{{ old('operador') }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <input type="text" name="operador" id="operador" value="{{ old('operador', 'Pendiente') }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                         </div>
                         <div>
                             <label for="placas" class="block text-sm font-medium text-gray-700">Placas</label>
-                            <input type="text" name="placas" id="placas" value="{{ old('placas') }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <input type="text" name="placas" id="placas" value="{{ old('placas', 'Pendiente') }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                         </div>
+                        <div>
+                            <label for="telefono" class="block text-sm font-medium text-gray-700">Teléfono</label>
+                            <input type="text" name="telefono" id="telefono" value="{{ old('telefono', $guiaData['telefono'] ?? '') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>                        
                         <div>
                             <label for="pedimento" class="block text-sm font-medium text-gray-700">Pedimento</label>
                             <input type="text" name="pedimento" id="pedimento" value="{{ old('pedimento') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">

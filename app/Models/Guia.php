@@ -14,6 +14,7 @@ class Guia extends Model
         'ruta_id',
         'operador',
         'placas',
+        'telefono',
         'pedimento',
         'estatus',
         'fecha_inicio_ruta',

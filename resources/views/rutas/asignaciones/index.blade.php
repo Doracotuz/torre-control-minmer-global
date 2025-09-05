@@ -125,6 +125,7 @@
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 mb-6 bg-gray-50 p-4 rounded-lg border text-sm">
                                     <div><strong class="block text-gray-500">Operador:</strong> <span x-text="selectedGuia.operador || 'N/A'"></span></div>
                                     <div><strong class="block text-gray-500">Placas:</strong> <span x-text="selectedGuia.placas || 'N/A'"></span></div>
+                                    <div><strong class="block text-gray-500">Teléfono:</strong> <span x-text="selectedGuia.telefono || 'N/A'"></span></div>
                                     <div><strong class="block text-gray-500">Origen:</strong> <span x-text="selectedGuia.origen || 'N/A'"></span></div>
                                     <div><strong class="block text-gray-500">Fecha Asignación:</strong> <span x-text="formatDate(selectedGuia.fecha_asignacion)"></span></div>
                                     <div><strong class="block text-gray-500">Custodia:</strong> <span x-text="selectedGuia.custodia || 'N/A'"></span></div>
@@ -200,6 +201,7 @@
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div><label class="block text-sm font-medium">Operador</label><input type="text" x-model="editData.operador" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
                                     <div><label class="block text-sm font-medium">Placas</label><input type="text" x-model="editData.placas" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
+                                    <div><label class="block text-sm font-medium">Teléfono</label><input type="text" x-model="editData.telefono" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
                                     <div><label class="block text-sm font-medium">Origen</label><input type="text" x-model="editData.origen" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
                                     <div><label class="block text-sm font-medium">Fecha Asignación</label><input type="date" x-model="editData.fecha_asignacion" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
                                     <div><label class="block text-sm font-medium">Pedimento</label><input type="text" x-model="editData.pedimento" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>

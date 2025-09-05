@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Edición Masiva de Planificación (<span class="text-indigo-600">{{ $planningsCount }}</span> registros seleccionados)
+            Edición Masiva para SO: <span class="text-indigo-600">{{ $soNumbers }}</span>
         </h2>
     </x-slot>
 
@@ -40,7 +40,7 @@
                     
                     <div class="flex justify-end gap-4 mt-8">
                         <a href="{{ route('customer-service.planning.index') }}" class="px-4 py-2 bg-gray-200 rounded-md">Cancelar</a>
-                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Aplicar Cambios a <span x-text="$store.planningsCount">{{ $planningsCount }}</span> Registros</button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Aplicar Cambios a {{ $planningsCount }} Registros</button>
                     </div>
                 </form>
             </div>

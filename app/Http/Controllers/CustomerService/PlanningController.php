@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Guia;
 use App\Models\CsPlanningEvent;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class PlanningController extends Controller
 {
@@ -355,6 +356,8 @@ class PlanningController extends Controller
     {
         $request->validate(['ids' => 'required|array|min:1']);
         $planningIds = $request->query('ids');
+        $plannings = CsPlanning::whereIn('id', $planningIds)->get();
+        $soNumbers = $plannings->pluck('so_number')->filter()->implode(', ');
         $planningsCount = count($planningIds);
 
         // Opciones para los menús desplegables
@@ -369,7 +372,7 @@ class PlanningController extends Controller
             'urgente' => ['Si', 'No'],
         ];
 
-        return view('customer-service.planning.bulk-edit', compact('planningIds', 'planningsCount', 'options'));
+        return view('customer-service.planning.bulk-edit', compact('planningIds', 'planningsCount', 'options', 'soNumbers'));
     }
 
     /**
@@ -456,6 +459,38 @@ class PlanningController extends Controller
         }
 
         return back()->with('success', 'Ruta marcada como directa.');
+    }
+
+    public function disassociateFromGuia(\App\Models\CsPlanning $planning)
+    {
+        if (!$planning->guia_id) {
+            return back()->with('error', 'Esta orden no está asignada a ninguna guía.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Eliminar la factura correspondiente en la tabla de facturas
+            \App\Models\Factura::where('cs_planning_id', $planning->id)->delete();
+
+            // 2. Actualizar el registro de planificación para "liberarlo"
+            $planning->update([
+                'guia_id' => null,
+                'status' => 'En Espera',
+                'operador' => 'Pendiente',
+                'placas' => 'Pendiente',
+                'telefono' => 'Pendiente'
+
+            ]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error al desasignar planning: " . $e->getMessage());
+            return back()->with('error', 'Ocurrió un error al procesar la solicitud.');
+        }
+
+        return back()->with('success', 'La orden ha sido desasignada de la guía exitosamente.');
     }    
 
 }

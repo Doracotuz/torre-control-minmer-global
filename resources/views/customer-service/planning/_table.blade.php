@@ -70,6 +70,7 @@
                                     </div>
                                 </td>
                             </template>
+                            
 
                             <td class="px-2 py-1 whitespace-nowrap text-center text-sm font-medium border w-[180px]">
                             <a :href="`/customer-service/planning/${planning.id}`" class="text-gray-600 hover:text-gray-900 mr-2" title="Ver Detalle"><i class="fas fa-eye"></i></a>
@@ -83,6 +84,14 @@
                                 <template x-if="planning.status === 'En Espera'">
                                     <form :action="`/customer-service/planning/${planning.id}/schedule`" method="POST" class="inline ml-2" onsubmit="return confirm('¿Programar esta ruta?');"> @csrf <button type="submit" class="px-3 py-1 bg-green-500 text-white rounded-md text-xs font-semibold hover:bg-green-600">Programar</button> </form>
                                 </template>
+                                <template x-if="planning.status === 'Asignado en Guía'">
+                                    <form :action="`/customer-service/planning/${planning.id}/disassociate-from-guia`" method="POST" class="inline ml-2" onsubmit="return confirm('¿Estás seguro de que quieres quitar esta orden de su guía?');">
+                                        @csrf
+                                        <button type="submit" class="px-3 py-1 bg-red-600 text-white rounded-md text-xs font-semibold hover:bg-red-700" title="Quitar de la Guía">
+                                            Desasignar
+                                        </button>
+                                    </form>
+                                </template>                                
                             </td>
                         </tr>
                     </template>
