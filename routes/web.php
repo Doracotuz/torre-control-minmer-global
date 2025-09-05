@@ -511,19 +511,24 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         Route::resource('credit-notes', CreditNoteController::class);
 
     Route::prefix('planning')->name('planning.')->group(function() {
-        Route::get('/create', [App\Http\Controllers\CustomerService\PlanningController::class, 'create'])->name('create');
-        Route::post('/', [App\Http\Controllers\CustomerService\PlanningController::class, 'store'])->name('store');        
+        // --- RUTAS ESPECÍFICAS Y ESTÁTICAS VAN PRIMERO ---
         Route::get('/', [App\Http\Controllers\CustomerService\PlanningController::class, 'index'])->name('index');
         Route::get('/filter', [App\Http\Controllers\CustomerService\PlanningController::class, 'filter'])->name('filter');
+        Route::get('/create', [App\Http\Controllers\CustomerService\PlanningController::class, 'create'])->name('create');
         Route::get('/bulk-edit', [App\Http\Controllers\CustomerService\PlanningController::class, 'bulkEdit'])->name('bulk-edit');
-        Route::post('/bulk-update', [App\Http\Controllers\CustomerService\PlanningController::class, 'bulkUpdate'])->name('bulk-update');        
+        Route::get('/export-csv', [App\Http\Controllers\CustomerService\PlanningController::class, 'exportCsv'])->name('export-csv');
+        
+        // --- RUTAS CON POST/PUT/DELETE PUEDEN IR DESPUÉS ---
+        Route::post('/', [App\Http\Controllers\CustomerService\PlanningController::class, 'store'])->name('store');
+        Route::post('/bulk-update', [App\Http\Controllers\CustomerService\PlanningController::class, 'bulkUpdate'])->name('bulk-update');
+
+        // --- RUTAS CON PARÁMETROS DINÁMICOS VAN AL FINAL ---
         Route::get('/{planning}', [App\Http\Controllers\CustomerService\PlanningController::class, 'show'])->name('show');
         Route::get('/{planning}/edit', [App\Http\Controllers\CustomerService\PlanningController::class, 'edit'])->name('edit');
         Route::put('/{planning}', [App\Http\Controllers\CustomerService\PlanningController::class, 'update'])->name('update');
         Route::post('/{planning}/schedule', [App\Http\Controllers\CustomerService\PlanningController::class, 'schedule'])->name('schedule');
         Route::post('/{planning}/add-scales', [App\Http\Controllers\CustomerService\PlanningController::class, 'addScales'])->name('add-scales');
         Route::post('/{planning}/mark-as-direct', [App\Http\Controllers\CustomerService\PlanningController::class, 'markAsDirect'])->name('mark-as-direct');
-        
     });
 
     Route::prefix('validation')->name('validation.')->group(function() {

@@ -17,7 +17,11 @@ class PlanningController extends Controller
 {
     public function index()
     {
-        $warehouses = \App\Models\CsWarehouse::orderBy('name')->get();
+        $warehouses = \App\Models\CsWarehouse::query()
+            ->select('name')
+            ->distinct()
+            ->orderBy('name')
+            ->get();
         
         $allColumns = [
             'guia' => 'Guía',
@@ -48,54 +52,127 @@ class PlanningController extends Controller
             'urgente' => 'Urgente',
             'devolucion' => 'Devolución',
             'estatus_de_entrega' => 'Estatus Entrega',
-            'status' => 'Estatus General'
+            'status' => 'Estatus General',
+            'created_at' => 'Fecha Creación'
         ];
 
         return view('customer-service.planning.index', compact('warehouses', 'allColumns'));
     }
 
-    public function filter(Request $request)
+    private function getFilteredQuery(Request $request)
     {
-        $query = CsPlanning::with('guia')->orderBy('guia_id', 'desc')->orderBy('created_at', 'asc');
+        $sortableColumns = ['guia', 'fecha_carga', 'hora_carga', 'fecha_entrega', 'origen', 'destino', 'razon_social', 'direccion', 'hora_cita', 'so_number', 'factura', 'pzs', 'cajas', 'subtotal', 'canal', 'transporte', 'operador', 'placas', 'telefono', 'capacidad', 'custodia', 'servicio', 'tipo_ruta', 'region', 'estado', 'urgente', 'devolucion', 'estatus_de_entrega', 'status', 'created_at'];
+        
+        $sorts = json_decode($request->input('sorts', '[]'), true);
+        if (empty($sorts)) {
+            $sorts = [['column' => 'created_at', 'dir' => 'asc']];
+        }
 
-        // Filtro de búsqueda rápida
-        if ($request->filled('search')) {
-            $searchTerm = '%' . $request->search . '%';
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('so_number', 'like', $searchTerm)
-                  ->orWhere('factura', 'like', $searchTerm)
-                  ->orWhere('razon_social', 'like', $searchTerm)
-                  ->orWhere('origen', 'like', $searchTerm)
-                  ->orWhere('destino', 'like', $searchTerm);
-            });
+        $query = CsPlanning::query()
+            ->leftJoin('guias', 'cs_plannings.guia_id', '=', 'guias.id')
+            ->select('cs_plannings.*');
+
+        foreach ($sorts as $sort) {
+            $sortBy = $sort['column'] ?? 'created_at';
+            $sortDir = ($sort['dir'] ?? 'asc') === 'asc' ? 'asc' : 'desc';
+            if (!in_array($sortBy, $sortableColumns)) { continue; }
+            
+            if ($sortBy === 'guia') { 
+                $query->orderBy('guias.guia', $sortDir); 
+            } else { 
+                // CORRECCIÓN: Se añade el prefijo de la tabla para evitar ambigüedad
+                $query->orderBy('cs_plannings.' . $sortBy, $sortDir); 
+            }
+        }
+
+        // Filtros básicos con prefijos de tabla para evitar ambigüedad
+        if ($request->filled('search')) { 
+            $searchTerm = '%' . $request->search . '%'; 
+            $query->where(function ($q) use ($searchTerm) { 
+                $q->where('cs_plannings.so_number', 'like', $searchTerm)
+                ->orWhere('cs_plannings.factura', 'like', $searchTerm)
+                ->orWhere('cs_plannings.razon_social', 'like', $searchTerm); 
+            }); 
+        }
+        if ($request->filled('status')) { 
+            $query->where('cs_plannings.status', $request->status); 
+        }
+        if ($request->filled('origen')) { 
+            $query->where('cs_plannings.origen', $request->origen); 
+        }
+        if ($request->filled('destino')) { 
+            $query->where('cs_plannings.destino', $request->destino); 
+        }
+        if ($request->filled('date_created_from') && $request->filled('date_created_to')) { 
+            $query->whereBetween(DB::raw('DATE(cs_plannings.created_at)'), [$request->date_created_from, $request->date_created_to]); 
         }
         
-        // Filtros básicos
-        if ($request->filled('status')) { $query->where('status', $request->status); }
-        if ($request->filled('date_from') && $request->filled('date_to')) {
-            $query->whereBetween('fecha_entrega', [$request->date_from, $request->date_to]);
-        }
+        // Filtros avanzados con prefijos de tabla
+        if ($request->filled('guia_adv')) { $query->where('guias.guia', 'like', '%' . $request->guia_adv . '%'); }
+        if ($request->filled('so_number_adv')) { $query->where('cs_plannings.so_number', 'like', '%' . $request->so_number_adv . '%'); }
+        if ($request->filled('factura_adv')) { $query->where('cs_plannings.factura', 'like', '%' . $request->factura_adv . '%'); }
+        if ($request->filled('razon_social_adv')) { $query->where('cs_plannings.razon_social', 'like', '%' . $request->razon_social_adv . '%'); }
+        if ($request->filled('direccion_adv')) { $query->where('cs_plannings.direccion', 'like', '%' . $request->direccion_adv . '%'); }
+        if ($request->filled('fecha_entrega_adv')) { $query->whereDate('cs_plannings.fecha_entrega', $request->fecha_entrega_adv); }
+        if ($request->filled('fecha_carga_adv')) { $query->whereDate('cs_plannings.fecha_carga', $request->fecha_carga_adv); }
+        if ($request->filled('origen_adv')) { $query->where('cs_plannings.origen', $request->origen_adv); }
+        if ($request->filled('destino_adv')) { $query->where('cs_plannings.destino', $request->destino_adv); }
+        if ($request->filled('estado_adv')) { $query->where('cs_plannings.estado', 'like', '%' . $request->estado_adv . '%'); }
+        if ($request->filled('transporte_adv')) { $query->where('cs_plannings.transporte', 'like', '%' . $request->transporte_adv . '%'); }
+        if ($request->filled('operador_adv')) { $query->where('cs_plannings.operador', 'like', '%' . $request->operador_adv . '%'); }
+        if ($request->filled('placas_adv')) { $query->where('cs_plannings.placas', 'like', '%' . $request->placas_adv . '%'); }
+        if ($request->filled('tipo_ruta_adv')) { $query->where('cs_plannings.tipo_ruta', $request->tipo_ruta_adv); }
+        if ($request->filled('servicio_adv')) { $query->where('cs_plannings.servicio', $request->servicio_adv); }
+        if ($request->filled('canal_adv')) { $query->where('cs_plannings.canal', 'like', '%' . $request->canal_adv . '%'); }
+        if ($request->filled('custodia_adv')) { $query->where('cs_plannings.custodia', $request->custodia_adv); }
+        if ($request->filled('urgente_adv')) { $query->where('cs_plannings.urgente', $request->urgente_adv); }
+        if ($request->filled('devolucion_adv')) { $query->where('cs_plannings.devolucion', $request->devolucion_adv); }
+        
+        return $query;
+    }
 
-        // --- INICIA CORRECCIÓN: Se añaden los nuevos filtros avanzados ---
-        if ($request->filled('fecha_carga_adv')) { $query->whereDate('fecha_carga', $request->fecha_carga_adv); }
-        if ($request->filled('razon_social_adv')) { $query->where('razon_social', 'like', '%' . $request->razon_social_adv . '%'); }
-        if ($request->filled('factura_adv')) { $query->where('factura', 'like', '%' . $request->factura_adv . '%'); }
-        if ($request->filled('origen_adv')) { $query->where('origen', $request->origen_adv); }
-        if ($request->filled('destino_adv')) { $query->where('destino', $request->destino_adv); }
-        if ($request->filled('transporte_adv')) { $query->where('transporte', 'like', '%' . $request->transporte_adv . '%'); }
-        if ($request->filled('operador_adv')) { $query->where('operador', 'like', '%' . $request->operador_adv . '%'); }
-        if ($request->filled('tipo_ruta_adv')) { $query->where('tipo_ruta', $request->tipo_ruta_adv); }
-        if ($request->filled('servicio_adv')) { $query->where('servicio', $request->servicio_adv); }
-        if ($request->filled('guia_adv')) {
-            $query->whereHas('guia', function($q) use ($request) {
-                $q->where('guia', 'like', '%' . $request->guia_adv . '%');
-            });
-        }
-        // --- TERMINA CORRECCIÓN ---
-
-        $plannings = $query->paginate(15)->withQueryString();
+    public function filter(Request $request)
+    {
+        $query = $this->getFilteredQuery($request);
+        $perPage = $request->input('per_page', 15);
+        
+        // Cargar la relación 'guia' después de paginar para el JSON
+        $plannings = $query->paginate($perPage)->withQueryString();
+        $plannings->getCollection()->load('guia');
 
         return response()->json($plannings);
+    }
+    
+    public function exportCsv(Request $request)
+    {
+        $query = $this->getFilteredQuery($request);
+        $plannings = $query->with('guia')->get();
+        
+        $fileName = 'planificacion_'.date('Y-m-d_H-i-s').'.csv';
+        $headers = [ "Content-type" => "text/csv", "Content-Disposition" => "attachment; filename=$fileName", "Pragma" => "no-cache", "Cache-Control" => "must-revalidate, post-check=0, pre-check=0", "Expires" => "0" ];
+        $allColumns = $this->index()->getData()['allColumns'];
+
+        $callback = function() use ($plannings, $allColumns) {
+            $file = fopen('php://output', 'w');
+            
+            // --- LÍNEA AÑADIDA PARA LA CORRECCIÓN ---
+            // Añade el BOM (Byte Order Mark) para asegurar la compatibilidad de UTF-8 con Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // El resto del código no cambia
+            fputcsv($file, array_values($allColumns)); // Escribir los encabezados
+            foreach ($plannings as $planning) {
+                $row = [];
+                foreach (array_keys($allColumns) as $columnKey) {
+                if ($columnKey === 'guia') { $row[] = $planning->guia->guia ?? 'Sin Asignar'; } 
+                elseif (in_array($columnKey, ['fecha_carga', 'fecha_entrega', 'created_at']) && $planning->{$columnKey}) { $row[] = Carbon::parse($planning->{$columnKey})->format('Y-m-d H:i:s'); }
+                else { $row[] = $planning->{$columnKey}; }
+                }
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+        return response()->stream($callback, 200, $headers);
     }
     
     public function schedule(CsPlanning $planning)

@@ -11,45 +11,73 @@
         <div class="mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
                 
-                {{-- Filtros Básicos --}}
                 <div class="mb-4">
                     @include('customer-service.planning._filters')
                 </div>
 
-                {{-- Barra de Acciones y Botones --}}
-                <div class="mb-4">
-                    {{-- Barra de acciones para selección --}}
-                    <div x-show="selectedPlannings.length > 0" class="bg-gray-800 text-white p-3 rounded-lg shadow-lg flex justify-between items-center transition-transform w-full" x-transition>
-                        <span x-text="`(${selectedPlannings.length}) registros seleccionados.`"></span>
-                        <div class="flex items-center space-x-4">
-                            <button @click="bulkEdit()" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700">
-                                <i class="fas fa-edit mr-2"></i>Editar Selección
-                            </button>
-                            <button @click="createGuide()" class="px-4 py-2 bg-[#ff9c00] text-white rounded-md text-sm font-semibold hover:bg-orange-600">
-                                <i class="fas fa-plus-circle mr-2"></i>Crear Guía
-                            </button>
-                            <button @click="openAddToGuiaModal()" class="px-4 py-2 bg-orange-600 text-white rounded-md text-sm font-semibold hover:bg-orange-700">
-                                <i class="fas fa-plus mr-2"></i>Añadir a Guía
-                            </button>                        
+                <div class="mb-6">
+                    <div x-show="selectedPlannings.length > 0" class="bg-gray-800 text-white p-3 rounded-lg shadow-lg flex flex-col md:flex-row justify-between items-center transition-transform w-full" x-transition>
+                        <span class="mb-2 md:mb-0" x-text="`(${selectedPlannings.length}) registros seleccionados.`"></span>
+                        <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                            <button @click="bulkEdit()" class="px-4 py-2 w-full sm:w-auto bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700"><i class="fas fa-edit mr-2"></i>Editar Selección</button>
+                            <button @click="createGuide()" class="px-4 py-2 w-full sm:w-auto bg-[#ff9c00] text-white rounded-md text-sm font-semibold hover:bg-orange-600"><i class="fas fa-plus-circle mr-2"></i>Crear Guía</button>
+                            <button @click="openAddToGuiaModal()" class="px-4 py-2 w-full sm:w-auto bg-orange-600 text-white rounded-md text-sm font-semibold hover:bg-orange-700"><i class="fas fa-plus mr-2"></i>Añadir a Guía</button>                        
                         </div>
                     </div>               
                 </div>
 
-                <div class="flex items-center space-x-4 mb-6">
-                    <a href="{{ route('customer-service.planning.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700">
-                        <i class="fas fa-plus mr-2"></i>Añadir Manualmente
-                    </a>                    
-                    <button @click="isColumnModalOpen = true" class="px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700">
-                        <i class="fas fa-columns mr-2"></i>Columnas
-                    </button>
-                    <button @click="isAdvancedFilterModalOpen = true" class="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-teal-700">
-                        <i class="fas fa-filter mr-2"></i>Filtros Avanzados
-                    </button>
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 mb-6">
+                    <div class="flex items-center space-x-2 sm:space-x-4 flex-wrap">
+                        <a href="{{ route('customer-service.planning.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700"><i class="fas fa-plus mr-2"></i>Añadir</a>                    
+                        <button @click="isColumnModalOpen = true" class="px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700"><i class="fas fa-columns mr-2"></i>Columnas</button>
+                        <button @click="isAdvancedFilterModalOpen = true" class="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-teal-700"><i class="fas fa-filter mr-2"></i>Filtros</button>
+                        <button @click="exportToCsv()" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-green-700"><i class="fas fa-file-csv mr-2"></i>Exportar</button>
+                    </div>
+                    
                 </div>
                 
-                <div x-show="!isLoading" style="display: none;">
+                <div id="planning-table-container" x-show="!isLoading">
                     @include('customer-service.planning._table')
                 </div>
+                
+                {{-- **INICIA BLOQUE DE PAGINACIÓN CORREGIDO Y MEJORADO** --}}
+                <div x-show="!isLoading && pagination.total > 0" class="mt-4 flex flex-col md:flex-row justify-between items-center text-sm text-gray-700">
+                    <p class="mb-2 md:mb-0">
+                        Mostrando de <span x-text="pagination.from || 0"></span> a <span x-text="pagination.to || 0"></span> de <span x-text="pagination.total || 0"></span> resultados
+                    </p>
+                    <div class="flex items-center text-sm text-gray-700">
+                        <span>Mostrar</span>
+                            <select x-model="rowsPerPage" @change="changeRowsPerPage()" class="mx-2 rounded-md border-gray-300 shadow-sm text-sm">
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="30">30</option>
+                                <option value="40">40</option>
+                                <option value="50">50</option>
+                                <option value="60">60</option>
+                                <option value="70">70</option>
+                                <option value="80">80</option>
+                                <option value="90">90</option>
+                                <option value="100">100</option>
+                            </select>
+                        <span>registros.</span>
+                    </div>                    
+                    <nav role="navigation" aria-label="Pagination Navigation" class="flex items-center">
+                        <template x-for="(link, index) in pagination.links" :key="index">
+                            <button @click="changePage(link)" 
+                                    :disabled="!link.url"
+                                    class="px-3 py-1 mx-1 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                    :class="{
+                                        'bg-indigo-600 text-white': link.active,
+                                        'bg-white text-gray-600 hover:bg-gray-100': !link.active && link.url,
+                                        'bg-gray-100 text-gray-400 cursor-not-allowed': !link.url
+                                    }"
+                                    >
+                                <span x-html="link.label"></span>
+                            </button>
+                        </template>
+                    </nav>
+                </div>
+                {{-- **TERMINA BLOQUE DE PAGINACIÓN** --}}
                 
                 <div x-show="isLoading" class="text-center py-10">
                     <i class="fas fa-spinner fa-spin text-4xl text-gray-500"></i>
@@ -70,6 +98,11 @@
 .flashing-row { animation: flash 1.5s infinite; }
 .resizer { position: absolute; top: 0; right: 0; width: 5px; height: 100%; cursor: col-resize; user-select: none; }
 th { position: relative; }
+
+    #planning-table-container {
+        overflow: visible !important; 
+    }
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -77,101 +110,211 @@ th { position: relative; }
 <script>
 function planningManager() {
     return {
-        // --- ESTADO Y DATOS ---
         plannings: [],
-        pagination: {},
+        pagination: { links: [] }, // Inicializar links como array vacío
         isLoading: true,
         filters: { 
             search: new URLSearchParams(window.location.search).get('search') || '', 
             status: new URLSearchParams(window.location.search).get('status') || '', 
-            date_from: new URLSearchParams(window.location.search).get('date_from') || '', 
-            date_to: new URLSearchParams(window.location.search).get('date_to') || '',
-            // --- CORRECCIÓN: Se añaden los nuevos filtros avanzados al estado ---
-            fecha_carga_adv: new URLSearchParams(window.location.search).get('fecha_carga_adv') || '',
-            razon_social_adv: new URLSearchParams(window.location.search).get('razon_social_adv') || '',
+            origen: new URLSearchParams(window.location.search).get('origen') || '', 
+            destino: new URLSearchParams(window.location.search).get('destino') || '', 
+            date_created_from: new URLSearchParams(window.location.search).get('date_created_from') || '', 
+            date_created_to: new URLSearchParams(window.location.search).get('date_created_to') || '', 
+            page: new URLSearchParams(window.location.search).get('page') || 1,
+            // --- FILTROS AVANZADOS ---
+            guia_adv: new URLSearchParams(window.location.search).get('guia_adv') || '',
+            so_number_adv: new URLSearchParams(window.location.search).get('so_number_adv') || '',
             factura_adv: new URLSearchParams(window.location.search).get('factura_adv') || '',
+            razon_social_adv: new URLSearchParams(window.location.search).get('razon_social_adv') || '',
+            direccion_adv: new URLSearchParams(window.location.search).get('direccion_adv') || '',
+            fecha_entrega_adv: new URLSearchParams(window.location.search).get('fecha_entrega_adv') || '',
+            fecha_carga_adv: new URLSearchParams(window.location.search).get('fecha_carga_adv') || '',
             origen_adv: new URLSearchParams(window.location.search).get('origen_adv') || '',
             destino_adv: new URLSearchParams(window.location.search).get('destino_adv') || '',
+            estado_adv: new URLSearchParams(window.location.search).get('estado_adv') || '',
             transporte_adv: new URLSearchParams(window.location.search).get('transporte_adv') || '',
             operador_adv: new URLSearchParams(window.location.search).get('operador_adv') || '',
+            placas_adv: new URLSearchParams(window.location.search).get('placas_adv') || '',
             tipo_ruta_adv: new URLSearchParams(window.location.search).get('tipo_ruta_adv') || '',
             servicio_adv: new URLSearchParams(window.location.search).get('servicio_adv') || '',
-            guia_adv: new URLSearchParams(window.location.search).get('guia_adv') || '',
-            page: 1 
+            canal_adv: new URLSearchParams(window.location.search).get('canal_adv') || '',
+            custodia_adv: new URLSearchParams(window.location.search).get('custodia_adv') || '',
+            urgente_adv: new URLSearchParams(window.location.search).get('urgente_adv') || '',
+            devolucion_adv: new URLSearchParams(window.location.search).get('devolucion_adv') || ''
         },
         selectedPlannings: [],
-
-        // --- GESTIÓN DE COLUMNAS (NUEVO) ---
+        rowsPerPage: localStorage.getItem('planning_rowsPerPage') || 10,
+        sortColumn: new URLSearchParams(window.location.search).get('sort_by') || 'created_at',
+        sortDirection: new URLSearchParams(window.location.search).get('sort_dir') || 'asc',
         isColumnModalOpen: false,
         allColumns: @json($allColumns),
         visibleColumns: {},
         columnOrder: [],
         columnWidths: {},
-
-        // --- MODALES ---
         isScalesModalOpen: false,
         isAddToGuiaModalOpen: false,
-        isAdvancedFilterModalOpen: false, // Nuevo
+        isAdvancedFilterModalOpen: false,
         selectedPlanning: {},
         scalesCount: 1,
         scales: [],
         warehouses: @json($warehouses),
         guiaSearch: '',
-        guiaSearchResults: [],        
+        guiaSearchResults: [],
+        sorts: [],
 
-        // --- INICIALIZACIÓN ---
         init() {
-            this.loadColumnSettings(); // Cargar configuración de columnas
+            try {
+                const urlSorts = new URLSearchParams(window.location.search).get('sorts');
+                this.sorts = urlSorts ? JSON.parse(urlSorts) : [];
+            } catch (e) {
+                this.sorts = [];
+            }            
+            this.loadColumnSettings();
             this.fetchPlannings();
-            
             this.$watch('filters', Alpine.debounce(() => { 
                 this.filters.page = 1; 
                 this.fetchPlannings(); 
             }, 300));
-
             this.$watch('visibleColumns', () => this.saveColumnSettings());
-
-            this.$nextTick(() => {
-                this.initSortable();
-                this.initResizers();
-            });
-
-            this.$el.addEventListener('toggle-all-plannings', (e) => {
-                this.toggleAllPlannings(e.detail);
-            });
+            this.$nextTick(() => { this.initSortable(); this.initResizers(); });
+            this.$el.addEventListener('toggle-all-plannings', (e) => { this.toggleAllPlannings(e.detail); });
         },
 
-        // --- LÓGICA DE DATOS ---
         fetchPlannings() {
-            this.isLoading = true;
-            // Limpiar filtros vacíos antes de enviar
+            this.isLoading = true; this.selectedPlannings = [];
             const cleanFilters = Object.fromEntries(Object.entries(this.filters).filter(([_, v]) => v !== null && v !== ''));
             const params = new URLSearchParams(cleanFilters);
             
-            // Actualizar URL
+            if (this.sorts.length > 0) {
+                params.append('sorts', JSON.stringify(this.sorts));
+            }
+            params.append('per_page', this.rowsPerPage);
             window.history.pushState({}, '', `${window.location.pathname}?${params}`);
 
             fetch(`{{ route('customer-service.planning.filter') }}?${params}`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        // Si la respuesta del servidor es un error (ej. 500), lo capturamos
+                        throw new Error(`Error del servidor: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     this.plannings = data.data;
                     this.pagination = data;
-                    this.isLoading = false;
+                    this.isLoading = false; // El proceso fue exitoso
+                })
+                .catch(error => {
+                    // --- BLOQUE AÑADIDO PARA MANEJAR ERRORES ---
+                    console.error('Ocurrió un error al filtrar los datos:', error);
+                    alert('Hubo un error al aplicar los filtros. Por favor, revisa la consola para más detalles.');
+                    this.plannings = []; // Limpiamos la tabla
+                    this.pagination = { links: [] };
+                    this.isLoading = false; // MUY IMPORTANTE: Ocultamos el spinner
                 });
         },
-        changePage(page) { if (page) { this.filters.page = page; } },
+
+        clearBasicFilters() {
+              this.filters.search = '';
+            this.filters.status = '';
+            this.filters.origen = '';
+            this.filters.destino = '';
+            this.filters.date_created_from = '';
+            this.filters.date_created_to = '';
+        },       
+        
+        // **NUEVA FUNCIÓN PARA MANEJAR CLICS DE PAGINACIÓN**
+        changePage(link) {
+            if (!link.url) return; // No hacer nada si el link es nulo (ej. '...' o deshabilitado)
+            try {
+                // Extraer el número de página de la URL completa
+                const url = new URL(link.url);
+                this.filters.page = url.searchParams.get('page');
+                this.fetchPlannings();
+            } catch (e) {
+                console.error("URL de paginación inválida:", link.url);
+            }
+        },
 
         getFormattedCell(planning, columnKey) {
             const value = planning[columnKey];
-            if (columnKey === 'guia') return planning.guia?.guia || 'Sin Asignar';
             if (value === null || value === undefined || value === '') return 'N/A';
-            if (['fecha_carga', 'fecha_entrega'].includes(columnKey)) {
-                return new Date(value.replace(' ', 'T')).toLocaleDateString('es-MX', {day: '2-digit', month: '2-digit', year: 'numeric'});
+            if (columnKey === 'guia') return planning.guia?.guia || 'Sin Asignar';
+            
+            // **CORRECCIÓN: Formato de fecha más robusto**
+            if (['fecha_carga', 'fecha_entrega', 'created_at'].includes(columnKey)) {
+                try {
+                    // Intenta crear una fecha válida; el formato de Laravel YYYY-MM-DD HH:MM:SS es reconocido
+                    const date = new Date(value);
+                    // Si la fecha es inválida (ej. el string está vacío o malformado), toLocaleDateString dará error
+                    if (isNaN(date.getTime())) return value; // Devuelve el string original si no se puede procesar
+                    return date.toLocaleDateString('es-MX', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                } catch (e) { return value; } // En caso de cualquier error, devuelve el valor original
             }
-            if (columnKey === 'hora_carga') return value.substring(0, 5);
+
+            if (columnKey === 'hora_carga' && typeof value === 'string') return value.substring(0, 5);
             if (columnKey === 'subtotal') return `$${parseFloat(value).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             return value;
         },      
+
+        changeRowsPerPage() {
+            localStorage.setItem('planning_rowsPerPage', this.rowsPerPage);
+            this.filters.page = 1;
+            this.fetchPlannings();
+        },
+        sortBy(column, event) {
+            const existingSortIndex = this.sorts.findIndex(s => s.column === column);
+
+            if (event.ctrlKey || event.metaKey) {
+                if (existingSortIndex > -1) {
+                    this.sorts.splice(existingSortIndex, 1); // Elimina el elemento del arreglo
+                    this.fetchPlannings();
+                }
+                return; // Termina la ejecución aquí
+            }            
+
+            if (event.shiftKey) { // Si se presiona Shift, se añade o modifica un orden
+                if (existingSortIndex > -1) {
+                    // Si ya existe, cambia su dirección
+                    this.sorts[existingSortIndex].dir = this.sorts[existingSortIndex].dir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    // Si no existe, se añade al final
+                    this.sorts.push({ column: column, dir: 'asc' });
+                }
+            } else { // Si no se presiona Shift, es un ordenamiento primario
+                if (existingSortIndex > -1) {
+                    // Si la columna ya está en el orden, o es la única, cambia su dirección
+                    const currentDir = this.sorts[existingSortIndex].dir;
+                    this.sorts = [{ column: column, dir: currentDir === 'asc' ? 'desc' : 'asc' }];
+                } else {
+                    // Si es una columna nueva, se convierte en el único orden
+                    this.sorts = [{ column: column, dir: 'asc' }];
+                }
+            }
+            this.fetchPlannings();
+        },
+        // --- TERMINA CAMBIO ---
+
+        // --- INICIA CAMBIO: Nueva función auxiliar para la vista ---
+        getSortState(column) {
+            const index = this.sorts.findIndex(s => s.column === column);
+            if (index > -1) {
+                return { dir: this.sorts[index].dir, priority: index + 1 };
+            }
+            return null;
+        },
+        exportToCsv() {
+            const cleanFilters = Object.fromEntries(Object.entries(this.filters).filter(([_, v]) => v !== null && v !== '' && v !== 'page'));
+            const params = new URLSearchParams(cleanFilters);
+
+            // --- CORRECCIÓN: Usa el nuevo arreglo 'sorts' en lugar de las variables antiguas ---
+            if (this.sorts.length > 0) {
+                params.append('sorts', JSON.stringify(this.sorts));
+            }
+            
+            window.location.href = `{{ route('customer-service.planning.export-csv') }}?${params.toString()}`;
+        },
+     
 
         // --- LÓGICA DE GESTIÓN DE COLUMNAS (NUEVO) ---
         loadColumnSettings() {
@@ -201,28 +344,17 @@ function planningManager() {
         },
         initResizers() {
             this.$el.querySelectorAll('th .resizer').forEach(resizer => {
-                let header = resizer.parentElement;
-                let startX, startWidth;
-                
+                let header = resizer.parentElement; let startX, startWidth;
                 const onMouseMove = (e) => {
                     const newWidth = startWidth + (e.clientX - startX);
-                    if (newWidth > 50) {
+                    // **AQUÍ ESTÁ LA CORRECCIÓN**
+                    if (newWidth > 20) { // Límite reducido de 50 a 20
                         header.style.width = `${newWidth}px`;
                         this.columnWidths[header.dataset.column] = `${newWidth}px`;
                     }
                 };
-                const onMouseUp = () => {
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                    this.saveColumnSettings();
-                };
-                resizer.addEventListener('mousedown', (e) => {
-                    e.preventDefault();
-                    startX = e.clientX;
-                    startWidth = header.offsetWidth;
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                });
+                const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); this.saveColumnSettings(); };
+                resizer.addEventListener('mousedown', (e) => { e.preventDefault(); startX = e.clientX; startWidth = header.offsetWidth; document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp); });
             });
         },
         // --- FIN LÓGICA DE GESTIÓN DE COLUMNAS ---
