@@ -150,16 +150,19 @@
                         <div class="card p-8 rounded-2xl shadow-xl fade-in-up" style="animation-delay: 700ms;">
                             <h3 class="font-bold text-[#2c3856] mb-6 text-xl">Módulos de Gestión</h3>
                             <div class="space-y-4">
+                                @if(in_array(Auth::user()->area?->name, ['Customer Service', 'Administración']))
                                 <a href="{{ route('customer-service.orders.index') }}" class="nav-item flex items-center p-4 rounded-xl group">
                                     <i class="nav-icon fas fa-box-open fa-fw fa-lg text-gray-400"></i>
                                     <span class="nav-text ml-4 font-semibold text-[#2b2b2b]">Gestión de Pedidos</span>
                                     <i class="nav-arrow fas fa-arrow-right text-gray-300 ml-auto opacity-0 transform -translate-x-2"></i>
                                 </a>
+                                @endif
                                 <a href="{{ route('customer-service.planning.index') }}" class="nav-item flex items-center p-4 rounded-xl group">
                                     <i class="nav-icon fas fa-shipping-fast fa-fw fa-lg text-gray-400"></i>
                                     <span class="nav-text ml-4 font-semibold text-[#2b2b2b]">Planificación</span>
                                     <i class="nav-arrow fas fa-arrow-right text-gray-300 ml-auto opacity-0 transform -translate-x-2"></i>
                                 </a>
+                                @if(in_array(Auth::user()->area?->name, ['Customer Service', 'Administración']))
                                 <a href="{{ route('customer-service.credit-notes.index') }}" class="nav-item flex items-center p-4 rounded-xl group">
                                     <i class="nav-icon fas fa-receipt fa-fw fa-lg text-gray-400"></i>
                                     <span class="nav-text ml-4 font-semibold text-[#2b2b2b]">Notas de Crédito</span>
@@ -169,7 +172,9 @@
                                     <i class="nav-icon fas fa-barcode fa-fw fa-lg text-gray-400"></i>
                                     <span class="nav-text ml-4 font-semibold text-[#2b2b2b]">Validación de UPC</span>
                                     <i class="nav-arrow fas fa-arrow-right text-gray-300 ml-auto opacity-0 transform -translate-x-2"></i>
-                                </a>                                
+                                </a>
+                                @endif
+                                @if(in_array(Auth::user()->area?->name, ['Customer Service', 'Administración']))                                
                                 @if(Auth::user()->is_area_admin)
                                 <div x-data="{ open: false }" class="relative">
                                     <button @click="open = !open" class="nav-item w-full flex items-center p-4 rounded-xl group">
@@ -184,28 +189,55 @@
                                     </div>
                                 </div>
                                 @endif
+                                @endif
                             </div>
                         </div>
                         <div class="card p-8 rounded-2xl shadow-xl fade-in-up" style="animation-delay: 800ms;">
                             <h3 class="font-bold text-[#2c3856] mb-6">Actividad Reciente</h3>
-                            <!-- Contenedor con altura máxima y scroll -->
                             <ul class="space-y-6 max-h-[400px] overflow-y-auto pr-4">
                                 @forelse($actividadReciente as $event)
-                                <li class="relative flex items-start timeline-item">
-                                    <div class="bg-gray-100 text-[#2c3856] rounded-full h-10 w-10 flex-shrink-0 flex items-center justify-center z-10 ring-8 ring-white">
-                                        @if(str_contains($event->description, 'creó')) <i class="fas fa-plus"></i>
-                                        @elseif(str_contains($event->description, 'canceló')) <i class="fas fa-ban"></i>
-                                        @else <i class="fas fa-pencil-alt"></i> @endif
-                                    </div>
-                                    <div class="ml-4 text-sm">
-                                        <p class="text-gray-700"><span class="font-semibold text-[#2b2b2b]">{{ $event->user->name ?? 'Sistema' }}</span> {{ Str::after($event->description, $event->user->name ?? 'El usuario') }}</p>
-                                        <p class="text-xs text-gray-400 mt-0.5">{{ $event->created_at->diffForHumans() }}</p>
-                                    </div>
-                                </li>
+                                    @php
+                                        // Se extrae solo la acción para poder truncarla si es necesario
+                                        $descripcionAccion = Str::after($event->description, $event->user->name ?? 'El usuario');
+                                        $esLargo = strlen($descripcionAccion) > 100;
+                                    @endphp
+                                    <li class="relative flex items-start timeline-item" @if($esLargo) x-data="{ expanded: false }" @endif>
+                                        <div class="bg-gray-100 text-[#2c3856] rounded-full h-10 w-10 flex-shrink-0 flex items-center justify-center z-10 ring-8 ring-white">
+                                            @if(str_contains($event->description, 'creó')) <i class="fas fa-plus"></i>
+                                            @elseif(str_contains($event->description, 'canceló')) <i class="fas fa-ban"></i>
+                                            @else <i class="fas fa-pencil-alt"></i> @endif
+                                        </div>
+                                        <div class="ml-4 text-sm">
+                                            <p class="text-gray-700">
+                                                <span class="font-semibold text-[#2b2b2b]">{{ $event->user->name ?? 'Sistema' }}</span>
+                                                
+                                                {{-- Lógica para mostrar texto expandible --}}
+                                                @if($esLargo)
+                                                    <span x-show="!expanded">{{ Str::limit($descripcionAccion, 100, '...') }}</span>
+                                                    <button @click="expanded = true" x-show="!expanded" class="text-blue-600 text-xs font-semibold hover:underline">Ver más</button>
+                                                    <span x-show="expanded">{{ $descripcionAccion }}</span>
+                                                    <button @click="expanded = false" x-show="expanded" class="text-blue-600 text-xs font-semibold hover:underline">Ver menos</button>
+                                                @else
+                                                    {{ $descripcionAccion }}
+                                                @endif
+                                            </p>
+                                            
+                                            {{-- Lógica para mostrar la fecha y el enlace al SO --}}
+                                            <p class="text-xs text-gray-400 mt-1">
+                                                <span>{{ $event->created_at->diffForHumans() }}</span>
+                                                <!-- @if($event->order)
+                                                    <span class="mx-1">&middot;</span>
+                                                    <a href="{{ route('customer-service.orders.show', $event->order) }}" class="text-blue-600 hover:underline font-semibold" title="Ver detalle del pedido">
+                                                        SO: {{ $event->order->so_number }}
+                                                    </a>
+                                                @endif -->
+                                            </p>
+                                        </div>
+                                    </li>
                                 @empty
-                                <li class="text-sm text-gray-400">No hay actividad reciente.</li>
+                                    <li class="text-sm text-gray-400">No hay actividad reciente.</li>
                                 @endforelse
-                            </ul>
+                                </ul>
                         </div>
                     </div>
                 </div>

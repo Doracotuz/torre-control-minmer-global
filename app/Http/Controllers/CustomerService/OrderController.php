@@ -329,7 +329,7 @@ class OrderController extends Controller
             CsOrderEvent::create([
                 'cs_order_id' => $order->id,
                 'user_id' => Auth::id(),
-                'description' => 'El usuario ' . Auth::user()->name . ' marcó el pedido como "Listo" y lo envió a planificación.'
+                'description' => 'El usuario ' . Auth::user()->name . ' marcó el pedido SO: ' . $order->so_number . ' como "Listo" y lo envió a planificación.'
             ]);
         });
 
@@ -952,7 +952,7 @@ class OrderController extends Controller
                 CsOrderEvent::create([
                     'cs_order_id' => $order->id,
                     'user_id' => Auth::id(),
-                    'description' => 'El usuario ' . Auth::user()->name . ' envió el pedido a planificación mediante una acción masiva.'
+                    'description' => 'El usuario ' . Auth::user()->name . ' envió el pedido SO: ' . $order->so_number . ' a planificación (acción masiva).'
                 ]);
 
                 $processedCount++;

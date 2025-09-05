@@ -212,8 +212,16 @@ public function index(Request $request)
                 ];
 
             case 'Ingresado':
-                // --- CORRECCIÓN AQUÍ ---
-                // Se usa 'Finalizada' como una cadena de texto con comillas.
+
+                $secondsSinceEntry = now()->diffInSeconds($visit->entry_datetime);
+
+                if ($secondsSinceEntry < 10) {
+                    return [
+                        'status' => 'success',
+                        'message' => 'ACCESO AUTORIZADO: ¡Bienvenido(a)!',
+                    ];
+                }
+
                 $visit->status = 'Finalizada'; 
                 
                 // Asumimos que tienes una columna 'exit_datetime'
