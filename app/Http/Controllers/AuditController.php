@@ -23,7 +23,9 @@ class AuditController extends Controller
     public function index(Request $request)
     {
         $query = CsOrder::query()
-            ->with(['plannings.guia'])
+            // --- INICIA MODIFICACIÓN: Cargar detalles de la orden eficientemente ---
+            ->with(['plannings.guia', 'details'])
+            // --- TERMINA MODIFICACIÓN ---
             ->where(function ($q) {
                 $q->whereIn('status', ['Pendiente', 'En Planificación', 'Listo para Enviar'])
                   ->orWhereHas('plannings.guia', function ($guiaQuery) {
@@ -39,17 +41,40 @@ class AuditController extends Controller
             $query->whereBetween('creation_date', [$request->start_date, $request->end_date]);
         }
 
-        // Filtro por estatus
-        if ($request->filled('status')) {
-            $status = $request->status;
-            if (in_array($status, ['En Cortina', 'Planeada'])) {
-                $query->whereHas('plannings.guia', function ($guiaQuery) use ($status) {
-                    $guiaQuery->where('estatus', $status);
-                });
-            } else {
-                $query->where('status', $status);
-            }
+        // --- INICIA MODIFICACIÓN: Lógica para filtrar por múltiples estatus ---
+        if ($request->filled('status') && is_array($request->status)) {
+            $selectedStatuses = $request->status;
+
+            $orderStatuses = array_filter($selectedStatuses, function($status) {
+                return in_array($status, ['Pendiente', 'En Planificación', 'Listo para Enviar']);
+            });
+
+            $guiaStatuses = array_filter($selectedStatuses, function($status) {
+                return in_array($status, ['Planeada', 'En Cortina']);
+            });
+
+            $query->where(function ($q) use ($orderStatuses, $guiaStatuses) {
+                $hasOrderFilter = !empty($orderStatuses);
+
+                if ($hasOrderFilter) {
+                    $q->whereIn('status', $orderStatuses);
+                }
+
+                if (!empty($guiaStatuses)) {
+                    if ($hasOrderFilter) {
+                        $q->orWhereHas('plannings.guia', function ($guiaQuery) use ($guiaStatuses) {
+                            $guiaQuery->whereIn('estatus', $guiaStatuses);
+                        });
+                    } else {
+                        $q->whereHas('plannings.guia', function ($guiaQuery) use ($guiaStatuses) {
+                            $guiaQuery->whereIn('estatus', $guiaStatuses);
+                        });
+                    }
+                }
+            });
         }
+        // --- TERMINA MODIFICACIÓN ---
+
 
         // Filtro por búsqueda de SO, Factura o Guía
         if ($request->filled('search')) {
@@ -215,34 +240,68 @@ class AuditController extends Controller
     {
         $guia = Guia::findOrFail($guiaId);
         $validated = $request->validate([
-            'foto_caja_vacia' => 'required|image|max:5120',
+            'foto_caja_vacia' => 'required|image|max:5120', // 5MB
             'fotos_carga' => 'required|array|min:3',
-            'fotos_carga.*' => 'required|image|max:5120',
-            'marchamo_numero' => 'nullable|string',
-            'foto_marchamo' => 'nullable|image|max:5120',
+            'fotos_carga.*' => 'image|max:5120', // 5MB
+            'marchamo_numero' => 'nullable|string|max:255',
+            'foto_marchamo' => 'nullable|image|max:5120', // 5MB
             'lleva_custodia' => 'required|boolean',
             'incidencias' => 'nullable|array',
+            'incidencias.*' => 'string',
         ]);
 
         DB::transaction(function () use ($validated, $guia, $request) {
-            // Lógica para guardar archivos... (similar a la auditoría de patio)
             
-            if ($request->has('incidencias')) {
-                foreach($validated['incidencias'] as $incidencia) {
-                    AuditIncidencia::create([
-                        'guia_id' => $guia->id,
-                        'user_id' => Auth::id(),
-                        'tipo_incidencia' => $incidencia,
-                    ]);
+            // --- INICIA LÓGICA PARA GUARDAR ARCHIVOS ---
+
+            $fotoCajaVaciaPath = $request->file('foto_caja_vacia')->store('audit_carga/caja_vacia', 's3');
+            
+            $fotosCargaPaths = [];
+            if ($request->hasFile('fotos_carga')) {
+                foreach ($request->file('fotos_carga') as $foto) {
+                    $path = $foto->store('audit_carga/proceso', 's3');
+                    $fotosCargaPaths[] = $path;
                 }
             }
 
-            $guia->update(['estatus' => 'En Tránsito']); // O el estatus final que definas
+            $fotoMarchamoPath = null;
+            if ($request->hasFile('foto_marchamo')) {
+                $fotoMarchamoPath = $request->file('foto_marchamo')->store('audit_carga/marchamo', 's3');
+            }
 
+            // --- TERMINA LÓGICA PARA GUARDAR ARCHIVOS ---
+
+            if ($request->has('incidencias') && !empty($validated['incidencias'])) {
+                foreach($validated['incidencias'] as $incidencia) {
+                    // Asegurarse que la incidencia no esté vacía
+                    if(!empty($incidencia)) {
+                        AuditIncidencia::create([
+                            'guia_id' => $guia->id,
+                            'user_id' => Auth::id(),
+                            'tipo_incidencia' => $incidencia,
+                        ]);
+                    }
+                }
+            }
+
+            // Actualiza la guía con la información y las rutas de las fotos
+            $guia->update([
+                'marchamo_numero' => $validated['marchamo_numero'],
+                'lleva_custodia' => $validated['lleva_custodia'],
+                'audit_carga_fotos' => json_encode([
+                    'caja_vacia' => $fotoCajaVaciaPath,
+                    'proceso_carga' => $fotosCargaPaths,
+                    'marchamo' => $fotoMarchamoPath,
+                ]),
+                'estatus' => 'En Tránsito', // Cambia el estatus de la guía
+            ]);
+
+            // Registra el evento en la orden de venta principal
             $order = $guia->plannings->first()->order;
             if ($order) {
                 CsOrderEvent::create([
-                    'cs_order_id' => $order->id, 'user_id' => Auth::id(),
+                    'cs_order_id' => $order->id, 
+                    'user_id' => Auth::id(),
                     'description' => 'Auditoría de carga completada por ' . Auth::user()->name . ' para la guía ' . $guia->guia . '. Unidad en tránsito.'
                 ]);
             }

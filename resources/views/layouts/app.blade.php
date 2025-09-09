@@ -822,7 +822,9 @@ document.addEventListener('alpine:init', () => {
                             <div x-show="isSuperAdminMenuOpen" x-transition:enter="transition ease-out duration-200" ...>
                                 <div class="pl-4 mt-2 space-y-2">
                                     <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="nav-link-custom {{ request()->routeIs('admin.dashboard') ? 'active-link' : '' }}">
-                                        <svg class="nav-icon" ...></svg>
+                                        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22l-1.92 3.32c-.12.2-.06.47.12.61l2.03 1.58c-.03.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.03-1.58zm-5.14 2.56c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5z" fill="currentColor"/>
+                                        </svg>
                                         <span class="nav-text">{{ __('Panel General') }}</span>
                                     </x-nav-link>
                                     <x-nav-link :href="route('admin.statistics.index')" :active="request()->routeIs('admin.statistics.*')" class="nav-link-custom {{ request()->routeIs('admin.statistics.*') ? 'active-link' : '' }}">

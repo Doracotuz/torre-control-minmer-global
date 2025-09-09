@@ -14,31 +14,68 @@
                 <i class="fas" :class="openFilters ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
             </button>
             <div x-show="openFilters" x-transition class="bg-white p-4 mt-2 rounded-lg shadow-lg">
-                <form method="GET" action="{{ route('audit.index') }}" class="space-y-4">
-                    <input type="text" name="search" placeholder="Buscar por SO, Factura o Guía..." value="{{ request('search') }}" class="w-full rounded-md border-gray-300 shadow-sm">
-                    <select name="status" class="w-full rounded-md border-gray-300 shadow-sm">
-                        <option value="">Todos los Estatus</option>
-                        <option value="Pendiente" @selected(request('status') == 'Pendiente')>Pendiente</option>
-                        <option value="En Planificación" @selected(request('status') == 'En Planificación')>En Planificación</option>
-                        <option value="Planeada" @selected(request('status') == 'Planeada')>Guía Planeada</option>
-                        <option value="En Cortina" @selected(request('status') == 'En Cortina')>Guía en Cortina</option>
-                    </select>
-                    <div>
-                        <label class="text-sm font-medium text-gray-600">Fecha de inicio</label>
-                        <input type="date" name="start_date" value="{{ request('start_date') }}" class="w-full mt-1 rounded-md border-gray-300 shadow-sm">
+                {{-- --- INICIA MODIFICACIÓN: Formulario con auto-submit --- --}}
+            <form id="filtersForm" method="GET" action="{{ route('audit.index') }}" class="space-y-4">
+                <input type="text" name="search" placeholder="Buscar por SO, Factura o Guía..." value="{{ request('search') }}" class="w-full rounded-md border-gray-300 shadow-sm" onchange="this.form.submit()">
+
+                {{-- --- INICIA SECCIÓN DE CHECKBOXES (REEMPLAZA EL <select>) --- --}}
+                <div>
+                    <label class="text-sm font-medium text-gray-600">Estatus</label>
+                    <div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" name="status[]" value="Pendiente" id="status_pendiente"
+                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                onchange="this.form.submit()"
+                                @checked(in_array('Pendiente', request('status', [])))>
+                            <label for="status_pendiente" class="ml-2 block text-sm text-gray-900">Pendiente</label>
+                        </div>
+
+                        <div class="flex items-center">
+                            <input type="checkbox" name="status[]" value="En Planificación" id="status_planificacion"
+                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                onchange="this.form.submit()"
+                                @checked(in_array('En Planificación', request('status', [])))>
+                            <label for="status_planificacion" class="ml-2 block text-sm text-gray-900">En Planificación</label>
+                        </div>
+
+                        <div class="flex items-center">
+                            <input type="checkbox" name="status[]" value="Planeada" id="status_planeada"
+                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                onchange="this.form.submit()"
+                                @checked(in_array('Planeada', request('status', [])))>
+                            <label for="status_planeada" class="ml-2 block text-sm text-gray-900">Guía Planeada</label>
+                        </div>
+
+                        <div class="flex items-center">
+                            <input type="checkbox" name="status[]" value="En Cortina" id="status_cortina"
+                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                onchange="this.form.submit()"
+                                @checked(in_array('En Cortina', request('status', [])))>
+                            <label for="status_cortina" class="ml-2 block text-sm text-gray-900">En Cortina</label>
+                        </div>
+                        
                     </div>
-                    <div>
-                        <label class="text-sm font-medium text-gray-600">Fecha de fin</label>
-                        <input type="date" name="end_date" value="{{ request('end_date') }}" class="w-full mt-1 rounded-md border-gray-300 shadow-sm">
-                    </div>
-                    <button type="submit" class="w-full px-4 py-3 bg-[#2c3856] text-white rounded-lg font-bold">Aplicar Filtros</button>
-                </form>
+                </div>
+                {{-- --- TERMINA SECCIÓN DE CHECKBOXES --- --}}
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600">Fecha de inicio</label>
+                    <input type="date" name="start_date" value="{{ request('start_date') }}" class="w-full mt-1 rounded-md border-gray-300 shadow-sm" onchange="this.form.submit()">
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-600">Fecha de fin</label>
+                    <input type="date" name="end_date" value="{{ request('end_date') }}" class="w-full mt-1 rounded-md border-gray-300 shadow-sm" onchange="this.form.submit()">
+                </div>
+                <button type="submit" class="hidden w-full px-4 py-3 bg-[#2c3856] text-white rounded-lg font-bold">Aplicar Filtros</button>
+            </form>
+                {{-- --- TERMINA MODIFICACIÓN --- --}}
             </div>
         </div>
 
         @php
             $warehouseAudits = $auditableOrders->filter(function($order) {
-                return in_array($order->status, ['Pendiente', 'En Planificación']) || !($order->plannings->first()->guia ?? null);
+                return in_array($order->status, ['Pendiente', 'En Planificación', 'Listo para Enviar']) || !($order->plannings->first()->guia ?? null);
             });
 
             $groupedByGuia = $auditableOrders->filter(function($order) {
@@ -70,6 +107,18 @@
                             <p class="text-sm text-gray-600 mt-2">{{ $order->customer_name }}</p>
                             
                             <div class="mt-3 pt-3 border-t border-gray-200 space-y-2 text-sm text-gray-700">
+                                {{-- --- INICIA MODIFICACIÓN: Mostrar SKUs y Total de Piezas --- --}}
+                                <div class="flex items-center">
+                                    <i class="fas fa-barcode w-5 text-center mr-2 text-gray-400"></i>
+                                    <strong>SKUs:</strong>
+                                    <span class="ml-2">{{ $order->details->count() }}</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-box-open w-5 text-center mr-2 text-gray-400"></i>
+                                    <strong>Total Piezas:</strong>
+                                    <span class="ml-2">{{ number_format($order->details->sum('quantity')) }}</span>
+                                </div>
+                                {{-- --- TERMINA MODIFICACIÓN --- --}}
                                 <div class="flex items-center">
                                     <i class="fas fa-calendar-alt w-5 text-center mr-2 text-gray-400"></i>
                                     <strong>F. Carga:</strong>
