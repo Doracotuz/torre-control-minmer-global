@@ -78,7 +78,7 @@ class OrderController extends Controller
         if ($request->filled('evidence_cutoff_date')) { $query->whereDate('evidence_cutoff_date', $request->evidence_cutoff_date); }
         // --- TERMINA CAMBIO ---
 
-        $perPage = $request->input('per_page', 15);
+        $perPage = $request->input('per_page', 10);
 
         $orders = $query->paginate($perPage)->withQueryString();
 
@@ -772,14 +772,16 @@ class OrderController extends Controller
 
         // --- INICIA MODIFICACIÓN ---
         // 1. Obtenemos las órdenes para acceder a sus datos (id y so_number)
-        $orders = CsOrder::whereIn('id', $orderIds)->select('id', 'so_number')->get();
+        $orders = CsOrder::whereIn('id', $orderIds)->select('id', 'so_number', 'origin_warehouse')->get();
         $ordersCount = $orders->count();
         
         // 2. Extraemos solo los números de SO para mostrarlos en el título
         $soNumbers = $orders->pluck('so_number')->all();
 
+        $firstOrderOrigin = $orders->first() ? $orders->first()->origin_warehouse : '';
+
         // 3. Pasamos la colección de órdenes y los números de SO a la vista
-        return view('customer-service.orders.bulk-edit', compact('orders', 'ordersCount', 'soNumbers'));
+        return view('customer-service.orders.bulk-edit', compact('orders', 'ordersCount', 'soNumbers', 'firstOrderOrigin'));
         // --- TERMINA MODIFICACIÓN ---
     }
 
@@ -788,7 +790,6 @@ class OrderController extends Controller
      */
     public function bulkUpdate(Request $request)
     {
-        // --- INICIA MODIFICACIÓN ---
         $validatedData = $request->validate([
             'ids' => 'required|string',
             // Campos generales
@@ -800,58 +801,50 @@ class OrderController extends Controller
             'executive' => 'nullable|string|max:255',
             'evidence_reception_date' => 'nullable|date_format:Y-m-d',
             'evidence_cutoff_date' => 'nullable|date_format:Y-m-d',
-            // Nuevo campo para facturas individuales
+            // --- INICIA MODIFICACIÓN ---
             'invoices' => 'nullable|array',
             'invoices.*.invoice_number' => 'nullable|string|max:255',
             'invoices.*.invoice_date' => 'nullable|date_format:Y-m-d',
+            'invoices.*.bt_oc' => 'nullable|string|max:255', // Campo BT OC añadido
+            // --- TERMINA MODIFICACIÓN ---
         ]);
 
         $orderIds = json_decode($validatedData['ids']);
         
-        // 1. Prepara los datos para los campos generales (los que aplican a todos)
         $generalDataToUpdate = collect($validatedData)
-            ->except(['ids', 'invoices']) // Excluimos los IDs y las facturas individuales
-            ->filter() // Filtramos para quitar campos vacíos
+            ->except(['ids', 'invoices'])
+            ->filter()
             ->all();
         
-        // 2. Prepara los datos de facturas individuales
         $individualInvoices = $validatedData['invoices'] ?? [];
 
         if (empty($generalDataToUpdate) && empty($individualInvoices)) {
             return redirect()->route('customer-service.orders.index')->with('info', 'No se especificaron cambios para aplicar.');
         }
 
-        // Usamos una transacción para asegurar que todas las actualizaciones se completen
         DB::transaction(function () use ($orderIds, $generalDataToUpdate, $individualInvoices) {
-            
-            // 3. Aplica los cambios generales si existen
             if (!empty($generalDataToUpdate)) {
                 CsOrder::whereIn('id', $orderIds)->update($generalDataToUpdate);
             }
 
-            // 4. Aplica las facturas y fechas de factura individuales
             foreach ($individualInvoices as $orderId => $invoiceData) {
-                // Filtramos para no actualizar con valores vacíos
                 $filteredInvoiceData = array_filter($invoiceData, fn($value) => !is_null($value) && $value !== '');
-                
                 if (!empty($filteredInvoiceData)) {
                     CsOrder::where('id', $orderId)->update($filteredInvoiceData);
                 }
             }
 
-            // 5. Registra un evento genérico en el historial de cada orden
             $changesDescription = 'actualización masiva.';
             foreach ($orderIds as $orderId) {
                 CsOrderEvent::create([
                     'cs_order_id' => $orderId,
-                    'user_id' => Auth::id(),
-                    'description' => 'El usuario ' . Auth::user()->name . ' realizó una ' . $changesDescription
+                    'user_id' => auth()->id(),
+                    'description' => 'El usuario ' . auth()->user()->name . ' realizó una ' . $changesDescription
                 ]);
             }
         });
         
         return redirect()->route('customer-service.orders.index')->with('success', count($orderIds) . ' órdenes actualizadas exitosamente.');
-        // --- TERMINA MODIFICACIÓN ---
     }
     
     

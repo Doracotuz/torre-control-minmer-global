@@ -15,12 +15,18 @@
             </button>
             <div x-show="openFilters" x-transition class="bg-white p-4 mt-2 rounded-lg shadow-lg">
                 {{-- --- INICIA MODIFICACIÓN: Formulario con auto-submit --- --}}
-            <form id="filtersForm" method="GET" action="{{ route('audit.index') }}" class="space-y-4">
-                <input type="text" name="search" placeholder="Buscar por SO, Factura o Guía..." value="{{ request('search') }}" class="w-full rounded-md border-gray-300 shadow-sm" onchange="this.form.submit()">
+            <form x-ref="filtersForm" id="filtersForm" method="GET" action="{{ route('audit.index') }}" class="space-y-4">
+                {{-- Se añade la referencia x-ref y se corrige el evento del input --}}
+                <input type="text" 
+                    name="search" 
+                    placeholder="Buscar por SO, Factura o Guía..." 
+                    value="{{ request('search') }}" 
+                    class="w-full rounded-md border-gray-300 shadow-sm"
+                    @input.debounce.500ms="$refs.filtersForm.submit()">
 
-                {{-- --- INICIA SECCIÓN DE CHECKBOXES (REEMPLAZA EL <select>) --- --}}
+                {{-- --- INICIA CORRECCIÓN: Checkboxes de estatus actualizados --- --}}
                 <div>
-                    <label class="text-sm font-medium text-gray-600">Estatus</label>
+                    <label class="text-sm font-medium text-gray-600">Estatus de Tarea</label>
                     <div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
                         
                         <div class="flex items-center">
@@ -28,15 +34,7 @@
                                 class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                 onchange="this.form.submit()"
                                 @checked(in_array('Pendiente', request('status', [])))>
-                            <label for="status_pendiente" class="ml-2 block text-sm text-gray-900">Pendiente</label>
-                        </div>
-
-                        <div class="flex items-center">
-                            <input type="checkbox" name="status[]" value="En Planificación" id="status_planificacion"
-                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                onchange="this.form.submit()"
-                                @checked(in_array('En Planificación', request('status', [])))>
-                            <label for="status_planificacion" class="ml-2 block text-sm text-gray-900">En Planificación</label>
+                            <label for="status_pendiente" class="ml-2 block text-sm text-gray-900">Auditoría Pendiente</label>
                         </div>
 
                         <div class="flex items-center">
@@ -75,11 +73,14 @@
 
         @php
             $warehouseAudits = $auditableOrders->filter(function($order) {
-                return in_array($order->status, ['Pendiente', 'En Planificación', 'Listo para Enviar']) || !($order->plannings->first()->guia ?? null);
+                // Una auditoría de almacén es aquella que NO tiene una guía asignada aún
+                // y cuyo estatus de auditoría está pendiente.
+                return !$order->plannings->first()?->guia && $order->audit_status === 'Pendiente';
             });
 
             $groupedByGuia = $auditableOrders->filter(function($order) {
-                return $order->plannings->first()->guia ?? null;
+                // Una auditoría de guía es aquella que SÍ tiene una guía asignada.
+                return $order->plannings->first()?->guia;
             })->groupBy(function($order) {
                 return $order->plannings->first()->guia->id;
             });
@@ -102,7 +103,14 @@
                                     <p class="text-sm text-gray-500">SO</p>
                                     <p class="font-bold text-xl text-[#2c3856]">{{ $order->so_number }}</p>
                                 </div>
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">{{ $order->status }}</span>
+                                <div class="text-right">
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-800">
+                                        Pedido: {{ $order->status }}
+                                    </span>
+                                    <span class="block mt-1 px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        Auditoría: {{ $order->audit_status }}
+                                    </span>
+                                </div>
                             </div>
                             <p class="text-sm text-gray-600 mt-2">{{ $order->customer_name }}</p>
                             

@@ -3,27 +3,67 @@
         <h2 class="font-bold text-2xl text-[#2c3856] leading-tight">Módulo de Validación de UPC</h2>
     </x-slot>
 
-    <div x-data="{ openModal: false, selectedOrder: null, selectedIds: [], toggleAll(event) {
-        let checkboxes = document.querySelectorAll('.order_checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = event.target.checked;
-            let id = parseInt(checkbox.value);
-            if (event.target.checked) {
-                if (!this.selectedIds.includes(id)) this.selectedIds.push(id);
-            } else {
-                this.selectedIds = this.selectedIds.filter(i => i !== id);
+    {{-- Se mueve el x-data al div principal que contiene todo --}}
+    <div x-data="{
+        openModal: false,
+        selectedOrder: null,
+        selectedIds: [],
+        isPageSelected: false, // Nueva variable para el estado del checkbox principal
+
+        init() {
+            const savedIds = sessionStorage.getItem('validation_selected_ids');
+            if (savedIds) {
+                this.selectedIds = JSON.parse(savedIds);
             }
-        });
-    }, downloadTemplate() {
-        if (this.selectedIds.length === 0) {
-            alert('Por favor, selecciona al menos una orden para descargar la plantilla.');
-            return;
+
+            // Observador principal: guarda en sessionStorage y actualiza el checkbox del encabezado
+            this.$watch('selectedIds', (newValue) => {
+                sessionStorage.setItem('validation_selected_ids', JSON.stringify(newValue));
+                this.updateHeaderCheckboxState();
+            });
+
+            // Llama a esta función al cargar para establecer el estado inicial del checkbox principal
+            this.updateHeaderCheckboxState();
+        },
+
+        // Nueva función para marcar/desmarcar solo la página actual
+        togglePageSelection() {
+            const visibleIds = Array.from(document.querySelectorAll('.order_checkbox')).map(el => el.value);
+            
+            if (this.isPageSelected) { // Si el checkbox principal está marcado, deseleccionamos los de esta página
+                this.selectedIds = this.selectedIds.filter(id => !visibleIds.includes(id));
+            } else { // Si no, seleccionamos todos los de esta página
+                this.selectedIds = [...new Set([...this.selectedIds, ...visibleIds])];
+            }
+        },
+
+        // Nueva función que mantiene el checkbox principal sincronizado
+        updateHeaderCheckboxState() {
+            const visibleIds = Array.from(document.querySelectorAll('.order_checkbox')).map(el => el.value);
+            if (visibleIds.length === 0) {
+                this.isPageSelected = false;
+                return;
+            }
+            // El checkbox principal se marcará solo si TODOS los IDs visibles ya están en la lista de seleccionados
+            this.isPageSelected = visibleIds.every(id => this.selectedIds.includes(id));
+        },
+
+        downloadTemplate() {
+            if (this.selectedIds.length === 0) {
+                alert('Por favor, selecciona al menos una orden para descargar la plantilla.');
+                return;
+            }
+            let url = `{{ route('customer-service.validation.template') }}`;
+            const params = new URLSearchParams();
+            this.selectedIds.forEach(id => params.append('ids[]', id));
+            window.location.href = `${url}?${params.toString()}`;
+        },
+
+        clearSelection() {
+            this.selectedIds = [];
+            sessionStorage.removeItem('validation_selected_ids');
         }
-        let url = `{{ route('customer-service.validation.template') }}`;
-        const params = new URLSearchParams();
-        this.selectedIds.forEach(id => params.append('ids[]', id));
-        window.location.href = `${url}?${params.toString()}`;
-    } }" class="py-12">
+    }" x-init="init()" class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             @if(session('success'))
                 <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
@@ -73,22 +113,36 @@
                         <label for="end_date" class="text-sm font-semibold text-gray-600">Fecha Fin</label>
                         <input @change="$refs.filtersForm.submit()" type="date" id="end_date" name="end_date" value="{{ request('end_date') }}" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
                     </div>
-
-                    </form>
+                </form>
                 
                 <div class="mt-4 pt-4 border-t flex items-center gap-4">
-                    <button @click="downloadTemplate()" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold">Descargar Plantilla</button>
-                    <button @click="document.getElementById('importModal').classList.remove('hidden')" class="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-semibold">Importar CSV</button>
+                    <button @click="downloadTemplate()" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold">
+                        <i class="fas fa-download mr-2"></i>Descargar Plantilla
+                    </button>
+                    <button @click="document.getElementById('importModal').classList.remove('hidden')" class="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-semibold">
+                        <i class="fas fa-file-upload mr-2"></i>Importar CSV
+                    </button>
+
+                    {{-- --- BOTÓN NUEVO --- --}}
+                    <button x-show="selectedIds.length > 0" 
+                            @click="clearSelection()" 
+                            class="px-4 py-2 bg-red-500 text-white rounded-md text-sm font-semibold"
+                            x-transition>
+                        <i class="fas fa-trash-alt mr-2"></i>Limpiar Selección (<span x-text="selectedIds.length"></span>)
+                    </button>
                 </div>
             </div>
-
-            {{-- El resto del archivo no necesita cambios --}}
 
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
                 <table class="min-w-full">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="py-3 px-4"><input type="checkbox" @click="toggleAll($event)" class="rounded border-gray-300"></th>
+                            <th class="py-3 px-4">
+                                <input type="checkbox" 
+                                    x-model="isPageSelected" 
+                                    @click="togglePageSelection()"
+                                    class="rounded border-gray-300">
+                            </th>
                             <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase">SO</th>
                             <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase">Cliente</th>
                             <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase">Fecha Creación</th>
@@ -124,6 +178,7 @@
             </div>
         </div>
 
+        {{-- Modal de Validación --}}
         <div x-show="openModal" @keydown.escape.window="openModal = false" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" style="display: none;">
             <div @click.away="openModal = false" class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-3xl">
                 <form action="{{ route('customer-service.validation.store') }}" method="POST">
@@ -162,6 +217,7 @@
         </div>
     </div>
 
+    {{-- Modal de Importación --}}
     <div id="importModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
             <h3 class="text-xl font-bold text-[#2c3856] mb-4">Importar Archivo de UPCs</h3>

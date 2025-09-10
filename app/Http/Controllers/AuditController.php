@@ -23,73 +23,61 @@ class AuditController extends Controller
     public function index(Request $request)
     {
         $query = CsOrder::query()
-            // --- INICIA MODIFICACIÓN: Cargar detalles de la orden eficientemente ---
-            ->with(['plannings.guia', 'details'])
-            // --- TERMINA MODIFICACIÓN ---
-            ->where(function ($q) {
-                $q->whereIn('status', ['Pendiente', 'En Planificación', 'Listo para Enviar'])
-                  ->orWhereHas('plannings.guia', function ($guiaQuery) {
-                      $guiaQuery->whereIn('estatus', ['Planeada', 'En Cortina']);
-                  });
-            })
-            ->whereDoesntHave('plannings.guia', function ($guiaQuery) {
+            ->with(['plannings.guia', 'details']);
+
+        // Si hay un término de búsqueda, la aplicamos primero y de forma amplia
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('so_number', 'like', "%{$searchTerm}%")
+                ->orWhere('invoice_number', 'like', "%{$searchTerm}%")
+                ->orWhereHas('plannings.guia', function ($guiaQuery) use ($searchTerm) {
+                    $guiaQuery->where('guia', 'like', "%{$searchTerm}%");
+                });
+            });
+            // Cuando se busca, no se aplica ningún otro filtro de estatus por defecto
+        } else {
+            // Si NO hay búsqueda, mostramos solo las tareas pendientes
+            $query->where(function ($q) {
+                $q->where('audit_status', 'Pendiente')
+                ->orWhereHas('plannings.guia', function ($guiaQuery) {
+                    $guiaQuery->whereIn('estatus', ['Planeada', 'En Cortina']);
+                });
+            });
+
+            // --- CORRECCIÓN ---
+            // Esta regla para ocultar completadas AHORA solo se aplica cuando NO estás buscando.
+            $query->whereDoesntHave('plannings.guia', function ($guiaQuery) {
                 $guiaQuery->whereIn('estatus', ['Completada', 'En Tránsito']);
             });
+        }
+        
+        // La línea que causaba el error fue movida de aquí hacia arriba, dentro del 'else'.
 
         // Filtro por rango de fecha de creación
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $query->whereBetween('creation_date', [$request->start_date, $request->end_date]);
         }
-
-        // --- INICIA MODIFICACIÓN: Lógica para filtrar por múltiples estatus ---
+        
+        // Filtro por estatus de Tarea (este sigue funcionando en conjunto con la búsqueda)
         if ($request->filled('status') && is_array($request->status)) {
             $selectedStatuses = $request->status;
-
-            $orderStatuses = array_filter($selectedStatuses, function($status) {
-                return in_array($status, ['Pendiente', 'En Planificación', 'Listo para Enviar']);
-            });
-
-            $guiaStatuses = array_filter($selectedStatuses, function($status) {
-                return in_array($status, ['Planeada', 'En Cortina']);
-            });
-
-            $query->where(function ($q) use ($orderStatuses, $guiaStatuses) {
-                $hasOrderFilter = !empty($orderStatuses);
-
-                if ($hasOrderFilter) {
-                    $q->whereIn('status', $orderStatuses);
+            
+            $query->where(function ($q) use ($selectedStatuses) {
+                if (in_array('Pendiente', $selectedStatuses)) {
+                    $q->orWhere('audit_status', 'Pendiente');
                 }
 
+                $guiaStatuses = array_intersect($selectedStatuses, ['Planeada', 'En Cortina']);
                 if (!empty($guiaStatuses)) {
-                    if ($hasOrderFilter) {
-                        $q->orWhereHas('plannings.guia', function ($guiaQuery) use ($guiaStatuses) {
-                            $guiaQuery->whereIn('estatus', $guiaStatuses);
-                        });
-                    } else {
-                        $q->whereHas('plannings.guia', function ($guiaQuery) use ($guiaStatuses) {
-                            $guiaQuery->whereIn('estatus', $guiaStatuses);
-                        });
-                    }
+                    $q->orWhereHas('plannings.guia', function ($guiaQuery) use ($guiaStatuses) {
+                        $guiaQuery->whereIn('estatus', $guiaStatuses);
+                    });
                 }
-            });
-        }
-        // --- TERMINA MODIFICACIÓN ---
-
-
-        // Filtro por búsqueda de SO, Factura o Guía
-        if ($request->filled('search')) {
-            $searchTerm = $request->search;
-            $query->where(function($q) use ($searchTerm) {
-                $q->where('so_number', 'like', "%{$searchTerm}%")
-                  ->orWhere('invoice_number', 'like', "%{$searchTerm}%")
-                  ->orWhereHas('plannings.guia', function ($guiaQuery) use ($searchTerm) {
-                      $guiaQuery->where('guia', 'like', "%{$searchTerm}%");
-                  });
             });
         }
 
         $auditableOrders = $query->orderBy('creation_date', 'desc')->paginate(15);
-
         return view('audit.index', compact('auditableOrders'));
     }
 
@@ -140,7 +128,7 @@ class AuditController extends Controller
             }
             
             $order->audit_almacen_observaciones = $validated['observaciones'];
-            $order->status = 'Listo para Enviar';
+            $order->audit_status = 'Completado'; 
             
             $order->audit_tarimas_cantidad = $validated['tarimas_cantidad'];
             $order->audit_tarimas_tipo = $validated['tarimas_tipo'];
@@ -153,7 +141,8 @@ class AuditController extends Controller
             CsOrderEvent::create([
                 'cs_order_id' => $order->id,
                 'user_id' => Auth::id(),
-                'description' => 'Auditoría de almacén completada por ' . Auth::user()->name . '. Pedido listo para enviar.'
+                // Se ajusta la descripción del evento
+                'description' => 'Auditoría de almacén completada por ' . Auth::user()->name . '.'
             ]);
         });
 
