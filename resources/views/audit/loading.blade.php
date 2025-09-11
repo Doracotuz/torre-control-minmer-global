@@ -44,6 +44,46 @@
                      </div>
                 </div>
 
+                @if(!empty($requirementsByOrder))
+                <div class="mt-8 bg-gray-50 p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Requisitos de Cliente a Validar</h3>
+
+                    @foreach($requirementsByOrder as $identifier => $categories)
+                        <div class="mb-6 p-4 border rounded-md bg-white">
+                            <h4 class="font-semibold text-indigo-700">Orden/Factura: {{ $identifier }}</h4>
+                            
+                            @if(!empty($categories['entrega']))
+                                <div class="mt-4">
+                                    <p class="font-medium text-gray-600">Requisitos de Entrega:</p>
+                                    <ul class="list-disc list-inside mt-2 space-y-2">
+                                        @foreach($categories['entrega'] as $spec)
+                                            <li class="flex items-center">
+                                                <input type="checkbox" name="validated_specs[{{ $identifier }}][{{ $spec }}]" class="rounded mr-3">
+                                                <label>{{ str_replace(' - Entrega', '', $spec) }}</label>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
+                            @if(!empty($categories['documentacion']))
+                                <div class="mt-4">
+                                    <p class="font-medium text-gray-600">Requisitos de Documentación:</p>
+                                    <ul class="list-disc list-inside mt-2 space-y-2">
+                                        @foreach($categories['documentacion'] as $spec)
+                                            <li class="flex items-center">
+                                                <input type="checkbox" name="validated_specs[{{ $identifier }}][{{ $spec }}]" class="rounded mr-3">
+                                                <label>{{ str_replace(' - Documentación', '', $spec) }}</label>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+                @endif                
+
                 <!-- Incidencias -->
                 <div>
                     <h3 class="font-bold text-lg mb-2">Incidencias (opcional)</h3>

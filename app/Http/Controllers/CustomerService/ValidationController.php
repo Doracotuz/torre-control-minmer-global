@@ -8,49 +8,74 @@ use App\Models\CsOrderDetail;
 use App\Models\CsOrderDetailUpc;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Guia;
 
 class ValidationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = CsOrder::whereNotIn('status', ['Terminado', 'Cancelado'])
-                        ->with('details.product', 'details.upc');
+        // La consulta base ahora incluye la relación a la guía para optimización
+        $query = CsOrder::with('details.product', 'details.upc', 'plannings.guia');
 
+        // Filtro de búsqueda general por SO, Cliente o Guía
         if ($request->filled('search')) {
             $searchTerm = $request->search;
             $query->where(function($q) use ($searchTerm) {
                 $q->where('so_number', 'like', "%{$searchTerm}%")
-                  ->orWhere('customer_name', 'like', "%{$searchTerm}%");
+                  ->orWhere('customer_name', 'like', "%{$searchTerm}%")
+                  ->orWhereHas('plannings.guia', function ($guiaQuery) use ($searchTerm) {
+                      $guiaQuery->where('guia', 'like', "%{$searchTerm}%");
+                  });
             });
         }
         
-        // --- CORRECCIÓN: Se añade el filtro por estatus ---
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        // Filtro unificado de estatus que busca en tres columnas diferentes
+        if ($request->filled('status') && is_array($request->status)) {
+            $selectedStatuses = $request->status;
+            
+            $query->where(function ($q) use ($selectedStatuses) {
+                // 1. Busca en el estatus principal de la orden (`cs_orders.status`)
+                $q->whereIn('status', $selectedStatuses);
+
+                // 2. O busca en el estatus de auditoría de la orden (`cs_orders.audit_status`)
+                $q->orWhereIn('audit_status', $selectedStatuses);
+
+                // 3. O busca en el estatus de la guía asociada a la orden (`guias.estatus`)
+                $q->orWhereHas('plannings.guia', function ($guiaQuery) use ($selectedStatuses) {
+                    $guiaQuery->whereIn('estatus', $selectedStatuses);
+                });
+            });
         }
 
-        // --- CORRECCIÓN: Se añade el filtro por canal ---
+        // Otros filtros existentes
         if ($request->filled('channel')) {
             $query->where('channel', $request->channel);
         }
-
         if ($request->filled('customer_name')) {
             $query->where('customer_name', $request->customer_name);
         }
-
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $query->whereBetween('creation_date', [$request->start_date, $request->end_date]);
         }
 
-        $orders = $query->paginate(10);
+        // Paginación de resultados
+        $orders = $query->orderBy('creation_date', 'desc')->paginate(10);
         
-        // --- CORRECCIÓN: Se obtienen los datos para los nuevos filtros ---
-        $baseQuery = CsOrder::whereNotIn('status', ['Terminado', 'Cancelado']);
-        $customers = (clone $baseQuery)->distinct()->orderBy('customer_name')->pluck('customer_name');
-        $channels = (clone $baseQuery)->distinct()->orderBy('channel')->pluck('channel');
-        $statuses = (clone $baseQuery)->distinct()->orderBy('status')->pluck('status');
+        // Recolección de todos los estatus únicos de las tres fuentes para los checkboxes del filtro
+        $orderStatuses = CsOrder::whereNotNull('status')->distinct()->pluck('status');
+        $auditStatuses = CsOrder::whereNotNull('audit_status')->distinct()->pluck('audit_status');
+        $guiaStatuses = Guia::whereNotNull('estatus')->distinct()->pluck('estatus');
+        
+        // Se unen las tres colecciones, se eliminan duplicados y se ordenan alfabéticamente
+        $allStatuses = $orderStatuses->merge($auditStatuses)->merge($guiaStatuses)->unique()->sort()->values();
 
-        return view('customer-service.validation.index', compact('orders', 'customers', 'channels', 'statuses'));
+        // Recolección de datos para otros filtros
+        $baseQueryForFilters = CsOrder::query();
+        $customers = (clone $baseQueryForFilters)->distinct()->orderBy('customer_name')->pluck('customer_name');
+        $channels = (clone $baseQueryForFilters)->distinct()->orderBy('channel')->pluck('channel');
+
+        // Se envían todas las variables a la vista
+        return view('customer-service.validation.index', compact('orders', 'customers', 'channels', 'allStatuses'));
     }
 
     public function store(Request $request)

@@ -447,6 +447,9 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
             Route::get('/create', [CustomerController::class, 'create'])->name('create');
             Route::post('/', [CustomerController::class, 'store'])->name('store');
             Route::get('/{customer}/edit', [CustomerController::class, 'edit'])->name('edit');
+            Route::get('/search', [CustomerController::class, 'search'])->name('search');
+            Route::get('/{customer}/specifications', [CustomerController::class, 'getSpecifications'])->name('specifications.get');
+            Route::post('/{customer}/specifications', [CustomerController::class, 'updateSpecifications'])->name('specifications.update');            
             Route::put('/{customer}', [CustomerController::class, 'update'])->name('update');
             Route::delete('/{customer}', [CustomerController::class, 'destroy'])->name('destroy');
             Route::get('/export', [CustomerController::class, 'exportCsv'])->name('export');

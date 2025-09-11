@@ -218,8 +218,45 @@ class AuditController extends Controller
      */
     public function showLoadingAudit($guiaId)
     {
-        $guia = Guia::with('facturas')->findOrFail($guiaId);
-        return view('audit.loading', compact('guia'));
+        $guia = Guia::with('plannings.order.customer', 'facturas')->findOrFail($guiaId);
+
+        // Creamos una estructura para agrupar especificaciones por SO/Factura
+        $requirementsByOrder = [];
+
+        foreach ($guia->plannings as $planning) {
+            $order = $planning->order;
+            if ($order && $order->customer && !empty($order->customer->delivery_specifications)) {
+                
+                // Usamos el SO o la factura como identificador
+                $identifier = $order->so_number ?? $order->invoice_number;
+                
+                // Obtenemos las especificaciones del cliente
+                $specs = $order->customer->delivery_specifications;
+                
+                // Inicializamos si no existe
+                if (!isset($requirementsByOrder[$identifier])) {
+                    $requirementsByOrder[$identifier] = [
+                        'entrega' => [],
+                        'documentacion' => []
+                    ];
+                }
+                
+                // Llenamos las listas con las especificaciones que están marcadas como true
+                foreach ($specs as $specName => $isRequired) {
+                    if ($isRequired) {
+                        // Aquí necesitarás una lógica para saber si es de 'Entrega' o 'Documentación'
+                        // Por ahora, asumimos que lo podemos determinar por el nombre
+                        if (in_array($specName, ['REVISION DE UPC VS FACTURA - Entrega', /* ...otros de entrega... */])) {
+                            $requirementsByOrder[$identifier]['entrega'][] = $specName;
+                        } else {
+                            $requirementsByOrder[$identifier]['documentacion'][] = $specName;
+                        }
+                    }
+                }
+            }
+        }
+
+        return view('audit.loading', compact('guia', 'requirementsByOrder'));
     }
 
     /**
@@ -237,6 +274,7 @@ class AuditController extends Controller
             'lleva_custodia' => 'required|boolean',
             'incidencias' => 'nullable|array',
             'incidencias.*' => 'string',
+            'validated_specs' => 'nullable|array', 
         ]);
 
         DB::transaction(function () use ($validated, $guia, $request) {
@@ -273,6 +311,8 @@ class AuditController extends Controller
                 }
             }
 
+            $validatedSpecs = $request->input('validated_specs', []);            
+
             // Actualiza la guía con la información y las rutas de las fotos
             $guia->update([
                 'marchamo_numero' => $validated['marchamo_numero'],
@@ -281,6 +321,7 @@ class AuditController extends Controller
                     'caja_vacia' => $fotoCajaVaciaPath,
                     'proceso_carga' => $fotosCargaPaths,
                     'marchamo' => $fotoMarchamoPath,
+                    'validated_specifications' => $validatedSpecs 
                 ]),
                 'estatus' => 'En Tránsito', // Cambia el estatus de la guía
             ]);

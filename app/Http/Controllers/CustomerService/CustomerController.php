@@ -180,4 +180,35 @@ class CustomerController extends Controller
         return view('customer-service.customers.dashboard', compact('chartData'));
     }
 
+    public function search(Request $request)
+    {
+        $query = CsCustomer::query();
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+        if ($request->filled('channel')) {
+            $query->where('channel', $request->channel);
+        }
+        $customers = $query->select('id', 'name')->limit(50)->get();
+        return response()->json($customers);
+    }
+
+    // Para obtener las especificaciones de un cliente
+    public function getSpecifications(CsCustomer $customer)
+    {
+        // Devolvemos las especificaciones guardadas o un array vacío si no hay nada
+        return response()->json($customer->delivery_specifications ?? []);
+    }
+
+    // Para guardar las nuevas especificaciones
+    public function updateSpecifications(Request $request, CsCustomer $customer)
+    {
+        // El request debería enviar un objeto JSON con las especificaciones
+        $specifications = $request->input('specifications', []);
+
+        $customer->update(['delivery_specifications' => $specifications]);
+
+        return response()->json(['success' => true, 'message' => 'Especificaciones actualizadas.']);
+    }    
+
 }
