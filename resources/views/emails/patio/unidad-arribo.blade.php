@@ -3,54 +3,242 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arribo de Unidad</title>
+    <title>Notificación de Arribo de Unidad</title>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
-        .header { font-size: 24px; font-weight: bold; color: #2c3856; text-align: center; margin-bottom: 20px; }
-        .content-table { width: 100%; border-collapse: collapse; }
-        .content-table td { padding: 10px; border-bottom: 1px solid #eee; }
-        .content-table td:first-child { font-weight: bold; color: #555; width: 150px; }
-        .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #999; }
-        .button { display: inline-block; padding: 12px 25px; margin-top: 20px; background-color: #purple-600; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            -webkit-text-size-adjust: none;
+            word-wrap: break-word;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+        }
+        .header {
+            background-color: #2c3856;
+            padding: 24px;
+            text-align: center;
+        }
+        .header img {
+            max-width: 150px;
+            height: auto;
+        }
+        .content-body {
+            padding: 30px;
+        }
+        .title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #2b2b2b;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 16px;
+            color: #666666;
+            text-align: center;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        .info-card {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            margin-bottom: 25px;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+        .info-item i {
+            font-size: 20px;
+            color: #ff9c00;
+            width: 30px;
+            text-align: center;
+        }
+        .info-item-text {
+            margin-left: 10px;
+            color: #2c3856;
+            font-size: 15px;
+        }
+        .info-label {
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        .info-value {
+            font-weight: 400;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            background-color: #ff9c00;
+            text-align: center;
+            margin-left: 10px;
+        }
+        .list-section {
+            margin-top: 25px;
+        }
+        .list-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3856;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #ff9c00;
+            display: inline-block;
+        }
+        .list-item {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .list-item:last-child {
+            margin-bottom: 0;
+        }
+        .list-item-title {
+            font-weight: 600;
+            color: #2b2b2b;
+            font-size: 15px;
+        }
+        .list-item-details {
+            font-size: 14px;
+            color: #666666;
+            margin-top: 5px;
+            line-height: 1.5;
+        }
+        .button-link {
+            display: block;
+            width: fit-content;
+            margin: 30px auto 0;
+            padding: 12px 28px;
+            background-color: #ff9c00;
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+        .button-link:hover {
+            background-color: #e68a00;
+        }
+        .footer-text {
+            text-align: center;
+            font-size: 12px;
+            color: #999999;
+            margin-top: 30px;
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">Notificación de Arribo de Unidad</div>
-        <p>Se ha completado la auditoría de patio para la siguiente unidad. Ya se encuentra en cortina, lista para el proceso de carga.</p>
-        <table class="content-table">
-            <tr>
-                <td>Guía:</td>
-                <td><strong>{{ $guia->guia }}</strong></td>
-            </tr>
-            <tr>
-                <td>Operador:</td>
-                <td>{{ $guia->operador }}</td>
-            </tr>
-            <tr>
-                <td>Placas:</td>
-                <td>{{ $guia->placas }}</td>
-            </tr>
-            <tr>
-                <td>Fecha de Arribo:</td>
-                <td>{{ \Carbon\Carbon::parse($guia->audit_patio_arribo)->format('d/m/Y') }}</td>
-            </tr>
-            <tr>
-                <td>Hora de Arribo:</td>
-                <td>{{ \Carbon\Carbon::parse($guia->audit_patio_arribo)->format('H:i') }} hrs</td>
-            </tr>
-            <tr>
-                <td>Estatus de la Guía:</td>
-                <td><span style="color: green; font-weight: bold;">{{ $guia->estatus }}</span></td>
-            </tr>
-        </table>
-        <div style="text-align: center;">
-             <a href="{{ route('audit.index') }}" class="button">Ir al Dashboard de Auditoría</a>
+    <div class="email-container">
+        
+        <div class="header">
+            <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" alt="Logotipo de la Empresa">
         </div>
-    </div>
-    <div class="footer">
-        Este es un correo generado automáticamente por el sistema de logística.
+        
+        <div class="content-body">
+            <h1 class="title">Unidad Arribada a Patio</h1>
+            <p class="subtitle">
+                Se ha completado la auditoría de patio para la siguiente unidad. 
+                Ya se encuentra reportada, lista para iniciar el proceso de carga.
+            </p>
+            
+            <div class="info-card">
+                <div class="info-item">
+                    <i class="fas fa-truck-moving"></i>
+                    <span class="info-item-text">
+                        <span class="info-label">Guía:</span>
+                        <span class="info-value">{{ $guia->guia }}</span>
+                    </span>
+                    <span class="status-badge">{{ $guia->estatus }}</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-user-tie"></i>
+                    <span class="info-item-text">
+                        <span class="info-label">Operador:</span>
+                        <span class="info-value">{{ $guia->operador }}</span>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-id-card"></i>
+                    <span class="info-item-text">
+                        <span class="info-label">Placas:</span>
+                        <span class="info-value">{{ $guia->placas }}</span>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span class="info-item-text">
+                        <span class="info-label">Fecha de Arribo:</span>
+                        <span class="info-value">{{ \Carbon\Carbon::parse($guia->audit_patio_arribo)->format('d/m/Y') }}</span>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-clock"></i>
+                    <span class="info-item-text">
+                        <span class="info-label">Hora de Arribo:</span>
+                        <span class="info-value">{{ \Carbon\Carbon::parse($guia->audit_patio_arribo)->format('H:i') }} hrs</span>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span class="info-item-text">
+                        <span class="info-label">Hora de Cita:</span>
+                        <span class="info-value">{{ $guia->hora_planeada ?? 'No especificada' }}</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="list-section">
+                <h2 class="list-title">Clientes y Órdenes Incluidas</h2>
+                
+                @if($guia->plannings->isNotEmpty())
+                    @foreach($guia->plannings as $planning)
+                        <div class="list-item">
+                            <div class="list-item-title">{{ $planning->razon_social ?? 'Cliente no disponible' }}</div>
+                            <div class="list-item-details">
+                                <p><strong>Orden de Venta (SO):</strong> {{ $planning->so_number ?? 'N/A' }}</p>
+                                <p><strong>Número de Factura:</strong> {{ $planning->factura ?? 'N/A' }}</p>
+                                <p><strong>Cantidad de Piezas:</strong> {{ number_format($planning->pzs ?? 0) }}</p>
+                            </div>
+                        </div>
+                    @endforeach
+                @else
+                    <p class="text-sm text-gray-600">Esta guía no tiene órdenes de venta asociadas.</p>
+                @endif
+            </div>
+
+            <a href="{{ route('audit.index') }}" class="button-link">Ver en Dashboard de Auditoría</a>
+
+        </div>
+
+        <div class="footer-text">
+            Este es un correo generado automáticamente por el sistema de logística de la empresa.
+        </div>
+        
     </div>
 </body>
 </html>

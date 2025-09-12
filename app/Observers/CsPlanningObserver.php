@@ -13,16 +13,18 @@ class CsPlanningObserver
      */
     public function updated(CsPlanning $csPlanning): void
     {
-
+        // --- LÓGICA CORREGIDA PARA SINCRONIZAR CON AUDITORÍA ---
         if ($csPlanning->wasChanged('guia_id') && !is_null($csPlanning->guia_id)) {
             if ($order = $csPlanning->order) {
-                // Buscamos la auditoría de esta orden que esté esperando guía
-                $audit = Audit::where('cs_order_id', $order->id)
-                              ->where('location', $csPlanning->origen)
-                              ->where('status', 'Pendiente Patio')
-                              ->first();
-                // Si la encontramos, le asignamos el guia_id para que se mueva de sección en el dashboard.
+                
+                // CORRECCIÓN: Buscamos la auditoría si está en CUALQUIERA de los dos estatus previos a la carga.
+                $audit = \App\Models\Audit::where('cs_order_id', $order->id)
+                            ->where('location', $csPlanning->origen)
+                            ->whereIn('status', ['Pendiente Almacén', 'Pendiente Patio'])
+                            ->first();
+                
                 if ($audit) {
+                    // Le asignamos el guia_id para que el dashboard la mueva de sección.
                     $audit->update(['guia_id' => $csPlanning->guia_id]);
                 }
             }

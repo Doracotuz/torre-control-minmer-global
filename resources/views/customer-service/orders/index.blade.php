@@ -191,12 +191,12 @@
             isImportModalOpen: false,
             isAdvancedFilterModalOpen: false,
             advancedFilterCount: 0,            
-            filters: { 
+            filters: {
                 page: 1, search: '', status: '', date_from: '', date_to: '',
                 purchase_order_adv: '', bt_oc: '', customer_name_adv: '', channel: '',
-                invoice_number_adv: '', invoice_date: '', origin_warehouse: '', 
-                destination_locality: '', delivery_date: '', executive: '', 
-                evidence_reception_date: '', evidence_cutoff_date: ''
+                invoice_number_adv: '', invoice_date: '', origin_warehouse: '',
+                destination_locality: '', delivery_date: '', executive: '',
+                evidence_reception_date: '', evidence_cutoff_date: '', per_page: 10
             },
             visibleColumns: {},
             columnOrder: [],
@@ -238,6 +238,17 @@
                 });
                 this.visibleColumns = visible;
 
+                try {
+                    const savedFilters = localStorage.getItem('csOrderFilters');
+                    if (savedFilters) {
+                        const loadedFilters = JSON.parse(savedFilters);
+                        // Asegura que todas las claves estén presentes, incluso si no se guardaron
+                        this.filters = { ...this.filters, ...loadedFilters };
+                    }
+                } catch (e) {
+                    console.error("Error al cargar los filtros desde el almacenamiento local", e);
+                }                
+
                 this.applyFilters(); // Carga inicial de datos
                 
                 // --- INICIA CÓDIGO CORREGIDO Y MÁS ROBUSTO ---
@@ -254,7 +265,8 @@
                 // Creamos un observador para cada uno de estos filtros
                 filterKeysToWatch.forEach(key => {
                     this.$watch(`filters.${key}`, () => {
-                        this.applyFilters(true); // Siempre resetea la página
+                        localStorage.setItem('csOrderFilters', JSON.stringify(this.filters));
+                        this.applyFilters(true); // Siempre reiniciar la página
                     });
                 });
                 // --- TERMINA CÓDIGO CORREGIDO ---
@@ -274,11 +286,34 @@
                 this.$el.addEventListener('toggle-all-orders', (e) => this.toggleAllOrders(e.detail));
             },
 
+            clearFilters() {
+                this.filters.search = '';
+                this.filters.status = '';
+                this.filters.date_from = '';
+                this.filters.date_to = '';
+                this.filters.purchase_order_adv = '';
+                this.filters.bt_oc = '';
+                this.filters.customer_name_adv = '';
+                this.filters.channel = '';
+                this.filters.invoice_number_adv = '';
+                this.filters.invoice_date = '';
+                this.filters.origin_warehouse = '';
+                this.filters.destination_locality = '';
+                this.filters.delivery_date = '';
+                this.filters.executive = '';
+                this.filters.evidence_reception_date = '';
+                this.filters.evidence_cutoff_date = '';
+                // Eliminar la clave de localStorage
+                localStorage.removeItem('csOrderFilters');
+                this.applyFilters(true); // Recargar la tabla
+            },            
+
             applyFilters(resetPage = false) {
                 if (resetPage) this.filters.page = 1;
                 this.isLoading = true;
                 this.updateAdvancedFilterCount();
                 const params = new URLSearchParams(this.filters);
+                localStorage.setItem('csOrderFilters', JSON.stringify(this.filters));
                 
                 fetch(`{{ route('customer-service.orders.filter') }}?${params.toString()}`)
                     .then(response => response.json())

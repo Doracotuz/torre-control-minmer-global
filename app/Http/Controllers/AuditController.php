@@ -155,8 +155,8 @@ class AuditController extends Controller
             'equipo_sujecion' => 'required|string',
             'presenta_maniobra' => 'sometimes|boolean',
             'maniobra_personas' => 'required_if:presenta_maniobra,1|nullable|integer|min:1',
-            'foto_unidad' => 'required|image|max:5120',
-            'foto_llantas' => 'required|image|max:5120',
+            'foto_unidad' => 'required|image|max:100120',
+            'foto_llantas' => 'required|image|max:100120',
         ]);
 
         DB::transaction(function () use ($validatedData, $guia, $request, $audit) {
@@ -255,11 +255,11 @@ class AuditController extends Controller
         }
         
         $validatedData = $request->validate([
-            'foto_caja_vacia' => 'required|image|max:5120',
+            'foto_caja_vacia' => 'required|image|max:100120',
             'fotos_carga' => 'required|array|min:3',
-            'fotos_carga.*' => 'image|max:5120',
+            'fotos_carga.*' => 'image|max:100120',
             'marchamo_numero' => 'nullable|string|max:255',
-            'foto_marchamo' => 'nullable|image|max:5120',
+            'foto_marchamo' => 'nullable|image|max:100120',
             'lleva_custodia' => 'required|boolean',
             'incidencias' => 'nullable|array',
             'incidencias.*' => 'string',
@@ -329,34 +329,69 @@ class AuditController extends Controller
      */
     public function reopenAudit(Guia $guia)
     {
-        // Obtenemos los IDs de las órdenes asociadas a la guía
         $orderIds = $guia->plannings->pluck('cs_order_id');
         
-        // Buscamos todos los registros de auditoría finalizados para esas órdenes
         $auditsToReopen = Audit::whereIn('cs_order_id', $orderIds)
                             ->where('status', 'Finalizada')
                             ->get();
 
-        // --- VALIDACIÓN AÑADIDA ---
-        // Si la colección está vacía, significa que no se encontró nada para reabrir.
         if ($auditsToReopen->isEmpty()) {
             return redirect()->route('audit.index')
-                            ->with('error', 'No se encontraron auditorías finalizadas para esta guía. La acción no se pudo completar.');
+                            ->with('error', 'No se encontraron auditorías finalizadas para reabrir.');
         }
-        // --- FIN DE LA VALIDACIÓN ---
 
+        // --- INICIA NUEVA LÓGICA DE ELIMINACIÓN DE FOTOS ---
+
+        // 1. Recolectamos todas las rutas de los archivos que vamos a eliminar.
+        $pathsToDelete = [];
         foreach($auditsToReopen as $audit) {
-            // Revertimos cada auditoría al estado inicial
+            // Recolectar fotos de patio
+            $patioData = $audit->patio_audit_data ?? [];
+            if (!empty($patioData['foto_unidad_path'])) {
+                $pathsToDelete[] = $patioData['foto_unidad_path'];
+            }
+            if (!empty($patioData['foto_llantas_path'])) {
+                $pathsToDelete[] = $patioData['foto_llantas_path'];
+            }
+
+            // Recolectar fotos de carga
+            $loadingData = $audit->loading_audit_data ?? [];
+            $cargaFotos = $loadingData['audit_carga_fotos'] ?? [];
+            if (!empty($cargaFotos['caja_vacia'])) {
+                $pathsToDelete[] = $cargaFotos['caja_vacia'];
+            }
+            if (!empty($cargaFotos['marchamo'])) {
+                $pathsToDelete[] = $cargaFotos['marchamo'];
+            }
+            if (!empty($cargaFotos['proceso_carga'])) {
+                // array_merge es para añadir todos los elementos de un array a otro
+                $pathsToDelete = array_merge($pathsToDelete, $cargaFotos['proceso_carga']);
+            }
+        }
+
+        // 2. Si encontramos rutas, las eliminamos de S3 de una sola vez.
+        if (!empty($pathsToDelete)) {
+            Storage::disk('s3')->delete($pathsToDelete);
+        }
+
+        // --- TERMINA NUEVA LÓGICA DE ELIMINACIÓN ---
+
+        // 3. Ahora, reiniciamos las auditorías
+        foreach($auditsToReopen as $audit) {
             $audit->update([
                 'status' => 'Pendiente Almacén', 
-                'completed_at' => null
+                'completed_at' => null,
+                // Limpiamos los datos de las auditorías anteriores para empezar de cero
+                'warehouse_audit_data' => null,
+                'patio_audit_data' => null,
+                'loading_audit_data' => null,
+                'user_id' => null
             ]);
 
-            // Creamos un evento para registrar la acción
             CsOrderEvent::create([
                 'cs_order_id' => $audit->cs_order_id, 
                 'user_id' => Auth::id(), 
-                'description' => 'Auditoría reabierta por ' . Auth::user()->name . ' en la ubicación ' . $audit->location
+                'description' => 'Auditoría reabierta por ' . Auth::user()->name . '. Evidencias anteriores eliminadas.'
             ]);
         }
 

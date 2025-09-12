@@ -481,6 +481,9 @@ class PlanningController extends Controller
 
         try {
             DB::beginTransaction();
+            
+            // Se guarda el ID de la guía antes de desasignarla de la planificación
+            $guiaId = $planning->guia_id;
 
             // 1. Eliminar la factura correspondiente en la tabla de facturas
             \App\Models\Factura::where('cs_planning_id', $planning->id)->delete();
@@ -492,8 +495,13 @@ class PlanningController extends Controller
                 'operador' => 'Pendiente',
                 'placas' => 'Pendiente',
                 'telefono' => 'Pendiente'
-
             ]);
+
+            // 3. Obtener la guía y comprobar si se quedó sin facturas
+            $guia = Guia::find($guiaId);
+            if ($guia && $guia->facturas()->count() === 0) {
+                $guia->update(['estatus' => 'Cancelado']);
+            }
 
             DB::commit();
         } catch (\Exception $e) {
@@ -503,6 +511,6 @@ class PlanningController extends Controller
         }
 
         return back()->with('success', 'La orden ha sido desasignada de la guía exitosamente.');
-    }    
+    }
 
 }

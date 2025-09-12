@@ -128,6 +128,22 @@
         @include('customer-service.planning._scales-modal')
         @include('customer-service.planning._add-to-guia-modal')
         @include('customer-service.planning._advanced-filters-modal')
+        <div x-show="isEditGuiaModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" @keydown.escape.window="closeAllModals()">
+            <div @click.outside="closeAllModals()" class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+                <h3 class="text-xl font-bold text-[#2c3856] mb-4">Editar Número de Guía</h3>
+                <form @submit.prevent="submitGuiaEdit()">
+                    <div>
+                        <label for="guia_number_input" class="block text-sm font-medium text-gray-700">Nuevo número de guía</label>
+                        <input type="text" id="guia_number_input" x-model="guiaToEdit.number" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-4">
+                        <button type="button" @click="closeAllModals()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
     </div>
 
 <style>
@@ -158,6 +174,8 @@ function planningManager() {
         plannings: [],
         pagination: { links: [] }, // Inicializar links como array vacío
         isLoading: true,
+        isEditGuiaModalOpen: false,
+        guiaToEdit: { id: null, number: '' },        
         filters: { 
             search: new URLSearchParams(window.location.search).get('search') || '', 
             status: new URLSearchParams(window.location.search).get('status') || '', 
@@ -252,6 +270,49 @@ function planningManager() {
             }
         },
 
+        // --- FUNCIÓN NUEVA: Abre el modal de edición de guía ---
+        openEditGuiaModal(planning) {
+            if (planning && planning.guia) {
+                this.guiaToEdit.id = planning.guia.id;
+                this.guiaToEdit.number = planning.guia.guia;
+                this.isEditGuiaModalOpen = true;
+            }
+        },
+
+        closeAllModals() {
+            this.isScalesModalOpen = false;
+            this.isImportModalOpen = false;
+            this.isEditGuiaModalOpen = false; // Añadido
+            // ...
+        },        
+
+        // --- FUNCIÓN NUEVA: Envía el formulario de edición ---
+        submitGuiaEdit() {
+            fetch(`/rutas/asignaciones/${this.guiaToEdit.id}/update-number`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ guia_number: this.guiaToEdit.number })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    this.showFlashMessage(data.message, 'success');
+                    // Actualizamos el dato en la tabla al instante, sin recargar
+                    this.plannings.forEach(p => {
+                        if (p.guia && p.guia.id === this.guiaToEdit.id) {
+                            p.guia.guia = data.new_guia_number;
+                        }
+                    });
+                    this.closeAllModals();
+                } else {
+                    this.showFlashMessage(data.message || 'Ocurrió un error.', 'error');
+                }
+            });
+        },        
+
 
         fetchPlannings() {
             this.isLoading = true; this.selectedPlannings = [];
@@ -310,25 +371,53 @@ function planningManager() {
         },
 
         getFormattedCell(planning, columnKey) {
-            const value = planning[columnKey];
-            if (value === null || value === undefined || value === '') return 'N/A';
-            if (columnKey === 'guia') return planning.guia?.guia || 'Sin Asignar';
-            
-            // **CORRECCIÓN: Formato de fecha más robusto**
-            if (['fecha_carga', 'fecha_entrega', 'created_at'].includes(columnKey)) {
-                try {
-                    // Intenta crear una fecha válida; el formato de Laravel YYYY-MM-DD HH:MM:SS es reconocido
-                    const date = new Date(value);
-                    // Si la fecha es inválida (ej. el string está vacío o malformado), toLocaleDateString dará error
-                    if (isNaN(date.getTime())) return value; // Devuelve el string original si no se puede procesar
-                    return date.toLocaleDateString('es-MX', {day: '2-digit', month: '2-digit', year: 'numeric'});
-                } catch (e) { return value; } // En caso de cualquier error, devuelve el valor original
+            // Primero, manejamos el caso especial de la columna 'guia'
+            if (columnKey === 'guia') {
+                if (planning.guia && planning.guia.id) {
+                    // Devolvemos un botón HTML que, al ser clickeado, llama a la función
+                    // para abrir el modal de edición, pasándole el objeto 'planning' completo.
+                    return `<button type="button" @click='openEditGuiaModal(${JSON.stringify(planning)})' class="text-indigo-600 hover:underline font-semibold" title="Editar Número de Guía">${planning.guia.guia}</button>`;
+                }
+                return 'Sin Asignar'; // Si no hay guía, mostramos 'Sin Asignar'
             }
 
-            if (columnKey === 'hora_carga' && typeof value === 'string') return value.substring(0, 5);
-            if (columnKey === 'subtotal') return `$${parseFloat(value).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            // Para todas las demás columnas, obtenemos el valor
+            const value = planning[columnKey];
+            
+            // Si el valor es nulo o vacío, devolvemos 'N/A'
+            if (value === null || value === undefined || value === '') {
+                return 'N/A';
+            }
+            
+            // Formateamos las fechas
+            if (['fecha_carga', 'fecha_entrega', 'created_at'].includes(columnKey)) {
+                try {
+                    const date = new Date(value);
+                    // Verificamos que sea una fecha válida antes de formatear
+                    if (isNaN(date.getTime())) return value;
+                    return date.toLocaleDateString('es-MX', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric' 
+                    });
+                } catch (e) {
+                    return value; // Si hay error, devuelve el valor original
+                }
+            }
+
+            // Formateamos la hora
+            if (columnKey === 'hora_carga' && typeof value === 'string') {
+                return value.substring(0, 5);
+            }
+            
+            // Formateamos el subtotal como moneda
+            if (columnKey === 'subtotal') {
+                return `$${parseFloat(value).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+            
+            // Si no es un caso especial, devolvemos el valor tal cual
             return value;
-        },      
+        },
 
         changeRowsPerPage() {
             localStorage.setItem('planning_rowsPerPage', this.rowsPerPage);
@@ -520,15 +609,30 @@ function planningManager() {
 
         createGuide() {
             if (this.selectedPlannings.length === 0) {
-                alert('Por favor, selecciona al menos un registro de planificación.');
+                this.showFlashMessage('Por favor, selecciona al menos un registro.', 'error');
                 return;
             }
 
-            // Tomamos el primer registro seleccionado como fuente para los datos de la guía
+            // --- LÓGICA DE VALIDACIÓN CORREGIDA ---
+            // Convertimos todos los IDs a String para una comparación segura
+            const selectedIdsAsStrings = this.selectedPlannings.map(String);
+            const selectedRecords = this.plannings.filter(p => selectedIdsAsStrings.includes(String(p.id)));
+
+            const alreadyAssigned = selectedRecords.some(p => p.guia !== null && p.guia !== undefined);
+
+            if (alreadyAssigned) {
+                this.showFlashMessage('Una o más órdenes ya tienen guía. Desasígnalas o deselecciónalas para continuar.', 'error');
+                return;
+            }
+            // --- FIN DE LA VALIDACIÓN ---
+
+            // Usamos el primer registro seleccionado como fuente para los datos (tu lógica original)
             const firstSelected = this.plannings.find(p => p.id == this.selectedPlannings[0]);
 
             if (!firstSelected) {
-                alert('Error al encontrar el registro seleccionado. Intenta de nuevo.');
+                // Este error solo debería ocurrir si hay selecciones en otras páginas,
+                // pero la validación de arriba ya lo previene para las guías asignadas.
+                this.showFlashMessage('No se pudo encontrar el registro principal en la página actual para pre-rellenar datos.', 'error');
                 return;
             }
 
@@ -544,7 +648,7 @@ function planningManager() {
 
             // Redirigimos al formulario de creación de guías
             window.location.href = `{{ route('rutas.asignaciones.create') }}?${params.toString()}`;
-        },   
+        },
         
         toggleAllPlannings(checked) {
             if (checked) {

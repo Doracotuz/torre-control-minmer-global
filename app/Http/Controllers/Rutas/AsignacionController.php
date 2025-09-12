@@ -220,60 +220,95 @@ class AsignacionController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'guia' => 'required|string|unique:guias,guia',
+            'guia' => 'required|string',
             'operador' => 'required|string',
             'placas' => 'required|string',
             'fecha_asignacion' => 'required|date',
             'planning_ids' => 'required|array|min:1',
             'planning_ids.*' => 'exists:cs_plannings,id',
             'telefono' => 'nullable|string|max:20',
-            // Añade aquí otras validaciones para campos de la guía si son necesarios
         ]);
 
         try {
             DB::beginTransaction();
 
-            // 1. Crear la Guía principal
-            $guia = Guia::create([
-                'guia' => $validatedData['guia'],
-                'operador' => $validatedData['operador'],
-                'placas' => $validatedData['placas'],
-                'fecha_asignacion' => $validatedData['fecha_asignacion'],
-                'estatus' => 'En Espera', // O 'Planeada' según tu flujo
-            ]);
+            $guia = Guia::where('guia', $validatedData['guia'])->first();
+            if ($guia) {
+                $guia->update([
+                    'operador' => $validatedData['operador'],
+                    'placas' => $validatedData['placas'],
+                    'fecha_asignacion' => $validatedData['fecha_asignacion'],
+                    'telefono' => $validatedData['telefono'] ?? null,
+                    'estatus' => 'En Espera',
+                ]);
+            } else {
+                $guia = Guia::create([
+                    'guia' => $validatedData['guia'],
+                    'operador' => $validatedData['operador'],
+                    'placas' => $validatedData['placas'],
+                    'fecha_asignacion' => $validatedData['fecha_asignacion'],
+                    'estatus' => 'En Espera',
+                    'telefono' => $validatedData['telefono'] ?? null,
+                ]);
+            }
 
             $planningRecords = \App\Models\CsPlanning::find($validatedData['planning_ids']);
+            $processedCount = 0;
+            $skippedIds = [];
 
-            // 2. Iterar sobre CADA registro de planificación para crear facturas y actualizar
             foreach ($planningRecords as $planning) {
-                // Crear una factura por cada registro de planificación
-                $guia->facturas()->create([
-                    'cs_planning_id' => $planning->id,
-                    'numero_factura' => $planning->factura ?? $planning->so_number,
-                    'destino' => $planning->razon_social,
-                    'cajas' => $planning->cajas,
-                    'botellas' => $planning->pzs,
-                    'hora_cita' => $planning->hora_cita,
-                    'so' => $planning->so_number,
-                    'fecha_entrega' => $planning->fecha_entrega,
-                ]);
+                // VERIFICACIÓN CLAVE: Si ya tiene una guía asignada, se salta el registro.
+                if ($planning->guia_id !== null) {
+                    $skippedIds[] = $planning->id;
+                    continue;
+                }
 
-                // Actualizar el registro de planificación con el ID de la nueva guía
+                // Lógica para crear o actualizar facturas
+                $facturaExistente = $guia->facturas()->where('cs_planning_id', $planning->id)->first();
+                if (!$facturaExistente) {
+                    $guia->facturas()->create([
+                        'cs_planning_id' => $planning->id,
+                        'numero_factura' => $planning->factura ?? $planning->so_number,
+                        'destino' => $planning->razon_social,
+                        'cajas' => $planning->cajas,
+                        'botellas' => $planning->pzs,
+                        'hora_cita' => $planning->hora_cita,
+                        'so' => $planning->so_number,
+                        'fecha_entrega' => $planning->fecha_entrega,
+                    ]);
+                } else {
+                    $facturaExistente->update([
+                        'numero_factura' => $planning->factura ?? $planning->so_number,
+                        'destino' => $planning->razon_social,
+                        'cajas' => $planning->cajas,
+                        'botellas' => $planning->pzs,
+                        'hora_cita' => $planning->hora_cita,
+                        'so' => $planning->so_number,
+                        'fecha_entrega' => $planning->fecha_entrega,
+                    ]);
+                }
+                
+                // Actualizar la planificación
                 $planning->update([
                     'guia_id' => $guia->id,
                     'status' => 'Asignado en Guía',
                 ]);
+                $processedCount++;
             }
 
             DB::commit();
 
+            $message = "Guía {$guia->guia} procesada exitosamente con {$processedCount} órdenes.";
+            if (!empty($skippedIds)) {
+                $message .= " Se omitieron " . count($skippedIds) . " órdenes que ya estaban asignadas.";
+            }
+            
+            return redirect()->route('rutas.asignaciones.index')->with('success', $message);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error al crear la guía masiva: " . $e->getMessage());
-            return redirect()->route('customer-service.planning.index')->with('error', 'Ocurrió un error al crear la guía.');
+            Log::error("Error al crear/actualizar la guía: " . $e->getMessage());
+            return redirect()->route('customer-service.planning.index')->with('error', 'Ocurrió un error al procesar la guía.');
         }
-
-        return redirect()->route('rutas.asignaciones.index')->with('success', 'Guía ' . $guia->guia . ' creada exitosamente con ' . count($planningRecords) . ' órdenes.');
     }
 
     public function edit(Guia $guia)
@@ -574,4 +609,22 @@ class AsignacionController extends Controller
 
         return redirect()->route('customer-service.planning.index')->with('success', $newPlanningIds->count() . ' nuevas órdenes fueron añadidas y sincronizadas con la guía ' . $guia->guia . ' exitosamente.');
     }
+
+    public function updateNumber(Request $request, Guia $guia)
+    {
+        $validated = $request->validate([
+            'guia_number' => 'required|string|max:255',
+        ]);
+
+        $guia->update([
+            'guia' => $validated['guia_number']
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Número de guía actualizado exitosamente.',
+            'new_guia_number' => $validated['guia_number'] // Devolvemos el nuevo número
+        ]);
+    }
+
 }

@@ -10,7 +10,7 @@
             <option value="">Todos</option>
             <option value="Pendiente">Pendiente</option>
             <option value="En Planificación">En Planificación</option>
-            <option value="En Planificación">Terminado</option>
+            <option value="Terminado">Terminado</option>
             <option value="Cancelado">Cancelado</option>
         </select>
     </div>
@@ -24,7 +24,11 @@
     </div>
 
     {{-- Nuevo Botón de Filtros Avanzados --}}
-    <div class="flex items-end">
+    <div class="flex items-end gap-2">
+        <button @click="clearFilters()" class="w-full h-10 px-2 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-semibold shadow-sm hover:bg-gray-50 flex items-center justify-center">
+            <i class="fas fa-eraser mr-2"></i>
+            Limpiar
+        </button>        
         <button @click="isAdvancedFilterModalOpen = true" class="w-full h-10 px-4 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-semibold shadow-sm hover:bg-gray-50 flex items-center justify-center">
             <i class="fas fa-filter mr-2"></i>
             Avanzados

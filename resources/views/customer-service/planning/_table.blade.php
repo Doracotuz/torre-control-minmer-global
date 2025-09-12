@@ -42,7 +42,7 @@
                     <template x-for="planning in plannings" :key="planning.id">
                         <tr class="transition-colors duration-150 hover:bg-gray-200"
                             :class="{
-                                'flashing-row': planning.origen !== planning.destino && !planning.is_scale && !planning.is_direct_route != true, 
+                                'flashing-row': planning.origen !== planning.destino && !planning.is_scale && !planning.is_direct_route, 
                                 'bg-blue-50': selectedPlannings.includes(planning.id)
                             }">
                             <td class="px-2 py-1 border text-center">
@@ -65,7 +65,10 @@
                                             </span>
                                         </template>
                                         <template x-if="columnKey !== 'status'">
-                                            <span x-text="getFormattedCell(planning, columnKey)"></span>
+                                            {{-- Si la columna es 'guia', usa x-html para renderizar el enlace --}}
+                                            <span x-if="columnKey === 'guia'" x-html="getFormattedCell(planning, columnKey)"></span>
+                                            {{-- Para todas las demás, usa x-text --}}
+                                            <span x-if="columnKey !== 'guia'" x-text="getFormattedCell(planning, columnKey)"></span>
                                         </template>
                                     </div>
                                 </td>
@@ -130,7 +133,7 @@
                 {{-- Cuerpo de la tarjeta con datos clave --}}
                 <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm border-t pt-3">
                     <div><strong class="block text-gray-500">Factura:</strong><span x-text="planning.factura || 'N/A'"></span></div>
-                    <div><strong class="block text-gray-500">Guía:</strong><span x-text="getFormattedCell(planning, 'guia')"></span></div>
+                    <div><strong class="block text-gray-500">Guía:</strong><span x-html="getFormattedCell(planning, 'guia')"></span></div>
                     <div><strong class="block text-gray-500">Origen:</strong><span x-text="planning.origen || 'N/A'"></span></div>
                     <div><strong class="block text-gray-500">Destino:</strong><span x-text="planning.destino || 'N/A'"></span></div>
                     <div class="col-span-2"><strong class="block text-gray-500">F. Entrega:</strong><span x-text="getFormattedCell(planning, 'fecha_entrega')"></span></div>
