@@ -61,4 +61,12 @@ class CsOrder extends Model
         // Si no hay guía, devolvemos una relación vacía.
         return \App\Models\Evento::where('guia_id', -1); // ID заведомо неверный
     }    
+
+    public function customer()
+    {
+        // Esto asume que tienes una columna 'cs_customer_id' en tu tabla 'cs_orders'
+        // que es la llave foránea a la tabla 'cs_customers'.
+        return $this->belongsTo(\App\Models\CsCustomer::class, 'customer_name', 'name');
+    }
+
 }

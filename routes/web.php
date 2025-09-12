@@ -562,6 +562,9 @@ Route::middleware(['auth', 'verified'])->prefix('audit')->name('audit.')->group(
         // Fase 3: Carga
         Route::get('/loading/{guia}', [App\Http\Controllers\AuditController::class, 'showLoadingAudit'])->name('loading.show');
         Route::post('/loading/{guia}', [App\Http\Controllers\AuditController::class, 'storeLoadingAudit'])->name('loading.store');
+
+        Route::post('/{order}/reopen', [App\Http\Controllers\AuditController::class, 'reopenAudit'])->name('reopen');
+
     });
 });
 

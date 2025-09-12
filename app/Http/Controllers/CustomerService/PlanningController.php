@@ -233,25 +233,26 @@ class PlanningController extends Controller
             DB::transaction(function () use ($validated, $planning) {
                 foreach ($validated['scales'] as $scaleData) {
                     $newPlanningRecord = $planning->replicate();
-                    
                     $newPlanningRecord->origen = $scaleData['origen'];
                     $newPlanningRecord->destino = $scaleData['destino'];
-                    
-                    // --- CAMBIO CLAVE 1: Marcamos el nuevo registro como una escala ---
                     $newPlanningRecord->is_scale = true;
-
                     $newPlanningRecord->save();
                 }
-
-                // --- CAMBIO CLAVE 2: Eliminamos el registro original ---
                 $planning->delete();
             });
-
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error al guardar las escalas: ' . $e->getMessage()], 500);
+            // Se devuelve una respuesta JSON consistente con 'success' y 'message'
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al guardar las escalas: ' . $e->getMessage()
+            ], 500);
         }
 
-        return response()->json(['message' => 'Escalas creadas y ruta original eliminada exitosamente.']);
+        // Se devuelve una respuesta JSON consistente con 'success' y 'message'
+        return response()->json([
+            'success' => true,
+            'message' => 'Escalas creadas y ruta original actualizada exitosamente.'
+        ]);
     }
 
     public function show(CsPlanning $planning)
@@ -452,13 +453,24 @@ class PlanningController extends Controller
     
     public function markAsDirect(Request $request, CsPlanning $planning)
     {
-        $planning->update(['is_direct_route' => true]);
+        try {
+            $planning->update(['is_direct_route' => true]);
 
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['message' => 'Ruta marcada como directa exitosamente.']);
+            // Esta es la respuesta que verá el JavaScript y mostrará la notificación
+            return response()->json([
+                'success' => true,
+                'message' => 'Ruta marcada como directa exitosamente.'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error al marcar ruta como directa: " . $e->getMessage());
+            
+            // Si algo falla, también devolvemos una respuesta JSON de error
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocurrió un error al procesar la solicitud.'
+            ], 500);
         }
-
-        return back()->with('success', 'Ruta marcada como directa.');
     }
 
     public function disassociateFromGuia(\App\Models\CsPlanning $planning)

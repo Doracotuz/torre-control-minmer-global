@@ -7,7 +7,7 @@
         </div>
     </x-slot>
 
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
+    <!-- <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
         @if (session('success'))
             <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4" role="alert">
                 <p class="font-bold">Éxito</p>
@@ -26,9 +26,25 @@
                 <p>{{ session('info') }}</p>
             </div>
         @endif
-    </div>
+    </div> -->
 
     <div class="py-12" x-data="planningManager()">
+        <div id="flash-success" class="fixed top-20 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert" style="display: none;">
+            <div class="flex items-center">
+                <svg class="w-6 h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <strong class="font-bold mr-1">¡Éxito!</strong>
+                <span id="flash-success-message" class="block sm:inline"></span>
+            </div>
+            <button onclick="document.getElementById('flash-success').style.display = 'none';" class="text-gray-500 hover:text-gray-700 focus:outline-none"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+        <div id="flash-error" class="fixed top-20 right-4 z-50 bg-white border-l-4 border-red-600 text-red-700 px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert" style="display: none;">
+            <div class="flex items-center">
+                <svg class="w-6 h-6 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <strong class="font-bold mr-1">¡Error!</strong>
+                <span id="flash-error-message" class="block sm:inline"></span>
+            </div>
+            <button onclick="document.getElementById('flash-error').style.display = 'none';" class="text-gray-500 hover:text-gray-700 focus:outline-none"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>        
         <div class="mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
                 
@@ -129,6 +145,14 @@ th { position: relative; }
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    @if (session('success'))
+        sessionStorage.setItem('planning_flash_success', '{{ session('success') }}');
+    @endif
+    @if (session('error'))
+        sessionStorage.setItem('planning_flash_error', '{{ session('error') }}');
+    @endif
+});    
 function planningManager() {
     return {
         plannings: [],
@@ -199,7 +223,35 @@ function planningManager() {
             this.$watch('visibleColumns', () => this.saveColumnSettings());
             this.$nextTick(() => { this.initSortable(); this.initResizers(); });
             this.$el.addEventListener('toggle-all-plannings', (e) => { this.toggleAllPlannings(e.detail); });
+            const flashSuccess = sessionStorage.getItem('planning_flash_success');
+            if (flashSuccess) {
+                this.showFlashMessage(flashSuccess, 'success');
+                sessionStorage.removeItem('planning_flash_success');
+            }
+            const flashError = sessionStorage.getItem('planning_flash_error');
+            if (flashError) {
+                this.showFlashMessage(flashError, 'error');
+                sessionStorage.removeItem('planning_flash_error');
+            }
         },
+
+        // --- NUEVA FUNCIÓN: Para mostrar notificaciones dinámicamente ---
+        showFlashMessage(message, type = 'success') {
+            const id = type === 'success' ? 'flash-success' : 'flash-error';
+            const messageId = type === 'success' ? 'flash-success-message' : 'flash-error-message';
+            
+            const el = document.getElementById(id);
+            const msgEl = document.getElementById(messageId);
+
+            if (el && msgEl) {
+                msgEl.innerText = message;
+                el.style.display = 'flex';
+                setTimeout(() => {
+                    el.style.display = 'none';
+                }, 5000); // Se oculta después de 5 segundos
+            }
+        },
+
 
         fetchPlannings() {
             this.isLoading = true; this.selectedPlannings = [];
@@ -226,12 +278,12 @@ function planningManager() {
                     this.isLoading = false; // El proceso fue exitoso
                 })
                 .catch(error => {
-                    // --- BLOQUE AÑADIDO PARA MANEJAR ERRORES ---
                     console.error('Ocurrió un error al filtrar los datos:', error);
-                    alert('Hubo un error al aplicar los filtros. Por favor, revisa la consola para más detalles.');
-                    this.plannings = []; // Limpiamos la tabla
+                    // --- CAMBIO: Usamos la nueva función en lugar de alert() ---
+                    this.showFlashMessage('Hubo un error al aplicar los filtros.', 'error');
+                    this.plannings = [];
                     this.pagination = { links: [] };
-                    this.isLoading = false; // MUY IMPORTANTE: Ocultamos el spinner
+                    this.isLoading = false;
                 });
         },
 
@@ -432,15 +484,18 @@ function planningManager() {
             })
             .then(response => response.json())
             .then(data => {
-                if (data.message) {
-                    alert(data.message);
+                if (data.success) {
+                    this.showFlashMessage(data.message, 'success');
                     this.closeScalesModal();
-                    this.fetchPlannings(); // Recargar la tabla
+                    this.fetchPlannings();
                 } else {
-                    alert('Ocurrió un error.');
+                    this.showFlashMessage(data.message || 'Ocurrió un error.', 'error');
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                console.error('Error:', error);
+                this.showFlashMessage('Error de conexión al guardar escalas.', 'error');
+            });
         },
 
         openAddToGuiaModal() {
@@ -520,19 +575,20 @@ function planningManager() {
                 return;
             }
 
-            fetch(`/customer-service/planning/${planningId}/mark-as-direct`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json',
+            fetch(`/customer-service/planning/${planningId}/mark-as-direct`, { /* ... */ })
+            .then(response => response.json())
+            .then(data => {
+                // --- CAMBIO: Usamos la nueva función en lugar de alert() ---
+                if (data.success) {
+                    this.showFlashMessage(data.message, 'success');
+                    this.fetchPlannings();
+                } else {
+                    this.showFlashMessage(data.message || 'Ocurrió un error.', 'error');
                 }
             })
-            .then(response => {
-                if (response.ok) {
-                    this.fetchPlannings(); // Recarga la tabla para que se apliquen los cambios visuales
-                } else {
-                    alert('Ocurrió un error al marcar la ruta como directa.');
-                }
+            .catch(error => {
+                console.error('Error:', error);
+                this.showFlashMessage('Error de conexión al marcar como directa.', 'error');
             });
         }        
 

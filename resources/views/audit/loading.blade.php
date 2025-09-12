@@ -1,80 +1,66 @@
 @extends('layouts.audit-layout')
+
 @section('content')
-    <div class="max-w-4xl mx-auto">
-        <a href="{{ route('audit.index') }}" class="text-sm font-semibold text-gray-600 mb-4 inline-block">&larr; Volver al Dashboard</a>
-        <h1 class="text-2xl font-bold text-[#2c3856]">Auditoría de Carga de Unidad</h1>
-        <p class="text-gray-600 mb-6">Guía: {{ $guia->guia }}</p>
+<div class="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8" 
+     x-data="{
+        incluyeTarimas: {{ old('incluye_tarimas') ? 'true' : 'false' }},
+        tipoTarima: '{{ old('tarimas_tipo', 'N/A') }}',
+        incidenciasOpen: false
+     }">
+
+    <a href="{{ route('audit.index') }}" class="text-sm font-semibold text-gray-600 hover:text-gray-900 mb-4 inline-block transition-colors">
+        &larr; Volver al Dashboard de Auditoría
+    </a>
+    <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl">
+        <div class="border-b pb-4 mb-6">
+            <h1 class="text-3xl font-bold text-[#2c3856]">Auditoría de Carga de Unidad</h1>
+            <p class="text-gray-600 mt-1">Guía: <span class="font-semibold text-gray-800">{{ $guia->guia }}</span></p>
+        </div>
 
         <form action="{{ route('audit.loading.store', $guia->id) }}" method="POST" enctype="multipart/form-data">
             @csrf
-            <div class="bg-white p-4 rounded-lg shadow-md space-y-6">
-                <!-- Confirmación de Facturas -->
+            <div class="space-y-8">
+                
                 <div>
-                    <h3 class="font-bold text-lg mb-2">Facturas en esta Carga</h3>
-                    @foreach($guia->facturas as $factura)
-                        <div class="border p-3 rounded-md mb-2 bg-gray-50">
-                            <p class="font-semibold">{{ $factura->numero_factura }}</p>
-                            <p class="text-sm text-gray-500">Botellas: {{ $factura->botellas }}</p>
-                        </div>
-                    @endforeach
-                </div>
-
-                <!-- Evidencias Fotográficas -->
-                <div>
-                    <h3 class="font-bold text-lg mb-2">Evidencias Fotográficas</h3>
-                    <div class="space-y-4">
-                        <div><label class="block text-sm font-medium">Foto de Caja Vacía <span class="text-red-500">*</span></label><input type="file" name="foto_caja_vacia" class="mt-1 block w-full" required></div>
-                        <div><label class="block text-sm font-medium">Fotos de Carga (mínimo 3) <span class="text-red-500">*</span></label><input type="file" name="fotos_carga[]" class="mt-1 block w-full" multiple required></div>
+                    <h3 class="font-bold text-lg text-gray-800 mb-2">Facturas en esta Carga</h3>
+                    <div class="space-y-2">
+                        @forelse($guia->facturas as $factura)
+                            <div class="border p-3 rounded-lg bg-gray-50"><p class="font-semibold text-gray-700">{{ $factura->numero_factura }}</p><p class="text-sm text-gray-500">Botellas: {{ $factura->botellas }}</p></div>
+                        @empty
+                            <div class="border p-3 rounded-lg bg-gray-50 text-center text-gray-500">No hay facturas asociadas a esta guía.</div>
+                        @endforelse
                     </div>
                 </div>
 
-                <!-- Marchamo y Custodia -->
-                <div>
-                     <h3 class="font-bold text-lg mb-2">Seguridad</h3>
-                     <div class="space-y-4">
-                        <div><label class="block text-sm font-medium">Número de Marchamo (si aplica)</label><input type="text" name="marchamo_numero" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                        <div><label class="block text-sm font-medium">Foto de Marchamo</label><input type="file" name="foto_marchamo" class="mt-1 block w-full"></div>
-                        <div>
-                            <label class="block text-sm font-medium">¿Lleva Custodia?</label>
-                            <select name="lleva_custodia" class="mt-1 block w-full rounded-md border-gray-300" required>
-                                <option value="1">Sí</option>
-                                <option value="0">No</option>
-                            </select>
-                        </div>
-                     </div>
-                </div>
+                @if(!empty($requirementsByCustomer))
+                <div class="pt-6 border-t">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Especificaciones de Entrega por Cliente</h3>
+                    
+                    {{-- Iteramos sobre cada cliente --}}
+                    @foreach($requirementsByCustomer as $customerName => $data)
+                        <div class="mb-6 p-4 border rounded-lg bg-white shadow-sm">
+                            {{-- Mostramos el nombre del cliente y las órdenes que le pertenecen --}}
+                            <h4 class="font-semibold text-indigo-700">Checklist para Cliente: {{ $customerName }}</h4>
+                            <p class="text-xs text-gray-500 mb-4">Aplica a Órdenes: {{ implode(', ', $data['orders']) }}</p>
 
-                @if(!empty($requirementsByOrder))
-                <div class="mt-8 bg-gray-50 p-6 rounded-lg shadow">
-                    <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Requisitos de Cliente a Validar</h3>
-
-                    @foreach($requirementsByOrder as $identifier => $categories)
-                        <div class="mb-6 p-4 border rounded-md bg-white">
-                            <h4 class="font-semibold text-indigo-700">Orden/Factura: {{ $identifier }}</h4>
-                            
-                            @if(!empty($categories['entrega']))
+                            {{-- La lógica del checklist es la misma, solo cambian las variables --}}
+                            @if(!empty($data['entrega']))
                                 <div class="mt-4">
                                     <p class="font-medium text-gray-600">Requisitos de Entrega:</p>
-                                    <ul class="list-disc list-inside mt-2 space-y-2">
-                                        @foreach($categories['entrega'] as $spec)
-                                            <li class="flex items-center">
-                                                <input type="checkbox" name="validated_specs[{{ $identifier }}][{{ $spec }}]" class="rounded mr-3">
-                                                <label>{{ str_replace(' - Entrega', '', $spec) }}</label>
-                                            </li>
+                                    <ul class="mt-2 space-y-2">
+                                        @foreach($data['entrega'] as $spec)
+                                            {{-- Usamos el nombre del cliente en el 'name' del input para agrupar los resultados --}}
+                                            <li class="flex items-center"><input type="checkbox" name="validated_specs[{{ $customerName }}][{{ $spec }}]" class="rounded mr-3 text-indigo-600 shadow-sm"><label class="text-sm">{{ str_replace(' - Entrega', '', $spec) }}</label></li>
                                         @endforeach
                                     </ul>
                                 </div>
                             @endif
-
-                            @if(!empty($categories['documentacion']))
+                            @if(!empty($data['documentacion']))
                                 <div class="mt-4">
                                     <p class="font-medium text-gray-600">Requisitos de Documentación:</p>
-                                    <ul class="list-disc list-inside mt-2 space-y-2">
-                                        @foreach($categories['documentacion'] as $spec)
-                                            <li class="flex items-center">
-                                                <input type="checkbox" name="validated_specs[{{ $identifier }}][{{ $spec }}]" class="rounded mr-3">
-                                                <label>{{ str_replace(' - Documentación', '', $spec) }}</label>
-                                            </li>
+                                    <ul class="mt-2 space-y-2">
+                                        @foreach($data['documentacion'] as $spec)
+                                            <li class="flex items-center"><input type="checkbox" name="validated_specs[{{ $customerName }}][{{ $spec }}]" class="rounded mr-3 text-indigo-600 shadow-sm"><label class="text-sm">{{ str_replace(' - Documentación', '', $spec) }}</label></li>
                                         @endforeach
                                     </ul>
                                 </div>
@@ -82,25 +68,63 @@
                         </div>
                     @endforeach
                 </div>
-                @endif                
+                @endif
 
-                <!-- Incidencias -->
-                <div>
-                    <h3 class="font-bold text-lg mb-2">Incidencias (opcional)</h3>
-                    <div class="space-y-2">
-                        @php
-                            $incidencias = ['Producto cambiado','Producto no etiquetado','Producto sobrante','Distribución incorrecta','Producto dañado','Producto faltante','Retraso en almacén','Producto sin maquila VA','Administración Planus','Unidad no adecuada','Unidad sin maniobra','Falta de herramientas en transporte','Gestión de operador','Modificación de embarque'];
-                        @endphp
+                <div class="pt-6 border-t">
+                    <h3 class="font-bold text-lg text-gray-800 mb-2">Información de Tarimas</h3>
+                    <div class="mt-2 bg-gray-50 p-4 rounded-lg border">
+                        <label class="flex items-center text-sm font-medium font-semibold"><input type="checkbox" name="incluye_tarimas" value="1" x-model="incluyeTarimas" class="rounded mr-2 text-indigo-600 shadow-sm">Incluye Tarimas</label>
+                        <div x-show="incluyeTarimas" x-transition class="mt-4 space-y-4 pl-6 border-l-2 border-indigo-200">
+                            <div>
+                                <label for="tarimas_tipo" class="block text-sm font-medium text-gray-700">Tipo de Tarima</label>
+                                <select name="tarimas_tipo" id="tarimas_tipo" x-model="tipoTarima" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"><option value="N/A" disabled>Selecciona...</option><option value="Chep">Chep</option><option value="Estándar">Estándar</option><option value="Ambas">Ambas</option></select>
+                            </div>
+                            <div x-show="tipoTarima === 'Chep' || tipoTarima === 'Ambas'" x-transition><label for="tarimas_cantidad_chep" class="block text-sm font-medium text-gray-700">Cantidad Tarimas Chep</label><input type="number" name="tarimas_cantidad_chep" id="tarimas_cantidad_chep" value="{{ old('tarimas_cantidad_chep', 0) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" min="0"></div>
+                            <div x-show="tipoTarima === 'Estándar' || tipoTarima === 'Ambas'" x-transition><label for="tarimas_cantidad_estandar" class="block text-sm font-medium text-gray-700">Cantidad Tarimas Estándar</label><input type="number" name="tarimas_cantidad_estandar" id="tarimas_cantidad_estandar" value="{{ old('tarimas_cantidad_estandar', 0) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" min="0"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t">
+                    <button type="button" @click="incidenciasOpen = !incidenciasOpen" class="w-full flex justify-between items-center text-left">
+                        <h3 class="font-bold text-lg text-gray-800">Incidencias (opcional)</h3>
+                        <i class="fas" :class="incidenciasOpen ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    </button>
+                    <div x-show="incidenciasOpen" x-transition class="mt-4 space-y-2 p-4 bg-gray-50 rounded-lg border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
+                        @php $incidencias = ['Producto cambiado','Producto no etiquetado','Producto sobrante','Distribución incorrecta','Producto dañado','Producto faltante','Retraso en almacén','Producto sin maquila VA','Administración Planus','Unidad no adecuada','Unidad sin maniobra','Falta de herramientas en transporte','Gestión de operador','Modificación de embarque']; @endphp
                         @foreach($incidencias as $incidencia)
-                            <label class="flex items-center"><input type="checkbox" name="incidencias[]" value="{{ $incidencia }}" class="rounded mr-2">{{ $incidencia }}</label>
+                            <label class="flex items-center text-sm font-medium"><input type="checkbox" name="incidencias[]" value="{{ $incidencia }}" class="rounded mr-2 text-indigo-600 shadow-sm">{{ $incidencia }}</label>
                         @endforeach
                     </div>
                 </div>
                 
-                <div class="pt-4">
-                    <button type="submit" class="w-full px-6 py-3 bg-teal-600 text-white rounded-lg font-bold shadow-lg hover:bg-teal-700 transition-colors">Finalizar Carga y Poner en Tránsito</button>
+                <div class="pt-6 border-t">
+                    <h3 class="font-bold text-lg text-gray-800 mb-2">Evidencias Fotográficas</h3>
+                    <div class="space-y-4 bg-gray-50 p-4 rounded-lg border">
+                        <div><label class="block text-sm font-medium text-gray-700">Foto de Caja Vacía <span class="text-red-500">*</span></label><input type="file" name="foto_caja_vacia" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Fotos de Carga (mínimo 3) <span class="text-red-500">*</span></label><input type="file" name="fotos_carga[]" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" multiple required></div>
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t">
+                     <h3 class="font-bold text-lg text-gray-800 mb-2">Seguridad</h3>
+                     <div class="space-y-4 bg-gray-50 p-4 rounded-lg border">
+                        <div><label class="block text-sm font-medium text-gray-700">Número de Marchamo (si aplica)</label><input type="text" name="marchamo_numero" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Foto de Marchamo</label><input type="file" name="foto_marchamo" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"></div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">¿Lleva Custodia?</label>
+                            <select name="lleva_custodia" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required><option value="1">Sí</option><option value="0" selected>No</option></select>
+                        </div>
+                     </div>
+                </div>
+
+                <div class="pt-8">
+                    <button type="submit" class="w-full px-6 py-3 bg-teal-600 text-white rounded-lg font-bold shadow-lg hover:bg-teal-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+                        Finalizar Auditoría de Carga
+                    </button>
                 </div>
             </div>
         </form>
     </div>
+</div>
 @endsection

@@ -43,6 +43,13 @@ class Guia extends Model
         'marchamo_numero',
         'lleva_custodia',
         'audit_carga_fotos',
+
+        'audit_carga_emplayado_correcto',
+        'audit_carga_etiquetado_correcto',
+        'audit_carga_distribucion_correcta',     
+        'audit_carga_incluye_tarimas',
+        'audit_carga_tarimas_chep',
+        'audit_carga_tarimas_estandar',       
     ];
 
     /**
