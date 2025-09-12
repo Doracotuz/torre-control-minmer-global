@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\CsPlanning;
 use App\Models\Guia;
+use App\Models\Audit; 
 
 class CsPlanningObserver
 {
@@ -12,6 +13,21 @@ class CsPlanningObserver
      */
     public function updated(CsPlanning $csPlanning): void
     {
+
+        if ($csPlanning->wasChanged('guia_id') && !is_null($csPlanning->guia_id)) {
+            if ($order = $csPlanning->order) {
+                // Buscamos la auditoría de esta orden que esté esperando guía
+                $audit = Audit::where('cs_order_id', $order->id)
+                              ->where('location', $csPlanning->origen)
+                              ->where('status', 'Pendiente Patio')
+                              ->first();
+                // Si la encontramos, le asignamos el guia_id para que se mueva de sección en el dashboard.
+                if ($audit) {
+                    $audit->update(['guia_id' => $csPlanning->guia_id]);
+                }
+            }
+        }
+
         // SIN 'wasChanged' para que siempre se ejecute y garantice la sincronización.
         if ($csPlanning->guia_id) {
             $guia = Guia::find($csPlanning->guia_id);

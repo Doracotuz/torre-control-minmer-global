@@ -17,7 +17,7 @@
                         <label class="block text-sm font-medium text-gray-700">Escala <span x-text="index + 1"></span>: Origen</label>
                         <select x-model="scale.origen" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                             <option value="">Seleccione un origen</option>
-                            <template x-for="warehouse in warehouses" :key="warehouse.id">
+                            <template x-for="warehouse in warehouses" :key="warehouse.name">
                                 <option :value="warehouse.name" x-text="warehouse.name"></option>
                             </template>
                         </select>
@@ -26,7 +26,7 @@
                         <label class="block text-sm font-medium text-gray-700">Escala <span x-text="index + 1"></span>: Destino</label>
                         <select x-model="scale.destino" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                              <option value="">Seleccione un destino</option>
-                            <template x-for="warehouse in warehouses" :key="warehouse.id">
+                            <template x-for="warehouse in warehouses" :key="warehouse.name">
                                 <option :value="warehouse.name" x-text="warehouse.name"></option>
                             </template>
                         </select>

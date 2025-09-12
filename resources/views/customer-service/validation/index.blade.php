@@ -135,6 +135,9 @@
                     <button @click="document.getElementById('importModal').classList.remove('hidden')" class="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-semibold"><i class="fas fa-file-upload mr-2"></i>Importar CSV</button>
                     <button id="open-spec-modal" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold"><i class="fas fa-tasks mr-2"></i>Especificaciones de Entrega</button>
                     <button x-show="selectedIds.length > 0" @click="clearSelection()" class="px-4 py-2 bg-red-500 text-white rounded-md text-sm font-semibold" x-transition><i class="fas fa-trash-alt mr-2"></i>Limpiar Selección (<span x-text="selectedIds.length"></span>)</button>
+                    <a href="{{ route('customer-service.audit-reports.index') }}" class="px-4 py-2 bg-gray-600 text-white rounded-md text-sm font-semibold">
+                        <i class="fas fa-history mr-2"></i>Historial de Auditorías
+                    </a>                    
                 </div>
             </div>
 

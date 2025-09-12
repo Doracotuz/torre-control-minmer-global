@@ -36,4 +36,14 @@ class CsOrderObserver
             }
         }
     }
+
+    public function created(CsOrder $csOrder)
+    {
+        \App\Models\Audit::create([
+            'cs_order_id' => $csOrder->id,
+            'location' => $csOrder->origin_warehouse, // Asumimos que la orden tiene un campo 'origen'
+            'status' => 'Pendiente Almacén',
+        ]);
+    }    
+
 }

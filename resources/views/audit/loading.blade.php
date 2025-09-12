@@ -1,9 +1,10 @@
 @extends('layouts.audit-layout')
 
 @section('content')
+{{-- Se inicializa Alpine.js para manejar los campos interactivos --}}
 <div class="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8" 
      x-data="{
-        incluyeTarimas: {{ old('incluye_tarimas') ? 'true' : 'false' }},
+        incluyeTarimas: {{ old('incluye_tarimas', $audit->guia?->audit_carga_incluye_tarimas) ? 'true' : 'false' }},
         tipoTarima: '{{ old('tarimas_tipo', 'N/A') }}',
         incidenciasOpen: false
      }">
@@ -14,18 +15,31 @@
     <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl">
         <div class="border-b pb-4 mb-6">
             <h1 class="text-3xl font-bold text-[#2c3856]">Auditoría de Carga de Unidad</h1>
-            <p class="text-gray-600 mt-1">Guía: <span class="font-semibold text-gray-800">{{ $guia->guia }}</span></p>
+            <p class="text-gray-600 mt-1">Guía: <span class="font-semibold text-gray-800">{{ $audit->guia->guia }}</span></p>
+            <p class="text-gray-500 text-sm mt-1">Ubicación de Auditoría: <span class="font-medium">{{ $audit->location }}</span></p>
         </div>
 
-        <form action="{{ route('audit.loading.store', $guia->id) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('audit.loading.store', $audit) }}" method="POST" enctype="multipart/form-data">
             @csrf
+
+            {{-- --- AÑADE ESTE BLOQUE AQUÍ --- --}}
+            @if ($errors->any())
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md" role="alert">
+                    <p class="font-bold">Por favor, corrige los siguientes errores:</p>
+                    <ul class="mt-2 list-disc list-inside text-sm">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             <div class="space-y-8">
                 
                 <div>
                     <h3 class="font-bold text-lg text-gray-800 mb-2">Facturas en esta Carga</h3>
                     <div class="space-y-2">
-                        @forelse($guia->facturas as $factura)
-                            <div class="border p-3 rounded-lg bg-gray-50"><p class="font-semibold text-gray-700">{{ $factura->numero_factura }}</p><p class="text-sm text-gray-500">Botellas: {{ $factura->botellas }}</p></div>
+                        @forelse($audit->guia->facturas as $factura)
+                            <div class="border p-3 rounded-lg bg-gray-50"><p class="font-semibold text-gray-700">{{ $factura->numero_factura }}</p><p class="text-sm text-gray-500">Piezas: {{ $factura->botellas }}</p></div>
                         @empty
                             <div class="border p-3 rounded-lg bg-gray-50 text-center text-gray-500">No hay facturas asociadas a esta guía.</div>
                         @endforelse
@@ -35,35 +49,16 @@
                 @if(!empty($requirementsByCustomer))
                 <div class="pt-6 border-t">
                     <h3 class="text-lg font-bold text-gray-800 mb-4">Especificaciones de Entrega por Cliente</h3>
-                    
-                    {{-- Iteramos sobre cada cliente --}}
                     @foreach($requirementsByCustomer as $customerName => $data)
                         <div class="mb-6 p-4 border rounded-lg bg-white shadow-sm">
-                            {{-- Mostramos el nombre del cliente y las órdenes que le pertenecen --}}
                             <h4 class="font-semibold text-indigo-700">Checklist para Cliente: {{ $customerName }}</h4>
                             <p class="text-xs text-gray-500 mb-4">Aplica a Órdenes: {{ implode(', ', $data['orders']) }}</p>
 
-                            {{-- La lógica del checklist es la misma, solo cambian las variables --}}
                             @if(!empty($data['entrega']))
-                                <div class="mt-4">
-                                    <p class="font-medium text-gray-600">Requisitos de Entrega:</p>
-                                    <ul class="mt-2 space-y-2">
-                                        @foreach($data['entrega'] as $spec)
-                                            {{-- Usamos el nombre del cliente en el 'name' del input para agrupar los resultados --}}
-                                            <li class="flex items-center"><input type="checkbox" name="validated_specs[{{ $customerName }}][{{ $spec }}]" class="rounded mr-3 text-indigo-600 shadow-sm"><label class="text-sm">{{ str_replace(' - Entrega', '', $spec) }}</label></li>
-                                        @endforeach
-                                    </ul>
-                                </div>
+                                <div class="mt-4"><p class="font-medium text-gray-600">Requisitos de Entrega:</p><ul class="mt-2 space-y-2">@foreach($data['entrega'] as $spec)<li class="flex items-center"><input type="checkbox" name="validated_specs[{{ $customerName }}][{{ $spec }}]" class="rounded mr-3 text-indigo-600 shadow-sm"><label class="text-sm">{{ str_replace(' - Entrega', '', $spec) }}</label></li>@endforeach</ul></div>
                             @endif
                             @if(!empty($data['documentacion']))
-                                <div class="mt-4">
-                                    <p class="font-medium text-gray-600">Requisitos de Documentación:</p>
-                                    <ul class="mt-2 space-y-2">
-                                        @foreach($data['documentacion'] as $spec)
-                                            <li class="flex items-center"><input type="checkbox" name="validated_specs[{{ $customerName }}][{{ $spec }}]" class="rounded mr-3 text-indigo-600 shadow-sm"><label class="text-sm">{{ str_replace(' - Documentación', '', $spec) }}</label></li>
-                                        @endforeach
-                                    </ul>
-                                </div>
+                                <div class="mt-4"><p class="font-medium text-gray-600">Requisitos de Documentación:</p><ul class="mt-2 space-y-2">@foreach($data['documentacion'] as $spec)<li class="flex items-center"><input type="checkbox" name="validated_specs[{{ $customerName }}][{{ $spec }}]" class="rounded mr-3 text-indigo-600 shadow-sm"><label class="text-sm">{{ str_replace(' - Documentación', '', $spec) }}</label></li>@endforeach</ul></div>
                             @endif
                         </div>
                     @endforeach

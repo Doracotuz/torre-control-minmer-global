@@ -575,7 +575,13 @@ function planningManager() {
                 return;
             }
 
-            fetch(`/customer-service/planning/${planningId}/mark-as-direct`, { /* ... */ })
+            fetch(`/customer-service/planning/${planningId}/mark-as-direct`, {
+                method: 'POST', // 1. Especificamos el método POST
+                headers: {      // 2. Añadimos las cabeceras necesarias
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
             .then(response => response.json())
             .then(data => {
                 // --- CAMBIO: Usamos la nueva función en lugar de alert() ---

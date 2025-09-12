@@ -106,4 +106,10 @@ class Guia extends Model
     {
         return $this->hasMany(\App\Models\CsPlanning::class, 'guia_id');
     }    
+
+    public function incidencias()
+    {
+        return $this->hasMany(\App\Models\AuditIncidencia::class);
+    }    
+
 }

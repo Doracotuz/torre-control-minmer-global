@@ -2,314 +2,364 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Audit;
 use App\Models\CsOrder;
 use App\Models\CsOrderEvent;
 use App\Models\Guia;
-use App\Models\AuditIncidencia;
-use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
 use App\Mail\UnidadArriboMail;
-
+use App\Models\AuditIncidencia;
+use Illuminate\Support\Facades\Storage;
 
 class AuditController extends Controller
 {
     /**
-     * Muestra el dashboard principal para auditores.
+     * Muestra el dashboard de auditorías, basado en el nuevo modelo Audit.
+     * Incluye filtros, paginación separada para tareas activas y completadas.
      */
     public function index(Request $request)
     {
-        // --- Consulta para Órdenes ACTIVAS ---
-        $activeQuery = CsOrder::query()->with(['plannings.guia', 'details']);
+        // --- Consulta para auditorías ACTIVAS ---
+        $activeQuery = Audit::query()
+            ->where('status', '!=', 'Finalizada')
+            ->with(['order.plannings.guia', 'order.details', 'guia']);
+
         if ($request->filled('search')) {
-            // Si hay una búsqueda general, se aplica aquí
-            $searchTerm = $request->search;
-            $activeQuery->where(function($q) use ($searchTerm) {
-                $q->where('so_number', 'like', "%{$searchTerm}%")
-                  ->orWhere('invoice_number', 'like', "%{$searchTerm}%")
-                  ->orWhereHas('plannings.guia', fn($gq) => $gq->where('guia', 'like', "%{$searchTerm}%"));
+            $searchTerm = '%' . $request->search . '%';
+            $activeQuery->where(function ($q) use ($searchTerm) {
+                $q->whereHas('order', fn($oq) => $oq->where('so_number', 'like', $searchTerm)
+                                                  ->orWhere('invoice_number', 'like', $searchTerm))
+                  ->orWhere('location', 'like', $searchTerm)
+                  ->orWhereHas('guia', fn($gq) => $gq->where('guia', 'like', $searchTerm));
             });
-        } else {
-            // La consulta por defecto busca todos los estatus de auditoría que no sean 'Finalizada'.
-            $activeQuery->where('audit_status', '!=', 'Finalizada');
         }
         if ($request->filled('status') && is_array($request->status)) {
-            $activeQuery->whereIn('audit_status', $request->status);
+            $activeQuery->whereIn('status', $request->status);
+        }
+        if ($request->filled('location')) {
+            $activeQuery->where('location', $request->location);
         }
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $activeQuery->whereBetween('creation_date', [$request->start_date, $request->end_date]);
-        }
-        $auditableOrders = $activeQuery->orderBy('creation_date', 'desc')->paginate(15, ['*'], 'page');
-
-        // --- Consulta para Órdenes TERMINADAS ---
-        $completedQuery = CsOrder::query()->with(['plannings.guia', 'details'])
-                                 ->where('audit_status', 'Finalizada');
-        if ($request->filled('search_completed')) {
-            $searchTerm = $request->search_completed;
-            $completedQuery->where(function($q) use ($searchTerm) {
-                $q->where('so_number', 'like', "%{$searchTerm}%")
-                  ->orWhere('invoice_number', 'like', "%{$searchTerm}%")
-                  ->orWhereHas('plannings.guia', fn($gq) => $gq->where('guia', 'like', "%{$searchTerm}%"));
+            $activeQuery->whereHas('order', function($q) use ($request) {
+                $q->whereBetween('creation_date', [$request->start_date, $request->end_date]);
             });
         }
-        $completedOrders = $completedQuery->orderBy('updated_at', 'desc')->paginate(10, ['*'], 'completedPage');
+        $audits = $activeQuery->orderBy('created_at', 'desc')->paginate(15, ['*'], 'page');
 
-        // --- Lista de estatus para los filtros ---
-        $auditStatuses = ['Pendiente Almacén', 'Pendiente Patio', 'Pendiente Carga'];
+        // --- Consulta para guías TERMINADAS (para la sección colapsable) ---
+        $completedQuery = Guia::query()
+            ->whereHas('plannings.order.audits', fn($q) => $q->where('status', 'Finalizada'))
+            ->whereDoesntHave('plannings.order.audits', fn($q) => $q->where('status', '!=', 'Finalizada'))
+            ->with(['plannings.order']);
 
-        return view('audit.index', compact('auditableOrders', 'completedOrders', 'auditStatuses'));
+        if ($request->filled('search_completed')) {
+            $searchTerm = '%' . $request->search_completed . '%';
+            $completedQuery->where(function($q) use ($searchTerm) {
+                $q->where('guia', 'like', $searchTerm)
+                  ->orWhereHas('plannings.order', fn($oq) => $oq->where('so_number', 'like', $searchTerm)
+                                                                ->orWhere('invoice_number', 'like', $searchTerm));
+            });
+        }
+        $completedGuides = $completedQuery->orderBy('updated_at', 'desc')->paginate(10, ['*'], 'completedPage');
+
+        // --- Datos para los filtros ---
+        $baseQuery = Audit::where('status', '!=', 'Finalizada');
+        $auditStatuses = (clone $baseQuery)->whereNotNull('status')->distinct()->orderByRaw("FIELD(status, 'Pendiente Almacén', 'Pendiente Patio', 'Pendiente Carga')")->pluck('status');
+        $locations = (clone $baseQuery)->whereNotNull('location')->distinct()->pluck('location');
+        
+        return view('audit.index', compact('audits', 'completedGuides', 'auditStatuses', 'locations'));
     }
 
     /**
      * Muestra el formulario para la auditoría de Almacén.
      */
-    public function showWarehouseAudit($orderId)
+    public function showWarehouseAudit(Audit $audit)
     {
-        $order = CsOrder::with('details.product', 'details.upc')->findOrFail($orderId);
-        return view('audit.warehouse', compact('order'));
+        $audit->load('order.details.product', 'order.details.upc');
+        return view('audit.warehouse', compact('audit'));
     }
 
     /**
-     * Guarda los datos de la auditoría de almacén (versión simplificada).
+     * Guarda la auditoría de almacén y actualiza el estatus.
      */
-    public function storeWarehouseAudit(Request $request, $orderId)
+    public function storeWarehouseAudit(Request $request, Audit $audit)
     {
-        $order = CsOrder::findOrFail($orderId);
+        $validatedData = $request->validate([
+            'observaciones' => 'nullable|string',
+            'items' => 'required|array',
+            'items.*.calidad' => 'required|string',
+            'items.*.sku_validado' => 'sometimes|boolean',
+            'items.*.piezas_validadas' => 'sometimes|boolean',
+            'items.*.upc_validado' => 'sometimes|boolean',
+        ]);
         
-        $validated = $request->validate([ 'items' => 'required|array', 'items.*.calidad' => 'required|string', 'observaciones' => 'nullable|string', 'items.*.sku_validado' => 'sometimes|boolean', 'items.*.piezas_validadas' => 'sometimes|boolean', 'items.*.upc_validado' => 'sometimes|boolean' ]);
-
-        DB::transaction(function () use ($validated, $order, $request) {
-            foreach ($validated['items'] as $detailId => $data) {
-                $detail = $order->details()->find($detailId);
-                if ($detail) {
-                    $detail->update([ 'audit_calidad' => $data['calidad'], 'audit_sku_validado' => $request->input("items.{$detailId}.sku_validado", false), 'audit_piezas_validadas' => $request->input("items.{$detailId}.piezas_validadas", false), 'audit_upc_validado' => $request->input("items.{$detailId}.upc_validado", false) ]);
-                }
-            }
-            
-            $order->audit_almacen_observaciones = $validated['observaciones'];
-            // --- CAMBIO CLAVE ---
-            // Solo se actualiza el estatus de la auditoría.
-            $order->audit_status = 'Pendiente Patio'; 
-            $order->save();
-
-            CsOrderEvent::create(['cs_order_id' => $order->id, 'user_id' => Auth::id(), 'description' => 'Auditoría de almacén completada. Esperando auditoría de patio.' ]);
-        });
-
+        $audit->update([
+            'warehouse_audit_data' => $validatedData,
+            'status' => 'Pendiente Patio',
+            'user_id' => Auth::id()
+        ]);
+        
+        CsOrderEvent::create(['cs_order_id' => $audit->cs_order_id, 'user_id' => Auth::id(), 'description' => 'Auditoría de almacén completada en ' . $audit->location]);
+        
         return redirect()->route('audit.index')->with('success', 'Auditoría de almacén completada.');
     }
 
     /**
-     * Muestra el formulario para la auditoría de Patio.
+     * Muestra el formulario de auditoría de Patio, con validación de sincronización.
      */
-    public function showPatioAudit($guiaId)
+    public function showPatioAudit(Audit $audit)
     {
-        $guia = Guia::with('plannings.order')->findOrFail($guiaId);
+        $audit->load('order', 'guia.plannings.order.audits');
+        $guia = $audit->guia;
 
-        // --- INICIA VALIDACIÓN DE SINCRONIZACIÓN ---
-        // 1. Obtenemos solo las órdenes que no están listas para el patio.
-        $pendingOrders = $guia->plannings
-            ->map(fn($p) => $p->order)
-            ->filter(fn($o) => $o && $o->audit_status !== 'Pendiente Patio');
+        if (!$guia) {
+            return redirect()->route('audit.index')->with('error', 'Esta auditoría aún no tiene una guía asignada.');
+        }
 
-        // 2. Si hay alguna, construimos el mensaje y redirigimos.
+        $pendingOrders = $guia->plannings->map(fn($p) => $p->order)->filter(function($order) use ($audit) {
+            if (!$order) return false;
+            $auditForLocation = $order->audits->where('location', $audit->location)->first();
+            return !$auditForLocation || $auditForLocation->status !== 'Pendiente Patio';
+        });
+
         if ($pendingOrders->isNotEmpty()) {
             $pendingSoNumbers = $pendingOrders->pluck('so_number')->join(', ');
-            $errorMessage = 'Aún no todas las órdenes de la guía han completado la auditoría de almacén. Faltan: SO ' . $pendingSoNumbers;
-            return redirect()->route('audit.index')->with('error', $errorMessage);
+            return redirect()->route('audit.index')->with('error', 'Aún no todas las órdenes de esta guía han completado la auditoría de almacén. Faltan: SO ' . $pendingSoNumbers);
         }
-        // --- TERMINA VALIDACIÓN DE SINCRONIZACIÓN ---
 
-        return view('audit.patio', compact('guia'));
+        return view('audit.patio', compact('audit', 'guia'));
     }
 
     /**
-     * Guarda los datos de la auditoría de patio.
+     * Guarda la auditoría de patio y actualiza el estatus de TODAS las auditorías de la guía.
      */
-    public function storePatioAudit(Request $request, $guiaId)
+    public function storePatioAudit(Request $request, Audit $audit)
     {
-        $guia = Guia::findOrFail($guiaId);
-        $validated = $request->validate([ 'operador' => 'required|string', 'placas' => 'required|string', 'arribo_fecha' => 'required|date', 'arribo_hora' => 'required|date_format:H:i', 'caja_estado' => 'required|string', 'llantas_estado' => 'required|string', 'combustible_nivel' => 'required|string', 'equipo_sujecion' => 'required|string', 'presenta_maniobra' => 'sometimes|boolean', 'maniobra_personas' => 'required_if:presenta_maniobra,1|nullable|integer|min:1', 'foto_unidad' => 'required|image|max:5120', 'foto_llantas' => 'required|image|max:5120' ]);
+        $guia = $audit->guia;
+        if (!$guia) {
+            return redirect()->route('audit.index')->with('error', 'La guía no fue encontrada.');
+        }
 
-        DB::transaction(function () use ($validated, $guia, $request) {
+        $validatedData = $request->validate([
+            'operador' => 'required|string|max:255',
+            'placas' => 'required|string|max:255',
+            'arribo_fecha' => 'required|date',
+            'arribo_hora' => 'required|date_format:H:i',
+            'caja_estado' => 'required|string',
+            'llantas_estado' => 'required|string',
+            'combustible_nivel' => 'required|string',
+            'equipo_sujecion' => 'required|string',
+            'presenta_maniobra' => 'sometimes|boolean',
+            'maniobra_personas' => 'required_if:presenta_maniobra,1|nullable|integer|min:1',
+            'foto_unidad' => 'required|image|max:5120',
+            'foto_llantas' => 'required|image|max:5120',
+        ]);
+
+        DB::transaction(function () use ($validatedData, $guia, $request, $audit) {
             $fotoUnidadPath = $request->file('foto_unidad')->store('audit_patio_unidad', 's3');
             $fotoLlantasPath = $request->file('foto_llantas')->store('audit_patio_llantas', 's3');
-
-            $guia->update([
-                // Se guardan los datos de la auditoría en la guía
-                'operador' => $validated['operador'], 'placas' => $validated['placas'], 'audit_patio_arribo' => $validated['arribo_fecha'] . ' ' . $validated['arribo_hora'], 'audit_patio_caja_estado' => $validated['caja_estado'], 'audit_patio_llantas_estado' => $validated['llantas_estado'], 'audit_patio_combustible_nivel' => $validated['combustible_nivel'], 'audit_patio_equipo_sujecion' => $validated['equipo_sujecion'], 'audit_patio_presenta_maniobra' => $request->has('presenta_maniobra'), 'audit_patio_maniobra_personas' => $request->input('maniobra_personas'), 'audit_patio_fotos' => json_encode(['unidad' => $fotoUnidadPath, 'llantas' => $fotoLlantasPath]),
-                // --- CAMBIO CLAVE ---
-                // YA NO SE ACTUALIZA el campo 'estatus' de la guía.
+            
+            // CORRECCIÓN: Se prepara el array con las claves correctas.
+            $patioAuditData = array_merge($validatedData, [
+                'presenta_maniobra' => $request->has('presenta_maniobra'),
+                'maniobra_personas' => $request->input('maniobra_personas'),
+                'arribo_completo' => $validatedData['arribo_fecha'] . ' ' . $validatedData['arribo_hora'],
+                'foto_unidad_path' => $fotoUnidadPath,
+                'foto_llantas_path' => $fotoLlantasPath
             ]);
 
-            // Ahora actualizamos el audit_status de TODAS las órdenes en la guía.
-            foreach($guia->plannings as $planning) {
-                if($planning->order) {
-                    $planning->order->update(['audit_status' => 'Pendiente Carga']);
-                    CsOrderEvent::create(['cs_order_id' => $planning->order->id, 'user_id' => Auth::id(), 'description' => 'Auditoría de patio completada. Esperando auditoría de carga.' ]);
-                }
-            }
-
-            // El envío de correo sigue funcionando igual
+            $guia->update([
+                'operador' => $validatedData['operador'],
+                'placas' => $validatedData['placas'],
+            ]);
+            
+            $orderIds = $guia->plannings->pluck('cs_order_id');
+            Audit::whereIn('cs_order_id', $orderIds)
+                ->where('location', $audit->location)
+                ->where('status', 'Pendiente Patio')
+                ->update([
+                    'patio_audit_data' => $patioAuditData, // El modelo Audit se encarga de convertirlo a JSON
+                    'status' => 'Pendiente Carga',
+                    'user_id' => Auth::id()
+                ]);
+            
             $areaNames = ['Auditoría', 'Tráfico'];
-            $recipients = User::whereHas('area', function ($query) use ($areaNames) { $query->whereIn('name', $areaNames); })->get();
-            $recipientEmails = $recipients->pluck('email')->all();
-            if (!empty($recipientEmails)) {
-                Mail::to($recipientEmails)->send(new UnidadArriboMail($guia));
+            $recipients = User::whereHas('area', fn($q) => $q->whereIn('name', $areaNames))->get();
+            if ($recipients->isNotEmpty()) {
+                Mail::to($recipients->pluck('email')->all())->send(new UnidadArriboMail($guia));
             }
         });
 
+        CsOrderEvent::create(['cs_order_id' => $audit->cs_order_id, 'user_id' => Auth::id(), 'description' => 'Auditoría de patio completada en ' . $audit->location]);
+        
         return redirect()->route('audit.index')->with('success', 'Auditoría de patio completada.');
     }
 
     /**
-     * Muestra el formulario para la auditoría de Carga de Unidad.
+     * Muestra el formulario de auditoría de Carga, con validación.
      */
-    public function showLoadingAudit($guiaId)
+    public function showLoadingAudit(Audit $audit)
     {
-        $guia = Guia::with('plannings.order.customer', 'facturas')->findOrFail($guiaId);
+        $audit->load('order.customer', 'guia.plannings.order.customer', 'guia.facturas');
+        $guia = $audit->guia;
 
-        // --- INICIA VALIDACIÓN DE SINCRONIZACIÓN ---
-        $pendingOrders = $guia->plannings
-            ->map(fn($p) => $p->order)
-            ->filter(fn($o) => $o && $o->audit_status !== 'Pendiente Carga');
+        if (!$guia) {
+            return redirect()->route('audit.index')->with('error', 'Esta auditoría aún no tiene una guía asignada.');
+        }
+
+        $ordersInGuia = $guia->plannings->map(fn($p) => $p->order)->filter();
+        $pendingOrders = $ordersInGuia->filter(function($order) use ($audit) {
+            $auditForLocation = $order->audits->where('location', $audit->location)->first();
+            return !$auditForLocation || $auditForLocation->status !== 'Pendiente Carga';
+        });
 
         if ($pendingOrders->isNotEmpty()) {
             $pendingSoNumbers = $pendingOrders->pluck('so_number')->join(', ');
-            $errorMessage = 'Aún no todas las órdenes de la guía han completado la auditoría de patio. Faltan: SO ' . $pendingSoNumbers;
-            return redirect()->route('audit.index')->with('error', $errorMessage);
+            return redirect()->route('audit.index')->with('error', 'Aún no todas las órdenes de esta guía han completado la auditoría de patio. Faltan: SO ' . $pendingSoNumbers);
         }
+
         $requirementsByCustomer = [];
-        foreach ($guia->plannings as $planning) {
-            $order = $planning->order;
-            
+        foreach ($ordersInGuia as $order) {
             if ($order && $order->customer && !empty($order->customer->delivery_specifications)) {
                 $customerName = $order->customer->name;
                 $identifier = $order->so_number ?? $order->invoice_number;
-
-                // Si es la primera vez que vemos a este cliente, guardamos sus especificaciones
                 if (!isset($requirementsByCustomer[$customerName])) {
                     $specs = $order->customer->delivery_specifications;
-                    $requirementsByCustomer[$customerName] = [
-                        'entrega' => [],
-                        'documentacion' => [],
-                        'orders' => [] // Aquí guardaremos las órdenes de este cliente
-                    ];
-
+                    $requirementsByCustomer[$customerName] = ['entrega' => [], 'documentacion' => [], 'orders' => []];
                     foreach ($specs as $specName => $isRequired) {
                         if ($isRequired) {
-                            if (str_contains($specName, 'Entrega')) {
-                                $requirementsByCustomer[$customerName]['entrega'][] = $specName;
-                            } else {
-                                $requirementsByCustomer[$customerName]['documentacion'][] = $specName;
-                            }
+                            if (str_contains($specName, 'Entrega')) $requirementsByCustomer[$customerName]['entrega'][] = $specName;
+                            else $requirementsByCustomer[$customerName]['documentacion'][] = $specName;
                         }
                     }
                 }
-                // Añadimos la orden actual a la lista de este cliente
                 $requirementsByCustomer[$customerName]['orders'][] = $identifier;
             }
         }
-        return view('audit.loading', compact('guia', 'requirementsByCustomer'));
+        
+        return view('audit.loading', compact('audit', 'guia', 'requirementsByCustomer'));
     }
-
+    
     /**
-     * Guarda los datos de la auditoría de carga (versión extendida).
+     * Guarda la auditoría de carga y finaliza TODAS las auditorías de la guía.
      */
-    public function storeLoadingAudit(Request $request, $guiaId)
+    public function storeLoadingAudit(Request $request, Audit $audit)
     {
-        $guia = Guia::findOrFail($guiaId);
-        $validated = $request->validate([ 'foto_caja_vacia' => 'required|image|max:5120',
-            'fotos_carga' => 'required|array|min:3', 
-            'fotos_carga.*' => 'image|max:5120', 
-            'marchamo_numero' => 'nullable|string|max:255', 
-            'foto_marchamo' => 'nullable|image|max:5120', 
-            'lleva_custodia' => 'required|boolean', 
-            'incidencias' => 'nullable|array', 
-            'incidencias.*' => 'string', 
-            'validated_specs' => 'nullable|array', 
-            // 'emplayado_correcto' => 'sometimes|boolean', 
-            // 'etiquetado_correcto' => 'sometimes|boolean', 
-            // 'distribucion_correcta' => 'sometimes|boolean', 
+        $guia = $audit->guia;
+        if (!$guia) {
+            return redirect()->route('audit.index')->with('error', 'La guía no fue encontrada.');
+        }
+        
+        $validatedData = $request->validate([
+            'foto_caja_vacia' => 'required|image|max:5120',
+            'fotos_carga' => 'required|array|min:3',
+            'fotos_carga.*' => 'image|max:5120',
+            'marchamo_numero' => 'nullable|string|max:255',
+            'foto_marchamo' => 'nullable|image|max:5120',
+            'lleva_custodia' => 'required|boolean',
+            'incidencias' => 'nullable|array',
+            'incidencias.*' => 'string',
+            'validated_specs' => 'nullable|array',
             'incluye_tarimas' => 'sometimes|boolean',
             'tarimas_tipo' => 'required_if:incluye_tarimas,1|in:Chep,Estándar,Ambas',
             'tarimas_cantidad_chep' => 'required_if:tarimas_tipo,Chep|required_if:tarimas_tipo,Ambas|nullable|integer|min:0',
             'tarimas_cantidad_estandar' => 'required_if:tarimas_tipo,Estándar|required_if:tarimas_tipo,Ambas|nullable|integer|min:0',
         ]);
-
-        DB::transaction(function () use ($validated, $guia, $request) {
+        
+        DB::transaction(function () use ($validatedData, $guia, $request, $audit) {
+            // 1. Procesar y guardar las fotografías
             $fotoCajaVaciaPath = $request->file('foto_caja_vacia')->store('audit_carga/caja_vacia', 's3');
             $fotosCargaPaths = [];
             if ($request->hasFile('fotos_carga')) {
-                foreach ($request->file('fotos_carga') as $foto) {
-                    $fotosCargaPaths[] = $foto->store('audit_carga/proceso', 's3');
-                }
+                foreach ($request->file('fotos_carga') as $foto) { $fotosCargaPaths[] = $foto->store('audit_carga/proceso', 's3'); }
             }
             $fotoMarchamoPath = null;
             if ($request->hasFile('foto_marchamo')) {
                 $fotoMarchamoPath = $request->file('foto_marchamo')->store('audit_carga/marchamo', 's3');
             }
 
-            if ($request->has('incidencias') && !empty($validated['incidencias'])) {
-                foreach($validated['incidencias'] as $incidencia) {
+            // 2. Procesar y guardar las incidencias
+            if ($request->has('incidencias')) {
+                foreach($validatedData['incidencias'] as $incidencia) {
                     if(!empty($incidencia)) {
-                        AuditIncidencia::create([
-                            'guia_id' => $guia->id,
-                            'user_id' => Auth::id(),
-                            'tipo_incidencia' => $incidencia,
-                        ]);
+                        \App\Models\AuditIncidencia::create(['guia_id' => $guia->id, 'user_id' => Auth::id(), 'tipo_incidencia' => $incidencia]);
                     }
                 }
             }
 
-            $validatedSpecs = $request->input('validated_specs', []);
-
-            $guia->update([
-                // Se guardan los datos de la auditoría en la guía
-                'marchamo_numero' => $validated['marchamo_numero'], 
-                'lleva_custodia' => $validated['lleva_custodia'], 
-                // 'audit_carga_emplayado_correcto' => $request->has('emplayado_correcto'), 
-                // 'audit_carga_etiquetado_correcto' => $request->has('etiquetado_correcto'), 
-                // 'audit_carga_distribucion_correcta' => $request->has('distribucion_correcta'), 
-                'audit_carga_incluye_tarimas' => $request->has('incluye_tarimas'),
-                'audit_carga_tarimas_chep' => $request->input('tarimas_cantidad_chep'),
-                'audit_carga_tarimas_estandar' => $request->input('tarimas_cantidad_estandar'),
-                'audit_carga_fotos' => json_encode([ 'caja_vacia' => $fotoCajaVaciaPath, 
-                'proceso_carga' => $fotosCargaPaths, 'marchamo' => $fotoMarchamoPath, 
-                'validated_specifications' => $validatedSpecs ]),
-                // --- CAMBIO CLAVE ---
-                // YA NO SE ACTUALIZA el campo 'estatus' de la guía.
+            // 3. Preparar el JSON con todos los resultados de la auditoría de carga
+            $loadingAuditData = array_merge($validatedData, [
+                'audit_carga_fotos' => [
+                    'caja_vacia' => $fotoCajaVaciaPath,
+                    'proceso_carga' => $fotosCargaPaths,
+                    'marchamo' => $fotoMarchamoPath,
+                ]
             ]);
             
-            // Actualizamos el audit_status de TODAS las órdenes en la guía.
-            foreach($guia->plannings as $planning) {
-                if($planning->order) {
-                    $planning->order->update(['audit_status' => 'Finalizada']);
-                    CsOrderEvent::create(['cs_order_id' => $planning->order->id, 'user_id' => Auth::id(), 'description' => 'Proceso de auditoría de carga finalizado.' ]);
-                }
-            }
+            // 4. Actualizar la guía solo con datos operativos relevantes
+            $guia->update([
+                'marchamo_numero' => $validatedData['marchamo_numero'],
+                'lleva_custodia' => $validatedData['lleva_custodia'],
+            ]);
+            
+            // 5. Finalizar TODAS las auditorías de esta guía que estén en 'Pendiente Carga'
+            $orderIds = $guia->plannings->pluck('cs_order_id');
+            Audit::whereIn('cs_order_id', $orderIds)
+                ->where('location', $audit->location)
+                ->where('status', 'Pendiente Carga')
+                ->update([
+                    'loading_audit_data' => json_encode($loadingAuditData),
+                    'status' => 'Finalizada',
+                    'completed_at' => now(),
+                    'user_id' => Auth::id()
+                ]);
         });
 
-        return redirect()->route('audit.index')->with('success', 'Auditoría de carga completada.');
+        CsOrderEvent::create(['cs_order_id' => $audit->cs_order_id, 'user_id' => Auth::id(), 'description' => 'Auditoría de carga finalizada en ' . $audit->location]);
+        
+        return redirect()->route('audit.index')->with('success', 'Auditoría de carga completada exitosamente.');
     }
 
-    public function reopenAudit(CsOrder $order)
+    /**
+     * Reabre TODAS las auditorías asociadas a las órdenes de una guía.
+     */
+    public function reopenAudit(Guia $guia)
     {
-        if ($order->audit_status === 'Finalizada') {
-            $order->update(['audit_status' => 'Pendiente Almacén']);
+        // Obtenemos los IDs de las órdenes asociadas a la guía
+        $orderIds = $guia->plannings->pluck('cs_order_id');
+        
+        // Buscamos todos los registros de auditoría finalizados para esas órdenes
+        $auditsToReopen = Audit::whereIn('cs_order_id', $orderIds)
+                            ->where('status', 'Finalizada')
+                            ->get();
 
-            CsOrderEvent::create([
-                'cs_order_id' => $order->id,
-                'user_id' => Auth::id(),
-                'description' => 'Auditoría reabierta por ' . Auth::user()->name . '. El estatus ha vuelto a Pendiente Almacén.'
+        // --- VALIDACIÓN AÑADIDA ---
+        // Si la colección está vacía, significa que no se encontró nada para reabrir.
+        if ($auditsToReopen->isEmpty()) {
+            return redirect()->route('audit.index')
+                            ->with('error', 'No se encontraron auditorías finalizadas para esta guía. La acción no se pudo completar.');
+        }
+        // --- FIN DE LA VALIDACIÓN ---
+
+        foreach($auditsToReopen as $audit) {
+            // Revertimos cada auditoría al estado inicial
+            $audit->update([
+                'status' => 'Pendiente Almacén', 
+                'completed_at' => null
             ]);
 
-            return redirect()->route('audit.index')->with('success', 'La auditoría para la SO ' . $order->so_number . ' ha sido reabierta.');
+            // Creamos un evento para registrar la acción
+            CsOrderEvent::create([
+                'cs_order_id' => $audit->cs_order_id, 
+                'user_id' => Auth::id(), 
+                'description' => 'Auditoría reabierta por ' . Auth::user()->name . ' en la ubicación ' . $audit->location
+            ]);
         }
 
-        return redirect()->route('audit.index')->with('error', 'Esta auditoría no se puede reabrir.');
+        return redirect()->route('audit.index')->with('success', 'La auditoría para la guía ' . $guia->guia . ' ha sido reabierta.');
     }
-
 }

@@ -6,9 +6,25 @@
 
     <div x-show="openFilters" x-transition class="bg-white p-4 mt-2 rounded-lg shadow-lg">
         <form id="filtersForm" method="GET" action="{{ route('audit.index') }}" class="space-y-4">
-            {{-- Búsqueda por texto --}}
-            <input type="text" name="search" placeholder="Buscar por SO, Factura o Guía..." value="{{ request('search') }}" class="w-full rounded-md border-gray-300 shadow-sm" oninput="this.form.submit()">
             
+            {{-- Búsqueda por texto --}}
+            <input type="text" name="search" placeholder="Buscar por SO, Guía o Almacén..." value="{{ request('search') }}" class="w-full rounded-md border-gray-300 shadow-sm" oninput="this.form.submit()">
+            
+            {{-- Filtro de Almacén (Nuevo) --}}
+            <div>
+                <label for="location" class="text-sm font-medium text-gray-600">Almacén de Auditoría</label>
+                <select name="location" id="location" class="w-full mt-1 rounded-md border-gray-300 shadow-sm" onchange="this.form.submit()">
+                    <option value="">Todos los Almacenes</option>
+                    @if(isset($locations))
+                        @foreach($locations as $location)
+                            <option value="{{ $location }}" @selected(request('location') == $location)>
+                                {{ $location }}
+                            </option>
+                        @endforeach
+                    @endif
+                </select>
+            </div>
+
             {{-- Filtro de Fechas --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -23,7 +39,7 @@
 
             {{-- Filtro de Estatus --}}
             <div>
-                <label class="text-sm font-medium text-gray-600">Estatus de Auditoría</label>
+                <label class="text-sm font-medium text-gray-600">Estatus de Auditoría</slabel>
                 <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                     @if(isset($auditStatuses))
                         @foreach($auditStatuses as $status)

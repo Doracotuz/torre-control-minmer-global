@@ -4,7 +4,7 @@
             <table class="w-full table-fixed">
                 <thead class="bg-[#2c3856]">
                     <tr>
-                        <th class="px-2 py-1 text-center text-xs font-medium text-white uppercase tracking-wider w-12 no-drag">
+                        <th class="ix-2 py-1 text-center text-xs font-medium text-white uppercase tracking-wider w-12 no-drag">
                             <input type="checkbox" @click="$dispatch('toggle-all-plannings', $event.target.checked)" class="rounded">
                         </th>
 
@@ -72,26 +72,28 @@
                             </template>
                             
 
-                            <td class="px-2 py-1 whitespace-nowrap text-center text-sm font-medium border w-[180px]">
-                            <a :href="`/customer-service/planning/${planning.id}`" class="text-gray-600 hover:text-gray-900 mr-2" title="Ver Detalle"><i class="fas fa-eye"></i></a>
-                                <a :href="`/customer-service/planning/${planning.id}/edit`" class="text-indigo-600 hover:text-indigo-900 mr-4" title="Editar"><i class="fas fa-edit"></i></a>
-                                <template x-if="planning.origen !== planning.destino && !planning.is_scale && !planning.is_direct_route">
-                                    <span>
-                                        <button @click="openScalesModal(planning)" class="px-3 py-1 bg-purple-600 text-white rounded-md text-xs font-semibold hover:bg-purple-700" title="Dividir en Escalas">Escalas</button>
-                                        <button @click="markAsDirect(planning.id)" class="ml-2 px-3 py-1 bg-gray-500 text-white rounded-md text-xs font-semibold hover:bg-gray-600" title="Marcar como ruta directa">No Escala</button>
-                                    </span>
-                                </template>
-                                <template x-if="planning.status === 'En Espera'">
-                                    <form :action="`/customer-service/planning/${planning.id}/schedule`" method="POST" class="inline ml-2" onsubmit="return confirm('¿Programar esta ruta?');"> @csrf <button type="submit" class="px-3 py-1 bg-green-500 text-white rounded-md text-xs font-semibold hover:bg-green-600">Programar</button> </form>
-                                </template>
-                                <template x-if="planning.status === 'Asignado en Guía'">
-                                    <form :action="`/customer-service/planning/${planning.id}/disassociate-from-guia`" method="POST" class="inline ml-2" onsubmit="return confirm('¿Estás seguro de que quieres quitar esta orden de su guía?');">
-                                        @csrf
-                                        <button type="submit" class="px-3 py-1 bg-red-600 text-white rounded-md text-xs font-semibold hover:bg-red-700" title="Quitar de la Guía">
-                                            Desasignar
-                                        </button>
-                                    </form>
-                                </template>                                
+                            <td class="px-2 py-1 border w-[180px]">
+                                <div class="flex flex-wrap items-center justify-center gap-2">
+                                    <a :href="`/customer-service/planning/${planning.id}`" class="text-gray-600 hover:text-gray-900" title="Ver Detalle"><i class="fas fa-eye"></i></a>
+                                    <a :href="`/customer-service/planning/${planning.id}/edit`" class="text-indigo-600 hover:text-indigo-900" title="Editar"><i class="fas fa-edit"></i></a>
+                                    <template x-if="planning.origen !== planning.destino && !planning.is_scale && !planning.is_direct_route">
+                                        <span class="flex items-center justify-center gap-2">
+                                            <button @click="openScalesModal(planning)" class="px-3 py-1 bg-purple-600 text-white rounded-md text-xs font-semibold hover:bg-purple-700" title="Dividir en Escalas">Escalas</button>
+                                            <button @click="markAsDirect(planning.id)" class="px-3 py-1 bg-gray-500 text-white rounded-md text-xs font-semibold hover:bg-gray-600" title="Marcar como ruta directa">No Escala</button>
+                                        </span>
+                                    </template>
+                                    <template x-if="planning.status === 'En Espera'">
+                                        <form :action="`/customer-service/planning/${planning.id}/schedule`" method="POST" class="inline" onsubmit="return confirm('¿Programar esta ruta?');"> @csrf <button type="submit" class="px-3 py-1 bg-green-500 text-white rounded-md text-xs font-semibold hover:bg-green-600">Programar</button> </form>
+                                    </template>
+                                    <template x-if="planning.status === 'Asignado en Guía'">
+                                        <form :action="`/customer-service/planning/${planning.id}/disassociate-from-guia`" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de que quieres quitar esta orden de su guía?');">
+                                            @csrf
+                                            <button type="submit" class="px-3 py-1 bg-red-600 text-white rounded-md text-xs font-semibold hover:bg-red-700" title="Quitar de la Guía">
+                                                Desasignar
+                                            </button>
+                                        </form>
+                                    </template>
+                                </div>
                             </td>
                         </tr>
                     </template>

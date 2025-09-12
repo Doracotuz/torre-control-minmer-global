@@ -69,4 +69,9 @@ class CsOrder extends Model
         return $this->belongsTo(\App\Models\CsCustomer::class, 'customer_name', 'name');
     }
 
+    public function audits()
+    {
+        return $this->hasMany(\App\Models\Audit::class, 'cs_order_id');
+    }    
+
 }

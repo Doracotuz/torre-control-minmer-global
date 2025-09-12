@@ -542,6 +542,17 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         Route::post('/import', [App\Http\Controllers\CustomerService\ValidationController::class, 'importCsv'])->name('importCsv');
     });    
 
+    Route::prefix('audit-reports')->name('audit-reports.')->group(function() {
+        // 1. Ruta para la lista de guías auditadas
+        Route::get('/', [App\Http\Controllers\CustomerService\AuditReportController::class, 'index'])->name('index');
+        
+        // 2. Ruta para ver el detalle de una guía específica
+        Route::get('/{guia}', [App\Http\Controllers\CustomerService\AuditReportController::class, 'show'])->name('show');
+        
+        // 3. Ruta para generar el PDF de una guía
+        Route::get('/{guia}/pdf', [App\Http\Controllers\CustomerService\AuditReportController::class, 'generatePdf'])->name('pdf');
+    });
+
 });
 
 
@@ -551,19 +562,17 @@ Route::middleware(['auth', 'verified'])->prefix('audit')->name('audit.')->group(
 
         Route::get('/', [App\Http\Controllers\AuditController::class, 'index'])->name('index');
 
-        // Fase 1: Almacén
-        Route::get('/warehouse/{order}', [App\Http\Controllers\AuditController::class, 'showWarehouseAudit'])->name('warehouse.show');
-        Route::post('/warehouse/{order}', [App\Http\Controllers\AuditController::class, 'storeWarehouseAudit'])->name('warehouse.store');
+        Route::get('/warehouse/{audit}', [App\Http\Controllers\AuditController::class, 'showWarehouseAudit'])->name('warehouse.show');
+        Route::post('/warehouse/{audit}', [App\Http\Controllers\AuditController::class, 'storeWarehouseAudit'])->name('warehouse.store');
 
-        // Fase 2: Patio
-        Route::get('/patio/{guia}', [App\Http\Controllers\AuditController::class, 'showPatioAudit'])->name('patio.show');
-        Route::post('/patio/{guia}', [App\Http\Controllers\AuditController::class, 'storePatioAudit'])->name('patio.store');
+        Route::get('/patio/{audit}', [App\Http\Controllers\AuditController::class, 'showPatioAudit'])->name('patio.show');
+        Route::post('/patio/{audit}', [App\Http\Controllers\AuditController::class, 'storePatioAudit'])->name('patio.store');
 
-        // Fase 3: Carga
-        Route::get('/loading/{guia}', [App\Http\Controllers\AuditController::class, 'showLoadingAudit'])->name('loading.show');
-        Route::post('/loading/{guia}', [App\Http\Controllers\AuditController::class, 'storeLoadingAudit'])->name('loading.store');
+        Route::get('/loading/{audit}', [App\Http\Controllers\AuditController::class, 'showLoadingAudit'])->name('loading.show');
+        Route::post('/loading/{audit}', [App\Http\Controllers\AuditController::class, 'storeLoadingAudit'])->name('loading.store');
 
-        Route::post('/{order}/reopen', [App\Http\Controllers\AuditController::class, 'reopenAudit'])->name('reopen');
+        // La ruta para reabrir ahora necesita un método diferente para encontrar la auditoría
+        Route::post('/reopen/guia/{guia}', [App\Http\Controllers\AuditController::class, 'reopenAudit'])->name('reopen');
 
     });
 });

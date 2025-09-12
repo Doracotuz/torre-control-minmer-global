@@ -20,16 +20,17 @@
         </form>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @forelse($completedOrders as $order)
-                @include('audit.partials.audit-card-completed', ['order' => $order])
+            {{-- CORRECCIÓN: Iteramos sobre $completedGuides que viene del controlador --}}
+            @forelse($completedGuides as $guia)
+                {{-- Pasamos el objeto $guia a la tarjeta de completados --}}
+                @include('audit.partials.audit-card-completed', ['guia' => $guia])
             @empty
                 <p class="text-center text-gray-500 py-4 col-span-full">No se encontraron órdenes terminadas con los filtros aplicados.</p>
             @endforelse
         </div>
 
         <div class="mt-4">
-            {{-- Paginación para las órdenes completadas --}}
-            {{ $completedOrders->appends(request()->except('page'))->links('pagination::tailwind') }}
+            {{ $completedGuides->appends(request()->except('page'))->links('pagination::tailwind') }}
         </div>
     </div>
 </div>
