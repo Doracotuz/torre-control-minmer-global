@@ -346,11 +346,15 @@ class OrderController extends Controller
         $path = $request->file('csv_file')->getRealPath();
         
         $fileContent = file_get_contents($path);
-        $utf8Content = mb_convert_encoding($fileContent, 'UTF-8', mb_detect_encoding($fileContent, 'UTF-8, ISO-8859-1', true));
-        $file = fopen("php://memory", 'r+');
-        fwrite($file, $utf8Content);
-        rewind($file);
 
+        // Eliminamos el BOM (ï»¿) si existe
+        if (strpos($fileContent, "\xEF\xBB\xBF") === 0) {
+            $fileContent = substr($fileContent, 3);
+        }
+
+        $file = fopen("php://memory", 'r+');
+        fwrite($file, $fileContent);
+        rewind($file);
         $raw_header = fgetcsv($file);
         $header = array_map(function($h) {
             return trim(preg_replace('/^\x{FEFF}/u', '', $h));
