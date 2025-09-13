@@ -469,7 +469,7 @@ class OrderController extends Controller
                         $creationDate = \Carbon\Carbon::createFromFormat('d/m/Y', $postingDate)->format('Y-m-d');
                     }
 
-                    Log::info('Claves del header_data:', array_keys($data['header_data'])); // <-- Agrega esta línea
+                    Log::info('DEBUG - Claves recibidas:', array_keys($data['header_data']));
 
 
                     $order = CsOrder::create(
