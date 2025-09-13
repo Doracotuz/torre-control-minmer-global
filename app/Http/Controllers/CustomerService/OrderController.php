@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Models\CsPlanning;
+use Illuminate\Support\Facades\Log;
 
 
 class OrderController extends Controller
@@ -467,6 +468,9 @@ class OrderController extends Controller
                     } else {
                         $creationDate = \Carbon\Carbon::createFromFormat('d/m/Y', $postingDate)->format('Y-m-d');
                     }
+
+                    Log::info('Claves del header_data:', array_keys($data['header_data'])); // <-- Agrega esta línea
+
 
                     $order = CsOrder::create(
                         [
