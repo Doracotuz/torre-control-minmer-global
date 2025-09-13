@@ -310,6 +310,7 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('rutas')->name('rut
         Route::get('/{guia}/edit', [AsignacionController::class, 'edit'])->name('edit');
         Route::put('/{guia}', [AsignacionController::class, 'update'])->name('update');
         Route::put('/{guia}/update-number', [AsignacionController::class, 'updateNumber'])->name('update-number');
+        Route::get('/{guia}/details', [AsignacionController::class, 'details'])->name('details');
 
     });
 

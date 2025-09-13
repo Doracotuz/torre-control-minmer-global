@@ -143,6 +143,46 @@
                 </form>
             </div>
         </div>
+
+        <div x-show="isGuiaDetailModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div @click.outside="closeAllModals()" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
+                <template x-if="guiaInModalLoading">
+                    <div class="text-center p-8"><i class="fas fa-spinner fa-spin text-4xl text-gray-500"></i></div>
+                </template>
+                <template x-if="!guiaInModalLoading && guiaInModal">
+                    <div>
+                        <div class="flex justify-between items-start border-b pb-3 mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-[#2c3856]">Detalle de la Guía</h3>
+                                <div class="flex items-center space-x-2">
+                                    <p class="font-semibold text-lg text-gray-800" x-text="guiaInModal.guia.guia"></p>
+                                    <button @click="openEditGuiaModal(guiaInModal.guia.id, guiaInModal.guia.guia, true)" type="button" class="text-indigo-500 hover:text-indigo-700" title="Editar Número de Guía">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" @click="closeAllModals()" class="text-gray-400 hover:text-gray-600">&times;</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+                            <div><strong>Operador:</strong> <span x-text="guiaInModal.guia.operador"></span></div>
+                            <div><strong>Placas:</strong> <span x-text="guiaInModal.guia.placas"></span></div>
+                            <div><strong>Teléfono:</strong> <span x-text="guiaInModal.guia.telefono || 'Pendiente'"></span></div>
+                            <div><strong>Origen:</strong> <span x-text="guiaInModal.guia.origen"></span></div>
+                            <div><strong>Custodia:</strong> <span x-text="guiaInModal.guia.custodia"></span></div>
+                        </div>
+                        <h4 class="font-semibold text-gray-700">Órdenes Incluidas:</h4>
+                        <ul class="list-disc list-inside text-sm mt-2 mb-4">
+                            <template x-for="planning in guiaInModal.guia.plannings" :key="planning.id">
+                                <li x-text="`SO: ${planning.order.so_number} - ${planning.order.customer_name}`"></li>
+                            </template>
+                        </ul>
+                        <div class="text-right font-bold text-lg text-gray-800 border-t pt-3">
+                            Valor Total de la Carga: <span class="text-green-600" x-text="`$${guiaInModal.total_subtotal.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>        
         
     </div>
 
@@ -174,6 +214,9 @@ function planningManager() {
         plannings: [],
         pagination: { links: [] }, // Inicializar links como array vacío
         isLoading: true,
+        isGuiaDetailModalOpen: false,
+        guiaInModal: null,
+        guiaInModalLoading: false,        
         isEditGuiaModalOpen: false,
         guiaToEdit: { id: null, number: '' },        
         filters: { 
@@ -251,7 +294,17 @@ function planningManager() {
                 this.showFlashMessage(flashError, 'error');
                 sessionStorage.removeItem('planning_flash_error');
             }
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('edit_guia')) { this.openEditModalByUrl(urlParams.get('edit_guia')); }            
         },
+
+        openEditModalByUrl(guiaId) {
+            fetch(`/rutas/asignaciones/${guiaId}/edit`).then(res => res.json()).then(data => {
+                if(data && data.id) {
+                    this.openEditGuiaModal(data, false);
+                }
+            });
+        },        
 
         // --- NUEVA FUNCIÓN: Para mostrar notificaciones dinámicamente ---
         showFlashMessage(message, type = 'success') {
@@ -271,20 +324,40 @@ function planningManager() {
         },
 
         // --- FUNCIÓN NUEVA: Abre el modal de edición de guía ---
-        openEditGuiaModal(planning) {
-            if (planning && planning.guia) {
-                this.guiaToEdit.id = planning.guia.id;
-                this.guiaToEdit.number = planning.guia.guia;
+        openEditGuiaModal(id, number, fromDetailModal = false) {
+            if (id && number) {
+                if (fromDetailModal) { this.isGuiaDetailModalOpen = false; }
+                this.guiaToEdit.id = id;
+                this.guiaToEdit.number = number;
                 this.isEditGuiaModalOpen = true;
             }
         },
 
+        openGuiaDetailModal(planning) {
+            if (!planning.guia) return;
+            this.isGuiaDetailModalOpen = true;
+            this.guiaInModalLoading = true;
+            fetch(`/rutas/asignaciones/${planning.guia.id}/details`)
+                .then(res => res.json())
+                .then(data => {
+                    this.guiaInModal = data;
+                    this.guiaInModalLoading = false;
+                })
+                .catch(() => {
+                    this.showFlashMessage('Error al cargar los detalles de la guía.', 'error');
+                    this.isGuiaDetailModalOpen = false;
+                    this.guiaInModalLoading = false;
+                });
+        },
+     
+
         closeAllModals() {
             this.isScalesModalOpen = false;
-            this.isImportModalOpen = false;
-            this.isEditGuiaModalOpen = false; // Añadido
-            // ...
-        },        
+            this.isAddToGuiaModalOpen = false;
+            this.isAdvancedFilterModalOpen = false;
+            this.isEditGuiaModalOpen = false;
+            this.isGuiaDetailModalOpen = false; // Se asegura de cerrar el nuevo modal
+        },      
 
         // --- FUNCIÓN NUEVA: Envía el formulario de edición ---
         submitGuiaEdit() {
@@ -292,6 +365,7 @@ function planningManager() {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    // Lee el token desde la meta etiqueta que añadimos en el layout
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 },
                 body: JSON.stringify({ guia_number: this.guiaToEdit.number })
@@ -300,7 +374,6 @@ function planningManager() {
             .then(data => {
                 if (data.success) {
                     this.showFlashMessage(data.message, 'success');
-                    // Actualizamos el dato en la tabla al instante, sin recargar
                     this.plannings.forEach(p => {
                         if (p.guia && p.guia.id === this.guiaToEdit.id) {
                             p.guia.guia = data.new_guia_number;
@@ -310,8 +383,12 @@ function planningManager() {
                 } else {
                     this.showFlashMessage(data.message || 'Ocurrió un error.', 'error');
                 }
+            })
+            .catch(error => {
+                console.error("Error al guardar la guía:", error);
+                this.showFlashMessage('Error de conexión al guardar la guía.', 'error');
             });
-        },        
+        },     
 
 
         fetchPlannings() {
@@ -371,51 +448,18 @@ function planningManager() {
         },
 
         getFormattedCell(planning, columnKey) {
-            // Primero, manejamos el caso especial de la columna 'guia'
             if (columnKey === 'guia') {
                 if (planning.guia && planning.guia.id) {
-                    // Devolvemos un botón HTML que, al ser clickeado, llama a la función
-                    // para abrir el modal de edición, pasándole el objeto 'planning' completo.
-                    return `<button type="button" @click='openEditGuiaModal(${JSON.stringify(planning)})' class="text-indigo-600 hover:underline font-semibold" title="Editar Número de Guía">${planning.guia.guia}</button>`;
+                    // CORRECCIÓN: Pasamos los datos primitivos (ID y número) en lugar del objeto completo
+                    return `<button type="button" @click='openEditGuiaModal(${planning.guia.id}, "${planning.guia.guia}")' class="text-indigo-600 hover:underline font-semibold" title="Editar Número de Guía">${planning.guia.guia}</button>`;
                 }
-                return 'Sin Asignar'; // Si no hay guía, mostramos 'Sin Asignar'
+                return 'Sin Asignar';
             }
-
-            // Para todas las demás columnas, obtenemos el valor
             const value = planning[columnKey];
-            
-            // Si el valor es nulo o vacío, devolvemos 'N/A'
-            if (value === null || value === undefined || value === '') {
-                return 'N/A';
-            }
-            
-            // Formateamos las fechas
-            if (['fecha_carga', 'fecha_entrega', 'created_at'].includes(columnKey)) {
-                try {
-                    const date = new Date(value);
-                    // Verificamos que sea una fecha válida antes de formatear
-                    if (isNaN(date.getTime())) return value;
-                    return date.toLocaleDateString('es-MX', { 
-                        day: '2-digit', 
-                        month: '2-digit', 
-                        year: 'numeric' 
-                    });
-                } catch (e) {
-                    return value; // Si hay error, devuelve el valor original
-                }
-            }
-
-            // Formateamos la hora
-            if (columnKey === 'hora_carga' && typeof value === 'string') {
-                return value.substring(0, 5);
-            }
-            
-            // Formateamos el subtotal como moneda
-            if (columnKey === 'subtotal') {
-                return `$${parseFloat(value).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            }
-            
-            // Si no es un caso especial, devolvemos el valor tal cual
+            if (value === null || value === undefined || value === '') return 'N/A';
+            if (['fecha_carga', 'fecha_entrega', 'created_at'].includes(columnKey)) { try { const d = new Date(value); return isNaN(d.getTime()) ? value : d.toLocaleDateString('es-MX', {day:'2-digit',month:'2-digit',year:'numeric'}); } catch(e){ return value; } }
+            if (columnKey === 'hora_carga' && typeof value === 'string') return value.substring(0, 5);
+            if (columnKey === 'subtotal') return `$${parseFloat(value).toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             return value;
         },
 
@@ -608,45 +652,24 @@ function planningManager() {
         },        
 
         createGuide() {
-            if (this.selectedPlannings.length === 0) {
-                this.showFlashMessage('Por favor, selecciona al menos un registro.', 'error');
-                return;
-            }
-
-            // --- LÓGICA DE VALIDACIÓN CORREGIDA ---
-            // Convertimos todos los IDs a String para una comparación segura
+            if (this.selectedPlannings.length === 0) { this.showFlashMessage('Por favor, selecciona al menos un registro.', 'error'); return; }
             const selectedIdsAsStrings = this.selectedPlannings.map(String);
             const selectedRecords = this.plannings.filter(p => selectedIdsAsStrings.includes(String(p.id)));
-
-            const alreadyAssigned = selectedRecords.some(p => p.guia !== null && p.guia !== undefined);
-
-            if (alreadyAssigned) {
-                this.showFlashMessage('Una o más órdenes ya tienen guía. Desasígnalas o deselecciónalas para continuar.', 'error');
-                return;
-            }
-            // --- FIN DE LA VALIDACIÓN ---
-
-            // Usamos el primer registro seleccionado como fuente para los datos (tu lógica original)
-            const firstSelected = this.plannings.find(p => p.id == this.selectedPlannings[0]);
-
-            if (!firstSelected) {
-                // Este error solo debería ocurrir si hay selecciones en otras páginas,
-                // pero la validación de arriba ya lo previene para las guías asignadas.
-                this.showFlashMessage('No se pudo encontrar el registro principal en la página actual para pre-rellenar datos.', 'error');
-                return;
-            }
-
-            // Construimos los parámetros para la URL
+            const alreadyAssigned = selectedRecords.some(p => p.guia !== null);
+            if (alreadyAssigned) { this.showFlashMessage('Una o más órdenes ya tienen guía. Desasígnalas o deselecciónalas para continuar.', 'error'); return; }
+            const totalValue = selectedRecords.reduce((sum, record) => sum + (parseFloat(record.subtotal) || 0), 0);
             const params = new URLSearchParams();
             this.selectedPlannings.forEach(id => params.append('planning_ids[]', id));
-            
-            // Añadimos los datos a pre-rellenar
-            if(firstSelected.custodia) params.append('custodia', firstSelected.custodia);
-            if(firstSelected.hora_carga) params.append('hora_planeada', firstSelected.hora_carga.substring(0, 5));
-            if(firstSelected.origen) params.append('origen', firstSelected.origen);
-            if(firstSelected.fecha_carga) params.append('fecha_asignacion', firstSelected.fecha_carga.split('T')[0]);
-
-            // Redirigimos al formulario de creación de guías
+            if (totalValue > 5000000) {
+                this.showFlashMessage(`¡Atención! El valor total ($${totalValue.toLocaleString('es-MX')}) supera los $5,000,000. Se requiere custodia.`, 'success');
+                params.append('custodia', 'Planus');
+            }
+            const firstSelected = selectedRecords[0];
+            if (firstSelected) {
+                if(firstSelected.hora_carga) params.append('hora_planeada', firstSelected.hora_carga.substring(0, 5));
+                if(firstSelected.origen) params.append('origen', firstSelected.origen);
+                if(firstSelected.fecha_carga) params.append('fecha_asignacion', firstSelected.fecha_carga.split('T')[0]);
+            }
             window.location.href = `{{ route('rutas.asignaciones.create') }}?${params.toString()}`;
         },
         
@@ -704,5 +727,8 @@ function planningManager() {
 
     }
 }
+document.addEventListener('alpine:init', () => {
+    Alpine.data('planningManager', planningManager);
+});
 </script>
 </x-app-layout>

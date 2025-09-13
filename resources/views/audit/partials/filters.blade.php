@@ -5,15 +5,21 @@
     </button>
 
     <div x-show="openFilters" x-transition class="bg-white p-4 mt-2 rounded-lg shadow-lg">
-        <form id="filtersForm" method="GET" action="{{ route('audit.index') }}" class="space-y-4">
+        {{-- 1. Añadimos un x-ref para que Alpine pueda identificar el formulario --}}
+        <form x-ref="filtersForm" id="filtersForm" method="GET" action="{{ route('audit.index') }}" class="space-y-4">
             
-            {{-- Búsqueda por texto --}}
-            <input type="text" name="search" placeholder="Buscar por SO, Guía o Almacén..." value="{{ request('search') }}" class="w-full rounded-md border-gray-300 shadow-sm" oninput="this.form.submit()">
+            {{-- 2. Cambiamos oninput por @input.debounce --}}
+            <input type="text" 
+                   name="search" 
+                   placeholder="Buscar por SO, Guía o Almacén..." 
+                   value="{{ request('search') }}" 
+                   class="w-full rounded-md border-gray-300 shadow-sm"
+                   @input.debounce.1050ms="$refs.filtersForm.submit()">
             
-            {{-- Filtro de Almacén (Nuevo) --}}
             <div>
                 <label for="location" class="text-sm font-medium text-gray-600">Almacén de Auditoría</label>
-                <select name="location" id="location" class="w-full mt-1 rounded-md border-gray-300 shadow-sm" onchange="this.form.submit()">
+                {{-- 3. Cambiamos onchange por @change para consistencia --}}
+                <select name="location" id="location" class="w-full mt-1 rounded-md border-gray-300 shadow-sm" @change="$refs.filtersForm.submit()">
                     <option value="">Todos los Almacenes</option>
                     @if(isset($locations))
                         @foreach($locations as $location)
@@ -25,26 +31,24 @@
                 </select>
             </div>
 
-            {{-- Filtro de Fechas --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label for="start_date" class="text-sm font-medium text-gray-600">Fecha Inicio (Creación)</label>
-                    <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}" class="w-full mt-1 rounded-md border-gray-300 shadow-sm" onchange="this.form.submit()">
+                    <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}" class="w-full mt-1 rounded-md border-gray-300 shadow-sm" @change="$refs.filtersForm.submit()">
                 </div>
                 <div>
                     <label for="end_date" class="text-sm font-medium text-gray-600">Fecha Fin (Creación)</label>
-                    <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}" class="w-full mt-1 rounded-md border-gray-300 shadow-sm" onchange="this.form.submit()">
+                    <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}" class="w-full mt-1 rounded-md border-gray-300 shadow-sm" @change="$refs.filtersForm.submit()">
                 </div>
             </div>
 
-            {{-- Filtro de Estatus --}}
             <div>
-                <label class="text-sm font-medium text-gray-600">Estatus de Auditoría</slabel>
+                <label class="text-sm font-medium text-gray-600">Estatus de Auditoría</label>
                 <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                     @if(isset($auditStatuses))
                         @foreach($auditStatuses as $status)
                         <div class="flex items-center">
-                            <input type="checkbox" name="status[]" value="{{ $status }}" id="status_{{ Str::slug($status) }}" class="h-4 w-4 rounded border-gray-300 text-indigo-600" onchange="this.form.submit()" @checked(in_array($status, request('status', [])))>
+                            <input type="checkbox" name="status[]" value="{{ $status }}" id="status_{{ Str::slug($status) }}" class="h-4 w-4 rounded border-gray-300 text-indigo-600" @change="$refs.filtersForm.submit()" @checked(in_array($status, request('status', [])))>
                             <label for="status_{{ Str::slug($status) }}" class="ml-2 block text-sm text-gray-900">{{ $status }}</label>
                         </div>
                         @endforeach

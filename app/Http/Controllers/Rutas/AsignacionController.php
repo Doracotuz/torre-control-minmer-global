@@ -627,4 +627,23 @@ class AsignacionController extends Controller
         ]);
     }
 
+
+    public function details(Guia $guia)
+    {
+        // Cargamos la guía con todas sus órdenes de planificación
+        $guia->load('plannings.order');
+
+        // Calculamos el subtotal sumando los subtotales de cada orden
+        $totalSubtotal = $guia->plannings->reduce(function ($carry, $planning) {
+            return $carry + ($planning->order->subtotal ?? 0);
+        }, 0);
+
+        // Devolvemos la guía y el total calculado como JSON
+        return response()->json([
+            'guia' => $guia,
+            'total_subtotal' => $totalSubtotal
+        ]);
+    }
+
+
 }
