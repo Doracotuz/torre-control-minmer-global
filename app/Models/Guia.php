@@ -20,6 +20,7 @@ class Guia extends Model
         'ruta_id',
         'operador',
         'placas',
+        'transporte',
         'telefono',
         'pedimento',
         'estatus',

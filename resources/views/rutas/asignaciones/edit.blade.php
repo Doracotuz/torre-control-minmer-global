@@ -29,7 +29,7 @@
                         <div>
                             <label for="guia" class="block font-medium text-sm text-gray-700">Número de Guía</label>
                             <input type="text" name="guia" id="guia" value="{{ old('guia', $guia->guia) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
-                        </div>
+                        </div>                  
 
                         {{-- Otros campos que desees que sean editables --}}
                         <div>

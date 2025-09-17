@@ -207,6 +207,10 @@
                                     <div><label class="block text-sm font-medium">Pedimento</label><input type="text" x-model="editData.pedimento" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
                                     <div><label class="block text-sm font-medium">Custodia</label><input type="text" x-model="editData.custodia" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
                                     <div><label class="block text-sm font-medium">Hora Planeada</label><input type="text" x-model="editData.hora_planeada" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
+                                    <div>
+                                        <label class="block text-sm font-medium">Transporte</label>
+                                        <input type="text" x-model="editData.transporte" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                                    </div>
                                 </div>
                                 <h4 class="text-lg font-semibold text-[#2c3856] border-b mt-6 pb-2 mb-4">Facturas</h4>
                                 <div class="space-y-3">

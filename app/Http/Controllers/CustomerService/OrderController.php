@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Models\CsPlanning;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 
 class OrderController extends Controller
@@ -91,27 +92,32 @@ class OrderController extends Controller
      */
     public function show(CsOrder $order)
     {
-        // Cargamos las relaciones necesarias del pedido
-        $order->load(['details', 'createdBy']);
+        // 1. Cargamos todas las relaciones necesarias para evitar consultas N+1
+        $order->load([
+            'details.product',
+            'events.user',
+            'plannings.guia.eventos.user'
+        ]);
 
-        // 1. Obtenemos los eventos de cada módulo
-        $orderEvents = $order->events()->with('user')->get();
-        $planningEvents = $order->planningEvents()->with('user')->get();
-        $guiaEvents = $order->guiaEvents()->get();
+        $timelineEvents = collect();
 
-        // 2. Unificamos todos los eventos en una sola colección
-        $timelineEvents = collect([]);
-
-        $orderEvents->each(function ($event) use ($timelineEvents) {
-            
-            // --- INICIA LÓGICA DE ETIQUETADO INTELIGENTE ---
+        // 2. Procesa los eventos del PEDIDO (CsOrderEvent), que ahora incluyen los de Guía y Auditoría
+        foreach ($order->events as $event) {
             $type = 'Pedido';
-            $color = 'blue';
-            if (str_contains($event->description, 'en la planificación')) {
+            $color = 'blue'; // Color por defecto
+
+            $description = strtolower($event->description); // Convertimos a minúsculas para una comparación segura
+
+            if (str_contains($description, 'auditoría')) {
+                $type = 'Auditoría';
+                $color = 'yellow';
+            } elseif (str_contains($description, 'planificación')) {
                 $type = 'Planificación';
                 $color = 'purple';
+            } elseif (str_contains($description, 'guía')) { // <-- LÓGICA AÑADIDA
+                $type = 'Guía';
+                $color = 'green';
             }
-            // --- TERMINA LÓGICA DE ETIQUETADO INTELIGENTE ---
 
             $timelineEvents->push([
                 'type' => $type,
@@ -120,34 +126,27 @@ class OrderController extends Controller
                 'date' => $event->created_at,
                 'color' => $color,
             ]);
-        });
+        }
 
-        $planningEvents->each(function ($event) use ($timelineEvents) {
-            $timelineEvents->push([
-                'type' => 'Planificación',
-                'description' => $event->description,
-                'user_name' => $event->user->name ?? 'Sistema',
-                'date' => $event->created_at,
-                'color' => 'purple',
-            ]);
-        });
-
-        $guiaEvents->each(function ($event) use ($timelineEvents) {
-            $timelineEvents->push([
-                'type' => 'Asignación',
-                'description' => "{$event->subtipo}: {$event->nota}",
-                'user_name' => 'Operador/Sistema',
-                'date' => $event->fecha_evento,
-                'color' => 'green',
-            ]);
-        });
+        // 3. (Opcional) Procesa eventos de la tabla 'eventos' si aún los usas para algo específico
+        if ($guia = optional(optional($order->plannings)->first())->guia) {
+            foreach ($guia->eventos as $event) {
+                // Si encuentras eventos duplicados, puedes comentar o eliminar este bloque
+                $timelineEvents->push([
+                    'type' => 'Logística (Legacy)',
+                    'description' => $event->descripcion,
+                    'user_name' => $event->user->name ?? 'Sistema',
+                    'date' => $event->fecha_evento,
+                    'color' => 'gray',
+                ]);
+            }
+        }
         
-        // 3. Ordenamos la colección final por fecha, de más reciente a más antiguo
+        // 4. Ordenamos la colección final por fecha
         $timelineEvents = $timelineEvents->sortByDesc('date');
 
         return view('customer-service.orders.show', compact('order', 'timelineEvents'));
     }
-
     /**
      * Muestra el formulario para editar un pedido.
      */

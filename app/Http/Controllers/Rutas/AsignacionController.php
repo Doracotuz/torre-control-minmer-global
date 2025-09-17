@@ -328,6 +328,7 @@ class AsignacionController extends Controller
             'hora_planeada' => 'nullable|string|max:255',
             'fecha_asignacion' => 'nullable|date',
             'origen' => 'required|string|max:3',
+            'transporte' => 'nullable|string|max:255',
             'facturas' => 'required|array|min:1',
             'facturas.*.id' => 'nullable|integer',
             'facturas.*.cs_planning_id' => 'nullable|integer|exists:cs_plannings,id',
@@ -342,12 +343,38 @@ class AsignacionController extends Controller
 
         DB::beginTransaction();
         try {
-            $guia->update($validatedData);
-            $facturasIdsActuales = [];
+            // Mapeo de nombres de campos para la descripción del evento
+            $fieldNames = [
+                'operador' => 'Operador',
+                'placas' => 'Placas',
+                'telefono' => 'Teléfono',
+                'pedimento' => 'Pedimento',
+                'custodia' => 'Custodia',
+                'hora_planeada' => 'Hora Planeada',
+                'fecha_asignacion' => 'Fecha Asignación',
+                'origen' => 'Origen',
+                'transporte' => 'Transporte'
+            ];
 
+            // 1. Detectamos los cambios ANTES de actualizar la guía
+            $descriptionParts = [];
+            foreach ($fieldNames as $field => $friendlyName) {
+                // Comparamos el valor actual del modelo con el valor que llega del formulario
+                if (isset($validatedData[$field]) && $guia->$field != $validatedData[$field]) {
+                    $oldValue = $guia->$field ?? 'vacío';
+                    $newValue = $validatedData[$field] ?? 'vacío';
+                    $descriptionParts[] = "{$friendlyName} cambió de '{$oldValue}' a '{$newValue}'";
+                }
+            }
+            $changesDescription = implode('. ', $descriptionParts);
+
+            // 2. Ahora sí, actualizamos la guía
+            $guia->update($request->only(array_keys($fieldNames)));
+
+            // 3. Procesamos las facturas (añadir, editar)
+            $facturasIdsActuales = [];
             foreach ($validatedData['facturas'] as $facturaData) {
-                $factura = null;
-                if (isset($facturaData['id'])) {
+                if (!empty($facturaData['id'])) {
                     $factura = $guia->facturas()->find($facturaData['id']);
                     if ($factura) {
                         $factura->update($facturaData);
@@ -362,54 +389,60 @@ class AsignacionController extends Controller
                     $planningRecord = \App\Models\CsPlanning::find($facturaData['cs_planning_id']);
                     if ($planningRecord) {
                         $planningRecord->update([
-                            'factura' => $facturaData['numero_factura'],
-                            // 'destino' => $facturaData['destino'],
-                            'cajas' => $facturaData['cajas'],
-                            'pzs' => $facturaData['botellas'],
-                            'hora_cita' => $facturaData['hora_cita'],
-                            'so_number' => $facturaData['so'],
-                            'fecha_entrega' => $facturaData['fecha_entrega'],
+                            'factura' => $facturaData['numero_factura'], 'cajas' => $facturaData['cajas'],
+                            'pzs' => $facturaData['botellas'], 'hora_cita' => $facturaData['hora_cita'],
+                            'so_number' => $facturaData['so'], 'fecha_entrega' => $facturaData['fecha_entrega'],
                         ]);
                     }
                 }
             }
 
-            // --- LÓGICA PARA DESASIGNAR ÓRDENES ELIMINADAS ---
+            // 4. Desasignamos las órdenes de las facturas que fueron eliminadas
             $facturasParaEliminar = $guia->facturas()->whereNotIn('id', $facturasIdsActuales)->get();
             if ($facturasParaEliminar->isNotEmpty()) {
                 $planningIdsParaDesasignar = $facturasParaEliminar->whereNotNull('cs_planning_id')->pluck('cs_planning_id');
                 if ($planningIdsParaDesasignar->isNotEmpty()) {
-                    \App\Models\CsPlanning::whereIn('id', $planningIdsParaDesasignar)->update([
-                        'guia_id' => null,
-                        'status' => 'En Espera',
-                        'operador' => 'Pendiente',
-                        'placas' => 'Pendiente',
-                        'telefono' => 'Pendiente'
-                    ]);
+                    \App\Models\CsPlanning::whereIn('id', $planningIdsParaDesasignar)->update(['guia_id' => null, 'status' => 'En Espera', 'operador' => 'Pendiente', 'placas' => 'Pendiente', 'telefono' => 'Pendiente', 'transporte' => null]);
                 }
+                $guia->facturas()->whereNotIn('id', $facturasIdsActuales)->delete();
             }
-            $guia->facturas()->whereNotIn('id', $facturasIdsActuales)->delete();
-            // --- FIN DE LÓGICA PARA DESASIGNAR ---
 
-            // --- LÓGICA PARA SINCRONIZAR DATOS DE GUÍA A PLANNING ---
+            // 5. Sincronizamos los datos de la guía a todas las órdenes (plannings) asociadas
             $planningIds = $guia->facturas()->whereNotNull('cs_planning_id')->pluck('cs_planning_id');
             if ($planningIds->isNotEmpty()) {
                 \App\Models\CsPlanning::whereIn('id', $planningIds)->update([
                     'operador' => $validatedData['operador'],
                     'placas' => $validatedData['placas'],
                     'telefono' => $validatedData['telefono'],
+                    'transporte' => $validatedData['transporte'],
                 ]);
             }
-            // --- FIN DE LÓGICA DE SINCRONIZACIÓN ---
+
+            // 6. Creamos la descripción final para el evento
+            $finalDescription = !empty($changesDescription)
+                ? 'Datos de la Guía ' . $guia->guia . ' actualizados por ' . auth()->user()->name . '. ' . $changesDescription
+                : 'Se actualizaron las facturas de la Guía ' . $guia->guia . ' por ' . auth()->user()->name . '.';
+            
+            // Obtenemos los IDs de las órdenes afectadas
+            $orderIds = \App\Models\CsPlanning::whereIn('id', $planningIds)->pluck('cs_order_id')->unique()->filter();
+
+            // Creamos un evento para CADA orden afectada
+            foreach ($orderIds as $orderId) {
+                \App\Models\CsOrderEvent::create([
+                    'cs_order_id' => $orderId,
+                    'user_id' => auth()->id(),
+                    'description' => $finalDescription,
+                ]);
+            }
 
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error al actualizar guía: " . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Ocurrió un error al actualizar.'], 500);
+            Log::error("Error al actualizar guía: " . $e->getMessage() . ' en la línea ' . $e->getLine());
+            return response()->json(['success' => false, 'message' => 'Ocurrió un error al actualizar. Revise los logs.'], 500);
         }
 
-        return response()->json(['success' => true, 'message' => 'Guía actualizada y registros de planificación sincronizados exitosamente.']);
+        return response()->json(['success' => true, 'message' => 'Guía actualizada, órdenes sincronizadas y evento registrado exitosamente.']);
     }
 
     /**
@@ -612,19 +645,57 @@ class AsignacionController extends Controller
 
     public function updateNumber(Request $request, Guia $guia)
     {
+        // 1. Validación mejorada para evitar duplicados
         $validated = $request->validate([
-            'guia_number' => 'required|string|max:255',
+            'guia_number' => 'required|string|max:255|unique:guias,guia,' . $guia->id,
         ]);
 
-        $guia->update([
-            'guia' => $validated['guia_number']
-        ]);
+        $originalGuiaNumber = $guia->guia;
+        $newGuiaNumber = $validated['guia_number'];
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Número de guía actualizado exitosamente.',
-            'new_guia_number' => $validated['guia_number'] // Devolvemos el nuevo número
-        ]);
+        // Si no hay cambios, no hacemos nada
+        if ($originalGuiaNumber === $newGuiaNumber) {
+            return response()->json([
+                'success' => true,
+                'message' => 'No se realizaron cambios.',
+                'new_guia_number' => $newGuiaNumber
+            ]);
+        }
+        
+        // Usamos una transacción para asegurar la integridad de los datos
+        DB::beginTransaction();
+        try {
+            // 2. Actualizamos la guía
+            $guia->update(['guia' => $newGuiaNumber]);
+
+            // 3. Creamos la descripción detallada para el evento
+            $description = 'El número de Guía cambió de \'' . $originalGuiaNumber . '\' a \'' . $newGuiaNumber . '\' por ' . auth()->user()->name . '.';
+
+            // 4. Buscamos todas las órdenes asociadas a esta guía
+            $orderIds = $guia->plannings()->pluck('cs_order_id')->unique()->filter();
+
+            // 5. Creamos un evento para cada orden afectada
+            foreach ($orderIds as $orderId) {
+                \App\Models\CsOrderEvent::create([
+                    'cs_order_id' => $orderId,
+                    'user_id'     => auth()->id(),
+                    'description' => $description,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success'       => true,
+                'message'       => 'Número de guía actualizado y evento registrado.',
+                'new_guia_number' => $newGuiaNumber
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error al actualizar número de guía: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Ocurrió un error en el servidor.'], 500);
+        }
     }
 
 
