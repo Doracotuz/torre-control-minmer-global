@@ -145,7 +145,7 @@
                     origen: @json(old('origen', $guiaData['origen'] ?? '')),
                     fecha_asignacion: @json(old('fecha_asignacion', $guiaData['fecha_asignacion'] ?? '')),
                     hora_planeada: @json(old('hora_planeada', $guiaData['hora_planeada'] ?? '')),
-                    custodia: @json(old('custodia', $guiaData['custodia'] ?? '')),
+                    custodia: @json(old('custodia', $guiaData['custodia'] ?? 'Pendiente')),
                 },
                 facturas: initialFacturas,
                 generateTempGuia() {
