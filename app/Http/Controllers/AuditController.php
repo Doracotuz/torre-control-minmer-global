@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\UnidadArriboMail;
 use App\Models\AuditIncidencia;
 use Illuminate\Support\Facades\Storage;
+use App\Mail\AuditReabiertaMail;
 
 class AuditController extends Controller
 {
@@ -329,6 +330,7 @@ class AuditController extends Controller
      */
     public function reopenAudit(Guia $guia)
     {
+
         $orderIds = $guia->plannings->pluck('cs_order_id');
         
         $auditsToReopen = Audit::whereIn('cs_order_id', $orderIds)
@@ -340,60 +342,52 @@ class AuditController extends Controller
                             ->with('error', 'No se encontraron auditorías finalizadas para reabrir.');
         }
 
-        // --- INICIA NUEVA LÓGICA DE ELIMINACIÓN DE FOTOS ---
-
         // 1. Recolectamos todas las rutas de los archivos que vamos a eliminar.
         $pathsToDelete = [];
         foreach($auditsToReopen as $audit) {
-            // Recolectar fotos de patio
             $patioData = $audit->patio_audit_data ?? [];
-            if (!empty($patioData['foto_unidad_path'])) {
-                $pathsToDelete[] = $patioData['foto_unidad_path'];
-            }
-            if (!empty($patioData['foto_llantas_path'])) {
-                $pathsToDelete[] = $patioData['foto_llantas_path'];
-            }
+            if (!empty($patioData['foto_unidad_path'])) $pathsToDelete[] = $patioData['foto_unidad_path'];
+            if (!empty($patioData['foto_llantas_path'])) $pathsToDelete[] = $patioData['foto_llantas_path'];
 
-            // Recolectar fotos de carga
             $loadingData = $audit->loading_audit_data ?? [];
             $cargaFotos = $loadingData['audit_carga_fotos'] ?? [];
-            if (!empty($cargaFotos['caja_vacia'])) {
-                $pathsToDelete[] = $cargaFotos['caja_vacia'];
-            }
-            if (!empty($cargaFotos['marchamo'])) {
-                $pathsToDelete[] = $cargaFotos['marchamo'];
-            }
-            if (!empty($cargaFotos['proceso_carga'])) {
-                // array_merge es para añadir todos los elementos de un array a otro
-                $pathsToDelete = array_merge($pathsToDelete, $cargaFotos['proceso_carga']);
-            }
+            if (!empty($cargaFotos['caja_vacia'])) $pathsToDelete[] = $cargaFotos['caja_vacia'];
+            if (!empty($cargaFotos['marchamo'])) $pathsToDelete[] = $cargaFotos['marchamo'];
+            if (!empty($cargaFotos['proceso_carga'])) $pathsToDelete = array_merge($pathsToDelete, $cargaFotos['proceso_carga']);
         }
 
-        // 2. Si encontramos rutas, las eliminamos de S3 de una sola vez.
+        // 2. Si encontramos rutas, las eliminamos de S3.
         if (!empty($pathsToDelete)) {
             Storage::disk('s3')->delete($pathsToDelete);
         }
 
-        // --- TERMINA NUEVA LÓGICA DE ELIMINACIÓN ---
-
-        // 3. Ahora, reiniciamos las auditorías
+        // 3. Reiniciamos las auditorías y creamos los eventos
+        $userWhoReopened = Auth::user(); // Obtenemos el usuario autenticado
         foreach($auditsToReopen as $audit) {
             $audit->update([
                 'status' => 'Pendiente Almacén', 
                 'completed_at' => null,
-                // Limpiamos los datos de las auditorías anteriores para empezar de cero
                 'warehouse_audit_data' => null,
                 'patio_audit_data' => null,
                 'loading_audit_data' => null,
                 'user_id' => null
             ]);
 
+            // **El registro de evento que ya tenías es correcto**
             CsOrderEvent::create([
                 'cs_order_id' => $audit->cs_order_id, 
-                'user_id' => Auth::id(), 
-                'description' => 'Auditoría reabierta por ' . Auth::user()->name . '. Evidencias anteriores eliminadas.'
+                'user_id' => $userWhoReopened->id, 
+                'description' => 'Auditoría reabierta por ' . $userWhoReopened->name . '. Evidencias anteriores eliminadas.'
             ]);
         }
+
+        // **4. Enviamos la notificación por correo**
+        $areaNames = ['Auditoría', 'Tráfico']; // Define a qué áreas notificar
+        $recipients = User::whereHas('area', fn($q) => $q->whereIn('name', $areaNames))->get();
+        if ($recipients->isNotEmpty()) {
+            Mail::to($recipients->pluck('email')->all())->send(new AuditReabiertaMail($guia, $userWhoReopened));
+        }
+        // --- FIN DE MODIFICACIONES ---
 
         return redirect()->route('audit.index')->with('success', 'La auditoría para la guía ' . $guia->guia . ' ha sido reabierta.');
     }
