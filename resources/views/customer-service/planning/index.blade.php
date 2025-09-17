@@ -661,26 +661,28 @@ function planningManager() {
             const totalValue = selectedRecords.reduce((sum, record) => sum + (parseFloat(record.subtotal) || 0), 0);
             const params = new URLSearchParams();
             this.selectedPlannings.forEach(id => params.append('planning_ids[]', id));
+            
+            // Obtenemos el primer registro seleccionado para usar sus datos.
+            const firstSelected = selectedRecords[0];
 
-            // --- INICIO DE LA CORRECCIÓN ---
+            // --- INICIO DE LA LÓGICA MODIFICADA ---
             if (totalValue > 5000000) {
                 this.showFlashMessage(`¡Atención! El valor total ($${totalValue.toLocaleString('es-MX')}) supera los $5,000,000. Se requiere custodia.`, 'success');
-                params.append('custodia', 'Sepsa');
+                params.append('custodia', 'Planus');
             } else {
-                // Si no supera el valor, enviamos 'Pendiente' por defecto
-                params.append('custodia', 'Pendiente');
+                // Si no supera el valor, toma la custodia del primer registro.
+                // Si está vacío o nulo, usa 'Pendiente' como fallback.
+                const custodiaValue = firstSelected?.custodia || 'Pendiente';
+                params.append('custodia', custodiaValue);
             }
             
-            const firstSelected = selectedRecords[0];
             if (firstSelected) {
                 if(firstSelected.hora_carga) params.append('hora_planeada', firstSelected.hora_carga.substring(0, 5));
                 if(firstSelected.origen) params.append('origen', firstSelected.origen);
                 if(firstSelected.fecha_carga) params.append('fecha_asignacion', firstSelected.fecha_carga.split('T')[0]);
-                
-                // Añadimos el teléfono del primer registro seleccionado
                 if(firstSelected.telefono) params.append('telefono', firstSelected.telefono);
             }
-            // --- FIN DE LA CORRECCIÓN ---
+            // --- FIN DE LA LÓGICA MODIFICADA ---
 
             window.location.href = `{{ route('rutas.asignaciones.create') }}?${params.toString()}`;
         },
