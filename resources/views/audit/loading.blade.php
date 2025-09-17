@@ -6,7 +6,33 @@
      x-data="{
         incluyeTarimas: {{ old('incluye_tarimas', $audit->guia?->audit_carga_incluye_tarimas) ? 'true' : 'false' }},
         tipoTarima: '{{ old('tarimas_tipo', 'N/A') }}',
-        incidenciasOpen: false
+        incidenciasOpen: false,
+        
+        // --- INICIA NUEVA LÓGICA PARA FOTOS ---
+        photoCount: {{ old('fotos_carga') ? count(old('fotos_carga')) : 3 }},
+        cajaVaciaPreview: null,
+        marchamoPreview: null,
+        cargaPreviews: [],
+        previewFile(event, target, index = null) {
+            if (event.target.files.length > 0) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    if (index !== null) {
+                        this[target][index] = e.target.result;
+                    } else {
+                        this[target] = e.target.result;
+                    }
+                };
+                reader.readAsDataURL(event.target.files[0]);
+            } else {
+                if (index !== null) {
+                    this[target][index] = null;
+                } else {
+                    this[target] = null;
+                }
+            }
+        }
+        // --- FIN NUEVA LÓGICA ---
      }">
 
     <a href="{{ route('audit.index') }}" class="text-sm font-semibold text-gray-600 hover:text-gray-900 mb-4 inline-block transition-colors">
@@ -22,7 +48,6 @@
         <form action="{{ route('audit.loading.store', $audit) }}" method="POST" enctype="multipart/form-data">
             @csrf
 
-            {{-- --- AÑADE ESTE BLOQUE AQUÍ --- --}}
             @if ($errors->any())
                 <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md" role="alert">
                     <p class="font-bold">Por favor, corrige los siguientes errores:</p>
@@ -94,18 +119,70 @@
                 </div>
                 
                 <div class="pt-6 border-t">
-                    <h3 class="font-bold text-lg text-gray-800 mb-2">Evidencias Fotográficas</h3>
-                    <div class="space-y-4 bg-gray-50 p-4 rounded-lg border">
-                        <div><label class="block text-sm font-medium text-gray-700">Foto de Caja Vacía <span class="text-red-500">*</span></label><input type="file" name="foto_caja_vacia" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Fotos de Carga (mínimo 3) <span class="text-red-500">*</span></label><input type="file" name="fotos_carga[]" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" multiple required></div>
+                    <h3 class="font-bold text-lg text-gray-800 mb-4">Evidencias Fotográficas</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {{-- 1. FOTO DE CAJA VACÍA (OBLIGATORIA) --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Caja Vacía <span class="text-red-500">*</span></label>
+                            <input type="file" name="foto_caja_vacia" x-ref="fotoCajaVaciaInput" @change="previewFile($event, 'cajaVaciaPreview')" class="hidden" accept="image/*" required>
+                            <div @click="$refs.fotoCajaVaciaInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
+                                <template x-if="!cajaVaciaPreview">
+                                    <div><i class="fas fa-box-open text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div>
+                                </template>
+                                <template x-if="cajaVaciaPreview">
+                                    <img :src="cajaVaciaPreview" class="max-h-full max-w-full mx-auto rounded-md object-contain">
+                                </template>
+                            </div>
+                        </div>
+
+                        {{-- 2. FOTO DE MARCHAMO (OPCIONAL) --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Marchamo</label>
+                            <input type="file" name="foto_marchamo" x-ref="fotoMarchamoInput" @change="previewFile($event, 'marchamoPreview')" class="hidden" accept="image/*">
+                            <div @click="$refs.fotoMarchamoInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
+                                <template x-if="!marchamoPreview">
+                                    <div><i class="fas fa-lock text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div>
+                                </template>
+                                <template x-if="marchamoPreview">
+                                    <img :src="marchamoPreview" class="max-h-full max-w-full mx-auto rounded-md object-contain">
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8">
+                        <label for="photo_count" class="block text-sm font-medium text-gray-700">¿Cuántas fotos del **proceso de carga** deseas subir? (Mínimo 3)</label>
+                        <input type="number" id="photo_count" x-model.number="photoCount" min="3" max="15" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm max-w-xs">
+                    </div>
+
+                    {{-- 3. FOTOS DE CARGA (DINÁMICAS Y OBLIGATORIAS) --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+                        <template x-for="index in photoCount" :key="index">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="'Foto de Carga ' + index + ' *'"></label>
+                                <input type="file" name="fotos_carga[]" :id="'foto_carga_' + index" @change="previewFile($event, 'cargaPreviews', index - 1)" class="hidden" accept="image/*" required>
+                                <div @click="document.getElementById('foto_carga_' + index).click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
+                                    <template x-if="!cargaPreviews[index - 1]">
+                                        <div><i class="fas fa-camera text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div>
+                                    </template>
+                                    <template x-if="cargaPreviews[index - 1]">
+                                        <img :src="cargaPreviews[index - 1]" class="max-h-full max-w-full mx-auto rounded-md object-contain">
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </div>
 
+                {{-- ==================================================================== --}}
+                {{-- --- SECCIÓN DE SEGURIDAD MODIFICADA --- --}}
+                {{-- ==================================================================== --}}
                 <div class="pt-6 border-t">
                      <h3 class="font-bold text-lg text-gray-800 mb-2">Seguridad</h3>
                      <div class="space-y-4 bg-gray-50 p-4 rounded-lg border">
                         <div><label class="block text-sm font-medium text-gray-700">Número de Marchamo (si aplica)</label><input type="text" name="marchamo_numero" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Foto de Marchamo</label><input type="file" name="foto_marchamo" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"></div>
+                        {{-- La foto de marchamo se movió a la sección de arriba --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700">¿Lleva Custodia?</label>
                             <select name="lleva_custodia" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required><option value="1">Sí</option><option value="0" selected>No</option></select>

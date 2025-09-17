@@ -26,7 +26,7 @@ class AuditController extends Controller
         // --- Consulta para auditorías ACTIVAS ---
         $activeQuery = Audit::query()
             ->where('status', '!=', 'Finalizada')
-            ->with(['order.plannings.guia', 'order.details', 'guia']);
+            ->with(['guia.facturas', 'order.details']);
 
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';

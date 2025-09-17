@@ -3,8 +3,7 @@
     // Accedemos a la guía a través de la primera auditoría del grupo.
     $guia = $auditsInGuia->first()->guia;
 
-    // Regla de Sincronización: ¿Están todas las auditorías listas para el siguiente paso?
-    // Ahora revisamos el campo 'status' del modelo Audit.
+    // Regla de Sincronización
     $todasListasParaPatio = $auditsInGuia->every(fn($audit) => $audit->status === 'Pendiente Patio');
     $todasListasParaCarga = $auditsInGuia->every(fn($audit) => $audit->status === 'Pendiente Carga' || $audit->status === 'Finalizada');
 
@@ -17,7 +16,6 @@
     if ($todasListasParaCarga) {
         $buttonClass = 'bg-purple-600 hover:bg-purple-700';
         $buttonText = 'Auditar Carga';
-        // La ruta ahora recibe el objeto de la primera auditoría del grupo
         $route = route('audit.loading.show', $auditsInGuia->first());
         $disabled = false;
     } elseif ($todasListasParaPatio) {
@@ -26,9 +24,20 @@
         $route = route('audit.patio.show', $auditsInGuia->first());
         $disabled = false;
     }
+
+    // Procesamos la información que vamos a mostrar
+    $customerNames = $auditsInGuia->map(fn($audit) => $audit->order->customer_name)
+                                  ->unique()
+                                  ->implode(', ');
+    
+    // === INICIO DEL CÓDIGO AÑADIDO ===
+    // Obtenemos los números de factura desde la relación y los unimos en un string.
+    $invoiceNumbers = $guia->facturas->pluck('numero_factura')->implode(', ');
+    // === FIN DEL CÓDIGO AÑADIDO ===
 @endphp
 
 <div class="border rounded-lg shadow-sm flex flex-col justify-between bg-white h-full">
+    {{-- SECCIÓN SUPERIOR --}}
     <div class="p-4">
         <div class="flex justify-between items-start mb-2">
             <div>
@@ -39,13 +48,32 @@
                 {{ $todasListasParaCarga ? 'Pendiente Carga' : 'Pendiente Patio' }}
             </span>
         </div>
-        <p class="text-sm text-gray-600 truncate">Operador: {{ $guia->operador ?? 'N/A' }}</p>
     </div>
 
+    {{-- SECCIÓN DE DETALLES --}}
     <div class="px-4 pb-4 space-y-2 text-sm text-gray-700 border-t pt-3">
+        
+        {{-- === INICIO DE CAMBIOS Y NUEVOS ELEMENTOS === --}}
+        <div class="flex items-center justify-between">
+            <span class="flex items-center"><i class="fas fa-user-tie w-5 text-center mr-2 text-gray-400"></i><strong>Operador:</strong></span>
+            <span class="truncate">{{ $guia->operador ?? 'N/A' }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+            <span class="flex items-center"><i class="fas fa-id-card w-5 text-center mr-2 text-gray-400"></i><strong>Placas:</strong></span>
+            <span class="truncate">{{ $guia->placas ?? 'N/A' }}</span>
+        </div>
+        <div class="flex items-center justify-between" title="{{ $invoiceNumbers }}">
+            <span class="flex items-center"><i class="fas fa-file-invoice-dollar w-5 text-center mr-2 text-gray-400"></i><strong>Facturas:</strong></span>
+            <span class="truncate">{{ !empty($invoiceNumbers) ? $invoiceNumbers : 'N/A' }}</span>
+        </div>
+        {{-- === FIN DE CAMBIOS Y NUEVOS ELEMENTOS === --}}
+
+        <div class="flex items-center justify-between" title="{{ $customerNames }}">
+            <span class="flex items-center"><i class="fas fa-users w-5 text-center mr-2 text-gray-400"></i><strong>Clientes:</strong></span>
+            <span class="truncate">{{ $customerNames }}</span>
+        </div>
         <div class="flex items-center justify-between">
             <span class="flex items-center"><i class="fas fa-file-invoice w-5 text-center mr-2 text-gray-400"></i><strong>Órdenes (SOs):</strong></span>
-            {{-- Accedemos a los datos a través de la relación anidada audit->order->so_number --}}
             <span class="truncate">{{ $auditsInGuia->pluck('order.so_number')->join(', ') }}</span>
         </div>
         <div class="flex items-center justify-between">
@@ -54,6 +82,7 @@
         </div>
     </div>
     
+    {{-- BOTÓN DE ACCIÓN --}}
     <a href="{{ $route }}" 
        @if($disabled) onclick="event.preventDefault();" @endif
        class="block w-full text-center p-3 text-white font-bold rounded-b-lg transition-colors {{ $buttonClass }}">
