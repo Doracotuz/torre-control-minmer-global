@@ -133,6 +133,7 @@
                                     <div><strong class="block text-gray-500">Pedimento:</strong> <span x-text="selectedGuia.pedimento || 'N/A'"></span></div>
                                     <div><strong class="block text-gray-500">Ruta Asignada:</strong> <span x-text="selectedGuia.ruta?.nombre || 'Sin Asignar'"></span></div>
                                     <div><strong class="block text-gray-500">Estatus:</strong> <span x-text="selectedGuia.estatus"></span></div>
+                                    <div><strong class="block text-gray-500">Transporte:</strong> <span x-text="selectedGuia.transporte"></span></div>
                                 </div>
 
                                 {{-- Tabla de Facturas --}}
