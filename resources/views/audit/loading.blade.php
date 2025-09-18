@@ -135,20 +135,6 @@
                                 </template>
                             </div>
                         </div>
-
-                        {{-- 2. FOTO DE MARCHAMO (OPCIONAL) --}}
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Marchamo</label>
-                            <input type="file" name="foto_marchamo" x-ref="fotoMarchamoInput" @change="previewFile($event, 'marchamoPreview')" class="hidden" accept="image/*" capture="environment">
-                            <div @click="$refs.fotoMarchamoInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
-                                <template x-if="!marchamoPreview">
-                                    <div><i class="fas fa-lock text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div>
-                                </template>
-                                <template x-if="marchamoPreview">
-                                    <img :src="marchamoPreview" class="max-h-full max-w-full mx-auto rounded-md object-contain">
-                                </template>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="mt-8">
@@ -189,6 +175,20 @@
                         </div>
                      </div>
                 </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Marchamo</label>
+                            <input type="file" name="foto_marchamo" x-ref="fotoMarchamoInput" @change="previewFile($event, 'marchamoPreview')" class="hidden" accept="image/*" capture="environment">
+                            <div @click="$refs.fotoMarchamoInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
+                                <template x-if="!marchamoPreview">
+                                    <div><i class="fas fa-lock text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div>
+                                </template>
+                                <template x-if="marchamoPreview">
+                                    <img :src="marchamoPreview" class="max-h-full max-w-full mx-auto rounded-md object-contain">
+                                </template>
+                            </div>
+                        </div>
+                    </div>                
 
                 <div class="pt-8">
                     <button type="submit" class="w-full px-6 py-3 bg-teal-600 text-white rounded-lg font-bold shadow-lg hover:bg-teal-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">

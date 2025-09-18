@@ -281,17 +281,40 @@
         @php $cargaFotos = $loadingData['audit_carga_fotos'] ?? []; @endphp
         <table class="photo-grid">
             <tr>
-            @if(!empty($cargaFotos['caja_vacia']))<td><p>Caja Vacía</p><img src="{{ embed_image($cargaFotos['caja_vacia']) }}"></td>@endif
-            @if(!empty($cargaFotos['marchamo']))<td><p>Marchamo</p><img src="{{ embed_image($cargaFotos['marchamo']) }}"></td>@endif
-            @if(!empty($cargaFotos['proceso_carga'][0]))<td><p>Proceso 1</p><img src="{{ embed_image($cargaFotos['proceso_carga'][0]) }}"></td>@endif
+                @if(!empty($cargaFotos['caja_vacia']))
+                    <td>
+                        <p>Caja Vacía</p>
+                        <img src="{{ embed_image($cargaFotos['caja_vacia']) }}">
+                    </td>
+                @endif
+                @if(!empty($cargaFotos['marchamo']))
+                    <td>
+                        <p>Marchamo</p>
+                        <img src="{{ embed_image($cargaFotos['marchamo']) }}">
+                    </td>
+                @endif
             </tr>
-            @if(count($cargaFotos['proceso_carga'] ?? []) > 1)
-            <tr>
-            @if(!empty($cargaFotos['proceso_carga'][1]))<td><p>Proceso 2</p><img src="{{ embed_image($cargaFotos['proceso_carga'][1]) }}"></td>@endif
-            @if(!empty($cargaFotos['proceso_carga'][2]))<td><p>Proceso 3</p><img src="{{ embed_image($cargaFotos['proceso_carga'][2]) }}"></td>@endif
-            </tr>
-            @endif
         </table>
+
+        {{-- Muestra TODAS las fotos del proceso de carga de forma dinámica --}}
+        @if(!empty($cargaFotos['proceso_carga']))
+            <h4 style="margin-top: 15px; margin-bottom: 5px; font-weight: bold;">Fotos del Proceso de Carga</h4>
+            <table class="photo-grid">
+                <tr>
+                @foreach($cargaFotos['proceso_carga'] as $key => $fotoPath)
+                    <td>
+                        <p>Proceso de carga {{ $key + 1 }}</p>
+                        <img src="{{ embed_image($fotoPath) }}">
+                    </td>
+
+                    {{-- Crea una nueva fila cada 3 fotos para mantener un diseño de cuadrícula --}}
+                    @if(($key + 1) % 3 == 0 && !$loop->last)
+                        </tr><tr>
+                    @endif
+                @endforeach
+                </tr>
+            </table>
+        @endif
     </main>
 </body>
 </html>
