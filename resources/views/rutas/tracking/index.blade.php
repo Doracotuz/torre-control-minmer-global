@@ -17,7 +17,8 @@
     @if($searchQuery)
         <div class="mt-8">
             @forelse ($facturas as $factura)
-                <div class="bg-white border rounded-lg p-4 mb-4">
+                <div class="bg-white border rounded-lg p-4 sm:p-6 mb-4">
+                    {{-- Encabezado de la Factura --}}
                     <div class="flex justify-between items-start border-b pb-3 mb-3">
                         <div>
                             <p class="text-xs text-gray-500">Factura</p>
@@ -32,49 +33,64 @@
                         </span>
                     </div>
 
-                    <h4 class="text-sm font-bold text-gray-600 mb-2">Historial de Entrega:</h4>
+                    {{-- Línea de Tiempo --}}
+                    <h4 class="text-sm font-bold text-gray-600 mt-4 mb-2">Historial de Entrega:</h4>
                     @if($factura->eventos->isEmpty())
-                        <p class="text-sm text-gray-500">Aún no hay eventos de entrega para esta factura.</p>
+                        <p class="text-sm text-gray-500 pl-4">Aún no hay eventos de entrega para esta factura.</p>
                     @else
-                        @foreach($factura->eventos as $evento)
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center mb-2">
-                                {{-- Info del Evento --}}
-                                <div class="md:col-span-2">
-                                    <p class="text-sm font-semibold {{ $evento->subtipo == 'Factura Entregada' ? 'text-green-700' : 'text-red-700' }}">
-                                        {{ $evento->subtipo }}
-                                    </p>
-                                    <p class="text-xs text-gray-500">{{ $evento->fecha_evento->format('d/m/Y h:i A') }}</p>
-                                    @if(!empty($evento->url_evidencia))
-                                        <div class="mt-2">
-                                            <!-- <p class="text-xs font-semibold text-gray-500">Evidencias:</p> -->
-                                            <div class="flex flex-wrap gap-2 mt-1">
-                                                @if(!empty($evento->url_evidencia))
-                                                    <div class="mt-2">
-                                                        <p class="text-xs font-semibold text-gray-500">Evidencias:</p>
-                                                        <div class="flex flex-wrap gap-2 mt-1">
-                                                            @foreach($evento->url_evidencia as $url)
-                                                                <a href="{{ $url }}" target="_blank" class="block border p-1 rounded-md hover:shadow-lg hover:border-blue-500 transition-all duration-300">
-                                                                    <img src="{{ $url }}" alt="Evidencia de entrega {{ $loop->iteration }}" class="h-20 w-20 object-cover rounded-sm">
-                                                                </a>
-                                                            @endforeach
-                                                        </div>
-                                                    </div>
-                                                @endif
+                        <div class="relative border-l-2 border-orange-200 ml-3 py-3">
+                            @foreach($factura->eventos as $evento)
+                                <div class="relative mb-10">
+                                    {{-- El punto en la línea de tiempo y su ícono --}}
+                                    <div class="absolute -left-[15px] top-1 flex items-center justify-center h-7 w-7 rounded-full text-white
+                                        {{ $evento->subtipo == 'Factura Entregada' ? 'bg-green-500' : 'bg-red-500' }}">
+                                        @if($evento->subtipo == 'Factura Entregada')
+                                            {{-- Ícono de Check --}}
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                        @else
+                                            {{-- Ícono de X --}}
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        @endif
+                                    </div>
+
+                                    {{-- Contenido del evento --}}
+                                    <div class="ml-10">
+                                        <p class="text-md font-semibold {{ $evento->subtipo == 'Factura Entregada' ? 'text-green-700' : 'text-red-700' }}">
+                                            {{ $evento->subtipo }}
+                                        </p>
+                                        <p class="text-xs text-gray-500 mb-3">{{ $evento->fecha_evento->format('d/m/Y h:i A') }}</p>
+
+                                        {{-- Evidencias --}}
+                                        @if(!empty($evento->url_evidencia))
+                                            <div class="mb-3">
+                                                <p class="text-xs font-semibold text-gray-500">Evidencias:</p>
+                                                <div class="flex flex-wrap gap-2 mt-1">
+                                                    @foreach($evento->url_evidencia as $url)
+                                                        <a href="{{ $url }}" target="_blank" class="block border p-1 rounded-md hover:shadow-lg hover:border-blue-500 transition-all duration-300">
+                                                            <img src="{{ $url }}" alt="Evidencia de entrega {{ $loop->iteration }}" class="h-20 w-20 object-cover rounded-sm">
+                                                        </a>
+                                                    @endforeach
+                                                </div>
                                             </div>
+                                        @endif
+
+                                        {{-- Mapa Estático --}}
+                                        <div class="mt-2">
+                                            <a href="https://www.google.com/maps?q={{$evento->latitud}},{{$evento->longitud}}" target="_blank" title="Ver en Google Maps">
+                                                <img 
+                                                    src="https://maps.googleapis.com/maps/api/staticmap?center={{$evento->latitud}},{{$evento->longitud}}&zoom=16&size=600x300&markers=color:red%7C{{$evento->latitud}},{{$evento->longitud}}&key={{ $googleMapsApiKey }}" 
+                                                    alt="Mapa de entrega" 
+                                                    class="w-full h-auto max-w-lg rounded-md border shadow-md cursor-pointer hover:opacity-90 transition-opacity">
+                                            </a>
                                         </div>
-                                    @endif
+                                    </div>
                                 </div>
-                                {{-- Mapa Estático --}}
-<div class="md:col-span-2">
-    <a href="https://www.google.com/maps?q={{$evento->latitud}},{{$evento->longitud}}" target="_blank">
-        <img 
-            src="https://maps.googleapis.com/maps/api/staticmap?center={{$evento->latitud}},{{$evento->longitud}}&zoom=16&size=1200x600&markers=color:red%7C{{$evento->latitud}},{{$evento->longitud}}&key={{ $googleMapsApiKey }}" 
-            alt="Mapa de entrega" 
-            class="w-full h-auto rounded-md border shadow-lg cursor-pointer hover:opacity-90 transition-opacity">
-    </a>
-</div>
-                            </div>
-                        @endforeach
+                            @endforeach
+                        </div>
                     @endif
                 </div>
             @empty

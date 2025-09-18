@@ -386,8 +386,8 @@
                 const now = new Date();
                 const currentDate = now.toISOString().split('T')[0];
                 const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
-                this.startRouteCoords.lat = '';
-                this.startRouteCoords.lng = '';
+                this.startRouteCoords.lat = '19.619794982524613';
+                this.startRouteCoords.lng = '-99.16364845466741';
                 this.startRouteCoords.date = currentDate;
                 this.startRouteCoords.time = currentTime;
             },
