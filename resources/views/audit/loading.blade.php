@@ -30,6 +30,14 @@
             const file = event.target.files[0];
             if (!file) return;
 
+            // --- INICIA CÓDIGO MEJORADO ---
+            // Verificamos si la librería existe ANTES de intentar usarla
+            if (typeof imageCompression === 'undefined') {
+                alert('Error crítico: La librería de compresión de imágenes no se ha cargado.');
+                return;
+            }
+            // --- FIN CÓDIGO MEJORADO ---
+
             const setLoading = (val) => {
                 if (index !== null) this.loading[target][index] = val; else this.loading[target] = val;
             };
@@ -39,19 +47,20 @@
 
             setLoading(true);
             setPreview(null);
-            
+
             const options = { maxSizeMB: 1.5, maxWidthOrHeight: 1920, useWebWorker: true };
 
             try {
                 const compressedFile = await imageCompression(file, options);
                 setPreview(await imageCompression.getDataUrlFromFile(compressedFile));
-                
+
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(compressedFile);
                 event.target.files = dataTransfer.files;
             } catch (error) {
                 console.error('Error al comprimir:', error);
-                alert('Hubo un error al procesar la imagen.');
+                // Mostramos un error más detallado
+                alert(`Hubo un error al procesar la imagen: ${error.message}`);
             } finally {
                 setLoading(false);
             }
