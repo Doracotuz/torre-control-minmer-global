@@ -8,17 +8,41 @@
         tipoTarima: '{{ old('tarimas_tipo', 'N/A') }}',
         incidenciasOpen: false,
         
-        // --- INICIA NUEVA LÓGICA PARA FOTOS ---
-        photoCount: {{ old('fotos_carga') ? count(old('fotos_carga')) : 3 }},
+        // --- INICIA NUEVA LÓGICA PARA FOTOS DINÁMICAS ---
         cajaVaciaPreview: null,
         marchamoPreview: null,
-        cargaPreviews: [],
+        // Almacenamos las fotos de carga en un array de objetos. Cada objeto tiene un ID único para el :key de Alpine.
+        photos: [], 
+        // Previsualizaciones de las fotos de carga
+        cargaPreviews: [], 
+        nextPhotoId: 1,
+
+        // Función de inicialización para cargar la cantidad correcta de fotos al inicio (mínimo 3 o las que vengan de un error de validación)
+        init() {
+            const initialCount = {{ old('fotos_carga') ? count(old('fotos_carga')) : 3 }};
+            for (let i = 0; i < initialCount; i++) {
+                this.addPhoto();
+            }
+        },
+
+        // Función para agregar un nuevo campo de foto
+        addPhoto() {
+            this.photos.push({ id: this.nextPhotoId++ });
+        },
+
+        // Función para eliminar un campo de foto y su previsualización
+        removePhoto(index) {
+            this.photos.splice(index, 1);
+            this.cargaPreviews.splice(index, 1);
+        },
+        
         previewFile(event, target, index = null) {
             if (event.target.files.length > 0) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     if (index !== null) {
-                        this[target][index] = e.target.result;
+                        // Usamos Vue.set o una asignación directa para asegurar la reactividad
+                        this.cargaPreviews[index] = e.target.result;
                     } else {
                         this[target] = e.target.result;
                     }
@@ -26,7 +50,7 @@
                 reader.readAsDataURL(event.target.files[0]);
             } else {
                 if (index !== null) {
-                    this[target][index] = null;
+                    this.cargaPreviews[index] = null;
                 } else {
                     this[target] = null;
                 }
@@ -60,6 +84,7 @@
             @endif
             <div class="space-y-8">
                 
+                {{-- ... (El resto del formulario hasta las fotos permanece igual) ... --}}
                 <div>
                     <h3 class="font-bold text-lg text-gray-800 mb-2">Facturas en esta Carga</h3>
                     <div class="space-y-2">
@@ -117,7 +142,7 @@
                         @endforeach
                     </div>
                 </div>
-                
+
                 <div class="pt-6 border-t">
                     <h3 class="font-bold text-lg text-gray-800 mb-4">Evidencias Fotográficas</h3>
                     
@@ -137,38 +162,43 @@
                         </div>
                     </div>
 
-                    <div class="mt-8">
-                        <label for="photo_count" class="block text-sm font-medium text-gray-700">¿Cuántas fotos del **proceso de carga** deseas subir? (Mínimo 3)</label>
-                        <input type="number" id="photo_count" x-model.number="photoCount" min="3" max="15" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm max-w-xs">
-                    </div>
-
                     {{-- 3. FOTOS DE CARGA (DINÁMICAS Y OBLIGATORIAS) --}}
+                    <h4 class="font-semibold text-gray-700 mt-8 mb-2">Fotos del Proceso de Carga <span class="text-red-500">*</span></h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                        <template x-for="index in photoCount" :key="index">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="'Foto de Carga ' + index + ' *'"></label>
-                                <input type="file" name="fotos_carga[]" :id="'foto_carga_' + index" @change="previewFile($event, 'cargaPreviews', index - 1)" class="hidden" accept="image/*" capture="environment" required>
-                                <div @click="document.getElementById('foto_carga_' + index).click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
-                                    <template x-if="!cargaPreviews[index - 1]">
+                        <template x-for="(photo, index) in photos" :key="photo.id">
+                            <div class="relative">
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="'Foto de Carga ' + (index + 1)"></label>
+                                <input type="file" name="fotos_carga[]" :id="'foto_carga_' + photo.id" @change="previewFile($event, 'cargaPreviews', index)" class="hidden" accept="image/*" capture="environment" required>
+                                
+                                <div @click="document.getElementById('foto_carga_' + photo.id).click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
+                                    <template x-if="!cargaPreviews[index]">
                                         <div><i class="fas fa-camera text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div>
                                     </template>
-                                    <template x-if="cargaPreviews[index - 1]">
-                                        <img :src="cargaPreviews[index - 1]" class="max-h-full max-w-full mx-auto rounded-md object-contain">
+                                    <template x-if="cargaPreviews[index]">
+                                        <img :src="cargaPreviews[index]" class="max-h-full max-w-full mx-auto rounded-md object-contain">
                                     </template>
                                 </div>
+                                
+                                <button type="button" @click.prevent="removePhoto(index)" x-show="photos.length > 3"
+                                        class="absolute top-0 right-0 -mt-2 -mr-2 bg-red-500 text-white rounded-full h-6 w-6 flex items-center justify-center shadow-md hover:bg-red-700 transition-colors">
+                                    &times;
+                                </button>
                             </div>
                         </template>
                     </div>
+
+                    <div class="mt-6">
+                        <button type="button" @click="addPhoto" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <i class="fas fa-plus mr-2"></i>Agregar Foto
+                        </button>
+                    </div>
                 </div>
 
-                {{-- ==================================================================== --}}
-                {{-- --- SECCIÓN DE SEGURIDAD MODIFICADA --- --}}
-                {{-- ==================================================================== --}}
+                {{-- ... (El resto del formulario de seguridad permanece igual) ... --}}
                 <div class="pt-6 border-t">
                      <h3 class="font-bold text-lg text-gray-800 mb-2">Seguridad</h3>
                      <div class="space-y-4 bg-gray-50 p-4 rounded-lg border">
                         <div><label class="block text-sm font-medium text-gray-700">Número de Marchamo (si aplica)</label><input type="text" name="marchamo_numero" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
-                        {{-- La foto de marchamo se movió a la sección de arriba --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700">¿Lleva Custodia?</label>
                             <select name="lleva_custodia" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required><option value="1">Sí</option><option value="0" selected>No</option></select>
