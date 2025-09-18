@@ -8,31 +8,42 @@
         tipoTarima: '{{ old('tarimas_tipo', 'N/A') }}',
         incidenciasOpen: false,
         
-        // --- INICIA NUEVA LÓGICA PARA FOTOS ---
         photoCount: {{ old('fotos_carga') ? count(old('fotos_carga')) : 3 }},
-        cajaVaciaPreview: null,
-        marchamoPreview: null,
-        cargaPreviews: [],
-        previewFile(event, target, index = null) {
-            if (event.target.files.length > 0) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    if (index !== null) {
-                        this[target][index] = e.target.result;
-                    } else {
-                        this[target] = e.target.result;
-                    }
-                };
-                reader.readAsDataURL(event.target.files[0]);
-            } else {
-                if (index !== null) {
-                    this[target][index] = null;
-                } else {
-                    this[target] = null;
-                }
+        previews: { cajaVacia: null, marchamo: null, cargas: [] },
+        loading: { cajaVacia: false, marchamo: false, cargas: [] },
+
+        async handleImageSelection(event, target, index = null) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const setLoading = (val) => {
+                if (index !== null) this.loading[target][index] = val;
+                else this.loading[target] = val;
+            };
+            const setPreview = (val) => {
+                if (index !== null) this.previews[target][index] = val;
+                else this.previews[target] = val;
+            };
+
+            setLoading(true);
+            setPreview(null);
+
+            const options = { maxSizeMB: 1.5, maxWidthOrHeight: 1920, useWebWorker: true };
+
+            try {
+                const compressedFile = await imageCompression(file, options);
+                setPreview(await imageCompression.getDataUrlFromFile(compressedFile));
+
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(compressedFile);
+                event.target.files = dataTransfer.files;
+            } catch (error) {
+                console.error('Error al comprimir:', error);
+                alert('Hubo un error al procesar la imagen.');
+            } finally {
+                setLoading(false);
             }
         }
-        // --- FIN NUEVA LÓGICA ---
      }">
 
     <a href="{{ route('audit.index') }}" class="text-sm font-semibold text-gray-600 hover:text-gray-900 mb-4 inline-block transition-colors">
@@ -125,7 +136,7 @@
                         {{-- 1. FOTO DE CAJA VACÍA (OBLIGATORIA) --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Caja Vacía <span class="text-red-500">*</span></label>
-                            <input type="file" name="foto_caja_vacia" x-ref="fotoCajaVaciaInput" @change="previewFile($event, 'cajaVaciaPreview')" class="hidden" accept="image/*" required>
+                            <input type="file" name="foto_caja_vacia" x-ref="fotoCajaVaciaInput" @change="handleImageSelection($event, 'cajaVacia')" class="hidden" accept="image/*" required>
                             <div @click="$refs.fotoCajaVaciaInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
                                 <template x-if="!cajaVaciaPreview">
                                     <div><i class="fas fa-box-open text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div>
@@ -139,7 +150,7 @@
                         {{-- 2. FOTO DE MARCHAMO (OPCIONAL) --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Marchamo</label>
-                            <input type="file" name="foto_marchamo" x-ref="fotoMarchamoInput" @change="previewFile($event, 'marchamoPreview')" class="hidden" accept="image/*">
+                            <input type="file" name="foto_marchamo" x-ref="fotoMarchamoInput" @change="handleImageSelection($event, 'marchamo')" class="hidden" accept="image/*">
                             <div @click="$refs.fotoMarchamoInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
                                 <template x-if="!marchamoPreview">
                                     <div><i class="fas fa-lock text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div>
@@ -161,7 +172,7 @@
                         <template x-for="index in photoCount" :key="index">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2" x-text="'Foto de Carga ' + index + ' *'"></label>
-                                <input type="file" name="fotos_carga[]" :id="'foto_carga_' + index" @change="previewFile($event, 'cargaPreviews', index - 1)" class="hidden" accept="image/*" required>
+                                <input type="file" name="fotos_carga[]" :id="'foto_carga_' + index" @change="handleImageSelection($event, 'cargas', index - 1)" class="hidden" accept="image/*" required>
                                 <div @click="document.getElementById('foto_carga_' + index).click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
                                     <template x-if="!cargaPreviews[index - 1]">
                                         <div><i class="fas fa-camera text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div>
