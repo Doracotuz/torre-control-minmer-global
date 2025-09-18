@@ -7,8 +7,7 @@
         tipoTarima: '{{ old('tarimas_tipo', 'N/A') }}',
         incidenciasOpen: false,
         
-        // --- Lógica para fotos dinámicas con botón 'Agregar' ---
-        cargaPhotos: [ { id: 1 }, { id: 2 }, { id: 3 } ], // Inicia con 3 campos por defecto
+        cargaPhotos: [ { id: 1 }, { id: 2 }, { id: 3 } ],
         
         previews: { cajaVacia: null, marchamo: null, cargas: [null, null, null] },
         loading: { cajaVacia: false, marchamo: false, cargas: [false, false, false] },
@@ -20,7 +19,6 @@
         },
 
         removePhotoField(index) {
-            // Solo permite eliminar si hay más de 3 campos
             if (this.cargaPhotos.length > 3) {
                 this.cargaPhotos.splice(index, 1);
                 this.previews.cargas.splice(index, 1);
@@ -28,7 +26,6 @@
             }
         },
 
-        // --- Lógica de compresión de imágenes ---
         async handleImageSelection(event, target, index = null) {
             const file = event.target.files[0];
             if (!file) return;
@@ -73,15 +70,10 @@
 
         <form action="{{ route('audit.loading.store', $audit) }}" method="POST" enctype="multipart/form-data">
             @csrf
-
             @if ($errors->any())
                 <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md" role="alert">
                     <p class="font-bold">Por favor, corrige los siguientes errores:</p>
-                    <ul class="mt-2 list-disc list-inside text-sm">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
+                    <ul class="mt-2 list-disc list-inside text-sm">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
                 </div>
             @endif
 
@@ -154,8 +146,8 @@
                                 <template x-for="(photo, index) in cargaPhotos" :key="photo.id">
                                     <div class="relative">
                                         <label class="block text-sm font-medium text-gray-700 mb-2" x-text="`Foto ` + (index + 1)"></label>
-                                        <input type="file" name="fotos_carga[]" :x-ref="'cargaInput' + index" @change="handleImageSelection($event, 'cargas', index)" class="hidden" accept="image/*" capture="environment" required>
-                                        <div @click="!loading.cargas[index] && $refs['cargaInput' + index].click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
+                                        <input type="file" name="fotos_carga[]" :id="'cargaInput' + index" @change="handleImageSelection($event, 'cargas', index)" class="hidden" accept="image/*" capture="environment" required>
+                                        <div @click="!loading.cargas[index] && document.getElementById('cargaInput' + index).click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
                                             <template x-if="loading.cargas[index]"><div><i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Comprimiendo...</p></div></template>
                                             <template x-if="!loading.cargas[index] && !previews.cargas[index]"><div><i class="fas fa-camera text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div></template>
                                             <template x-if="!loading.cargas[index] && previews.cargas[index]"><img :src="previews.cargas[index]" class="max-h-full max-w-full mx-auto rounded-md object-contain"></template>
