@@ -59,4 +59,9 @@ class Evento extends Model
         })->filter()->all();
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }    
+
 }
