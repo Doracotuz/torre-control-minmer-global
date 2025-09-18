@@ -4,36 +4,15 @@
 <div class="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8" 
      x-data="{
         presentaManiobra: {{ old('presenta_maniobra', $audit->guia?->audit_patio_presenta_maniobra) ? 'true' : 'false' }},
-        previews: { fotoUnidad: null, fotoLlantas: null },
-        loading: { fotoUnidad: false, fotoLlantas: false },
-
-        async handleImageSelection(event, target) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            this.loading[target] = true;
-            this.previews[target] = null;
-
-            const options = {
-                maxSizeMB: 1.5,
-                maxWidthOrHeight: 1920,
-                useWebWorker: true
-            };
-
-            try {
-                const compressedFile = await imageCompression(file, options);
-
-                this.previews[target] = imageCompression.getDataUrlFromFile(compressedFile);
-
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(compressedFile);
-                event.target.files = dataTransfer.files;
-
-            } catch (error) {
-                console.error('Error al comprimir la imagen:', error);
-                alert('Hubo un error al procesar la imagen. Por favor, intenta de nuevo.');
-            } finally {
-                this.loading[target] = false;
+        fotoUnidadPreview: null,
+        fotoLlantasPreview: null,
+        previewFile(event, target) {
+            if (event.target.files.length > 0) {
+                const reader = new FileReader();
+                reader.onload = (e) => { this[target] = e.target.result; };
+                reader.readAsDataURL(event.target.files[0]);
+            } else {
+                this[target] = null;
             }
         }
      }">
@@ -92,33 +71,25 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Fotografía de la Unidad <span class="text-red-500">*</span></label>
-                        <input type="file" name="foto_unidad" x-ref="fotoUnidadInput" @change="handleImageSelection($event, 'fotoUnidad')" class="hidden" accept="image/*" required>
-                        <div @click="!loading.fotoUnidad && $refs.fotoUnidadInput.click()" class="cursor-pointer ...">
-                            <template x-if="loading.fotoUnidad">
-                                <div><i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Comprimiendo...</p></div>
+                        <input type="file" name="foto_unidad" x-ref="fotoUnidadInput" @change="previewFile($event, 'fotoUnidadPreview')" class="hidden" accept="image/*" capture="environment" required>
+                        <div @click="$refs.fotoUnidadInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors">
+                            <template x-if="!fotoUnidadPreview">
+                                <div><i class="fas fa-camera text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar imagen</p></div>
                             </template>
-                            <template x-if="!loading.fotoUnidad && !previews.fotoUnidad">
-                                <div><i class="fas fa-camera text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div>
-                            </template>
-                            <template x-if="!loading.fotoUnidad && previews.fotoUnidad">
-                                <img :src="previews.fotoUnidad" class="max-h-48 mx-auto rounded-md">
+                            <template x-if="fotoUnidadPreview">
+                                <img :src="fotoUnidadPreview" class="max-h-48 mx-auto rounded-md">
                             </template>
                         </div>
                     </div>
-
-                    {{-- Para la Fotografía de Llantas --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Fotografía de Llantas <span class="text-red-500">*</span></label>
-                        <input type="file" name="foto_llantas" x-ref="fotoLlantasInput" @change="handleImageSelection($event, 'fotoLlantas')" class="hidden" accept="image/*" required>
-                        <div @click="!loading.fotoLlantas && $refs.fotoLlantasInput.click()" class="cursor-pointer ...">
-                            <template x-if="loading.fotoLlantas">
-                                <div><i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Comprimiendo...</p></div>
+                        <input type="file" name="foto_llantas" x-ref="fotoLlantasInput" @change="previewFile($event, 'fotoLlantasPreview')" class="hidden" accept="image/*" capture="environment" required>
+                        <div @click="$refs.fotoLlantasInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors">
+                            <template x-if="!fotoLlantasPreview">
+                                <div><i class="fas fa-dot-circle text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar imagen</p></div>
                             </template>
-                            <template x-if="!loading.fotoLlantas && !previews.fotoLlantas">
-                                <div><i class="fas fa-dot-circle text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div>
-                            </template>
-                            <template x-if="!loading.fotoLlantas && previews.fotoLlantas">
-                                <img :src="previews.fotoLlantas" class="max-h-48 mx-auto rounded-md">
+                            <template x-if="fotoLlantasPreview">
+                                <img :src="fotoLlantasPreview" class="max-h-48 mx-auto rounded-md">
                             </template>
                         </div>
                     </div>
