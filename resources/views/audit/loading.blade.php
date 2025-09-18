@@ -141,8 +141,8 @@
                     <div class="space-y-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Caja Vacía <span class="text-red-500">*</span></label>
-                            <input type="file" name="foto_caja_vacia" @change="handleImageSelection($event, 'cajaVacia')" class="hidden" accept="image/*" capture="environment" required>
-                            <div @click="!loading.cajaVacia && $el.querySelector('input').click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
+                            <input type="file" name="foto_caja_vacia" x-ref="cajaVaciaInput" @change="handleImageSelection($event, 'cajaVacia')" class="hidden" accept="image/*" capture="environment" required>
+                            <div @click="!loading.cajaVacia && $refs.cajaVaciaInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
                                  <template x-if="loading.cajaVacia"><div><i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Comprimiendo...</p></div></template>
                                  <template x-if="!loading.cajaVacia && !previews.cajaVacia"><div><i class="fas fa-box-open text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div></template>
                                  <template x-if="!loading.cajaVacia && previews.cajaVacia"><img :src="previews.cajaVacia" class="max-h-full max-w-full mx-auto rounded-md object-contain"></template>
@@ -154,8 +154,8 @@
                                 <template x-for="(photo, index) in cargaPhotos" :key="photo.id">
                                     <div class="relative">
                                         <label class="block text-sm font-medium text-gray-700 mb-2" x-text="`Foto ` + (index + 1)"></label>
-                                        <input type="file" name="fotos_carga[]" @change="handleImageSelection($event, 'cargas', index)" class="hidden" accept="image/*" capture="environment" required>
-                                        <div @click="!loading.cargas[index] && $el.querySelector('input').click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
+                                        <input type="file" name="fotos_carga[]" :x-ref="'cargaInput' + index" @change="handleImageSelection($event, 'cargas', index)" class="hidden" accept="image/*" capture="environment" required>
+                                        <div @click="!loading.cargas[index] && $refs['cargaInput' + index].click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
                                             <template x-if="loading.cargas[index]"><div><i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Comprimiendo...</p></div></template>
                                             <template x-if="!loading.cargas[index] && !previews.cargas[index]"><div><i class="fas fa-camera text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div></template>
                                             <template x-if="!loading.cargas[index] && previews.cargas[index]"><img :src="previews.cargas[index]" class="max-h-full max-w-full mx-auto rounded-md object-contain"></template>
@@ -189,8 +189,8 @@
                         </div>
                         <div class="pt-4 border-t">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Marchamo (si aplica)</label>
-                            <input type="file" name="foto_marchamo" @change="handleImageSelection($event, 'marchamo')" class="hidden" accept="image/*" capture="environment">
-                            <div @click="!loading.marchamo && $el.querySelector('input').click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
+                            <input type="file" name="foto_marchamo" x-ref="marchamoInput" @change="handleImageSelection($event, 'marchamo')" class="hidden" accept="image/*" capture="environment">
+                            <div @click="!loading.marchamo && $refs.marchamoInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
                                 <template x-if="loading.marchamo"><div><i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Comprimiendo...</p></div></template>
                                 <template x-if="!loading.marchamo && !previews.marchamo"><div><i class="fas fa-lock text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div></template>
                                 <template x-if="!loading.marchamo && previews.marchamo"><img :src="previews.marchamo" class="max-h-full max-w-full mx-auto rounded-md object-contain"></template>
