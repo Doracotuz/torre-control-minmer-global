@@ -23,6 +23,7 @@ use Illuminate\Support\Str;
 use App\Models\Evento;
 
 
+
 class OrderController extends Controller
 {
     /**
@@ -93,75 +94,85 @@ class OrderController extends Controller
      */
     public function show(CsOrder $order)
     {
-        $order->load('details.product', 'events.user');
+        // 1. Cargamos las relaciones necesarias como lo hacía tu versión funcional
+        $order->load([
+            'details.product',
+            'events.user', // Eventos de la tabla cs_order_events
+            'plannings.guia.eventos' // Eventos de la tabla 'eventos' vía Planificación
+        ]);
 
-        // 1. OBTENER EVENTOS PROPIOS DEL PEDIDO
-        $orderEvents = $order->events->map(function ($event) {
-            return [
-                'type'        => 'Pedido',
-                'description' => $event->description,
-                'date'        => $event->created_at,
-                'user_name'   => $event->user->name ?? 'Sistema',
-                'color'       => 'indigo', // Color para eventos de pedido
-            ];
-        });
+        $timelineEvents = collect();
 
-        // 2. OBTENER NÚMEROS DE FACTURA ASOCIADOS AL PEDIDO
-        // Asegúrate de que tu modelo CsOrder tenga una relación para obtener las facturas.
-        // Si no la tienes, este es un ejemplo de cómo podría ser en el modelo CsOrder:
-        // public function facturas() {
-        //     return $this->hasMany(Factura::class, 'so', 'so_number');
-        // }
-        $invoiceNumbers = $order->facturas->pluck('numero_factura')->unique();
+        // 2. Procesa los eventos principales de la orden (esto ya funcionaba bien)
+        // Estos son los eventos de Auditoría, Planificación, Creación, etc.
+        foreach ($order->events as $event) {
+            $type = 'Pedido';
+            $color = 'blue';
 
-        // 3. OBTENER EVENTOS DE MONITOREO/OPERADOR
-        $monitoringEvents = collect();
-        if ($invoiceNumbers->isNotEmpty()) {
-            // Buscamos los eventos de guías que contienen alguna de las facturas del pedido
-            $guiaIds = \App\Models\Factura::whereIn('numero_factura', $invoiceNumbers)->pluck('guia_id')->unique();
+            $description = strtolower($event->description);
 
-            if ($guiaIds->isNotEmpty()) {
-                $monitoringEvents = Evento::whereIn('guia_id', $guiaIds)
-                    ->with('guia') // Cargar la relación para obtener el nombre del operador
-                    ->orderBy('fecha_evento', 'asc')
-                    ->get()
-                    ->map(function ($event) {
-                        $userName = 'Sistema'; // Valor por defecto
-                        if ($event->tipo === 'Notificacion' || $event->tipo === 'Incidencias' || $event->tipo === 'Entrega') {
-                            $userName = $event->guia->operador ?? 'Operador';
-                        }
-
-                        return [
-                            'type'        => $event->tipo, // 'Sistema', 'Notificacion', 'Incidencias', 'Entrega'
-                            'description' => $event->subtipo . ($event->nota ? ': ' . $event->nota : ''),
-                            'date'        => $event->fecha_evento,
-                            'user_name'   => $userName,
-                            'color'       => $this->getEventColor($event->tipo), // Función para asignar color
-                        ];
-                    });
+            if (str_contains($description, 'auditoría')) {
+                $type = 'Auditoría';
+                $color = 'yellow';
+            } elseif (str_contains($description, 'planificación')) {
+                $type = 'Planificación';
+                $color = 'purple';
+            } elseif (str_contains($description, 'guía')) {
+                $type = 'Guía';
+                $color = 'green';
             }
+
+            $timelineEvents->push([
+                'type' => $type,
+                'description' => $event->description,
+                'user_name' => $event->user->name ?? 'Sistema',
+                'date' => $event->created_at,
+                'color' => $color,
+            ]);
         }
 
-        // 4. UNIR Y ORDENAR TODOS LOS EVENTOS
-        $timelineEvents = $orderEvents->merge($monitoringEvents)->sortByDesc('date');
+        // 3. --- CAMBIO CLAVE: Procesamos los eventos de Monitoreo y Operador de forma detallada ---
+        // Obtenemos la guía a través del primer registro de planificación
+        $planning = $order->plannings->first();
+        if ($planning && $planning->guia) {
+            foreach ($planning->guia->eventos as $event) {
+                
+                $userName = 'Sistema';
+                $eventType = $event->tipo; // Ej: 'Entrega', 'Incidencias'
+
+                // Asignamos 'Operador' si es un evento manual
+                if (in_array($eventType, ['Notificacion', 'Incidencias', 'Entrega'])) {
+                    $userName = $planning->guia->operador ?? 'Operador';
+                }
+
+                $timelineEvents->push([
+                    'type'        => $eventType, // Usamos el tipo real del evento
+                    'description' => $event->subtipo . ($event->nota ? ': ' . $event->nota : ''),
+                    'user_name'   => $userName,
+                    'date'        => $event->fecha_evento,
+                    'color'       => $this->getEventColor($eventType),
+                ]);
+            }
+        }
+        
+        // 4. Ordenamos la colección final por fecha, como antes
+        $timelineEvents = $timelineEvents->sortByDesc('date');
 
         return view('customer-service.orders.show', compact('order', 'timelineEvents'));
     }
 
-    // --- Añadir esta función auxiliar al controlador ---
+    // --- Asegúrate de tener esta función auxiliar en tu controlador ---
     private function getEventColor($eventType)
     {
         switch ($eventType) {
-            case 'Entrega':
-                return 'green';
-            case 'Incidencias':
-                return 'red';
-            case 'Notificacion':
-                return 'yellow';
-            case 'Sistema':
-                return 'gray';
-            default:
-                return 'blue';
+            case 'Entrega': return 'green';
+            case 'Incidencias': return 'red';
+            case 'Notificacion': return 'yellow';
+            case 'Sistema': return 'gray';
+            case 'Guía': return 'green';
+            case 'Auditoría': return 'yellow';
+            case 'Planificación': return 'purple';
+            default: return 'blue';
         }
     }
     /**
