@@ -117,20 +117,21 @@
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-8">
                 <h4 class="text-lg font-semibold text-gray-800 mb-6">Línea de Tiempo</h4>
                 <div class="border-l-2 border-gray-300 pl-6 space-y-8 relative">
-                    
+
                     @forelse($timelineEvents as $event)
                         <div class="relative">
-                            {{-- El color del punto cambia según el tipo de evento --}}
+                            {{-- El color del punto cambia dinámicamente --}}
                             <div class="absolute -left-[33px] top-1 h-4 w-4 bg-{{ $event['color'] }}-500 rounded-full border-4 border-white"></div>
                             <div class="ml-4">
                                 <p class="font-medium text-gray-800 text-sm">
-                                    {{-- Etiqueta de color para el tipo de evento --}}
+                                    {{-- La etiqueta de tipo también es dinámica --}}
                                     <span class="inline-block mr-2 px-2 py-0.5 text-xs font-semibold text-{{ $event['color'] }}-800 bg-{{ $event['color'] }}-100 rounded-full">
                                         {{ $event['type'] }}
                                     </span>
                                     {{ $event['description'] }}
                                 </p>
                                 <p class="text-xs text-gray-500 mt-1">
+                                    {{-- La fecha y el nombre de usuario se muestran correctamente --}}
                                     {{ $event['date']->format('d/m/Y H:i A') }} por {{ $event['user_name'] }}
                                 </p>
                             </div>

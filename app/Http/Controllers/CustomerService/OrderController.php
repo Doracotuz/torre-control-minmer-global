@@ -20,6 +20,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Models\CsPlanning;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Models\Evento;
 
 
 class OrderController extends Controller
@@ -92,60 +93,76 @@ class OrderController extends Controller
      */
     public function show(CsOrder $order)
     {
-        // 1. Cargamos todas las relaciones necesarias para evitar consultas N+1
-        $order->load([
-            'details.product',
-            'events.user',
-            'plannings.guia.eventos.user'
-        ]);
+        $order->load('details.product', 'events.user');
 
-        $timelineEvents = collect();
-
-        // 2. Procesa los eventos del PEDIDO (CsOrderEvent), que ahora incluyen los de Guía y Auditoría
-        foreach ($order->events as $event) {
-            $type = 'Pedido';
-            $color = 'blue'; // Color por defecto
-
-            $description = strtolower($event->description); // Convertimos a minúsculas para una comparación segura
-
-            if (str_contains($description, 'auditoría')) {
-                $type = 'Auditoría';
-                $color = 'yellow';
-            } elseif (str_contains($description, 'planificación')) {
-                $type = 'Planificación';
-                $color = 'purple';
-            } elseif (str_contains($description, 'guía')) { // <-- LÓGICA AÑADIDA
-                $type = 'Guía';
-                $color = 'green';
-            }
-
-            $timelineEvents->push([
-                'type' => $type,
+        // 1. OBTENER EVENTOS PROPIOS DEL PEDIDO
+        $orderEvents = $order->events->map(function ($event) {
+            return [
+                'type'        => 'Pedido',
                 'description' => $event->description,
-                'user_name' => $event->user->name ?? 'Sistema',
-                'date' => $event->created_at,
-                'color' => $color,
-            ]);
-        }
+                'date'        => $event->created_at,
+                'user_name'   => $event->user->name ?? 'Sistema',
+                'color'       => 'indigo', // Color para eventos de pedido
+            ];
+        });
 
-        // 3. (Opcional) Procesa eventos de la tabla 'eventos' si aún los usas para algo específico
-        if ($guia = optional(optional($order->plannings)->first())->guia) {
-            foreach ($guia->eventos as $event) {
-                // Si encuentras eventos duplicados, puedes comentar o eliminar este bloque
-                $timelineEvents->push([
-                    'type' => 'Logística (Legacy)',
-                    'description' => $event->descripcion,
-                    'user_name' => $event->user->name ?? 'Sistema',
-                    'date' => $event->fecha_evento,
-                    'color' => 'gray',
-                ]);
+        // 2. OBTENER NÚMEROS DE FACTURA ASOCIADOS AL PEDIDO
+        // Asegúrate de que tu modelo CsOrder tenga una relación para obtener las facturas.
+        // Si no la tienes, este es un ejemplo de cómo podría ser en el modelo CsOrder:
+        // public function facturas() {
+        //     return $this->hasMany(Factura::class, 'so', 'so_number');
+        // }
+        $invoiceNumbers = $order->facturas->pluck('numero_factura')->unique();
+
+        // 3. OBTENER EVENTOS DE MONITOREO/OPERADOR
+        $monitoringEvents = collect();
+        if ($invoiceNumbers->isNotEmpty()) {
+            // Buscamos los eventos de guías que contienen alguna de las facturas del pedido
+            $guiaIds = \App\Models\Factura::whereIn('numero_factura', $invoiceNumbers)->pluck('guia_id')->unique();
+
+            if ($guiaIds->isNotEmpty()) {
+                $monitoringEvents = Evento::whereIn('guia_id', $guiaIds)
+                    ->with('guia') // Cargar la relación para obtener el nombre del operador
+                    ->orderBy('fecha_evento', 'asc')
+                    ->get()
+                    ->map(function ($event) {
+                        $userName = 'Sistema'; // Valor por defecto
+                        if ($event->tipo === 'Notificacion' || $event->tipo === 'Incidencias' || $event->tipo === 'Entrega') {
+                            $userName = $event->guia->operador ?? 'Operador';
+                        }
+
+                        return [
+                            'type'        => $event->tipo, // 'Sistema', 'Notificacion', 'Incidencias', 'Entrega'
+                            'description' => $event->subtipo . ($event->nota ? ': ' . $event->nota : ''),
+                            'date'        => $event->fecha_evento,
+                            'user_name'   => $userName,
+                            'color'       => $this->getEventColor($event->tipo), // Función para asignar color
+                        ];
+                    });
             }
         }
-        
-        // 4. Ordenamos la colección final por fecha
-        $timelineEvents = $timelineEvents->sortByDesc('date');
+
+        // 4. UNIR Y ORDENAR TODOS LOS EVENTOS
+        $timelineEvents = $orderEvents->merge($monitoringEvents)->sortByDesc('date');
 
         return view('customer-service.orders.show', compact('order', 'timelineEvents'));
+    }
+
+    // --- Añadir esta función auxiliar al controlador ---
+    private function getEventColor($eventType)
+    {
+        switch ($eventType) {
+            case 'Entrega':
+                return 'green';
+            case 'Incidencias':
+                return 'red';
+            case 'Notificacion':
+                return 'yellow';
+            case 'Sistema':
+                return 'gray';
+            default:
+                return 'blue';
+        }
     }
     /**
      * Muestra el formulario para editar un pedido.
