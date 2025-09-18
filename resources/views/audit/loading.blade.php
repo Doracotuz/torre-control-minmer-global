@@ -10,60 +10,34 @@
         cargaPhotos: [ { id: 1 }, { id: 2 }, { id: 3 } ],
         
         previews: { cajaVacia: null, marchamo: null, cargas: [null, null, null] },
-        loading: { cajaVacia: false, marchamo: false, cargas: [false, false, false] },
 
         addPhotoField() {
             this.cargaPhotos.push({ id: Date.now() });
             this.previews.cargas.push(null);
-            this.loading.cargas.push(false);
         },
 
         removePhotoField(index) {
             if (this.cargaPhotos.length > 3) {
                 this.cargaPhotos.splice(index, 1);
                 this.previews.cargas.splice(index, 1);
-                this.loading.cargas.splice(index, 1);
             }
         },
 
-        async handleImageSelection(event, target, index = null) {
+        // --- Lógica de vista previa SIN compresión ---
+        previewFile(event, target, index = null) {
             const file = event.target.files[0];
-            if (!file) return;
-
-            // --- INICIA CÓDIGO MEJORADO ---
-            // Verificamos si la librería existe ANTES de intentar usarla
-            if (typeof imageCompression === 'undefined') {
-                alert('Error crítico: La librería de compresión de imágenes no se ha cargado.');
+            if (!file) {
+                if (index !== null) { this.previews[target][index] = null; } 
+                else { this.previews[target] = null; }
                 return;
             }
-            // --- FIN CÓDIGO MEJORADO ---
 
-            const setLoading = (val) => {
-                if (index !== null) this.loading[target][index] = val; else this.loading[target] = val;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (index !== null) { this.previews[target][index] = e.target.result; } 
+                else { this.previews[target] = e.target.result; }
             };
-            const setPreview = (val) => {
-                if (index !== null) this.previews[target][index] = val; else this.previews[target] = val;
-            };
-
-            setLoading(true);
-            setPreview(null);
-
-            const options = { maxSizeMB: 1.5, maxWidthOrHeight: 1920, useWebWorker: true };
-
-            try {
-                const compressedFile = await imageCompression(file, options);
-                setPreview(await imageCompression.getDataUrlFromFile(compressedFile));
-
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(compressedFile);
-                event.target.files = dataTransfer.files;
-            } catch (error) {
-                console.error('Error al comprimir:', error);
-                // Mostramos un error más detallado
-                alert(`Hubo un error al procesar la imagen: ${error.message}`);
-            } finally {
-                setLoading(false);
-            }
+            reader.readAsDataURL(file);
         }
      }">
 
@@ -142,11 +116,10 @@
                     <div class="space-y-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Caja Vacía <span class="text-red-500">*</span></label>
-                            <input type="file" name="foto_caja_vacia" x-ref="cajaVaciaInput" @change="handleImageSelection($event, 'cajaVacia')" class="hidden" accept="image/*" capture="environment" required>
-                            <div @click="!loading.cajaVacia && $refs.cajaVaciaInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
-                                 <template x-if="loading.cajaVacia"><div><i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Comprimiendo...</p></div></template>
-                                 <template x-if="!loading.cajaVacia && !previews.cajaVacia"><div><i class="fas fa-box-open text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div></template>
-                                 <template x-if="!loading.cajaVacia && previews.cajaVacia"><img :src="previews.cajaVacia" class="max-h-full max-w-full mx-auto rounded-md object-contain"></template>
+                            <input type="file" name="foto_caja_vacia" x-ref="cajaVaciaInput" @change="previewFile($event, 'cajaVacia')" class="hidden" accept="image/*" capture="environment" required>
+                            <div @click="$refs.cajaVaciaInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
+                                 <template x-if="!previews.cajaVacia"><div><i class="fas fa-box-open text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div></template>
+                                 <template x-if="previews.cajaVacia"><img :src="previews.cajaVacia" class="max-h-full max-w-full mx-auto rounded-md object-contain"></template>
                             </div>
                         </div>
                         <div>
@@ -155,11 +128,10 @@
                                 <template x-for="(photo, index) in cargaPhotos" :key="photo.id">
                                     <div class="relative">
                                         <label class="block text-sm font-medium text-gray-700 mb-2" x-text="`Foto ` + (index + 1)"></label>
-                                        <input type="file" name="fotos_carga[]" :id="'cargaInput' + index" @change="handleImageSelection($event, 'cargas', index)" class="hidden" accept="image/*" capture="environment" required>
-                                        <div @click="!loading.cargas[index] && document.getElementById('cargaInput' + index).click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
-                                            <template x-if="loading.cargas[index]"><div><i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Comprimiendo...</p></div></template>
-                                            <template x-if="!loading.cargas[index] && !previews.cargas[index]"><div><i class="fas fa-camera text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div></template>
-                                            <template x-if="!loading.cargas[index] && previews.cargas[index]"><img :src="previews.cargas[index]" class="max-h-full max-w-full mx-auto rounded-md object-contain"></template>
+                                        <input type="file" name="fotos_carga[]" :id="'cargaInput' + index" @change="previewFile($event, 'cargas', index)" class="hidden" accept="image/*" capture="environment" required>
+                                        <div @click="document.getElementById('cargaInput' + index).click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
+                                            <template x-if="!previews.cargas[index]"><div><i class="fas fa-camera text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div></template>
+                                            <template x-if="previews.cargas[index]"><img :src="previews.cargas[index]" class="max-h-full max-w-full mx-auto rounded-md object-contain"></template>
                                         </div>
                                         <template x-if="cargaPhotos.length > 3">
                                             <button type="button" @click="removePhotoField(index)" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-6 w-6 flex items-center justify-center text-xs shadow">&times;</button>
@@ -190,11 +162,10 @@
                         </div>
                         <div class="pt-4 border-t">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Marchamo (si aplica)</label>
-                            <input type="file" name="foto_marchamo" x-ref="marchamoInput" @change="handleImageSelection($event, 'marchamo')" class="hidden" accept="image/*" capture="environment">
-                            <div @click="!loading.marchamo && $refs.marchamoInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
-                                <template x-if="loading.marchamo"><div><i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Comprimiendo...</p></div></template>
-                                <template x-if="!loading.marchamo && !previews.marchamo"><div><i class="fas fa-lock text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div></template>
-                                <template x-if="!loading.marchamo && previews.marchamo"><img :src="previews.marchamo" class="max-h-full max-w-full mx-auto rounded-md object-contain"></template>
+                            <input type="file" name="foto_marchamo" x-ref="marchamoInput" @change="previewFile($event, 'marchamo')" class="hidden" accept="image/*" capture="environment">
+                            <div @click="$refs.marchamoInput.click()" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors h-48 flex items-center justify-center">
+                                <template x-if="!previews.marchamo"><div><i class="fas fa-lock text-4xl text-gray-400"></i><p class="mt-2 text-sm text-gray-600">Clic para seleccionar</p></div></template>
+                                <template x-if="previews.marchamo"><img :src="previews.marchamo" class="max-h-full max-w-full mx-auto rounded-md object-contain"></template>
                             </div>
                         </div>
                      </div>
