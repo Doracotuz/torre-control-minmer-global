@@ -109,7 +109,13 @@
 
                         <div><label for="executive" class="block text-sm font-medium text-gray-700">Ejecutivo</label><input type="text" name="executive" value="{{ old('executive', $order->executive) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div><label for="evidence_reception_date" class="block text-sm font-medium text-gray-700">Recepción de Evidencia</label><input type="date" name="evidence_reception_date" value="{{ old('evidence_reception_date', $order->evidence_reception_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
-                        
+                        <div>
+                            <label for="is_oversized" class="block text-sm font-medium text-gray-700">Sobredimensionado</label>
+                            <select name="is_oversized" id="is_oversized" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="0" {{ old('is_oversized', $order->is_oversized) == false ? 'selected' : '' }}>No</option>
+                                <option value="1" {{ old('is_oversized', $order->is_oversized) == true ? 'selected' : '' }}>Sí</option>
+                            </select>
+                        </div>                        
                         {{-- Campo de Fecha de Corte ahora es de solo lectura para evitar modificación manual --}}
                         <div>
                             <label for="evidence_cutoff_date" class="block text-sm font-medium text-gray-700">Corte de Evidencias</label>

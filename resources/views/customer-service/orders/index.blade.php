@@ -208,7 +208,7 @@
                 origin_warehouse: 'Almacén Origen', destination_locality: 'Localidad Destino',
                 total_bottles: 'Botellas', total_boxes: 'Cajas', subtotal: 'Subtotal',
                 delivery_date: 'F. Entrega', schedule: 'Horario', client_contact: 'Cliente',
-                shipping_address: 'Dirección', executive: 'Ejecutivo', observations: 'Observaciones',
+                shipping_address: 'Dirección', executive: 'Ejecutivo', observations: 'Observaciones',is_oversized: 'Sobredim.',
                 evidence_reception_date: 'Recep. Evidencia', evidence_cutoff_date: 'Corte Evidencia',
             },
             orders: [],
@@ -274,6 +274,15 @@
                     localStorage.setItem('csOrderPerPage', newValue);
                 });
                 this.$watch('visibleColumns', (val) => {
+
+                    const visibleKeys = Object.keys(val).filter(key => val[key]);
+
+                    const newColumns = visibleKeys.filter(key => !this.columnOrder.includes(key));
+
+                    if (newColumns.length > 0) {
+                        this.columnOrder = [...this.columnOrder, ...newColumns];
+                    }
+
                     localStorage.setItem('csOrderVisibleColumns', JSON.stringify(val));
                     this.$nextTick(() => this.reinitTableInteractions());
                 }, { deep: true });

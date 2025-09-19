@@ -146,6 +146,14 @@
                         <div><label class="block text-sm font-medium text-gray-700">Contacto Cliente</label><input type="text" name="client_contact" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div><label class="block text-sm font-medium text-gray-700">Ejecutivo</label><input type="text" name="executive" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div>
+                            <label class="block text-sm font-medium text-gray-700">Sobredimensionado</label>
+                            <select name="is_oversized" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="">No Cambiar</option>
+                                <option value="0">No</option>
+                                <option value="1">Sí</option>
+                            </select>
+                        </div>                        
+                        <div>
                             <label class="block text-sm font-medium text-gray-700">Recepción de Evidencia</label>
                             <input type="date" name="evidence_reception_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                         </div>

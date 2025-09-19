@@ -43,9 +43,16 @@
                                         x-text="order.status">
                                     </span>
                                 </template>
-                                <template x-if="columnKey !== 'status'">
+
+                                <template x-if="columnKey === 'is_oversized'">
+                                    <span x-text="order.is_oversized ? 'Sí' : 'No'" 
+                                        class="inline-block px-2 rounded-full"
+                                        :class="order.is_oversized ? 'font-semibold text-yellow-800 bg-yellow-100' : 'text-gray-600'"></span>
+                                </template>
+
+                                <template x-if="!['status', 'is_oversized'].includes(columnKey)">
                                     <span class="block overflow-hidden text-ellipsis whitespace-nowrap" 
-                                          x-text="getFormattedCell(order, columnKey)">
+                                        x-text="getFormattedCell(order, columnKey)">
                                     </span>
                                 </template>
                             </td>

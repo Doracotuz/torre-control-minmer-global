@@ -23,6 +23,7 @@
             <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.executive" class="rounded"> <span class="ml-2">Ejecutivo</span></label></div>
             <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.status" class="rounded"> <span class="ml-2">Estatus</span></label></div>
             <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.observations" class="rounded"> <span class="ml-2">Observaciones</span></label></div>
+            <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.is_oversized" class="rounded"> <span class="ml-2">Sobredimensionado</span></label></div>
             <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.evidence_reception_date" class="rounded"> <span class="ml-2">Recepción Evidencia</span></label></div>
             <div><label class="inline-flex items-center"><input type="checkbox" x-model="visibleColumns.evidence_cutoff_date" class="rounded"> <span class="ml-2">Corte Evidencias</span></label></div>
         </div>

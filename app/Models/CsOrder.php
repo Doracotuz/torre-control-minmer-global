@@ -19,6 +19,7 @@ class CsOrder extends Model
         'delivery_date' => 'date',
         'evidence_reception_date' => 'date',
         'evidence_cutoff_date' => 'date',
+        'is_oversized' => 'boolean',
     ];
 
     public function details() { return $this->hasMany(CsOrderDetail::class); }

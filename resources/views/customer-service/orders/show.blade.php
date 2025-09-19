@@ -77,7 +77,16 @@
                     <div><strong class="block text-gray-500">Localidad Destino:</strong><span>{{ $order->destination_locality ?? 'Sin dato' }}</span></div>
                     <div><strong class="block text-gray-500">Contacto Cliente:</strong><span>{{ $order->client_contact ?? 'Sin dato' }}</span></div>
                     <div><strong class="block text-gray-500">Ejecutivo:</strong><span>{{ $order->executive ?? 'Sin dato' }}</span></div>
-                    
+                    <div>
+                        <strong class="block text-gray-500">Sobredimensionado:</strong>
+                        <span>
+                            @if($order->is_oversized)
+                                <span class="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-100 rounded-full">Sí</span>
+                            @else
+                                No
+                            @endif
+                        </span>
+                    </div>                    
                     {{-- ✅ INICIA CAMBIO: Se añade el nuevo campo --}}
                     <div><strong class="block text-gray-500">Recepción de Evidencia:</strong><span>{{ $order->evidence_reception_date ? $order->evidence_reception_date->format('d/m/Y') : 'Sin dato' }}</span></div>
                     <div><strong class="block text-gray-500">Corte de Evidencias:</strong><span>{{ $order->evidence_cutoff_date ? $order->evidence_cutoff_date->format('d/m/Y') : 'Sin dato' }}</span></div>

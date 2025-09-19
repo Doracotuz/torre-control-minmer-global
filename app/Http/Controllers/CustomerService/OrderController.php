@@ -203,6 +203,7 @@ class OrderController extends Controller
             'observations' => 'nullable|string',
             'evidence_reception_date' => 'nullable|date_format:Y-m-d',
             'evidence_cutoff_date' => 'nullable|date_format:Y-m-d',
+            'is_oversized' => 'nullable|boolean',
             'details' => 'array',
             'details.*.id' => 'required|exists:cs_order_details,id',
             'details.*.sent' => 'nullable|integer|min:0',
@@ -221,6 +222,7 @@ class OrderController extends Controller
             'observations' => 'Observaciones',
             'evidence_reception_date' => 'Fecha de Recepción de Evidencia',
             'evidence_cutoff_date' => 'Fecha de Corte de Evidencia',
+            'is_oversized' => 'Sobredimensionado',
         ];
 
         $changes = [];
@@ -836,6 +838,7 @@ class OrderController extends Controller
             'executive' => 'nullable|string|max:255',
             'evidence_reception_date' => 'nullable|date_format:Y-m-d',
             'evidence_cutoff_date' => 'nullable|date_format:Y-m-d',
+            'is_oversized' => 'nullable|boolean',
             // --- INICIA MODIFICACIÓN ---
             'invoices' => 'nullable|array',
             'invoices.*.invoice_number' => 'nullable|string|max:255',
