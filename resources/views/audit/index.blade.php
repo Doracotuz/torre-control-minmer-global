@@ -8,6 +8,12 @@
     </div>
 
     <div class="p-4">
+        <div class="flex justify-between items-center mb-4">
+            
+            <a href="{{ route('audit.carga-plan.show') }}" class="bg-[#2c3856] text-white font-bold py-1 px-2 rounded hover:bg-indigo-700 transition duration-300 text-xs">
+                <i class="fas fa-calendar-alt mr-2"></i>Ver Plan de Carga
+            </a>
+        </div>        
         {{-- Incluimos los filtros que ya funcionan --}}
         @include('audit.partials.filters')
 

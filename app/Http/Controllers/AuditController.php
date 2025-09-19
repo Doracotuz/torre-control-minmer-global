@@ -15,6 +15,7 @@ use App\Mail\UnidadArriboMail;
 use App\Models\AuditIncidencia;
 use Illuminate\Support\Facades\Storage;
 use App\Mail\AuditReabiertaMail;
+use App\Models\CsPlanning;
 
 class AuditController extends Controller
 {
@@ -323,6 +324,45 @@ class AuditController extends Controller
         CsOrderEvent::create(['cs_order_id' => $audit->cs_order_id, 'user_id' => Auth::id(), 'description' => 'Auditoría de carga finalizada en ' . $audit->location]);
         
         return redirect()->route('audit.index')->with('success', 'Auditoría de carga completada exitosamente.');
+    }
+
+    public function showCargaPlan(Request $request)
+    {
+        $selectedDate = $request->input('fecha', now()->format('Y-m-d'));
+        $selectedOrigen = $request->input('origen');
+
+        $origenes = CsPlanning::whereDate('fecha_carga', $selectedDate)
+            ->whereNotNull('origen')
+            ->distinct()
+            ->pluck('origen');
+
+        $query = Guia::whereDate('fecha_asignacion', $selectedDate)
+            ->where('estatus', '!=', 'Cancelado')
+            ->with([
+                'plannings.order.customer',
+                'plannings.order.audits',
+            ]);
+
+        if ($selectedOrigen) {
+            $query->whereHas('plannings', function ($q) use ($selectedOrigen) {
+                $q->where('origen', $selectedOrigen);
+            });
+        }
+        
+        $guias = $query->orderBy('hora_planeada', 'asc')->get();
+
+        // --- INICIO: CÁLCULO DE ESTADÍSTICAS DEL DASHBOARD ---
+        $allPlannings = $guias->flatMap->plannings;
+
+        $stats = [
+            'totalGuias' => $guias->count(),
+            'totalDocumentos' => $allPlannings->pluck('cs_order_id')->unique()->count(),
+            'totalCajas' => $allPlannings->sum('cajas'),
+            'totalPiezas' => $allPlannings->sum('pzs'),
+        ];
+        // --- FIN: CÁLCULO DE ESTADÍSTICAS ---
+
+        return view('audit.plan-de-carga', compact('guias', 'selectedDate', 'origenes', 'selectedOrigen', 'stats'));
     }
 
     /**

@@ -564,6 +564,8 @@ Route::middleware(['auth', 'verified'])->prefix('audit')->name('audit.')->group(
 
         Route::get('/', [App\Http\Controllers\AuditController::class, 'index'])->name('index');
 
+        Route::get('/plan-de-carga', [App\Http\Controllers\AuditController::class, 'showCargaPlan'])->name('carga-plan.show');
+
         Route::get('/warehouse/{audit}', [App\Http\Controllers\AuditController::class, 'showWarehouseAudit'])->name('warehouse.show');
         Route::post('/warehouse/{audit}', [App\Http\Controllers\AuditController::class, 'storeWarehouseAudit'])->name('warehouse.store');
 
