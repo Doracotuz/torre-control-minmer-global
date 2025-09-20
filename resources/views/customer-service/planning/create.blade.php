@@ -91,6 +91,16 @@
                             <label class="block text-sm font-medium text-gray-700">Subtotal</label>
                             <input type="number" step="0.01" name="subtotal" value="{{ old('subtotal') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                         </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Maniobras</label>
+                            <input type="number" name="maniobras" value="{{ old('maniobras', 0) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">Observaciones</label>
+                            <textarea name="observaciones" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">{{ old('observaciones') }}</textarea>
+                        </div>
+
                         <div class="md:col-span-2">
                             <label for="canal" class="block text-sm font-medium text-gray-700">Canal</label>
                             <select name="canal" id="canal" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">

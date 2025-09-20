@@ -73,6 +73,28 @@
                         </div>
                     </div>
 
+                    <div class="mt-10 border-t pt-6">
+                        <h3 class="text-lg font-semibold text-[#2c3856]">Resumen de Carga</h3>
+                    </div>
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-5 gap-6">
+                        <div class="md:col-span-1 bg-gray-50 p-4 rounded-lg border text-center">
+                            <p class="text-sm font-medium text-gray-500">Total Maniobras</p>
+                            <p class="text-2xl font-bold text-gray-800">{{ $planningRecords->sum('maniobras') }}</p>
+                        </div>
+                        <div class="md:col-span-4 bg-gray-50 p-4 rounded-lg border">
+                            <p class="text-sm font-medium text-gray-500 mb-2">Observaciones de la Carga</p>
+                            @if(isset($observacionesConSO) && $observacionesConSO->isNotEmpty())
+                                <ul class="list-none space-y-1 text-sm text-gray-700">
+                                    @foreach($observacionesConSO as $item)
+                                        <li><strong class="text-blue-600">{{ $item['so'] }}:</strong> {{ $item['observacion'] }}</li>
+                                    @endforeach
+                                </ul>
+                            @else
+                                <p class="text-sm text-gray-500">No hay observaciones en las órdenes seleccionadas.</p>
+                            @endif
+                        </div>
+                    </div>                    
+
                     <div class="mt-10">
                         <h3 class="text-lg font-semibold text-[#2c3856] border-b pb-2 mb-6">Facturas de la Guía</h3>
                         <template x-for="(factura, index) in facturas" :key="index">

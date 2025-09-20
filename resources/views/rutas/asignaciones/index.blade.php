@@ -122,10 +122,15 @@
                             </div>
                             <div class="p-6 flex-grow overflow-y-auto">
                                 {{-- Información General de la Guía --}}
+                                
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 mb-6 bg-gray-50 p-4 rounded-lg border text-sm">
                                     <div><strong class="block text-gray-500">Operador:</strong> <span x-text="selectedGuia.operador || 'N/A'"></span></div>
                                     <div><strong class="block text-gray-500">Placas:</strong> <span x-text="selectedGuia.placas || 'N/A'"></span></div>
                                     <div><strong class="block text-gray-500">Teléfono:</strong> <span x-text="selectedGuia.telefono || 'N/A'"></span></div>
+                                    <div>
+                                        <strong class="block text-gray-500">Capacidad:</strong> 
+                                        <span class="font-bold text-blue-700" x-text="selectedGuia.capacidad || 'N/A'"></span>
+                                    </div>                                    
                                     <div><strong class="block text-gray-500">Origen:</strong> <span x-text="selectedGuia.origen || 'N/A'"></span></div>
                                     <div><strong class="block text-gray-500">Fecha Asignación:</strong> <span x-text="formatDate(selectedGuia.fecha_asignacion)"></span></div>
                                     <div><strong class="block text-gray-500">Custodia:</strong> <span x-text="selectedGuia.custodia || 'N/A'"></span></div>
@@ -147,7 +152,8 @@
                                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Destino</th>
                                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cajas / Botellas</th>
                                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fecha Entrega</th>
-                                            </tr>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Hora Cita</th>
+                                                </tr>
                                         </thead>
                                         <tbody class="bg-white divide-y divide-gray-200">
                                             <template x-for="factura in selectedGuia.facturas" :key="factura.id">
@@ -157,11 +163,32 @@
                                                     <td class="px-4 py-3" x-text="factura.destino"></td>
                                                     <td class="px-4 py-3" x-text="`${factura.cajas} / ${factura.botellas}`"></td>
                                                     <td class="px-4 py-3" x-text="formatDate(factura.fecha_entrega)"></td>
-                                                </tr>
+                                                    <td class="px-4 py-3" x-text="factura.hora_cita || 'N/A'"></td>
+                                                    </tr>
                                             </template>
                                         </tbody>
                                     </table>
                                 </div>
+                                <div class="mt-6 grid grid-cols-1 md:grid-cols-5 gap-x-6">
+                                    <div class="md:col-span-1 bg-gray-50 p-4 rounded-lg border text-center">
+                                        <strong class="block text-gray-500 text-sm">Total Maniobras</strong>
+                                        <span class="text-2xl font-bold text-[#2c3856]" x-text="selectedGuia.total_maniobras || 0"></span>
+                                    </div>
+                                    <div class="md:col-span-4 bg-gray-50 p-4 rounded-lg border mt-4 md:mt-0">
+                                        <strong class="block text-gray-500 text-sm mb-2">Observaciones de la Carga</strong>
+                                        <template x-if="selectedGuia.observaciones_con_so && selectedGuia.observaciones_con_so.length > 0">
+                                            <ul class="list-none space-y-1 text-sm text-gray-800">
+                                                <template x-for="item in selectedGuia.observaciones_con_so" :key="item.so">
+                                                    <li><strong class="text-blue-600" x-text="item.so + ':'"></strong> <span x-text="item.observacion"></span></li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                        <template x-if="!selectedGuia.observaciones_con_so || selectedGuia.observaciones_con_so.length === 0">
+                                            <p class="text-sm text-gray-500">No hay observaciones registradas.</p>
+                                        </template>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </template>
@@ -198,6 +225,32 @@
                             <button @click="closeAllModals()" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
                         </div>
                         <div class="p-6 flex-grow overflow-y-auto">
+                            <div class="mb-6 border-b pb-4">
+                                <h4 class="text-md font-semibold text-gray-700 mb-2">Resumen de Carga</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                    <div class="md:col-span-1 bg-gray-100 p-3 rounded-lg border text-center">
+                                        <p class="text-xs font-medium text-gray-500">Total Maniobras</p>
+                                        <p class="text-xl font-bold text-gray-800" x-text="editData.total_maniobras || 0"></p>
+                                    </div>
+                                    <div class="md:col-span-1 bg-gray-100 p-3 rounded-lg border text-center">
+                                        <p class="text-xs font-medium text-gray-500">Capacidad</p>
+                                        <p class="text-xl font-bold text-blue-700" x-text="editData.capacidad || 'N/A'"></p>
+                                    </div>                                    
+                                    <div class="md:col-span-4 bg-gray-100 p-3 rounded-lg border">
+                                        <p class="text-xs font-medium text-gray-500 mb-1">Observaciones</p>
+                                        <template x-if="editData.observaciones_con_so && editData.observaciones_con_so.length > 0">
+                                            <ul class="list-none space-y-1 text-sm text-gray-700">
+                                                <template x-for="item in editData.observaciones_con_so" :key="item.so">
+                                                    <li><strong class="text-blue-600" x-text="item.so + ':'"></strong> <span x-text="item.observacion"></span></li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                        <template x-if="!editData.observaciones_con_so || editData.observaciones_con_so.length === 0">
+                                            <p class="text-sm text-gray-500">No hay observaciones.</p>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>                            
                             <form @submit.prevent="submitEditForm()">
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div><label class="block text-sm font-medium">Operador</label><input type="text" x-model="editData.operador" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"></div>
@@ -293,8 +346,40 @@
                     this.searchRoutes();
                 },
                 openDetailsModal(guia) {
-                    this.selectedGuia = guia;
+                    // 1. Abre el modal inmediatamente con los datos básicos y muestra "cargando".
+                    this.selectedGuia = guia; // Muestra la info básica que ya tienes.
                     this.isDetailsModalOpen = true;
+                    this.isLoading = true;
+
+                    // 2. Realiza la petición al servidor para obtener los detalles completos.
+                    fetch(`/rutas/asignaciones/${guia.id}/details`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => {
+                        if (!res.ok) {
+                            throw new Error('La respuesta del servidor no fue exitosa.');
+                        }
+                        return res.json();
+                    })
+                    .then(data => {
+                        // 3. ✅ CAMBIO CLAVE: Actualizamos el objeto existente en lugar de reemplazarlo.
+                        // Esto es más robusto para la reactividad de la interfaz.
+                        Object.assign(this.selectedGuia, data.guia); // Combina los datos detallados de la guía.
+                        this.selectedGuia.total_maniobras = data.total_maniobras;
+                        this.selectedGuia.observaciones_con_so = data.observaciones_con_so; // <-- Añade las observaciones.
+                        this.selectedGuia.capacidad = data.capacidad;
+                        this.isLoading = false; // Oculta el indicador de carga.
+                    })
+                    .catch(error => {
+                        // 4. Si algo falla, informa al usuario y cierra el modal.
+                        console.error("Error al cargar los detalles de la guía:", error);
+                        alert('No se pudieron cargar los detalles completos de la guía.');
+                        this.isLoading = false;
+                        this.isDetailsModalOpen = false;
+                    });
                 },
                 closeAllModals() {
                     this.isAssignModalOpen = false;
@@ -317,12 +402,31 @@
                     this.isLoading = true;
                     this.isEditModalOpen = true;
                     this.editData = {};
-                    fetch(`/rutas/asignaciones/${guiaId}/edit`)
-                        .then(res => res.json())
-                        .then(data => {
-                            this.editData = data;
-                            this.isLoading = false;
-                        });
+                    
+                    // ✅ INICIA CAMBIO
+                    fetch(`/rutas/asignaciones/${guiaId}/edit`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    // ⏹️ TERMINA CAMBIO
+                    .then(res => {
+                        if (!res.ok) {
+                            throw new Error('El servidor respondió con un error.');
+                        }
+                        return res.json();
+                    })
+                    .then(data => {
+                        this.editData = data;
+                        this.isLoading = false; 
+                    })
+                    .catch(error => {
+                        console.error("Error al cargar los datos para editar:", error);
+                        alert('No se pudieron cargar los datos para editar. Revisa la consola para más detalles.');
+                        this.isLoading = false;
+                        this.isEditModalOpen = false;
+                    });
                 },
                 submitEditForm() {
                     fetch(`/rutas/asignaciones/${this.editData.id}`, {

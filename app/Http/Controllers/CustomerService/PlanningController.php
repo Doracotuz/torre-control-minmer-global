@@ -39,6 +39,8 @@ class PlanningController extends Controller
             'pzs' => 'Pzs',
             'cajas' => 'Cajas',
             'subtotal' => 'Subtotal',
+            'observaciones' => 'Observaciones',
+            'maniobras' => 'Maniobras', 
             'canal' => 'Canal',
             'transporte' => 'Transporte',
             'operador' => 'Operador',
@@ -139,7 +141,7 @@ class PlanningController extends Controller
         
         // Cargar la relación 'guia' después de paginar para el JSON
         $plannings = $query->paginate($perPage)->withQueryString();
-        $plannings->getCollection()->load('guia');
+        $plannings->getCollection()->load(['guia', 'order']);
 
         return response()->json($plannings);
     }
@@ -206,6 +208,8 @@ class PlanningController extends Controller
             'cajas' => 'nullable|integer',
             'subtotal' => 'nullable|numeric',
             'canal' => 'nullable|string|max:255',
+            'observaciones' => 'nullable|string',
+            'maniobras' => 'nullable|integer|min:0',
         ]);
         
         $validatedData['status'] = 'En Espera';
@@ -314,6 +318,8 @@ class PlanningController extends Controller
             'telefono' => 'nullable|string|max:255',
             'estatus_de_entrega' => 'nullable|string|max:255',
             'urgente' => 'nullable|string',
+            'observaciones' => 'nullable|string',
+            'maniobras' => 'nullable|integer|min:0',
         ]);
         
         $originalData = $planning->getOriginal();
@@ -398,6 +404,8 @@ class PlanningController extends Controller
             'telefono' => 'nullable|string|max:255',
             'estatus_de_entrega' => 'nullable|string|max:255',
             'urgente' => 'nullable|string',
+            'observaciones' => 'nullable|string',
+            'maniobras' => 'nullable|integer|min:0',
         ]);
 
         $planningIds = json_decode($validatedData['ids']);

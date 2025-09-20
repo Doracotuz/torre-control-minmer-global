@@ -121,6 +121,14 @@
                             <option value="">--</option>
                             @foreach($options['urgente'] as $option) <option value="{{ $option }}" @selected(old('urgente', $planning->urgente) == $option)>{{ $option }}</option> @endforeach
                         </select></div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Maniobras</label>
+                            <input type="number" name="maniobras" value="{{ old('maniobras', $planning->maniobras) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700">Observaciones</label>
+                            <textarea name="observaciones" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">{{ old('observaciones', $planning->observaciones) }}</textarea>
+                        </div>                        
                     </div>
                     
                     <div class="flex justify-end gap-4 mt-8">

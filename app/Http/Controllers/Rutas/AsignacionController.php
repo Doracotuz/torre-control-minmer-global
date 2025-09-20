@@ -181,6 +181,7 @@ class AsignacionController extends Controller
     public function create(Request $request)
     {
         $facturasData = [];
+        $planningRecords = collect();
         $guiaData = [
             'custodia' => $request->query('custodia'),
             'hora_planeada' => $request->query('hora_planeada'),
@@ -211,10 +212,17 @@ class AsignacionController extends Controller
             }
         }
         
-        // Pasamos también los IDs para saber qué registros actualizar después
+        // ✅ INICIA CAMBIO: Añadimos la lógica para procesar las observaciones
+        $observacionesConSO = $planningRecords
+            ->filter(fn($p) => !empty($p->observaciones))
+            ->map(fn($p) => ['so' => $p->so_number ?? 'Manual', 'observacion' => $p->observaciones])
+            ->values();
+        // ⏹️ TERMINA CAMBIO
+        
         $planning_ids = json_encode($request->query('planning_ids', []));
 
-        return view('rutas.asignaciones.create', compact('facturasData', 'guiaData', 'planning_ids'));
+        // Añadimos la nueva variable a los datos que se envían a la vista
+        return view('rutas.asignaciones.create', compact('facturasData', 'guiaData', 'planning_ids', 'planningRecords', 'observacionesConSO'));
     }
 
     public function store(Request $request)
@@ -311,10 +319,33 @@ class AsignacionController extends Controller
         }
     }
 
-    public function edit(Guia $guia)
+    public function edit(Guia $guia, Request $request)
     {
-        $guia->load('facturas');
-        return response()->json($guia);
+        $guia->load('facturas', 'plannings');
+
+        // ✅ INICIA CAMBIO: Nueva lógica para obtener observaciones con SO
+        $observacionesConSO = $guia->plannings
+            ->filter(fn($p) => !empty($p->observaciones)) // Filtramos solo los que tienen observaciones
+            ->map(fn($p) => ['so' => $p->so_number ?? 'Manual', 'observacion' => $p->observaciones]) // Creamos el array estructurado
+            ->values(); // Obtenemos un array limpio
+
+        $capacidad = $guia->plannings->firstWhere('capacidad')['capacidad'] ?? 'No definida';
+            
+
+        if ($request->ajax() || $request->wantsJson()) {
+            // ✅ INICIA CAMBIO: Añadimos el cálculo y la propiedad que faltaba
+            $guia->total_maniobras = $guia->plannings->sum('maniobras');
+            $guia->observaciones_con_so = $observacionesConSO;
+            $guia->capacidad = $capacidad;
+
+            return response()->json($guia);
+            // ⏹️ TERMINA CAMBIO
+        }
+
+        $totalManiobras = $guia->plannings->sum('maniobras');
+        
+        // Pasamos el nuevo array a la vista de página completa
+        return view('rutas.asignaciones.edit', compact('guia', 'totalManiobras', 'observacionesConSO', 'capacidad'));
     }
 
     public function update(Request $request, Guia $guia)
@@ -704,15 +735,28 @@ class AsignacionController extends Controller
         // Cargamos la guía con todas sus órdenes de planificación
         $guia->load('plannings.order');
 
-        // Calculamos el subtotal sumando los subtotales de cada orden
+        // Calculamos el subtotal
         $totalSubtotal = $guia->plannings->reduce(function ($carry, $planning) {
-            return $carry + ($planning->order->subtotal ?? 0);
+            return $carry + ($planning->subtotal ?? 0);
         }, 0);
 
-        // Devolvemos la guía y el total calculado como JSON
+        // ✅ INICIA CAMBIO: Usamos la misma lógica unificada que en el método edit()
+        $totalManiobras = $guia->plannings->sum('maniobras');
+        
+        $observacionesConSO = $guia->plannings
+            ->filter(fn($p) => !empty($p->observaciones))
+            ->map(fn($p) => ['so' => $p->so_number ?? 'Manual', 'observacion' => $p->observaciones])
+            ->values();
+        $capacidad = $guia->plannings->firstWhere('capacidad')['capacidad'] ?? 'No definida';
+
+
+        // Devolvemos la guía y los totales calculados en el formato correcto
         return response()->json([
             'guia' => $guia,
-            'total_subtotal' => $totalSubtotal
+            'total_subtotal' => $totalSubtotal,
+            'total_maniobras' => $totalManiobras,
+            'observaciones_con_so' => $observacionesConSO,
+            'capacidad' => $capacidad
         ]);
     }
 

@@ -36,7 +36,9 @@
                         <!-- <div><label class="block text-sm font-medium text-gray-700">Estatus Entrega</label><input type="text" name="estatus_de_entrega" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div> -->
                         <div><label class="block text-sm font-medium text-gray-700">¿Devolución?</label><select name="devolucion" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"><option value="">--</option>@foreach($options['devolucion'] as $o) <option value="{{ $o }}">{{ $o }}</option> @endforeach</select></div>
                         <div><label class="block text-sm font-medium text-gray-700">¿Urgente?</label><select name="urgente" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"><option value="">--</option>@foreach($options['urgente'] as $o) <option value="{{ $o }}">{{ $o }}</option> @endforeach</select></div>
-                    </div>
+                        <div><strong class="block text-gray-500">Maniobras:</strong><span>{{ $planning->maniobras ?? '0' }}</span></div>
+                        <div class="col-span-full"><strong class="block text-gray-500">Observaciones:</strong><p class="mt-1 text-gray-900 bg-gray-50 p-2 rounded">{{ $planning->observaciones ?? 'Sin dato' }}</p></div>
+                        </div>
                     
                     <div class="flex justify-end gap-4 mt-8">
                         <a href="{{ route('customer-service.planning.index') }}" class="px-4 py-2 bg-gray-200 rounded-md">Cancelar</a>

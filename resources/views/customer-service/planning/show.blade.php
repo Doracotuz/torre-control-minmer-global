@@ -49,6 +49,8 @@
                     <div><strong class="block text-gray-500">Tipo de Ruta:</strong><span class="font-bold text-blue-700">{{ $planning->tipo_ruta ?? 'Sin dato' }}</span></div>
                     <div><strong class="block text-gray-500">Región:</strong><span>{{ $planning->region ?? 'Sin dato' }}</span></div>
                     <div><strong class="block text-gray-500">Urgente:</strong><span class="{{ $planning->urgente === 'Si' ? 'text-red-600 font-bold' : '' }}">{{ $planning->urgente ?? 'No' }}</span></div>
+                    <div><strong class="block text-gray-500">Maniobras:</strong><span>{{ $planning->maniobras ?? '0' }}</span></div>
+                    <div class="col-span-full"><strong class="block text-gray-500">Observaciones:</strong><p class="mt-1 text-gray-900 bg-gray-50 p-2 rounded">{{ $planning->observaciones ?? 'Sin dato' }}</p></div>                
                 </div>
 
                 {{-- Información del Transporte --}}

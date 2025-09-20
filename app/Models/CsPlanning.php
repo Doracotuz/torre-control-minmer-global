@@ -16,7 +16,8 @@ class CsPlanning extends Model
         'fecha_carga' => 'date',
         'fecha_entrega' => 'date',
         'is_scale' => 'boolean',
-        'is_direct_route' => 'boolean',        
+        'is_direct_route' => 'boolean',
+        'maniobras' => 'integer',
     ];
 
     public function order()
