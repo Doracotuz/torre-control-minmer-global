@@ -70,6 +70,16 @@
                     <button @click="isColumnModalOpen = true" class="px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700">
                         <i class="fas fa-columns mr-2"></i>Seleccionar Columnas
                     </button>
+                    <div x-data="{ isWidthMenuOpen: false }" class="relative">
+                        <button @click="isWidthMenuOpen = !isWidthMenuOpen" @click.away="isWidthMenuOpen = false" class="px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700 flex items-center">
+                            <i class="fas fa-arrows-alt-h mr-2"></i>Ancho
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div x-show="isWidthMenuOpen" x-transition class="absolute z-10 mt-2 w-48 bg-white rounded-md shadow-lg border">
+                            <a @click="setColumnWidths('uniform'); isWidthMenuOpen = false" href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ancho Uniforme</a>
+                            <a @click="setColumnWidths('auto'); isWidthMenuOpen = false" href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ajuste Automático</a>
+                        </div>
+                    </div>                    
                 </div>
                 <div class="flex items-center space-x-4">
                     <button @click="isImportModalOpen = true" class="px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700">
@@ -423,6 +433,20 @@
                 
                 document.body.style.userSelect = '';
                 document.body.style.cursor = '';
+            },
+            setColumnWidths(preset) {
+                if (preset === 'uniform') {
+                    const newWidths = {};
+                    this.columnOrder.forEach(columnKey => {
+                        if (this.visibleColumns[columnKey]) {
+                            newWidths[columnKey] = '160px'; // Ancho fijo preestablecido
+                        }
+                    });
+                    this.columnWidths = newWidths;
+                } 
+                else if (preset === 'auto') {
+                    this.columnWidths = {};
+                }
             },
 
             getFormattedCell(order, columnKey) {

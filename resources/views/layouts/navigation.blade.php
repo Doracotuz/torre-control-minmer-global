@@ -42,6 +42,9 @@ x-init="$watch('search', value => {
     <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16 items-center">
             <div class="flex items-center space-x-2 sm:space-x-4">
+                <button @click="toggleSidebar()" class="p-2 rounded-md text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50 hidden lg:block">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                </button>                
                 <div class="flex items-center text-white text-sm font-medium">
                     @if (Auth::user()->area)
                         @php
