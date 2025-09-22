@@ -535,6 +535,8 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         Route::post('/{planning}/add-scales', [App\Http\Controllers\CustomerService\PlanningController::class, 'addScales'])->name('add-scales');
         Route::post('/{planning}/mark-as-direct', [App\Http\Controllers\CustomerService\PlanningController::class, 'markAsDirect'])->name('mark-as-direct');
         Route::post('/{planning}/disassociate-from-guia', [App\Http\Controllers\CustomerService\PlanningController::class, 'disassociateFromGuia'])->name('disassociate-from-guia');
+        Route::post('/planning/bulk-update-capacity', [\App\Http\Controllers\CustomerService\PlanningController::class, 'bulkUpdateCapacity'])->name('bulk-update-capacity');
+
     });
 
     Route::prefix('validation')->name('validation.')->group(function() {

@@ -84,9 +84,14 @@
                         <div class="md:col-span-4 bg-gray-50 p-4 rounded-lg border">
                             <p class="text-sm font-medium text-gray-500 mb-2">Observaciones de la Carga</p>
                             @if(isset($observacionesConSO) && $observacionesConSO->isNotEmpty())
-                                <ul class="list-none space-y-1 text-sm text-gray-700">
+                                <ul class="list-none space-y-2 text-sm text-gray-700">
                                     @foreach($observacionesConSO as $item)
-                                        <li><strong class="text-blue-600">{{ $item['so'] }}:</strong> {{ $item['observacion'] }}</li>
+                                        <li>
+                                            <strong class="text-blue-600">
+                                                {{ $item['fuente'] }} ({{ $item['so'] }}):
+                                            </strong> 
+                                            <span>{{ $item['observacion'] }}</span>
+                                        </li>
                                     @endforeach
                                 </ul>
                             @else

@@ -205,6 +205,25 @@
                                 <li x-text="`SO: ${planning.so_number} - ${planning.razon_social}`"></li>
                             </template>
                         </ul>
+
+                        <div class="mt-4 border-t pt-4">
+                            <h4 class="font-semibold text-gray-700 mb-2">Observaciones de la Carga</h4>
+                            <div class="bg-gray-50 p-3 rounded-lg border max-h-40 overflow-y-auto">
+                                <template x-if="guiaInModal.observaciones_con_so && guiaInModal.observaciones_con_so.length > 0">
+                                    <ul class="list-none space-y-2 text-sm text-gray-700">
+                                        <template x-for="item in guiaInModal.observaciones_con_so" :key="item.so + item.fuente">
+                                            <li>
+                                                <strong class="text-blue-600" x-text="`${item.fuente} (${item.so}):`"></strong>
+                                                <span x-text="item.observacion"></span>
+                                            </li>
+                                        </template>
+                                    </ul>
+                                </template>
+                                <template x-if="!guiaInModal.observaciones_con_so || guiaInModal.observaciones_con_so.length === 0">
+                                    <p class="text-sm text-gray-500">No hay observaciones registradas.</p>
+                                </template>
+                            </div>
+                        </div>                        
                         
                         {{-- Resumen de Totales en el Modal --}}
                         <div class="mt-4 border-t pt-4">
@@ -223,15 +242,42 @@
                                     <span class="text-gray-500">Clientes</span>
                                 </div>
                                 <div class="bg-gray-100 p-2 rounded">
+                                    <span class="font-bold block" x-text="guiaModalTotals.maniobras.toLocaleString('es-MX')"></span>
+                                    <span class="text-gray-500">Maniobristas</span>
+                                </div>                                
+                                <div class="bg-gray-100 p-2 rounded">
                                     <span class="font-bold block" x-text="guiaModalTotals.so_count.toLocaleString('es-MX')"></span>
                                     <span class="text-gray-500">SOs</span>
                                 </div>
                                 <div class="bg-gray-100 p-2 rounded">
                                     <span class="font-bold block" x-text="guiaModalTotals.factura_count.toLocaleString('es-MX')"></span>
                                     <span class="text-gray-500">Facturas</span>
-                                </div>
+                                </div>                               
                             </div>
                         </div>
+                        <div class="mt-4 space-y-3">
+                            <h5 class="font-semibold text-gray-600 text-sm">Capacidad de Unidad</h5>
+                            <div class="bg-gray-50 p-3 rounded-lg border grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-2">
+                                    <div>
+                                        <p class="text-xs text-gray-500">Capacidad Actual:</p>
+                                        <p class="font-bold text-gray-800" x-text="actualCapacity"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-blue-500">Unidad Sugerida (por carga):</p>
+                                        <p class="font-bold text-blue-700" x-text="suggestedCapacity"></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <select x-model="editableCapacity" class="block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                        <template x-for="option in capacityOptions" :key="option">
+                                            <option :value="option" x-text="option"></option>
+                                        </template>
+                                    </select>
+                                    <button @click="saveCapacity()" class="px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 whitespace-nowrap">Guardar</button>
+                                </div>
+                            </div>
+                        </div>                        
 
                         <div class="text-right font-bold text-lg text-gray-800 border-t pt-3 mt-4">
                             Valor Total de la Carga: <span class="text-green-600" x-text="`$${guiaInModal.total_subtotal.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`"></span>
@@ -239,7 +285,7 @@
                     </div>
                 </template>
             </div>
-        </div>        
+        </div>
     </div>
 
 <style>
@@ -274,8 +320,13 @@ function planningManager() {
             pzs: 0,
             clientes: 0,
             so_count: 0,
-            factura_count: 0
+            factura_count: 0,
+            maniobras: 0
         },
+        actualCapacity: 'N/A',
+        suggestedCapacity: 'N/A',
+        editableCapacity: '',
+        capacityOptions: ['1 Ton', '1.5 Ton', '3.5 Ton', '4.5 Ton', 'Torthon', 'Rabón', 'Mudancero', 'Trailer 48"', 'Trailer 53"', 'Automovil', 'Motocicleta', 'Paqueteria', 'Contenedor 20"', 'Contenedor 40"', 'Contenedor 48"', 'Contenedor 53"'],        
         isEditGuiaModalOpen: false,
         guiaToEdit: { id: null, number: '' },        
         filters: { 
@@ -411,6 +462,8 @@ function planningManager() {
                 .then(data => {
                     this.guiaInModal = data;
                     this.guiaInModalLoading = false;
+                    
+                    // ✅ INICIA CAMBIO: Lógica de cálculo y sugerencia
                     if (data && data.guia && data.guia.plannings) {
                         const records = data.guia.plannings;
                         this.guiaModalTotals.cajas = records.reduce((sum, rec) => sum + (parseInt(rec.cajas) || 0), 0);
@@ -419,7 +472,24 @@ function planningManager() {
                         this.guiaModalTotals.clientes = uniqueClientes.size;
                         this.guiaModalTotals.so_count = records.length;
                         this.guiaModalTotals.factura_count = records.length;
+                        this.guiaModalTotals.maniobras = data.total_maniobras || 0;
+                        this.actualCapacity = data.capacidad_actual || 'No definida';
+
+                        // Lógica de sugerencia
+                        const cajas = this.guiaModalTotals.cajas;
+                        if (cajas <= 30) this.suggestedCapacity = '1 Ton';
+                        else if (cajas <= 60) this.suggestedCapacity = '1.5 Ton';
+                        else if (cajas <= 90) this.suggestedCapacity = '3.5 Ton';
+                        else if (cajas <= 120) this.suggestedCapacity = '4.5 Ton';
+                        else if (cajas <= 240) this.suggestedCapacity = 'Torthon';
+                        else if (cajas <= 360) this.suggestedCapacity = 'Rabón';
+                        else if (cajas <= 480) this.suggestedCapacity = 'Trailer 48"';
+                        else this.suggestedCapacity = 'Trailer 53"';
+                        
+                        // Inicializa el valor editable
+                        this.editableCapacity = data.capacidad_actual || this.suggestedCapacity;
                     }
+                    // ⏹️ TERMINA CAMBIO
                 })
                 .catch(() => {
                     this.showFlashMessage('Error al cargar los detalles de la guía.', 'error');
@@ -436,6 +506,37 @@ function planningManager() {
                 this.isEditGuiaModalOpen = true;
             }
         },
+
+        saveCapacity() {
+            if (!this.guiaInModal || !this.guiaInModal.guia.id) return;
+
+            fetch('{{ route("customer-service.planning.bulk-update-capacity") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    guia_id: this.guiaInModal.guia.id,
+                    capacidad: this.editableCapacity
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    this.showFlashMessage(data.message, 'success');
+                    // Opcional: Actualizar la capacidad en la tabla principal sin recargar
+                    this.fetchPlannings(); 
+                    this.closeAllModals();
+                } else {
+                    this.showFlashMessage(data.message || 'Ocurrió un error.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error("Error al guardar capacidad:", error);
+                this.showFlashMessage('Error de conexión al guardar la capacidad.', 'error');
+            });
+        },        
 
         closeAllModals() {
             this.isScalesModalOpen = false;

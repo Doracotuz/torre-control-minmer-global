@@ -521,4 +521,45 @@ class PlanningController extends Controller
         return back()->with('success', 'La orden ha sido desasignada de la guía exitosamente.');
     }
 
+    public function bulkUpdateCapacity(Request $request)
+    {
+        $validated = $request->validate([
+            'guia_id' => 'required|integer|exists:guias,id',
+            'capacidad' => 'required|string|max:255',
+        ]);
+
+        try {
+            DB::beginTransaction();
+            $guia = Guia::find($validated['guia_id']);
+            $planningIds = $guia->plannings()->pluck('cs_plannings.id');
+
+            if ($planningIds->isEmpty()) {
+                return response()->json(['success' => false, 'message' => 'La guía no tiene órdenes asociadas.'], 404);
+            }
+
+            // Actualiza la capacidad en todos los registros de planificación
+            CsPlanning::whereIn('id', $planningIds)->update(['capacidad' => $validated['capacidad']]);
+
+            // Registra el evento en la línea de tiempo de cada pedido original
+            $orderIds = CsPlanning::whereIn('id', $planningIds)->pluck('cs_order_id')->unique()->filter();
+            $description = 'El usuario ' . auth()->user()->name . ' actualizó la Capacidad a "' . $validated['capacidad'] . '" para la guía ' . $guia->guia;
+
+            foreach ($orderIds as $orderId) {
+                CsOrderEvent::create([
+                    'cs_order_id' => $orderId,
+                    'user_id' => auth()->id(),
+                    'description' => $description
+                ]);
+            }
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Capacidad actualizada exitosamente para ' . $planningIds->count() . ' órdenes.']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error en bulkUpdateCapacity: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Ocurrió un error en el servidor.'], 500);
+        }
+    }    
+
 }

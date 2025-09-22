@@ -191,7 +191,7 @@ class AsignacionController extends Controller
         ];
 
         if ($request->has('planning_ids')) {
-            $planningRecords = \App\Models\CsPlanning::find($request->query('planning_ids'));
+            $planningRecords = \App\Models\CsPlanning::with('order')->find($request->query('planning_ids'));
 
             $firstPhone = $planningRecords->firstWhere('telefono');
             if ($firstPhone) {
@@ -211,8 +211,27 @@ class AsignacionController extends Controller
                 ];
             }
         }
+
+        $observacionesConSO = collect();
+
+        foreach ($planningRecords as $planning) {
+            if (!empty($planning->observaciones)) {
+                $observacionesConSO->push([
+                    'so' => $planning->so_number ?? 'Manual',
+                    'fuente' => 'Planificación',
+                    'observacion' => $planning->observaciones
+                ]);
+            }
+            
+            if ($planning->order && !empty($planning->order->observations)) {
+                $observacionesConSO->push([
+                    'so' => $planning->so_number ?? 'Manual',
+                    'fuente' => 'Pedido',
+                    'observacion' => $planning->order->observations
+                ]);
+            }
+        }        
         
-        // ✅ INICIA CAMBIO: Añadimos la lógica para procesar las observaciones
         $observacionesConSO = $planningRecords
             ->filter(fn($p) => !empty($p->observaciones))
             ->map(fn($p) => ['so' => $p->so_number ?? 'Manual', 'observacion' => $p->observaciones])
@@ -732,31 +751,38 @@ class AsignacionController extends Controller
 
     public function details(Guia $guia)
     {
-        // Cargamos la guía con todas sus órdenes de planificación
         $guia->load('plannings.order');
 
-        // Calculamos el subtotal
-        $totalSubtotal = $guia->plannings->reduce(function ($carry, $planning) {
-            return $carry + ($planning->subtotal ?? 0);
-        }, 0);
-
-        // ✅ INICIA CAMBIO: Usamos la misma lógica unificada que en el método edit()
+        $totalSubtotal = $guia->plannings->reduce(fn($carry, $p) => $carry + ($p->subtotal ?? 0), 0);
         $totalManiobras = $guia->plannings->sum('maniobras');
-        
-        $observacionesConSO = $guia->plannings
-            ->filter(fn($p) => !empty($p->observaciones))
-            ->map(fn($p) => ['so' => $p->so_number ?? 'Manual', 'observacion' => $p->observaciones])
-            ->values();
-        $capacidad = $guia->plannings->firstWhere('capacidad')['capacidad'] ?? 'No definida';
+        $capacidad = $guia->plannings->firstWhere('capacidad')['capacidad'] ?? null;
 
+        $observacionesConSO = collect();
 
-        // Devolvemos la guía y los totales calculados en el formato correcto
+        foreach ($guia->plannings as $planning) {
+            if (!empty($planning->observaciones)) {
+                $observacionesConSO->push([
+                    'so' => $planning->so_number ?? 'Manual',
+                    'fuente' => 'Planificación',
+                    'observacion' => $planning->observaciones
+                ]);
+            }
+            
+            if ($planning->order && !empty($planning->order->observations)) {
+                $observacionesConSO->push([
+                    'so' => $planning->so_number,
+                    'fuente' => 'Pedido',
+                    'observacion' => $planning->order->observations
+                ]);
+            }
+        }
+
         return response()->json([
             'guia' => $guia,
             'total_subtotal' => $totalSubtotal,
             'total_maniobras' => $totalManiobras,
-            'observaciones_con_so' => $observacionesConSO,
-            'capacidad' => $capacidad
+            'capacidad_actual' => $capacidad,
+            'observaciones_con_so' => $observacionesConSO->unique()->values()
         ]);
     }
 
