@@ -98,4 +98,14 @@ class SearchController extends Controller
 
         return response()->json($suggestions->sortBy('name')->values()->all());
     }
+
+    public function getEmailRecipients(Request $request)
+    {
+        $users = \App\Models\User::where('is_client', false)
+                                ->orderBy('name')
+                                ->get(['name', 'email']);
+
+        return response()->json($users);
+    }
+    
 }

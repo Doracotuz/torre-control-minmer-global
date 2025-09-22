@@ -278,14 +278,81 @@
                                 </div>
                             </div>
                         </div>                        
-
-                        <div class="text-right font-bold text-lg text-gray-800 border-t pt-3 mt-4">
-                            Valor Total de la Carga: <span class="text-green-600" x-text="`$${guiaInModal.total_subtotal.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`"></span>
+                        <div class="flex justify-between items-center font-bold text-lg text-gray-800 border-t pt-3 mt-4">
+                            <button @click="openEmailModal()" type="button" class="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-teal-700">
+                                <i class="fas fa-envelope mr-2"></i>Correo
+                            </button>
+                            <span>Valor Total de la Carga: <span class="text-green-600" x-text="`$${guiaInModal.total_subtotal.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`"></span></span>
                         </div>
                     </div>
                 </template>
             </div>
         </div>
+
+        <div x-show="isEmailModalOpen" @keydown.escape.window="isEmailModalOpen = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" style="display: none;">
+            <div @click.outside="isEmailModalOpen = false" class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col">
+                <div class="flex justify-between items-center border-b p-4">
+                    <h3 class="text-xl font-bold text-[#2c3856]">Enviar Correo de Ruta</h3>
+                    <button @click="isEmailModalOpen = false" class="text-gray-400 hover:text-gray-600">&times;</button>
+                </div>
+
+                <div class="p-6 flex-grow overflow-y-auto">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Destinatarios:</label>
+                        <div class="mt-1 flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px]">
+                            <template x-for="(recipient, index) in emailData.recipients" :key="index">
+                                <span class="flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                                    <span x-text="recipient"></span>
+                                    <button @click="removeRecipient(index)" class="ml-2 text-blue-600 hover:text-blue-800">&times;</button>
+                                </span>
+                            </template>
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <select x-model="newRecipient" class="block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                <option value="">Seleccionar de la lista...</option>
+                                <template x-for="user in allRecipients" :key="user.email">
+                                    <option :value="user.email" x-text="`${user.name} (${user.email})`"></option>
+                                </template>
+                            </select>
+                            <input type="email" placeholder="O añadir nuevo correo..." x-model="newRecipientManual" @keydown.enter.prevent="addRecipient(newRecipientManual); newRecipientManual=''" class="block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                            <button @click="addRecipient(newRecipient || newRecipientManual)" type="button" class="px-4 py-2 bg-gray-200 rounded-md text-sm">Añadir</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Asunto:</label>
+                        <input type="text" x-model="emailData.subject" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-50">
+                    </div>
+
+                    <div class="space-y-4">
+<div>
+    <label for="emailEditor" class="block text-sm font-medium text-gray-700">Cuerpo del Mensaje:</label>
+    {{-- ✅ INICIA CAMBIO: Usamos un div editable en lugar de textarea --}}
+    <div
+        id="emailEditor"
+        x-ref="emailEditor"
+        contenteditable="true"
+        x-html="emailData.body"
+        class="mt-1 p-4 border rounded-md min-h-[250px] text-sm font-sans focus:ring-2 focus:ring-blue-500 focus:border-blue-500 overflow-y-auto"
+    ></div>
+    {{-- ⏹️ TERMINA CAMBIO --}}
+</div>
+
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700">Firma:</label>
+                        <input type="text" x-model="signature" @input.debounce.500ms="saveSignature()" placeholder="Pega aquí la URL pública de tu imagen de firma..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-4 border-t p-4 bg-gray-50">
+                    <button @click="isEmailModalOpen = false" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md">Cancelar</button>
+                    <button @click="sendEmail()" class="px-4 py-2 bg-green-600 text-white rounded-md">Enviar Correo</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
 <style>
@@ -382,6 +449,17 @@ function planningManager() {
         warehouses: @json($warehouses),
         guiaSearch: '',
         guiaSearchResults: [],
+        isEmailModalOpen: false,
+        allRecipients: [],
+        newRecipient: '',
+        newRecipientManual: '',
+        signature: '',
+        emailData: {
+            recipients: [],
+            subject: '',
+            body: ''
+        },
+        editableBody: '', 
 
         init() {
             try {
@@ -437,6 +515,12 @@ function planningManager() {
                 this.showFlashMessage(flashError, 'error');
                 sessionStorage.removeItem('planning_flash_error');
             }
+
+            this.loadEmailDefaults();
+            fetch('{{ route("api.email-recipients") }}')
+                .then(res => res.json())
+                .then(data => this.allRecipients = data);            
+
         },
 
         showFlashMessage(message, type = 'success') {
@@ -458,7 +542,10 @@ function planningManager() {
             this.isGuiaDetailModalOpen = true;
             this.guiaInModalLoading = true;
             fetch(`/rutas/asignaciones/${planning.guia.id}/details`)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) throw new Error('El servidor respondió con un error.');
+                    return res.json();
+                })
                 .then(data => {
                     this.guiaInModal = data;
                     this.guiaInModalLoading = false;
@@ -555,7 +642,10 @@ function planningManager() {
                 },
                 body: JSON.stringify({ guia_number: this.guiaToEdit.number })
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Error del servidor al actualizar.');
+                return res.json();
+            })
             .then(data => {
                 if (data.success) {
                     this.showFlashMessage(data.message, 'success');
@@ -794,7 +884,10 @@ function planningManager() {
                 },
                 body: JSON.stringify({ scales: this.scales })
             })
-            .then(response => response.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Error del servidor al guardar escalas.');
+                return res.json();
+            })
             .then(data => {
                 if (data.success) {
                     this.showFlashMessage(data.message, 'success');
@@ -824,11 +917,18 @@ function planningManager() {
                 return;
             }
             fetch(`/rutas/asignaciones/search?term=${this.guiaSearch}`)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) throw new Error('Error del servidor al buscar guías.');
+                    return res.json();
+                })
                 .then(data => {
                     this.guiaSearchResults = data;
+                })
+                .catch(error => {
+                    console.error("Error en búsqueda de guías:", error);
+                    this.guiaSearchResults = []; // Limpia los resultados en caso de error
                 });
-        },        
+        },     
 
         createGuide() {
             if (this.selectedPlannings.length === 0) { this.showFlashMessage('Por favor, selecciona al menos un registro.', 'error'); return; }
@@ -886,7 +986,10 @@ function planningManager() {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
             })
-            .then(response => response.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Error del servidor al marcar como directa.');
+                return res.json();
+            })
             .then(data => {
                 if (data.success) {
                     this.showFlashMessage(data.message, 'success');
@@ -899,7 +1002,122 @@ function planningManager() {
                 console.error('Error:', error);
                 this.showFlashMessage('Error de conexión al marcar como directa.', 'error');
             });
-        }        
+        },
+        
+        loadEmailDefaults() {
+            this.emailData.recipients = JSON.parse(localStorage.getItem('planning_email_recipients')) || [];
+            this.signature = localStorage.getItem('planning_email_signature') || '';
+        },
+        
+        addRecipient(email) {
+            if (email && !this.emailData.recipients.includes(email)) {
+                this.emailData.recipients.push(email);
+                this.saveRecipients();
+            }
+            this.newRecipient = '';
+            this.newRecipientManual = '';
+        },
+
+        removeRecipient(index) {
+            this.emailData.recipients.splice(index, 1);
+            this.saveRecipients();
+        },
+
+        saveRecipients() {
+            localStorage.setItem('planning_email_recipients', JSON.stringify(this.emailData.recipients));
+        },
+        
+        saveSignature() {
+            localStorage.setItem('planning_email_signature', this.signature);
+        },
+
+        openEmailModal() {
+            if (!this.guiaInModal) return;
+
+            const guia = this.guiaInModal.guia;
+            const plannings = guia.plannings || [];
+
+            // --- 1. Lógica del Asunto (sin cambios) ---
+            const clientes = [...new Set(plannings.map(p => p.razon_social))];
+            const tipoCliente = clientes.length === 1 ? clientes[0] : 'CONSOLIDADA';
+            const origen = guia.origen || 'N/A';
+            const fecha = new Date(guia.fecha_asignacion.split('-').join('/'));
+            const diaSemana = fecha.toLocaleDateString('es-MX', { weekday: 'long' }).toUpperCase();
+            const fechaFormato = fecha.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            this.emailData.subject = `RUTA ${tipoCliente} // ALMACEN ${origen} // ${diaSemana} ${fechaFormato}`;
+
+            // --- 2. ✅ Lógica para construir el CUERPO COMPLETO en HTML ---
+            let htmlBody = `<p>Hola, buen día a todos.</p>`;
+            htmlBody += `<p>Por favor su apoyo para programar y embarcar los siguientes pedidos y adicionar los insumos suficientes (playo, tarima, cinta adhesiva) con base en las necesidades de entrega y favor de colocar marchamo.</p>`;
+            
+            htmlBody += `<table style="width: 100%; border-collapse: collapse; font-family: sans-serif; margin: 20px 0;">
+                            <thead style="background-color: #f2f2f2;">
+                                <tr>
+                                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Cliente</th>
+                                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Origen</th>
+                                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Carga</th>
+                                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">SO</th>
+                                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Factura</th>
+                                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Botellas</th>
+                                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Cajas</th>
+                                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Custodia</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+            plannings.forEach(p => {
+                const carga = p.order && p.order.channel === 'POSM' ? 'POSM' : 'Producto';
+                htmlBody += `<tr>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${p.razon_social || 'N/A'}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${p.origen || 'N/A'}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${carga}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${p.so_number || 'N/A'}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${p.factura || 'N/A'}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${p.pzs || 0}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${p.cajas || 0}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${guia.custodia || 'N/A'}</td>
+                            </tr>`;
+            });
+            htmlBody += `</tbody></table>`;
+
+            htmlBody += `<p>Se adjuntan los datos del transporte:</p>
+                        <ul style="list-style-type: none; padding-left: 0;">
+                            <li><strong>Línea de transporte:</strong> ${guia.transporte || 'N/A'}</li>
+                            <li><strong>Fecha de carga:</strong> ${fechaFormato}</li>
+                            <li><strong>Horario de carga:</strong> ${guia.hora_planeada || 'N/A'}</li>
+                            <li><strong>Tipo de unidad:</strong> ${this.actualCapacity || 'N/A'}</li>
+                            <li><strong>Operador:</strong> ${guia.operador || 'N/A'}</li>
+                            <li><strong>Placas:</strong> ${guia.placas || 'N/A'}</li>
+                        </ul>`;
+            htmlBody += `<p>De antemano gracias y quedo atento a cualquier duda o comentario.</p><p>Saludos.</p>`;
+
+            this.emailData.body = htmlBody; // Asignamos el HTML a la variable del editor
+            this.isEmailModalOpen = true;
+        },
+
+        sendEmail() {
+            // Tomamos el contenido HTML directamente desde el editor
+            const finalHtmlBody = this.$refs.emailEditor.innerHTML;
+
+            fetch('{{ route("customer-service.planning.send-email") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    recipients: this.emailData.recipients,
+                    subject: this.emailData.subject,
+                    body: finalHtmlBody, // Enviamos el HTML editado
+                    signature_url: this.signature
+                })
+            })
+            .then(res => { if (!res.ok) throw new Error('El servidor respondió con un error.'); return res.json(); })
+            .then(data => {
+                if (data.success) { this.showFlashMessage(data.message, 'success'); this.isEmailModalOpen = false; }
+                else { this.showFlashMessage(data.message || 'Ocurrió un error.', 'error'); }
+            })
+            .catch(error => { console.error("Error al enviar correo:", error); this.showFlashMessage('Error de conexión.', 'error'); });
+        }
     }
 }
 document.addEventListener('alpine:init', () => {

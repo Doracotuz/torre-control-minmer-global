@@ -13,6 +13,8 @@ use App\Models\Guia;
 use App\Models\CsPlanningEvent;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\RouteDispatchMail;
 
 class PlanningController extends Controller
 {
@@ -560,6 +562,32 @@ class PlanningController extends Controller
             Log::error("Error en bulkUpdateCapacity: " . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Ocurrió un error en el servidor.'], 500);
         }
-    }    
+    }
+
+    public function sendRouteEmail(Request $request)
+    {
+        $validated = $request->validate([
+            'recipients' => 'required|array|min:1',
+            'recipients.*' => 'required|email',
+            'subject' => 'required|string',
+            'body' => 'required|string',
+            'signature_url' => 'nullable|url',
+        ]);
+        try {
+            $mailable = new RouteDispatchMail(
+                $validated['subject'],
+                $validated['body'],
+                $validated['signature_url'] ?? null,
+                auth()->user()->name,
+                auth()->user()->email
+            );
+            Mail::to($validated['recipients'])->send($mailable);
+            return response()->json(['success' => true, 'message' => 'Correo enviado exitosamente.']);
+
+        } catch (\Exception $e) {
+            Log::error("Error al enviar correo de ruta: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'No se pudo enviar el correo.'], 500);
+        }
+    }
 
 }

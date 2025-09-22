@@ -55,11 +55,23 @@
                                     }"
                                 >
                                     <div class="truncate">
+                                        {{-- ✅ INICIA CAMBIO --}}
                                         <template x-if="columnKey === 'status'">
-                                            </template>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                                                :class="{
+                                                    'bg-yellow-100 text-yellow-800': planning.status === 'En Espera',
+                                                    'bg-green-100 text-green-800': planning.status === 'Programada',
+                                                    'bg-blue-100 text-blue-800': planning.status === 'Asignado en Guía',
+                                                    'bg-red-100 text-red-800': planning.status === 'Cancelado',
+                                                    'bg-gray-100 text-gray-800': !['En Espera', 'Programada', 'Asignado en Guía', 'Cancelado'].includes(planning.status)
+                                                }"
+                                                x-text="planning.status">
+                                            </span>
+                                        </template>
                                         <template x-if="columnKey !== 'status'">
                                             <span x-html="getFormattedCell(planning, columnKey)"></span>
                                         </template>
+                                        {{-- ⏹️ TERMINA CAMBIO --}}
                                     </div>
                                 </td>
                             </template>

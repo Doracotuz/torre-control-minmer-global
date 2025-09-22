@@ -536,6 +536,7 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         Route::post('/{planning}/mark-as-direct', [App\Http\Controllers\CustomerService\PlanningController::class, 'markAsDirect'])->name('mark-as-direct');
         Route::post('/{planning}/disassociate-from-guia', [App\Http\Controllers\CustomerService\PlanningController::class, 'disassociateFromGuia'])->name('disassociate-from-guia');
         Route::post('/planning/bulk-update-capacity', [\App\Http\Controllers\CustomerService\PlanningController::class, 'bulkUpdateCapacity'])->name('bulk-update-capacity');
+        Route::post('/send-email', [\App\Http\Controllers\CustomerService\PlanningController::class, 'sendRouteEmail'])->name('send-email');
 
     });
 
@@ -584,6 +585,7 @@ Route::middleware(['auth', 'verified'])->prefix('audit')->name('audit.')->group(
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/api/email-recipients', [App\Http\Controllers\Api\SearchController::class, 'getEmailRecipients'])->name('api.email-recipients');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
