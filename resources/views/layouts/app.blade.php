@@ -212,7 +212,31 @@
             map = new google.maps.Map(document.getElementById("map"), { center: { lat: 19.4326, lng: -99.1332 }, zoom: 12, mapTypeControl: false, streetViewControl: false, gestureHandling: 'greedy',});
             directionsService = new google.maps.DirectionsService();
             directionsRenderer = new google.maps.DirectionsRenderer({ map: map, draggable: true, markerOptions: { draggable: true } });
-            google.maps.event.addListener(directionsRenderer, 'directions_changed', () => { const result = directionsRenderer.getDirections(); if (result && result.routes.length > 0) { const newRoute = result.routes[0]; actualizarDistancia(newRoute); const newParadas = newRoute.legs.map((leg, index) => ({ lat: leg.start_location.lat(), lng: leg.start_location.lng(), nombre: (paradas[index] && paradas[index].nombre.includes("Punto")) ? `Punto ${index + 1}` : leg.start_address.split(',')[0] })); const lastLeg = newRoute.legs[newRoute.legs.length - 1]; newParadas.push({ lat: lastLeg.end_location.lat(), lng: lastLeg.end_location.lng(), nombre: (paradas[newParadas.length] && paradas[newParadas.length].nombre.includes("Punto")) ? `Punto ${newParadas.length + 1}` : lastLeg.end_address.split(',')[0] }); paradas = newParadas; actualizarVistaParadas(); } });
+            google.maps.event.addListener(directionsRenderer, 'directions_changed', () => {
+                const result = directionsRenderer.getDirections();
+                if (result && result.routes.length > 0) {
+                    const newRoute = result.routes[0];
+                    actualizarDistancia(newRoute);
+
+                    // Actualiza las coordenadas de las paradas existentes sin tocar sus nombres
+                    newRoute.legs.forEach((leg, index) => {
+                        if (paradas[index]) {
+                            paradas[index].lat = leg.start_location.lat();
+                            paradas[index].lng = leg.start_location.lng();
+                        }
+                    });
+                    
+                    // Actualiza la última parada
+                    const lastLeg = newRoute.legs[newRoute.legs.length - 1];
+                    if (paradas[newRoute.legs.length]) {
+                        paradas[newRoute.legs.length].lat = lastLeg.end_location.lat();
+                        paradas[newRoute.legs.length].lng = lastLeg.end_location.lng();
+                    }
+                    
+                    // Vuelve a dibujar la lista de paradas en la barra lateral
+                    actualizarVistaParadas();
+                }
+            });
             const input = document.getElementById("autocomplete");
             autocomplete = new google.maps.places.Autocomplete(input, { fields: ["name", "geometry.location"] });
             autocomplete.addListener("place_changed", () => { const place = autocomplete.getPlace(); if (!place.geometry || !place.geometry.location) return; agregarParada(place.geometry.location, place.name); input.value = ''; });
@@ -592,6 +616,11 @@ document.addEventListener('alpine:init', () => {
             function agregarParada(location, nombre) { paradas.push({ lat: location.lat(), lng: location.lng(), nombre: nombre }); actualizarVistaParadas(); trazarRuta(); }
             function eliminarParada(index) { paradas.splice(index, 1); actualizarVistaParadas(); trazarRuta(); }
             function actualizarVistaParadas() { const container = document.getElementById('paradas-container'); if (!container) return; container.innerHTML = paradas.length === 0 ? '<p class="text-sm text-gray-500">Aún no hay paradas.</p>' : ''; paradas.forEach((parada, index) => { const el = document.createElement('div'); el.className = 'flex items-center justify-between p-2 bg-gray-100 rounded-md border'; el.setAttribute('data-id', index); el.innerHTML = `<div class="flex items-center"><svg class="w-5 h-5 text-gray-400 mr-2 cursor-move" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg><input type="text" value="${parada.nombre}" class="text-sm font-medium text-gray-800 bg-transparent border-0 p-1 focus:ring-1 focus:ring-indigo-500 focus:bg-white rounded" onchange="actualizarNombreParada(${index}, this.value)"></div><button type="button" onclick="eliminarParada(${index})" class="text-red-500 hover:text-red-700">&times;</button>`; container.appendChild(el); }); if (document.getElementById('paradas-container') && paradas.length > 0) { new Sortable(document.getElementById('paradas-container'), { animation: 150, onEnd: (evt) => { const [item] = paradas.splice(evt.oldIndex, 1); paradas.splice(evt.newIndex, 0, item); actualizarVistaParadas(); trazarRuta(); }, }); } }
+            function actualizarNombreParada(index, nuevoNombre) {
+                if (paradas[index]) {
+                    paradas[index].nombre = nuevoNombre;
+                }
+            }            
             function actualizarNombreParada(index, nuevoNombre) { if (paradas[index]) paradas[index].nombre = nuevoNombre; }
             function trazarRuta() { if (paradas.length < 2) { if (directionsRenderer) directionsRenderer.setDirections({ routes: [] }); actualizarDistancia(null); return; } const waypoints = paradas.slice(1, -1).map(p => ({ location: new google.maps.LatLng(p.lat, p.lng), stopover: true })); const request = { origin: new google.maps.LatLng(paradas[0].lat, paradas[0].lng), destination: new google.maps.LatLng(paradas[paradas.length - 1].lat, paradas[paradas.length - 1].lng), waypoints: waypoints, travelMode: 'DRIVING' }; if (directionsService) { directionsService.route(request, (result, status) => { if (status == 'OK') { directionsRenderer.setDirections(result); directionsRenderer.setOptions({ draggable: true }); } }); } }
             function validarYEnviarFormulario() { const form = document.getElementById('rutaForm'); const paradasContainer = document.getElementById('paradas-hidden-inputs'); const errorContainer = document.getElementById('paradas-error'); if (!form || !paradasContainer || !errorContainer) { alert("Error: No se encontró el formulario."); return; } if (paradas.length < 2) { errorContainer.classList.remove('hidden'); return; } errorContainer.classList.add('hidden'); paradasContainer.innerHTML = ''; paradas.forEach((parada, index) => { paradasContainer.innerHTML += `<input type="hidden" name="paradas[${index}][nombre_lugar]" value="${parada.nombre.replace(/"/g, "'")}"><input type="hidden" name="paradas[${index}][latitud]" value="${parada.lat}"><input type="hidden" name="paradas[${index}][longitud]" value="${parada.lng}">`; }); form.submit(); }
