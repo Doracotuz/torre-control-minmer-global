@@ -510,6 +510,11 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
 
         Route::get('/{order}/logistica-inversa', [ReverseLogisticsController::class, 'create'])->name('reverse-logistics.create');
         Route::post('/{order}/logistica-inversa', [ReverseLogisticsController::class, 'store'])->name('reverse-logistics.store');
+
+
+        
+        Route::post('/{order}/evidence', [OrderController::class, 'uploadEvidence'])->name('evidence.upload');
+        Route::delete('/evidence/{evidence}', [OrderController::class, 'deleteEvidence'])->name('evidence.delete');        
     });  
         Route::get('credit-notes/export/csv', [CreditNoteController::class, 'exportCsv'])->name('credit-notes.export.csv');
         Route::get('credit-notes/dashboard', [CreditNoteController::class, 'dashboard'])->name('credit-notes.dashboard');                

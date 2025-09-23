@@ -21,6 +21,8 @@ use App\Models\CsPlanning;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Models\Evento;
+use App\Models\CsOrderEvidence;
+use Illuminate\Support\Facades\Storage;
 
 
 
@@ -180,10 +182,10 @@ class OrderController extends Controller
      */
     public function edit(CsOrder $order)
     {
-        $order->load(['details.product']);
-        // $products = CsProduct::all()->sortBy('sku');
+
+        $order->load(['details.product', 'evidences']); 
         return view('customer-service.orders.edit', compact('order'));
-    } 
+    }
 
     /**
      * Actualiza un pedido y registra los cambios en la línea de tiempo.
@@ -1038,6 +1040,67 @@ class OrderController extends Controller
         }
 
         return redirect()->route('customer-service.orders.index')->with('success', $message);
+    }
+    
+    public function uploadEvidence(Request $request, CsOrder $order)
+    {
+        // 1. Validación
+        if (empty($order->invoice_number) || in_array($order->invoice_number, ['N/A', 'Sin dato'])) {
+            return response()->json(['message' => 'El pedido debe tener un número de factura válido para subir evidencias.'], 422);
+        }
+
+        $request->validate([
+            'evidence_file' => 'required|file|mimes:pdf,jpg,jpeg,png,xml|max:10240', // max 10MB
+        ]);
+
+        $file = $request->file('evidence_file');
+
+        // 2. Crear la ruta dinámica
+        $year = Carbon::now()->year;
+        $month = Carbon::now()->format('m');
+        $folderPath = "CustomerService/Evidencias/{$year}/{$month}";
+
+        // 3. Crear el nombre del archivo
+        $fileName = $order->invoice_number . '.' . $file->getClientOriginalExtension();
+
+        // 4. Guardar en S3
+        $path = $file->storeAs($folderPath, $fileName, 's3');
+
+        // 5. Crear el registro en la base de datos
+        $evidence = $order->evidences()->create([
+            'file_name' => $fileName,
+            'file_path' => $path,
+        ]);
+
+        // 6. Actualizar la fecha de recepción en el pedido
+        $order->update(['evidence_reception_date' => Carbon::now()]);
+
+        // 7. Devolver una respuesta exitosa con los datos del nuevo archivo
+        return response()->json([
+            'success' => true,
+            'message' => 'Evidencia subida exitosamente.',
+            'evidence' => $evidence,
+            'reception_date' => Carbon::now()->format('Y-m-d'),
+        ]);
+    }
+
+    public function deleteEvidence(CsOrderEvidence $evidence)
+    {
+        // Lógica de permisos (opcional, pero recomendada)
+        $this->authorize('delete', $evidence); // Necesitarías crear una Policy para esto
+
+        // Eliminar archivo de S3
+        if (Storage::disk('s3')->exists($evidence->file_path)) {
+            Storage::disk('s3')->delete($evidence->file_path);
+        }
+
+        // Eliminar registro de la base de datos
+        $evidence->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Evidencia eliminada exitosamente.'
+        ]);
     }    
 
 

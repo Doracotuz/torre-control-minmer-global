@@ -94,6 +94,18 @@
                     
                     <div class="col-span-full"><strong class="block text-gray-500">Observaciones:</strong><p class="mt-1 text-gray-700">{{ $order->observations ?? 'Sin dato' }}</p></div>
                 </div>
+
+                <h4 class="text-lg font-semibold text-gray-800 mt-6 mb-4">Evidencias Adjuntas</h4>
+                <div class="space-y-2">
+                    @forelse ($order->evidences as $evidence)
+                        <a href="{{ Storage::disk('s3')->url($evidence->file_path) }}" target="_blank" class="flex items-center bg-gray-50 p-2 rounded-md border hover:bg-gray-100">
+                            <i class="fas fa-file-alt text-gray-500 mr-2"></i>
+                            <span class="text-blue-600 text-sm">{{ $evidence->file_name }}</span>
+                        </a>
+                    @empty
+                        <p class="text-sm text-gray-500">No hay evidencias adjuntas.</p>
+                    @endforelse
+                </div>                
                 
                 <h4 class="text-lg font-semibold text-gray-800 mt-6 mb-4">Detalle de SKUs</h4>
                 <div class="max-h-48 overflow-y-auto border rounded-lg">

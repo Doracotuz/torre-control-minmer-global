@@ -35,7 +35,60 @@
                               
                               // Actualiza el campo de fecha de corte
                               document.querySelector('[name=evidence_cutoff_date]').value = `${year}-${month}-${day}`;
-                          }
+                          },
+
+                        invoice_number: '{{ old('invoice_number', $order->invoice_number) }}',
+                        evidences: {{ $order->evidences->toJson() }},
+                        newFile: null,
+                        isUploading: false,
+
+                        uploadFile() {
+                            if (!this.newFile) return;
+                            this.isUploading = true;
+
+                            let formData = new FormData();
+                            formData.append('evidence_file', this.newFile);
+
+                            fetch('{{ route('customer-service.orders.evidence.upload', $order) }}', {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                                body: formData
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    this.evidences.push(data.evidence);
+                                    document.querySelector('[name=evidence_reception_date]').value = data.reception_date;
+                                    this.newFile = null;
+                                    document.getElementById('evidence_file_input').value = ''; // Limpiar el input
+                                    alert(data.message);
+                                } else {
+                                    alert('Error: ' + data.message);
+                                }
+                            })
+                            .catch(error => alert('Ocurrió un error de red.'))
+                            .finally(() => this.isUploading = false);
+                        },
+
+                        deleteEvidence(evidenceId, index) {
+                            if (!confirm('¿Estás seguro de que deseas eliminar esta evidencia?')) return;
+
+                            fetch(`/customer-service/orders/evidence/${evidenceId}`, {
+                                method: 'DELETE',
+                                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    this.evidences.splice(index, 1);
+                                    alert(data.message);
+                                } else {
+                                    alert('Error: ' + data.message);
+                                }
+                            })
+                            .catch(error => alert('Ocurrió un error de red.'));
+                        }
+
                       }"
                       x-init="calculateCutoffDate()">
 
@@ -50,7 +103,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div><label for="bt_oc" class="block text-sm font-medium text-gray-700">Bt de OC</label><input type="text" name="bt_oc" value="{{ old('bt_oc', $order->bt_oc) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
-                        <div><label for="invoice_number" class="block text-sm font-medium text-gray-700">Factura</label><input type="text" name="invoice_number" value="{{ old('invoice_number', $order->invoice_number) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label for="invoice_number" class="block text-sm font-medium text-gray-700">Factura</label><input type="text" name="invoice_number" x-model="invoice_number" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div><label for="invoice_date" class="block text-sm font-medium text-gray-700">Fecha Factura</label><input type="date" name="invoice_date" value="{{ old('invoice_date', $order->invoice_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         
                         {{-- Campo modificado para activar el cálculo --}}
@@ -124,6 +177,38 @@
                         
                         <div class="md:col-span-2"><label for="observations" class="block text-sm font-medium text-gray-700">Observaciones</label><textarea name="observations" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">{{ old('observations', $order->observations) }}</textarea></div>
                     </div>
+
+                    <div class="md:col-span-2 mt-6 border-t pt-6">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Evidencias de Entrega</h4>
+
+                        <div class="space-y-2 mb-4">
+                            <template x-if="evidences.length === 0">
+                                <p class="text-sm text-gray-500">No hay evidencias adjuntas.</p>
+                            </template>
+                            <template x-for="(evidence, index) in evidences" :key="evidence.id">
+                                <div class="flex items-center justify-between bg-gray-50 p-2 rounded-md border">
+                                    <a :href="`/storage/${evidence.file_path}`" target="_blank" class="text-blue-600 hover:underline text-sm" x-text="evidence.file_name"></a>
+                                    <button @click.prevent="deleteEvidence(evidence.id, index)" class="text-red-500 hover:text-red-700 text-xs font-bold">ELIMINAR</button>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div>
+                            <label for="evidence_file_input" class="block text-sm font-medium text-gray-700">Adjuntar nueva evidencia</label>
+                            <div class="mt-1 flex items-center gap-2">
+                                <input id="evidence_file_input" type="file" @change="newFile = $event.target.files[0]" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                <button @click.prevent="uploadFile()" 
+                                        :disabled="!invoice_number || ['N/A', 'Sin dato', ''].includes(invoice_number.trim()) || !newFile || isUploading"
+                                        class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+                                        x-text="isUploading ? 'Subiendo...' : 'Subir Archivo'">
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Archivos permitidos: PDF, JPG, PNG, XML. Max: 10MB.</p>
+                            <template x-if="!invoice_number || ['N/A', 'Sin dato', ''].includes(invoice_number.trim())">
+                                <p class="text-xs text-red-600 mt-1">**Nota:** Debes introducir un número de factura para poder subir una evidencia.</p>
+                            </template>
+                        </div>
+                    </div>                    
 
                     <h4 class="text-lg font-semibold text-gray-800 mt-8 mb-4">Detalles de SKUs</h4>
                     <div class="max-h-70 overflow-y-auto border rounded-lg">

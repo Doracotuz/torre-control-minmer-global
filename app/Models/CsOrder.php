@@ -75,6 +75,11 @@ class CsOrder extends Model
     public function audits()
     {
         return $this->hasMany(\App\Models\Audit::class, 'cs_order_id');
+    }   
+    
+    public function evidences()
+    {
+        return $this->hasMany(CsOrderEvidence::class, 'cs_order_id');
     }    
 
 }
