@@ -24,6 +24,55 @@
                 <span id="flash-error-message" class="block sm:inline"></span>
             </div>
             <button onclick="document.getElementById('flash-error').style.display = 'none';" class="text-gray-500 hover:text-gray-700 focus:outline-none"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+
+        <div x-show="selectedPlannings.length > 0" 
+             class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-5xl bg-gray-800 text-white p-3 rounded-lg shadow-2xl flex flex-col justify-between items-center"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-4"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 translate-y-4">
+            
+            <div class="w-full flex flex-col md:flex-row justify-between items-center">
+               <span class="mb-2 md:mb-0" x-text="`(${selectedPlannings.length}) registros seleccionados.`"></span>
+               <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                   <button @click="bulkEdit()" class="px-4 py-2 w-full sm:w-auto bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700"><i class="fas fa-edit mr-2"></i>Editar Selección</button>
+                   <button @click="createGuide()" class="px-4 py-2 w-full sm:w-auto bg-[#ff9c00] text-white rounded-md text-sm font-semibold hover:bg-orange-600"><i class="fas fa-plus-circle mr-2"></i>Crear Guía</button>
+                   <button @click="openAddToGuiaModal()" class="px-4 py-2 w-full sm:w-auto bg-orange-600 text-white rounded-md text-sm font-semibold hover:bg-orange-700"><i class="fas fa-plus mr-2"></i>Añadir a Guía</button>                        
+               </div>
+            </div>
+
+            {{-- Sección de Totales de la Selección --}}
+            <div class="w-full border-t border-gray-600 mt-3 pt-3 text-xs">
+                <div class="grid grid-cols-3 md:grid-cols-6 gap-2 text-center">
+                    <div>
+                        <span class="font-bold block" x-text="`$${selectionTotals.subtotal.toLocaleString('es-MX', {minimumFractionDigits: 2})}`"></span>
+                        <span class="text-gray-400">Subtotal</span>
+                    </div>
+                    <div>
+                        <span class="font-bold block" x-text="selectionTotals.cajas.toLocaleString('es-MX')"></span>
+                        <span class="text-gray-400">Cajas</span>
+                    </div>
+                    <div>
+                        <span class="font-bold block" x-text="selectionTotals.pzs.toLocaleString('es-MX')"></span>
+                        <span class="text-gray-400">Botellas</span>
+                    </div>
+                    <div>
+                        <span class="font-bold block" x-text="selectionTotals.clientes.toLocaleString('es-MX')"></span>
+                        <span class="text-gray-400">Clientes</span>
+                    </div>
+                    <div>
+                        <span class="font-bold block" x-text="selectionTotals.so_count.toLocaleString('es-MX')"></span>
+                        <span class="text-gray-400">SO Sel.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold block" x-text="selectionTotals.factura_count.toLocaleString('es-MX')"></span>
+                        <span class="text-gray-400">Facturas Sel.</span>
+                    </div>
+                </div>
+            </div>
         </div>        
         
         <div class="mx-auto sm:px-6 lg:px-8">
@@ -35,7 +84,7 @@
                 </div>
 
                 {{-- Barra de Acciones Masivas --}}
-                <div class="mb-6">
+                <!-- <div class="mb-6">
                     <div x-show="selectedPlannings.length > 0" class="bg-gray-800 text-white p-3 rounded-lg shadow-lg flex flex-col justify-between items-center transition-transform w-full" x-transition>
                         <div class="w-full flex flex-col md:flex-row justify-between items-center">
                            <span class="mb-2 md:mb-0" x-text="`(${selectedPlannings.length}) registros seleccionados.`"></span>
@@ -76,7 +125,7 @@
                             </div>
                         </div>
                     </div>               
-                </div>
+                </div> -->
 
                 {{-- Botones de Acción Principales --}}
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 mb-6">

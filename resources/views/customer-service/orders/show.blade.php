@@ -139,24 +139,63 @@
                 <h4 class="text-lg font-semibold text-gray-800 mb-6">Línea de Tiempo</h4>
                 <div class="border-l-2 border-gray-300 pl-6 space-y-8 relative">
 
-                    @forelse($timelineEvents as $event)
-                        <div class="relative">
-                            {{-- El color del punto cambia dinámicamente --}}
-                            <div class="absolute -left-[33px] top-1 h-4 w-4 bg-{{ $event['color'] }}-500 rounded-full border-4 border-white"></div>
-                            <div class="ml-4">
-                                <p class="font-medium text-gray-800 text-sm">
-                                    {{-- La etiqueta de tipo también es dinámica --}}
-                                    <span class="inline-block mr-2 px-2 py-0.5 text-xs font-semibold text-{{ $event['color'] }}-800 bg-{{ $event['color'] }}-100 rounded-full">
-                                        {{ $event['type'] }}
-                                    </span>
-                                    {{ $event['description'] }}
-                                </p>
-                                <p class="text-xs text-gray-500 mt-1">
-                                    {{-- La fecha y el nombre de usuario se muestran correctamente --}}
-                                    {{ $event['date']->format('d/m/Y H:i A') }} por {{ $event['user_name'] }}
-                                </p>
-                            </div>
+                @forelse($timelineEvents as $event)
+                    <div class="relative">
+                        {{-- ✅ INICIA CAMBIO: Se usa @switch para que Tailwind detecte las clases de color --}}
+                        @php
+                            $color = $event['color'];
+                            $bgColorClass = 'bg-blue-500';
+                            $textColorClass = 'text-blue-800';
+                            $badgeBgColorClass = 'bg-blue-100';
+
+                            switch ($color) {
+                                case 'red':
+                                    $bgColorClass = 'bg-red-500';
+                                    $textColorClass = 'text-red-800';
+                                    $badgeBgColorClass = 'bg-red-100';
+                                    break;
+                                case 'yellow':
+                                    $bgColorClass = 'bg-yellow-500';
+                                    $textColorClass = 'text-yellow-800';
+                                    $badgeBgColorClass = 'bg-yellow-100';
+                                    break;
+                                case 'green':
+                                    $bgColorClass = 'bg-green-500';
+                                    $textColorClass = 'text-green-800';
+                                    $badgeBgColorClass = 'bg-green-100';
+                                    break;
+                                case 'purple':
+                                    $bgColorClass = 'bg-purple-500';
+                                    $textColorClass = 'text-purple-800';
+                                    $badgeBgColorClass = 'bg-purple-100';
+                                    break;
+                                case 'teal':
+                                    $bgColorClass = 'bg-teal-500';
+                                    $textColorClass = 'text-teal-800';
+                                    $badgeBgColorClass = 'bg-teal-100';
+                                    break;
+                                case 'gray':
+                                    $bgColorClass = 'bg-gray-500';
+                                    $textColorClass = 'text-gray-800';
+                                    $badgeBgColorClass = 'bg-gray-100';
+                                    break;
+                            }
+                        @endphp
+
+                        <div class="absolute -left-[33px] top-1 h-4 w-4 {{ $bgColorClass }} rounded-full border-4 border-white"></div>
+                        <div class="ml-4">
+                            <p class="font-medium text-gray-800 text-sm">
+                                <span class="inline-block mr-2 px-2 py-0.5 text-xs font-semibold {{ $textColorClass }} {{ $badgeBgColorClass }} rounded-full">
+                                    {{ $event['type'] }}
+                                </span>
+                                {{ $event['description'] }}
+                            </p>
+                            <p class="text-xs text-gray-500 mt-1">
+                                {{ $event['date']->format('d/m/Y H:i A') }} por {{ $event['user_name'] }}
+                            </p>
                         </div>
+                        {{-- ⏹️ TERMINA CAMBIO --}}
+                    </div>
                     @empty
                         <p class="text-sm text-gray-500">No hay eventos registrados.</p>
                     @endforelse

@@ -122,6 +122,9 @@ class OrderController extends Controller
             } elseif (str_contains($description, 'guía')) {
                 $type = 'Guía';
                 $color = 'green';
+            } elseif (str_contains($description, 'evidencia')) {
+                $type = 'Evidencia';
+                $color = 'teal';
             }
 
             $timelineEvents->push([
@@ -174,6 +177,7 @@ class OrderController extends Controller
             case 'Guía': return 'green';
             case 'Auditoría': return 'yellow';
             case 'Planificación': return 'purple';
+            case 'Evidencia': return 'teal';
             default: return 'blue';
         }
     }
@@ -1075,6 +1079,13 @@ class OrderController extends Controller
         // 6. Actualizar la fecha de recepción en el pedido
         $order->update(['evidence_reception_date' => Carbon::now()]);
 
+        // Registrar el evento en la línea de tiempo
+        CsOrderEvent::create([
+            'cs_order_id' => $order->id,
+            'user_id' => auth()->id(),
+            'description' => 'El usuario ' . auth()->user()->name . ' subió la evidencia: ' . $fileName,
+        ]);
+
         // 7. Devolver una respuesta exitosa con los datos del nuevo archivo
         return response()->json([
             'success' => true,
@@ -1086,8 +1097,10 @@ class OrderController extends Controller
 
     public function deleteEvidence(CsOrderEvidence $evidence)
     {
-        // Lógica de permisos (opcional, pero recomendada)
-        $this->authorize('delete', $evidence); // Necesitarías crear una Policy para esto
+        // $this->authorize('delete', $evidence);
+
+        $orderId = $evidence->cs_order_id;
+        $fileName = $evidence->file_name;
 
         // Eliminar archivo de S3
         if (Storage::disk('s3')->exists($evidence->file_path)) {
@@ -1097,11 +1110,18 @@ class OrderController extends Controller
         // Eliminar registro de la base de datos
         $evidence->delete();
 
+        // Registrar el evento en la línea de tiempo
+        CsOrderEvent::create([
+            'cs_order_id' => $orderId,
+            'user_id'     => auth()->id(),
+            'description' => 'El usuario ' . auth()->user()->name . ' eliminó la evidencia: ' . $fileName,
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Evidencia eliminada exitosamente.'
         ]);
-    }    
+    }   
 
 
 }

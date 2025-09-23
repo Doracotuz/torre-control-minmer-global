@@ -232,11 +232,11 @@ class AsignacionController extends Controller
             }
         }        
         
-        $observacionesConSO = $planningRecords
-            ->filter(fn($p) => !empty($p->observaciones))
-            ->map(fn($p) => ['so' => $p->so_number ?? 'Manual', 'observacion' => $p->observaciones])
-            ->values();
-        // ⏹️ TERMINA CAMBIO
+        // $observacionesConSO = $planningRecords
+        //     ->filter(fn($p) => !empty($p->observaciones))
+        //     ->map(fn($p) => ['so' => $p->so_number ?? 'Manual', 'observacion' => $p->observaciones])
+        //     ->values();
+
         
         $planning_ids = json_encode($request->query('planning_ids', []));
 
