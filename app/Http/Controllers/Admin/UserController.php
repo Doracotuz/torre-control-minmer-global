@@ -34,7 +34,8 @@ class UserController extends Controller
             $query->where(function($q) use ($searchTerm) {
                 $q->where('name', 'like', $searchTerm)
                 ->orWhere('email', 'like', $searchTerm)
-                ->orWhere('position', 'like', $searchTerm);
+                ->orWhere('position', 'like', $searchTerm)
+                ->orWhere('phone_number', 'like', $searchTerm);
             });
         }
 

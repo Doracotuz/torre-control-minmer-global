@@ -108,12 +108,29 @@
             padding: 20px;
             border-top: 1px solid #e0e0e0;
         }
+
+        .feature-section {
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .feature-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3856;
+            margin-bottom: 10px;
+        }
+        .feature-text {
+            font-size: 15px;
+            color: #666666;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }        
     </style>
 </head>
 <body>
     <div class="email-container">
         <div class="header">
-            <img src="{{ $message->embed(Storage::disk('s3')->path('LogoBlanco.png')) }}" alt="Logotipo de la Empresa">
+            <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" alt="Logotipo de Minmer Global">
         </div>
         
         <div class="content-body">
@@ -138,6 +155,15 @@
                 </div>
             </div>
 
+            <div class="feature-section">
+                <h2 class="feature-title">Tu Herramienta para el Éxito Diario</h2>
+                <p class="feature-text">
+                    Tu nueva cuenta te da acceso a <strong>Control Tower</strong>, el software de gestión integral creado por <strong>Minmer Global</strong>. Esta plataforma está diseñada para optimizar y facilitar tu operación diaria.
+                </p>
+                <p class="feature-text">
+                    Estamos en constante desarrollo para asegurarnos de que Control Tower sea siempre una herramienta moderna, funcional y perfectamente adaptada a tus necesidades.
+                </p>
+            </div>
             <div class="alert">
                 <strong>Nota de seguridad:</strong> Por tu seguridad, te recomendamos encarecidamente que cambies esta contraseña temporal la primera vez que inicies sesión.
             </div>

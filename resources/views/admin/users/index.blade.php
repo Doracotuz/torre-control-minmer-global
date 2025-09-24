@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-12 bg-[#E8ECF7]">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-8xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-6 md:p-8">
 
                 {{-- ... Notificaciones de éxito y error (sin cambios) ... --}}
@@ -93,7 +93,7 @@
                                         alt="{{ $user->name }}">
                                     <h5 class="text-base font-bold text-[#2c3856] truncate w-full" title="{{ $user->name }}">{{ $user->name }}</h5>
                                     <p class="text-xs font-medium text-gray-500 mb-1 truncate w-full" title="{{ $user->position }}">{{ $user->position ?? 'Sin Posición' }}</p>
-                                    <p class="text-xs font-medium text-gray-500 mb-1 truncate w-full" title="{{ $user->phone }}">{{ $user->phone ?? 'Sin Teléfono' }}</p>
+                                    <p class="text-xs font-medium text-gray-500 mb-1 truncate w-full" title="{{ $user->phone }}">{{ $user->phone_number ?? 'Sin Teléfono' }}</p>
                                     <p class="text-xs text-gray-500 mb-2 truncate w-full" title="{{ $user->email }}">{{ $user->email }}</p>
                                     <p class="text-xs text-gray-600 font-medium">{{ $user->area->name ?? 'Sin área' }}</p>
                                     
@@ -140,7 +140,7 @@
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->position ?? 'Sin posición' }}</div></td>
-                                        <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->phone ?? 'Sin teléfono' }}</div></td>
+                                        <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->phone_number ?? 'Sin teléfono' }}</div></td>
                                         <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->email }}</div></td>
                                         <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->area->name ?? 'N/A' }}</div></td>
                                         <td class="px-6 py-4 whitespace-nowrap">

@@ -31,8 +31,9 @@ class WelcomeNewUser extends Mailable
      */
     public function envelope(): Envelope
     {
+        $firstName = explode(' ', $this->user->name)[0];
         return new Envelope(
-            subject: '¡Bienvenido(a)! Tu cuenta ha sido creada',
+            subject: "¡Bienvenido(a), {$firstName}! Tu cuenta en Minmer Global ha sido creada",
         );
     }
 
