@@ -213,7 +213,7 @@ public function index(Request $request)
 
             case 'Ingresado':
 
-                $secondsSinceEntry = now()->diffInSeconds($visit->entry_datetime);
+                $secondsSinceEntry = abs(now()->diffInSeconds($visit->entry_datetime, false));
 
                 if ($secondsSinceEntry < 10) {
                     return [

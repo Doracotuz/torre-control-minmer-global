@@ -128,69 +128,100 @@
         </form>
     </div>
 
-    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-[var(--color-primary)] text-white">
-                    <tr>
-                        <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Visitante</th>
-                        <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Creado Por</th>
-                        <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Empresa</th>
-                        <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Entrada</th>
-                        <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Salida</th>
-                        <th scope="col" class="p-4 font-semibold text-center uppercase tracking-wider">Acompañantes</th> {{-- ✅ COLUMNA AÑADIDA --}}
-                        <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Estatus</th>
-                        <th scope="col" class="p-4 font-semibold text-center uppercase tracking-wider">Acciones</th>
+<div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    {{-- Vista de Tabla para Escritorio (md en adelante) --}}
+    <div class="overflow-x-auto hidden md:block">
+        <table class="w-full text-sm">
+            <thead class="bg-[var(--color-primary)] text-white">
+                <tr>
+                    <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Visitante</th>
+                    <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Creado Por</th>
+                    <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Empresa</th>
+                    <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Entrada</th>
+                    <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Salida</th>
+                    <th scope="col" class="p-4 font-semibold text-center uppercase tracking-wider">Acompañantes</th>
+                    <th scope="col" class="p-4 font-semibold text-left uppercase tracking-wider">Estatus</th>
+                    <th scope="col" class="p-4 font-semibold text-center uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                @forelse ($visits as $visit)
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="p-4 whitespace-nowrap">
+                            <p class="font-bold text-[var(--color-text-primary)]">{{ $visit->visitor_name }} {{ $visit->visitor_last_name }}</p>
+                            <p class="text-xs text-[var(--color-text-secondary)]">{{ $visit->email }}</p>
+                        </td>
+                        <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)] text-sm">{{ $visit->creator->name ?? 'N/A' }}</td>
+                        <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)]">{{ $visit->company ?? 'N/A' }}</td>
+                        <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)]">
+                            @if($visit->entry_datetime)
+                                {{ $visit->entry_datetime->format('d/m/Y h:i A') }}
+                            @else
+                                <span class="text-xs italic text-gray-400">(Programada para el {{ $visit->visit_datetime->format('d/m/Y h:i A') }})</span>
+                            @endif
+                        </td>
+                        <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)]">{{ $visit->exit_datetime ? $visit->exit_datetime->format('d/m/Y h:i A') : 'Pendiente' }}</td>
+                        <td class="p-4 whitespace-nowrap text-center font-semibold text-gray-700">{{ $visit->companions ? count($visit->companions) : 0 }}</td>
+                        <td class="p-4 whitespace-nowrap">
+                            <span class="badge badge-{{ strtolower(str_replace(' ', '-', $visit->status)) }}">{{ $visit->status }}</span>
+                        </td>
+                        <td class="p-4 whitespace-nowrap text-center">
+                            <div class="flex items-center justify-center space-x-4">
+                                <a href="{{ route('area_admin.visits.show', $visit) }}" class="text-gray-400 hover:text-blue-500 transition-colors" title="Ver Detalles"><i class="fas fa-eye fa-lg"></i></a>
+                                <form action="{{ route('area_admin.visits.destroy', $visit) }}" method="POST" onsubmit="return confirm('¿Confirmas la eliminación de esta visita?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors" title="Eliminar"><i class="fas fa-trash-alt fa-lg"></i></button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    @forelse ($visits as $visit)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="p-4 whitespace-nowrap"><p class="font-bold text-[var(--color-text-primary)]">{{ $visit->visitor_name }} {{ $visit->visitor_last_name }}</p><p class="text-xs text-[var(--color-text-secondary)]">{{ $visit->email }}</p></td>
-                            <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)] text-sm">
-                                {{ $visit->creator->name ?? 'Usuario no encontrado' }}
-                            </td>                            
-                            <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)]">{{ $visit->company ?? 'N/A' }}</td>
-                            <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)]">
-                                @if($visit->entry_datetime)
-                                    {{ \Carbon\Carbon::parse($visit->entry_datetime)->format('d/m/Y h:i A') }}
-                                @else
-                                    <span class="text-xs italic text-gray-400">(Programado para {{ $visit->visit_datetime->format('d/m/Y h:i A') }})</span>
-                                @endif
-                            </td>
-                            <td class="p-4 whitespace-nowrap text-[var(--color-text-secondary)]">{{ $visit->exit_datetime ? $visit->exit_datetime->format('d/m/Y h:i A') : '—' }}</td>
-                            {{-- ✅ INICIO: CELDA CON EL CONTEO DE ACOMPAÑANTES --}}
-                            <td class="p-4 whitespace-nowrap text-center font-semibold text-gray-700">
-                                {{ $visit->companions ? count($visit->companions) : 0 }}
-                            </td>
-                            {{-- ✅ FIN: CELDA CON EL CONTEO --}}
-                            <td class="p-4 whitespace-nowrap">
-                                <span class="badge badge-{{ strtolower(str_replace(' ', '-', $visit->status)) }}">
-                                    {{ $visit->status }}
-                                </span>
-                            </td>
-                            <td class="p-4 whitespace-nowrap text-center">
-                                <div class="flex items-center justify-center space-x-4">
-                                    <a href="{{ route('area_admin.visits.show', $visit) }}" class="text-gray-400 hover:text-blue-500 transition-colors" title="Ver Detalles">
-                                        <i class="fas fa-eye fa-lg"></i>
-                                    </a>
+                @empty
+                    <tr><td colspan="8" class="text-center p-8 text-gray-500">No se encontraron visitas.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 
-                                    <form action="{{ route('area_admin.visits.destroy', $visit) }}" method="POST" onsubmit="return confirm('¿Confirmas la eliminación de esta visita?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors" title="Eliminar">
-                                            <i class="fas fa-trash-alt fa-lg"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="8" class="text-center p-8 text-gray-500">No se encontraron visitas.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
+    {{-- Vista de Tarjetas para Móvil (hasta md) --}}
+    <div class="block md:hidden">
+        <div class="divide-y divide-gray-200">
+            @forelse ($visits as $visit)
+                <div class="p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <p class="font-bold text-base text-[var(--color-text-primary)]">{{ $visit->visitor_name }} {{ $visit->visitor_last_name }}</p>
+                            <p class="text-sm text-[var(--color-text-secondary)]">{{ $visit->company ?? 'N/A' }}</p>
+                        </div>
+                        <span class="badge badge-{{ strtolower(str_replace(' ', '-', $visit->status)) }} flex-shrink-0">{{ $visit->status }}</span>
+                    </div>
+                    <div class="text-sm text-gray-600 space-y-2 mt-3">
+                        <p><strong><i class="fas fa-sign-in-alt w-5 text-center mr-1 text-gray-400"></i> Entrada:</strong> 
+                            @if($visit->entry_datetime)
+                                {{ $visit->entry_datetime->format('d/m/Y h:i A') }}
+                            @else
+                                <span class="italic text-gray-500">(Progamada para el {{ $visit->visit_datetime->format('d/m/Y h:i A') }})</span>
+                            @endif
+                        </p>
+                        <p><strong><i class="fas fa-sign-out-alt w-5 text-center mr-1 text-gray-400"></i> Salida:</strong> {{ $visit->exit_datetime ? $visit->exit_datetime->format('d/m/Y h:i A') : 'Pendiente' }}</p>
+                        <p><strong><i class="fas fa-users w-5 text-center mr-1 text-gray-400"></i> Acompañantes:</strong> {{ $visit->companions ? count($visit->companions) : 0 }}</p>
+                        <p><strong><i class="fas fa-user-tie w-5 text-center mr-1 text-gray-400"></i> Creado por:</strong> {{ $visit->creator->name ?? 'N/A' }}</p>
+                    </div>
+                    <div class="flex items-center justify-end space-x-5 mt-4">
+                        <a href="{{ route('area_admin.visits.show', $visit) }}" class="text-gray-400 hover:text-blue-500 transition-colors" title="Ver Detalles"><i class="fas fa-eye fa-lg"></i></a>
+                        <form action="{{ route('area_admin.visits.destroy', $visit) }}" method="POST" onsubmit="return confirm('¿Confirmas la eliminación de esta visita?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors" title="Eliminar"><i class="fas fa-trash-alt fa-lg"></i></button>
+                        </form>
+                    </div>
+                </div>
+            @empty
+                <div class="text-center p-8 text-gray-500">No se encontraron visitas.</div>
+            @endforelse
         </div>
+    </div>
+        
         <div class="p-4 bg-gray-50 border-t">
             {!! $visits->appends(request()->query())->links() !!}
         </div>

@@ -35,6 +35,7 @@ class Visit extends Model
         'qr_code_token',
         'status',
         'created_by_user_id',
+        'entry_datetime',
         'exit_datetime',
     ];
 
@@ -45,6 +46,7 @@ class Visit extends Model
      */
     protected $casts = [
         'visit_datetime' => 'datetime',
+        'entry_datetime' => 'datetime',
         'exit_datetime' => 'datetime',
         'companions' => 'array',
     ];

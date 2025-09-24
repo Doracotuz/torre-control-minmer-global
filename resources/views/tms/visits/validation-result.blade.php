@@ -40,6 +40,13 @@
                     <p><strong>Visitante:</strong> {{ $visit->visitor_name }} {{ $visit->visitor_last_name }}</p>
                     <p><strong>Empresa:</strong> {{ $visit->company ?? 'N/A' }}</p>
                     <p><strong>Fecha y Hora Programada:</strong> {{ \Carbon\Carbon::parse($visit->visit_datetime)->format('d/m/Y h:i A') }}</p>
+                    @if($visit->vehicle_make || $visit->vehicle_model || $visit->license_plate)
+                    <div class="mt-4 pt-4 border-t">
+                        <h3 class="font-semibold text-gray-800 mb-2">Datos del Vehículo</h3>
+                        <p><strong>Vehículo:</strong> {{ $visit->vehicle_make ?? '' }} {{ $visit->vehicle_model ?? '' }}</p>
+                        <p><strong>Placas:</strong> {{ $visit->license_plate ?? 'N/A' }}</p>
+                    </div>
+                    @endif                    
                     <p><strong>Estatus Final:</strong> <span class="font-bold text-black">{{ $visit->status }}</span></p>
                 </div>
 
@@ -59,11 +66,11 @@
             </div>
         </div>
 
-        <div class="text-center mt-8">
+        <!-- <div class="text-center mt-8">
             <a href="{{ route('visits.scan.page') }}" class="inline-block px-8 py-3 rounded-lg font-semibold btn-scan-again transition">
                 <i class="fas fa-qrcode mr-2"></i>Escanear Otro QR
             </a>
-        </div>
+        </div> -->
     </div>
 </body>
 </html>
