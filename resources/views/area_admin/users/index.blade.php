@@ -94,10 +94,13 @@
                                 </div>
                                 <div class="mt-4 pt-4 border-t border-gray-100 flex justify-center space-x-2">
                                     <a href="{{ route('area_admin.users.edit', $user) }}" class="text-sm text-gray-500 hover:text-[#2c3856] p-1">Editar</a>
-                                    <form action="{{ route('area_admin.users.destroy', $user) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que quieres eliminar a este usuario?');">
+                                    <form action="{{ route('area_admin.users.destroy', $user) }}" method="POST" 
+                                        onsubmit="return confirm('¿Confirmas la eliminación de \'{{ addslashes($user->name) }}\'? El usuario será eliminado permanentemente. Su historial de auditoría se conservará, pero se desvinculará de su nombre (quedará como NULL).');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="text-sm text-gray-500 hover:text-red-600 p-1">Eliminar</button>
+                                        <button type="submit" class="text-sm text-gray-500 hover:text-red-600 p-1">
+                                            Eliminar
+                                        </button>
                                     </form>
                                 </div>
                             </div>
@@ -141,10 +144,13 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div class="flex items-center justify-end space-x-4">
                                                 <a href="{{ route('area_admin.users.edit', $user) }}" class="text-[#2c3856] hover:text-[#ff9c00] font-semibold">Editar</a>
-                                                <form action="{{ route('area_admin.users.destroy', $user) }}" method="POST" onsubmit="return confirm('¿Estás seguro?');">
+                                                <form action="{{ route('area_admin.users.destroy', $user) }}" method="POST" 
+                                                    onsubmit="return confirm('¿Confirmas la eliminación de \'{{ addslashes($user->name) }}\'? El usuario será eliminado permanentemente. Su historial de auditoría se conservará, pero se desvinculará de su nombre (quedará como NULL).');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-800 font-semibold">Eliminar</button>
+                                                    <button type="submit" class="text-sm text-gray-500 hover:text-red-600 p-1">
+                                                        Eliminar
+                                                    </button>
                                                 </form>
                                             </div>
                                         </td>

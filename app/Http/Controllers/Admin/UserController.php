@@ -14,6 +14,7 @@ use App\Models\OrganigramPosition;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\WelcomeNewUser;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -279,4 +280,64 @@ class UserController extends Controller
 
         return redirect()->route('admin.users.index')->with('success', 'Usuario eliminado exitosamente.');
     }
+
+    public function bulkDelete(Request $request)
+    {
+        $request->validate(['ids' => 'required|array|min:1']);
+        $ids = $request->input('ids');
+
+        // Evitar que el super admin se elimine a sí mismo
+        if (in_array(auth()->id(), $ids)) {
+            throw ValidationException::withMessages(['ids' => 'No puedes eliminar tu propia cuenta en una acción masiva.']);
+        }
+
+        $users = User::whereIn('id', $ids)->get();
+
+        foreach ($users as $user) {
+            if ($user->profile_photo_path) {
+                Storage::disk('s3')->delete($user->profile_photo_path);
+            }
+            $user->delete();
+        }
+
+        return redirect()->route('admin.users.index')->with('success', count($ids) . ' usuarios eliminados exitosamente.');
+    }
+
+    /**
+     * Reenvía una notificación de bienvenida a múltiples usuarios.
+     * Por seguridad, en lugar de reenviar una contraseña, se envía un enlace para restablecerla.
+     */
+    public function bulkResendWelcome(Request $request)
+    {
+        $request->validate(['ids' => 'required|array|min:1']);
+        $ids = $request->input('ids');
+
+        $users = User::whereIn('id', $ids)->get();
+        $count = 0;
+
+        foreach ($users as $user) {
+            // 1. Generar una nueva contraseña temporal segura
+            $temporaryPassword = Str::random(10); // Genera una contraseña de 10 caracteres
+
+            // 2. Actualizar la contraseña del usuario en la base de datos (encriptada)
+            $user->password = Hash::make($temporaryPassword);
+            $user->save();
+
+            // 3. Enviar el correo de bienvenida con la contraseña en texto plano
+            try {
+                // Pasamos `true` para indicar que es un reenvío
+                Mail::to($user->email)->send(new WelcomeNewUser($user, $temporaryPassword, true));
+                $count++;
+            } catch (\Exception $e) {
+                Log::error("Error al reenviar correo de bienvenida a {$user->email}: " . $e->getMessage());
+            }
+        }
+
+        if ($count > 0) {
+            return redirect()->route('admin.users.index')->with('success', 'Correo de bienvenida reenviado a ' . $count . ' usuarios con una nueva contraseña temporal.');
+        }
+
+        return redirect()->route('admin.users.index')->with('error', 'No se pudo enviar el correo a los usuarios seleccionados. Revise los logs.');
+    }
+    
 }

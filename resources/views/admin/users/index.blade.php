@@ -23,6 +23,18 @@
                     </div>
                 @endif
 
+                <div x-data="{ 
+                    selectedUsers: [], 
+                    selectAll: false, 
+                    usersOnPage: {{ json_encode($users->pluck('id')) }},
+                    toggleSelectAll() {
+                        this.selectAll = !this.selectAll;
+                        this.selectedUsers = this.selectAll ? [...this.usersOnPage] : [];
+                    },
+                    get isAllSelected() {
+                        return this.usersOnPage.length > 0 && this.selectedUsers.length === this.usersOnPage.length;
+                    }
+                }" x-init="$watch('selectedUsers', () => selectAll = isAllSelected)">
 
                 <div class="mb-8 p-4 bg-gray-50 rounded-lg border">
                     <form action="{{ route('admin.users.index') }}" method="GET">
@@ -85,7 +97,12 @@
 
                     <div x-show="view === 'grid'" x-transition class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                         @forelse ($users as $user)
-                            <div class="bg-white rounded-lg shadow border border-gray-100 p-4 flex flex-col text-center transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                            <div class="relative bg-white rounded-lg shadow border p-4 flex flex-col text-center transition-all duration-300 hover:shadow-xl hover:-translate-y-1" 
+                                 :class="{ 'ring-2 ring-offset-2 ring-[#ff9c00]': selectedUsers.includes({{ $user->id }}) }">
+                                <div class="absolute top-2 left-2">
+                                    <input type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" 
+                                           :value="{{ $user->id }}" x-model="selectedUsers">
+                                </div>
                                 <div class="flex-grow flex flex-col items-center">
                                     <img class="h-20 w-20 rounded-full object-cover mb-3 border-4 
                                         {{ $user->is_area_admin ? 'border-[#ff9c00]' : ($user->is_client ? 'border-blue-400' : 'border-gray-200') }}" 
@@ -105,10 +122,13 @@
                                 </div>
                                 <div class="mt-4 pt-4 border-t border-gray-100 flex justify-center space-x-2">
                                     <a href="{{ route('admin.users.edit', $user) }}" class="text-sm text-gray-500 hover:text-[#2c3856] p-1">Editar</a>
-                                    <form action="{{ route('admin.users.destroy', $user) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que quieres eliminar a este usuario?');">
+                                    <form action="{{ route('admin.users.destroy', $user) }}" method="POST" 
+                                        onsubmit="return confirm('¿Confirmas la eliminación de \'{{ addslashes($user->name) }}\'? El usuario será eliminado permanentemente. Su historial de auditoría se conservará, pero se desvinculará de su nombre (quedará como NULL).');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="text-sm text-gray-500 hover:text-red-600 p-1">Eliminar</button>
+                                        <button type="submit" class="text-sm text-gray-500 hover:text-red-600 p-1">
+                                            Eliminar
+                                        </button>
                                     </form>
                                 </div>
                             </div>
@@ -121,6 +141,9 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-[#2c3856]">
                                 <tr>
+                                    <th class="px-6 py-3">
+                                        <input type="checkbox" @click="toggleSelectAll()" :checked="isAllSelected" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]">
+                                    </th>                                    
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Nombre</th>
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Posición</th>
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Teléfono</th>
@@ -133,6 +156,10 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @forelse ($users as $user)
                                     <tr class="hover:bg-gray-50 transition-colors duration-200">
+                                        <td class="px-6 py-4">
+                                            <input type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" 
+                                                   :value="{{ $user->id }}" x-model="selectedUsers">
+                                        </td>                                        
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <img class="h-9 w-9 rounded-full object-cover mr-3" src="{{ $user->profile_photo_path ? Storage::disk('s3')->url($user->profile_photo_path) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&color=2C3856&background=F3F4F6' }}" alt="{{ $user->name }}">
@@ -155,9 +182,13 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div class="flex items-center justify-end space-x-4">
                                                 <a href="{{ route('admin.users.edit', $user) }}" class="text-[#2c3856] hover:text-[#ff9c00] font-semibold">Editar</a>
-                                                <form action="{{ route('admin.users.destroy', $user) }}" method="POST" onsubmit="return confirm('¿Estás seguro?');">
-                                                    @csrf @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-800 font-semibold">Eliminar</button>
+                                                <form action="{{ route('admin.users.destroy', $user) }}" method="POST" 
+                                                    onsubmit="return confirm('¿Confirmas la eliminación de \'{{ addslashes($user->name) }}\'? El usuario será eliminado permanentemente. Su historial de auditoría se conservará, pero se desvinculará de su nombre (quedará como NULL).');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="text-sm text-gray-500 hover:text-red-600 p-1">
+                                                        Eliminar
+                                                    </button>
                                                 </form>
                                             </div>
                                         </td>
@@ -168,6 +199,46 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <div x-show="selectedUsers.length > 0" 
+                        x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 transform translate-y-4"
+                        x-transition:enter-end="opacity-100 transform translate-y-0"
+                        x-transition:leave="transition ease-in duration-200"
+                        x-transition:leave-start="opacity-100 transform translate-y-0"
+                        x-transition:leave-end="opacity-0 transform translate-y-4"
+                        class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl mb-4"
+                        style="display: none;">
+                        <div class="bg-[#2c3856] text-white rounded-lg shadow-xl p-4 flex items-center justify-between">
+                            <div>
+                                <span x-text="selectedUsers.length"></span>
+                                <span x-text="selectedUsers.length === 1 ? 'usuario seleccionado' : 'usuarios seleccionados'"></span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <form id="bulk-resend-form" action="{{ route('admin.users.bulk_resend_welcome') }}" method="POST" class="m-0">
+                                    @csrf
+                                    <template x-for="userId in selectedUsers" :key="userId">
+                                        <input type="hidden" name="ids[]" :value="userId">
+                                    </template>
+                                    <button type="submit" class="px-4 py-2 text-sm font-semibold bg-[#ff9c00] rounded-md hover:bg-orange-500">Reenviar Bienvenida</button>
+                                </form>
+                                
+                                <form id="bulk-delete-form" action="{{ route('admin.users.bulk_delete') }}" method="POST" class="m-0" 
+                                    onsubmit="return confirm('¿Confirmas la eliminación de los ' + document.querySelector('[x-data]').__x.$data.selectedUsers.length + ' usuarios seleccionados? Serán eliminados permanentemente y su historial de auditoría se desvinculará (quedará como NULL).');">
+                                    @csrf
+                                    <template x-for="userId in selectedUsers" :key="userId">
+                                        <input type="hidden" name="ids[]" :value="userId">
+                                    </template>
+                                    <button type="submit" class="px-4 py-2 text-sm font-semibold bg-red-600 rounded-md hover:bg-red-700">
+                                        Eliminar Seleccionados
+                                    </button>
+                                </form>
+                                
+                                <button @click="selectedUsers = []" class="text-sm text-gray-300 hover:text-white">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 <div class="mt-8">

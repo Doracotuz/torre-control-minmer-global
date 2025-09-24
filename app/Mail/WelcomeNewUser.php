@@ -16,14 +16,16 @@ class WelcomeNewUser extends Mailable
 
     public $user;
     public $password;
+    public $isReWelcome;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(User $user, string $password)
+    public function __construct(User $user, string $password, bool $isReWelcome = false)
     {
         $this->user = $user;
         $this->password = $password;
+        $this->isReWelcome = $isReWelcome; 
     }
 
     /**
@@ -32,8 +34,12 @@ class WelcomeNewUser extends Mailable
     public function envelope(): Envelope
     {
         $firstName = explode(' ', $this->user->name)[0];
+        $subject = $this->isReWelcome
+            ? "¡Bienvenido(a), {$firstName}! Tu cuenta en Minmer Global ha sido creada"
+            : "¡Bienvenido(a), {$firstName}! Tu cuenta en Minmer Global ha sido creada";
+
         return new Envelope(
-            subject: "¡Bienvenido(a), {$firstName}! Tu cuenta en Minmer Global ha sido creada",
+            subject: $subject,
         );
     }
 

@@ -174,7 +174,8 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/statistics/charts', [StatisticsController::class, 'charts'])->name('statistics.charts');
     Route::get('/notification-settings', [App\Http\Controllers\Admin\NotificationSettingsController::class, 'index'])->name('notifications.settings.index');
     Route::post('/notification-settings', [App\Http\Controllers\Admin\NotificationSettingsController::class, 'store'])->name('notifications.settings.store');    
-
+    Route::post('/users/bulk-delete', [AdminUserController::class, 'bulkDelete'])->name('users.bulk_delete');
+    Route::post('/users/bulk-resend-welcome', [AdminUserController::class, 'bulkResendWelcome'])->name('users.bulk_resend_welcome');
 
 
 

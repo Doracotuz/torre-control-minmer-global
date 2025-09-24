@@ -134,11 +134,19 @@
         </div>
         
         <div class="content-body">
-            <h1 class="title">¡Bienvenido(a) a bordo!</h1>
-            <p class="subtitle">
-                Hola, <strong>{{ $user->name }}</strong>. Se ha creado una cuenta para ti en nuestro sistema. 
-                A continuación, encontrarás tus credenciales para acceder.
-            </p>
+            @if ($isReWelcome)
+                <h1 class="title">¡Bienvenido(a) a bordo!</h1>
+                <p class="subtitle">
+                    Hola, <strong>{{ $user->name }}</strong>. Se ha creado una cuenta para ti en nuestro sistema. 
+                    A continuación, encontrarás tus credenciales para acceder.
+                </p>
+            @else
+                <h1 class="title">¡Bienvenido(a) a bordo!</h1>
+                <p class="subtitle">
+                    Hola, <strong>{{ $user->name }}</strong>. Se ha creado una cuenta para ti en nuestro sistema. 
+                    A continuación, encontrarás tus credenciales para acceder.
+                </p>
+            @endif
             
             <div class="info-card">
                 <div class="info-item">
