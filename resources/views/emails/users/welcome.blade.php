@@ -130,7 +130,10 @@
 <body>
     <div class="email-container">
         <div class="header">
-            <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" alt="Logotipo de Minmer Global">
+            <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" 
+                 alt="Logotipo Minmer Global" 
+                 style="height: auto; max-height: 60px; display: block; border: 0;" 
+                 width="150">
         </div>
         
         <div class="content-body">

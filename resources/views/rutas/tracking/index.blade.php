@@ -12,8 +12,6 @@
             </button>
         </div>
     </form>
-
-    {{-- Detalles --}}
     @if($searchQuery)
         <div class="mt-8">
             @forelse ($facturas as $factura)
@@ -27,13 +25,13 @@
                         
                         <div class="flex items-center space-x-3">
                             @php
-                                $order = $factura->csPlanning?->order; // <-- NOMBRE CORREGIDO
-                                $creator = $order?->creator;
+                                $order = $factura->csPlanning?->order;
+                                $editor = $order?->updater;
                                 $clientContact = $order?->client_contact ?? $order?->customer_name;
-                                $creatorPhoneNumber = $creator?->phone_number;
+                                $editorPhoneNumber = $editor?->phone_number;
                             @endphp
 
-                            @if($creatorPhoneNumber)
+                            @if($editorPhoneNumber)
                                 @php
                                     // Lógica para el saludo dinámico
                                     $hour = now()->hour;
@@ -44,18 +42,12 @@
                                     } else {
                                         $greeting = 'buena noche';
                                     }
-                                    
-                                    // Extraer primer nombre del creador
-                                    $creatorFirstName = explode(' ', $creator->name)[0];
 
-                                    // Construir el mensaje
-                                    $message = "Hola, {$greeting} {$creatorFirstName}.\n\n";
-                                    $message .= "Me gustaría obtener más detalles sobre la entrega de la factura {$factura->numero_factura} con destino a {$clientContact}.";
-                                    
-                                    // Formatear número de teléfono (asumiendo lada de México +52 y 1 para celular)
-                                    $whatsAppNumber = "521" . $creatorPhoneNumber;
+                                    $editorFirstName = explode(' ', $editor->name)[0];
 
-                                    // Construir el enlace final
+                                    $message = "Hola, {$greeting} {$editorFirstName}.\n\n";
+                                    $message .= "Me gustaría obtener más detalles sobre la entrega de la factura *{$factura->numero_factura}* con destino a *{$clientContact}*.";
+                                    $whatsAppNumber = "521" . $editorPhoneNumber;
                                     $whatsAppLink = "https://wa.me/{$whatsAppNumber}?text=" . urlencode($message);
                                 @endphp
                             @endif
@@ -72,10 +64,15 @@
                     <h4 class="text-sm font-bold text-gray-600 mb-2">Historial de Entrega:</h4>
                     @if($factura->eventos->isEmpty())
                         <p class="text-sm text-gray-500">Aún no hay eventos de entrega para esta factura.</p>
+                        <div class="mt-4">
+                            <a href="{{ $whatsAppLink }}" target="_blank" class="inline-flex items-center px-3 py-1.2 bg-[rgb(44,56,86)] text-white rounded-full font-semibold text-xs uppercase tracking-widest hover:bg-[#ff9c00] transition-all duration-300 transform hover:scale-105 shadow-md" title="Enviar WhatsApp a {{ $creator->name }}">
+                                <!-- <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886-.001 2.269.655 4.506 1.908 6.385l-1.292 4.72zm7.572-6.911c-.533-.266-3.143-1.552-3.64-1.725-.496-.173-.855-.265-1.214.265-.36.53-.137 1.251-.138 1.251-.36.53-.137 1.251-.138 1.251l-.149.174c-.379.444-.799.524-1.214.379-.414-.143-1.745-.636-3.328-2.049a11.583 11.583 0 0 1-2.3-2.828c-.266-.495-.034-.764.231-1.021.233-.232.496-.615.744-.913.249-.298.33-.495.496-.855.165-.36.083-.66-.034-.912-.117-.252-1.213-2.909-1.662-3.996-.448-1.087-.905-1.008-1.213-1.008h-.494c-.359 0-.912.117-1.385.579-.47.462-1.798 1.76-1.798 4.298s1.839 4.99 2.083 5.349c.243.359 3.593 5.493 8.718 7.669 1.144.495 2.062.793 2.76.995.894.243 1.706.215 2.333-.034.707-.282 2.196-1.12 2.502-2.208.307-1.087.307-2.008.216-2.208-.092-.2-.358-.321-.737-.533z"/></svg> -->
+                                <span>Solicitar informes a CS</span>
+                            </a>
+                        </div>
                     @else
                         @foreach($factura->eventos as $evento)
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center mb-2">
-                                {{-- Info del Evento --}}
                                 <div class="md:col-span-2">
                                     <p class="text-sm font-semibold {{ $evento->subtipo == 'Factura Entregada' ? 'text-green-700' : 'text-red-700' }}">
                                         {{ $evento->subtipo }}
@@ -101,7 +98,6 @@
                                         </div>
                                     @endif
                                 </div>
-                                {{-- Mapa Estático --}}
                                 <div class="md:col-span-2">
                                     <a href="https://www.google.com/maps?q={{$evento->latitud}},{{$evento->longitud}}" target="_blank">
                                         <img 
@@ -114,7 +110,7 @@
                             <a href="{{ $whatsAppLink }}" target="_blank" class="inline-flex items-center px-3 py-1.2 bg-[rgb(44,56,86)] text-white rounded-full font-semibold text-xs uppercase tracking-widest hover:bg-[#ff9c00] transition-all duration-300 transform hover:scale-105 shadow-md" title="Enviar WhatsApp a {{ $creator->name }}">
                                 <!-- <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886-.001 2.269.655 4.506 1.908 6.385l-1.292 4.72zm7.572-6.911c-.533-.266-3.143-1.552-3.64-1.725-.496-.173-.855-.265-1.214.265-.36.53-.137 1.251-.138 1.251-.36.53-.137 1.251-.138 1.251l-.149.174c-.379.444-.799.524-1.214.379-.414-.143-1.745-.636-3.328-2.049a11.583 11.583 0 0 1-2.3-2.828c-.266-.495-.034-.764.231-1.021.233-.232.496-.615.744-.913.249-.298.33-.495.496-.855.165-.36.083-.66-.034-.912-.117-.252-1.213-2.909-1.662-3.996-.448-1.087-.905-1.008-1.213-1.008h-.494c-.359 0-.912.117-1.385.579-.47.462-1.798 1.76-1.798 4.298s1.839 4.99 2.083 5.349c.243.359 3.593 5.493 8.718 7.669 1.144.495 2.062.793 2.76.995.894.243 1.706.215 2.333-.034.707-.282 2.196-1.12 2.502-2.208.307-1.087.307-2.008.216-2.208-.092-.2-.358-.321-.737-.533z"/></svg> -->
                                 <span>Solicitar informes a CS</span>
-                            </a>                            
+                            </a>
                         @endforeach
                     @endif
                 </div>

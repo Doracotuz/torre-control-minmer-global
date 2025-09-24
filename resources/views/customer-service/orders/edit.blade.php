@@ -161,7 +161,9 @@
                         </div>
 
                         <div><label for="executive" class="block text-sm font-medium text-gray-700">Ejecutivo</label><input type="text" name="executive" value="{{ old('executive', $order->executive) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
-                        <div><label for="evidence_reception_date" class="block text-sm font-medium text-gray-700">Recepción de Evidencia</label><input type="date" name="evidence_reception_date" value="{{ old('evidence_reception_date', $order->evidence_reception_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label for="evidence_reception_date" class="block text-sm font-medium text-gray-700">Recepción de Evidencia</label>
+                            <input type="date" name="evidence_reception_date" value="{{ old('evidence_reception_date', $order->evidence_reception_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100" readonly>
+                        </div>
                         <div>
                             <label for="is_oversized" class="block text-sm font-medium text-gray-700">Sobredimensionado</label>
                             <select name="is_oversized" id="is_oversized" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
@@ -266,7 +268,9 @@
 
                     <div class="flex justify-end gap-4 mt-8">
                         <a href="{{ route('customer-service.orders.show', $order) }}" class="px-4 py-2 bg-gray-200 rounded-md">Cancelar</a>
+                        @if(in_array(Auth::user()->area?->name, ['Administración']))
                         <a href="{{ route('customer-service.orders.edit-original', $order) }}" class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600">Editar Datos Originales</a>
+                        @endif
                         <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Guardar Cambios</button>
                     
                     </div>

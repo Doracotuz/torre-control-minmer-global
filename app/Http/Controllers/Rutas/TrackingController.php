@@ -21,7 +21,7 @@ class TrackingController extends Controller
                     'eventos' => function ($query) {
                         $query->where('tipo', 'Entrega')->orderBy('fecha_evento', 'desc');
                     },
-                    'csPlanning.order.creator'
+                    'csPlanning.order.updater' 
                 ])
                 ->get();
         }
