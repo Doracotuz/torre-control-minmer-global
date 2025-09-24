@@ -81,6 +81,25 @@
                             </div>
 
                             <div>
+                                <x-input-label for="position" :value="__('Posición')" class="font-semibold" />
+                                <select id="position" name="position" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm">
+                                    <option value="">{{ __('Selecciona una Posición') }}</option>
+                                    @foreach ($positions as $position)
+                                        <option value="{{ $position->name }}" {{ old('position', $user->position) == $position->name ? 'selected' : '' }}>
+                                            {{ $position->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <x-input-error :messages="$errors->get('position')" class="mt-2" />
+                            </div>
+
+                            <div class="mt-4">
+                                <x-input-label for="phone_number" :value="__('Número Telefónico')" />
+                                <x-text-input id="phone_number" name="phone_number" type="tel" class="mt-1 block w-full" :value="old('phone_number', $user->phone_number)" autocomplete="tel" />
+                                <x-input-error class="mt-2" :messages="$errors->get('phone_number')" />
+                            </div>                            
+
+                            <div>
                                 <x-input-label for="email" :value="__('Correo Electrónico')" />
                                 <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
                                 <x-input-error class="mt-2" :messages="$errors->get('email')" />

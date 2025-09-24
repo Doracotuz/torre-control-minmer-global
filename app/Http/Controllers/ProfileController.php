@@ -8,7 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
-use Illuminate\Support\Facades\Storage; // ¡Añade esta línea!
+use Illuminate\Support\Facades\Storage;
+use App\Models\OrganigramPosition;
 
 class ProfileController extends Controller
 {
@@ -17,8 +18,10 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $positions = OrganigramPosition::orderBy('name')->get();
         return view('profile.edit', [
             'user' => $request->user(),
+            'positions' => $positions,
         ]);
     }
 

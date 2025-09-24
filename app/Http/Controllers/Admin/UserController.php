@@ -10,6 +10,10 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use App\Models\OrganigramPosition;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\WelcomeNewUser;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -19,10 +23,48 @@ class UserController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with('area')->orderBy('name')->get();
-        return view('admin.users.index', compact('users'));
+        $areas = Area::orderBy('name')->get();
+        $query = User::with('area')->orderBy('name');
+
+        // 1. Filtro de búsqueda por texto (nombre, email, posición)
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->search . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('name', 'like', $searchTerm)
+                ->orWhere('email', 'like', $searchTerm)
+                ->orWhere('position', 'like', $searchTerm);
+            });
+        }
+
+        // 2. Filtro por Área
+        if ($request->filled('area_id')) {
+            $query->where('area_id', $request->area_id);
+        }
+
+        // 3. Filtro por Rol
+        if ($request->filled('role')) {
+            switch ($request->role) {
+                case 'admin':
+                    $query->where('is_area_admin', true);
+                    break;
+                case 'client':
+                    $query->where('is_client', true);
+                    break;
+                case 'normal':
+                    $query->where('is_area_admin', false)->where('is_client', false);
+                    break;
+            }
+        }
+
+        $users = $query->paginate(15)->withQueryString(); // withQueryString() mantiene los filtros en la paginación
+
+        return view('admin.users.index', [
+            'users' => $users,
+            'areas' => $areas,
+            'filters' => $request->only(['search', 'area_id', 'role'])
+        ]);
     }
 
     /**
@@ -34,11 +76,8 @@ class UserController extends Controller
     public function create()
     {
         $areas = Area::orderBy('name')->get();
-        // Para la selección de carpetas, podrías cargar solo las carpetas raíz o todas,
-        // dependiendo de si quieres que el Super Admin solo asigne raíces o también subcarpetas directamente.
-        // `getFoldersForClientAccess` ya devuelve las carpetas raíz cuando parent_id es null
-        // No necesitamos `$folders` aquí, ya que Alpine.js cargará dinámicamente.
-        return view('admin.users.create', compact('areas'));
+        $positions = OrganigramPosition::orderBy('name')->get();
+        return view('admin.users.create', compact('areas', 'positions'));
     }
 
     /**
@@ -52,6 +91,8 @@ class UserController extends Controller
     {
         $rules = [
             'name' => 'required|string|max:255',
+            'position' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|digits:10',            
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'is_area_admin' => 'boolean',
@@ -89,7 +130,17 @@ class UserController extends Controller
             $data['profile_photo_path'] = null;
         }
 
-        $user = User::create($data); //
+        $user = User::create($data);
+
+        try {
+            // Usamos $request->password para enviar la contraseña en texto plano,
+            // antes de que se guarde hasheada en la base de datos.
+            Mail::to($user->email)->send(new WelcomeNewUser($user, $request->password));
+        } catch (\Exception $e) {
+            // Opcional: Manejar el error si el correo no se puede enviar.
+            // Por ejemplo, puedes registrar el error sin detener el proceso.
+            Log::error("Error al enviar correo de bienvenida a {$user->email}: " . $e->getMessage());
+        }        
 
         if ($user->isClient()) {
             // El hidden input aún envía una cadena. Por eso se mantiene explode.
@@ -116,10 +167,10 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $areas = Area::orderBy('name')->get();
-        // Las carpetas no se pasan aquí, ya que se cargarán dinámicamente con la API
+        $positions = OrganigramPosition::orderBy('name')->get();
         $accessibleFolderIds = $user->accessibleFolders->pluck('id')->toArray();
 
-        return view('admin.users.edit', compact('user', 'areas', 'accessibleFolderIds'));
+        return view('admin.users.edit', compact('user', 'areas', 'accessibleFolderIds', 'positions')); 
     }
 
     /**
@@ -134,6 +185,8 @@ class UserController extends Controller
     {
         $rules = [
             'name' => 'required|string|max:255',
+            'position' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|digits:10', 
             'email' => [
                 'required',
                 'string',

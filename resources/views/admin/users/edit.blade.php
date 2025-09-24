@@ -70,6 +70,25 @@
                             </div>
 
                             <div>
+                                <x-input-label for="position" :value="__('Posición')" class="font-semibold" />
+                                <select id="position" name="position" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm">
+                                    <option value="">{{ __('Selecciona una Posición') }}</option>
+                                    @foreach ($positions as $position)
+                                        <option value="{{ $position->name }}" {{ old('position', $user->position) == $position->name ? 'selected' : '' }}>
+                                            {{ $position->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <x-input-error :messages="$errors->get('position')" class="mt-2" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="phone_number" :value="__('Número Telefónico')" class="font-semibold" />
+                                <x-text-input id="phone_number" class="block mt-1 w-full" type="tel" name="phone_number" :value="old('phone_number', $user->phone_number)" />
+                                <x-input-error :messages="$errors->get('phone_number')" class="mt-2" />
+                            </div>                            
+
+                            <div>
                                 <x-input-label for="email" :value="__('Email')" class="font-semibold" />
                                 <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $user->email)" required />
                                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
