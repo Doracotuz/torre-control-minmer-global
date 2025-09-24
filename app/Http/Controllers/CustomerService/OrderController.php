@@ -236,6 +236,7 @@ class OrderController extends Controller
         // Separar los detalles para procesarlos por separado
         $detailsData = $validatedData['details'] ?? [];
         unset($validatedData['details']);
+        $validatedData['updated_by_user_id'] = Auth::id();
 
         // Actualizar los datos del pedido principal
         $oldOrderData = $order->getOriginal();
