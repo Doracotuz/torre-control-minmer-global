@@ -5,8 +5,8 @@
         </h2>
     </x-slot>
 
-    <div class="py-12 bg-gray-100">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-12 bg-[#E8ECF7]">
+        <div class="max-w-8xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-6 md:p-8">
 
                 {{-- Success Notification --}}
@@ -24,6 +24,34 @@
                     </div>
                 @endif
 
+                <div class="mb-8 p-4 bg-gray-50 rounded-lg border">
+                    <form action="{{ route('area_admin.users.index') }}" method="GET">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="search" class="block text-sm font-medium text-gray-700">Buscar</label>
+                                <input type="text" name="search" id="search" class="mt-1 block w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm text-sm" placeholder="Nombre, email, posición..." value="{{ $filters['search'] ?? '' }}">
+                            </div>
+
+                            <div>
+                                <label for="role" class="block text-sm font-medium text-gray-700">Rol de Usuario</label>
+                                <select name="role" id="role" class="mt-1 block w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm text-sm">
+                                    <option value="">Todos los roles</option>
+                                    <option value="admin" @selected(isset($filters['role']) && $filters['role'] == 'admin')>Admin. de Área</option>
+                                    <option value="normal" @selected(isset($filters['role']) && $filters['role'] == 'normal')>Usuario Normal</option>
+                                </select>
+                            </div>
+
+                            <div class="flex items-end space-x-2">
+                                <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#2c3856] hover:bg-[#1a2233]">
+                                    Filtrar
+                                </button>
+                                <a href="{{ route('area_admin.users.index') }}" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                    Limpiar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>                
                 {{-- Main container with Alpine.js logic for view selector --}}
                 <div x-data="{ view: localStorage.getItem('users_view_mode') || 'grid' }" x-init="$watch('view', val => localStorage.setItem('users_view_mode', val))">
 
@@ -54,6 +82,8 @@
                                         src="{{ $user->profile_photo_path ? Storage::disk('s3')->url($user->profile_photo_path) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&color=2C3856&background=F3F4F6' }}"
                                         alt="{{ $user->name }}">
                                     <h5 class="text-base font-bold text-[#2c3856]">{{ $user->name }}</h5>
+                                    <p class="text-xs font-medium text-gray-500 mb-1 truncate w-full" title="{{ $user->position }}">{{ $user->position ?? 'Sin Posición' }}</p>
+                                    <p class="text-xs font-medium text-gray-500 mb-1 truncate w-full" title="{{ $user->phone }}">{{ $user->phone_number ?? 'Sin Teléfono' }}</p>                                    
                                     <p class="text-xs text-gray-500 mb-2 truncate w-full">{{ $user->email }}</p>
                                     {{-- Role Indicator for Grid View --}}
                                     @if ($user->is_area_admin)
@@ -82,6 +112,8 @@
                             <thead class="bg-[#2c3856]">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Nombre</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Posición</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Teléfono</th>                                    
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Email</th>
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Rol</th>
                                     <th class="relative px-6 py-3"><span class="sr-only">Acciones</span></th>
@@ -96,6 +128,8 @@
                                                 <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
                                             </div>
                                         </td>
+                                        <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->position ?? 'Sin posición' }}</div></td>
+                                        <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->phone_number ?? 'Sin teléfono' }}</div></td>                                        
                                         <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->email }}</div></td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             @if ($user->is_area_admin)

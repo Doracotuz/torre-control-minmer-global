@@ -5,7 +5,7 @@
         </h2>
     </x-slot>
 
-    <div class="py-12 bg-gray-100">
+    <div class="py-12 bg-[#E8ECF7]">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200">
 
@@ -24,6 +24,25 @@
                                 <x-input-label for="name" :value="__('Nombre Completo')" class="font-semibold" />
                                 <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name', $user->name)" required autofocus />
                                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="position" :value="__('Posición')" class="font-semibold" />
+                                <select id="position" name="position" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm">
+                                    <option value="">{{ __('Selecciona una Posición') }}</option>
+                                    @foreach ($positions as $position)
+                                        <option value="{{ $position->name }}" {{ old('position', $user->position) == $position->name ? 'selected' : '' }}>
+                                            {{ $position->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <x-input-error :messages="$errors->get('position')" class="mt-2" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="phone_number" :value="__('Número Telefónico')" class="font-semibold" />
+                                <x-text-input id="phone_number" class="block mt-1 w-full" type="tel" name="phone_number" :value="old('phone_number', $user->phone_number)" />
+                                <x-input-error :messages="$errors->get('phone_number')" class="mt-2" />
                             </div>
 
                             <div>

@@ -9,7 +9,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Storage; // Importar Storage
+use Illuminate\Support\Facades\Storage;
+use App\Models\OrganigramPosition;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\WelcomeNewUser;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -19,13 +23,39 @@ class UserController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(Request $request)
     {
-        $areaId = Auth::user()->area_id;
-        $users = User::where('area_id', $areaId)->orderBy('name')->get();
-        $currentArea = Auth::user()->area; // Para mostrar el nombre del área en la vista
+        $areaId = auth()->user()->area_id;
+        $currentArea = auth()->user()->area;
+        $query = User::where('area_id', $areaId)->orderBy('name');
 
-        return view('area_admin.users.index', compact('users', 'currentArea'));
+        // Filtro de búsqueda por texto
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->search . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('name', 'like', $searchTerm)
+                  ->orWhere('email', 'like', $searchTerm)
+                  ->orWhere('position', 'like', $searchTerm)
+                  ->orWhere('phone_number', 'like', $searchTerm);
+            });
+        }
+
+        // Filtro por Rol (dentro del área)
+        if ($request->filled('role')) {
+            if ($request->role == 'admin') {
+                $query->where('is_area_admin', true);
+            } elseif ($request->role == 'normal') {
+                $query->where('is_area_admin', false);
+            }
+        }
+
+        $users = $query->paginate(15)->withQueryString();
+
+        return view('area_admin.users.index', [
+            'users' => $users,
+            'currentArea' => $currentArea,
+            'filters' => $request->only(['search', 'role'])
+        ]);
     }
 
     /**
@@ -36,9 +66,10 @@ class UserController extends Controller
      */
     public function create()
     {
-        $currentArea = Auth::user()->area; // El área del administrador
+        $currentArea = auth()->user()->area;
+        $positions = OrganigramPosition::orderBy('name')->get();
 
-        return view('area_admin.users.create', compact('currentArea'));
+        return view('area_admin.users.create', compact('currentArea', 'positions'));
     }
 
     /**
@@ -50,33 +81,41 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $areaId = Auth::user()->area_id;
-
         $request->validate([
             'name' => 'required|string|max:255',
+            'position' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|digits:10',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'profile_photo' => 'nullable|image|max:2048', // Añadida validación para la foto
+            'profile_photo' => 'nullable|image|max:2048',
         ]);
 
         $userData = [
             'name' => $request->name,
+            'position' => $request->position,
+            'phone_number' => $request->phone_number,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'area_id' => $areaId, // Asigna automáticamente al área del admin
-            'is_area_admin' => false, // Por defecto, los nuevos usuarios no son administradores de área
+            'area_id' => auth()->user()->area_id,
+            'is_area_admin' => $request->boolean('is_area_admin'), // CORREGIDO
+            'is_client' => false,
         ];
 
-        // Manejo de la subida de la foto de perfil
         if ($request->hasFile('profile_photo')) {
-            // CAMBIO: Almacenar en S3
             $path = $request->file('profile_photo')->store('profile-photos', 's3');
             $userData['profile_photo_path'] = $path;
         }
 
-        User::create($userData);
+        $user = User::create($userData);
 
-        return redirect()->route('area_admin.users.index')->with('success', 'Usuario creado exitosamente en tu área.');
+        // Enviar correo de bienvenida
+        try {
+            Mail::to($user->email)->send(new WelcomeNewUser($user, $request->password));
+        } catch (\Exception $e) {
+            Log::error("Error al enviar correo de bienvenida desde AreaAdmin a {$user->email}: " . $e->getMessage());
+        }
+
+        return redirect()->route('area_admin.users.index')->with('success', 'Usuario creado y notificado exitosamente.');
     }
 
     /**
@@ -88,13 +127,14 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        // Asegurarse de que el usuario a editar pertenece al área del administrador
-        if (Auth::user()->area_id !== $user->area_id) {
-            return redirect()->route('area_admin.users.index')->with('error', 'No tienes permiso para editar este usuario.');
+        if (auth()->user()->area_id !== $user->area_id) {
+            abort(403, 'No tienes permiso para editar este usuario.');
         }
 
-        $currentArea = Auth::user()->area; // El área del administrador
-        return view('area_admin.users.edit', compact('user', 'currentArea'));
+        $currentArea = auth()->user()->area;
+        $positions = OrganigramPosition::orderBy('name')->get();
+
+        return view('area_admin.users.edit', compact('user', 'currentArea', 'positions'));
     }
 
     /**
@@ -107,28 +147,24 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
-        // Asegurarse de que el usuario a actualizar pertenece al área del administrador
-        if (Auth::user()->area_id !== $user->area_id) {
-            return redirect()->route('area_admin.users.index')->with('error', 'No tienes permiso para actualizar este usuario.');
+        if (auth()->user()->area_id !== $user->area_id) {
+            abort(403, 'No tienes permiso para actualizar este usuario.');
         }
 
-        $rules = [
+        $request->validate([
             'name' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'max:255',
-                Rule::unique('users')->ignore($user->id),
-            ],
+            'position' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|digits:10',
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|string|min:8|confirmed',
-            'profile_photo' => 'nullable|image|max:2048', // Añadida validación para la foto
-        ];
-
-        $request->validate($rules);
+            'profile_photo' => 'nullable|image|max:2048',
+        ]);
 
         $user->name = $request->name;
+        $user->position = $request->position;
+        $user->phone_number = $request->phone_number;
         $user->email = $request->email;
+        $user->is_area_admin = $request->boolean('is_area_admin'); // CORREGIDO
 
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
