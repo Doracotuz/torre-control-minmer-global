@@ -14,14 +14,15 @@ class TrackingController extends Controller
         $searchQuery = $request->input('facturas');
 
         if ($searchQuery) {
-            // Convertir la cadena de facturas separadas por coma en un array
             $numerosFactura = array_map('trim', explode(',', $searchQuery));
 
-            // Buscar las facturas y cargar solo los eventos de tipo "Entrega"
             $facturas = Factura::whereIn('numero_factura', $numerosFactura)
-                ->with(['eventos' => function ($query) {
-                    $query->where('tipo', 'Entrega')->orderBy('fecha_evento', 'desc');
-                }])
+                ->with([
+                    'eventos' => function ($query) {
+                        $query->where('tipo', 'Entrega')->orderBy('fecha_evento', 'desc');
+                    },
+                    'csPlanning.order.creator'
+                ])
                 ->get();
         }
 

@@ -31,6 +31,11 @@ class Factura extends Model
         return $this->belongsTo(Guia::class);
     }
 
+    public function csPlanning()
+    {
+        return $this->belongsTo(\App\Models\CsPlanning::class, 'cs_planning_id');
+    }    
+
     public function eventos()
     {
         return $this->hasMany(Evento::class);
