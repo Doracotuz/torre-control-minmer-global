@@ -140,8 +140,8 @@
             .glowing-button::before {
                 content: '';
                 position: absolute;
-                top: 50%;  /* Cambiado a centro vertical */
-                left: 50%; /* Cambiado a centro horizontal */
+                top: 50%;
+                left: 50%;
                 width: 40px;
                 height: 40px;
                 background: rgba(255, 255, 255, 0.3);
@@ -149,7 +149,7 @@
                 opacity: 0;
                 pointer-events: none;
                 animation: glow-burst 1s ease-out forwards infinite alternate;
-                transform: translate(-50%, -50%) scale(0); /* Centrado preciso y escala inicial 0 */
+                transform: translate(-50%, -50%) scale(0);
             }
 
             .glowing-button::after {
@@ -164,19 +164,19 @@
             border-radius: 50%;
             opacity: 0.8;
             pointer-events: none;
-            animation: twinkle 1.5s ease-in-out infinite; /* Animación de parpadeo constante */
+            animation: twinkle 1.5s ease-in-out infinite;
             }
 
-@keyframes glow-burst {
-    0% {
-        transform: translate(-50%, -50%) scale(0); /* Mantener centrado */
-        opacity: 0.8;
-    }
-    100% {
-        transform: translate(-50%, -50%) scale(5); /* Mantener centrado */
-        opacity: 0;
-    }
-}
+            @keyframes glow-burst {
+                0% {
+                    transform: translate(-50%, -50%) scale(0);
+                    opacity: 0.8;
+                }
+                100% {
+                    transform: translate(-50%, -50%) scale(5);
+                    opacity: 0;
+                }
+            }
 
             @keyframes twinkle {
             0%, 100% {
@@ -190,11 +190,10 @@
             }
 
             .glowing-button span {
-            position: relative; /* Asegura que el texto esté encima de los efectos */
+            position: relative;
             }
         </style>
             <script>
-        // Variables globales
         let map, directionsService, directionsRenderer, autocomplete;
         let paradas = [];
         let indexMap, monitoreoMap, activeRenderers = {};
@@ -205,7 +204,7 @@
             activeRenderers = {};
         });
 
-        // ========= CREAR/EDITAR =========
+        // CREAR/EDITAR
         window.initMap = function() {
             if (!document.getElementById('map')) return;
             if (window.initialParadas) { paradas = window.initialParadas; delete window.initialParadas; } else { paradas = []; }
@@ -218,7 +217,6 @@
                     const newRoute = result.routes[0];
                     actualizarDistancia(newRoute);
 
-                    // Actualiza las coordenadas de las paradas existentes sin tocar sus nombres
                     newRoute.legs.forEach((leg, index) => {
                         if (paradas[index]) {
                             paradas[index].lat = leg.start_location.lat();
@@ -226,14 +224,12 @@
                         }
                     });
                     
-                    // Actualiza la última parada
                     const lastLeg = newRoute.legs[newRoute.legs.length - 1];
                     if (paradas[newRoute.legs.length]) {
                         paradas[newRoute.legs.length].lat = lastLeg.end_location.lat();
                         paradas[newRoute.legs.length].lng = lastLeg.end_location.lng();
                     }
                     
-                    // Vuelve a dibujar la lista de paradas en la barra lateral
                     actualizarVistaParadas();
                 }
             });
@@ -245,7 +241,7 @@
             trazarRuta();
         };
 
-        // ========= MAPA DEL INDEX =========
+        // MAPA DEL INDEX
         window.initIndexMap = function() {
             if (!document.getElementById('map-panel')) return;
             indexMap = new google.maps.Map(document.getElementById("map-panel"), { center: { lat: 19.4326, lng: -99.1332 }, zoom: 10, mapTypeControl: false, gestureHandling: 'greedy', });
@@ -258,7 +254,7 @@
             });
         };
 
-        // ========= MAPA DE MONITOREO =========
+        // MAPA DE MONITOREO 
         window.initMonitoreoMap = function() {
             if (!document.getElementById('monitoreo-map')) return;
             monitoreoMap = new google.maps.Map(document.getElementById("monitoreo-map"), {
@@ -270,14 +266,13 @@
             directionsService = new google.maps.DirectionsService();
         };
 
-        // ========= DIBUJAR EN MONITOREO =========
+        // DIBUJAR EN MONITOREO 
         function drawMonitoreoRoute(guiaId) {
             const guiaData = window.guiasData[guiaId];
             if (!guiaData) return;
 
             activeRenderers[guiaId] = { renderer: null, markers: [], infoWindow: new google.maps.InfoWindow() };
             
-            // Se dibuja el trazo de la ruta
             const paradas = guiaData.paradas;
             if (paradas.length >= 2) {
                 const request = {
@@ -305,7 +300,7 @@
                     position: { lat: parada.lat, lng: parada.lng },
                     map: monitoreoMap,
                     label: {
-                        text: `${index + 1}`, // Etiqueta con el número de la parada (1, 2, 3...)
+                        text: `${index + 1}`,
                         color: "white",
                         fontSize: "12px",
                         fontWeight: "bold"
@@ -313,7 +308,7 @@
                     icon: {
                         path: google.maps.SymbolPath.CIRCLE,
                         scale: 12,
-                        fillColor: "#2c3856", // Azul oscuro de tu paleta
+                        fillColor: "#2c3856",
                         fillOpacity: 1,
                         strokeWeight: 2,
                         strokeColor: "white"
@@ -321,7 +316,6 @@
                     title: `Parada ${index + 1}: ${parada.nombre_lugar}`
                 });
 
-                // Añadimos un InfoWindow para mostrar el nombre al hacer clic
                 stopMarker.addListener("click", () => {
                     const contentString = `<div style="font-family: Montserrat, sans-serif; padding: 5px;">
                                             <p style="font-weight: 600; color: #2c3856;">Parada ${index + 1}</p>
@@ -331,11 +325,9 @@
                     activeRenderers[guiaId].infoWindow.open({ anchor: stopMarker, map: monitoreoMap });
                 });
 
-                // Guardamos el marcador para poder borrarlo después
                 activeRenderers[guiaId].markers.push(stopMarker);
             });
 
-            // Se dibujan marcadores de eventos con iconos SVG
             guiaData.eventos.forEach(evento => {
                 // SVG Paths
                 const icons = {
@@ -364,7 +356,6 @@
 
                 let facturaAfectadaHtml = '';
                 if (evento.tipo === 'Entrega' && evento.factura_id) {
-                    // factura en los datos de la guía
                     const factura = guiaData.facturas.find(f => f.id === evento.factura_id);
                     if (factura) {
                         facturaAfectadaHtml = `<p style="font-size: 12px; color: #666; margin: 0 0 8px 0;"><strong>Factura:</strong> ${factura.numero_factura}</p>`;
@@ -396,7 +387,6 @@
             });
         }
 
-            // Lógica para remover rutas del mapa
             function removeMonitoreoRoute(guiaId) {
                 if (activeRenderers[guiaId]) {
                     if (activeRenderers[guiaId].renderer) {
@@ -410,14 +400,11 @@
                 }
             }
         
-        // ========= ALPINE.JS PARA MONITOREO =========
+        // ALPINE.JS PARA MONITOREO
 document.addEventListener('alpine:init', () => {
     Alpine.data('monitoringManager', () => ({
-        // El array con los IDs de las guías seleccionadas. Es la "única fuente de verdad".
         selectedGuias: JSON.parse(sessionStorage.getItem('selectedGuias')) || [],
 
-        
-        // Modal de eventos
         isEventModalOpen: false,
         isDetailsModalOpen: false,
         selectedGuia: null,
@@ -444,8 +431,6 @@ document.addEventListener('alpine:init', () => {
             ]
             
         },
-        
-        // Cuando carga en la página.
             init() {
                 this.selectedGuias = JSON.parse(sessionStorage.getItem('selectedGuias')) || [];
                 
@@ -507,7 +492,6 @@ document.addEventListener('alpine:init', () => {
                     
                     if (!guiaData) return [];
 
-                    // Filtros de facturas de la guía seleccionada
                     return guiaData.facturas.filter(factura => factura.estatus_entrega === 'Pendiente');
                 },
                 setEventLocationFromMapClick(event) {
@@ -529,15 +513,12 @@ document.addEventListener('alpine:init', () => {
                     this.evento.lng = latLng.lng().toFixed(6);
                     this.isEventModalOpen = true;
                 },
-
-                // Lógica para mostrar el modal de acceso denegado
                 showAccessDeniedModal() {
                     this.isAccessDeniedModalOpen = true;
                 }
 
             }));
 
-            // Agregando la lógica de Alpine.js para los modales globales
             Alpine.data('globalState', () => ({
                 isAccessDeniedModalOpen: false,
                 closeAccessDeniedModal() {
@@ -546,73 +527,6 @@ document.addEventListener('alpine:init', () => {
             }));
         });
 
-            // --- Mapa del INDEX ---
-            // function drawRoute(rutaId) {
-            //     const paradasParaRuta = window.rutasJson[rutaId];
-            //     if (!paradasParaRuta || paradasParaRuta.length < 2) return;
-            //     const waypoints = paradasParaRuta.slice(1, -1).map(p => ({ location: {lat: p.lat, lng: p.lng}, stopover: true }));
-            //     const request = {
-            //         origin: {lat: paradasParaRuta[0].lat, lng: paradasParaRuta[0].lng},
-            //         destination: {lat: paradasParaRuta[paradasParaRuta.length - 1].lat, lng: paradasParaRuta[paradasParaRuta.length - 1].lng},
-            //         waypoints: waypoints,
-            //         travelMode: 'DRIVING'
-            //     }; 
-            //     directionsService.route(request, (result, status) => {
-            //         if (status == 'OK') {
-            //             const color = routeColors[rutaId % routeColors.length];
-            //             const renderer = new google.maps.DirectionsRenderer({
-            //                 map: indexMap,
-            //                 directions: result,
-            //                 suppressMarkers: true,
-            //                 polylineOptions: { strokeColor: color, strokeWeight: 5, strokeOpacity: 0.8 }
-            //             });
-                        
-            //             activeRenderers[rutaId] = { renderer: renderer, markers: [] };
-
-            //             // AÑADIDO: Bucle para crear un marcador para cada parada
-            //             paradasParaRuta.forEach((parada, index) => {
-            //                 const stopMarker = new google.maps.Marker({
-            //                     position: { lat: parada.lat, lng: parada.lng },
-            //                     map: indexMap,
-            //                     label: {
-            //                         text: `${index + 1}`, // Etiqueta con el número de parada
-            //                         color: "white",
-            //                         fontSize: "11px",
-            //                         fontWeight: "bold"
-            //                     },
-            //                     icon: {
-            //                         path: google.maps.SymbolPath.CIRCLE,
-            //                         scale: 10,
-            //                         fillColor: color, // Usa el mismo color que la línea de la ruta
-            //                         fillOpacity: 1,
-            //                         strokeWeight: 1.5,
-            //                         strokeColor: "white"
-            //                     },
-            //                     title: `Parada ${index + 1}`
-            //                 });
-            //                 // Guardamos el marcador para poder borrarlo después
-            //                 activeRenderers[rutaId].markers.push(stopMarker);
-            //             });
-            //         }
-            //     });
-            // }
-
-            // function removeRoute(rutaId) {
-            //     if (activeRenderers[rutaId]) {
-            //         // Elimina la línea de la ruta
-            //         if (activeRenderers[rutaId].renderer) {
-            //             activeRenderers[rutaId].renderer.setMap(null);
-            //         }
-            //         // Elimina cada marcador de parada asociado
-            //         if (activeRenderers[rutaId].markers) {
-            //             activeRenderers[rutaId].markers.forEach(marker => marker.setMap(null));
-            //         }
-            //         // Limpia el registro
-            //         delete activeRenderers[rutaId];
-            //     }
-            // }
-
-            // --- Funciones para el mapa de CREAR/EDITAR ---
             function agregarParada(location, nombre) { paradas.push({ lat: location.lat(), lng: location.lng(), nombre: nombre }); actualizarVistaParadas(); trazarRuta(); }
             function eliminarParada(index) { paradas.splice(index, 1); actualizarVistaParadas(); trazarRuta(); }
             function actualizarVistaParadas() { const container = document.getElementById('paradas-container'); if (!container) return; container.innerHTML = paradas.length === 0 ? '<p class="text-sm text-gray-500">Aún no hay paradas.</p>' : ''; paradas.forEach((parada, index) => { const el = document.createElement('div'); el.className = 'flex items-center justify-between p-2 bg-gray-100 rounded-md border'; el.setAttribute('data-id', index); el.innerHTML = `<div class="flex items-center"><svg class="w-5 h-5 text-gray-400 mr-2 cursor-move" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg><input type="text" value="${parada.nombre}" class="text-sm font-medium text-gray-800 bg-transparent border-0 p-1 focus:ring-1 focus:ring-indigo-500 focus:bg-white rounded" onchange="actualizarNombreParada(${index}, this.value)"></div><button type="button" onclick="eliminarParada(${index})" class="text-red-500 hover:text-red-700">&times;</button>`; container.appendChild(el); }); if (document.getElementById('paradas-container') && paradas.length > 0) { new Sortable(document.getElementById('paradas-container'), { animation: 150, onEnd: (evt) => { const [item] = paradas.splice(evt.oldIndex, 1); paradas.splice(evt.newIndex, 0, item); actualizarVistaParadas(); trazarRuta(); }, }); } }
@@ -931,14 +845,11 @@ document.addEventListener('alpine:init', () => {
 
                 <div x-show="isAccessDeniedModalOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
                     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                        {{-- Fondo oscuro del modal --}}
                         <div class="fixed inset-0 bg-[#2b2b2b] bg-opacity-75 transition-opacity" aria-hidden="true"></div>
                         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
                         
-                        {{-- Contenedor del modal --}}
                         <div x-show="isAccessDeniedModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-[#ffffff] rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full sm:p-6">
                             <div>
-                                {{-- Contenedor para el logo --}}
                                     <div class="mx-auto flex items-center justify-center h-16">
                                         <img 
                                             src="{{ Storage::disk('s3')->url('LogoAzulm.PNG') }}" 

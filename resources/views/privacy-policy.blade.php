@@ -7,7 +7,6 @@
     <title>Política de Privacidad - Estrategias y Soluciones Minmer Global</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
-        /* Animación de entrada para secciones */
         .fade-in {
             opacity: 0;
             transform: translateY(20px);
@@ -19,12 +18,10 @@
                 transform: translateY(0);
             }
         }
-        /* Transiciones suaves para enlaces y botones */
         .hover-effect:hover {
             transform: translateY(-2px);
             transition: transform 0.3s ease, color 0.3s ease;
         }
-        /* Estilo para la tabla */
         .elegant-table th, .elegant-table td {
             border: 1px solid #e5e7eb;
             padding: 1rem;
@@ -37,11 +34,9 @@
         .elegant-table tr:hover {
             background-color: #f3f4f6;
         }
-        /* Fondo degradado */
         body {
             background: linear-gradient(to bottom, rgba(40, 56, 86, 1), #e5e7eb);
         }
-        /* Estilo para el logotipo */
         .logo {
             opacity: 0;
             animation: logoFadeIn 3s ease-out 0.1s forwards;
@@ -55,16 +50,13 @@
 </head>
 <body class="min-h-screen">
     <div class="container mx-auto px-4 py-12">
-        <!-- Logotipo -->
         <div class="flex justify-center mb-8">
             <img src="{{ Storage::disk('s3')->url('images/LogoBlanco.png') }}" alt="Logo Estrategias y Soluciones Minmer Global" class="h-24 logo">
         </div>
 
-        <!-- Título principal -->
         <h1 class="text-4xl font-bold text-center text-gray-800 mb-8 fade-in" style="color: white; animation-delay: 0.5s;">Política de Privacidad</h1>
 
         <div class="bg-white shadow-xl rounded-lg p-8 fade-in" style="animation-delay: 0.5s;">
-            <!-- Introducción -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">Introducción</h2>
                 <p class="text-gray-600 leading-relaxed">
@@ -152,7 +144,6 @@
                 </table>
             </section>
 
-            <!-- Tiempo de retención -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">¿Cuánto tiempo conserva Estrategias y Soluciones Minmer Global sus datos?</h2>
                 <p class="text-gray-600 leading-relaxed">
@@ -165,7 +156,6 @@
                 </ul>
             </section>
 
-            <!-- Compartir datos -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">¿Con quién comparte Estrategias y Soluciones Minmer Global sus datos?</h2>
                 <p class="text-gray-600 leading-relaxed">
@@ -180,7 +170,6 @@
                 </p>
             </section>
 
-            <!-- Venta de datos -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">¿Se pueden vender mis Datos Personales?</h2>
                 <p class="text-gray-600 leading-relaxed">
@@ -188,7 +177,6 @@
                 </p>
             </section>
 
-            <!-- Protección de datos -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">¿Cómo protege Estrategias y Soluciones Minmer Global sus Datos Personales?</h2>
                 <p class="text-gray-600 leading-relaxed">
@@ -202,7 +190,6 @@
                 </ul>
             </section>
 
-            <!-- Derechos del usuario -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">¿Cuáles son sus derechos y cómo puede ejercerlos?</h2>
                 <p class="text-gray-600 leading-relaxed">
@@ -228,7 +215,6 @@
                 </p>
             </section>
 
-            <!-- Ley aplicable -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">Ley aplicable</h2>
                 <p class="text-gray-600 leading-relaxed">

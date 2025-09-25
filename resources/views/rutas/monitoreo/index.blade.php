@@ -284,7 +284,7 @@
             isDetailsModalOpen: false,
             isReportModalOpen: false,
             isColumnSelectorOpen: false,
-            isStartRouteModalOpen: false, // Nuevo estado
+            isStartRouteModalOpen: false,
             selectedGuia: null,
             guias: [],
             pagination: {},
@@ -299,7 +299,7 @@
             reportEndDate: '',
             availableStatuses: [],
             reportStatusFilter: [],
-            startRouteCoords: { lat: '', lng: '', date: '', time: '' }, // Nuevo estado para coordenadas
+            startRouteCoords: { lat: '', lng: '', date: '', time: '' },
             showReportCharts: true,
             allColumns: [
                 { key: 'fecha_carga', label: 'Fecha Carga' },
@@ -361,10 +361,9 @@
                 const guiaId = this.selectedGuias[0];
                 this.selectedGuia = window.guiasData[guiaId];
                 
-                // Se pre-rellena con la fecha y hora actual al abrir
                 const now = new Date();
-                const currentDate = now.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-                const currentTime = now.toTimeString().split(' ')[0].substring(0, 5); // Formato HH:MM
+                const currentDate = now.toISOString().split('T')[0];
+                const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
 
                 this.evento = { 
                     tipo: 'Sistema', 
@@ -382,7 +381,6 @@
 
             openStartRouteModal() {
                 this.isStartRouteModalOpen = true;
-                // Asigna la fecha y hora actuales a los campos del modal cada vez que se abre
                 const now = new Date();
                 const currentDate = now.toISOString().split('T')[0];
                 const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
@@ -400,20 +398,17 @@
                 const guiaId = this.selectedGuias[0];
                 this.selectedGuia = window.guiasData[guiaId];
 
-                // 1. Resetea el objeto evento PERO CON LAS COORDENADAS DEL CLIC
                 this.evento = {
                     tipo: 'Sistema',
                     subtipo: '',
-                    lat: latLng.lat().toFixed(6), // Usa las coordenadas del clic
-                    lng: latLng.lng().toFixed(6), // Usa las coordenadas del clic
+                    lat: latLng.lat().toFixed(6),
+                    lng: latLng.lng().toFixed(6),
                     nota: '',
                     factura_ids: []
                 };
                 
-                // 2. Prepara las opciones del dropdown
                 this.updateSubtypeOptions();
 
-                // 3. Finalmente, abre el modal
                 this.isEventModalOpen = true;
             },
 
@@ -452,7 +447,6 @@
 
                 const combinedDateTime = `${date} ${time}:00`;
 
-                // Geocodificar para obtener el municipio
                 let municipio = 'N/A';
                 const geocoder = new google.maps.Geocoder();
                 geocoder.geocode({ location: { lat: parseFloat(lat), lng: parseFloat(lng) } })
@@ -503,7 +497,6 @@
             submitEventForm() {
                 this.isSubmitting = true;
                 
-                // Si ya hay coordenadas manuales, se salta el GPS. Si no, lo busca.
                 if (this.evento.lat && this.evento.lng) {
                     this.sendEventData(this.evento.lat, this.evento.lng);
                 } else {
@@ -512,8 +505,7 @@
             },
 
             /**
-             * Función central para obtener GPS y el municipio, y luego enviar un formulario.
-             * @param {HTMLFormElement} form - El formulario que se va a enviar.
+             * @param {HTMLFormElement} form
              */
             getLocationAndSend() {
                 if (!navigator.geolocation) {
@@ -533,9 +525,6 @@
                 );
             },
 
-            /**
-             * Construye el FormData y envía la petición AJAX al servidor.
-             */
             async sendEventData(lat, lng) {
                 let municipio = 'N/A';
                 if (typeof google !== 'undefined' && google.maps) {
@@ -565,8 +554,8 @@
                 formData.append('tipo', this.evento.tipo);
                 formData.append('subtipo', this.evento.subtipo);
                 formData.append('nota', this.evento.nota);
-                formData.append('latitud', lat); // Usa la latitud final (manual o GPS)
-                formData.append('longitud', lng); // Usa la longitud final (manual o GPS)
+                formData.append('latitud', lat);
+                formData.append('longitud', lng);
                 formData.append('municipio', municipio);
                 this.evento.factura_ids.forEach(id => formData.append('factura_ids[]', id));
                 for (let i = 0; i < files.length; i++) {
@@ -583,7 +572,7 @@
                     if (data.success) {
                         this.showNotification(data.message, 'success');
                         this.closeAllModals();
-                        this.applyFilters(); // Recarga los datos para ver el nuevo evento
+                        this.applyFilters();
                     } else {
                         this.showNotification(data.message || 'Ocurrió un error.', 'error');
                     }
@@ -598,9 +587,8 @@
                     this.notification.show = true;
                     setTimeout(() => {
                         this.notification.show = false;
-                    }, 5000); // La notificación desaparecerá después de 5 segundos
+                    }, 5000);
                 }
-            // --- TERMINA CORRECCIÓN ---
 
         }));
     });

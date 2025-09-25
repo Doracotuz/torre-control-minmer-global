@@ -17,7 +17,6 @@
     <div class="py-12">
         <div class="max-w-screen-xl mx-auto sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {{-- Columna Principal de Información (siempre visible) --}}
             <div class="lg:col-span-2 bg-white overflow-hidden shadow-xl sm:rounded-lg p-8">
                 <div class="flex justify-between items-start mb-6">
                     <div>
@@ -35,7 +34,6 @@
                     ">{{ $planning->status }}</span>
                 </div>
 
-                {{-- Información de la Ruta --}}
                 <h4 class="text-lg font-semibold text-gray-800 mt-6 mb-4">Información de la Ruta</h4>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm border-b pb-6">
                     <div><strong class="block text-gray-500">Origen:</strong><span>{{ $planning->origen ?? 'Sin dato' }}</span></div>
@@ -53,7 +51,6 @@
                     <div class="col-span-full"><strong class="block text-gray-500">Observaciones:</strong><p class="mt-1 text-gray-900 bg-gray-50 p-2 rounded">{{ $planning->observaciones ?? 'Sin dato' }}</p></div>                
                 </div>
 
-                {{-- Información del Transporte --}}
                 <h4 class="text-lg font-semibold text-gray-800 mt-6 mb-4">Información del Transporte</h4>
                  <div class="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm border-b pb-6">
                     <div><strong class="block text-gray-500">Transporte:</strong><span>{{ $planning->transporte ?? 'Sin dato' }}</span></div>
@@ -64,7 +61,6 @@
                     <div><strong class="block text-gray-500">Custodia:</strong><span>{{ $planning->custodia ?? 'Sin dato' }}</span></div>
                  </div>
                 
-                {{-- SECCIÓN CONDICIONAL: Detalle de SKUs --}}
                 @if($planning->order && $planning->order->details->isNotEmpty())
                     <h4 class="text-lg font-semibold text-gray-800 mt-6 mb-4">Detalle de SKUs del Pedido</h4>
                     <div class="max-h-48 overflow-y-auto border rounded-lg">
@@ -96,10 +92,8 @@
                 </div>
             </div>
 
-            {{-- Columna Lateral Condicional --}}
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-8">
                 @if($planning->order)
-                    {{-- Muestra la línea de tiempo del PEDIDO --}}
                     <h4 class="text-lg font-semibold text-gray-800 mb-6">Línea de Tiempo del Pedido</h4>
                     <div class="border-l-2 border-blue-500 pl-6 space-y-8 relative">
                         @forelse($planning->order->events as $event)
@@ -115,7 +109,6 @@
                         @endforelse
                     </div>
                 @else
-                    {{-- Muestra la línea de tiempo de la PLANIFICACIÓN --}}
                     <h4 class="text-lg font-semibold text-gray-800 mb-6">Línea de Tiempo de Planificación</h4>
                     <div class="border-l-2 border-purple-500 pl-6 space-y-8 relative">
                         @forelse($planning->events as $event)

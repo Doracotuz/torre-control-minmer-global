@@ -10,7 +10,6 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
                 <div class="space-y-6">
-                    {{-- Botones de Navegación y Acción --}}
                     <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
                         <a href="{{ route('rutas.dashboard') }}" class="inline-flex items-center px-4 py-2 bg-[#2c3856] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#1e2638] transition-colors">
                             &larr; Volver
@@ -25,7 +24,6 @@
                         </div>
                     </div>
 
-                    {{-- Filtros Dinámicos --}}
                     <div class="bg-white p-4 rounded-lg shadow-md">
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                             <input type="text" x-model.debounce.300ms="filters.search" placeholder="Buscar por nombre..." class="rounded-md border-gray-300 shadow-sm text-sm">
@@ -54,15 +52,12 @@
                         </div>
                     </div>
                     
-                    {{-- Controles de Selección --}}
                     <div class="flex items-center gap-4">
                         <button @click="selectVisible()" class="text-sm font-semibold text-blue-600 hover:text-blue-800">Seleccionar Visibles</button>
                         <button @click="deselectVisible()" class="text-sm font-semibold text-gray-600 hover:text-gray-800">Deseleccionar Visibles</button>
                     </div>
 
-                    {{-- Contenedor para la Tabla y Paginación Dinámica --}}
                     <div id="table-container" x-html="tableView">
-                        {{-- La tabla inicial se carga aquí para el primer renderizado --}}
                         @include('rutas.plantillas.partials.table', ['rutas' => $rutas])
                     </div>
                 </div>
@@ -88,7 +83,6 @@
     }
 </script>
 
-{{-- SCRIPT QUE CARGA GOOGLE MAPS Y LLAMA A LA FUNCIÓN CORRECTA --}}
 <script src="https://maps.googleapis.com/maps/api/js?key={{ $googleMapsApiKey }}&libraries=places,drawing&callback=initIndexMap" async defer></script>
 
     <script>

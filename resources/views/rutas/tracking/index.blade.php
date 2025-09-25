@@ -13,7 +13,6 @@
         </div>
     </form>
 
-    {{-- Sección de Resultados --}}
     @if($searchQuery)
         <div class="mt-8">
 
@@ -36,10 +35,6 @@
             @endif
 
             @forelse ($results as $item)
-
-                {{-- ****************************************************** --}}
-                {{-- CASO 1: El item es una FACTURA (ya en ruta)            --}}
-                {{-- ****************************************************** --}}
                 @if($item->source === 'factura')
                     @php $factura = $item; // Renombramos para compatibilidad @endphp
                     <div class="bg-white border rounded-lg p-4 mb-4 shadow-md">
@@ -91,7 +86,6 @@
                         @else
                             @foreach($factura->eventos as $evento)
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start mb-4">
-                                    {{-- Info del Evento --}}
                                     <div>
                                         <p class="text-sm font-semibold {{ $evento->subtipo == 'Factura Entregada' ? 'text-green-700' : 'text-red-700' }}">
                                             {{ $evento->subtipo }}
@@ -110,7 +104,6 @@
                                             </div>
                                         @endif
                                     </div>
-                                    {{-- Mapa Estático --}}
                                     <div>
                                         <a href="https://www.google.com/maps/search/?api=1&query={{$evento->latitud}},{{$evento->longitud}}" target="_blank">
                                             <img 
@@ -124,9 +117,6 @@
                         @endif
                     </div>
                 
-                {{-- ****************************************************** --}}
-                {{-- CASO 2: El item es una ORDEN (aún no está en ruta)     --}}
-                {{-- ****************************************************** --}}
                 @elseif($item->source === 'order')
                     @php $order = $item; // Renombramos para claridad @endphp
                     <div class="bg-white border-l-4 border-[#ff9c00] rounded-r-lg p-4 mb-4 shadow-md">

@@ -8,9 +8,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
         body { background-color: #f3f4f6; }
-        .status-success { background-color: #10B981; /* green-500 */ }
-        .status-error { background-color: #EF4444; /* red-500 */ }
-        .status-warning { background-color: #F59E0B; /* amber-500 */ }
+        .status-success { background-color: #10B981; }
+        .status-error { background-color: #EF4444; }
+        .status-warning { background-color: #F59E0B; }
         .btn-scan-again { background-color: #2c3856; color: white; }
         .btn-scan-again:hover { background-color: #1a2233; }
     </style>
@@ -50,7 +50,6 @@
                     <p><strong>Estatus Final:</strong> <span class="font-bold text-black">{{ $visit->status }}</span></p>
                 </div>
 
-                {{-- ✅ INICIO: SECCIÓN DE ACOMPAÑANTES --}}
                 @if($visit->companions && count($visit->companions) > 0)
                 <div class="mt-6 pt-4 border-t">
                     <h2 class="text-lg font-semibold text-[#2b2b2b] mb-3">Acompañantes Autorizados</h2>
@@ -61,16 +60,9 @@
                     </ul>
                 </div>
                 @endif
-                {{-- ✅ FIN: SECCIÓN DE ACOMPAÑANTES --}}
 
             </div>
         </div>
-
-        <!-- <div class="text-center mt-8">
-            <a href="{{ route('visits.scan.page') }}" class="inline-block px-8 py-3 rounded-lg font-semibold btn-scan-again transition">
-                <i class="fas fa-qrcode mr-2"></i>Escanear Otro QR
-            </a>
-        </div> -->
     </div>
 </body>
 </html>

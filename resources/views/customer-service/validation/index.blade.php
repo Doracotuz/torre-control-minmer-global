@@ -10,7 +10,6 @@
         isPageSelected: false,
 
         init() {
-            // Lógica para la selección de IDs persistente
             const savedIds = sessionStorage.getItem('validation_selected_ids');
             if (savedIds) {
                 this.selectedIds = JSON.parse(savedIds);
@@ -21,7 +20,6 @@
             });
             this.updateHeaderCheckboxState();
 
-            // Lógica para mostrar notificaciones flash
             const flashSuccess = sessionStorage.getItem('validation_flash_success');
             const flashError = sessionStorage.getItem('validation_flash_error');
 
@@ -83,7 +81,6 @@
     }" x-init="init()" class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            {{-- Bloque de Notificaciones Flash (controlado por JavaScript) --}}
             <div id="flash-success" class="fixed top-4 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert" style="display: none;">
                 <div class="flex items-center">
                     <svg class="w-6 h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -101,7 +98,6 @@
                 <button onclick="document.getElementById('flash-error').style.display = 'none';" class="text-gray-500 hover:text-gray-700 focus:outline-none"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
 
-            {{-- Panel de Filtros y Acciones --}}
             <div class="bg-white p-6 rounded-2xl shadow-xl mb-6">
                 <form x-ref="filtersForm" method="GET" action="{{ route('customer-service.validation.index') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
                     <div class="lg:col-span-2">
@@ -141,7 +137,6 @@
                 </div>
             </div>
 
-            {{-- Tabla de Órdenes --}}
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
                 <table class="min-w-full">
                     <thead class="bg-gray-50">
@@ -173,11 +168,9 @@
                 </table>
             </div>
 
-            {{-- Paginación --}}
             <div class="mt-6">{{ $orders->appends(request()->query())->links() }}</div>
         </div>
 
-        {{-- Modales --}}
         <div x-show="openModal" @keydown.escape.window="openModal = false" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" style="display: none;">
             <div @click.away="openModal = false" class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-3xl"><form action="{{ route('customer-service.validation.store') }}" method="POST">@csrf<h3 class="text-xl font-bold text-[#2c3856] mb-4">Validar UPCs para SO: <span x-text="selectedOrder?.so_number"></span></h3><div class="max-h-[60vh] overflow-y-auto pr-4"><table class="min-w-full"><thead class="border-b sticky top-0 bg-white"><tr><th class="text-left py-2 px-3 text-sm font-semibold text-gray-600">SKU</th><th class="text-left py-2 px-3 text-sm font-semibold text-gray-600">Descripción</th><th class="text-left py-2 px-3 text-sm font-semibold text-gray-600">UPC</th></tr></thead><tbody><template x-if="selectedOrder"><template x-for="detail in selectedOrder.details" :key="detail.id"><tr class="border-b"><td class="py-2 px-3" x-text="detail.sku"></td><td class="py-2 px-3" x-text="detail.product?.description || 'N/A'"></td><td class="py-2 px-3"><input type="text" :name="`upcs[${detail.id}]`" :value="detail.upc?.upc || ''" placeholder="Ingresar UPC o dejar vacío para usar SKU" class="w-full rounded-md border-gray-300 shadow-sm text-sm"></td></tr></template></template></tbody></table></div><div class="mt-6 flex justify-end gap-4"><button type="button" @click="openModal = false" class="px-4 py-2 bg-gray-200 rounded-md">Cancelar</button><button type="submit" class="px-4 py-2 bg-[#ff9c00] text-white rounded-md">Guardar Cambios</button></div></form></div>
         </div>
@@ -187,8 +180,6 @@
 
 
     <script>
-        // Este script se encarga de transferir el mensaje flash de la sesión de Laravel
-        // al sessionStorage del navegador, para que AlpineJS pueda leerlo después de la carga.
         @if (session('success'))
             sessionStorage.setItem('validation_flash_success', '{{ session('success') }}');
         @endif
@@ -196,7 +187,6 @@
             sessionStorage.setItem('validation_flash_error', '{{ session('error') }}');
         @endif
 
-        // Toda la lógica de JavaScript para los modales y la interactividad de la página.
         document.addEventListener('DOMContentLoaded', function () {
             const specModal = document.getElementById('specificationsModal');
             const openBtn = document.getElementById('open-spec-modal');
@@ -207,7 +197,7 @@
             const specForm = document.getElementById('specifications_form');
             const saveBtn = document.getElementById('save-spec-button');
             const errorAlert = document.getElementById('spec-error-alert');
-            const successAlert = document.getElementById('flash-success'); // Reutilizamos la alerta flash
+            const successAlert = document.getElementById('flash-success');
 
             const specifications = {
                 'Entrega': ['REVISION DE UPC VS FACTURA', 'DISTRIBUCION POR TIENDA', 'RE-ETIQUETADO', 'COLOCACION DE SENSOR', 'PREPARADO ESPECIAL', 'TIPO DE UNIDAD ACEPTADA', 'EQUIPO DE SEGURIDAD', 'REGISTO PATRONAL (SUA)', 'ENTREGA CON OTROS PEDIDOS', 'INSUMOS Y HERRAMIENTAS', 'MANIOBRA', 'IDENTIFICACIONES PARA ACCESO', 'ETIQUETA DE FRAGIL'],
@@ -289,9 +279,8 @@
                     const result = await response.json();
                     if (!response.ok || !result.success) throw new Error(result.message || 'Ocurrió un error al guardar.');
                     
-                    // Disparamos la notificación flash de éxito
                     sessionStorage.setItem('validation_flash_success', result.message);
-                    window.location.reload(); // Recargamos para que Alpine la muestre
+                    window.location.reload();
                     
                 } catch (error) {
                     errorAlert.textContent = error.message; errorAlert.classList.remove('hidden');

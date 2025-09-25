@@ -8,19 +8,16 @@
         <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl">
             <div class="border-b pb-4 mb-6">
                 <h1 class="text-3xl font-bold text-[#2c3856]">Auditoría de Almacén</h1>
-                {{-- CAMBIO: Accedemos a la orden a través de la auditoría --}}
                 <p class="text-gray-600 mt-1">SO: <span class="font-semibold text-gray-800">{{ $audit->order->so_number }}</span> | {{ $audit->order->customer_name }}</p>
                 <p class="text-gray-500 text-sm mt-1">Ubicación: <span class="font-medium">{{ $audit->location }}</span></p>
             </div>
 
-            {{-- CAMBIO: El formulario ahora envía el objeto $audit --}}
             <form action="{{ route('audit.warehouse.store', $audit) }}" method="POST">
                 @csrf
                 <div class="space-y-8">
                     <div>
                         <h3 class="font-bold text-xl text-[#2c3856]">Validación por SKU</h3>
                         <div class="space-y-4 mt-4">
-                            {{-- CAMBIO: Iteramos sobre los detalles de la orden a través de la auditoría --}}
                             @forelse($audit->order->details as $detail)
                                 <div class="border rounded-lg p-4 bg-gray-50">
                                     <div class="mb-4">

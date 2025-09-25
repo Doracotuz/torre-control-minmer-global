@@ -1,5 +1,4 @@
 <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-    {{-- Filtros existentes --}}
     <div class="md:col-span-2">
         <label for="search" class="block text-sm font-medium text-gray-700">Búsqueda Rápida</label>
         <input type="text" x-model.debounce.300ms="filters.search" id="search" placeholder="Buscar por SO, OC, Cliente..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
@@ -23,7 +22,6 @@
         <input type="date" x-model="filters.date_to" id="date_to" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
     </div>
 
-    {{-- Nuevo Botón de Filtros Avanzados --}}
     <div class="flex items-end gap-2">
         <button @click="clearFilters()" class="w-full h-10 px-2 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-semibold shadow-sm hover:bg-gray-50 flex items-center justify-center">
             <i class="fas fa-eraser mr-2"></i>

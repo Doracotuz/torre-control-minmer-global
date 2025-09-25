@@ -25,7 +25,6 @@
         </div>
     </div>
 
-    {{-- CORRECCIÓN: El formulario ahora envía la guía a la ruta de 'reopen' --}}
     <form action="{{ route('audit.reopen', $guia) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que quieres reabrir la auditoría para esta guía? Todas las órdenes volverán al estado inicial.');">
         @csrf
         <button type="submit" class="w-full text-center p-3 text-white font-bold rounded-b-lg bg-gray-600 hover:bg-gray-700 transition-colors">

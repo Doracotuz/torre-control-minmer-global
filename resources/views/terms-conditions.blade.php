@@ -7,7 +7,6 @@
     <title>Términos y Condiciones - Estrategias y Soluciones Minmer Global</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
-        /* Animación de entrada para secciones */
         .fade-in {
             opacity: 0;
             transform: translateY(20px);
@@ -19,12 +18,10 @@
                 transform: translateY(0);
             }
         }
-        /* Transiciones suaves para enlaces y botones */
         .hover-effect:hover {
             transform: translateY(-2px);
             transition: transform 0.3s ease, color 0.3s ease;
         }
-        /* Estilo para la tabla */
         .elegant-table th, .elegant-table td {
             border: 1px solid #e5e7eb;
             padding: 1rem;
@@ -37,11 +34,9 @@
         .elegant-table tr:hover {
             background-color: #f3f4f6;
         }
-        /* Fondo degradado */
         body {
             background: linear-gradient(to bottom,rgb(40, 56, 86), #e5e7eb);
         }
-        /* Estilo para el logotipo */
         .logo {
             opacity: 0;
             animation: logoFadeIn 1s ease-out 0.5s forwards;
@@ -55,16 +50,13 @@
 </head>
 <body class="min-h-screen">
     <div class="container mx-auto px-4 py-12">
-        <!-- Logotipo -->
         <div class="flex justify-center mb-8">
             <img src="{{ Storage::disk('s3')->url('images/LogoBlanco.png') }}" alt="Logo Estrategias y Soluciones Minmer Global" class="h-24 logo">
         </div>
 
-        <!-- Título principal -->
         <h1 class="text-4xl font-bold text-center text-gray-800 mb-8 fade-in" style="color: white; animation-delay: 0.5s;">Términos y Condiciones</h1>
 
         <div class="bg-white shadow-xl rounded-lg p-8 fade-in" style="animation-delay: 0.2s;">
-            <!-- Introducción -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">Introducción</h2>
                 <p class="text-gray-600 leading-relaxed">
@@ -91,7 +83,6 @@
                 </p>
             </section>
 
-            <!-- Cuentas de Usuario -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">Cuentas de Usuario</h2>
                 <p class="text-gray-600 leading-relaxed">
@@ -104,7 +95,6 @@
                 </ul>
             </section>
 
-            <!-- Propiedad Intelectual -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">Propiedad Intelectual</h2>
                 <p class="text-gray-600 leading-relaxed">
@@ -115,7 +105,6 @@
                 </p>
             </section>
 
-            <!-- Limitación de Responsabilidad -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">Limitación de Responsabilidad</h2>
                 <p class="text-gray-600 leading-relaxed">
@@ -126,7 +115,6 @@
                 </p>
             </section>
 
-            <!-- Modificaciones de los Términos -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">Modificaciones de los Términos</h2>
                 <p class="text-gray-600 leading-relaxed">
@@ -134,7 +122,6 @@
                 </p>
             </section>
 
-            <!-- Contacto -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">Contacto</h2>
                 <p class="text-gray-600 leading-relaxed">
@@ -148,7 +135,6 @@
                 </p>
             </section>
 
-            <!-- Ley Aplicable -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">Ley Aplicable</h2>
                 <p class="text-gray-600 leading-relaxed">

@@ -8,7 +8,6 @@
     </x-slot>
 
     <div class="py-12" x-data="planningManager()">
-        {{-- Contenedores para Notificaciones Dinámicas --}}
         <div id="flash-success" class="fixed top-20 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert" style="display: none;">
             <div class="flex items-center">
                 <svg class="w-6 h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -44,7 +43,6 @@
                </div>
             </div>
 
-            {{-- Sección de Totales de la Selección --}}
             <div class="w-full border-t border-gray-600 mt-3 pt-3 text-xs">
                 <div class="grid grid-cols-3 md:grid-cols-6 gap-2 text-center">
                     <div>
@@ -78,12 +76,10 @@
         <div class="mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
                 
-                {{-- Filtros Básicos --}}
                 <div class="mb-4">
                     @include('customer-service.planning._filters')
                 </div>
 
-                {{-- Barra de Acciones Masivas --}}
                 <!-- <div class="mb-6">
                     <div x-show="selectedPlannings.length > 0" class="bg-gray-800 text-white p-3 rounded-lg shadow-lg flex flex-col justify-between items-center transition-transform w-full" x-transition>
                         <div class="w-full flex flex-col md:flex-row justify-between items-center">
@@ -127,7 +123,6 @@
                     </div>               
                 </div> -->
 
-                {{-- Botones de Acción Principales --}}
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 mb-6">
                     <div class="flex items-center space-x-2 sm:space-x-4 flex-wrap">
                         <a href="{{ route('customer-service.planning.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700"><i class="fas fa-plus mr-2"></i>Añadir</a>                    
@@ -147,12 +142,10 @@
                     </div>
                 </div>
                 
-                {{-- Contenedor de la Tabla --}}
                 <div id="planning-table-container" x-show="!isLoading">
                     @include('customer-service.planning._table')
                 </div>
                 
-                {{-- Paginación --}}
                 <div x-show="!isLoading && pagination.total > 0" class="mt-4 flex flex-col md:flex-row justify-between items-center text-sm text-gray-700">
                     <p class="mb-2 md:mb-0">
                         Mostrando de <span x-text="pagination.from || 0"></span> a <span x-text="pagination.to || 0"></span> de <span x-text="pagination.total || 0"></span> resultados
@@ -190,7 +183,6 @@
                     </nav>
                 </div>
                 
-                {{-- Indicador de Carga --}}
                 <div x-show="isLoading" class="text-center py-10">
                     <i class="fas fa-spinner fa-spin text-4xl text-gray-500"></i>
                     <p class="mt-2 text-gray-600">Cargando datos...</p>
@@ -198,13 +190,11 @@
             </div>
         </div>
         
-        {{-- Inclusión de todos los Modales --}}
         @include('customer-service.planning._column-selector-modal')
         @include('customer-service.planning._scales-modal')
         @include('customer-service.planning._add-to-guia-modal')
         @include('customer-service.planning._advanced-filters-modal')
         
-        {{-- Modal para Editar Guía --}}
         <div x-show="isEditGuiaModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" @keydown.escape.window="closeAllModals()">
             <div @click.outside="closeAllModals()" class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
                 <h3 class="text-xl font-bold text-[#2c3856] mb-4">Editar Número de Guía</h3>
@@ -221,7 +211,6 @@
             </div>
         </div>
 
-        {{-- Modal para Detalle de Guía --}}
         <div x-show="isGuiaDetailModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
             <div @click.outside="closeAllModals()" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
                 <template x-if="guiaInModalLoading">
@@ -274,7 +263,6 @@
                             </div>
                         </div>                        
                         
-                        {{-- Resumen de Totales en el Modal --}}
                         <div class="mt-4 border-t pt-4">
                             <h4 class="font-semibold text-gray-700 mb-2">Resumen de la Carga:</h4>
                             <div class="grid grid-cols-3 md:grid-cols-5 gap-2 text-sm text-center">
@@ -376,7 +364,6 @@
                     <div class="space-y-4">
 <div>
     <label for="emailEditor" class="block text-sm font-medium text-gray-700">Cuerpo del Mensaje:</label>
-    {{-- ✅ INICIA CAMBIO: Usamos un div editable en lugar de textarea --}}
     <div
         id="emailEditor"
         x-ref="emailEditor"
@@ -384,7 +371,6 @@
         x-html="emailData.body"
         class="mt-1 p-4 border rounded-md min-h-[250px] text-sm font-sans focus:ring-2 focus:ring-blue-500 focus:border-blue-500 overflow-y-auto"
     ></div>
-    {{-- ⏹️ TERMINA CAMBIO --}}
 </div>
 
                     </div>
@@ -521,15 +507,12 @@ function planningManager() {
             this.fetchPlannings();
 
             this.$watch('selectedPlannings', (selectedIds) => {
-                // Filtramos los registros completos que corresponden a los IDs seleccionados
-                const selectedRecords = this.plannings.filter(p => selectedIds.includes(String(p.id))); // ✅ CAMBIO AQUÍ
+                const selectedRecords = this.plannings.filter(p => selectedIds.includes(String(p.id)));
                 
-                // Calculamos los totales
                 this.selectionTotals.subtotal = selectedRecords.reduce((sum, rec) => sum + (parseFloat(rec.subtotal) || 0), 0);
                 this.selectionTotals.cajas = selectedRecords.reduce((sum, rec) => sum + (parseInt(rec.cajas) || 0), 0);
                 this.selectionTotals.pzs = selectedRecords.reduce((sum, rec) => sum + (parseInt(rec.pzs) || 0), 0);
                 
-                // Para contar clientes únicos, usamos un Set
                 const uniqueClientes = new Set(selectedRecords.map(rec => rec.razon_social));
                 this.selectionTotals.clientes = uniqueClientes.size;
 
@@ -599,7 +582,6 @@ function planningManager() {
                     this.guiaInModal = data;
                     this.guiaInModalLoading = false;
                     
-                    // ✅ INICIA CAMBIO: Lógica de cálculo y sugerencia
                     if (data && data.guia && data.guia.plannings) {
                         const records = data.guia.plannings;
                         this.guiaModalTotals.cajas = records.reduce((sum, rec) => sum + (parseInt(rec.cajas) || 0), 0);
@@ -622,10 +604,8 @@ function planningManager() {
                         else if (cajas <= 480) this.suggestedCapacity = 'Trailer 48"';
                         else this.suggestedCapacity = 'Trailer 53"';
                         
-                        // Inicializa el valor editable
                         this.editableCapacity = data.capacidad_actual || this.suggestedCapacity;
                     }
-                    // ⏹️ TERMINA CAMBIO
                 })
                 .catch(() => {
                     this.showFlashMessage('Error al cargar los detalles de la guía.', 'error');
@@ -661,7 +641,6 @@ function planningManager() {
             .then(data => {
                 if (data.success) {
                     this.showFlashMessage(data.message, 'success');
-                    // Opcional: Actualizar la capacidad en la tabla principal sin recargar
                     this.fetchPlannings(); 
                     this.closeAllModals();
                 } else {
@@ -975,7 +954,7 @@ function planningManager() {
                 })
                 .catch(error => {
                     console.error("Error en búsqueda de guías:", error);
-                    this.guiaSearchResults = []; // Limpia los resultados en caso de error
+                    this.guiaSearchResults = [];
                 });
         },     
 
@@ -1086,7 +1065,6 @@ function planningManager() {
             const guia = this.guiaInModal.guia;
             const plannings = guia.plannings || [];
 
-            // --- 1. Lógica del Asunto (sin cambios) ---
             const clientes = [...new Set(plannings.map(p => p.razon_social))];
             const tipoCliente = clientes.length === 1 ? clientes[0] : 'CONSOLIDADA';
             const origen = guia.origen || 'N/A';
@@ -1095,7 +1073,6 @@ function planningManager() {
             const fechaFormato = fecha.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
             this.emailData.subject = `RUTA ${tipoCliente} // ALMACEN ${origen} // ${diaSemana} ${fechaFormato}`;
 
-            // --- 2. ✅ Lógica para construir el CUERPO COMPLETO en HTML ---
             let htmlBody = `<p>Hola, buen día a todos.</p>`;
             htmlBody += `<p>Por favor su apoyo para programar y embarcar los siguientes pedidos y adicionar los insumos suficientes (playo, tarima, cinta adhesiva) con base en las necesidades de entrega y favor de colocar marchamo.</p>`;
             
@@ -1139,12 +1116,11 @@ function planningManager() {
                         </ul>`;
             htmlBody += `<p>De antemano gracias y quedo atento a cualquier duda o comentario.</p><p>Saludos.</p>`;
 
-            this.emailData.body = htmlBody; // Asignamos el HTML a la variable del editor
+            this.emailData.body = htmlBody;
             this.isEmailModalOpen = true;
         },
 
         sendEmail() {
-            // Tomamos el contenido HTML directamente desde el editor
             const finalHtmlBody = this.$refs.emailEditor.innerHTML;
 
             fetch('{{ route("customer-service.planning.send-email") }}', {
@@ -1156,7 +1132,7 @@ function planningManager() {
                 body: JSON.stringify({
                     recipients: this.emailData.recipients,
                     subject: this.emailData.subject,
-                    body: finalHtmlBody, // Enviamos el HTML editado
+                    body: finalHtmlBody,
                     signature_url: this.signature
                 })
             })

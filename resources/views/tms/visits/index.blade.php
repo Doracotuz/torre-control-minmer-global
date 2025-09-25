@@ -2,7 +2,6 @@
 
 @section('content')
 
-{{-- Estilos personalizados con la nueva paleta y ajustes de elegancia --}}
 <style>
     :root {
         --color-primary: #2c3856;
@@ -10,7 +9,7 @@
         --color-text-primary: #2b2b2b;
         --color-text-secondary: #666666;
         --color-surface: #ffffff;
-        --color-background: #f3f4f6; /* Gris muy claro para el fondo */
+        --color-background: #f3f4f6;
         --color-success: #10B981;
     }
 
@@ -18,7 +17,6 @@
         background-color: var(--color-background);
     }
 
-    /* Botones */
     .btn {
         padding: 0.75rem 1.5rem;
         border-radius: 0.5rem;
@@ -59,10 +57,8 @@
     .form-input-sm {
         font-size: 0.875rem;
         padding: 0.5rem 0.75rem;
-        border-radius: 0.375rem; /* Un poco menos redondeado */
+        border-radius: 0.375rem;
     }
-
-    /* Insignias de Estatus */
     .badge {
         padding: 0.25rem 0.75rem;
         border-radius: 9999px;
@@ -76,7 +72,6 @@
     .badge-cancelada { background-color: var(--color-text-primary); color: white; }
     .badge-finalizada { background-color: var(--color-success); color: white; }
 
-    /* Estilos para Formularios */
     .form-input {
         border-radius: 0.5rem;
         border-color: #e5e7eb;
@@ -183,7 +178,6 @@
         </table>
     </div>
 
-    {{-- Vista de Tarjetas para Móvil (hasta md) --}}
     <div class="block md:hidden">
         <div class="divide-y divide-gray-200">
             @forelse ($visits as $visit)
@@ -244,7 +238,6 @@
         fetch("{{ route('area_admin.visits.charts') }}")
             .then(response => response.json())
             .then(data => {
-                // Tarjeta de Duración Promedio
                 const avgDurationEl = document.getElementById('avgDuration');
                 if(data.averageDuration > 0) {
                     const hours = Math.floor(data.averageDuration / 60);
@@ -254,7 +247,6 @@
                     avgDurationEl.textContent = 'N/A';
                 }
 
-                // Gráfico de Visitas por Día (Líneas)
                 new Chart(document.getElementById('visitsPerDayChart'), {
                     type: 'line',
                     data: {
@@ -271,7 +263,6 @@
                     options: { responsive: true, maintainAspectRatio: false }
                 });
 
-                // Gráfico de Estatus (Dona)
                 new Chart(document.getElementById('statusChart'), {
                     type: 'doughnut',
                     data: {
@@ -285,7 +276,6 @@
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
                 });
 
-                // Gráfico de Compañías (Barras)
                 new Chart(document.getElementById('companyChart'), {
                     type: 'bar',
                     data: {
@@ -310,16 +300,14 @@
         let timer;
 
         inputs.forEach(input => {
-            // Para los campos de texto, esperamos un poco después de que el usuario deja de teclear.
             if (input.type === 'text') {
                 input.addEventListener('keyup', () => {
                     clearTimeout(timer);
                     timer = setTimeout(() => {
                         form.submit();
-                    }, 500); // Espera 500ms (medio segundo)
+                    }, 500);
                 });
             } else {
-                // Para selects y fechas, el cambio es inmediato.
                 input.addEventListener('change', () => {
                     form.submit();
                 });

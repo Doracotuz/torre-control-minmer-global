@@ -6,7 +6,6 @@
         </h2>
     </x-slot>
 
-    {{-- Estilos (sin cambios en esta sección) --}}
     <style>
         #main-chart-wrapper {
             position: relative;
@@ -71,7 +70,6 @@
         }
     </style>
 
-    {{-- Layout y Modales (sin cambios en la estructura principal del layout) --}}
     <div class="bg-[#E8ECF7] w-full h-full flex flex-col p-6">
         <div class="bg-white w-full h-full shadow-xl sm:rounded-lg border border-gray-200 flex flex-col">
             <div class="flex justify-between items-center p-4 border-b border-gray-200">
@@ -92,7 +90,6 @@
                 <div id="chart-container"></div>
             </div>
 
-            {{-- Modal para Áreas (sin cambios) --}}
             <div x-data="areaModal" @open-area-modal.window="openModal($event.detail)" x-show="showModal" x-transition class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50" style="display: none;" @click.away="showModal = false">
                 <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg" @click.stop="">
                     <div class="flex justify-between items-center pb-3 border-b">
@@ -108,7 +105,6 @@
                 </div>
             </div>
 
-            {{-- Modal para Miembros - Actualizado con operador de encadenamiento opcional --}}
             <div x-data="memberModal" @open-member-modal.window="openModal($event.detail)" x-show="showModal" x-transition class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50" style="display: none;" @click.away="closeModalAndResetData()">
                 <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden" @click.stop="">
                     <div class="flex justify-between items-center p-4 bg-[#2c3856] text-white">
@@ -116,7 +112,6 @@
                         <button @click="closeModalAndResetData()" class="text-gray-300 hover:text-white text-3xl leading-none">&times;</button>
                     </div>
                     <div class="p-6 flex-1 overflow-y-auto bg-gray-50">
-                        {{-- Se muestra este div solo si hay datos cargados (data no es null) --}}
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6" x-show="data">
                             <div class="md:col-span-1 space-y-4 text-center">
                                 <img x-show="data?.profile_photo_path" :src="data?.profile_photo_path" class="w-40 h-40 rounded-full object-cover mx-auto border-4 border-[#ff9c00] shadow-md"> {{-- Agregado ?. --}}
@@ -125,12 +120,10 @@
                                 </div>
                                 <div class="space-y-3 text-sm">
                                     <div><p class="font-semibold text-gray-500 block">Posición</p><p class="text-lg font-bold text-[#2c3856]" x-text="data?.position_name"></p></div> {{-- Agregado ?. --}}
-                                    {{-- INICIO DE CAMBIO --}}
                                     <div x-show="data?.position_description">
                                         <!-- <p class="font-semibold text-gray-500 block">Descripción del Puesto</p> -->
                                         <p class="text-sm text-[#666666]" x-text="data?.position_description"></p>
                                     </div>
-                                    {{-- FIN DE CAMBIO --}}
                                     <div><p class="font-semibold text-gray-500 block">Área</p><p class="text-base text-[#666666]" x-text="data?.area_name"></p></div> {{-- Agregado ?. --}}
                                     <div><p class="font-semibold text-gray-500 block">Jefe Directo</p><p class="text-base text-[#666666]" x-text="data?.manager_name || 'N/A'"></p></div> {{-- Agregado ?. --}}
                                     <div class="pt-2"><p class="font-semibold text-gray-500 block">Email</p><a :href="'mailto:' + data?.email" class="text-blue-600 hover:underline" x-text="data?.email"></a></div> {{-- Agregado ?. --}}
@@ -179,23 +172,18 @@
         </div>
     </div>
 
-    {{-- Librerías --}}
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/orgchart/3.1.3/js/jquery.orgchart.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/orgchart/3.1.3/css/jquery.orgchart.min.css" />
     @vite('resources/js/app.js')
 
-    {{-- Script Principal Optimizado --}}
 <script>
-    // Almacenamiento global para detalles de miembros
     window.memberDetailsStore = {};
-    let originalOrgchartData = null; // Almacena los datos originales obtenidos
+    let originalOrgchartData = null;
 
-    // Obtener el estado inicial de "mostrar nodos de área" de la URL
     const urlParams = new URLSearchParams(window.location.search);
     let showAreaNodesInitially = urlParams.get('show_areas') === 'true';
 
-    // Inicialización de componentes de Alpine.js para los modales
     document.addEventListener('alpine:init', () => {
         Alpine.data('areaModal', () => ({
             showModal: false,
@@ -208,11 +196,10 @@
 
         Alpine.data('memberModal', () => ({
             showModal: false,
-            data: null, // Inicializado como null para indicar que no hay datos cargados
+            data: null,
             openModal(memberId) {
                 const details = window.memberDetailsStore[memberId];
                 if (details) {
-                    // Copia profunda para evitar cualquier referencia compartida y asegurar un estado fresco
                     this.data = JSON.parse(JSON.stringify(details));
                     this.showModal = true;
                 } else {
@@ -222,7 +209,6 @@
             },
             closeModalAndResetData() {
                 this.showModal = false;
-                // Restablecer data a null después de que el modal se oculte visualmente
                 Alpine.nextTick(() => {
                     this.data = null;
                 });
@@ -410,12 +396,10 @@
         let dataUrl;
 
         @if (Auth::check() && Auth::user()->is_client)
-            // Si el usuario es un cliente, usa las rutas seguras para clientes
             dataUrl = showAreaNodesInitially
                 ? `{{ route('client.organigram.data') }}`
                 : `{{ route('client.organigram.data.without-areas') }}`;
         @else
-            // Si no, usa las rutas de administrador como antes
             dataUrl = showAreaNodesInitially
                 ? `{{ route('admin.organigram.interactive.data') }}`
                 : `{{ route('admin.organigram.interactive.data.without-areas') }}`;
@@ -440,20 +424,16 @@
                 function extractDetails(node) {
                     const storeId = node.is_proxy ? node.original_id : node.id;
                     if (node.type === 'member' && node.full_details) {
-                        // Solo almacenar si no existe ya en memberDetailsStore
                         if (!window.memberDetailsStore[storeId]) {
                             window.memberDetailsStore[storeId] = {
                                 name: node.full_details.name || '',
                                 email: node.full_details.email || '',
                                 cell_phone: node.full_details.cell_phone || '',
                                 position_name: node.full_details.position_name || '',
-                                {{-- INICIO DE CAMBIO: Agregar la descripción de la posición --}}
                                 position_description: node.full_details.position_description || '',
-                                {{-- FIN DE CAMBIO --}}
                                 area_name: node.full_details.area_name || '',
                                 manager_name: node.full_details.manager_name || '',
                                 profile_photo_path: node.full_details.profile_photo_path || null,
-                                // Uso de operador de encadenamiento opcional y mapeo para copias
                                 activities: node.full_details.activities?.map(item => ({ ...item })) || [],
                                 skills: node.full_details.skills?.map(item => ({ ...item })) || [],
                                 trajectories: node.full_details.trajectories?.map(item => ({ ...item })) || []

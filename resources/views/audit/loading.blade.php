@@ -1,23 +1,18 @@
 @extends('layouts.audit-layout')
 
 @section('content')
-{{-- Se inicializa Alpine.js para manejar los campos interactivos --}}
 <div class="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8" 
      x-data="{
         incluyeTarimas: {{ old('incluye_tarimas', $audit->guia?->audit_carga_incluye_tarimas) ? 'true' : 'false' }},
         tipoTarima: '{{ old('tarimas_tipo', 'N/A') }}',
         incidenciasOpen: false,
         
-        // --- INICIA NUEVA LÓGICA PARA FOTOS DINÁMICAS ---
         cajaVaciaPreview: null,
         marchamoPreview: null,
-        // Almacenamos las fotos de carga en un array de objetos. Cada objeto tiene un ID único para el :key de Alpine.
         photos: [], 
-        // Previsualizaciones de las fotos de carga
         cargaPreviews: [], 
         nextPhotoId: 1,
 
-        // Función de inicialización para cargar la cantidad correcta de fotos al inicio (mínimo 3 o las que vengan de un error de validación)
         init() {
             const initialCount = {{ old('fotos_carga') ? count(old('fotos_carga')) : 3 }};
             for (let i = 0; i < initialCount; i++) {
@@ -25,12 +20,10 @@
             }
         },
 
-        // Función para agregar un nuevo campo de foto
         addPhoto() {
             this.photos.push({ id: this.nextPhotoId++ });
         },
 
-        // Función para eliminar un campo de foto y su previsualización
         removePhoto(index) {
             this.photos.splice(index, 1);
             this.cargaPreviews.splice(index, 1);
@@ -41,7 +34,6 @@
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     if (index !== null) {
-                        // Usamos Vue.set o una asignación directa para asegurar la reactividad
                         this.cargaPreviews[index] = e.target.result;
                     } else {
                         this[target] = e.target.result;
@@ -56,7 +48,6 @@
                 }
             }
         }
-        // --- FIN NUEVA LÓGICA ---
      }">
 
     <a href="{{ route('audit.index') }}" class="text-sm font-semibold text-gray-600 hover:text-gray-900 mb-4 inline-block transition-colors">
@@ -84,7 +75,6 @@
             @endif
             <div class="space-y-8">
                 
-                {{-- ... (El resto del formulario hasta las fotos permanece igual) ... --}}
                 <div>
                     <h3 class="font-bold text-lg text-gray-800 mb-2">Facturas en esta Carga</h3>
                     <div class="space-y-2">
@@ -147,7 +137,6 @@
                     <h3 class="font-bold text-lg text-gray-800 mb-4">Evidencias Fotográficas</h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {{-- 1. FOTO DE CAJA VACÍA (OBLIGATORIA) --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Caja Vacía <span class="text-red-500">*</span></label>
                             <input type="file" name="foto_caja_vacia" x-ref="fotoCajaVaciaInput" @change="previewFile($event, 'cajaVaciaPreview')" class="hidden" accept="image/*" capture="environment" required>
@@ -162,7 +151,6 @@
                         </div>
                     </div>
 
-                    {{-- 3. FOTOS DE CARGA (DINÁMICAS Y OBLIGATORIAS) --}}
                     <h4 class="font-semibold text-gray-700 mt-8 mb-2">Fotos del Proceso de Carga <span class="text-red-500">*</span></h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
                         <template x-for="(photo, index) in photos" :key="photo.id">
@@ -194,7 +182,6 @@
                     </div>
                 </div>
 
-                {{-- ... (El resto del formulario de seguridad permanece igual) ... --}}
                 <div class="pt-6 border-t">
                      <h3 class="font-bold text-lg text-gray-800 mb-2">Seguridad</h3>
                      <div class="space-y-4 bg-gray-50 p-4 rounded-lg border">

@@ -64,30 +64,24 @@
             .then(response => response.json())
             .then(data => {
                 
-                // --- Gráfico de Estatus (Dona) ---
                 new Chart(document.getElementById('statusChart'), {
                     type: 'doughnut', data: { labels: data.ticketsByStatus.labels, datasets: [{ data: data.ticketsByStatus.data, backgroundColor: ['#2c3856', '#ff9c00', '#666666', '#F59E0B'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }}}
                 });
 
-                // --- Gráfico de Prioridad (Tarta) ---
                 new Chart(document.getElementById('priorityChart'), {
                     type: 'pie', data: { labels: data.ticketsByPriority.labels, datasets: [{ data: data.ticketsByPriority.data, backgroundColor: ['#10B981', '#F59E0B', '#EF4444'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }}}
                 });
 
-                // --- Gráfico de Categorías (Barras Polares) ---
                 new Chart(document.getElementById('categoryChart'), {
                     type: 'polarArea', data: { labels: data.ticketsByCategory.labels, datasets: [{ data: data.ticketsByCategory.data, backgroundColor: ['#2c3856', '#4f628e', '#7a8eb8', '#a9b9e0', '#dce3ff'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }}}
                 });
 
-                // --- Tarjeta de Tiempo Promedio ---
                 document.getElementById('avgTime').textContent = data.avgResolutionTime > 0 ? data.avgResolutionTime : 'N/A';
 
-                // --- Gráfico de Agentes (Barras Horizontales) ---
                 new Chart(document.getElementById('agentChart'), {
                     type: 'bar', data: { labels: data.ticketsByAgent.labels, datasets: [{ label: 'Tickets Cerrados', data: data.ticketsByAgent.data, backgroundColor: 'var(--color-accent)', borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }}}
                 });
                 
-                // --- Gráfico de Tickets por Día (Líneas) ---
                 new Chart(document.getElementById('ticketsPerDayChart'), {
                     type: 'line', data: { labels: data.ticketsPerDay.labels, datasets: [{ label: 'Tickets Creados', data: data.ticketsPerDay.data, borderColor: 'var(--color-primary)', backgroundColor: 'rgba(44, 56, 86, 0.1)', fill: true, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }}}}
                 });

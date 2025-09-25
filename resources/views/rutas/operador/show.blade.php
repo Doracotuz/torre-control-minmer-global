@@ -1,12 +1,10 @@
 @extends('layouts.guest-rutas')
 
 @section('content')
-    {{-- Se inicializa el componente AlpineJS con todos los datos necesarios de la guía y sus facturas --}}
     <div x-data="operatorView({{ json_encode($guia->load('facturas')) }})">
         <div class="text-center mb-6">
             <p class="text-sm text-gray-500">Guía No. / Estatus Actual</p>
             <h2 class="text-3xl font-bold text-[#2c3856] tracking-wider">{{ $guia->guia }}</h2>
-            {{-- El estatus se actualiza dinámicamente con AlpineJS --}}
             <p class="mt-1 text-lg font-semibold" :class="getBadgeClass(guia.estatus, true)" x-text="guia.estatus"></p>
         </div>
 
@@ -130,7 +128,6 @@
                             <label class="block text-sm font-medium text-gray-700">Evidencia Fotográfica</label>
                             <input type="file" id="original-evidencia" accept="image/*" multiple @change="processImages" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100">
 
-                            {{-- Este input oculto recibirá las imágenes ya procesadas --}}
                             <input type="hidden" name="evidencia[]" id="processed-evidencia">
                             <p class="text-xs text-gray-500 mt-1" x-text="modal.evidenceRequired ? 'Evidencia obligatoria (máx. 10 fotos).' : 'Evidencia opcional.'"></p>
                             <p class="text-xs text-gray-500 mt-1">Para mas de una fotografia, usa la galeria.<p>
@@ -242,7 +239,6 @@
                 const files = event.target.files;
                 const processedFiles = [];
                 
-                // Función para procesar un solo archivo de forma asíncrona
                 const processFile = (file) => {
                     return new Promise((resolve) => {
                         const reader = new FileReader();
@@ -250,11 +246,10 @@
                             const img = new Image();
                             img.onload = () => {
                                 const canvas = document.createElement('canvas');
-                                const MAX_WIDTH = 800; // Define el ancho máximo deseado para la imagen
+                                const MAX_WIDTH = 800;
                                 let width = img.width;
                                 let height = img.height;
 
-                                // Redimensionar si la imagen es más grande que el ancho máximo
                                 if (width > MAX_WIDTH) {
                                     height = height * (MAX_WIDTH / width);
                                     width = MAX_WIDTH;
@@ -265,7 +260,6 @@
                                 const ctx = canvas.getContext('2d');
                                 ctx.drawImage(img, 0, 0, width, height);
                                 
-                                // Comprimir la imagen a un 70% de calidad y convertirla en un Blob
                                 canvas.toBlob((blob) => {
                                     const newFile = new File([blob], file.name, {
                                         type: 'image/jpeg',
@@ -280,20 +274,17 @@
                     });
                 };
 
-                // Procesar todos los archivos seleccionados en paralelo
                 Promise.all(Array.from(files).map(processFile)).then(processedBlobs => {
                     const dataTransfer = new DataTransfer();
                     processedBlobs.forEach(blob => {
                         dataTransfer.items.add(blob);
                     });
-                    // Asignar los archivos procesados al input oculto
                     document.getElementById('processed-evidencia').files = dataTransfer.files;
                 });
             },           
 
             submitEventForm() {
                 const form = document.getElementById('event-form');
-                // Se valida el nuevo input de tipo 'file' que ya tiene las fotos procesadas
                 const evidenceInput = document.getElementById('processed-evidencia');
                 const facturasCheckboxes = form.querySelectorAll('input[name="factura_ids[]"]:checked');
 
@@ -357,7 +348,6 @@
                             form.querySelector(`input[name="municipio"]`).value = "API de Google no disponible";
                         }
                         
-                        // Limpiar y añadir IDs de factura fijos si existen
                         form.querySelectorAll('input[type="hidden"][name="factura_ids[]"]').forEach(el => el.remove());
                         if (fixedFacturaIds.length > 0) {
                             fixedFacturaIds.forEach(id => {

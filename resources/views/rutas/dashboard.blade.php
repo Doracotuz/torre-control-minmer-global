@@ -1,5 +1,4 @@
 <x-app-layout>
-    {{-- Encabezado de la página --}}
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Dashboard de Rutas') }}
@@ -53,7 +52,6 @@
                 <form action="{{ route('rutas.dashboard') }}" method="GET" class="flex flex-col sm:flex-row items-center gap-4">
                     <div>
                         <label for="start_date" class="block text-sm font-medium text-gray-700">Fecha de inicio</label>
-                        {{-- El valor lo recibimos del controlador para mantener el estado --}}
                         <input type="date" name="start_date" id="start_date" value="{{ request('start_date', $startDate) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                     </div>
                     <div>
@@ -66,7 +64,6 @@
                         </button>
                     </div>
                     <div class="self-end border-l pl-4 ml-4">
-                        {{-- El enlace de exportar pasa los mismos filtros de fecha activos --}}
                         <a href="{{ route('rutas.dashboard.export', ['start_date' => request('start_date', $startDate), 'end_date' => request('end_date', $endDate)]) }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                             Exportar a CSV
                         </a>
@@ -91,12 +88,10 @@
         </div>
     </div>
 
-    {{-- Incluimos la librería Chart.js desde un CDN --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Colores base de la paleta
         const colorNaranja = 'rgba(255, 156, 0, 0.6)';
         const colorAzul = 'rgba(44, 60, 86, 0.6)';
         const colorGris = 'rgba(102, 102, 102, 0.6)';
@@ -108,7 +103,6 @@
         const borderGris = 'rgba(102, 102, 102, 1)';
         const borderGrisOscuro = 'rgba(43, 43, 43, 1)';
 
-        // --- Gráfico 1: Rutas por Tipo (Bar) ---
         const chart1Data = @json($chart1Data);
         const ctx1 = document.getElementById('chart1').getContext('2d');
         new Chart(ctx1, {
@@ -116,7 +110,6 @@
             options: { responsive: true, plugins: { title: { display: true, text: 'Rutas por Tipo' } }, scales: { y: { beginAtZero: true } } }
         });
 
-        // --- Gráfico 2: Guías por Estatus (Doughnut) ---
         const chart2Data = @json($chart2Data);
         const ctx2 = document.getElementById('chart2').getContext('2d');
         new Chart(ctx2, {
@@ -124,7 +117,6 @@
             options: { responsive: true, plugins: { title: { display: true, text: 'Guías por Estatus' } } }
         });
 
-        // --- Gráfico 3: Rutas por Región (Bar) ---
         const chart3Data = @json($chart3Data);
         const ctx3 = document.getElementById('chart3').getContext('2d');
         new Chart(ctx3, {
@@ -132,7 +124,6 @@
             options: { responsive: true, plugins: { title: { display: true, text: 'Plantillas por Región' } }, scales: { y: { beginAtZero: true } } }
         });
 
-        // --- Gráfico 4: Eventos por Tipo (Pie) ---
         const chart4Data = @json($chart4Data);
         const ctx4 = document.getElementById('chart4').getContext('2d');
         new Chart(ctx4, {
@@ -140,7 +131,6 @@
             options: { responsive: true, plugins: { title: { display: true, text: 'Eventos Registrados por Tipo' } } }
         });
 
-        // --- Gráfico 5: Top 5 Operadores (Horizontal Bar) ---
         const chart5Data = @json($chart5Data);
         const ctx5 = document.getElementById('chart5').getContext('2d');
         new Chart(ctx5, {
@@ -148,7 +138,6 @@
             options: { indexAxis: 'y', responsive: true, plugins: { title: { display: true, text: 'Top 5 Operadores' } }, scales: { x: { beginAtZero: true } } }
         });
 
-        // --- Gráfico 6: Estatus de Entregas (Doughnut) ---
         const chart6Data = @json($chart6Data);
         const ctx6 = document.getElementById('chart6').getContext('2d');
         new Chart(ctx6, {
@@ -156,7 +145,6 @@
             options: { responsive: true, plugins: { title: { display: true, text: 'Estatus de Entregas' } } }
         });
 
-        // --- Gráfico 7: Guías Completadas (Line) ---
         const chart7Data = @json($chart7Data);
         const ctx7 = document.getElementById('chart7').getContext('2d');
         new Chart(ctx7, {

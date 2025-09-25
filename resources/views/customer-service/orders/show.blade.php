@@ -43,7 +43,6 @@
                     <div class="col-span-full"><strong class="block text-gray-500">Subtotal:</strong><span>${{ number_format($order->subtotal, 2) }}</span></div>
                 </div>
 
-                {{-- ✅ INICIA CAMBIO: Cálculo del porcentaje de llenado --}}
                 @php
                     $fields = [
                         $order->bt_oc, $order->invoice_number, $order->invoice_date,
@@ -65,7 +64,6 @@
                         <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ $percentage }}%"></div>
                     </div>
                 </div>
-                {{-- ⏹️ TERMINA CAMBIO --}}
 
                 <h4 class="text-lg font-semibold text-gray-800 mt-6 mb-4">Información Logística y Facturación</h4>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm border-b pb-6">
@@ -87,10 +85,8 @@
                             @endif
                         </span>
                     </div>                    
-                    {{-- ✅ INICIA CAMBIO: Se añade el nuevo campo --}}
                     <div><strong class="block text-gray-500">Recepción de Evidencia:</strong><span>{{ $order->evidence_reception_date ? $order->evidence_reception_date->format('d/m/Y') : 'Sin dato' }}</span></div>
                     <div><strong class="block text-gray-500">Corte de Evidencias:</strong><span>{{ $order->evidence_cutoff_date ? $order->evidence_cutoff_date->format('d/m/Y') : 'Sin dato' }}</span></div>
-                    {{-- ⏹️ TERMINA CAMBIO --}}
                     
                     <div class="col-span-full"><strong class="block text-gray-500">Observaciones:</strong><p class="mt-1 text-gray-700">{{ $order->observations ?? 'Sin dato' }}</p></div>
                 </div>
@@ -141,7 +137,6 @@
 
                 @forelse($timelineEvents as $event)
                     <div class="relative">
-                        {{-- ✅ INICIA CAMBIO: Se usa @switch para que Tailwind detecte las clases de color --}}
                         @php
                             $color = $event['color'];
                             $bgColorClass = 'bg-blue-500';
@@ -194,7 +189,6 @@
                                 {{ $event['date']->format('d/m/Y H:i A') }} por {{ $event['user_name'] }}
                             </p>
                         </div>
-                        {{-- ⏹️ TERMINA CAMBIO --}}
                     </div>
                     @empty
                         <p class="text-sm text-gray-500">No hay eventos registrados.</p>

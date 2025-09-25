@@ -17,41 +17,40 @@
             background-repeat: no-repeat;
             background-attachment: fixed;
         }
-        /* Custom responsive adjustments */
         @media (max-width: 1024px) {
             .lg\:grid-cols-2 {
-                grid-template-columns: 1fr; /* Single column on smaller screens */
+                grid-template-columns: 1fr;
             }
             .lg\:flex {
-                display: none; /* Hide left section on smaller screens */
+                display: none;
             }
         }
         @media (max-width: 640px) {
             .text-3xl {
-                font-size: 1.5rem; /* Adjust font size for mobile */
+                font-size: 1.5rem;
             }
             .text-2xl {
                 font-size: 1.25rem;
             }
             .h-24 {
-                height: 4rem; /* Smaller logo size for mobile */
+                height: 4rem;
             }
             .h-20 {
-                height: 3.5rem; /* Smaller logo size for mobile */
+                height: 3.5rem;
             }
             .p-6 {
-                padding: 1.5rem; /* Reduce padding on mobile */
+                padding: 1.5rem;
             }
             .max-w-6xl {
-                max-width: 100%; /* Full width on mobile */
+                max-width: 100%;
             }
         }
         @media (max-width: 768px) {
             .md\:flex-row {
-                flex-direction: column; /* Stack footer links vertically */
+                flex-direction: column;
             }
             .md\:mb-0 {
-                margin-bottom: 0.5rem; /* Add spacing between footer links */
+                margin-bottom: 0.5rem;
             }
         }
     </style>

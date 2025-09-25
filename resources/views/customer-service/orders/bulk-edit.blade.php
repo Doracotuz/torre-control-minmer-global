@@ -16,7 +16,6 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-8">
                 
-                {{-- --- INICIA MODIFICACIÓN: Se añade Alpine.js al formulario --- --}}
                 <form action="{{ route('customer-service.orders.bulk-update') }}" method="POST"
                       x-data="{
                           delivery_date: '',
@@ -24,7 +23,6 @@
                           first_order_origin: '{{ $firstOrderOrigin }}',
                           
                           calculateCutoffDate() {
-                              // Ahora la función necesita tanto la fecha como el destino para ejecutarse
                               if (!this.delivery_date || !this.destination_locality) {
                                   document.querySelector('[name=evidence_cutoff_date]').value = '';
                                   return;
@@ -37,8 +35,6 @@
                                   daysToAdd = 7;
                               }
                               
-                              // SE REINTEGRA LA LÓGICA DE COMPARACIÓN
-                              // Compara el destino seleccionado con el origen de la PRIMERA orden.
                               if (this.first_order_origin !== this.destination_locality) {
                                   daysToAdd += 7;
                               }
@@ -52,7 +48,6 @@
                               document.querySelector('[name=evidence_cutoff_date]').value = `${year}-${month}-${day}`;
                           }
                       }">
-                {{-- --- TERMINA MODIFICACIÓN --- --}}
 
                     @csrf
                     <input type="hidden" name="ids" value="{{ json_encode($orders->pluck('id')) }}">
@@ -88,7 +83,6 @@
                     <h3 class="text-lg font-bold text-gray-900 mb-4 border-t pt-6">Campos Generales (se aplican a todos)</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         
-                        {{-- --- INICIA MODIFICACIÓN: Conectar campos a Alpine.js --- --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Fecha de Entrega</label>
                             <input type="date" name="delivery_date" 

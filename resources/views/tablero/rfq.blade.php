@@ -7,8 +7,6 @@
 
     <div class="py-12">
         <div class="max-w-10xl mx-auto sm:px-6 lg:px-8 space-y-12">
-            
-            {{-- SECCIÓN DE SOLICITUDES DE COTIZACIÓN (RFQ) --}}
             <div class="bg-[#FFF1DC] overflow-hidden shadow-xl rounded-[40px] p-6 sm:p-10">
                 <h3 class="text-2xl font-bold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">Documentación RFQ</h3>
                 

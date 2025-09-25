@@ -46,7 +46,6 @@
                                         <img :src="photoPreview" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md">
                                     </template>
                                     <template x-if="!photoPreview && '{{ $user->profile_photo_path }}'">
-                                        {{-- Línea editada para usar Storage::disk('s3')->url() --}}
                                         <img src="{{ $user->profile_photo_path ? Storage::disk('s3')->url($user->profile_photo_path) : '' }}" alt="{{ $user->name }}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md">
 
                                     </template>
@@ -74,7 +73,7 @@
                                 @endif
                             </div>
 
-                            <div class="mt-8"> {{-- Añadir margen superior para separar de la sección de foto --}}
+                            <div class="mt-8">
                                 <x-input-label for="name" :value="__('Nombre')" />
                                 <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
                                 <x-input-error class="mt-2" :messages="$errors->get('name')" />

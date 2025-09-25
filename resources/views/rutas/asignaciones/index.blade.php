@@ -6,7 +6,6 @@
     <div class="py-12" x-data="assignmentManager()">
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
             
-            {{-- Botones y Filtros --}}
             <div class="bg-white p-4 rounded-lg shadow-md mb-6">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center gap-4">
@@ -34,7 +33,6 @@
                 </div>
             </div>
 
-            {{-- Tabla de Guías --}}
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -121,7 +119,6 @@
                                 <button @click="closeAllModals()" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
                             </div>
                             <div class="p-6 flex-grow overflow-y-auto">
-                                {{-- Información General de la Guía --}}
                                 
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 mb-6 bg-gray-50 p-4 rounded-lg border text-sm">
                                     <div><strong class="block text-gray-500">Operador:</strong> <span x-text="selectedGuia.operador || 'N/A'"></span></div>
@@ -141,7 +138,6 @@
                                     <div><strong class="block text-gray-500">Transporte:</strong> <span x-text="selectedGuia.transporte"></span></div>
                                 </div>
 
-                                {{-- Tabla de Facturas --}}
                                 <h4 class="text-md font-semibold text-gray-700 mb-2">Facturas Incluidas</h4>
                                 <div class="border rounded-lg overflow-hidden max-h-64 overflow-y-auto">
                                     <table class="min-w-full divide-y divide-gray-200 text-sm">
@@ -217,7 +213,6 @@
 
         <div x-show="isEditModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
             <div @click.outside="closeAllModals()" class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-                {{-- Usamos x-if para renderizar solo cuando hay datos --}}
                 <template x-if="editData.id">
                     <div>
                         <div class="flex justify-between items-center border-b p-4">
@@ -269,17 +264,14 @@
                                 <h4 class="text-lg font-semibold text-[#2c3856] border-b mt-6 pb-2 mb-4">Facturas</h4>
                                 <div class="space-y-3">
                                     <template x-for="(factura, index) in editData.facturas" :key="index">
-                                        {{-- Se ajusta el grid para que quepan todos los campos --}}
                                         <div class="grid grid-cols-10 gap-4 items-end bg-gray-50 p-3 rounded-md border">
                                             <div class="col-span-2"><label class="text-xs"># Factura</label><input type="text" x-model="factura.numero_factura" class="w-full rounded-md border-gray-300 text-sm"></div>
                                             <div class="col-span-2"><label class="text-xs">Destino</label><input type="text" x-model="factura.destino" class="w-full rounded-md border-gray-300 text-sm"></div>
                                             <div><label class="text-xs">SO</label><input type="text" x-model="factura.so" class="w-full rounded-md border-gray-300 text-sm"></div>
                                             <div><label class="text-xs">F. Entrega</label><input type="date" x-model="factura.fecha_entrega" class="w-full rounded-md border-gray-300 text-sm"></div>
-                                            {{-- INICIO DE CAMPOS REINTEGRADOS --}}
                                             <div><label class="text-xs">Hora Cita</label><input type="text" x-model="factura.hora_cita" class="w-full rounded-md border-gray-300 text-sm"></div>
                                             <div><label class="text-xs">Cajas</lebel><input type="number" x-model="factura.cajas" class="w-full rounded-md border-gray-300 text-sm"></div>
                                             <div><label class="text-xs">Botellas</label><input type="number" x-model="factura.botellas" class="w-full rounded-md border-gray-300 text-sm"></div>
-                                            {{-- FIN DE CAMPOS REINTEGRADOS --}}
                                             <button type="button" @click="editData.facturas.splice(index, 1)" class="bg-red-500 text-white rounded-md py-2 text-sm">Eliminar</button>
                                         </div>
                                     </template>
@@ -301,7 +293,6 @@
         </div>
     </div>
 
-    {{-- SCRIPT MANEJADOR DE ALPINE.JS --}}
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('assignmentManager', () => ({
@@ -317,7 +308,6 @@
 
 
                 formatDate(dateString) {
-                    // Si la fecha es nula, indefinida o no es un string, devuelve 'N/A' y evita el error.
                     if (!dateString || typeof dateString !== 'string') {
                         return 'N/A';
                     }
@@ -325,7 +315,6 @@
                     const parts = dateString.split('-');
                     if (parts.length !== 3) return 'N/A';
 
-                    // Creamos la fecha de forma segura
                     const date = new Date(parts[0], parts[1] - 1, parts[2]);
                     
                     if (isNaN(date.getTime())) {
@@ -346,12 +335,10 @@
                     this.searchRoutes();
                 },
                 openDetailsModal(guia) {
-                    // 1. Abre el modal inmediatamente con los datos básicos y muestra "cargando".
-                    this.selectedGuia = guia; // Muestra la info básica que ya tienes.
+                    this.selectedGuia = guia;
                     this.isDetailsModalOpen = true;
                     this.isLoading = true;
 
-                    // 2. Realiza la petición al servidor para obtener los detalles completos.
                     fetch(`/rutas/asignaciones/${guia.id}/details`, {
                         headers: {
                             'Accept': 'application/json',
@@ -365,16 +352,13 @@
                         return res.json();
                     })
                     .then(data => {
-                        // 3. ✅ CAMBIO CLAVE: Actualizamos el objeto existente en lugar de reemplazarlo.
-                        // Esto es más robusto para la reactividad de la interfaz.
-                        Object.assign(this.selectedGuia, data.guia); // Combina los datos detallados de la guía.
+                        Object.assign(this.selectedGuia, data.guia);
                         this.selectedGuia.total_maniobras = data.total_maniobras;
-                        this.selectedGuia.observaciones_con_so = data.observaciones_con_so; // <-- Añade las observaciones.
+                        this.selectedGuia.observaciones_con_so = data.observaciones_con_so;
                         this.selectedGuia.capacidad = data.capacidad;
-                        this.isLoading = false; // Oculta el indicador de carga.
+                        this.isLoading = false;
                     })
                     .catch(error => {
-                        // 4. Si algo falla, informa al usuario y cierra el modal.
                         console.error("Error al cargar los detalles de la guía:", error);
                         alert('No se pudieron cargar los detalles completos de la guía.');
                         this.isLoading = false;
@@ -403,14 +387,12 @@
                     this.isEditModalOpen = true;
                     this.editData = {};
                     
-                    // ✅ INICIA CAMBIO
                     fetch(`/rutas/asignaciones/${guiaId}/edit`, {
                         headers: {
                             'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
                         }
                     })
-                    // ⏹️ TERMINA CAMBIO
                     .then(res => {
                         if (!res.ok) {
                             throw new Error('El servidor respondió con un error.');

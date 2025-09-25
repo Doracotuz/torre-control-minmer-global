@@ -31,28 +31,23 @@
         </div>
 
         <div class="bg-white p-6 rounded-lg shadow-md text-center">
-            <!-- Input oculto para la cámara -->
             <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden-camera-input">
             
-            <!-- Vista previa de la imagen capturada -->
             <div class="preview-container hidden" id="previewContainer">
                 <img id="imagePreview" class="w-full rounded-lg">
                 <div class="mt-2 text-gray-600" id="scanStatus"></div>
             </div>
 
-            <!-- Botón para iniciar el escaneo -->
             <button id="startScanBtn" class="mt-4 px-6 py-3 rounded-lg font-semibold bg-[#2c3856] text-white hover:bg-[#1a2233] transition">
                 <i class="fas fa-camera mr-2"></i> Iniciar Escáner
             </button>
 
-            <!-- Botón para procesar QR (oculto inicialmente) -->
             <button id="processBtn" class="mt-4 px-6 py-3 rounded-lg font-semibold bg-green-600 text-white hover:bg-green-700 transition hidden">
                 <i class="fas fa-search mr-2"></i> Procesar QR
             </button>
         </div>
     </div>
 
-    <!-- Librería para leer QR desde imagen -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -65,12 +60,10 @@
             
             let capturedImage = null;
 
-            // 1. Iniciar cámara al hacer clic
             startScanBtn.addEventListener('click', () => {
                 cameraInput.click();
             });
 
-            // 2. Cuando se captura una imagen
             cameraInput.addEventListener('change', function(e) {
                 if (e.target.files.length > 0) {
                     const file = e.target.files[0];
@@ -89,7 +82,6 @@
                 }
             });
 
-            // 3. Procesar la imagen para leer QR
             processBtn.addEventListener('click', function() {
                 if (!capturedImage) return;
                 
@@ -97,14 +89,12 @@
                 
                 const img = new Image();
                 img.onload = function() {
-                    // Crear canvas para analizar la imagen
                     const canvas = document.createElement('canvas');
                     const context = canvas.getContext('2d');
                     canvas.width = img.width;
                     canvas.height = img.height;
                     context.drawImage(img, 0, 0, canvas.width, canvas.height);
                     
-                    // Obtener datos de imagen para jsQR
                     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
                     const code = jsQR(imageData.data, imageData.width, imageData.height);
                     

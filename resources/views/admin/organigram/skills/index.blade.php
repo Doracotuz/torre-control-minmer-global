@@ -70,7 +70,6 @@
                     @if ($skills->isEmpty())
                         <p class="text-lg text-gray-600 py-4 text-center">No hay habilidades registradas.</p>
                     @else
-                        {{-- AÑADIDO: Contenedor overflow-x-auto para responsividad de tabla --}}
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">

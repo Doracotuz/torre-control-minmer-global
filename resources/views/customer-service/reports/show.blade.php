@@ -14,13 +14,9 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-8">
 
             @php
-                // Obtenemos la primera auditoría de la guía para acceder a los datos de Patio y Carga,
-                // ya que estos son compartidos a nivel de guía para una ubicación específica.
                 $firstPlanning = $guia->plannings->first();
                 $firstOrder = $firstPlanning?->order;
                 $mainAudit = $firstOrder?->audits->where('location', $firstPlanning?->origen)->first();
-                
-                // Extraemos los datos de los campos JSON, con un array vacío como respaldo.
                 $patioData = $mainAudit?->patio_audit_data ?? [];
                 $loadingData = $mainAudit?->loading_audit_data ?? [];
             @endphp
@@ -48,7 +44,6 @@
                                 $warehouseEvent = $order->events->first(fn($e) => str_contains($e->description, 'Auditoría de almacén completada'));
                             @endphp
                             <div class="border p-4 rounded-lg bg-gray-50">
-                                {{-- Encabezado de la auditoría para esta orden --}}
                                 <div class="flex justify-between items-center mb-3">
                                     <div>
                                         <p class="font-semibold text-indigo-700">Resultados para SO: {{ $order->so_number }}</p>
@@ -56,14 +51,10 @@
                                     </div>
                                     <p class="text-xs text-gray-500">Auditado por: <strong>{{ $warehouseEvent->user->name ?? 'N/A' }}</strong></p>
                                 </div>
-
-                                {{-- Observaciones Generales --}}
                                 <div class="mb-4 text-sm">
                                     <strong class="text-gray-600">Observaciones:</strong>
                                     <p class="p-2 bg-white rounded-md border mt-1">{{ $warehouseData['observaciones'] ?? 'Ninguna.' }}</p>
                                 </div>
-
-                                {{-- Tabla de Validación por SKU --}}
                                 <h4 class="text-sm font-semibold text-gray-700 mb-2">Checklist de Validación por SKU</h4>
                                 <div class="overflow-x-auto border rounded-md">
                                     <table class="min-w-full text-sm">
@@ -109,7 +100,6 @@
             </div>
 
             <div class="bg-white p-6 rounded-xl shadow-lg">
-                {{-- Encabezado con título y auditor --}}
                 <div class="flex justify-between items-center border-b pb-2 mb-4">
                     <h3 class="text-xl font-bold text-gray-800">Fase 2: Auditoría de Patio</h3>
                     @php
@@ -117,8 +107,6 @@
                     @endphp
                     <p class="text-xs text-gray-500">Auditado por: <strong>{{ $patioEvent->user->name ?? 'N/A' }}</strong></p>
                 </div>
-
-                {{-- Tabla de datos principales --}}
                 <div class="overflow-x-auto border rounded-md">
                     <table class="min-w-full text-sm">
                         <tbody class="divide-y divide-gray-200">
@@ -150,11 +138,9 @@
                     </table>
                 </div>
                 
-                {{-- Sección de Fotos --}}
                 <h4 class="font-semibold mt-6 mb-2 text-gray-700">Fotos de Patio:</h4>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     @php
-                        // Lógica de retrocompatibilidad para encontrar la ruta de la imagen
                         $fotoUnidadUrl = $patioData['foto_unidad_path'] ?? null;
                         $fotoLlantasUrl = $patioData['foto_llantas_path'] ?? null;
                         if (!$fotoUnidadUrl && isset($patioData['audit_patio_fotos'])) {

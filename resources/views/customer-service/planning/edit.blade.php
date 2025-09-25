@@ -19,7 +19,6 @@
                     <h4 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Información Principal</h4>
                     
                     @if(!$planning->order)
-                        {{-- MODO EDICIÓN COMPLETA: Para registros manuales --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                             <div><label class="block text-sm font-medium text-gray-700">Razón Social / Contacto</label><input type="text" name="razon_social" value="{{ old('razon_social', $planning->razon_social) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required></div>
                             <div><label class="block text-sm font-medium text-gray-700">Dirección</label><input type="text" name="direccion" value="{{ old('direccion', $planning->direccion) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required></div>
@@ -46,7 +45,6 @@
                             <div><label class="block text-sm font-medium text-gray-700">Hora Cita</label><input type="text" name="hora_cita" value="{{ old('hora_cita', $planning->hora_cita) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         </div>
                     @else
-                        {{-- MODO LECTURA PARCIAL: Para registros vinculados a un pedido --}}
                         <div class="bg-blue-50 border-l-4 border-blue-400 text-blue-800 p-4 mb-8 text-sm">
                             La información principal es gestionada desde el Pedido original y no puede ser modificada aquí.
                         </div>
@@ -63,7 +61,6 @@
                             <div><strong class="block text-gray-500">Fecha Entrega:</strong><span class="mt-1 block">{{ $planning->order->delivery_date?->format('d/m/Y') ?? 'N/A' }}</span></div>
 
                         </div>
-                        {{-- Campos ocultos para pasar la validación --}}
                         <input type="hidden" name="razon_social" value="{{ $planning->razon_social }}">
                         <input type="hidden" name="direccion" value="{{ $planning->direccion }}">
                         <input type="hidden" name="so_number" value="{{ $planning->so_number }}">
@@ -74,7 +71,6 @@
                         <input type="hidden" name="destino" value="{{ $planning->destino }}">
                         <input type="hidden" name="hora_cita" value="{{ $planning->hora_cita }}">
                     @endif
-                    {{-- --- TERMINA LÓGICA CONDICIONAL --- --}}
 
                     <h4 class="text-lg font-semibold text-gray-800 mt-6 mb-4 border-b pb-2">Información de la Ruta y Transporte</h4>
 

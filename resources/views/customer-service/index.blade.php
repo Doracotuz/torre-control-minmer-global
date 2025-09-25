@@ -1,24 +1,20 @@
 <x-app-layout>
-    <!-- Se añade ApexCharts desde un CDN -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
-    <!-- Todos los estilos personalizados están aquí para mantenerlo en un solo archivo -->
     <style>
         .bg-aether {
-            background-color: #f4f7fc; /* Un blanco ligeramente más suave que el puro */
+            background-color: #f4f7fc;
         }
 
         .card {
             background-color: #ffffff;
             transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
-            border: 1px solid #e5e7eb; /* Borde sutil */
+            border: 1px solid #e5e7eb;
         }
         .card:hover {
             transform: translateY(-8px);
             box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15);
         }
-
-        /* Animación de entrada */
         .fade-in-up {
             opacity: 0;
             transform: translateY(25px);
@@ -27,8 +23,6 @@
         @keyframes fadeInUp {
             to { opacity: 1; transform: translateY(0); }
         }
-
-        /* Animación de pulso para el dato relevante */
         .pulse-glow {
             animation: pulseGlow 3s infinite ease-in-out;
         }
@@ -37,7 +31,6 @@
             50% { box-shadow: 0 0 60px rgba(44, 56, 86, 0.2); }
         }
 
-        /* Efecto de hover para la navegación */
         .nav-item { position: relative; }
         .nav-item .nav-icon, .nav-item .nav-text, .nav-item .nav-arrow {
             transition: all 0.3s ease;
@@ -54,14 +47,12 @@
             transform: translateX(0);
         }
 
-        /* Línea conectora para la línea de tiempo */
         .timeline-item:not(:last-child)::after {
             content: ''; position: absolute; top: 2.5rem; left: 1.25rem;
             bottom: -0.75rem; width: 2px;
             background-color: #e5e7eb;
             transform: translateX(-50%);
         }
-         /* Estilos para las etiquetas de ApexCharts */
          .apexcharts-tooltip {
             background: #ffffff;
             color: #2b2b2b;
@@ -95,9 +86,7 @@
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- Columna Izquierda: KPIs y Gráficas -->
                     <div class="lg:col-span-2 space-y-8">
-                        <!-- Stat Cards -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                             <div class="card p-6 rounded-2xl shadow-xl fade-in-up" style="animation-delay: 200ms;">
                                 <div class="flex items-center">
@@ -134,7 +123,6 @@
                             </div>
                         </div>
 
-                        <!-- Gráficas -->
                         <div class="card p-8 rounded-2xl shadow-xl fade-in-up" style="animation-delay: 500ms;">
                             <h3 class="font-bold text-[#2c3856] mb-2 text-xl">Top 10 Clientes por Pedidos</h3>
                             <div id="topClientsChart" class="h-80"></div>
@@ -145,7 +133,6 @@
                         </div>
                     </div>
 
-                    <!-- Columna Derecha: Módulos y Actividad -->
                     <div class="lg:col-span-1 space-y-8">
                         <div class="card p-8 rounded-2xl shadow-xl fade-in-up" style="animation-delay: 700ms;">
                             <h3 class="font-bold text-[#2c3856] mb-6 text-xl">Módulos de Gestión</h3>
@@ -221,7 +208,6 @@
                                                 <p class="text-xs text-gray-400 mt-1">
                                                     <span>{{ $event->created_at->diffForHumans() }}</span>
                                                     
-                                                    {{-- Lógica para mostrar el enlace correcto según el tipo de evento --}}
                                                     @if($event->type === 'order' && $event->order)
                                                         <span class="mx-1">&middot;</span>
                                                         <a href="{{ route('customer-service.orders.show', $event->order) }}" class="text-blue-600 hover:underline font-semibold" title="Ver detalle del pedido">
@@ -247,9 +233,7 @@
         </div>
     </div>
 
-    <!-- Script para la animación de conteo y las gráficas -->
     <script>
-        // Componente Alpine.js para la animación de conteo
         function countUp(target) {
             return {
                 displayValue: 0,
@@ -277,7 +261,6 @@
             const chartData = @json($chartData);
             const apexChartFont = "'Montserrat', sans-serif";
 
-            // Gráfica 1: Top 10 Clientes (Barras Horizontales)
             if (document.querySelector("#topClientsChart")) {
                 const topClientsOptions = {
                     series: [{ name: 'Nº de Pedidos', data: chartData.topClientes.series }],
@@ -292,7 +275,6 @@
                 new ApexCharts(document.querySelector("#topClientsChart"), topClientsOptions).render();
             }
 
-            // Gráfica 2: Órdenes por Canal (Dona)
             if (document.querySelector("#ordersByChannelChart")) {
                 const ordersByChannelOptions = {
                     series: chartData.ordenesPorCanal.series,

@@ -3,7 +3,6 @@
 @section('content')
 <div class="p-2 md:p-4 bg-gray-50 min-h-screen" x-data>
     
-    {{-- Encabezado y Filtros --}}
     <div class="bg-white shadow-md rounded-lg p-4 mb-5">
         <form action="{{ route('audit.carga-plan.show') }}" method="GET" class="space-y-4">
             <div class="flex flex-wrap justify-between items-center gap-4">
@@ -36,7 +35,6 @@
         </form>
     </div>
 
-    {{-- INICIO: Mini Dashboard de Resumen --}}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-white p-3 rounded-lg shadow text-center">
             <p class="text-2xl font-bold text-blue-600">{{ $stats['totalGuias'] }}</p>
@@ -55,24 +53,20 @@
             <p class="text-xs text-gray-500 font-semibold">Piezas Totales</p>
         </div>
     </div>
-    {{-- FIN: Mini Dashboard de Resumen --}}
 
 
-    {{-- Loop de Guías --}}
     @forelse ($guias as $guia)
         @php
             $totalCajasGuia = $guia->plannings->sum('cajas');
             $totalPiezasGuia = $guia->plannings->sum('pzs');
         @endphp
         <div x-data="{ open: true }" class="bg-white rounded-xl shadow-lg mb-6 overflow-hidden border border-gray-200">
-            {{-- Encabezado Colapsable --}}
             <div @click="open = !open" class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center cursor-pointer">
                 <div>
                     <span class="text-xs text-gray-500">Guía</span>
                     <h2 class="text-xl font-extrabold text-[#2c3856]">{{ $guia->guia }}</h2>
                     <p class="font-semibold text-gray-600 text-sm"><i class="far fa-clock mr-1"></i>{{ \Carbon\Carbon::parse($guia->hora_planeada)->format('h:i A') }}</p>
                     
-                    {{-- INICIO: Totales visibles en el encabezado --}}
                     <div class="flex items-center space-x-4 mt-2 text-xs text-gray-600 border-t pt-2">
                         <span title="Total de Cajas en la Guía">
                             <i class="fas fa-box-open mr-1 text-gray-400"></i>
@@ -83,15 +77,12 @@
                             <strong>Piezas:</strong> {{ $totalPiezasGuia }}
                         </span>
                     </div>
-                    {{-- FIN: Totales visibles en el encabezado --}}
 
                 </div>
                 <i class="fas text-gray-500" :class="open ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
             </div>
             
-            {{-- Contenido Colapsable --}}
             <div x-show="open" x-transition class="transition-all duration-300">
-                {{-- Detalles Generales de la Guía --}}
                 <div class="p-4 grid grid-cols-2 gap-4 text-center border-b border-gray-200">
                     <div>
                         <p class="text-xs text-gray-500">Capacidad</p>
@@ -111,7 +102,6 @@
                     </div>
                 </div>
 
-                {{-- Lista de Tareas de Auditoría (por cada planning) --}}
                 <div class="p-2 space-y-3">
                     @foreach ($guia->plannings as $planning)
                         @if ($order = $planning->order)

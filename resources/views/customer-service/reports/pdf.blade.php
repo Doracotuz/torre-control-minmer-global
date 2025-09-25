@@ -4,7 +4,6 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Reporte de Auditoría - Guía {{ $guia->guia }}</title>
     <style>
-        /* Definimos los colores de tu marca */
         :root {
             --primary-color: #2c3856;
             --secondary-color: #ff9c00;
@@ -101,10 +100,10 @@
         .photo-grid td { width: 33.33%; text-align: center; border: none; padding: 5px; vertical-align: top; }
         
         .photo-grid img {
-            max-width: 100%;      /* La imagen no será más ancha que su contenedor */
-            max-height: 140px;    /* Altura MÁXIMA para todas las fotos */
-            width: auto;          /* El ancho se ajusta para mantener la proporción */
-            height: auto;         /* La altura se ajusta para mantener la proporción */
+            max-width: 100%;
+            max-height: 140px;
+            width: auto;
+            height: auto;
             border: 1px solid var(--border-color);
             border-radius: 4px;
         }
@@ -205,14 +204,10 @@
         <h3>Fotos de Patio</h3>
 
         @php
-            // --- INICIA LÓGICA DE RETROCOMPATIBILIDAD (COPIADA DE SHOW.BLADE.PHP) ---
-            // Primero, intentamos encontrar las rutas con las claves nuevas.
             $fotoUnidadUrl = $patioData['foto_unidad_path'] ?? null;
             $fotoLlantasUrl = $patioData['foto_llantas_path'] ?? null;
 
-            // Si no se encuentran, buscamos en la estructura antigua.
             if (!$fotoUnidadUrl && isset($patioData['audit_patio_fotos'])) {
-                // La estructura antigua guardaba un string JSON que necesitamos decodificar.
                 $oldFotos = is_string($patioData['audit_patio_fotos']) ? json_decode($patioData['audit_patio_fotos'], true) : $patioData['audit_patio_fotos'];
                 $fotoUnidadUrl = $oldFotos['unidad'] ?? null;
                 $fotoLlantasUrl = $oldFotos['llantas'] ?? null;
@@ -296,7 +291,6 @@
             </tr>
         </table>
 
-        {{-- Muestra TODAS las fotos del proceso de carga de forma dinámica --}}
         @if(!empty($cargaFotos['proceso_carga']))
             <h4 style="margin-top: 15px; margin-bottom: 5px; font-weight: bold;">Fotos del Proceso de Carga</h4>
             <table class="photo-grid">
@@ -307,7 +301,6 @@
                         <img src="{{ embed_image($fotoPath) }}">
                     </td>
 
-                    {{-- Crea una nueva fila cada 3 fotos para mantener un diseño de cuadrícula --}}
                     @if(($key + 1) % 3 == 0 && !$loop->last)
                         </tr><tr>
                     @endif

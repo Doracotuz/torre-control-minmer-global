@@ -94,7 +94,6 @@
 
             </div>
             <div class="flex justify-between items-center mb-4">
-                {{-- Barra de acciones para selección --}}
                 <div x-show="selectedOrders.length > 0" class="bg-gray-800 text-white p-3 rounded-lg shadow-lg flex justify-between items-center transition-transform w-full" x-transition>
                     <span x-text="`(${selectedOrders.length}) órdenes seleccionadas.`"></span>
                     
@@ -160,37 +159,29 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
 <style>
-    /* --- INICIA CÓDIGO CORREGIDO Y MEJORADO --- */
-
-    /* Reglas generales del redimensionador (se mantienen) */
     th { position: relative; }
     .resizer {
         position: absolute; right: 0; top: 0; height: 100%;
         width: 5px; background: transparent; z-index: 10; cursor: ew-resize;
     }
     .resizing { background: #ff9c00; }
-    
-    /* Encabezados: Permite que el texto se divida en varias líneas si no cabe */
+
     th .drag-handle {
         cursor: move; display: block; padding: 4px; user-select: none;
         white-space: normal; overflow-wrap: normal;
     }
 
-    /* Celdas: Prepara el terreno para el truncado de texto */
     td { max-width: 0; }
 
-    /* Contenedor de la Tabla: Se le quita el scroll y se permite que su contenido se desborde */
     #orders-table-container {
         overflow: visible !important; 
     }
 
-    /* Columna de Acciones: Se le asigna un ancho mínimo fijo */
     .actions-column {
-        width: 160px !important;      /* Ancho fijo */
-        min-width: 160px !important; /* Ancho mínimo fijo */
+        width: 160px !important;
+        min-width: 160px !important;
     }
     
-    /* --- TERMINA CÓDIGO CORREGIDO Y MEJORADO --- */
 </style>
 
 <script>
@@ -252,17 +243,14 @@
                     const savedFilters = localStorage.getItem('csOrderFilters');
                     if (savedFilters) {
                         const loadedFilters = JSON.parse(savedFilters);
-                        // Asegura que todas las claves estén presentes, incluso si no se guardaron
                         this.filters = { ...this.filters, ...loadedFilters };
                     }
                 } catch (e) {
                     console.error("Error al cargar los filtros desde el almacenamiento local", e);
                 }                
 
-                this.applyFilters(); // Carga inicial de datos
+                this.applyFilters();
                 
-                // --- INICIA CÓDIGO CORREGIDO Y MÁS ROBUSTO ---
-                // Lista de todos los filtros que deben recargar la tabla desde la página 1
                 const filterKeysToWatch = [
                     'search', 'status', 'date_from', 'date_to',
                     'purchase_order_adv', 'bt_oc', 'customer_name_adv', 'channel',
@@ -272,14 +260,12 @@
                     'per_page'
                 ];
 
-                // Creamos un observador para cada uno de estos filtros
                 filterKeysToWatch.forEach(key => {
                     this.$watch(`filters.${key}`, () => {
                         localStorage.setItem('csOrderFilters', JSON.stringify(this.filters));
-                        this.applyFilters(true); // Siempre reiniciar la página
+                        this.applyFilters(true);
                     });
                 });
-                // --- TERMINA CÓDIGO CORREGIDO ---
                 this.$watch('filters.per_page', (newValue) => {
                     localStorage.setItem('csOrderPerPage', newValue);
                 });
@@ -322,9 +308,8 @@
                 this.filters.executive = '';
                 this.filters.evidence_reception_date = '';
                 this.filters.evidence_cutoff_date = '';
-                // Eliminar la clave de localStorage
                 localStorage.removeItem('csOrderFilters');
-                this.applyFilters(true); // Recargar la tabla
+                this.applyFilters(true);
             },            
 
             applyFilters(resetPage = false) {
@@ -439,7 +424,7 @@
                     const newWidths = {};
                     this.columnOrder.forEach(columnKey => {
                         if (this.visibleColumns[columnKey]) {
-                            newWidths[columnKey] = '160px'; // Ancho fijo preestablecido
+                            newWidths[columnKey] = '160px';
                         }
                     });
                     this.columnWidths = newWidths;
@@ -456,22 +441,17 @@
                 try {
                     const dateColumns = ['creation_date', 'authorization_date', 'invoice_date', 'delivery_date', 'evidence_reception_date', 'evidence_cutoff_date'];
                     if (dateColumns.includes(columnKey)) {
-                        // Formateo de fechas
                         const date = new Date(value);
                         if (isNaN(date.getTime())) return '—';
                         return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     }
                     if (columnKey === 'subtotal') {
-                        // Formateo de moneda
                         return '$' + new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
                     }
                     if (columnKey === 'total_boxes') {
-                        // Formateo de números enteros
                         return new Intl.NumberFormat('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
                     }
                     
-                    // --- CAMBIO CLAVE: Se elimina el bloque que cortaba el texto ---
-                    // Ahora, simplemente devolvemos el valor original para todas las demás columnas.
                     return value;
 
                 } catch (e) {
@@ -481,7 +461,6 @@
             },
 
             updateAdvancedFilterCount() {
-                // CORRECCIÓN: Se actualiza la lista de filtros a contar
                 const advancedKeys = [
                     'purchase_order_adv', 'bt_oc', 'customer_name_adv', 'channel',
                     'invoice_number_adv', 'invoice_date', 'origin_warehouse',
@@ -491,7 +470,6 @@
                 this.advancedFilterCount = advancedKeys.filter(key => this.filters[key] && this.filters[key] !== '').length;
             },
             clearAdvancedFilters() {
-                // CORRECCIÓN: Se limpian todos los nuevos filtros
                 this.filters.purchase_order_adv = '';
                 this.filters.bt_oc = '';
                 this.filters.customer_name_adv = '';
@@ -533,19 +511,16 @@
                     return;
                 }
 
-                // Creamos un formulario en memoria
                 let form = document.createElement('form');
                 form.method = 'POST';
                 form.action = '{{ route("customer-service.orders.bulk-plan") }}';
 
-                // Añadimos el token CSRF para seguridad
                 let csrfToken = document.createElement('input');
                 csrfToken.type = 'hidden';
                 csrfToken.name = '_token';
                 csrfToken.value = '{{ csrf_token() }}';
                 form.appendChild(csrfToken);
 
-                // Añadimos cada ID seleccionado como un campo oculto
                 this.selectedOrders.forEach(id => {
                     let input = document.createElement('input');
                     input.type = 'hidden';
@@ -554,7 +529,6 @@
                     form.appendChild(input);
                 });
 
-                // Añadimos el formulario al DOM, lo enviamos y lo removemos.
                 document.body.appendChild(form);
                 form.submit();
                 document.body.removeChild(form);

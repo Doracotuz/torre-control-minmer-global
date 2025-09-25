@@ -5,10 +5,8 @@
     </button>
 
     <div x-show="openFilters" x-transition class="bg-white p-4 mt-2 rounded-lg shadow-lg">
-        {{-- 1. Añadimos un x-ref para que Alpine pueda identificar el formulario --}}
         <form x-ref="filtersForm" id="filtersForm" method="GET" action="{{ route('audit.index') }}" class="space-y-4">
             
-            {{-- 2. Cambiamos oninput por @input.debounce --}}
             <input type="text" 
                    name="search" 
                    placeholder="Buscar por SO, Guía o Almacén..." 
@@ -18,7 +16,6 @@
             
             <div>
                 <label for="location" class="text-sm font-medium text-gray-600">Almacén de Auditoría</label>
-                {{-- 3. Cambiamos onchange por @change para consistencia --}}
                 <select name="location" id="location" class="w-full mt-1 rounded-md border-gray-300 shadow-sm" @change="$refs.filtersForm.submit()">
                     <option value="">Todos los Almacenes</option>
                     @if(isset($locations))

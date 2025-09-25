@@ -29,7 +29,7 @@
                 </defs>
                 <ellipse cx="75" cy="220" rx="40" ry="5" fill="#000000" opacity="0.15"/>
                 <g class="robot-body">
-                    <!-- Cabeza humana -->
+                    <!-- Cabeza -->
                     <circle cx="75" cy="35" r="25" fill="url(#gradienteGris)" stroke="#cccccc" stroke-width="0.5"/>
                     <!-- Orejas -->
                     <ellipse cx="50" cy="35" rx="5" ry="8" fill="url(#gradienteGris)" stroke="#cccccc" stroke-width="0.5"/>

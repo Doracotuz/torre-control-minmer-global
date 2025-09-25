@@ -176,7 +176,7 @@
                 </p>
             </div>
             <div class="alert">
-                <strong>Nota de seguridad:</strong> Por tu seguridad, te recomendamos encarecidamente que cambies esta contraseña temporal la primera vez que inicies sesión.
+                <strong>Nota de seguridad:</strong> Por tu seguridad, te recomendamos que cambies esta contraseña temporal la primera vez que inicies sesión.
             </div>
 
             <a href="{{ route('login') }}" class="button-link">Iniciar Sesión Ahora</a>

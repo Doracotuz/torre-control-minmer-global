@@ -7,7 +7,6 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white p-6 rounded-2xl shadow-xl">
                 
-                {{-- Barra de Búsqueda --}}
                 <div class="mb-6">
                     <form method="GET" action="{{ route('customer-service.audit-reports.index') }}">
                         <div class="relative">
@@ -23,7 +22,6 @@
                     </form>
                 </div>
 
-                {{-- Tabla de Resultados --}}
                 <div class="overflow-x-auto">
                     <table class="min-w-full">
                         <thead class="bg-gray-50">
@@ -40,11 +38,7 @@
                             @forelse($guias as $guia)
                                 @php
                                     $orders = $guia->plannings->pluck('order')->filter();
-                                    
-                                    // --- LÓGICA CORREGIDA PARA OBTENER AUDITORES ---
-                                    // 1. Obtenemos todas las auditorías de todas las órdenes de la guía.
                                     $audits = $orders->pluck('audits')->flatten();
-                                    // 2. De esas auditorías, obtenemos el nombre del auditor (si existe) y creamos una lista única.
                                     $auditors = $audits->pluck('auditor.name')->filter()->unique()->join(', ');
                                 @endphp
                                 <tr class="hover:bg-gray-50">
@@ -69,8 +63,6 @@
                         </tbody>
                     </table>
                 </div>
-
-                {{-- Paginación --}}
                 <div class="mt-6">
                     {{ $guias->appends(request()->query())->links() }}
                 </div>

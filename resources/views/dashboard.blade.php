@@ -10,9 +10,7 @@
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-8"> {{-- Contenedor principal con sombra y padding --}}
                 <h3 class="text-2xl font-extrabold text-[#2c3856] mb-8 text-center" style="font-family: 'Raleway', sans-serif;">{{ __('Métricas Generales de la Torre de Control') }}</h3>
 
-                <!-- Contenedor de Tarjetas de Métricas -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                    <!-- Tarjeta: Total de Usuarios -->
                     <div class="bg-white rounded-lg shadow-md p-6 flex items-center justify-between border border-gray-100 transition-transform duration-300 hover:scale-105 hover:shadow-lg">
                         <div>
                             <p class="text-sm font-medium text-gray-500">{{ __('Total de Usuarios') }}</p>
@@ -23,7 +21,6 @@
                         </div>
                     </div>
 
-                    <!-- Tarjeta: Total de Áreas -->
                     <div class="bg-white rounded-lg shadow-md p-6 flex items-center justify-between border border-gray-100 transition-transform duration-300 hover:scale-105 hover:shadow-lg">
                         <div>
                             <p class="text-sm font-medium text-gray-500">{{ __('Total de Áreas') }}</p>
@@ -34,7 +31,6 @@
                         </div>
                     </div>
 
-                    <!-- Tarjeta: Total de Carpetas -->
                     <div class="bg-white rounded-lg shadow-md p-6 flex items-center justify-between border border-gray-100 transition-transform duration-300 hover:scale-105 hover:shadow-lg">
                         <div>
                             <p class="text-sm font-medium text-gray-500">{{ __('Total de Carpetas') }}</p>
@@ -45,7 +41,6 @@
                         </div>
                     </div>
 
-                    <!-- Tarjeta: Total de Archivos/Enlaces -->
                     <div class="bg-white rounded-lg shadow-md p-6 flex items-center justify-between border border-gray-100 transition-transform duration-300 hover:scale-105 hover:shadow-lg">
                         <div>
                             <p class="text-sm font-medium text-gray-500">{{ __('Total de Archivos/Enlaces') }}</p>
@@ -57,21 +52,17 @@
                     </div>
                 </div>
 
-                <!-- Contenedor de Gráficos -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Gráfico: Carpetas por Área -->
                     <div class="bg-white rounded-lg shadow-md p-6 border border-gray-100">
                         <h4 class="text-lg font-semibold text-[#2c3856] mb-4">{{ __('Carpetas por Área') }}</h4>
                         <div id="foldersByAreaChart"></div>
                     </div>
 
-                    <!-- Gráfico: Distribución de Tipos de Archivo -->
                     <div class="bg-white rounded-lg shadow-md p-6 border border-gray-100">
                         <h4 class="text-lg font-semibold text-[#2c3856] mb-4">{{ __('Distribución de Tipos de Archivo') }}</h4>
                         <div id="fileTypesDistributionChart"></div>
                     </div>
 
-                    <!-- Gráfico: Usuarios por Área (Solo para Super Admin) -->
                     @if (Auth::user()->area && Auth::user()->area->name === 'Administración')
                         <div class="bg-white rounded-lg shadow-md p-6 border border-gray-100 lg:col-span-2">
                             <h4 class="text-lg font-semibold text-[#2c3856] mb-4">{{ __('Usuarios por Área (Administración General)') }}</h4>
@@ -83,18 +74,16 @@
         </div>
     </div>
 
-    <!-- Incluir ApexCharts library -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             console.log('DOM Content Loaded. Starting dashboard rendering...');
 
-            // Función para obtener datos del backend
             async function fetchDashboardData() {
                 try {
                     console.log('Fetching data from /dashboard-data...');
-                    const response = await fetch('{{ route('dashboard.data') }}'); // Usar route() helper
+                    const response = await fetch('{{ route('dashboard.data') }}');
                     if (!response.ok) {
                         const errorText = await response.text();
                         throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
@@ -104,7 +93,6 @@
                     return data;
                 } catch (error) {
                     console.error('Error fetching dashboard data:', error);
-                    // Mostrar un mensaje de error en el dashboard si la carga falla
                     document.getElementById('totalUsers').innerText = 'Error';
                     document.getElementById('totalAreas').innerText = 'Error';
                     document.getElementById('totalFolders').innerText = 'Error';
@@ -114,7 +102,6 @@
                 }
             }
 
-            // Función para renderizar métricas y gráficos
             async function renderDashboard() {
                 const data = await fetchDashboardData();
                 if (!data) {
@@ -122,7 +109,6 @@
                     return;
                 }
 
-                // Actualizar Tarjetas de Métricas
                 document.getElementById('totalUsers').innerText = data.totalUsers;
                 document.getElementById('totalAreas').innerText = data.totalAreas;
                 document.getElementById('totalFolders').innerText = data.totalFolders;
@@ -130,7 +116,6 @@
 
                 console.log('Rendering charts...');
 
-                // Gráfico: Carpetas por Área
                 const foldersByAreaOptions = {
                     series: [{
                         name: 'Carpetas',
@@ -160,7 +145,7 @@
                         categories: data.foldersByArea.map(item => item.area_name),
                         labels: {
                             style: {
-                                colors: '#666666', // Gris de tu paleta
+                                colors: '#666666',
                                 fontFamily: 'Montserrat, sans-serif',
                             },
                         },
@@ -169,7 +154,7 @@
                         title: {
                             text: 'Número de Carpetas',
                             style: {
-                                color: '#2c3856', // Azul oscuro de tu paleta
+                                color: '#2c3856',
                                 fontFamily: 'Montserrat, sans-serif',
                             }
                         },
@@ -182,7 +167,7 @@
                     },
                     fill: {
                         opacity: 1,
-                        colors: ['#ff9c00'] // Naranja de tu paleta
+                        colors: ['#ff9c00']
                     },
                     tooltip: {
                         y: {
@@ -195,7 +180,6 @@
                         borderColor: '#f1f1f1',
                     },
                 };
-                // Solo renderizar si el elemento existe y hay datos para el gráfico
                 if (document.querySelector("#foldersByAreaChart") && data.foldersByArea.length > 0) {
                     const foldersByAreaChart = new ApexCharts(document.querySelector("#foldersByAreaChart"), foldersByAreaOptions);
                     foldersByAreaChart.render();
@@ -207,16 +191,14 @@
                     }
                 }
 
-
-                // Gráfico: Distribución de Tipos de Archivo
                 const fileTypesDistributionOptions = {
                     series: data.fileTypesDistribution.map(item => item.count),
                     chart: {
                         width: 380,
                         type: 'pie',
                     },
-                    labels: data.fileTypesDistribution.map(item => item.type_category), // Usar type_category
-                    colors: ['#2c3856', '#ff9c00', '#666666', '#2b2b2b', '#000000'], // Colores de tu paleta
+                    labels: data.fileTypesDistribution.map(item => item.type_category),
+                    colors: ['#2c3856', '#ff9c00', '#666666', '#2b2b2b', '#000000'],
                     responsive: [{
                         breakpoint: 480,
                         options: {
@@ -251,7 +233,6 @@
                     }
                 }
 
-                // Gráfico: Usuarios por Área (Solo para Super Admin)
                 @if (Auth::user()->area && Auth::user()->area->name === 'Administración')
                     const usersByAreaOptions = {
                         series: [{
@@ -304,7 +285,7 @@
                         },
                         fill: {
                             opacity: 1,
-                            colors: ['#2c3856'] // Azul oscuro de tu paleta
+                            colors: ['#2c3856']
                         },
                         tooltip: {
                             y: {
@@ -330,7 +311,7 @@
                 @endif
             }
 
-            renderDashboard(); // Renderizar el dashboard al cargar la página
+            renderDashboard();
         });
     </script>
 </x-app-layout>

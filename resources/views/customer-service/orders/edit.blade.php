@@ -6,7 +6,6 @@
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-8">
-                {{-- Se añade x-data y x-init para la lógica de Alpine.js --}}
                 <form action="{{ route('customer-service.orders.update', $order) }}" method="POST"
                       x-data="{
                           delivery_date: '{{ old('delivery_date', $order->delivery_date?->format('Y-m-d')) }}',
@@ -22,7 +21,6 @@
                                   daysToAdd = 7; // Si es miércoles, saltar al siguiente
                               }
                               
-                              // Si origen y destino son diferentes, añadir una semana extra
                               if (this.origin_warehouse !== this.destination_locality) {
                                   daysToAdd += 7;
                               }
@@ -33,7 +31,6 @@
                               const month = String(deliveryDate.getMonth() + 1).padStart(2, '0');
                               const day = String(deliveryDate.getDate()).padStart(2, '0');
                               
-                              // Actualiza el campo de fecha de corte
                               document.querySelector('[name=evidence_cutoff_date]').value = `${year}-${month}-${day}`;
                           },
 
@@ -60,7 +57,7 @@
                                     this.evidences.push(data.evidence);
                                     document.querySelector('[name=evidence_reception_date]').value = data.reception_date;
                                     this.newFile = null;
-                                    document.getElementById('evidence_file_input').value = ''; // Limpiar el input
+                                    document.getElementById('evidence_file_input').value = '';
                                     alert(data.message);
                                 } else {
                                     alert('Error: ' + data.message);
@@ -106,7 +103,6 @@
                         <div><label for="invoice_number" class="block text-sm font-medium text-gray-700">Factura</label><input type="text" name="invoice_number" x-model="invoice_number" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div><label for="invoice_date" class="block text-sm font-medium text-gray-700">Fecha Factura</label><input type="date" name="invoice_date" value="{{ old('invoice_date', $order->invoice_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         
-                        {{-- Campo modificado para activar el cálculo --}}
                         <div>
                             <label for="delivery_date" class="block text-sm font-medium text-gray-700">Fecha de Entrega</label>
                             <input type="date" name="delivery_date" x-model="delivery_date" @change="calculateCutoffDate()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
@@ -116,7 +112,6 @@
                         <div><label for="client_contact" class="block text-sm font-medium text-gray-700">Cliente</label><input type="text" name="client_contact" value="{{ old('client_contact', $order->client_contact) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div class="md:col-span-2"><label for="shipping_address" class="block text-sm font-medium text-gray-700">Dirección de Envío</label><input type="text" name="shipping_address" value="{{ old('shipping_address', $order->shipping_address) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         
-                        {{-- Campo modificado para activar el cálculo --}}
                         <div>
                             <label for="destination_locality" class="block text-sm font-medium text-gray-700">Localidad Destino</label>
                             <select name="destination_locality" x-model="destination_locality" @change="calculateCutoffDate()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
@@ -171,7 +166,6 @@
                                 <option value="1" {{ old('is_oversized', $order->is_oversized) == true ? 'selected' : '' }}>Sí</option>
                             </select>
                         </div>                        
-                        {{-- Campo de Fecha de Corte ahora es de solo lectura para evitar modificación manual --}}
                         <div>
                             <label for="evidence_cutoff_date" class="block text-sm font-medium text-gray-700">Corte de Evidencias</label>
                             <input type="date" name="evidence_cutoff_date" value="{{ old('evidence_cutoff_date', $order->evidence_cutoff_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100" readonly>
@@ -225,7 +219,6 @@
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach($order->details as $index => $detail)
-                                    {{-- El x-data ahora se mueve a cada fila para gestionar su propia búsqueda --}}
                                     <tr x-data="{ 
                                         open: false, 
                                         query: '{{ old('details.' . $index . '.sku', $detail->sku) }}', 
@@ -243,7 +236,6 @@
                                                 <input type="hidden" name="details[{{ $index }}][sku]" x-model="selected" required>
                                                 <input type="text" x-model="query" @focus="open = true" @input.debounce.300ms="search()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Buscar SKU..." required>
                                                 <ul x-show="open" class="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                                                    {{-- El template ahora itera sobre los resultados de la búsqueda --}}
                                                     <template x-for="product in results" :key="product.id">
                                                         <li @click="selected = product.sku; query = product.sku; open = false" class="px-4 py-2 cursor-pointer hover:bg-gray-100">
                                                             <span x-text="product.sku"></span> - <span x-text="product.description"></span>

@@ -1,4 +1,3 @@
-{{-- Encabezado de la sección, consistente con las otras fases --}}
 <div class="flex justify-between items-center border-b pb-2 mb-4">
     <h3 class="text-xl font-bold text-gray-800">Fase 3: Auditoría de Carga</h3>
     @php
@@ -7,7 +6,6 @@
     <p class="text-xs text-gray-500">Auditado por: <strong>{{ $loadingEvent->user->name ?? 'N/A' }}</strong></p>
 </div>
 
-{{-- Tabla de datos principales (Marchamo, Custodia, Tarimas) --}}
 <div class="overflow-x-auto border rounded-md mb-6">
     <table class="min-w-full text-sm">
         <tbody class="divide-y divide-gray-200">
@@ -37,7 +35,6 @@
     </table>
 </div>
 
-{{-- Checklist de Especificaciones de Cliente --}}
 @php $validatedSpecs = $loadingData['validated_specs'] ?? []; @endphp
 @if(!empty($validatedSpecs))
     <div class="mb-6">
@@ -77,7 +74,6 @@
     </div>
 @endif
 
-{{-- Incidencias --}}
 <div class="mb-6">
     <h4 class="font-semibold text-gray-700 mb-2">Incidencias Registradas</h4>
     @if($guia->incidencias->isNotEmpty())
@@ -91,7 +87,6 @@
     @endif
 </div>
 
-{{-- Fotos de Carga --}}
 <div>
     <h4 class="font-semibold text-gray-700 mb-2">Fotos de Carga:</h4>
     @php $cargaFotos = $loadingData['audit_carga_fotos'] ?? []; @endphp

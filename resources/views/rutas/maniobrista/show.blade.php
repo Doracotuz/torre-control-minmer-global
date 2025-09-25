@@ -16,24 +16,18 @@
         @endif
 
         <div class="bg-white p-6 rounded-xl shadow-lg">
-            
-            {{-- EVENTO 1: LLEGADA A CARGA --}}
             <div x-show="currentState === 'Llegada a carga'">
                 <h3 class="font-bold text-lg text-center text-gray-700 mb-4">Paso 1: Llegada a Carga</h3>
                 <button @click="openEventModal('Llegada a carga')" class="w-full justify-center inline-flex items-center px-6 py-4 bg-[#2c3856] text-white rounded-lg font-semibold text-lg hover:bg-opacity-90">
                     Registrar Llegada a Carga
                 </button>
             </div>
-
-            {{-- EVENTO 2: INICIO DE RUTA --}}
             <div x-show="currentState === 'Inicio de ruta'">
                 <h3 class="font-bold text-lg text-center text-gray-700 mb-4">Paso 2: Inicio de Ruta</h3>
                 <button @click="openEventModal('Inicio de ruta')" class="w-full justify-center inline-flex items-center px-6 py-4 bg-[#2c3856] text-white rounded-lg font-semibold text-lg hover:bg-opacity-90">
                     Registrar Inicio de Ruta
                 </button>
             </div>
-
-            {{-- FASE 3: EN RUTA (ENTREGAS) --}}
             <div x-show="currentState === 'En Ruta (Entregas)'">
                 <h3 class="font-bold text-lg text-gray-700 mb-4">Paso 3: Entregas en Destino</h3>
                 
@@ -64,7 +58,6 @@
                 </div>
             </div>
 
-            {{-- FLUJO COMPLETADO --}}
             <div x-show="currentState === 'Completado'">
                  <div class="bg-green-100 border-l-4 border-green-500 text-green-800 p-6 rounded-lg text-center">
                     <h3 class="text-xl font-bold">¡Flujo Completado!</h3>

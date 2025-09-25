@@ -122,9 +122,8 @@
             init() {
                 this.applyFilters();
                 this.$watch('filters', (newVal, oldVal) => {
-                    // Evita disparar la solicitud si solo cambia el número de página
                     if (newVal.page === oldVal.page) {
-                        this.applyFilters(1); // Reinicia a la página 1 al cambiar un filtro
+                        this.applyFilters(1);
                     }
                 });
             },
@@ -189,12 +188,10 @@
             renderPagination(links) {
                 let html = '<nav role="navigation" aria-label="Pagination Navigation" class="flex items-center justify-between">';
                 
-                // Muestra la leyenda si hay resultados
                 if (links.from !== null) {
                     html += `<div><p class="text-sm text-gray-700 leading-5">Mostrando del <span class="font-medium">${links.from}</span> al <span class="font-medium">${links.to}</span> de <span class="font-medium">${links.total}</span> resultados</p></div>`;
                 }
 
-                // Genera los botones de paginación
                 if (links.data.length > 0) {
                     html += '<div><span class="relative z-0 inline-flex shadow-sm rounded-md">';
                     

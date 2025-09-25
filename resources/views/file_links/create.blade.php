@@ -47,7 +47,6 @@
                                     <p x-show="fileName" class="text-xs text-[#ff9c00] mt-1" x-text="fileName"></p>
                                 </div>
                             </label>
-                            {{-- x-bind:required para el input de archivo --}}
                             <input x-ref="fileInput" id="file" class="hidden" type="file" name="files[]" multiple x-bind:required="elementType === 'file' && !isUploading && $refs.fileInput.files.length === 0" x-on:change="
                                 if ($refs.fileInput && $refs.fileInput.files.length > 0) {
                                     if (elementType === 'file') {

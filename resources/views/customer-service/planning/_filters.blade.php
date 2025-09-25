@@ -1,5 +1,4 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 items-end">
-    {{-- Búsqueda Rápida --}}
     <div class="lg:col-span-2">
         <label for="search" class="block text-sm font-medium text-gray-700">Búsqueda Rápida</label>
         <div class="flex items-center">
@@ -10,19 +9,16 @@
         </div>
     </div>
 
-    {{-- Fecha Creación - Desde --}}
     <div>
         <label for="date_created_from" class="block text-sm font-medium text-gray-700">Creado Desde</label>
         <input type="date" x-model="filters.date_created_from" id="date_created_from" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
     </div>
 
-    {{-- Fecha Creación - Hasta --}}
     <div>
         <label for="date_created_to" class="block text-sm font-medium text-gray-700">Creado Hasta</label>
         <input type="date" x-model="filters.date_created_to" id="date_created_to" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
     </div>    
 
-    {{-- Estatus --}}
     <div>
         <label for="status" class="block text-sm font-medium text-gray-700">Estatus</label>
         <select x-model="filters.status" id="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
@@ -34,7 +30,6 @@
         </select>
     </div>
 
-    {{-- Origen --}}
     <div>
         <label for="origen" class="block text-sm font-medium text-gray-700">Origen</label>
         <select x-model="filters.origen" id="origen" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
@@ -45,7 +40,6 @@
         </select>
     </div>
     
-    {{-- Destino --}}
     <div>
         <label for="destino" class="block text-sm font-medium text-gray-700">Destino</label>
         <select x-model="filters.destino" id="destino" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">

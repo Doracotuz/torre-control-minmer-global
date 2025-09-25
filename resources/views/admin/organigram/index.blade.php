@@ -1,5 +1,4 @@
 <x-app-layout>
-    {{-- Se mantienen las fuentes de la guía de estilo desde Google Fonts --}}
     <x-slot name="head">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +15,6 @@
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-6 sm:p-8">
                 
-                {{-- Mensajes de éxito y error se mantienen igual --}}
                 @if (session('success'))
                     <div x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 5000)"
                          class="fixed top-5 right-5 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert">
@@ -44,17 +42,14 @@
                     </div>
                 @endif
 
-                {{-- Barra de Título y Botones de Acción (Ahora más prominentes) --}}
                 <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
                     <h3 class="text-2xl font-bold text-[#2c3856] w-full text-center sm:w-auto sm:text-left" style="font-family: 'Raleway', sans-serif;">Miembros del Organigrama</h3>
                     <div class="flex flex-wrap justify-center sm:justify-end gap-4 w-full sm:w-auto">
-                        {{-- Botón "Interactivo" más grande y prominente --}}
                         <a href="{{ route('admin.organigram.interactive') }}" class="inline-flex items-center justify-center px-5 py-2.5 bg-[#ff9c00] border border-transparent rounded-full font-bold text-sm text-white uppercase tracking-widest hover:bg-orange-500 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-lg">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                             Organigrama
                         </a>
 
-                        {{-- Menú desplegable para "Acciones" más grande y prominente --}}
                         <div x-data="{ open: false }" class="relative inline-block text-left">
                             <div>
                                 <button @click="open = !open" type="button" class="inline-flex items-center justify-center w-full px-5 py-2.5 bg-[#2c3856] border border-transparent rounded-full font-bold text-sm text-white uppercase tracking-widest hover:bg-[#4a5d8c] focus:bg-[#4a5d8c] active:bg-[#1a233a] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-lg" aria-expanded="true" aria-haspopup="true">
@@ -77,18 +72,15 @@
                     </div>
                 </div>
 
-                {{-- FORMULARIO DE FILTROS (Minimalista) --}}
                 <form action="{{ route('admin.organigram.index') }}" method="GET" class="mb-8 px-4 py-4 md:px-0 md:py-0">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end"> {{-- Cambiado a 4 columnas para el buscador --}}
-                        {{-- Nuevo: Filtro por Nombre/Email --}}
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
                         <div>
                             <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
                             <input type="text" id="search" name="search" placeholder="Nombre o Email"
                                    class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm"
-                                   value="{{ $searchQuery ?? '' }}"> {{-- Mantener el valor de búsqueda --}}
+                                   value="{{ $searchQuery ?? '' }}">
                         </div>
 
-                        {{-- Filtro por Posición --}}
                         <div>
                             <label for="position_id" class="block text-sm font-medium text-gray-700 mb-1">Posición</label>
                             <select id="position_id" name="position_id" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm">
@@ -101,7 +93,6 @@
                             </select>
                         </div>
 
-                        {{-- Filtro por Jefe Directo --}}
                         <div>
                             <label for="manager_id" class="block text-sm font-medium text-gray-700 mb-1">Jefe Directo</label>
                             <select id="manager_id" name="manager_id" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm">
@@ -115,7 +106,6 @@
                             </select>
                         </div>
 
-                        {{-- Filtro por Área --}}
                         <div>
                             <label for="area_id" class="block text-sm font-medium text-gray-700 mb-1">Área</label>
                             <select id="area_id" name="area_id" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm">
@@ -143,7 +133,6 @@
                 @if ($members->isEmpty())
                     <p class="text-lg text-[#666666] py-8 text-center">No hay miembros en el organigrama para mostrar con los filtros aplicados.</p>
                 @else
-                    {{-- TABLA para pantallas medianas y grandes --}}
                     <div class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
@@ -187,7 +176,6 @@
                         </table>
                     </div>
 
-                    {{-- LISTA DE TARJETAS para pantallas pequeñas --}}
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 md:hidden">
                         @foreach ($members as $member)
                             <div class="bg-white rounded-lg shadow-md p-5 border border-gray-100 flex flex-col">
@@ -224,6 +212,5 @@
             </div>
         </div>
         
-        {{-- El modal se mantiene sin cambios, ya que su diseño es adaptable --}}
     </div>
 </x-app-layout>

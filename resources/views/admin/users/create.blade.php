@@ -172,7 +172,6 @@
                                 </label>
                             </div>
 
-                            {{-- EXPLORADOR DE CARPETAS INTERACTIVO --}}
                             <div x-show="isClient" x-transition.opacity class="mt-4">
                                 <x-input-label :value="__('Carpetas Accesibles (para clientes)')" class="font-semibold mb-2" />
                                 <div class="border border-gray-300 rounded-md p-3 max-h-60 overflow-y-auto bg-white">

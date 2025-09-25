@@ -150,7 +150,6 @@
                                 </div>
                             </div>
                             
-                            {{-- Campo de Área, visible si NO es cliente --}}
                             <div x-show="!isClient" x-transition.opacity>
                                 <x-input-label for="area_id" :value="__('Área')" class="font-semibold" />
                                 <select id="area_id" name="area_id" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm" x-bind:required="!isClient">
@@ -162,7 +161,6 @@
                                 <x-input-error :messages="$errors->get('area_id')" class="mt-2" />
                             </div>
 
-                            {{-- Campo de Área, si es cliente y no se seleccionó área --}}
                             <!-- <input type="hidden" name="area_id" x-show="isClient" x-bind:value="isClient ? null : '{{ $user->area_id }}'"> -->
 
                             <div class="pt-2">
@@ -172,7 +170,6 @@
                                 </label>
                             </div>  
 
-                            {{-- NUEVO CAMPO PARA IS_CLIENT --}}
                             <div class="pt-2">
                                 <label for="is_client" class="inline-flex items-center">
                                 <input type="checkbox" name="is_client" id="is_client" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" value="1" x-model="isClient"
@@ -182,7 +179,6 @@
                                         if (isClient) {
                                             areaSelect.value = ''; // Limpiar el valor si se convierte en cliente
                                         } else {
-                                            // Restaurar el valor original del usuario si estaba en una área
                                             areaSelect.value = '{{ $user->area_id }}';
                                         }
                                     ">
@@ -190,7 +186,6 @@
                                 </label>
                             </div>
 
-                            {{-- EXPLORADOR DE CARPETAS INTERACTIVO --}}
                             <div x-show="isClient" x-transition.opacity class="mt-4">
                                 <x-input-label :value="__('Carpetas Accesibles (para clientes)')" class="font-semibold mb-2" />
                                 <div class="border border-gray-300 rounded-md p-3 max-h-60 overflow-y-auto bg-white">

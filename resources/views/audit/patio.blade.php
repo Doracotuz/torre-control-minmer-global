@@ -42,7 +42,6 @@
 
             <div class="space-y-6">
                 
-                {{-- SECCIÓN DE DATOS GENERALES --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div><label class="block text-sm font-medium text-gray-700">Operador</label><input type="text" name="operador" value="{{ old('operador', $audit->guia?->operador) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required></div>
                     <div><label class="block text-sm font-medium text-gray-700">Placas</label><input type="text" name="placas" value="{{ old('placas', $audit->guia?->placas) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required></div>
@@ -50,7 +49,6 @@
                     <div><label class="block text-sm font-medium text-gray-700">Hora de Arribo</label><input type="time" name="arribo_hora" value="{{ old('arribo_hora', now()->format('H:i')) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required></div>
                 </div>
 
-                {{-- SECCIÓN DE ESTADO DE UNIDAD --}}
                 <div class="space-y-4 bg-gray-50 p-4 rounded-lg border">
                     <h3 class="font-semibold text-gray-800 mb-2">Estado de la Unidad</h3>
                     <div><label class="block text-sm font-medium text-gray-700">Estado de la Caja</label><select name="caja_estado" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required><option @selected(old('caja_estado', $audit->guia?->audit_patio_caja_estado) == 'Bueno')>Bueno</option><option @selected(old('caja_estado', $audit->guia?->audit_patio_caja_estado) == 'Regular')>Regular</option><option @selected(old('caja_estado', $audit->guia?->audit_patio_caja_estado) == 'Malo')>Malo</option></select></div>
@@ -67,7 +65,6 @@
                     </div>
                 </div>
 
-                {{-- SECCIÓN DE FOTOGRAFÍAS CON MEJOR ESTÉTICA --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Fotografía de la Unidad <span class="text-red-500">*</span></label>

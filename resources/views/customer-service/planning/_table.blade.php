@@ -1,5 +1,4 @@
 <div>
-    {{-- VISTA DE TABLA PARA ESCRITORIO --}}
     <div class="hidden md:block bg-white overflow-hidden shadow-xl sm:rounded-lg">
         <div class="overflow-x-auto">
             <table class="w-full table-fixed">
@@ -55,7 +54,6 @@
                                     }"
                                 >
                                     <div class="truncate">
-                                        {{-- ✅ INICIA CAMBIO --}}
                                         <template x-if="columnKey === 'status'">
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                                                 :class="{
@@ -71,7 +69,6 @@
                                         <template x-if="columnKey !== 'status'">
                                             <span x-html="getFormattedCell(planning, columnKey)"></span>
                                         </template>
-                                        {{-- ⏹️ TERMINA CAMBIO --}}
                                     </div>
                                 </td>
                             </template>
@@ -112,7 +109,6 @@
         </div>
     </div>
 
-    {{-- VISTA DE TARJETAS PARA MÓVIL --}}
     <div class="block md:hidden space-y-4">
         <template x-for="planning in plannings" :key="planning.id">
             <div class="bg-white rounded-lg shadow-md p-4 border"
@@ -122,7 +118,6 @@
                     <div class="flex items-start">
                         <input type="checkbox" :value="planning.id" x-model="selectedPlannings" class="rounded mt-1">
                         <div class="ml-3">
-                            {{-- CORRECCIÓN: Usamos x-html para mostrar el ícono de custodia --}}
                             <p class="font-bold text-gray-800" x-text="planning.razon_social"></p>
                             <p class="text-sm text-gray-500" x-text="`SO: ${planning.so_number || 'N/A'}`"></p>
                         </div>

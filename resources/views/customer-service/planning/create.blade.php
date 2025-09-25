@@ -22,7 +22,6 @@
                         <div><label class="block text-sm font-medium text-gray-700">SO (Opcional)</label><input type="text" name="so_number" value="{{ old('so_number') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div><label class="block text-sm font-medium text-gray-700">Factura</label><input type="text" name="factura" value="{{ old('factura') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required></div>
                         
-                        {{-- --- INICIA CAMBIO: CAMPO "ORIGEN" --- --}}
                         <div>
                             <label for="origen" class="block text-sm font-medium text-gray-700">Origen</label>
                             <select name="origen" id="origen" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
@@ -36,9 +35,7 @@
                                 <option value="SOTANO 5" {{ old('origen') == 'SOTANO 5' ? 'selected' : '' }}>SOTANO 5</option>
                             </select>
                         </div>
-                        {{-- --- TERMINA CAMBIO --- --}}
 
-                        {{-- --- INICIA CAMBIO: CAMPO "DESTINO" --- --}}
                         <div>
                             <label for="destino" class="block text-sm font-medium text-gray-700">Destino</label>
                             <select name="destino" id="destino" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
@@ -81,7 +78,6 @@
                                 <option value="ZAM" {{ old('destino') == 'ZAM' ? 'selected' : '' }}>ZAM</option>
                             </select>
                         </div>
-                        {{-- --- TERMINA CAMBIO --- --}}
 
                         <div><label class="block text-sm font-medium text-gray-700">Fecha Entrega</label><input type="date" name="fecha_entrega" value="{{ old('fecha_entrega') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         <div><label class="block text-sm font-medium text-gray-700">Hora Cita</label><input type="text" name="hora_cita" value="{{ old('hora_cita') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>

@@ -33,7 +33,6 @@
                     <div class="bg-gray-50 p-6 rounded-lg shadow mb-6">
                         <h4 class="font-bold text-gray-700 mb-2">Top 3 de Usuarios con más actividad:</h4>
                         <ul class="list-disc list-inside">
-                            {{-- Verificamos si la variable es una colección antes de iterar --}}
                             @if(is_iterable($topUsers) && count($topUsers) > 0)
                                 @foreach($topUsers as $topUser)
                                     <li class="text-xl">

@@ -12,11 +12,8 @@
                 <form method="POST" action="{{ route('admin.organigram.update', $organigramMember) }}" enctype="multipart/form-data"
                     x-data="{
                         photoName: null,
-                        // Inicializa photoPreview de forma segura: si profile_photo_path es null, usa una cadena vacía
                         photoPreview: '{{ $organigramMember->profile_photo_path ? Storage::disk('s3')->url($organigramMember->profile_photo_path) : '' }}',
-                        // Carga las trayectorias existentes para la edición, usando la variable formateada del controlador
-                        // y codificándola a JSON directamente (ya es un array PHP)
-                        trajectories: {{ json_encode($trajectories) }}, {{-- ¡CAMBIO CLAVE AQUÍ! --}}
+                        trajectories: {{ json_encode($trajectories) }},
                     }">
                     @csrf
                     @method('PUT') {{-- Importante: Laravel usa PUT para las actualizaciones --}}
@@ -31,7 +28,6 @@
                                     <template x-if="photoPreview">
                                         <img :src="photoPreview" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-md">
                                     </template>
-                                    {{-- Muestra el placeholder solo si no hay preview Y no hay un nuevo archivo seleccionado --}}
                                     <template x-if="!photoPreview && !photoName">
                                         <div class="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 border-4 border-gray-300 shadow-md">
                                             <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg>
@@ -50,7 +46,6 @@
                                             reader.readAsDataURL($refs.photo.files[0]);
                                         } else {
                                             photoName = null;
-                                            // Si no se selecciona un nuevo archivo, restablece a la foto existente (si la hay)
                                             photoPreview = '{{ $organigramMember->profile_photo_path ? Storage::disk('s3')->url($organigramMember->profile_photo_path) : '' }}';
                                         }
                                     ">
@@ -61,7 +56,6 @@
                                 </label>
                                 <x-input-error class="mt-2" :messages="$errors->get('profile_photo') ?? []" />
 
-                                {{-- Botón para eliminar la foto actual --}}
                                 @if($organigramMember->profile_photo_path)
                                     <button type="button" 
                                             @click="photoPreview = null; $refs.photo.value = ''; photoName = null;"
@@ -69,7 +63,6 @@
                                         {{ __('Eliminar foto actual') }}
                                     </button>
                                 @endif
-                                {{-- Input hidden para indicar si se eliminó la foto --}}
                                 <input type="hidden" name="remove_profile_photo" :value="photoPreview === null && '{{ $organigramMember->profile_photo_path }}' !== '' ? 1 : 0">
                             </div>
 
@@ -132,7 +125,6 @@
                         <div>
                             <h3 class="text-lg font-semibold text-[#2c3856] mb-4">{{ __('Detalles Adicionales') }}</h3>
 
-                            {{-- SECCIÓN ACTIVIDADES --}}
                             <div class="mb-6">
                                 <x-input-label :value="__('Actividades')" class="mb-2" />
                                 <div class="max-h-56 overflow-y-auto p-4 border border-gray-200 rounded-md">
@@ -151,7 +143,6 @@
                                 <x-input-error class="mt-2" :messages="$errors->get('activities_ids') ?? []" />
                             </div>
 
-                            {{-- SECCIÓN HABILIDADES --}}
                             <div class="mb-6">
                                 <x-input-label :value="__('Habilidades')" class="mb-2" />
                                 <div class="max-h-56 overflow-y-auto p-4 border border-gray-200 rounded-md">

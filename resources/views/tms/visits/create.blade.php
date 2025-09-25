@@ -2,7 +2,6 @@
 
 @section('content')
 <style>
-    /* Custom styles to match your color palette */
     .btn-custom-primary {
         background-color: #2c3856;
         color: #ffffff;
@@ -31,7 +30,6 @@
             <p class="text-[#666666]">Registra los datos para generar una nueva invitación con código QR.</p>
         </div>
 
-        {{-- Notificaciones de Éxito o Error --}}
         @if (session('success'))
             <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md" role="alert">
                 <p class="font-bold">Éxito</p>
@@ -52,7 +50,6 @@
         <form action="{{ route('area_admin.visits.store') }}" method="POST">
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {{-- Columna Izquierda --}}
                 <div>
                     <h3 class="text-lg font-semibold text-[#2b2b2b] border-b pb-2 mb-4">Información del Visitante</h3>
                     <div class="space-y-4">
@@ -81,7 +78,6 @@
                     </div>
                 </div>
 
-                {{-- Columna Derecha --}}
                 <div>
                     <h3 class="text-lg font-semibold text-[#2b2b2b] border-b pb-2 mb-4">Detalles de la Visita</h3>
                     <div class="space-y-4">

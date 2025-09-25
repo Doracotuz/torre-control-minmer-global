@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notificación de Auditoría Reabierta</title>
-    {{-- (Los estilos son idénticos al archivo unidad-arribo.blade.php, puedes copiarlos aquí) --}}
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
@@ -27,7 +26,6 @@
     <div class="email-container">
         
         <div class="header">
-            {{-- Asumimos que la imagen está en tu disco s3 --}}
             <img src="{{ Storage::disk('s3')->url('LogoBlanco.png') }}" alt="Logotipo de la Empresa">
         </div>
         

@@ -1,13 +1,9 @@
 @php
-    // La variable que recibimos es $auditsInGuia.
-    // Accedemos a la guía a través de la primera auditoría del grupo.
     $guia = $auditsInGuia->first()->guia;
 
-    // Regla de Sincronización
     $todasListasParaPatio = $auditsInGuia->every(fn($audit) => $audit->status === 'Pendiente Patio');
     $todasListasParaCarga = $auditsInGuia->every(fn($audit) => $audit->status === 'Pendiente Carga' || $audit->status === 'Finalizada');
 
-    // Lógica para el botón de acción
     $buttonClass = 'bg-gray-400 cursor-not-allowed';
     $buttonText = 'Sincronizando Órdenes...';
     $route = '#';
@@ -25,19 +21,14 @@
         $disabled = false;
     }
 
-    // Procesamos la información que vamos a mostrar
     $customerNames = $auditsInGuia->map(fn($audit) => $audit->order->customer_name)
                                   ->unique()
                                   ->implode(', ');
     
-    // === INICIO DEL CÓDIGO AÑADIDO ===
-    // Obtenemos los números de factura desde la relación y los unimos en un string.
     $invoiceNumbers = $guia->facturas->pluck('numero_factura')->implode(', ');
-    // === FIN DEL CÓDIGO AÑADIDO ===
 @endphp
 
 <div class="border rounded-lg shadow-sm flex flex-col justify-between bg-white h-full">
-    {{-- SECCIÓN SUPERIOR --}}
     <div class="p-4">
         <div class="flex justify-between items-start mb-2">
             <div>
@@ -50,10 +41,8 @@
         </div>
     </div>
 
-    {{-- SECCIÓN DE DETALLES --}}
     <div class="px-4 pb-4 space-y-2 text-sm text-gray-700 border-t pt-3">
         
-        {{-- === INICIO DE CAMBIOS Y NUEVOS ELEMENTOS === --}}
         <div class="flex items-center justify-between">
             <span class="flex items-center"><i class="fas fa-user-tie w-5 text-center mr-2 text-gray-400"></i><strong>Operador:</strong></span>
             <span class="truncate">{{ $guia->operador ?? 'N/A' }}</span>
@@ -66,7 +55,6 @@
             <span class="flex items-center"><i class="fas fa-file-invoice-dollar w-5 text-center mr-2 text-gray-400"></i><strong>Facturas:</strong></span>
             <span class="truncate">{{ !empty($invoiceNumbers) ? $invoiceNumbers : 'N/A' }}</span>
         </div>
-        {{-- === FIN DE CAMBIOS Y NUEVOS ELEMENTOS === --}}
 
         <div class="flex items-center justify-between" title="{{ $customerNames }}">
             <span class="flex items-center"><i class="fas fa-users w-5 text-center mr-2 text-gray-400"></i><strong>Clientes:</strong></span>
@@ -82,7 +70,6 @@
         </div>
     </div>
     
-    {{-- BOTÓN DE ACCIÓN --}}
     <a href="{{ $route }}" 
        @if($disabled) onclick="event.preventDefault();" @endif
        class="block w-full text-center p-3 text-white font-bold rounded-b-lg transition-colors {{ $buttonClass }}">

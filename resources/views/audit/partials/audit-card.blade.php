@@ -1,10 +1,8 @@
 @php
-    // Ahora accedemos a la orden a través del objeto $audit
     $order = $audit->order;
     $planning = $order->plannings->first();
     $guia = $planning?->guia;
 
-    // Lógica para determinar el estatus de la auditoría
     $statusText = $audit->status;
     $statusColor = 'bg-gray-200 text-gray-800';
     if($audit->status === 'Pendiente Almacén') {
@@ -15,7 +13,6 @@
         $statusColor = 'bg-orange-100 text-orange-800';
     }
     
-    // Lógica del botón (ahora pasa el objeto $audit a la ruta)
     $buttonClass = 'bg-gray-400 cursor-not-allowed';
     $buttonText = 'En Espera';
     $route = '#';

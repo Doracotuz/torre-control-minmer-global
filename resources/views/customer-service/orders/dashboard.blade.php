@@ -14,21 +14,16 @@
         <div class="max-w-screen-xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 
-                <!-- Chart 1 & 2 -->
                 <div class="bg-white p-4 rounded-lg shadow col-span-1 md:col-span-1 lg:col-span-1 h-80"><canvas id="ordersByChannelChart"></canvas></div>
                 <div class="bg-white p-4 rounded-lg shadow col-span-1 md:col-span-1 lg:col-span-1 h-80"><canvas id="ordersByStatusChart"></canvas></div>
                 
-                <!-- Chart 3 & 4 -->
                 <div class="bg-white p-4 rounded-lg shadow col-span-1 md:col-span-2 lg:col-span-2 h-80"><canvas id="amountByChannelChart"></canvas></div>
 
-                <!-- Chart 5 & 6 -->
                 <div class="bg-white p-4 rounded-lg shadow col-span-1 md:col-span-1 lg:col-span-2 h-96"><canvas id="topCustomersByOrdersChart"></canvas></div>
                 <div class="bg-white p-4 rounded-lg shadow col-span-1 md:col-span-1 lg:col-span-2 h-96"><canvas id="topCustomersByAmountChart"></canvas></div>
 
-                <!-- Chart 7 -->
                 <div class="bg-white p-4 rounded-lg shadow md:col-span-2 lg:col-span-4 h-96"><canvas id="recentOrdersChart"></canvas></div>
 
-                <!-- Chart 8 & 9 & 10 -->
                 <div class="bg-white p-4 rounded-lg shadow col-span-1 lg:col-span-2 h-80"><canvas id="bottlesByChannelChart"></canvas></div>
                 <div class="bg-white p-4 rounded-lg shadow col-span-1 lg:col-span-1 h-80"><canvas id="completionStatusChart"></canvas></div>
                 <div class="bg-white p-4 rounded-lg shadow col-span-1 lg:col-span-1 h-80"><canvas id="topWarehousesChart"></canvas></div>

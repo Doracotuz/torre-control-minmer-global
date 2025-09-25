@@ -16,17 +16,14 @@
                     @if($accessibleRootFolders->isNotEmpty())
                         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                             @foreach($accessibleRootFolders as $folder)
-                                {{-- Verifica si el usuario actual está en la lista de IDs restringidos --}}
                                 @php
                                     $restrictedUsers = ['24', '25', '26', '27', '4'];
                                     $isRestricted = in_array(Auth::id(), $restrictedUsers);
                                 @endphp
 
                                 @if($isRestricted)
-                                    {{-- Si el usuario está restringido, usa un span para mostrar el modal --}}
                                     <a href="#" @click.prevent="showAccessDeniedModal()" class="group bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-2">
                                 @else
-                                    {{-- Si el usuario no está restringido, usa el enlace original --}}
                                     <a href="{{ route('folders.index', ['folder' => $folder->id]) }}" class="group bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-2">
                                 @endif
                                     <div class="bg-[#DFE5F5] p-6 rounded-full transition-colors duration-300 group-hover:bg-[#ff9c00]">
@@ -262,7 +259,6 @@
                 }]
             };
 
-            // Destruir el gráfico existente si lo hay y crearlo de nuevo
             if (charts[elementId]) {
                 charts[elementId].destroy();
             }
@@ -281,12 +277,12 @@
                     return dataPointIndex === 0 ? 'Objetivo (90%)' : '';
                 },
                 style: {
-                    colors: ['#dc3545'], // Rojo para el objetivo
+                    colors: ['#dc3545'],
                     fontSize: '12px'
                 },
                 offsetY: -10,
                 background: {
-                    enabled: false // Sin fondo para el objetivo
+                    enabled: false
                 }
             };
             
@@ -317,17 +313,17 @@
                     return val !== 90 ? val.toFixed(1) + '%' : '';
                 },
                 style: {
-                    colors: ['#000000'], // Texto negro para todas las etiquetas
+                    colors: ['#000000'],
                     fontSize: '11px',
                     fontFamily: 'Arial, sans-serif'
                 },
                 offsetY: -8, 
                 background: {
-                    enabled: false, // Elimina el contenedor/fondo
+                    enabled: false,
                     opacity: 0
                 },
                 dropShadow: {
-                    enabled: false // Elimina sombras
+                    enabled: false
                 }
             },
             tooltip: {

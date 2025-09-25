@@ -70,7 +70,6 @@
         </div>
 
         <div class="detail-body grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-            {{-- SECCIÓN INFORMACIÓN DEL VISITANTE --}}
             <div class="col-span-1">
                 <h3 class="detail-section-title">Información del Visitante</h3>
                 <div class="space-y-2">
@@ -93,7 +92,6 @@
                 </div>
             </div>
 
-            {{-- SECCIÓN DETALLES DE LA VISITA --}}
             <div class="col-span-1">
                 <h3 class="detail-section-title">Detalles de la Visita</h3>
                 <div class="space-y-2">
@@ -150,7 +148,6 @@
                 </div>
             </div>
 
-            {{-- SECCIÓN INFORMACIÓN DEL VEHÍCULO (si aplica) --}}
             @if($visit->vehicle_make || $visit->vehicle_model || $visit->license_plate)
             <div class="md:col-span-2">
                 <h3 class="detail-section-title">Información del Vehículo</h3>

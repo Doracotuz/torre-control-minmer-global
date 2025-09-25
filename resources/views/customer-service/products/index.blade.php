@@ -62,7 +62,6 @@
             </div>
         </div>
         
-        <!-- Modal de Importación -->
         <div x-show="isImportModalOpen" @keydown.escape.window="isImportModalOpen = false" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" style="display: none;">
             <div @click.outside="isImportModalOpen = false" class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
                 <h3 class="text-xl font-bold text-[#2c3856] mb-4">Importar Productos desde CSV</h3>
@@ -106,7 +105,6 @@
             changePage(page) { if (page) { this.filters.page = page; } },
             generateExportUrl() {
                 const params = new URLSearchParams(this.filters);
-                // Se elimina el parámetro de página para exportar todos los resultados filtrados
                 params.delete('page'); 
                 return `{{ route('customer-service.products.export') }}?${params.toString()}`;
             }

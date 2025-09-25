@@ -5,30 +5,29 @@
         showSuggestions: false,
         loading: false,
         timeout: null,
-        /* Nuevos estados para los menús colapsables en móvil */
         isMobileSuperAdminMenuOpen: {{ request()->routeIs('admin.*') ? 'true' : 'false' }},
         isMobileAreaAdminMenuOpen: {{ request()->routeIs('area_admin.*') ? 'true' : 'false' }}
      }"
 x-init="$watch('search', value => {
     clearTimeout(timeout);
-    suggestions = []; // Limpiar resultados anteriores
+    suggestions = [];
 
     if (value.length > 2) {
         loading = true;
-        showSuggestions = true; // Mostrar el contenedor principal
+        showSuggestions = true;
 
         timeout = setTimeout(() => {
             fetch(`{{ route('search.suggestions') }}?query=${value}`)
                 .then(response => response.json())
                 .then(data => {
-                    suggestions = data; // Asignar los nuevos resultados
+                    suggestions = data;
                 })
                 .catch(error => {
                     console.error('Error en la búsqueda:', error);
-                    showSuggestions = false; // Ocultar todo si hay un error
+                    showSuggestions = false;
                 })
                 .finally(() => {
-                    loading = false; // La carga ha terminado (con o sin resultados)
+                    loading = false;
                 });
         }, 300);
     } else {
@@ -165,21 +164,18 @@ x-init="$watch('search', value => {
 
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden bg-[#2c3856] transition-all duration-300 ease-in-out">
         <div class="pt-2 pb-3 space-y-1">
-            {{-- Enlaces para todos los empleados --}}
             @if(!Auth::user()->is_client)
                 <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                     {{ __('Dashboard') }}
                 </x-responsive-nav-link>
             @endif
 
-            {{-- Enlaces para clientes --}}
             @if (Auth::user()->is_client)
                 <x-responsive-nav-link :href="route('tablero.index')" :active="request()->routeIs('tablero.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                     {{ __('Dashboard') }}
                 </x-responsive-nav-link>
             @endif
 
-            {{-- Enlaces comunes con lógica de acceso --}}
             @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
                 <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                     <span class="nav-text">{{ __('Archivos') }}</span>
@@ -194,7 +190,6 @@ x-init="$watch('search', value => {
                 </x-responsive-nav-link>
             @endif
 
-            {{-- Botones exclusivos para CLIENTES --}}
             @if (Auth::user()->is_client)
                 @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
                     <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
@@ -252,7 +247,6 @@ x-init="$watch('search', value => {
                 </div>
             @endif
 
-            {{-- Botones Ocultos para CLIENTES --}}
             @if (!Auth::user()->is_client)
                 <x-responsive-nav-link :href="route('area_admin.visits.index')" :active="request()->routeIs('area_admin.visits.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                     {{ __('Gestión de Visitas') }}
@@ -281,7 +275,6 @@ x-init="$watch('search', value => {
                 @endif
             @endif
 
-            {{-- Menús de Administrador (replicados de app.blade.php) --}}
             @if (Auth::user()->isSuperAdmin())
                 <div class="pt-4 pb-3 border-t border-gray-600/50">
                     <button @click="isMobileSuperAdminMenuOpen = !isMobileSuperAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
@@ -319,8 +312,6 @@ x-init="$watch('search', value => {
                 </div>
             @endif
         </div>
-
-        {{-- Menú de Usuario y Logout (sin cambios, excepto en colores) --}}
         <div class="pt-4 pb-1 border-t border-gray-600/50">
             <div class="px-4">
                 <div class="font-medium text-base text-white">{{ Auth::user()->name }}</div>

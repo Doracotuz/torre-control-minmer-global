@@ -852,9 +852,7 @@
                 </div>
             </div>
         </div>
-        {{-- FIN DEL MODAL --}}
 
-        {{-- MODAL DE PREVISUALIZACIÓN MULTIMEDIA --}}
         <div x-show="showMediaModal"
             x-transition:enter="transition ease-out duration-300"
             x-transition:enter-start="opacity-0 scale-90"
@@ -940,7 +938,6 @@
                 </div>
             </div>
         </div>
-        {{-- FIN DEL MODAL DE PREVISUALIZACIÓN --}}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.8/dist/axios.min.js"></script>

@@ -33,7 +33,6 @@
     </table>
 </div>
 
-{{-- Paginación --}}
 <div class="mt-6">
     {{ $rutas->appends(request()->query())->links() }}
 </div>

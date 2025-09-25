@@ -8,12 +8,10 @@
     <div class="py-12 bg-[#E8ECF7]">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
-            {{-- Título principal con el color corporativo --}}
             <h3 class="text-2xl md:text-3xl font-bold text-[#2c3856] mb-6 px-4 sm:px-0">
                 Panel de Gestión de tu Área
             </h3>
 
-            {{-- Grid responsivo para las tarjetas de opciones --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 <a href="{{ route('area_admin.users.index') }}" 

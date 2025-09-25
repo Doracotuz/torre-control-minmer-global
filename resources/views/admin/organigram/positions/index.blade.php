@@ -8,7 +8,6 @@
     <div class="py-12 bg-[#E8ECF7]">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-8">
-                {{-- Mensajes de éxito y error --}}
                 @if (session('success'))
                     <div x-data="{ show: true }" x-show="show" x-transition:enter="transition ease-out duration-300 transform scale-90 opacity-0" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200 transform scale-100 opacity-100" x-transition:leave-end="opacity-0 scale-90"
                          class="fixed top-4 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert">
@@ -37,7 +36,7 @@
                 @endif
 
                 <div x-data="{
-                    editingPosition: null, // Objeto para la posición que se está editando
+                    editingPosition: null,
                     newPositionName: '',
                     newPositionDescription: '',
                     newPositionHierarchyLevel: '',
@@ -47,7 +46,7 @@
                         this.newPositionName = position.name;
                         this.newPositionDescription = position.description;
                         this.newPositionHierarchyLevel = position.hierarchy_level;
-                        window.scrollTo({ top: 0, behavior: 'smooth' }); // Desplazarse al inicio del formulario
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                     },
                     cancelEdit() {
                         this.editingPosition = null;
@@ -107,7 +106,6 @@
                     @if ($positions->isEmpty())
                         <p class="text-lg text-gray-600 py-8 text-center">No hay posiciones registradas.</p>
                     @else
-                        {{-- AÑADIDO: Contenedor overflow-x-auto para responsividad de tabla --}}
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">

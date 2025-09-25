@@ -6,7 +6,6 @@
 
     <div x-show="completedOpen" x-transition class="p-4 border-t">
         <form action="{{ route('audit.index') }}" method="GET" class="mb-4">
-            {{-- Mantenemos los filtros activos al buscar en esta sección --}}
             @if(request('start_date')) <input type="hidden" name="start_date" value="{{ request('start_date') }}"> @endif
             @if(request('end_date')) <input type="hidden" name="end_date" value="{{ request('end_date') }}"> @endif
             @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
@@ -20,9 +19,7 @@
         </form>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {{-- CORRECCIÓN: Iteramos sobre $completedGuides que viene del controlador --}}
             @forelse($completedGuides as $guia)
-                {{-- Pasamos el objeto $guia a la tarjeta de completados --}}
                 @include('audit.partials.audit-card-completed', ['guia' => $guia])
             @empty
                 <p class="text-center text-gray-500 py-4 col-span-full">No se encontraron órdenes terminadas con los filtros aplicados.</p>

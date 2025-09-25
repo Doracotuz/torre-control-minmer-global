@@ -2,19 +2,16 @@
     $planning = $order->plannings->first();
     $guia = $planning?->guia;
 
-    // Lógica para determinar el estatus y su color
     $statusText = $order->audit_status;
     $statusColor = 'bg-gray-200 text-gray-800';
     if($order->audit_status === 'Pendiente Almacén') {
         $statusColor = 'bg-blue-100 text-blue-800';
     }
-    // Este estado es para cuando ya se auditó en almacén pero aún no se le asigna guía.
     if($order->audit_status === 'Pendiente Patio' && !$guia) {
         $statusText = 'Esperando Guía';
         $statusColor = 'bg-orange-100 text-orange-800';
     }
     
-    // Lógica del botón para estas fases
     $buttonClass = 'bg-gray-400 cursor-not-allowed';
     $buttonText = 'En Espera';
     $route = '#';

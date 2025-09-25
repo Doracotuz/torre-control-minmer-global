@@ -88,7 +88,6 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Datos para los gráficos
             const actionData = @json($actionData);
             const userTypeData = @json($userTypeData);
             const foldersByArea = @json($foldersByArea);
@@ -100,7 +99,6 @@
             const creationDeletion = @json($creationDeletion);
             const activityByHour = @json($activityByHour);
 
-            // Funciones de utilidad para los gráficos
             function getChartColors() {
                 return ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#d946ef', '#f97316', '#a855f7', '#64748b'];
             }

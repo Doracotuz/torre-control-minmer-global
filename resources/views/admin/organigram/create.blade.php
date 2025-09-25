@@ -7,7 +7,6 @@
 
     <div class="py-12 bg-[#E8ECF7]">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            {{-- EL DIV PRINCIPAL CON X-DATA AHORA ENVUELVE TODO EL CONTENIDO --}}
             <div x-data="{
                 photoName: null,
                 photoPreview: null,
@@ -15,7 +14,6 @@
                 openCsvUploadModal: false
             }">
 
-                {{-- Contenido del formulario de creación individual --}}
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-8">
                     
                     <form method="POST" action="{{ route('admin.organigram.store') }}" enctype="multipart/form-data">
@@ -119,7 +117,6 @@
                             <div>
                                 <h3 class="text-lg font-semibold text-[#2c3856] mb-4">{{ __('Detalles Adicionales') }}</h3>
 
-                                {{-- SECCIÓN ACTIVIDADES --}}
                                 <div class="mb-6">
                                     <x-input-label :value="__('Actividades')" class="mb-2" />
                                     <div class="max-h-56 overflow-y-auto p-4 border border-gray-200 rounded-md">
@@ -138,7 +135,6 @@
                                     <x-input-error class="mt-2" :messages="$errors->get('activities_ids') ?? []" />
                                 </div>
 
-                                {{-- SECCIÓN HABILIDADES --}}
                                 <div class="mb-6">
                                     <x-input-label :value="__('Habilidades')" class="mb-2" />
                                     <div class="max-h-56 overflow-y-auto p-4 border border-gray-200 rounded-md">
@@ -208,7 +204,6 @@
                     </form>
                 </div>
                 
-                {{-- Botones de Carga Masiva (ahora dentro de x-data) --}}
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-8 mt-6 flex justify-end items-center space-x-4">
                     <a href="{{ route('admin.organigram.download-template') }}" class="inline-flex items-center px-5 py-2 bg-blue-500 text-white rounded-full font-semibold text-xs uppercase tracking-widest hover:bg-blue-600 focus:bg-blue-600 active:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -220,7 +215,6 @@
                     </button>
                 </div>
             
-                <!-- Modal de Carga de CSV (ahora dentro de x-data) -->
                 <div x-cloak x-show="openCsvUploadModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
                     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                         <div x-show="openCsvUploadModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
@@ -269,7 +263,7 @@
                     </div>
                 </div>
                 
-            </div> {{-- Cierre del div principal con x-data --}}
+            </div>
         </div>
     </div>
 </x-app-layout>
