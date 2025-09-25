@@ -9,7 +9,7 @@
 
     @if ($signature_url)
         <div style="margin-top: 20px;">
-            <img src="{{ $signature_url }}" alt="Firma" style="max-width: 600px; max-height: 160px; width: auto; height: auto;">
+            <img src="{{ $signature_url }}" alt="Firma" style="max-width: 400px; max-height: 100px; width: auto; height: auto;">
         </div>
     @endif
 </body>
