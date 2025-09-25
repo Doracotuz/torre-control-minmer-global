@@ -65,8 +65,16 @@
                 <div>
                     <span class="text-xs text-gray-500">Guía</span>
                     <h2 class="text-xl font-extrabold text-[#2c3856]">{{ $guia->guia }}</h2>
-                    <p class="font-semibold text-gray-600 text-sm"><i class="far fa-clock mr-1"></i>{{ \Carbon\Carbon::parse($guia->hora_planeada)->format('h:i A') }}</p>
-                    
+                    <p class="font-semibold text-gray-600 text-sm">
+                        <i class="far fa-clock mr-1"></i>
+                        @php
+                            try {
+                                echo \Carbon\Carbon::parse($guia->hora_planeada)->format('h:i A');
+                            } catch (\Exception $e) {
+                                echo $guia->hora_planeada;
+                            }
+                        @endphp
+                    </p>
                     <div class="flex items-center space-x-4 mt-2 text-xs text-gray-600 border-t pt-2">
                         <span title="Total de Cajas en la Guía">
                             <i class="fas fa-box-open mr-1 text-gray-400"></i>
@@ -135,7 +143,21 @@
                                 
                                 <div class="text-xs text-gray-600 border-t pt-2 mt-2">
                                     <p><i class="fas fa-user-tie fa-fw mr-2 text-gray-400"></i><span class="font-semibold">{{ $order->customer->name ?? 'N/A' }}</span></p>
-                                    <p><i class="fas fa-calendar-check fa-fw mr-2 text-gray-400"></i>Cita: {{ \Carbon\Carbon::parse($order->delivery_date)->format('d/m/Y') }} - {{ $order->schedule ? \Carbon\Carbon::parse($order->schedule)->format('h:i A') : 'Sin hora' }}</p>
+                                    <p>
+                                        <i class="fas fa-calendar-check fa-fw mr-2 text-gray-400"></i>
+                                        Cita: {{ \Carbon\Carbon::parse($order->delivery_date)->format('d/m/Y') }} -
+                                        @if($order->schedule)
+                                            @php
+                                                try {
+                                                    echo \Carbon\Carbon::parse($order->schedule)->format('h:i A');
+                                                } catch (\Exception $e) {
+                                                    echo $order->schedule; // Muestra el texto original si falla
+                                                }
+                                            @endphp
+                                        @else
+                                            Sin hora
+                                        @endif
+                                    </p>
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-2 text-center text-sm mt-3">
