@@ -174,7 +174,7 @@
                                         <strong class="block text-gray-500 text-sm mb-2">Observaciones de la Carga</strong>
                                         <template x-if="selectedGuia.observaciones_con_so && selectedGuia.observaciones_con_so.length > 0">
                                             <ul class="list-none space-y-1 text-sm text-gray-800">
-                                                <template x-for="item in selectedGuia.observaciones_con_so" :key="item.so">
+                                                <template x-for="(item, index) in selectedGuia.observaciones_con_so" :key="index">
                                                     <li><strong class="text-blue-600" x-text="item.so + ':'"></strong> <span x-text="item.observacion"></span></li>
                                                 </template>
                                             </ul>
