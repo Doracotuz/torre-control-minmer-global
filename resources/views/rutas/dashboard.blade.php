@@ -76,14 +76,14 @@
                  
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="bg-white p-6 rounded-lg shadow-md col-span-1 min-h-[350px]"><canvas id="chart1"></canvas></div>
-                <div class="bg-white p-6 rounded-lg shadow-md col-span-1 min-h-[350px]"><canvas id="chart2"></canvas></div>
-                <div class="bg-white p-6 rounded-lg shadow-md col-span-1 min-h-[350px]"><canvas id="chart3"></canvas></div>
+                <div class="bg-white p-6 rounded-lg shadow-md col-span-1"><canvas id="chart2"></canvas></div>
+                <div class="bg-white p-6 rounded-lg shadow-md col-span-1"><canvas id="chart3"></canvas></div>
 
                 <div class="bg-white p-6 rounded-lg shadow-md col-span-1 min-h-[350px]"><canvas id="chart4"></canvas></div>
-                <div class="bg-white p-6 rounded-lg shadow-md col-span-1 min-h-[350px]"><canvas id="chart5"></canvas></div>
-                <div class="bg-white p-6 rounded-lg shadow-md col-span-1 min-h-[350px]"><canvas id="chart6"></canvas></div>
+                <div class="bg-white p-6 rounded-lg shadow-md col-span-1"><canvas id="chart5"></canvas></div>
+                <div class="bg-white p-6 rounded-lg shadow-md col-span-1"><canvas id="chart6"></canvas></div>
 
-                <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-3min-h-[400px]"><canvas id="chart7"></canvas></div>
+                <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-3min-h-[600px]"><canvas id="chart7"></canvas></div>
             </div>
         </div>
     </div>
