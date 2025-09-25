@@ -137,8 +137,8 @@ class UserController extends Controller
         try {
             // Usamos $request->password para enviar la contraseña en texto plano,
             // antes de que se guarde hasheada en la base de datos.
-            // Mail::to($user->email)->send(new WelcomeNewUser($user, $request->password));
-            Mail::to('i.sanchez@minmerglobal.com')->send(new WelcomeNewUser($user, $request->password)); // Línea temporal para pruebas
+            Mail::to($user->email)->send(new WelcomeNewUser($user, $request->password));
+            // Mail::to('i.sanchez@minmerglobal.com')->send(new WelcomeNewUser($user, $request->password)); // Línea temporal para pruebas
             
         } catch (\Exception $e) {
             // Opcional: Manejar el error si el correo no se puede enviar.
