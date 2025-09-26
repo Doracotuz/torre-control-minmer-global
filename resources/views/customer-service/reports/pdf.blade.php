@@ -235,7 +235,7 @@
 
         <h2>Fase 3: Auditoría de Carga</h2>
         @php
-            $loadingEvent = $guia->plannings->pluck('order')->flatten()->pluck('events')->flatten()->first(fn($e) => str_contains($e->description, 'Auditoría de carga finalizada'));
+            $loadingEvent = $guia->plannings->pluck('order')->flatten()->pluck('events')->flatten()->first(fn($e) => str_contains($e->description, 'Auditoría de carga finalizada en '));
         @endphp
         <p class="text-xs text-gray-500">Auditado por: <strong>{{ $loadingEvent->user->name ?? 'N/A' }}</strong></p>       
         <table class="info-table">

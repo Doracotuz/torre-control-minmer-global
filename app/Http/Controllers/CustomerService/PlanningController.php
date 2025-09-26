@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\RouteDispatchMail;
+use App\Models\Audit;
 
 class PlanningController extends Controller
 {
@@ -243,18 +244,33 @@ class PlanningController extends Controller
                     $newPlanningRecord->destino = $scaleData['destino'];
                     $newPlanningRecord->is_scale = true;
                     $newPlanningRecord->save();
+
+                    // --- INICIA LÓGICA DE LA SOLUCIÓN ---
+                    // Si la planificación está ligada a una orden, nos aseguramos de que exista su auditoría.
+                    if ($newPlanningRecord->cs_order_id) {
+                        // Busca una auditoría para esta orden y esta ubicación de origen.
+                        // Si no la encuentra, la crea. Si ya existe, no hace NADA.
+                        Audit::firstOrCreate(
+                            [
+                                'cs_order_id' => $newPlanningRecord->cs_order_id,
+                                'location'    => $newPlanningRecord->origen,
+                            ],
+                            [
+                                'status'      => 'Pendiente Almacén',
+                            ]
+                        );
+                    }
+                    // --- TERMINA LÓGICA DE LA SOLUCIÓN ---
                 }
                 $planning->delete();
             });
         } catch (\Exception $e) {
-            // Se devuelve una respuesta JSON consistente con 'success' y 'message'
             return response()->json([
                 'success' => false,
                 'message' => 'Error al guardar las escalas: ' . $e->getMessage()
             ], 500);
         }
 
-        // Se devuelve una respuesta JSON consistente con 'success' y 'message'
         return response()->json([
             'success' => true,
             'message' => 'Escalas creadas y ruta original actualizada exitosamente.'

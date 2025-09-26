@@ -1,7 +1,7 @@
 <div class="flex justify-between items-center border-b pb-2 mb-4">
     <h3 class="text-xl font-bold text-gray-800">Fase 3: Auditoría de Carga</h3>
     @php
-        $loadingEvent = $guia->plannings->pluck('order')->flatten()->pluck('events')->flatten()->first(fn($e) => str_contains($e->description, 'auditoría de carga finalizado') || str_contains($e->description, 'Proceso de auditoría de carga finalizado'));
+        $loadingEvent = $guia->plannings->pluck('order')->flatten()->pluck('events')->flatten()->first(fn($e) => str_contains($e->description, 'Auditoría de carga finalizada en ') || str_contains($e->description, 'Proceso de auditoría de carga finalizado'));
     @endphp
     <p class="text-xs text-gray-500">Auditado por: <strong>{{ $loadingEvent->user->name ?? 'N/A' }}</strong></p>
 </div>

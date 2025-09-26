@@ -25,7 +25,7 @@ class AuditController extends Controller
      */
     public function index(Request $request)
     {
-        // --- Consulta para auditorías ACTIVAS ---
+        // --- Consulta para auditorías ACTIVAS (Sin cambios) ---
         $activeQuery = Audit::query()
             ->where('status', '!=', 'Finalizada')
             ->with(['guia.facturas', 'order.details']);
@@ -34,9 +34,9 @@ class AuditController extends Controller
             $searchTerm = '%' . $request->search . '%';
             $activeQuery->where(function ($q) use ($searchTerm) {
                 $q->whereHas('order', fn($oq) => $oq->where('so_number', 'like', $searchTerm)
-                                                  ->orWhere('invoice_number', 'like', $searchTerm))
-                  ->orWhere('location', 'like', $searchTerm)
-                  ->orWhereHas('guia', fn($gq) => $gq->where('guia', 'like', $searchTerm));
+                                                    ->orWhere('invoice_number', 'like', 'searchTerm'))
+                    ->orWhere('location', 'like', $searchTerm)
+                    ->orWhereHas('guia', fn($gq) => $gq->where('guia', 'like', $searchTerm));
             });
         }
         if ($request->filled('status') && is_array($request->status)) {
@@ -52,23 +52,30 @@ class AuditController extends Controller
         }
         $audits = $activeQuery->orderBy('created_at', 'desc')->paginate(15, ['*'], 'page');
 
-        // --- Consulta para guías TERMINADAS (para la sección colapsable) ---
-        $completedQuery = Guia::query()
-            ->whereHas('plannings.order.audits', fn($q) => $q->where('status', 'Finalizada'))
-            ->whereDoesntHave('plannings.order.audits', fn($q) => $q->where('status', '!=', 'Finalizada'))
-            ->with(['plannings.order']);
+        // --- INICIA CORRECCIÓN: Consulta para guías TERMINADAS ---
+        $completedGuidesQuery = Guia::query()
+            // Condición 1: La guía NO debe tener ninguna auditoría asociada que NO esté 'Finalizada'.
+            // Esto asegura que solo se consideren las guías 100% completas.
+            ->whereDoesntHave('audits', function ($query) {
+                $query->where('status', '!=', 'Finalizada');
+            })
+            // Condición 2: Y, para no mostrar guías vacías, nos aseguramos de que SÍ tenga al menos una auditoría.
+            ->whereHas('audits')
+            // Cargamos las relaciones necesarias para mostrar la información en la vista.
+            ->with('audits.order');
 
         if ($request->filled('search_completed')) {
             $searchTerm = '%' . $request->search_completed . '%';
-            $completedQuery->where(function($q) use ($searchTerm) {
+            $completedGuidesQuery->where(function($q) use ($searchTerm) {
                 $q->where('guia', 'like', $searchTerm)
-                  ->orWhereHas('plannings.order', fn($oq) => $oq->where('so_number', 'like', $searchTerm)
-                                                                ->orWhere('invoice_number', 'like', $searchTerm));
+                    // Se busca dentro de las órdenes asociadas a las auditorías de ESTA guía.
+                    ->orWhereHas('audits.order', fn($oq) => $oq->where('so_number', 'like', $searchTerm));
             });
         }
-        $completedGuides = $completedQuery->orderBy('updated_at', 'desc')->paginate(10, ['*'], 'completedPage');
+        $completedGuides = $completedGuidesQuery->orderBy('updated_at', 'desc')->paginate(10, ['*'], 'completedPage');
+        // --- TERMINA CORRECCIÓN ---
 
-        // --- Datos para los filtros ---
+        // --- Datos para los filtros (Sin cambios) ---
         $baseQuery = Audit::where('status', '!=', 'Finalizada');
         $auditStatuses = (clone $baseQuery)->whereNotNull('status')->distinct()->orderByRaw("FIELD(status, 'Pendiente Almacén', 'Pendiente Patio', 'Pendiente Carga')")->pluck('status');
         $locations = (clone $baseQuery)->whereNotNull('location')->distinct()->pluck('location');

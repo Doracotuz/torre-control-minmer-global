@@ -113,4 +113,9 @@ class Guia extends Model
         return $this->hasMany(\App\Models\AuditIncidencia::class);
     }    
 
+    public function audits()
+    {
+        return $this->hasMany(\App\Models\Audit::class);
+    }
+
 }
