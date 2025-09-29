@@ -1,19 +1,31 @@
 <x-app-layout>
     <x-slot name="header">
-        <!-- <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Gestión de Pedidos</h2>
-            <div>
+            <!-- <div>
                 <a href="{{ route('customer-service.orders.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700">Crear Pedido</a>
                 <a href="{{ route('customer-service.orders.dashboard') }}" class="ml-4 px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-black">Dashboard</a>
-            </div>
-        </div> -->
+            </div> -->
+        </div>
     </x-slot>
 
     <br>
 
     <div class="pt-12" x-data="orderManager()" x-cloak>
 
-        <div class="fixed top-20 left-1/2 -translate-x-1/2 z-20 w-11/12 max-w-7xl">
+        <div x-show="isFilterContainerVisible"
+            class="mb-6 lg:fixed lg:top-20 lg:z-20 transition-all duration-300 w-full"
+            :class="{
+                'lg:left-64 lg:w-[calc(99%-16rem)]': isSidebarOpen,
+                'lg:left-4 lg:w-[calc(99%-2rem)]': !isSidebarOpen
+            }"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 -translate-y-4"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 translate-y-0"
+            x-transition:leave-end="opacity-0 -translate-y-4">
+
             <div class="bg-white p-6 rounded-lg shadow-xl w-full transition-all duration-300">
                 <div class="flex justify-between items-center">
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight">Gestión de Pedidos</h2>
@@ -166,7 +178,13 @@
                         <option value="50">50</option>
                         <option value="100">100</option>
                     </select>
-                </div>                
+                </div>
+                    <button @click="isFilterContainerVisible = !isFilterContainerVisible"
+                            class="px-3 py-2 bg-gray-200 text-gray-700 rounded-md text-sm font-semibold shadow-sm hover:bg-gray-300 flex items-center"
+                            title="Mostrar/Ocultar Filtros">
+                        <i class="fas" :class="isFilterContainerVisible ? 'fa-eye-slash' : 'fa-eye'"></i>
+                        <span class="hidden sm:inline ml-2" x-text="isFilterContainerVisible ? 'Ocultar Filtros' : 'Mostrar Filtros'"></span>
+                    </button>                             
                 <div>
                     Mostrando de <span class="font-medium" x-text="pagination.from"></span> a <span class="font-medium" x-text="pagination.to"></span> de <span class="font-medium" x-text="pagination.total"></span> resultados
                 </div>
@@ -294,6 +312,7 @@
             resizerCleanups: [],
             selectedOrders: [],
             resizingState: { isResizing: false, currentHeader: null, startX: 0, startW: 0 },
+            isFilterContainerVisible: true,
 
             init() {
                 const savedPerPage = localStorage.getItem('csOrderPerPage');
@@ -307,6 +326,7 @@
 
                 this.columnOrder = savedOrder ? JSON.parse(savedOrder) : defaultOrder;
                 this.columnWidths = savedWidths ? JSON.parse(savedWidths) : {};
+                this.isFilterContainerVisible = JSON.parse(localStorage.getItem('csOrderFiltersVisible') ?? 'true');
                 
                 let visible = savedVisible ? JSON.parse(savedVisible) : {};
                 defaultOrder.forEach(key => {
@@ -362,6 +382,8 @@
                     localStorage.setItem('csOrderColumnOrder', JSON.stringify(val));
                     this.$nextTick(() => this.reinitTableInteractions());
                 });
+                this.$watch('isFilterContainerVisible', value => localStorage.setItem('csOrderFiltersVisible', JSON.stringify(value)));
+
 
                 this.$watch('columnWidths', (val) => localStorage.setItem('csOrderColumnWidths', JSON.stringify(val)), { deep: true });
                 
