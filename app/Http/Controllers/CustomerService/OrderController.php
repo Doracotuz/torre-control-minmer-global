@@ -33,8 +33,11 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        // Inicialmente carga la vista. Los datos se obtendrán vía AJAX.
-        return view('customer-service.orders.index');
+        $warehouses = CsOrder::whereNotNull('origin_warehouse')->where('origin_warehouse', '!=', '')->distinct()->orderBy('origin_warehouse')->pluck('origin_warehouse');
+        $localities = CsOrder::whereNotNull('destination_locality')->where('destination_locality', '!=', '')->distinct()->orderBy('destination_locality')->pluck('destination_locality');
+        $executives = CsOrder::whereNotNull('executive')->where('executive', '!=', '')->distinct()->orderBy('executive')->pluck('executive');
+
+        return view('customer-service.orders.index', compact('warehouses', 'localities', 'executives'));
     }
 
     /**
@@ -44,7 +47,6 @@ class OrderController extends Controller
     {
         $query = CsOrder::with('plan')->orderBy('creation_date', 'desc');
 
-        // Filtro de búsqueda rápida (se mantiene)
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';
             $query->where(function ($q) use ($searchTerm) {
@@ -56,36 +58,37 @@ class OrderController extends Controller
             });
         }
         
-        // Filtros básicos (se mantienen)
-        if ($request->filled('status')) { $query->where('status', $request->status); }
-        if ($request->filled('channel')) { $query->where('channel', $request->channel); }
+        if ($request->filled('status')) { $query->whereIn('status', $request->status); }
+        if ($request->filled('channel')) { $query->whereIn('channel', $request->channel); }
         if ($request->filled('date_from') && $request->filled('date_to')) {
             $query->whereBetween('creation_date', [$request->date_from, $request->date_to]);
         }
 
-        // --- INICIA CAMBIO: Se añaden los nuevos filtros avanzados ---
-        if ($request->filled('status')) { $query->where('status', $request->status); }
-        if ($request->filled('date_from') && $request->filled('date_to')) {
-            $query->whereBetween('creation_date', [$request->date_from, $request->date_to]);
-        }
-
-        // --- INICIA CAMBIO: Se añaden TODAS las columnas filtrables del modal ---
         if ($request->filled('purchase_order_adv')) { $query->where('purchase_order', 'like', '%' . $request->purchase_order_adv . '%'); }
         if ($request->filled('bt_oc')) { $query->where('bt_oc', 'like', '%' . $request->bt_oc . '%'); }
         if ($request->filled('customer_name_adv')) { $query->where('customer_name', 'like', '%' . $request->customer_name_adv . '%'); }
-        if ($request->filled('channel')) { $query->where('channel', $request->channel); }
         if ($request->filled('invoice_number_adv')) { $query->where('invoice_number', 'like', '%' . $request->invoice_number_adv . '%'); }
         if ($request->filled('invoice_date')) { $query->whereDate('invoice_date', $request->invoice_date); }
-        if ($request->filled('origin_warehouse')) { $query->where('origin_warehouse', 'like', '%' . $request->origin_warehouse . '%'); }
-        if ($request->filled('destination_locality')) { $query->where('destination_locality', 'like', '%' . $request->destination_locality . '%'); }
+        
+        if ($request->filled('origin_warehouse')) { $query->whereIn('origin_warehouse', $request->origin_warehouse); }
+        if ($request->filled('destination_locality')) { $query->whereIn('destination_locality', $request->destination_locality); }
+        
+        // --- INICIA CORRECCIÓN ---
+        // La línea anterior usaba 'like' por error. La correcta es 'whereIn'.
+        if ($request->filled('executive')) { $query->whereIn('executive', $request->executive); }
+        // --- TERMINA CORRECCIÓN ---
+
         if ($request->filled('delivery_date')) { $query->whereDate('delivery_date', $request->delivery_date); }
-        if ($request->filled('executive')) { $query->where('executive', 'like', '%' . $request->executive . '%'); }
         if ($request->filled('evidence_reception_date')) { $query->whereDate('evidence_reception_date', $request->evidence_reception_date); }
         if ($request->filled('evidence_cutoff_date')) { $query->whereDate('evidence_cutoff_date', $request->evidence_cutoff_date); }
-        // --- TERMINA CAMBIO ---
+        
+        if ($request->input('has_delivery_date') === 'yes') { $query->whereNotNull('delivery_date'); } 
+        elseif ($request->input('has_delivery_date') === 'no') { $query->whereNull('delivery_date'); }
+
+        if ($request->input('has_invoice') === 'yes') { $query->whereNotNull('evidence_reception_date'); } 
+        elseif ($request->input('has_invoice') === 'no') { $query->whereNull('evidence_reception_date'); }
 
         $perPage = $request->input('per_page', 10);
-
         $orders = $query->paginate($perPage)->withQueryString();
 
         return response()->json($orders);
@@ -895,8 +898,7 @@ class OrderController extends Controller
     
     public function exportCsv(Request $request)
     {
-        // 1. Se inicia la consulta cargando las relaciones para acceder a los datos heredados.
-        // Usamos 'plannings' que es la relación correcta para un pedido que puede tener escalas.
+        // 1. Se inicia la consulta cargando las relaciones.
         $query = CsOrder::with(['plannings.guia'])->orderBy('creation_date', 'desc');
 
         // 2. Se aplica la misma lógica de filtrado que en la vista, incluyendo TODOS los filtros.
@@ -911,24 +913,34 @@ class OrderController extends Controller
             });
         }
         
-        if ($request->filled('status')) { $query->where('status', $request->status); }
+        // Filtros de selección múltiple y fechas
+        if ($request->filled('status')) { $query->whereIn('status', $request->status); }
+        if ($request->filled('channel')) { $query->whereIn('channel', $request->channel); }
         if ($request->filled('date_from') && $request->filled('date_to')) {
-            $query->whereBetween('creation_date', [$request->date_from, $request->date_to]);
+            $query->whereBetween('creation_date', [$request->date_from, $request->to]);
         }
 
         // Aplicación de todos los filtros avanzados
         if ($request->filled('purchase_order_adv')) { $query->where('purchase_order', 'like', '%' . $request->purchase_order_adv . '%'); }
         if ($request->filled('bt_oc')) { $query->where('bt_oc', 'like', '%' . $request->bt_oc . '%'); }
         if ($request->filled('customer_name_adv')) { $query->where('customer_name', 'like', '%' . $request->customer_name_adv . '%'); }
-        if ($request->filled('channel')) { $query->where('channel', $request->channel); }
         if ($request->filled('invoice_number_adv')) { $query->where('invoice_number', 'like', '%' . $request->invoice_number_adv . '%'); }
         if ($request->filled('invoice_date')) { $query->whereDate('invoice_date', $request->invoice_date); }
-        if ($request->filled('origin_warehouse')) { $query->where('origin_warehouse', 'like', '%' . $request->origin_warehouse . '%'); }
-        if ($request->filled('destination_locality')) { $query->where('destination_locality', 'like', '%' . $request->destination_locality . '%'); }
         if ($request->filled('delivery_date')) { $query->whereDate('delivery_date', $request->delivery_date); }
-        if ($request->filled('executive')) { $query->where('executive', 'like', '%' . $request->executive . '%'); }
         if ($request->filled('evidence_reception_date')) { $query->whereDate('evidence_reception_date', $request->evidence_reception_date); }
         if ($request->filled('evidence_cutoff_date')) { $query->whereDate('evidence_cutoff_date', $request->evidence_cutoff_date); }
+        
+        // Filtros avanzados de selección múltiple (corregidos)
+        if ($request->filled('origin_warehouse')) { $query->whereIn('origin_warehouse', $request->origin_warehouse); }
+        if ($request->filled('destination_locality')) { $query->whereIn('destination_locality', $request->destination_locality); }
+        if ($request->filled('executive')) { $query->whereIn('executive', $request->executive); }
+
+        // Filtros "Sí/No"
+        if ($request->input('has_delivery_date') === 'yes') { $query->whereNotNull('delivery_date'); } 
+        elseif ($request->input('has_delivery_date') === 'no') { $query->whereNull('delivery_date'); }
+
+        if ($request->input('has_invoice') === 'yes') { $query->whereNotNull('evidence_reception_date'); } 
+        elseif ($request->input('has_invoice') === 'no') { $query->whereNull('evidence_reception_date'); }
 
         $orders = $query->get();
         

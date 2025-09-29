@@ -1,18 +1,58 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <!-- <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Gestión de Pedidos</h2>
             <div>
                 <a href="{{ route('customer-service.orders.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700">Crear Pedido</a>
                 <a href="{{ route('customer-service.orders.dashboard') }}" class="ml-4 px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-black">Dashboard</a>
-                <!-- <button @click="isImportModalOpen = true" class="ml-4 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700">Carga de SO</button> -->
             </div>
-        </div>
+        </div> -->
     </x-slot>
 
-    <div class="py-12" x-data="orderManager()" x-cloak>
+    <br>
+
+    <div class="pt-12" x-data="orderManager()" x-cloak>
+
+        <div class="fixed top-20 left-1/2 -translate-x-1/2 z-20 w-11/12 max-w-7xl">
+            <div class="bg-white p-6 rounded-lg shadow-xl w-full transition-all duration-300">
+                <div class="flex justify-between items-center">
+                    <h2 class="font-semibold text-xl text-gray-800 leading-tight">Gestión de Pedidos</h2>
+                    <div>
+                        <a href="{{ route('customer-service.orders.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700">Crear Pedido</a>
+                        <a href="{{ route('customer-service.orders.dashboard') }}" class="ml-4 px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-black">Dashboard</a>
+                    </div>
+                </div>                
+                @include('customer-service.orders.partials._filters')
+                <br>
+            <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+                <button @click="isColumnModalOpen = true" class="px-3 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700 flex items-center">
+                    <i class="fas fa-columns mr-2"></i>Seleccionar Columnas
+                </button>
+                <div x-data="{ isWidthMenuOpen: false }" class="relative">
+                    <button @click="isWidthMenuOpen = !isWidthMenuOpen" @click.away="isWidthMenuOpen = false" class="px-3 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700 flex items-center">
+                        <i class="fas fa-arrows-alt-h mr-2"></i>Ancho
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div x-show="isWidthMenuOpen" x-transition class="absolute z-10 mt-2 w-48 bg-white rounded-md shadow-lg border">
+                        <a @click="setColumnWidths('uniform'); isWidthMenuOpen = false" href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ancho Uniforme</a>
+                        <a @click="setColumnWidths('auto'); isWidthMenuOpen = false" href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ajuste Automático</a>
+                    </div>
+                </div>
+                <button @click="isImportModalOpen = true" class="px-3 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700 flex items-center">
+                    <i class="fas fa-file-import mr-2"></i>Carga de SO
+                </button>
+                <a :href="`{{ route('customer-service.orders.export-csv') }}?${serializeFilters(filters)}`"
+                class="px-3 py-2 bg-green-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-green-700 flex items-center">
+                    <i class="fas fa-file-excel mr-2"></i>Exportar CSV
+                </a>
+            </div>                
+            </div>
+        </div>
+
         <div class="mx-auto sm:px-6 lg:px-8">
             
+            <!-- <div class="h-28"></div> -->
+
             @if(session('success'))<div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert"><p>{{ session('success') }}</p></div>@endif
             @if(session('error'))<div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert"><p>{{ session('error') }}</p></div>@endif
             @if(session('warning'))<div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert"><p>{{ session('warning') }}</p></div>@endif
@@ -60,11 +100,7 @@
                 </div>
             @endif
 
-            <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
-                @include('customer-service.orders.partials._filters')
-            </div>
-
-            <div class="flex justify-between items-center mb-4">
+            <!-- <div class="flex justify-between items-center mb-4">
                 <span class="text-sm text-gray-500" x-show="isLoading">Cargando datos...</span>
                 <div class="flex items-center space-x-4">
                     <button @click="isColumnModalOpen = true" class="px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700">
@@ -85,17 +121,24 @@
                     <button @click="isImportModalOpen = true" class="px-4 py-2 bg-gray-800 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-gray-700">
                         <i class="fas fa-file-import mr-2"></i>Carga de SO
                     </button>
-                    <a :href="`{{ route('customer-service.orders.export-csv') }}?${new URLSearchParams(filters).toString()}`"
+                    <a :href="`{{ route('customer-service.orders.export-csv') }}?${serializeFilters(filters)}`"
                        class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-green-700">
                         <i class="fas fa-file-excel mr-2"></i>Exportar CSV
                     </a>
-                    </div>                    
-                </div>
-
-            </div>
-            <div class="flex justify-between items-center mb-4">
-                <div x-show="selectedOrders.length > 0" class="bg-gray-800 text-white p-3 rounded-lg shadow-lg flex justify-between items-center transition-transform w-full" x-transition>
-                    <span x-text="`(${selectedOrders.length}) órdenes seleccionadas.`"></span>
+                </div>                    
+            </div> -->
+            
+            <div class="mb-4 h-14">
+                <div x-show="selectedOrders.length > 0" 
+                     class="fixed bottom-4 left-1/2 -translate-x-1/2 w-11/12 md:w-auto z-50 bg-gray-800 text-white p-3 rounded-lg shadow-2xl flex justify-between items-center transition-transform" 
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0 transform translate-y-4"
+                     x-transition:enter-end="opacity-100 transform translate-y-0"
+                     x-transition:leave="transition ease-in duration-200"
+                     x-transition:leave-start="opacity-100 transform translate-y-0"
+                     x-transition:leave-end="opacity-0 transform translate-y-4">
+                    
+                    <span x-text="`(${selectedOrders.length}) órdenes seleccionadas.`" class="mr-6"></span>
                     
                     <div class="flex items-center space-x-4">
                         <button @click="bulkEdit()" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700">
@@ -106,11 +149,13 @@
                             <i class="fas fa-shipping-fast mr-2"></i>Enviar a Planificación
                         </button>
                     </div>
-                    </div>
+                </div>
             </div>
+
             <div id="orders-table-container">
                 @include('customer-service.orders.partials.table')
             </div>
+
             <div class="mt-6 pagination-container flex justify-between items-center text-sm text-gray-700" x-show="!isLoading && pagination.total > 0">
                 <div class="flex items-center space-x-2">
                     <label for="per_page" class="text-sm font-medium">Filas por página:</label>
@@ -145,13 +190,15 @@
                 <i class="fas fa-spinner fa-spin text-4xl text-gray-500"></i>
                 <p class="mt-2 text-gray-600">Cargando datos...</p>
             </div>
-            <div x-show="isLoading" class="text-center py-10">
-                <i class="fas fa-spinner fa-spin text-4xl text-gray-500"></i>
-                <p class="mt-2 text-gray-600">Cargando datos...</p>
-            </div>
+
             @include('customer-service.orders.partials._column-selector-modal')
             @include('customer-service.orders.partials._import-modal')
-            @include('customer-service.orders.partials._advanced-filters-modal')
+            
+            @include('customer-service.orders.partials._advanced-filters-modal', [
+                'warehouses' => $warehouses,
+                'localities' => $localities,
+                'executives' => $executives
+            ])
         </div>
     </div>
 </x-app-layout>
@@ -181,7 +228,6 @@
         width: 160px !important;
         min-width: 160px !important;
     }
-    
 </style>
 
 <script>
@@ -193,24 +239,55 @@
             isAdvancedFilterModalOpen: false,
             advancedFilterCount: 0,            
             filters: {
-                page: 1, search: '', status: '', date_from: '', date_to: '',
-                purchase_order_adv: '', bt_oc: '', customer_name_adv: '', channel: '',
-                invoice_number_adv: '', invoice_date: '', origin_warehouse: '',
-                destination_locality: '', delivery_date: '', executive: '',
-                evidence_reception_date: '', evidence_cutoff_date: '', per_page: 10
+                page: 1,
+                search: '',
+                status: [],
+                date_from: '',
+                date_to: '',
+                purchase_order_adv: '',
+                bt_oc: '',
+                customer_name_adv: '',
+                channel: [],
+                invoice_number_adv: '',
+                invoice_date: '',
+                origin_warehouse: [], 
+                destination_locality: [],
+                delivery_date: '',
+                executive: [],
+                evidence_reception_date: '',
+                evidence_cutoff_date: '',
+                per_page: 10,
+                has_delivery_date: '',
+                has_invoice: '',
             },
             visibleColumns: {},
             columnOrder: [],
             columnWidths: {},
             allColumns: {
-                purchase_order: 'Orden Compra', bt_oc: 'BT OC', so_number: 'SO', customer_name: 'Razón Social', status: 'Estatus',
-                creation_date: 'F. Creación', authorization_date: 'F. Autorización', channel: 'Canal',
-                invoice_number: 'Factura', invoice_date: 'F. Factura',
-                origin_warehouse: 'Almacén Origen', destination_locality: 'Localidad Destino',
-                total_bottles: 'Botellas', total_boxes: 'Cajas', subtotal: 'Subtotal',
-                delivery_date: 'F. Entrega', schedule: 'Horario', client_contact: 'Cliente',
-                shipping_address: 'Dirección', executive: 'Ejecutivo', observations: 'Observaciones',is_oversized: 'Sobredim.',
-                evidence_reception_date: 'Recep. Evidencia', evidence_cutoff_date: 'Corte Evidencia',
+                purchase_order: 'Orden Compra',
+                bt_oc: 'BT OC',
+                so_number: 'SO',
+                customer_name: 'Razón Social',
+                status: 'Estatus',
+                creation_date: 'F. Creación',
+                authorization_date: 'F. Autorización',
+                channel: 'Canal',
+                invoice_number: 'Factura',
+                invoice_date: 'F. Factura',
+                origin_warehouse: 'Almacén Origen',
+                destination_locality: 'Localidad Destino',
+                total_bottles: 'Botellas',
+                total_boxes: 'Cajas',
+                subtotal: 'Subtotal',
+                delivery_date: 'F. Entrega',
+                schedule: 'Horario',
+                client_contact: 'Cliente',
+                shipping_address: 'Dirección',
+                executive: 'Ejecutivo',
+                observations: 'Observaciones',
+                is_oversized: 'Sobredim.',
+                evidence_reception_date: 'Recep. Evidencia',
+                evidence_cutoff_date: 'Corte Evidencia',
             },
             orders: [],
             pagination: { currentPage: 1, lastPage: 1, links: [], total: 0, from: 0, to: 0 },
@@ -257,7 +334,7 @@
                     'invoice_number_adv', 'invoice_date', 'origin_warehouse',
                     'destination_locality', 'delivery_date', 'executive',
                     'evidence_reception_date', 'evidence_cutoff_date',
-                    'per_page'
+                    'per_page', 'has_delivery_date', 'has_invoice'
                 ];
 
                 filterKeysToWatch.forEach(key => {
@@ -266,48 +343,57 @@
                         this.applyFilters(true);
                     });
                 });
+
                 this.$watch('filters.per_page', (newValue) => {
                     localStorage.setItem('csOrderPerPage', newValue);
                 });
+
                 this.$watch('visibleColumns', (val) => {
-
                     const visibleKeys = Object.keys(val).filter(key => val[key]);
-
                     const newColumns = visibleKeys.filter(key => !this.columnOrder.includes(key));
-
                     if (newColumns.length > 0) {
                         this.columnOrder = [...this.columnOrder, ...newColumns];
                     }
-
                     localStorage.setItem('csOrderVisibleColumns', JSON.stringify(val));
                     this.$nextTick(() => this.reinitTableInteractions());
                 }, { deep: true });
+
                 this.$watch('columnOrder', (val) => {
                     localStorage.setItem('csOrderColumnOrder', JSON.stringify(val));
                     this.$nextTick(() => this.reinitTableInteractions());
                 });
+
                 this.$watch('columnWidths', (val) => localStorage.setItem('csOrderColumnWidths', JSON.stringify(val)), { deep: true });
                 
                 this.$el.addEventListener('toggle-all-orders', (e) => this.toggleAllOrders(e.detail));
             },
 
+            serializeFilters(params) {
+                const parts = [];
+                for (const key in params) {
+                    const value = params[key];
+                    if (value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
+                        continue;
+                    }
+                    if (Array.isArray(value)) {
+                        value.forEach(item => {
+                            parts.push(`${encodeURIComponent(key)}[]=${encodeURIComponent(item)}`);
+                        });
+                    } else {
+                        parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+                    }
+                }
+                return parts.join('&');
+            },
+
             clearFilters() {
                 this.filters.search = '';
-                this.filters.status = '';
+                this.filters.status = [];
                 this.filters.date_from = '';
                 this.filters.date_to = '';
-                this.filters.purchase_order_adv = '';
-                this.filters.bt_oc = '';
-                this.filters.customer_name_adv = '';
-                this.filters.channel = '';
-                this.filters.invoice_number_adv = '';
-                this.filters.invoice_date = '';
-                this.filters.origin_warehouse = '';
-                this.filters.destination_locality = '';
-                this.filters.delivery_date = '';
-                this.filters.executive = '';
-                this.filters.evidence_reception_date = '';
-                this.filters.evidence_cutoff_date = '';
+                this.filters.has_delivery_date = '';
+                this.filters.has_invoice = '';
+                this.clearAdvancedFilters();
                 localStorage.removeItem('csOrderFilters');
                 this.applyFilters(true);
             },            
@@ -316,10 +402,11 @@
                 if (resetPage) this.filters.page = 1;
                 this.isLoading = true;
                 this.updateAdvancedFilterCount();
-                const params = new URLSearchParams(this.filters);
+                
+                const paramsStr = this.serializeFilters(this.filters);
                 localStorage.setItem('csOrderFilters', JSON.stringify(this.filters));
                 
-                fetch(`{{ route('customer-service.orders.filter') }}?${params.toString()}`)
+                fetch(`{{ route('customer-service.orders.filter') }}?${paramsStr}`)
                     .then(response => response.json())
                     .then(data => {
                         this.orders = data.data;
@@ -343,7 +430,6 @@
                     this.applyFilters(false);
                 }
             },
-
 
             reinitTableInteractions() {
                 setTimeout(() => {
@@ -404,7 +490,7 @@
                 this.resizingState.currentHeader.style.width = `${newWidth}px`;
             },
 
-            stopResize(e) {
+            stopResize() {
                 if (!this.resizingState.isResizing) return;
                 this.resizingState.currentHeader.querySelector('.resizer').classList.remove('resizing');
                 if (this.resizingState.currentHeader.dataset.column) {
@@ -419,6 +505,7 @@
                 document.body.style.userSelect = '';
                 document.body.style.cursor = '';
             },
+
             setColumnWidths(preset) {
                 if (preset === 'uniform') {
                     const newWidths = {};
@@ -467,19 +554,26 @@
                     'destination_locality', 'delivery_date', 'executive', 
                     'evidence_reception_date', 'evidence_cutoff_date'
                 ];
-                this.advancedFilterCount = advancedKeys.filter(key => this.filters[key] && this.filters[key] !== '').length;
+                this.advancedFilterCount = advancedKeys.filter(key => {
+                    const value = this.filters[key];
+                    if (Array.isArray(value)) {
+                        return value.length > 0;
+                    }
+                    return value && value !== '';
+                }).length;
             },
+
             clearAdvancedFilters() {
                 this.filters.purchase_order_adv = '';
                 this.filters.bt_oc = '';
                 this.filters.customer_name_adv = '';
-                this.filters.channel = '';
+                this.filters.channel = [];
                 this.filters.invoice_number_adv = '';
                 this.filters.invoice_date = '';
-                this.filters.origin_warehouse = '';
-                this.filters.destination_locality = '';
+                this.filters.origin_warehouse = [];
+                this.filters.destination_locality = [];
                 this.filters.delivery_date = '';
-                this.filters.executive = '';
+                this.filters.executive = [];
                 this.filters.evidence_reception_date = '';
                 this.filters.evidence_cutoff_date = '';
             },
@@ -491,6 +585,7 @@
                     this.selectedOrders = [];
                 }
             },
+
             bulkEdit() {
                 if (this.selectedOrders.length === 0) {
                     alert('Por favor, selecciona al menos una orden para editar.');
@@ -532,8 +627,7 @@
                 document.body.appendChild(form);
                 form.submit();
                 document.body.removeChild(form);
-            }            
-
+            }
         }
     }
 </script>
