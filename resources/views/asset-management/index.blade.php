@@ -2,106 +2,56 @@
 
 @section('content')
 
-{{-- 
-    Bloque de estilos completo para el dashboard y componentes.
-    Incluye la paleta de colores, estilos para formularios, botones, badges y la estética general.
---}}
 <style>
     :root {
-        /* Tu paleta de colores */
+        /* Paleta de colores completa y refinada */
         --color-primary: #2c3856;
         --color-accent: #ff9c00;
         --color-text-primary: #2b2b2b;
         --color-text-secondary: #666666;
         --color-surface: #ffffff;
-        
-        /* Colores de apoyo */
-        --color-primary-dark: #212a41; /* Versión oscurecida para hover */
         --color-background: #f3f4f6;
-        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        --color-border: #d1d5db; /* Color de borde estandarizado */
     }
-
-    body {
-        background-color: var(--color-background);
+    body { 
+        background-color: var(--color-background); 
     }
-
-    /* Estilos para formularios (Inputs, Selects, Textareas) */
-    .form-input, .form-select, .form-textarea {
-        border-radius: 0.5rem;
-        border-color: #d1d5db;
-        transition: all 150ms ease-in-out;
+    /* Estilos de formulario consistentes */
+    .form-label { font-weight: 600; color: var(--color-text-primary); margin-bottom: 0.5rem; display: block; }
+    .form-input, .form-select, .form-textarea { 
+        border-radius: 0.5rem; 
+        border: 1px solid var(--color-border); 
+        transition: all 150ms ease-in-out; 
+        width: 100%; 
+        padding: 0.75rem 1rem; 
     }
-    .form-input:focus, .form-select:focus, .form-textarea:focus {
-        --tw-ring-color: var(--color-primary);
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 2px var(--tw-ring-color);
+    .form-input:focus, .form-select:focus, .form-textarea:focus { 
+        --tw-ring-color: var(--color-primary); 
+        border-color: var(--color-primary); 
+        box-shadow: 0 0 0 2px var(--tw-ring-color); 
     }
-    label.form-label {
-        font-weight: 600;
-        color: var(--color-text-primary);
-        margin-bottom: 0.5rem;
-        display: block;
-    }
-    
-    /* Botones */
-    .btn {
-        padding: 0.65rem 1.25rem;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: var(--shadow-sm);
-        transition: all 200ms ease-in-out;
-        transform: translateY(0);
-        border: 1px solid transparent; /* Añadido para consistencia */
-    }
-    .btn:hover {
-        box-shadow: var(--shadow-md);
-        transform: translateY(-2px);
-    }
-    .btn-primary {
-        background-color: var(--color-primary);
-        color: white;
-    }
-    .btn-primary:hover {
-        background-color: var(--color-primary-dark);
-    }
-    .btn-secondary {
-        background-color: var(--color-surface);
-        color: var(--color-text-secondary);
-        border-color: #d1d5db;
-    }
-    .btn-secondary:hover {
-        background-color: #f9fafb;
-    }
+    /* Estilos de botones consistentes */
+    .btn { padding: 0.65rem 1.25rem; border-radius: 0.5rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); transition: all 200ms ease-in-out; transform: translateY(0); border: 1px solid transparent; }
+    .btn:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; }
+    .btn-primary { background-color: var(--color-primary); color: white; }
+    .btn-primary:hover { background-color: #212a41; } /* Darker primary */
+    .btn-secondary { background-color: var(--color-surface); color: var(--color-text-secondary); border-color: var(--color-border); }
+    .btn-secondary:hover { background-color: #f9fafb; }
 
     /* Badges de Estado */
-    .status-badge { 
-        padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; 
-        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
-    }
+    .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
     .status-en-almacen { background-color: #10B981; color: white; }
     .status-asignado { background-color: #3B82F6; color: white; }
     .status-en-reparacion { background-color: var(--color-accent); color: white; }
     .status-prestado { background-color: #8B5CF6; color: white; }
     .status-de-baja { background-color: var(--color-text-secondary); color: white; }
-
+    
     /* Animaciones y Transiciones */
-    .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .kpi-card { animation: fadeIn 0.5s ease-out forwards; }
 
-    /* Estilo de la tabla */
-    .table-container { overflow: hidden; border-radius: 0.75rem; box-shadow: var(--shadow-md); }
-    .table-header th { background-color: #2c3856; color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
-    .table-row:hover { background-color: #eff6ff; }
-
+    /* --- ESTILOS PARA LA TABLA RESPONSIVA --- */
     @media (max-width: 767px) {
         /* Oculta la cabecera de la tabla en móvil */
         .responsive-table-header {
@@ -138,18 +88,22 @@
             color: var(--color-text-primary);
         }
     }
-
 </style>
 
-<div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+{{-- El x-data ahora envuelve todo el contenido para controlar el modal --}}
+<div x-data="{ modalOpen: false }" class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     
-    {{-- Encabezado --}}
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10">
         <div>
             <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight">Dashboard de Activos</h1>
             <p class="text-[var(--color-text-secondary)] mt-2">Vista general y filtrado del inventario de hardware.</p>
         </div>
         <div class="flex items-center space-x-3 mt-4 sm:mt-0">
+            {{-- Botón que abre el modal --}}
+            <button @click="modalOpen = true" class="btn btn-secondary">
+                <i class="fas fa-chart-pie mr-2"></i> Ver Balance
+            </button>
+
             {{-- Menú de Configuración (Dropdown) --}}
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" class="btn btn-secondary">
@@ -163,7 +117,7 @@
                      x-transition:leave="transition ease-in duration-150"
                      x-transition:leave-start="opacity-100 transform translate-y-0"
                      x-transition:leave-end="opacity-0 transform -translate-y-2"
-                     class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl z-20 overflow-hidden border border-gray-200" style="display: none;">
+                     class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl z-20 overflow-hidden border border-gray-200" style="display: none;" x-cloak>
                     <a href="{{ route('asset-management.sites.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Sitios</a>
                     <a href="{{ route('asset-management.manufacturers.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Fabricantes</a>
                     <a href="{{ route('asset-management.categories.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Categorías</a>
@@ -171,6 +125,7 @@
                     <a href="{{ route('asset-management.software-licenses.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all border-t border-gray-100">Gestionar Software</a>    
                 </div>
             </div>
+            
             {{-- Botón para Añadir Activo --}}
             <a href="{{ route('asset-management.assets.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus mr-2"></i> Registrar Activo
@@ -250,7 +205,7 @@
             </div>
         </form>
 
-        {{-- Tabla de Activos --}}
+        {{-- INICIO DE LA TABLA RESPONSIVA --}}
         <div class="table-container border rounded-lg overflow-hidden">
             {{-- Cabecera visible solo en Escritorio (md en adelante) --}}
             <div class="responsive-table-header hidden md:grid md:grid-cols-7 gap-4 bg-[#2c3856] p-4 font-bold text-xs text-[#ffffff] uppercase tracking-wider">
@@ -322,5 +277,88 @@
             </div>
         @endif
     </div>
-</div>
+
+    {{-- MODAL DE BALANCE DE ACTIVOS --}}
+    <div x-show="modalOpen" 
+         x-transition:enter="ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" x-cloak>
+
+        {{-- Contenido del Modal --}}
+        <div @click.away="modalOpen = false" 
+             x-show="modalOpen"
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-90"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="ease-in duration-200"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-90"
+             class="bg-white rounded-xl shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+
+            {{-- Cabecera del Modal --}}
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-[var(--color-primary)]">Balance de Activos por Categoría</h2>
+                    <button @click="modalOpen = false" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+                </div>
+            </div>
+
+            {{-- Cuerpo del Modal (con scroll) --}}
+            <div class="p-6 space-y-4 overflow-y-auto">
+                @forelse($assetBalance as $categoryName => $data)
+                    <div x-data="{ expanded: false }" class="bg-gray-50 rounded-lg border">
+                        {{-- Fila Principal de la Categoría --}}
+                        <div class="grid grid-cols-5 gap-4 items-center p-4">
+                            <div class="col-span-2 md:col-span-1 font-bold text-gray-800">{{ $categoryName }}</div>
+                            <div class="text-center">
+                                <span class="block text-xs text-gray-500">Total</span>
+                                <span class="text-xl font-bold text-[var(--color-primary)]">{{ $data['total'] }}</span>
+                            </div>
+                            <div class="text-center">
+                                <span class="block text-xs text-gray-500">Utilizados</span>
+                                <span class="text-xl font-bold text-orange-500">{{ $data['utilizados'] }}</span>
+                            </div>
+                            <div class="text-center">
+                                <span class="block text-xs text-gray-500">Restantes</span>
+                                <span class="text-xl font-bold text-green-600">{{ $data['restantes'] }}</span>
+                            </div>
+                            <div class="text-right">
+                                <button @click="expanded = !expanded" class="btn btn-secondary btn-sm py-1 px-2 text-xs">
+                                    <span x-show="!expanded">Ver desglose</span>
+                                    <span x-show="expanded">Ocultar</span>
+                                    <i class="fas fa-chevron-down ml-2 text-xs transition-transform" :class="{'rotate-180': expanded}"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {{-- Desglose Colapsable --}}
+                        <div x-show="expanded" x-transition class="border-t bg-white p-4">
+                            <h4 class="font-semibold text-sm mb-2">Desglose por Estatus:</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                                @foreach($data['breakdown'] as $status => $count)
+                                    <div class="flex justify-between items-center p-2 rounded">
+                                        <span>{{ $status }}</span>
+                                        <span class="font-bold">{{ $count }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-gray-500 text-center py-8">No hay activos para mostrar en el balance.</p>
+                @endforelse
+            </div>
+
+            {{-- Pie del Modal --}}
+            <div class="bg-gray-100 px-6 py-4 text-right rounded-b-xl border-t">
+                <button @click="modalOpen = false" class="btn btn-secondary">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+</div> {{-- Cierre del div con x-data --}}
 @endsection

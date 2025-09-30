@@ -211,7 +211,10 @@
                     </div>
                 @else
                     @if($asset->status === 'En Almacén')
-                        <a href="{{ route('asset-management.assignments.create', $asset) }}" class="btn btn-primary w-full mt-4">Asignar Activo</a>
+                        <div class="grid grid-cols-2 gap-2">
+                            <a href="{{ route('asset-management.assignments.create', $asset) }}" class="btn btn-primary w-full mt-4">Asignar</a>
+                            <a href="{{ route('asset-management.assignments.createLoan', $asset) }}" class="btn btn-secondary w-full mt-4">Prestar</a>
+                        </div>
                     @endif
                 @endif
             </div>
@@ -230,7 +233,11 @@
                             @endif
                         </div>
                         <div>
-                            <p class="font-semibold text-gray-800">{{ $assignment->member->name }}</p>
+                            <p class="font-semibold text-gray-800">{{ $assignment->member->name }} 
+                                @if($assignment->type === 'Préstamo')
+                                    <span class="badge badge-media text-xs">Préstamo</span>
+                                @endif
+                            </p>
                             <p class="text-gray-500">Asignado: {{ date('d/m/Y', strtotime($assignment->assignment_date)) }}</p>
                             @if($assignment->actual_return_date)
                             <p class="text-green-600 font-medium">Devuelto: {{ date('d/m/Y', strtotime($assignment->actual_return_date)) }}</p>

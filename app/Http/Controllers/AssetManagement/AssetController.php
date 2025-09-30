@@ -8,6 +8,8 @@ use App\Models\HardwareModel;
 use App\Models\Site;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Models\HardwareCategory;
+use Illuminate\Support\Facades\DB; 
 
 class AssetController extends Controller
 {
@@ -61,13 +63,34 @@ class AssetController extends Controller
             ->distinct()
             ->pluck('status');
 
+        $balanceData = DB::table('hardware_assets')
+            ->join('hardware_models', 'hardware_assets.hardware_model_id', '=', 'hardware_models.id')
+            ->join('hardware_categories', 'hardware_models.hardware_category_id', '=', 'hardware_categories.id')
+            ->select('hardware_categories.name as category_name', 'hardware_assets.status', DB::raw('count(*) as count'))
+            ->groupBy('hardware_categories.name', 'hardware_assets.status')
+            ->orderBy('category_name')
+            ->get();
+
+        $assetBalance = collect($balanceData)->groupBy('category_name')->map(function ($group) {
+            $total = $group->sum('count');
+            $inStock = $group->where('status', 'En Almacén')->sum('count');
+            
+            return [
+                'total' => $total,
+                'utilizados' => $total - $inStock,
+                'restantes' => $inStock,
+                'breakdown' => $group->pluck('count', 'status'),
+            ];
+        });        
+
         return view('asset-management.index', [
             'assets' => $assets,
             'stats' => $stats,
             'filters' => $request->all(),
             'sites' => $sites,
             'categories' => $categories,
-            'statuses' => $statuses
+            'statuses' => $statuses,
+            'assetBalance' => $assetBalance, 
         ]);
     }
 

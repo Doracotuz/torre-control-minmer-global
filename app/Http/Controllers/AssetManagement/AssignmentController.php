@@ -79,4 +79,49 @@ class AssignmentController extends Controller
         return redirect()->route('asset-management.assets.show', $assignment->asset)
             ->with('success', 'Devolución registrada exitosamente. El activo está disponible en almacén.');
     }
+
+    public function createLoan(HardwareAsset $asset)
+    {
+        if ($asset->status !== 'En Almacén') {
+            return redirect()->route('asset-management.assets.show', $asset)
+                ->with('error', 'Este activo no está disponible para ser prestado.');
+        }
+
+        $members = OrganigramMember::orderBy('name')->get();
+        return view('asset-management.assignments.create-loan', compact('asset', 'members'));
+    }
+
+    /**
+     * Guarda el nuevo préstamo en la base de datos.
+     */
+    public function storeLoan(Request $request, HardwareAsset $asset)
+    {
+        $request->validate([
+            'organigram_member_id' => 'required|exists:organigram_members,id',
+            'assignment_date' => 'required|date',
+            'expected_return_date' => 'required|date|after_or_equal:assignment_date',
+        ]);
+
+        if ($asset->status !== 'En Almacén') {
+            return back()->with('error', 'Este activo ya no está disponible.');
+        }
+
+        DB::transaction(function () use ($request, $asset) {
+            Assignment::create([
+                'type' => 'Préstamo', // <-- Diferenciador clave
+                'hardware_asset_id' => $asset->id,
+                'organigram_member_id' => $request->organigram_member_id,
+                'assignment_date' => $request->assignment_date,
+                'expected_return_date' => $request->expected_return_date, // <-- Fecha de devolución
+            ]);
+
+            $asset->status = 'Prestado'; // <-- Nuevo estatus
+            $asset->save();
+        });
+
+        return redirect()->route('asset-management.assets.show', $asset)
+            ->with('success', 'Activo prestado exitosamente.');
+    }
+
+
 }

@@ -11,4 +11,9 @@ class HardwareCategory extends Model {
         return $this->hasMany(HardwareModel::class);
     }
 
+    public function assets()
+    {
+        return $this->hasManyThrough(HardwareAsset::class, HardwareModel::class);
+    }    
+
 }
