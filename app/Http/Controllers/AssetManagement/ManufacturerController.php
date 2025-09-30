@@ -46,6 +46,10 @@ class ManufacturerController extends Controller
 
     public function destroy(Manufacturer $manufacturer)
     {
+        if ($manufacturer->models()->exists()) {
+            return back()->with('error', 'No se puede eliminar un fabricante que tiene modelos asignados.');
+        }
+
         $manufacturer->delete();
         return redirect()->route('asset-management.manufacturers.index')->with('success', 'Fabricante eliminado exitosamente.');
     }

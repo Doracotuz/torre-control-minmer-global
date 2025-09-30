@@ -1,64 +1,149 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="w-full max-w-4xl mx-auto px-4 py-8">
-    <h1 class="text-4xl font-bold">Editar Activo: {{ $asset->asset_tag }}</h1>
+<style>
+    :root {
+        /* Tu paleta de colores */
+        --color-primary: #2c3856;
+        --color-accent: #ff9c00;
+        --color-text-primary: #2b2b2b;
+        --color-text-secondary: #666666;
+        --color-surface: #ffffff;
+        
+        /* Colores de apoyo */
+        --color-primary-dark: #212a41; /* Versión oscurecida para hover */
+        --color-background: #f3f4f6;
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    body {
+        background-color: var(--color-background);
+    }
+
+    /* Estilos para formularios (Inputs, Selects, Textareas) */
+    .form-input, .form-select, .form-textarea {
+        border-radius: 0.5rem;
+        border-color: #d1d5db;
+        transition: all 150ms ease-in-out;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        --tw-ring-color: var(--color-primary);
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px var(--tw-ring-color);
+    }
+    label.form-label {
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    /* Botones */
+    .btn {
+        padding: 0.65rem 1.25rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-sm);
+        transition: all 200ms ease-in-out;
+        transform: translateY(0);
+    }
+    .btn:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+    .btn-primary {
+        background-color: var(--color-primary);
+        color: white;
+    }
+    .btn-primary:hover {
+        background-color: var(--color-primary-dark);
+    }
+    .btn-secondary {
+        background-color: var(--color-surface);
+        color: var(--color-text-secondary);
+        border: 1px solid #d1d5db;
+    }
+    .btn-secondary:hover {
+        background-color: #f9fafb;
+    }
+
+    /* Badges de Estado */
+    .status-badge { 
+        padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; 
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .status-asignado { background-color: #3B82F6; color: white; }
+    .status-en-almacen { background-color: #10B981; color: white; }
+    .status-en-reparacion { background-color: var(--color-accent); color: white; }
+    .status-prestado { background-color: #8B5CF6; color: white; }
+    .status-de-baja { background-color: var(--color-text-secondary); color: white; }
+</style>
+<div class="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="mb-8">
+        <a href="{{ route('asset-management.assets.show', $asset) }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-2 inline-block">
+            <i class="fas fa-arrow-left mr-2"></i> Volver a Detalles
+        </a>
+        <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight">Editar Activo</h1>
+        <p class="font-mono text-[var(--color-primary)] mt-1">{{ $asset->asset_tag }}</p>
+    </div>
     
     <div class="bg-white p-8 rounded-xl shadow-lg mt-8">
         <form action="{{ route('asset-management.assets.update', $asset) }}" method="POST">
             @csrf
             @method('PUT')
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 
                 {{-- Columna Izquierda --}}
                 <div class="space-y-6">
                     <div>
-                        <label for="asset_tag" class="block font-semibold">Etiqueta de Activo</label>
-                        <input type="text" id="asset_tag" name="asset_tag" class="form-input w-full mt-1" value="{{ old('asset_tag', $asset->asset_tag) }}" required>
+                        <label for="asset_tag" class="form-label">Etiqueta de Activo</label>
+                        <input type="text" id="asset_tag" name="asset_tag" class="form-input w-full" value="{{ old('asset_tag', $asset->asset_tag) }}" required>
                     </div>
                     <div>
-                        <label for="serial_number" class="block font-semibold">Número de Serie</label>
-                        <input type="text" id="serial_number" name="serial_number" class="form-input w-full mt-1" value="{{ old('serial_number', $asset->serial_number) }}" required>
+                        <label for="serial_number" class="form-label">Número de Serie</label>
+                        <input type="text" id="serial_number" name="serial_number" class="form-input w-full" value="{{ old('serial_number', $asset->serial_number) }}" required>
                     </div>
+
+                    {{-- AlpineJS Componente para Categoría/Modelo --}}
                     <div x-data="{ models: {{ $groupedModels->toJson() }}, categories: {{ $groupedModels->keys()->toJson() }}, selectedCategory: '{{ old('category', $currentCategoryName) }}', filteredModels: [] }"
-                         x-init="filteredModels = models[selectedCategory] || []">
+                         x-init="filteredModels = models[selectedCategory] || []" class="space-y-6">
                         <div>
-                            <label for="category" class="block font-semibold">Categoría</label>
-                            <select id="category" x-model="selectedCategory" @change="filteredModels = models[selectedCategory] || []" class="form-input w-full mt-1">
+                            <label for="category" class="form-label">Categoría</label>
+                            <select id="category" x-model="selectedCategory" @change="filteredModels = models[selectedCategory] || []" class="form-select w-full">
                                 <option value="">-- Selecciona una categoría --</option>
-                                <template x-for="category in categories" :key="category">
-                                    <option :value="category" x-text="category"></option>
-                                </template>
+                                <template x-for="category in categories" :key="category"><option :value="category" x-text="category"></option></template>
                             </select>
                         </div>
-                        <div x-show="selectedCategory" class="mt-6">
-                            <label for="hardware_model_id" class="block font-semibold">Modelo</label>
-                            <select id="hardware_model_id" name="hardware_model_id" class="form-input w-full mt-1" required>
+                        <div x-show="selectedCategory" x-transition>
+                            <label for="hardware_model_id" class="form-label">Modelo</label>
+                            <select id="hardware_model_id" name="hardware_model_id" class="form-select w-full" required>
                                 <option value="">-- Selecciona un modelo --</option>
-                                <template x-for="model in filteredModels" :key="model.id">
-                                    <option :value="model.id" x-text="model.name" :selected="model.id == {{ old('hardware_model_id', $asset->hardware_model_id) }}"></option>
-                                </template>
+                                <template x-for="model in filteredModels" :key="model.id"><option :value="model.id" x-text="model.name" :selected="model.id == {{ old('hardware_model_id', $asset->hardware_model_id) }}"></option></template>
                             </select>
                         </div>
-                        {{-- Campos dinámicos --}}
-                        <div x-show="selectedCategory === 'Laptop' || selectedCategory === 'Desktop'" class="space-y-6 border-t pt-4 mt-4">
-                            <h3 class="font-bold text-lg">Especificaciones Técnicas</h3>
-                            <div><label for="cpu" class="block font-semibold">Procesador</label><input type="text" name="cpu" id="cpu" class="form-input w-full mt-1" value="{{ old('cpu', $asset->cpu) }}"></div>
-                            <div><label for="ram" class="block font-semibold">RAM</label><input type="text" name="ram" id="ram" class="form-input w-full mt-1" value="{{ old('ram', $asset->ram) }}"></div>
-                            <div><label for="storage" class="block font-semibold">Almacenamiento</label><input type="text" name="storage" id="storage" class="form-input w-full mt-1" value="{{ old('storage', $asset->storage) }}"></div>
-                            <div><label for="mac_address" class="block font-semibold">MAC Address</label><input type="text" name="mac_address" id="mac_address" class="form-input w-full mt-1" value="{{ old('mac_address', $asset->mac_address) }}"></div>
+
+                        {{-- Campos dinámicos para Laptops/Desktops --}}
+                        <div x-show="selectedCategory === 'Laptop' || selectedCategory === 'Desktop'" x-transition class="space-y-6 border-t border-gray-200 pt-6 mt-6">
+                            <h3 class="font-bold text-lg text-[var(--color-text-primary)]">Especificaciones Técnicas</h3>
+                            <div><label for="cpu" class="form-label">Procesador</label><input type="text" name="cpu" id="cpu" class="form-input w-full" value="{{ old('cpu', $asset->cpu) }}"></div>
+                            <div><label for="ram" class="form-label">RAM (e.g., 16GB)</label><input type="text" name="ram" id="ram" class="form-input w-full" value="{{ old('ram', $asset->ram) }}"></div>
+                            <div><label for="storage" class="form-label">Almacenamiento (e.g., 512GB SSD)</label><input type="text" name="storage" id="storage" class="form-input w-full" value="{{ old('storage', $asset->storage) }}"></div>
+                            <div><label for="mac_address" class="form-label">MAC Address</label><input type="text" name="mac_address" id="mac_address" class="form-input w-full" value="{{ old('mac_address', $asset->mac_address) }}"></div>
                         </div>
-                        <div x-show="selectedCategory === 'Celular'" class="space-y-6 border-t pt-4 mt-4">
-                             <h3 class="font-bold text-lg">Detalles de Telefonía</h3>
-                            <div>
-                                <label for="phone_plan_type" class="block font-semibold">Tipo de Plan</label>
-                                <select name="phone_plan_type" id="phone_plan_type" class="form-input w-full mt-1">
-                                    <option value="">-- Selecciona --</option>
-                                    <option value="Prepago" @selected(old('phone_plan_type', $asset->phone_plan_type) == 'Prepago')>Prepago</option>
-                                    <option value="Plan" @selected(old('phone_plan_type', $asset->phone_plan_type) == 'Plan')>Plan</option>
-                                </select>
+
+                        {{-- Campos dinámicos para Celulares --}}
+                        <div x-show="selectedCategory === 'Celular'" x-transition class="space-y-6 border-t border-gray-200 pt-6 mt-6">
+                             <h3 class="font-bold text-lg text-[var(--color-text-primary)]">Detalles de Telefonía</h3>
+                             <div>
+                                <label for="phone_plan_type" class="form-label">Tipo de Plan</label>
+                                <select name="phone_plan_type" id="phone_plan_type" class="form-select w-full"><option value="">-- Selecciona --</option><option value="Prepago" @selected(old('phone_plan_type', $asset->phone_plan_type) == 'Prepago')>Prepago</option><option value="Plan" @selected(old('phone_plan_type', $asset->phone_plan_type) == 'Plan')>Plan</option></select>
                             </div>
-                            <div><label for="phone_number" class="block font-semibold">Número Telefónico</label><input type="text" name="phone_number" id="phone_number" class="form-input w-full mt-1" value="{{ old('phone_number', $asset->phone_number) }}"></div>
+                            <div><label for="phone_number" class="form-label">Número Telefónico</label><input type="text" name="phone_number" id="phone_number" class="form-input w-full" value="{{ old('phone_number', $asset->phone_number) }}"></div>
                         </div>
                     </div>
                 </div>
@@ -66,39 +151,34 @@
                 {{-- Columna Derecha --}}
                 <div class="space-y-6">
                     <div>
-                        <label for="site_id" class="block font-semibold">Sitio / Ubicación</label>
-                        <select id="site_id" name="site_id" class="form-input w-full mt-1" required>
-                            @foreach($sites as $site)
-                            <option value="{{ $site->id }}" @selected(old('site_id', $asset->site_id) == $site->id)>{{ $site->name }}</option>
-                            @endforeach
+                        <label for="site_id" class="form-label">Sitio / Ubicación</label>
+                        <select id="site_id" name="site_id" class="form-select w-full" required>
+                            @foreach($sites as $site)<option value="{{ $site->id }}" @selected(old('site_id', $asset->site_id) == $site->id)>{{ $site->name }}</option>@endforeach
                         </select>
                     </div>
                     <div>
-                        <label for="status" class="block font-semibold">Estatus</label>
-                        <select id="status" name="status" class="form-input w-full mt-1" required>
-                            <option value="En Almacén" @selected(old('status', $asset->status) == 'En Almacén')>En Almacén</option>
-                            <option value="Asignado" @selected(old('status', $asset->status) == 'Asignado')>Asignado</option>
-                            <option value="En Reparación" @selected(old('status', $asset->status) == 'En Reparación')>En Reparación</option>
-                            <option value="Prestado" @selected(old('status', $asset->status) == 'Prestado')>Prestado</option>
-                            <option value="De Baja" @selected(old('status', $asset->status) == 'De Baja')>De Baja</option>
+                        <label for="status" class="form-label">Estatus</label>
+                        <select id="status" name="status" class="form-select w-full" required>
+                            <option value="En Almacén" @selected(old('status', $asset->status) == 'En Almacén')>En Almacén</option><option value="Asignado" @selected(old('status', $asset->status) == 'Asignado')>Asignado</option><option value="En Reparación" @selected(old('status', $asset->status) == 'En Reparación')>En Reparación</option><option value="Prestado" @selected(old('status', $asset->status) == 'Prestado')>Prestado</option><option value="De Baja" @selected(old('status', $asset->status) == 'De Baja')>De Baja</option>
                         </select>
                     </div>
                     <div>
-                        <label for="purchase_date" class="block font-semibold">Fecha de Compra</label>
-                        <input type="date" id="purchase_date" name="purchase_date" class="form-input w-full mt-1" value="{{ old('purchase_date', $asset->purchase_date) }}">
+                        <label for="purchase_date" class="form-label">Fecha de Compra</label>
+                        <input type="date" id="purchase_date" name="purchase_date" class="form-input w-full" value="{{ old('purchase_date', $asset->purchase_date) }}">
                     </div>
                     <div>
-                        <label for="warranty_end_date" class="block font-semibold">Fin de Garantía</label>
-                        <input type="date" id="warranty_end_date" name="warranty_end_date" class="form-input w-full mt-1" value="{{ old('warranty_end_date', $asset->warranty_end_date) }}">
+                        <label for="warranty_end_date" class="form-label">Fin de Garantía</label>
+                        <input type="date" id="warranty_end_date" name="warranty_end_date" class="form-input w-full" value="{{ old('warranty_end_date', $asset->warranty_end_date) }}">
                     </div>
                     <div>
-                        <label for="notes" class="block font-semibold">Notas Adicionales</label>
-                        <textarea id="notes" name="notes" rows="4" class="form-input w-full mt-1">{{ old('notes', $asset->notes) }}</textarea>
+                        <label for="notes" class="form-label">Notas Adicionales</label>
+                        <textarea id="notes" name="notes" rows="5" class="form-textarea w-full">{{ old('notes', $asset->notes) }}</textarea>
                     </div>
                 </div>
             </div>
-            <div class="mt-8 text-right">
-                <a href="{{ route('asset-management.assets.show', $asset) }}" class="btn bg-gray-200 text-gray-700">Cancelar</a>
+            
+            <div class="mt-8 pt-6 border-t border-gray-200 flex justify-end items-center space-x-4">
+                <a href="{{ route('asset-management.assets.show', $asset) }}" class="btn btn-secondary">Cancelar</a>
                 <button type="submit" class="btn btn-primary">Actualizar Activo</button>
             </div>
         </form>

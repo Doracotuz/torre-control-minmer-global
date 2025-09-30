@@ -24,7 +24,7 @@ class TicketController extends Controller
     public function index(Request $request)
     {
         $categories = TicketCategory::orderBy('name')->get();
-        $agents = Auth::user()->isSuperAdmin() ? User::where('is_client', false)->orderBy('name')->get() : collect();
+        $agents = Auth::user()->isSuperAdmin() ? $this->getAssignableAgents() : collect();
 
         $query = Ticket::query();
         $user = Auth::user();
@@ -98,7 +98,7 @@ class TicketController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'priority' => 'required|in:Baja,Media,Alta',
-            'attachment' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:50048',
+            'attachment' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:100048',
             'ticket_sub_category_id' => 'required|exists:ticket_sub_categories,id',
             'hardware_asset_id' => 'nullable|exists:hardware_assets,id',
         ]);
@@ -139,14 +139,13 @@ class TicketController extends Controller
     {
         $user = Auth::user();
 
-        // Permitir el acceso si el usuario es el creador, un SuperAdmin, O el agente asignado.
         if ($user->id !== $ticket->user_id && !$user->isSuperAdmin() && $user->id !== $ticket->agent_id) {
             abort(403, 'No tienes permiso para ver este ticket.');
         }
 
         $ticket->load(['user', 'agent', 'subCategory', 'replies.user', 'statusHistories.user', 'asset.model']);
 
-        $agents = User::where('is_client', false)->orderBy('name')->get();
+        $agents = $this->getAssignableAgents();
 
         return view('tickets.show', compact('ticket', 'agents'));
     }
@@ -238,7 +237,7 @@ class TicketController extends Controller
 
         $request->validate([
             'work_summary' => 'required_if:status,Cerrado|string|nullable',
-            'closure_evidence' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:50048',
+            'closure_evidence' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:100048',
         ]);
 
         if ($request->status === 'Cerrado') {
@@ -394,5 +393,15 @@ class TicketController extends Controller
                 $query->where('name', 'Administración');
             })->get();
     }
+
+    private function getAssignableAgents()
+    {
+        return User::where('is_client', false)
+            ->whereHas('area', function ($query) {
+                $query->whereIn('name', ['Administración', 'Innovación y Desarrollo']);
+            })
+            ->orderBy('name')
+            ->get();
+    }    
 
 }

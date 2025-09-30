@@ -5,4 +5,10 @@ use Illuminate\Database\Eloquent\Model;
 class Manufacturer extends Model {
     use HasFactory;
     protected $fillable = ['name'];
+
+    public function models(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(HardwareModel::class);
+    }
+
 }

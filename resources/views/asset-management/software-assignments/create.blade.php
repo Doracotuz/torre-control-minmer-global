@@ -1,20 +1,110 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="w-full max-w-2xl mx-auto px-4 py-8">
-    <div class="bg-white p-8 rounded-xl shadow-lg">
-        <h1 class="text-2xl font-bold text-gray-800">Asignar Software</h1>
+<style>
+    :root {
+        /* Tu paleta de colores */
+        --color-primary: #2c3856;
+        --color-accent: #ff9c00;
+        --color-text-primary: #2b2b2b;
+        --color-text-secondary: #666666;
+        --color-surface: #ffffff;
         
-        <div class="mt-4 border-t pt-4">
-            <p><strong>Activo:</strong> {{ $asset->model->name }} ({{ $asset->asset_tag }})</p>
-        </div>
+        /* Colores de apoyo */
+        --color-primary-dark: #212a41; /* Versión oscurecida para hover */
+        --color-background: #f3f4f6;
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
 
-        <form action="{{ route('asset-management.software-assignments.store', $asset) }}" method="POST" class="mt-6">
+    body {
+        background-color: var(--color-background);
+    }
+
+    /* Estilos para formularios (Inputs, Selects, Textareas) */
+    .form-input, .form-select, .form-textarea {
+        border-radius: 0.5rem;
+        border-color: #d1d5db;
+        transition: all 150ms ease-in-out;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        --tw-ring-color: var(--color-primary);
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px var(--tw-ring-color);
+    }
+    label.form-label {
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    /* Botones */
+    .btn {
+        padding: 0.65rem 1.25rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-sm);
+        transition: all 200ms ease-in-out;
+        transform: translateY(0);
+    }
+    .btn:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+    .btn-primary {
+        background-color: var(--color-primary);
+        color: white;
+    }
+    .btn-primary:hover {
+        background-color: var(--color-primary-dark);
+    }
+    .btn-secondary {
+        background-color: var(--color-surface);
+        color: var(--color-text-secondary);
+        border: 1px solid #d1d5db;
+    }
+    .btn-secondary:hover {
+        background-color: #f9fafb;
+    }
+
+    /* Badges de Estado */
+    .status-badge { 
+        padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; 
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .status-asignado { background-color: #3B82F6; color: white; }
+    .status-en-almacen { background-color: #10B981; color: white; }
+    .status-en-reparacion { background-color: var(--color-accent); color: white; }
+    .status-prestado { background-color: #8B5CF6; color: white; }
+    .status-de-baja { background-color: var(--color-text-secondary); color: white; }
+</style>
+<div class="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    {{-- Encabezado --}}
+    <div class="mb-8">
+        <a href="{{ route('asset-management.assets.show', $asset) }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-2 inline-block">
+            <i class="fas fa-arrow-left mr-2"></i> Volver a los detalles del activo
+        </a>
+        <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight">Asignar Software</h1>
+        <p class="text-[var(--color-text-secondary)] mt-1">
+            Asignando a: <span class="font-semibold text-[var(--color-text-primary)]">{{ $asset->model->name }}</span>
+            <span class="font-mono text-xs text-[var(--color-primary)]">({{ $asset->asset_tag }})</span>
+        </p>
+    </div>
+
+    {{-- Formulario --}}
+    <div class="bg-white p-8 rounded-xl shadow-lg mt-8">
+        <form action="{{ route('asset-management.software-assignments.store', $asset) }}" method="POST">
             @csrf
             <div class="space-y-6">
                 <div>
-                    <label for="software_license_id" class="block font-semibold">Licencia de Software:</label>
-                    <select id="software_license_id" name="software_license_id" class="form-input w-full mt-1" required>
+                    <label for="software_license_id" class="form-label">Licencia de Software</label>
+                    <select id="software_license_id" name="software_license_id" class="form-select w-full" required>
                         <option value="">-- Selecciona una licencia disponible --</option>
                         @forelse($availableLicenses as $license)
                             <option value="{{ $license->id }}">
@@ -26,12 +116,13 @@
                     </select>
                 </div>
                 <div>
-                    <label for="install_date" class="block font-semibold">Fecha de Instalación:</label>
-                    <input type="date" id="install_date" name="install_date" value="{{ date('Y-m-d') }}" class="form-input w-full mt-1" required>
+                    <label for="install_date" class="form-label">Fecha de Instalación</label>
+                    <input type="date" id="install_date" name="install_date" value="{{ date('Y-m-d') }}" class="form-input w-full" required>
                 </div>
             </div>
-            <div class="mt-8 text-right">
-                <a href="{{ route('asset-management.assets.show', $asset) }}" class="btn bg-gray-200 text-gray-700">Cancelar</a>
+            
+            <div class="mt-8 pt-6 border-t border-gray-200 flex justify-end items-center space-x-4">
+                <a href="{{ route('asset-management.assets.show', $asset) }}" class="btn btn-secondary">Cancelar</a>
                 <button type="submit" class="btn btn-primary">Confirmar Asignación</button>
             </div>
         </form>

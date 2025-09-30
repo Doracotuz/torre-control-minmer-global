@@ -56,6 +56,10 @@ class ModelController extends Controller
 
     public function destroy(HardwareModel $model)
     {
+        if ($model->assets()->exists()) {
+            return back()->with('error', 'No se puede eliminar un modelo que está en uso por uno o más activos.');
+        }
+
         $model->delete();
         return redirect()->route('asset-management.models.index')->with('success', 'Modelo eliminado exitosamente.');
     }

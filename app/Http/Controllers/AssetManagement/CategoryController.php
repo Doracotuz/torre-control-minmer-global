@@ -46,6 +46,10 @@ class CategoryController extends Controller
 
     public function destroy(HardwareCategory $category)
     {
+        if ($category->models()->exists()) {
+             return back()->with('error', 'No se puede eliminar una categoría que tiene modelos asignados.');
+        }
+
         $category->delete();
         return redirect()->route('asset-management.categories.index')->with('success', 'Categoría eliminada exitosamente.');
     }

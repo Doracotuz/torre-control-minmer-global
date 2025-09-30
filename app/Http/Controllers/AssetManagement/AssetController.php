@@ -18,31 +18,56 @@ class AssetController extends Controller
     {
         $query = HardwareAsset::with(['model.category', 'model.manufacturer', 'site', 'currentAssignment.member']);
 
-        // Aplicar filtros de búsqueda si existen
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';
             $query->where(function($q) use ($searchTerm) {
                 $q->where('asset_tag', 'like', $searchTerm)
-                  ->orWhere('serial_number', 'like', $searchTerm)
+                  ->orWhere('serial_number', 'like', 'searchTerm')
                   ->orWhereHas('model', fn($modelQuery) => $modelQuery->where('name', 'like', $searchTerm))
                   ->orWhereHas('currentAssignment.member', fn($memberQuery) => $memberQuery->where('name', 'like', $searchTerm));
             });
         }
 
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('site_id')) {
+            $query->where('site_id', $request->site_id);
+        }
+
+        if ($request->filled('category_id')) {
+            $query->whereHas('model.category', function ($q) use ($request) {
+                $q->where('id', $request->category_id);
+            });
+        }
+
         $assets = $query->latest()->paginate(15)->withQueryString();
         
-        // Calcular KPIs para el dashboard
         $stats = [
             'total' => HardwareAsset::count(),
             'assigned' => HardwareAsset::where('status', 'Asignado')->count(),
             'in_stock' => HardwareAsset::where('status', 'En Almacén')->count(),
             'in_repair' => HardwareAsset::where('status', 'En Reparación')->count(),
         ];
+        
+        
+        $sites = \App\Models\Site::orderBy('name')->get();
+        $categories = \App\Models\HardwareCategory::orderBy('name')->get();
+        $statuses = \App\Models\HardwareAsset::query()
+            ->select('status')
+            ->whereNotNull('status')
+            ->where('status', '!=', '')
+            ->distinct()
+            ->pluck('status');
 
         return view('asset-management.index', [
             'assets' => $assets,
             'stats' => $stats,
-            'filters' => $request->all()
+            'filters' => $request->all(),
+            'sites' => $sites,
+            'categories' => $categories,
+            'statuses' => $statuses
         ]);
     }
 
