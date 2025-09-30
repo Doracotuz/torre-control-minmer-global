@@ -92,6 +92,10 @@
     </style>
 </head>
 <body>
+    @php
+        use Carbon\Carbon;
+        Carbon::setLocale('es');
+    @endphp    
     <header>
         @if($logoBase64)
             <img src="{{ $logoBase64 }}" alt="Logo de la Empresa">
@@ -108,10 +112,10 @@
     </footer>
 
     <main>
-        <h1>Carta Responsiva de Activos de Tecnologías de la Información</h1>
+        <h1>Carta Responsiva de Activos de TI</h1>
 
         <p class="text-justify">
-            En la ciudad de {{ $assignment->asset->site->name ?? 'nuestras oficinas' }}, a {{ date('d') }} días del mes de {{ date('F') }} de {{ date('Y') }}, la empresa
+            En la ciudad de {{ $assignment->asset->site->name ?? 'nuestras oficinas' }}, a {{ \Carbon\Carbon::parse($assignment->assignment_date)->isoFormat('D [de] MMMM [de] YYYY') }}, la empresa
             <strong>Estrategias y Soluciones Minmer Global</strong> (en adelante "LA EMPRESA"), hace entrega del equipo de cómputo que se detalla a continuación al colaborador(a)
             <strong>{{ $assignment->member->name }}</strong>, quien se identifica con el puesto de
             <strong>{{ $assignment->member->position->name ?? 'No especificado' }}</strong> (en adelante "EL COLABORADOR").
@@ -157,8 +161,8 @@
              <tr>
                 <th>Fechas Clave</th>
                 <td>
-                    <strong>Fecha de Compra:</strong> {{ $assignment->asset->purchase_date ? date('d/m/Y', strtotime($assignment->asset->purchase_date)) : 'N/A' }} <br>
-                    <strong>Fin de Garantía:</strong> {{ $assignment->asset->warranty_end_date ? date('d/m/Y', strtotime($assignment->asset->warranty_end_date)) : 'N/A' }}
+                    <strong>Fecha de Compra:</strong> {{ $assignment->asset->purchase_date ? Carbon::parse($assignment->asset->purchase_date)->isoFormat('L') : 'N/A' }} <br>
+                    <strong>Fin de Garantía:</strong> {{ $assignment->asset->warranty_end_date ? Carbon::parse($assignment->asset->warranty_end_date)->isoFormat('L') : 'N/A' }}
                 </td>
             </tr>
         </table>
@@ -206,6 +210,25 @@
                 <p><strong>Entrega</strong><br>Departamento de TI</p>
             </div>
         </div>
+
+        <div style="margin-top: 60px; border-top: 2px dashed #ccc; padding-top: 20px; page-break-inside: avoid;">
+            <h2>Acta de Devolución de Activo</h2>
+            <p class="text-justify">
+                "EL COLABORADOR" hace entrega a "LA EMPRESA" del equipo descrito en la presente acta, dando por finalizada la responsiva sobre el mismo. El equipo se recibe para su revisión y validación de estado.
+                <br><br>
+                Fecha de Devolución: ______ / _______________ / ______
+            </p>
+            <div class="signatures">
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <p><strong>Entrega de Conformidad</strong><br>{{ $assignment->member->name }}</p>
+                </div>
+                <div class="signature-box" style="float: right;">
+                    <div class="signature-line"></div>
+                    <p><strong>Recibe</strong><br>Departamento de TI</p>
+                </div>
+            </div>
+        </div>        
     </main>
 </body>
 </html>

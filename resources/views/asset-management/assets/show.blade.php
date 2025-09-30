@@ -83,7 +83,8 @@
     .status-prestado { background-color: #8B5CF6; color: white; }
     .status-de-baja { background-color: var(--color-text-secondary); color: white; }
 </style>
-<div class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+<div x-data="{ photoModalOpen: false, currentPhoto: '' }" class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    
     {{-- Encabezado --}}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
         <div>
@@ -103,8 +104,27 @@
     {{-- Layout Principal --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {{-- Columna Izquierda (Detalles y Software) --}}
+        {{-- Columna Izquierda (Detalles, Fotos y Software) --}}
         <div class="lg:col-span-2 space-y-8">
+            
+            {{-- Tarjeta de Fotografías del Activo --}}
+            @if($asset->photo_1_path || $asset->photo_2_path || $asset->photo_3_path)
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h3 class="font-bold text-xl text-[var(--color-text-primary)] border-b pb-3 mb-4">Fotografías del Activo</h3>
+                <div class="grid grid-cols-3 gap-4">
+                    @foreach([$asset->photo_1_path, $asset->photo_2_path, $asset->photo_3_path] as $photo)
+                        @if($photo)
+                        <div class="aspect-w-1 aspect-h-1">
+                            <img src="{{ Storage::disk('s3')->url($photo) }}" 
+                                 @click="photoModalOpen = true; currentPhoto = '{{ Storage::disk('s3')->url($photo) }}'"
+                                 alt="Fotografía del activo"
+                                 class="rounded-lg object-cover cursor-pointer w-full h-full transition transform hover:scale-105">
+                        </div>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+            @endif
             
             {{-- Tarjeta de Detalles --}}
             <div class="bg-white p-6 rounded-xl shadow-lg">
@@ -220,38 +240,60 @@
             </div>
 
             {{-- Tarjeta de Historial --}}
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <h3 class="font-bold text-lg mb-4 text-[var(--color-text-primary)]">Historial de Asignaciones</h3>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-bold text-[var(--color-primary)] mb-4">Línea de Vida del Activo</h3>
                 <ul class="space-y-4 text-sm">
-                @forelse($asset->assignments->sortByDesc('assignment_date') as $assignment)
+                @forelse($asset->logs as $log)
                     <li class="flex items-start space-x-3 border-b pb-3 last:border-b-0">
+                        @if($log->loggable_type === 'App\Models\Assignment' && $log->loggable)
+                            @php $assignment = $log->loggable; @endphp
+                            <div class="mt-2 pl-4 border-l-2">
+                                <!-- <a href="{{ route('asset-management.assignments.pdf', $assignment) }}" target="_blank" class="text-xs text-indigo-600 hover:underline">Ver Responsiva Original</a> -->
+                                
+                                @if($assignment->signed_receipt_path)
+                                    <a href="{{ Storage::disk('s3')->url($assignment->signed_receipt_path) }}" target="_blank" class="text-xs text-green-600 hover:underline ml-4">Ver Responsiva Firmada</a>
+                                @else
+                                    <form action="{{ route('asset-management.assignments.uploadReceipt', $assignment) }}" method="POST" enctype="multipart/form-data" class="inline-block ml-4">
+                                        @csrf
+                                        <input type="file" name="signed_receipt" class="hidden" id="receipt-{{ $assignment->id }}" onchange="this.form.submit()">
+                                        <label for="receipt-{{ $assignment->id }}" class="cursor-pointer text-xs text-blue-600 hover:underline">Subir Firmada (PDF)</label>
+                                    </form>
+                                @endif
+                            </div>
+                        @endif                        
                         <div class="flex-shrink-0 pt-1">
-                            @if($assignment->actual_return_date)
-                                <i class="fas fa-check-circle text-green-500"></i>
-                            @else
-                                <i class="fas fa-user-check text-blue-500"></i>
+                            @if($log->action_type == 'Creación') <i class="fas fa-plus-circle text-blue-500"></i>
+                            @elseif($log->action_type == 'Asignación' || $log->action_type == 'Préstamo') <i class="fas fa-user-check text-green-500"></i>
+                            @elseif($log->action_type == 'Devolución') <i class="fas fa-undo text-gray-500"></i>
+                            @elseif($log->action_type == 'Cambio de Estatus') <i class="fas fa-info-circle text-yellow-500"></i>
                             @endif
                         </div>
                         <div>
-                            <p class="font-semibold text-gray-800">{{ $assignment->member->name }} 
-                                @if($assignment->type === 'Préstamo')
-                                    <span class="badge badge-media text-xs">Préstamo</span>
-                                @endif
+                            <p class="font-semibold text-gray-800">{{ $log->action_type }}</p>
+                            <p class="text-gray-600">{{ $log->notes }}</p>
+                            <p class="text-xs text-gray-400 mt-1">
+                                {{ $log->created_at->diffForHumans() }}
+                                @if($log->user) por {{ $log->user->name }} @endif
                             </p>
-                            <p class="text-gray-500">Asignado: {{ date('d/m/Y', strtotime($assignment->assignment_date)) }}</p>
-                            @if($assignment->actual_return_date)
-                            <p class="text-green-600 font-medium">Devuelto: {{ date('d/m/Y', strtotime($assignment->actual_return_date)) }}</p>
-                            @else
-                            <p class="text-blue-600 font-medium">Actualmente Asignado</p>
-                            @endif
                         </div>
                     </li>
                 @empty
-                    <p class="text-center text-gray-500 p-4">Este activo nunca ha sido asignado.</p>
+                    <p class="text-center text-gray-500 p-4">No hay historial para este activo.</p>
                 @endforelse
                 </ul>
             </div>
         </div>
     </div>
+    <div x-show="photoModalOpen" 
+         x-transition:enter="ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:leave="ease-in duration-200"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" x-cloak>
+        <div @click.away="photoModalOpen = false" class="relative p-4">
+            <button @click="photoModalOpen = false" class="absolute -top-2 -right-2 text-white bg-gray-800 bg-opacity-50 rounded-full w-8 h-8 flex items-center justify-center text-xl hover:bg-opacity-75">&times;</button>
+            <img :src="currentPhoto" class="max-w-screen-lg max-h-[85vh] rounded-lg shadow-2xl">
+        </div>
+    </div>    
 </div>
 @endsection

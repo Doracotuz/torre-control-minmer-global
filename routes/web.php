@@ -186,7 +186,9 @@ Route::middleware(['auth', 'super.admin'])->prefix('asset-management')->name('as
     Route::post('assets/{asset}/software-assignments', [App\Http\Controllers\AssetManagement\SoftwareAssignmentController::class, 'store'])->name('software-assignments.store');
     Route::delete('software-assignments/{assignment}', [App\Http\Controllers\AssetManagement\SoftwareAssignmentController::class, 'destroy'])->name('software-assignments.destroy');
     Route::get('assets/{asset}/loan', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'createLoan'])->name('assignments.createLoan');
-    Route::post('assets/{asset}/loan', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'storeLoan'])->name('assignments.storeLoan');    
+    Route::post('assets/{asset}/loan', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'storeLoan'])->name('assignments.storeLoan');
+    Route::post('assignments/{assignment}/upload-receipt', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'uploadReceipt'])->name('assignments.uploadReceipt');
+
 
 });
 

@@ -10,7 +10,7 @@ class HardwareAsset extends Model {
     protected $fillable = [
         'asset_tag', 'serial_number', 'hardware_model_id', 'site_id', 'status', 
         'purchase_date', 'warranty_end_date', 'cpu', 'ram', 'storage', 
-        'mac_address', 'phone_plan_type', 'phone_number', 'notes'
+        'mac_address', 'phone_plan_type', 'phone_number', 'notes', 'photo_1_path', 'photo_2_path', 'photo_3_path'
     ];
 
     public function model(): BelongsTo {
@@ -33,5 +33,10 @@ class HardwareAsset extends Model {
     {
         return $this->hasMany(SoftwareAssignment::class);
     }
+
+    public function logs()
+    {
+        return $this->hasMany(AssetLog::class)->latest(); // Ordenado por más reciente
+    }    
 
 }

@@ -93,7 +93,7 @@
     </div>
     
     <div class="bg-white p-8 rounded-xl shadow-lg mt-8">
-        <form action="{{ route('asset-management.assets.update', $asset) }}" method="POST">
+        <form action="{{ route('asset-management.assets.update', $asset) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -173,9 +173,54 @@
                     <div>
                         <label for="notes" class="form-label">Notas Adicionales</label>
                         <textarea id="notes" name="notes" rows="5" class="form-textarea w-full">{{ old('notes', $asset->notes) }}</textarea>
-                    </div>
+                    </div>                  
                 </div>
             </div>
+            <div class="mt-8 pt-6 border-t">
+                <label class="form-label">Fotografías del Activo (Opcional)</label>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    @foreach([1, 2, 3] as $i)
+                    <div x-data="{
+                        photoPreview: '{{ $asset->{"photo_{$i}_path"} ? Storage::disk('s3')->url($asset->{"photo_{$i}_path"}) : '' }}',
+                        removePhoto: false
+                    }">
+                        <div class="aspect-w-1 aspect-h-1 bg-gray-100 rounded-lg flex items-center justify-center relative border-2 border-dashed">
+                            {{-- Vista Previa de la Imagen --}}
+                            <template x-if="photoPreview">
+                                <img :src="photoPreview" class="w-full h-full object-cover rounded-lg">
+                            </template>
+                            {{-- Icono si no hay imagen --}}
+                            <template x-if="!photoPreview">
+                                <div class="text-center text-gray-400 p-4">
+                                    <i class="fas fa-camera text-3xl"></i>
+                                    <p class="text-xs mt-2">Click para seleccionar Foto {{ $i }}</p>
+                                </div>
+                            </template>
+                            
+                            {{-- Input de archivo --}}
+                            <input id="photo_{{ $i }}" name="photo_{{ $i }}" type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                   @change="
+                                        const reader = new FileReader();
+                                        reader.onload = (e) => { photoPreview = e.target.result; };
+                                        reader.readAsDataURL($event.target.files[0]);
+                                        removePhoto = false;
+                                   ">
+
+                            {{-- Botón para eliminar foto existente --}}
+                            <template x-if="photoPreview && !removePhoto">
+                                <button type="button" @click.prevent="photoPreview = null; removePhoto = true; document.getElementById('photo_{{ $i }}').value = ''"
+                                        class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-transform hover:scale-110"
+                                        title="Eliminar foto">
+                                    &times;
+                                </button>
+                            </template>
+                        </div>
+                        {{-- Campo oculto para marcar la eliminación en el backend --}}
+                        <input type="hidden" name="remove_photo_{{ $i }}" x-model="removePhoto">
+                    </div>
+                    @endforeach
+                </div>
+            </div>            
             
             <div class="mt-8 pt-6 border-t border-gray-200 flex justify-end items-center space-x-4">
                 <a href="{{ route('asset-management.assets.show', $asset) }}" class="btn btn-secondary">Cancelar</a>

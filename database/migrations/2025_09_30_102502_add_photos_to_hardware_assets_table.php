@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('assignments', function (Blueprint $table) {
-            $table->string('type')->default('Asignación')->after('id');
-            $table->date('expected_return_date')->nullable()->after('assignment_date');
+        Schema::table('hardware_assets', function (Blueprint $table) {
+            $table->string('photo_1_path')->nullable()->after('notes');
+            $table->string('photo_2_path')->nullable()->after('photo_1_path');
+            $table->string('photo_3_path')->nullable()->after('photo_2_path');
         });
     }
 
@@ -22,7 +23,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('assignments', function (Blueprint $table) {
+        Schema::table('hardware_assets', function (Blueprint $table) {
             //
         });
     }

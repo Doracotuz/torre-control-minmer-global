@@ -9,7 +9,9 @@ use App\Models\Site;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Models\HardwareCategory;
-use Illuminate\Support\Facades\DB; 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class AssetController extends Controller
 {
@@ -125,10 +127,25 @@ class AssetController extends Controller
             'mac_address' => ['nullable', 'string', 'max:17', Rule::unique('hardware_assets')->ignore($request->id)],
             'phone_plan_type' => 'nullable|in:Prepago,Plan',
             'phone_number' => 'nullable|string|max:20',
-            'notes' => 'nullable|string',
+                'notes' => 'nullable|string',
+            'photo_1' => 'nullable|image|max:10048',
+            'photo_2' => 'nullable|image|max:10048',
+            'photo_3' => 'nullable|image|max:10048',            
         ]);
 
-        HardwareAsset::create($validated);
+        for ($i = 1; $i <= 3; $i++) {
+            if ($request->hasFile("photo_{$i}")) {
+                $validated["photo_{$i}_path"] = $request->file("photo_{$i}")->store('assets/photos', 's3');
+            }
+        }
+
+        $asset = HardwareAsset::create($validated);
+
+        $asset->logs()->create([
+            'user_id' => Auth::id(),
+            'action_type' => 'Creación',
+            'notes' => 'El activo fue registrado en el sistema.'
+        ]);        
 
         return redirect()->route('asset-management.dashboard')->with('success', 'Activo registrado exitosamente.');
     }
@@ -138,7 +155,7 @@ class AssetController extends Controller
      */
     public function show(HardwareAsset $asset)
     {
-        $asset->load(['model.category', 'model.manufacturer', 'site', 'assignments.member']);
+        $asset->load(['model.category', 'model.manufacturer', 'site', 'assignments.member', 'logs.user']);
         return view('asset-management.assets.show', compact('asset'));
     }
 
@@ -178,9 +195,43 @@ class AssetController extends Controller
             'phone_plan_type' => 'nullable|in:Prepago,Plan',
             'phone_number' => 'nullable|string|max:20',
             'notes' => 'nullable|string',
+            'photo_1' => 'nullable|image|max:10048',
+            'photo_2' => 'nullable|image|max:10048',
+            'photo_3' => 'nullable|image|max:10048',
         ]);
 
+        $originalStatus = $asset->status;
+
+        for ($i = 1; $i <= 3; $i++) {
+            $fileInputName = "photo_{$i}";
+            $dbColumnName = "photo_{$i}_path";
+            $removeInputName = "remove_photo_{$i}";
+
+            if ($request->input($removeInputName) === 'true') {
+                if ($asset->{$dbColumnName}) {
+                    Storage::disk('s3')->delete($asset->{$dbColumnName});
+                }
+                $validated[$dbColumnName] = null;
+            }
+
+            if ($request->hasFile($fileInputName)) {
+                if ($asset->{$dbColumnName}) {
+                    Storage::disk('s3')->delete($asset->{$dbColumnName});
+                }
+                
+                $validated[$dbColumnName] = $request->file($fileInputName)->store('assets/photos', 's3');
+            }
+        }
+
         $asset->update($validated);
+
+        if ($originalStatus !== $asset->status) {
+            $asset->logs()->create([
+                'user_id' => Auth::id(),
+                'action_type' => 'Cambio de Estatus',
+                'notes' => "El estatus cambió de '{$originalStatus}' a '{$asset->status}'."
+            ]);
+        }
 
         return redirect()->route('asset-management.assets.show', $asset)->with('success', 'Activo actualizado correctamente.');
     }
