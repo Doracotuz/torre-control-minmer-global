@@ -69,6 +69,16 @@
                                     <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email')" />
                                     <x-input-error class="mt-2" :messages="$errors->get('email') ?? []" />
                                 </div>
+                                <div class="mt-4 border-t pt-4">
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" name="create_user_account" value="1" checked 
+                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        <span class="ml-2 text-gray-700 font-semibold">Crear cuenta de usuario para este miembro</span>
+                                    </label>
+                                    <p class="text-sm text-gray-500 ml-6">
+                                        Esto generará un usuario para que pueda iniciar sesión en el sistema y le enviará una notificación de bienvenida.
+                                    </p>
+                                </div>                                
 
                                 <div class="mb-4">
                                     <x-input-label for="cell_phone" :value="__('Celular')" />

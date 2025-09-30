@@ -16,6 +16,8 @@ use App\Notifications\AgentAssignedNotification;
 use App\Models\TicketCategory;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use App\Models\HardwareAsset;
+use App\Models\OrganigramMember;
 
 class TicketController extends Controller
 {
@@ -75,7 +77,19 @@ class TicketController extends Controller
     public function create()
     {
         $categories = TicketCategory::with('subCategories')->orderBy('name')->get();
-        return view('tickets.create', compact('categories'));
+        
+        $userAssets = collect();
+        $organigramMember = Auth::user()->organigramMember;
+
+        if ($organigramMember) {
+            $assignedAssetIds = $organigramMember->assignments()
+                ->whereNull('actual_return_date')
+                ->pluck('hardware_asset_id');
+                
+            $userAssets = HardwareAsset::with('model')->whereIn('id', $assignedAssetIds)->get();
+        }
+
+        return view('tickets.create', compact('categories', 'userAssets'));
     }
 
     public function store(Request $request)
@@ -86,6 +100,7 @@ class TicketController extends Controller
             'priority' => 'required|in:Baja,Media,Alta',
             'attachment' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:50048',
             'ticket_sub_category_id' => 'required|exists:ticket_sub_categories,id',
+            'hardware_asset_id' => 'nullable|exists:hardware_assets,id',
         ]);
 
         $attachmentPath = null;
@@ -100,6 +115,7 @@ class TicketController extends Controller
             'priority' => $request->priority,
             'attachment_path' => $attachmentPath,
             'ticket_sub_category_id' => $request->ticket_sub_category_id,
+            'hardware_asset_id' => $request->hardware_asset_id,
             'status' => 'Abierto',
         ]);
 
@@ -128,7 +144,7 @@ class TicketController extends Controller
             abort(403, 'No tienes permiso para ver este ticket.');
         }
 
-        $ticket->load(['user', 'agent', 'subCategory', 'replies.user', 'statusHistories.user']);
+        $ticket->load(['user', 'agent', 'subCategory', 'replies.user', 'statusHistories.user', 'asset.model']);
 
         $agents = User::where('is_client', false)->orderBy('name')->get();
 

@@ -14,7 +14,8 @@ class Ticket extends Model
     protected $fillable = [
         'user_id',
         'agent_id',
-        'ticket_sub_category_id', // Actualizado
+        'ticket_sub_category_id',
+        'hardware_asset_id',
         'title',
         'description',
         'status',
@@ -65,5 +66,15 @@ class Ticket extends Model
     {
         return $this->hasMany(TicketStatusHistory::class)->orderBy('created_at', 'asc');
     }
+
+    public function hardwareAsset(): BelongsTo
+    {
+        return $this->belongsTo(HardwareAsset::class, 'hardware_asset_id');
+    }    
+
+    public function asset(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\HardwareAsset::class, 'hardware_asset_id');
+    }    
 
 }

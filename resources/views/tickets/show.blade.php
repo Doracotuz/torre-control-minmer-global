@@ -185,6 +185,16 @@
                     <p><strong>Asignado a:</strong> {{ $ticket->agent->name ?? 'Sin asignar' }}</p>
                     <p><strong>Fecha:</strong> {{ $ticket->created_at->format('d/m/Y') }}</p>
                     <p><strong>Prioridad:</strong> <span class="badge badge-{{ strtolower($ticket->priority) }}">{{ $ticket->priority }}</span></p>
+                    @if($ticket->asset)
+                    <div class="border-t pt-3 mt-3">
+                        <p class="font-bold">Activo Vinculado:</p>
+                        <p>
+                            <a href="{{ route('asset-management.assets.show', $ticket->asset) }}" class="text-indigo-600 hover:underline">
+                                {{ $ticket->asset->model->name }} ({{ $ticket->asset->asset_tag }})
+                            </a>
+                        </p>
+                    </div>
+                    @endif                    
                 </div>
 
                 @if(($isAgent || $isSuperAdmin) && !in_array($ticket->status, ['Cerrado', 'Pendiente de Aprobación']))

@@ -829,11 +829,11 @@ document.addEventListener('alpine:init', () => {
             <div class="flex-1 flex flex-col bg-gray-100 w-full lg:w-auto">
                 @include('layouts.navigation', ['currentFolder' => $currentFolder ?? null])
                 @if (isset($header))
-<div class="bg-[#2C3856]">
-    <header class="bg-[#E8ECF7] rounded-tl-3xl">
-        <div class="w-[95%] py-6 pl-6 pr-4 sm:pl-8 lg:pl-10">{{ $header }}</div>
-    </header>
-</div>
+                <div class="bg-[#2C3856]">
+                    <header class="bg-[#E8ECF7] rounded-tl-3xl">
+                        <div class="w-[95%] py-6 pl-6 pr-4 sm:pl-8 lg:pl-10">{{ $header }}</div>
+                    </header>
+                </div>
                 @endif
                 <main class="bg-[#E8ECF7] flex-1 p-8">
                     @if (isset($slot))

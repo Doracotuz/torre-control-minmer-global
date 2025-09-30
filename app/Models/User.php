@@ -108,4 +108,10 @@ class User extends Authenticatable
     {
         return $this->is_area_admin && $this->area?->name === 'Administración';
     }
+
+    public function organigramMember(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\OrganigramMember::class);
+    }
+
 }

@@ -65,6 +65,21 @@
                     </div>
                 </div>
                 
+                @if($userAssets->isNotEmpty())
+                <div class="mt-6">
+                    <label for="hardware_asset_id" class="form-label">Activo Relacionado (Opcional)</label>
+                    <select id="hardware_asset_id" name="hardware_asset_id" class="form-input">
+                        <option value="">-- Ninguno --</option>
+                        @foreach($userAssets as $asset)
+                            <option value="{{ $asset->id }}">
+                                {{ $asset->model->name }} ({{ $asset->asset_tag }})
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-sm text-gray-500 mt-1">Selecciona el equipo con el que tienes problemas.</p>
+                </div>
+                @endif
+
                 <div>
                     <label for="description" class="form-label">Descripción Detallada</label>
                     <textarea id="description" name="description" rows="6" class="form-input" required>{{ old('description') }}</textarea>

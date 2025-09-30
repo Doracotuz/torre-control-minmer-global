@@ -75,5 +75,15 @@ class OrganigramMember extends Model
         return $this->belongsTo(OrganigramPosition::class);
     }
 
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class, 'organigram_member_id');
+    }    
+
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class);
+    }    
+
     
 }

@@ -37,6 +37,10 @@
             <a href="{{ route('tickets.dashboard') }}" class="btn bg-white text-[var(--color-primary)] border border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors duration-300">
                 <i class="fas fa-chart-bar mr-2"></i> Ver Indicadores
             </a>
+            
+            <a href="{{ route('asset-management.dashboard') }}" class="btn bg-white text-[var(--color-primary)] border border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors duration-300">
+                <i class="fas fa-desktop mr-2"></i> Gestionar Activos
+            </a>
             <a href="{{ route('tickets.create') }}" class="btn btn-accent">
                 <i class="fas fa-plus mr-2"></i> Crear Ticket
             </a>

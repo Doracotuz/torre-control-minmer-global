@@ -24,6 +24,11 @@ use League\Csv\ByteSequence;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use App\Models\User;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use App\Mail\WelcomeNewUser;
 
 
 class OrganigramController extends Controller
@@ -348,9 +353,9 @@ class OrganigramController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
+            'email' => 'required|email|max:255|unique:organigram_members,email',
             'cell_phone' => 'nullable|string|max:20',
             'position_id' => 'required|exists:organigram_positions,id',
             'area_id' => 'required|exists:areas,id',
@@ -365,30 +370,69 @@ class OrganigramController extends Controller
             'trajectories.*.description' => 'nullable|string|max:1000',
             'trajectories.*.start_date' => 'nullable|date',
             'trajectories.*.end_date' => 'nullable|date|after_or_equal:trajectories.*.start_date',
+            'create_user_account' => 'nullable|boolean',
         ]);
+
+        $newUserId = null;
+
+        // --- LÓGICA ACTUALIZADA PARA CREACIÓN Y VINCULACIÓN DE USUARIO ---
+        if ($request->boolean('create_user_account')) {
+            $existingUser = User::where('email', $validatedData['email'])->first();
+
+            if ($existingUser) {
+                // Si el usuario ya existe, simplemente obtenemos su ID para vincularlo
+                $newUserId = $existingUser->id;
+            } else {
+                // Si el usuario no existe, lo creamos
+                $temporaryPassword = Str::random(12);
+                $newUser = User::create([
+                    'name' => $validatedData['name'],
+                    'email' => $validatedData['email'],
+                    'password' => Hash::make($temporaryPassword),
+                    'area_id' => $validatedData['area_id'],
+                    'position' => OrganigramPosition::find($validatedData['position_id'])->name,
+                ]);
+
+                $newUserId = $newUser->id;
+
+                // --- LÓGICA DE ENVÍO DE CORREO INTEGRADA ---
+                try {
+                    Mail::to($newUser->email)->send(new WelcomeNewUser($newUser, $temporaryPassword));
+                } catch (\Exception $e) {
+                    // Si el correo falla, no detenemos el proceso, pero lo registramos
+                    Log::error("Error al enviar correo de bienvenida desde Organigrama a {$newUser->email}: " . $e->getMessage());
+                }
+                // --- FIN DE LA LÓGICA DE CORREO ---
+            }
+        }
 
         $path = null;
         if ($request->hasFile('profile_photo')) {
             $path = $request->file('profile_photo')->store('organigram-photos', 's3');
         }
 
+        // Creamos el miembro del organigrama
         $member = OrganigramMember::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'cell_phone' => $request->cell_phone,
-            'position_id' => $request->position_id,
-            'area_id' => $request->area_id,
-            'manager_id' => $request->manager_id,
+            'user_id' => $newUserId, // <-- Aquí se guarda el vínculo con el usuario
+            'name' => $validatedData['name'],
+            'email' => $validatedData['email'],
+            'cell_phone' => $validatedData['cell_phone'],
+            'position_id' => $validatedData['position_id'],
+            'area_id' => $validatedData['area_id'],
+            'manager_id' => $validatedData['manager_id'],
             'profile_photo_path' => $path,
         ]);
 
+        // Sincronizamos las relaciones
         $member->activities()->sync($request->input('activities_ids', []));
         $member->skills()->sync($request->input('skills_ids', []));
 
         if ($request->has('trajectories')) {
             foreach ($request->trajectories as $trajectoryData) {
-                unset($trajectoryData['id']);
-                $member->trajectories()->create($trajectoryData);
+                if (!empty($trajectoryData['title'])) {
+                    unset($trajectoryData['id']);
+                    $member->trajectories()->create($trajectoryData);
+                }
             }
         }
 
@@ -442,7 +486,7 @@ class OrganigramController extends Controller
      */
     public function update(Request $request, OrganigramMember $organigramMember)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
             'cell_phone' => 'nullable|string|max:20',
@@ -470,7 +514,33 @@ class OrganigramController extends Controller
             'trajectories.*.description' => 'nullable|string|max:1000',
             'trajectories.*.start_date' => 'nullable|date',
             'trajectories.*.end_date' => 'nullable|date|after_or_equal:trajectories.*.start_date',
+            'create_user_account' => 'nullable|boolean',
         ]);
+
+        if ($request->boolean('create_user_account') && is_null($organigramMember->user_id)) {
+            $existingUser = User::where('email', $validatedData['email'])->first();
+
+            if ($existingUser) {
+                $organigramMember->user_id = $existingUser->id;
+            } else {
+                $temporaryPassword = Str::random(12);
+                $newUser = User::create([
+                    'name' => $validatedData['name'],
+                    'email' => $validatedData['email'],
+                    'password' => Hash::make($temporaryPassword),
+                    'area_id' => $validatedData['area_id'],
+                    'position' => \App\Models\OrganigramPosition::find($validatedData['position_id'])->name,
+                ]);
+
+                $organigramMember->user_id = $newUser->id;
+
+                try {
+                    Mail::to($newUser->email)->send(new WelcomeNewUser($newUser, $temporaryPassword));
+                } catch (\Exception $e) {
+                    Log::error("Error al enviar correo de bienvenida desde Organigrama (Update) a {$newUser->email}: " . $e->getMessage());
+                }
+            }
+        }        
 
         if ($request->hasFile('profile_photo')) {
             if ($organigramMember->profile_photo_path) {
@@ -485,7 +555,7 @@ class OrganigramController extends Controller
             }
         }
 
-        $organigramMember->fill($request->except(['profile_photo', 'remove_profile_photo', 'activities_ids', 'skills_ids', 'trajectories']));
+        $organigramMember->fill($request->except(['profile_photo', 'remove_profile_photo', 'activities_ids', 'skills_ids', 'trajectories', 'create_user_account']));
         $organigramMember->save();
 
         $organigramMember->activities()->sync($request->input('activities_ids', []));

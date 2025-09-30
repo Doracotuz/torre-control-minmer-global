@@ -42,6 +42,7 @@ use App\Http\Controllers\CustomerService\CreditNoteController;
 
 
 
+
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
 })->name('terms.conditions');
@@ -157,6 +158,33 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/rfq', [RfqController::class, 'index'])->name('rfq.index');
 
 
+});
+
+Route::middleware(['auth', 'super.admin'])->prefix('asset-management')->name('asset-management.')->group(function () {
+    // Dashboard principal del módulo
+    Route::get('/', [App\Http\Controllers\AssetManagement\AssetController::class, 'index'])->name('dashboard');
+
+    // CRUD para Activos de Hardware
+    Route::resource('assets', App\Http\Controllers\AssetManagement\AssetController::class);
+
+    // Asignación de Activos
+    Route::get('assets/{asset}/assign', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'create'])->name('assignments.create');
+    Route::post('assets/{asset}/assign', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'store'])->name('assignments.store');
+    
+    // Devolución de Activos
+    Route::post('assignments/{assignment}/return', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'return'])->name('assignments.return');
+
+    // Rutas para los sub-recursos (Categorías, Fabricantes, etc.)
+    Route::resource('categories', App\Http\Controllers\AssetManagement\CategoryController::class)->except(['show']);
+    Route::resource('manufacturers', App\Http\Controllers\AssetManagement\ManufacturerController::class)->except(['show']);
+    Route::resource('sites', App\Http\Controllers\AssetManagement\SiteController::class)->except(['show']);
+    Route::resource('models', App\Http\Controllers\AssetManagement\ModelController::class);
+
+    Route::get('assignments/{assignment}/pdf', [App\Http\Controllers\AssetManagement\PdfController::class, 'generateAssignmentPdf'])->name('assignments.pdf');
+    Route::resource('software-licenses', App\Http\Controllers\AssetManagement\SoftwareLicenseController::class)->except(['show']);
+    Route::get('assets/{asset}/software-assignments/create', [App\Http\Controllers\AssetManagement\SoftwareAssignmentController::class, 'create'])->name('software-assignments.create');
+    Route::post('assets/{asset}/software-assignments', [App\Http\Controllers\AssetManagement\SoftwareAssignmentController::class, 'store'])->name('software-assignments.store');
+    Route::delete('software-assignments/{assignment}', [App\Http\Controllers\AssetManagement\SoftwareAssignmentController::class, 'destroy'])->name('software-assignments.destroy');
 });
 
 // Rutas de administración (solo accesibles por el área de Administración)
