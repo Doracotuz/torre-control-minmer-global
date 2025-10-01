@@ -41,11 +41,12 @@
 
     /* Badges de Estado */
     .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
-    .status-en-almacen { background-color: #10B981; color: white; }
+    .status-en-almacén { background-color: #10B981; color: white; }
     .status-asignado { background-color: #3B82F6; color: white; }
-    .status-en-reparacion { background-color: var(--color-accent); color: white; }
+    .status-en-reparación { background-color: var(--color-accent); color: white; }
     .status-prestado { background-color: #8B5CF6; color: white; }
     .status-de-baja { background-color: var(--color-text-secondary); color: white; }
+    .status-en-mantenimiento { background-color: var(--color-text-secondary); color: white; }
     
     /* Animaciones y Transiciones */
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -91,7 +92,7 @@
 </style>
 
 {{-- El x-data ahora envuelve todo el contenido para controlar el modal --}}
-<div x-data="{ modalOpen: false }" class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+<div x-data="{ modalOpen: false }" class="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
     
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10">
         <div>
@@ -123,6 +124,9 @@
                     <a href="{{ route('asset-management.categories.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Categorías</a>
                     <a href="{{ route('asset-management.models.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Modelos</a>
                     <a href="{{ route('asset-management.software-licenses.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all border-t border-gray-100">Gestionar Software</a>    
+                    <a href="{{ route('asset-management.maintenances.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">
+                        Mantenimientos
+                    </a>
                 </div>
             </div>
             

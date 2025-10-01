@@ -95,6 +95,9 @@
             <p class="font-mono text-[var(--color-primary)] text-sm mt-1">{{ $asset->asset_tag }}</p>
         </div>
         <div class="mt-4 sm:mt-0">
+            <a href="{{ route('asset-management.maintenances.create', $asset) }}" class="btn btn-secondary">
+                <i class="fas fa-tools mr-2"></i> Enviar a Mantenimiento
+            </a>            
             <a href="{{ route('asset-management.assets.edit', $asset) }}" class="btn btn-primary">
                 <i class="fas fa-pencil-alt mr-2"></i> Editar Activo
             </a>
@@ -211,23 +214,87 @@
         {{-- Columna Derecha (Estado e Historial) --}}
         <div class="space-y-6">
             {{-- Tarjeta de Estado --}}
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <h3 class="font-bold text-lg mb-3 text-[var(--color-text-primary)]">Estado Actual</h3>
+            <div x-data="{ returnModalOpen: false }" class="bg-white p-6 rounded-xl shadow-lg">
+                <h3 class="font-bold text-lg mb-3 text-[var(--color-primary)]">Estado Actual</h3>
                 <p class="status-badge status-{{ Str::kebab($asset->status) }} inline-block">{{ $asset->status }}</p>
 
                 @if($asset->currentAssignment)
                     <div class="mt-4 border-t pt-4">
-                        <p class="text-sm font-semibold text-gray-600">Asignado a:</p>
+                        <p class="text-sm font-semibold text-gray-600">{{ $asset->currentAssignment->type === 'Préstamo' ? 'Prestado a:' : 'Asignado a:' }}</p>
                         <p class="text-lg font-bold text-[var(--color-primary)]">{{ $asset->currentAssignment->member->name }}</p>
                         <p class="text-sm text-gray-500">{{ $asset->currentAssignment->member->position->name ?? 'Sin Puesto' }}</p>
                         <p class="text-sm text-gray-500 mt-1">Desde: {{ date('d/m/Y', strtotime($asset->currentAssignment->assignment_date)) }}</p>
                         
-                        <a href="{{ route('asset-management.assignments.pdf', $asset->currentAssignment) }}" target="_blank" class="btn bg-gray-700 text-white w-full mt-4"><i class="fas fa-file-pdf mr-2"></i> Generar Responsiva</a>
-                        
-                        <form action="{{ route('asset-management.assignments.return', $asset->currentAssignment) }}" method="POST" onsubmit="return confirm('¿Registrar la devolución de este activo?');">
-                            @csrf
-                            <button type="submit" class="btn bg-[var(--color-accent)] text-white w-full mt-2">Registrar Devolución</button>
-                        </form>
+                        {{-- Botón que abre el modal --}}
+                        <button @click="returnModalOpen = true" class="btn bg-[var(--color-accent)] text-white w-full mt-4">
+                            Registrar Devolución
+                        </button>
+                    </div>
+
+                    {{-- Ventana Modal para Registrar Devolución --}}
+                    <div x-show="returnModalOpen" 
+                        x-transition:enter="ease-out duration-300"
+                        x-transition:enter-start="opacity-0"
+                        x-transition:enter-end="opacity-100"
+                        x-transition:leave="ease-in duration-200"
+                        x-transition:leave-start="opacity-100"
+                        x-transition:leave-end="opacity-0"
+                        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" x-cloak>
+
+                        <div @click.away="returnModalOpen = false" 
+                            x-show="returnModalOpen"
+                            x-transition:enter="ease-out duration-300"
+                            x-transition:enter-start="opacity-0 scale-90"
+                            x-transition:enter-end="opacity-100 scale-100"
+                            x-transition:leave="ease-in duration-200"
+                            x-transition:leave-start="opacity-100 scale-100"
+                            x-transition:leave-end="opacity-0 scale-90"
+                            class="bg-white rounded-xl shadow-lg w-full max-w-lg mx-4">
+                            
+                            <form action="{{ route('asset-management.assignments.return', $asset->currentAssignment) }}" method="POST" enctype="multipart/form-data">
+                                @csrf
+                                {{-- Cabecera del Modal --}}
+                                <div class="p-6 border-b">
+                                    <h3 class="text-lg font-bold text-[var(--color-primary)] flex items-center">
+                                        <i class="fas fa-undo mr-3"></i>
+                                        Confirmar Devolución de Activo
+                                    </h3>
+                                </div>
+                                
+                                {{-- Cuerpo del Modal --}}
+                                <div class="p-6">
+                                    <p class="text-sm text-gray-600 mb-6">
+                                        Estás a punto de registrar la devolución del activo <strong>{{ $asset->asset_tag }}</strong> por parte de <strong>{{ $asset->currentAssignment->member->name }}</strong>. El estatus del activo cambiará a "En Almacén".
+                                    </p>
+
+                                    {{-- Nuevo Componente para Subir Archivo --}}
+                                    <div x-data="{ fileName: '' }">
+                                        <label class="form-label">Adjuntar Responsiva de Devolución Firmada (PDF, Opcional)</label>
+                                        <div class="mt-1 flex items-center justify-center w-full px-6 py-4 border-2 border-gray-300 border-dashed rounded-md">
+                                            <div class="text-center">
+                                                <i class="fas fa-file-pdf text-3xl text-gray-400"></i>
+                                                <div class="flex text-sm text-gray-600 mt-2">
+                                                    <label for="return_receipt" class="relative cursor-pointer bg-white rounded-md font-medium text-[var(--color-primary)] hover:text-[var(--color-accent)] focus-within:outline-none">
+                                                        <span>Haz clic para seleccionar el archivo</span>
+                                                        <input id="return_receipt" name="return_receipt" type="file" class="sr-only" accept=".pdf"
+                                                            @change="fileName = $event.target.files.length > 0 ? $event.target.files[0].name : ''">
+                                                    </label>
+                                                </div>
+                                                <p x-show="fileName" class="text-xs text-gray-500 mt-2" x-cloak>
+                                                    Archivo seleccionado: <span x-text="fileName" class="font-semibold"></span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Pie del Modal --}}
+                                <div class="bg-gray-100 px-6 py-4 flex justify-end items-center space-x-3 rounded-b-xl">
+                                    <button type="button" @click="returnModalOpen = false" class="btn btn-secondary">Cancelar</button>
+                                    <button type="submit" class="btn btn-primary">Confirmar Devolución</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 @else
                     @if($asset->status === 'En Almacén')
@@ -245,36 +312,63 @@
                 <ul class="space-y-4 text-sm">
                 @forelse($asset->logs as $log)
                     <li class="flex items-start space-x-3 border-b pb-3 last:border-b-0">
-                        @if($log->loggable_type === 'App\Models\Assignment' && $log->loggable)
-                            @php $assignment = $log->loggable; @endphp
-                            <div class="mt-2 pl-4 border-l-2">
-                                <!-- <a href="{{ route('asset-management.assignments.pdf', $assignment) }}" target="_blank" class="text-xs text-indigo-600 hover:underline">Ver Responsiva Original</a> -->
-                                
-                                @if($assignment->signed_receipt_path)
-                                    <a href="{{ Storage::disk('s3')->url($assignment->signed_receipt_path) }}" target="_blank" class="text-xs text-green-600 hover:underline ml-4">Ver Responsiva Firmada</a>
-                                @else
-                                    <form action="{{ route('asset-management.assignments.uploadReceipt', $assignment) }}" method="POST" enctype="multipart/form-data" class="inline-block ml-4">
-                                        @csrf
-                                        <input type="file" name="signed_receipt" class="hidden" id="receipt-{{ $assignment->id }}" onchange="this.form.submit()">
-                                        <label for="receipt-{{ $assignment->id }}" class="cursor-pointer text-xs text-blue-600 hover:underline">Subir Firmada (PDF)</label>
-                                    </form>
-                                @endif
-                            </div>
-                        @endif                        
                         <div class="flex-shrink-0 pt-1">
+                            {{-- Icono dinámico --}}
                             @if($log->action_type == 'Creación') <i class="fas fa-plus-circle text-blue-500"></i>
-                            @elseif($log->action_type == 'Asignación' || $log->action_type == 'Préstamo') <i class="fas fa-user-check text-green-500"></i>
+                            @elseif(in_array($log->action_type, ['Asignación', 'Préstamo'])) <i class="fas fa-user-check text-green-500"></i>
                             @elseif($log->action_type == 'Devolución') <i class="fas fa-undo text-gray-500"></i>
-                            @elseif($log->action_type == 'Cambio de Estatus') <i class="fas fa-info-circle text-yellow-500"></i>
+                            @elseif(in_array($log->action_type, ['En Mantenimiento', 'En Reparación', 'Mantenimiento Completado'])) <i class="fas fa-tools text-orange-500"></i>
+                            @else <i class="fas fa-info-circle text-yellow-500"></i>
                             @endif
                         </div>
-                        <div>
+                        <div class="flex-grow">
                             <p class="font-semibold text-gray-800">{{ $log->action_type }}</p>
                             <p class="text-gray-600">{{ $log->notes }}</p>
                             <p class="text-xs text-gray-400 mt-1">
                                 {{ $log->created_at->diffForHumans() }}
                                 @if($log->user) por {{ $log->user->name }} @endif
                             </p>
+
+                            {{-- Lógica para mostrar documentos --}}
+                            @if($log->loggable_type === 'App\Models\Assignment' && $log->loggable)
+                                @php $assignment = $log->loggable; @endphp
+                                
+                                {{-- Si es un evento de Entrega (Asignación o Préstamo) --}}
+                                @if(in_array($log->action_type, ['Asignación', 'Préstamo']))
+                                <div class="mt-2 pl-4 border-l-2 space-y-1">
+                                    @if(!$assignment->signed_receipt_path)
+                                        <div><a href="{{ route('asset-management.assignments.pdf', $assignment) }}" target="_blank" class="text-xs text-indigo-600 hover:underline">Ver Responsiva Original</a></div>
+                                    @endif
+                                    <div>
+                                        @if($assignment->signed_receipt_path)
+                                            <a href="{{ Storage::disk('s3')->url($assignment->signed_receipt_path) }}" target="_blank" class="text-xs text-green-600 hover:underline">Ver Responsiva</a>
+                                        @else
+                                            <form action="{{ route('asset-management.assignments.uploadReceipt', $assignment) }}" method="POST" enctype="multipart/form-data" class="inline-block">
+                                                @csrf
+                                                <input type="file" name="signed_receipt" class="hidden" id="receipt-{{ $assignment->id }}" onchange="this.form.submit()">
+                                                <label for="receipt-{{ $assignment->id }}" class="cursor-pointer text-xs text-blue-600 hover:underline">Cargar responsiva</label>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endif
+
+                                {{-- **INICIO DE LA LÓGICA CORREGIDA PARA DEVOLUCIONES** --}}
+                                @if($log->action_type === 'Devolución')
+                                <div class="mt-2 pl-4 border-l-2 space-y-1">
+                                    @if($assignment->return_receipt_path)
+                                        <div><a href="{{ Storage::disk('s3')->url($assignment->return_receipt_path) }}" target="_blank" class="text-xs text-green-600 hover:underline">Ver responsiva</a></div>
+                                    @else
+                                    {{-- Si no hay PDF, muestra el formulario para subirlo --}}
+                                    <form action="{{ route('asset-management.assignments.uploadReturnReceipt', $assignment) }}" method="POST" enctype="multipart/form-data" class="inline-block">
+                                            @csrf
+                                            <input type="file" name="return_receipt" class="hidden" id="return-receipt-{{ $assignment->id }}" onchange="this.form.submit()">
+                                            <label for="return-receipt-{{ $assignment->id }}" class="cursor-pointer text-xs text-blue-600 hover:underline">Cargar responsiva</label>
+                                        </form>
+                                    @endif
+                                </div>
+                                @endif
+                            @endif
                         </div>
                     </li>
                 @empty

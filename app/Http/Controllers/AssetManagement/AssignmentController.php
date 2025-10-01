@@ -68,28 +68,37 @@ class AssignmentController extends Controller
     /**
      * Registra la devolución de un activo.
      */
-    public function return(Assignment $assignment)
+    public function return(Request $request, Assignment $assignment)
     {
+        $request->validate([
+            'return_receipt' => 'nullable|file|mimes:pdf|max:10048',
+        ]);
+
         if ($assignment->actual_return_date) {
             return back()->with('error', 'Esta asignación ya ha sido marcada como devuelta.');
         }
 
-        DB::transaction(function () use ($assignment) {
-            // 1. Marcar la fecha de devolución en la asignación
+        DB::transaction(function () use ($request, $assignment) {
+            $receiptPath = null;
+            if ($request->hasFile('return_receipt')) {
+                $receiptPath = $request->file('return_receipt')->store('assets/return-receipts', 's3');
+            }
+
             $assignment->actual_return_date = now();
+            $assignment->return_receipt_path = $receiptPath;
             $assignment->save();
 
-            // 2. Actualizar el estado del activo a "En Almacén"
             $asset = $assignment->asset;
-
+            $asset->status = 'En Almacén';
+            $asset->save();
+            
             $asset->logs()->create([
                 'user_id' => Auth::id(),
                 'action_type' => 'Devolución',
-                'notes' => 'Devuelto por ' . $assignment->member->name . '. Disponible en almacén.'
+                'notes' => 'Devuelto por ' . $assignment->member->name . '. Disponible en almacén.',
+                'loggable_id' => $assignment->id,
+                'loggable_type' => \App\Models\Assignment::class,
             ]);
-
-            $asset->status = 'En Almacén';
-            $asset->save();
         });
 
         return redirect()->route('asset-management.assets.show', $assignment->asset)
@@ -166,6 +175,23 @@ class AssignmentController extends Controller
         $assignment->update(['signed_receipt_path' => $path]);
 
         return back()->with('success', 'Responsiva firmada subida exitosamente.');
+    }    
+
+    public function uploadReturnReceipt(Request $request, Assignment $assignment)
+    {
+        $request->validate([
+            'return_receipt' => 'required|file|mimes:pdf|max:2048',
+        ]);
+
+        // Eliminar el archivo antiguo si existe
+        if ($assignment->return_receipt_path) {
+            Storage::disk('s3')->delete($assignment->return_receipt_path);
+        }
+
+        $path = $request->file('return_receipt')->store('assets/return-receipts', 's3');
+        $assignment->update(['return_receipt_path' => $path]);
+
+        return back()->with('success', 'Responsiva de devolución subida exitosamente.');
     }    
 
 

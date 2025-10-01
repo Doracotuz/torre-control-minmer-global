@@ -188,6 +188,14 @@ Route::middleware(['auth', 'super.admin'])->prefix('asset-management')->name('as
     Route::get('assets/{asset}/loan', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'createLoan'])->name('assignments.createLoan');
     Route::post('assets/{asset}/loan', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'storeLoan'])->name('assignments.storeLoan');
     Route::post('assignments/{assignment}/upload-receipt', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'uploadReceipt'])->name('assignments.uploadReceipt');
+    Route::get('maintenances', [App\Http\Controllers\AssetManagement\MaintenanceController::class, 'index'])->name('maintenances.index');
+    Route::get('assets/{asset}/maintenance/create', [App\Http\Controllers\AssetManagement\MaintenanceController::class, 'create'])->name('maintenances.create');
+    Route::post('assets/{asset}/maintenance', [App\Http\Controllers\AssetManagement\MaintenanceController::class, 'store'])->name('maintenances.store');
+    Route::get('maintenances/{maintenance}/edit', [App\Http\Controllers\AssetManagement\MaintenanceController::class, 'edit'])->name('maintenances.edit');
+    Route::put('maintenances/{maintenance}', [App\Http\Controllers\AssetManagement\MaintenanceController::class, 'update'])->name('maintenances.update');
+    Route::get('maintenances/{maintenance}/pdf', [App\Http\Controllers\AssetManagement\MaintenanceController::class, 'generatePdf'])->name('maintenances.pdf');
+    Route::post('assignments/{assignment}/upload-return-receipt', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'uploadReturnReceipt'])->name('assignments.uploadReturnReceipt');
+
 
 
 });
