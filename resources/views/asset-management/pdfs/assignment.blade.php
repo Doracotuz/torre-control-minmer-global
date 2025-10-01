@@ -115,7 +115,7 @@
         <h1>Carta Responsiva de Activos de TI</h1>
 
         <p class="text-justify">
-            En la ciudad de {{ $assignment->asset->site->name ?? 'nuestras oficinas' }}, a {{ \Carbon\Carbon::parse($assignment->assignment_date)->isoFormat('D [de] MMMM [de] YYYY') }}, la empresa
+            En {{ $assignment->asset->site->name ?? 'nuestras oficinas' }}, a {{ \Carbon\Carbon::parse($assignment->assignment_date)->isoFormat('D [de] MMMM [de] YYYY') }}, la empresa
             <strong>Estrategias y Soluciones Minmer Global</strong> (en adelante "LA EMPRESA"), hace entrega del equipo de cómputo que se detalla a continuación al colaborador(a)
             <strong>{{ $assignment->member->name }}</strong>, quien se identifica con el puesto de
             <strong>{{ $assignment->member->position->name ?? 'No especificado' }}</strong> (en adelante "EL COLABORADOR").

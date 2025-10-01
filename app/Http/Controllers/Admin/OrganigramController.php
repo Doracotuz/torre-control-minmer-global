@@ -29,6 +29,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use App\Mail\WelcomeNewUser;
+use Illuminate\Support\Facades\Mail;
 
 
 class OrganigramController extends Controller

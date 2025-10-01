@@ -33,6 +33,7 @@
 <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <header class="flex flex-col sm:flex-row items-center justify-between mb-8">
         <h1 class="text-4xl font-bold text-[var(--color-text-primary)]">Tickets de Soporte IT</h1>
+        @if(in_array(Auth::user()->area?->name, ['Administración', 'Innovación y Desarrollo']))
         <div class="flex items-center space-x-2 mt-4 sm:mt-0">
             <a href="{{ route('tickets.dashboard') }}" class="btn bg-white text-[var(--color-primary)] border border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors duration-300">
                 <i class="fas fa-chart-bar mr-2"></i> Ver Indicadores
@@ -41,6 +42,7 @@
             <a href="{{ route('asset-management.dashboard') }}" class="btn bg-white text-[var(--color-primary)] border border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors duration-300">
                 <i class="fas fa-desktop mr-2"></i> Gestionar Activos
             </a>
+        @endif
             <a href="{{ route('tickets.create') }}" class="btn btn-accent">
                 <i class="fas fa-plus mr-2"></i> Crear Ticket
             </a>

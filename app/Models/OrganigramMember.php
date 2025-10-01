@@ -13,6 +13,7 @@ class OrganigramMember extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'name',
         'email',
         'cell_phone',

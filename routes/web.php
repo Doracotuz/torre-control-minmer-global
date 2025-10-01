@@ -160,7 +160,7 @@ Route::middleware(['auth'])->group(function () {
 
 });
 
-Route::middleware(['auth', 'super.admin'])->prefix('asset-management')->name('asset-management.')->group(function () {
+Route::middleware(['auth', 'high.privilege'])->prefix('asset-management')->name('asset-management.')->group(function () {
     // Dashboard principal del módulo
     Route::get('/', [App\Http\Controllers\AssetManagement\AssetController::class, 'index'])->name('dashboard');
 

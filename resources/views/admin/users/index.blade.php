@@ -144,7 +144,7 @@
                                         <input type="checkbox" @click="toggleSelectAll()" :checked="isAllSelected" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]">
                                     </th>                                    
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Nombre</th>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Posición</th>
+                                    <!-- <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Posición</th> -->
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Teléfono</th>
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Email</th>
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Área</th>
@@ -165,7 +165,7 @@
                                                 <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->position ?? 'Sin posición' }}</div></td>
+                                        <!-- <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->position ?? 'Sin posición' }}</div></td> -->
                                         <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->phone_number ?? 'Sin teléfono' }}</div></td>
                                         <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->email }}</div></td>
                                         <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->area->name ?? 'N/A' }}</div></td>
