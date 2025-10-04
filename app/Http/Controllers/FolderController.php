@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Log;
 
 
 
@@ -988,6 +989,118 @@ class FolderController extends Controller
         });
 
         return response()->json($folders);
+    }
+
+    public function uploadDirectory(Request $request)
+    {
+        $request->validate([
+            'target_folder_id' => 'nullable|exists:folders,id',
+            'files' => 'required|array',
+            'files.*' => 'file|max:500000', // 500MB
+            'paths' => 'required|array',
+        ]);
+
+        $user = Auth::user();
+        $files = $request->file('files');
+        $paths = $request->input('paths');
+
+        if (count($files) !== count($paths)) {
+            return response()->json(['success' => false, 'message' => 'El número de archivos no coincide con el número de rutas.'], 400);
+        }
+
+        $baseFolder = $request->target_folder_id ? Folder::findOrFail($request->target_folder_id) : null;
+        
+        // --- Validación de Permisos (muy importante) ---
+        $baseFolderAreaId = $baseFolder ? $baseFolder->area_id : $user->area_id;
+
+        if (!$user->isSuperAdmin() && !$user->is_area_admin && $baseFolderAreaId !== $user->area_id) {
+             return response()->json(['success' => false, 'message' => 'No tienes permiso para subir archivos aquí.'], 403);
+        }
+        
+        $uploadedCount = 0;
+        
+        try {
+            for ($i = 0; $i < count($files); $i++) {
+                $file = $files[$i];
+                $relativePath = $paths[$i];
+
+                // 1. Encuentra o crea la carpeta de destino para este archivo
+                $targetFolder = $this->findOrCreateNestedFolder($baseFolder, $relativePath, $user);
+                
+                // 2. Procesa y sube el archivo
+                $originalFileName = $file->getClientOriginalName();
+                $s3Path = $file->store('files', 's3');
+
+                // 3. Crea el registro en la base de datos
+                $fileLink = FileLink::create([
+                    'name'      => $originalFileName,
+                    'type'      => 'file',
+                    'path'      => $s3Path,
+                    'folder_id' => $targetFolder ? $targetFolder->id : null,
+                    'user_id'   => $user->id,
+                ]);
+
+                // 4. Registrar actividad (opcional pero recomendado)
+                ActivityLog::create([
+                    'user_id' => $user->id,
+                    'action' => 'Subió un archivo (en carpeta)',
+                    'action_key' => 'uploaded_file_in_directory',
+                    'item_type' => 'file_link',
+                    'item_id' => $fileLink->id,
+                    'details' => ['name' => $fileLink->name, 'path' => $relativePath],
+                ]);
+                $uploadedCount++;
+            }
+
+            return response()->json(['success' => true, 'message' => "Se subieron {$uploadedCount} archivos exitosamente."]);
+
+        } catch (\Exception $e) {
+            // Log del error para depuración
+            Log::error('Error al subir directorio: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Ocurrió un error en el servidor al procesar la subida.'], 500);
+        }
+    }
+
+    /**
+     * Encuentra o crea una estructura de carpetas anidada a partir de una ruta relativa.
+     *
+     * @param  \App\Models\Folder|null  $baseFolder La carpeta raíz donde inicia la creación.
+     * @param  string  $filePath La ruta relativa del archivo (ej. "docs/reportes/2024.pdf").
+     * @param  \App\Models\User  $user El usuario que realiza la acción.
+     * @return \App\Models\Folder|null La carpeta final donde se debe guardar el archivo.
+     */
+    private function findOrCreateNestedFolder(?Folder $baseFolder, string $filePath, $user): ?Folder
+    {
+        // Extraemos solo la parte del directorio de la ruta del archivo
+        $directoryPath = pathinfo($filePath, PATHINFO_DIRNAME);
+
+        // Si el archivo está en la raíz de la carpeta subida, no hay nada que crear.
+        if ($directoryPath === '.' || $directoryPath === '') {
+            return $baseFolder;
+        }
+
+        $pathSegments = explode('/', $directoryPath);
+        $currentFolder = $baseFolder;
+        $currentFolderId = $baseFolder ? $baseFolder->id : null;
+        $areaId = $baseFolder ? $baseFolder->area_id : $user->area_id;
+
+        foreach ($pathSegments as $segment) {
+            // firstOrCreate: busca una carpeta con ese nombre en el padre actual.
+            // Si no la encuentra, la crea con los valores proporcionados.
+            $currentFolder = Folder::firstOrCreate(
+                [
+                    'parent_id' => $currentFolderId,
+                    'name'      => $segment,
+                    'area_id'   => $areaId,
+                ],
+                [
+                    'user_id'   => $user->id, // El creador de la nueva carpeta
+                ]
+            );
+            $currentFolderId = $currentFolder->id;
+        }
+
+        return $currentFolder;
     }
 
 }

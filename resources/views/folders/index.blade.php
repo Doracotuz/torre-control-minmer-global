@@ -95,6 +95,18 @@
                             @endif
                         </div>
 
+                        <input type="file" webkitdirectory directory multiple style="display: none;" 
+                            x-ref="folderInput" 
+                            @change="handleFolderSelected($event)">
+
+                        {{-- Botón para subir carpeta --}}
+                        <button @click="$refs.folderInput.click()"
+                                class="inline-flex items-center px-4 py-2 bg-[#9CB3ED] border border-transparent rounded-full font-semibold text-xxs sm:text-xs text-white uppercase tracking-widest hover:bg-[#2C3856] focus:bg-[#2C3856] active:bg-[#000000] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
+                            <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            <span class="hidden sm:inline">{{ __('Subir Carpeta') }}</span>
+                            <span class="sm:hidden">{{ __('Carpeta') }}</span>
+                        </button>                        
+
                         <button @click="deleteSelected()" x-show="isAnySelected()"
                                 class="inline-flex items-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-wider hover:bg-red-700 focus:bg-red-700 active:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
                             <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -1393,6 +1405,53 @@
                         this.showMoveModal = false;
                     });
                 },
+
+                handleFolderSelected(event) {
+                    const files = event.target.files;
+                    if (!files.length) {
+                        return;
+                    }
+
+                    const targetFolderId = @json($currentFolder ? $currentFolder->id : null);
+                    const formData = new FormData();
+
+                    // Solo añadimos el ID si no es nulo
+                    if (targetFolderId) {
+                        formData.append('target_folder_id', targetFolderId);
+                    }
+
+                    for (let i = 0; i < files.length; i++) {
+                        // Adjuntamos el archivo y su ruta relativa
+                        formData.append('files[]', files[i]);
+                        formData.append('paths[]', files[i].webkitRelativePath);
+                    }
+                    
+                    // Mostramos el overlay de carga
+                    document.getElementById('loading-overlay').classList.remove('hidden');
+
+                    fetch('{{ route("folders.uploadDirectory") }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            sessionStorage.setItem('flash_success', data.message);
+                        } else {
+                            sessionStorage.setItem('flash_error', data.message || 'Ocurrió un error al subir la carpeta.');
+                        }
+                        window.location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error al subir la carpeta:', error);
+                        sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar subir la carpeta.');
+                        window.location.reload();
+                    });
+                },                
 
                 init() {
                     const savedView = localStorage.getItem('file_manager_view');

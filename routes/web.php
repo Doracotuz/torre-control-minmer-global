@@ -114,6 +114,8 @@ Route::middleware(['auth'])->group(function () {
     // Ruta para descarga directa de archivos (usada por la búsqueda predictiva y clics en tabla)
     Route::get('/files/{fileLink}/download', [FileLinkController::class, 'download'])->name('files.download');
     Route::get('/indicadores/{folder}', [IndicadoresController::class, 'show'])->name('indicadores.show')->middleware('auth');
+    Route::post('/folders/upload-directory', [FolderController::class, 'uploadDirectory'])->name('folders.uploadDirectory');
+    
 
 
     // Route::get('/files/{fileLink}/download', function (FileLink $fileLink) {
