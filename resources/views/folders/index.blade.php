@@ -778,16 +778,32 @@
             </div>
 
         </div>
-        <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-75 hidden">
-            <div class="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center">
-                <svg class="animate-spin h-10 w-10 text-[#2c3856] mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p class="text-[#2c3856] font-semibold">Cargando archivos...</p>
+        <div id="loading-overlay" x-show="isUploading"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-75"
+            style="display: none;">
+            <div class="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center w-full max-w-md">
+                <h3 class="text-xl font-semibold text-[#2c3856] mb-2">Subiendo Carpeta</h3>
+                
+                {{-- Indicador de conteo --}}
+                <p class="text-gray-600 mb-4">
+                    <span x-text="`Archivo ${uploadCurrentFile} de ${uploadTotalFiles}`"></span>
+                </p>
+
+                {{-- Nombre del archivo actual --}}
+                <p class="text-sm text-gray-500 mb-2 w-full text-center truncate" x-text="uploadCurrentFileName"></p>
+
+                {{-- Barra de Progreso --}}
+                <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
+                    <div class="bg-[#FF9C00] h-4 rounded-full transition-all duration-150" 
+                        :style="`width: ${uploadProgress}%`">
+                    </div>
+                </div>
+                
+                <p class="text-[#2c3856] font-semibold text-lg">
+                    <span x-text="`${uploadProgress}%`"></span>
+                </p>
             </div>
         </div>
-        {{-- FIN DEL MODAL --}}
 
         {{-- INICIO DEL MODAL DE MOVER ELEMENTOS --}}
         <div x-show="showMoveModal"
@@ -957,6 +973,11 @@
         document.addEventListener('alpine:init', () => {
             Alpine.data('fileManager', () => ({
                 showPropertiesModal: false,
+                isUploading: false,
+                uploadProgress: 0,
+                uploadTotalFiles: 0,
+                uploadCurrentFile: 0,
+                uploadCurrentFileName: '',                
                 propertiesData: {},
                 isTileView: true,
                 tileSize: 'medium',
@@ -1026,100 +1047,84 @@
                     this.highlightMainDropArea = false;
                 },
 
-                handleDrop(event, targetFolderId) {
+                async handleDrop(event, targetFolderId) {
+                    // 1. Prevenir el comportamiento por defecto del navegador
                     event.preventDefault();
-                    const files = event.dataTransfer.files;
+                    this.highlightMainDropArea = false;
+                    this.dropTargetFolderId = null;
+
+                    // 2. Obtener los datos del evento
+                    // `items` es para archivos/carpetas del sistema operativo
+                    const items = event.dataTransfer.items;
+                    // `draggedData` es para elementos internos de la aplicación
                     const draggedData = event.dataTransfer.getData('text/plain');
 
-                    let draggedItem = null;
-                    if (draggedData) {
+                    // --- ESCENARIO A: Se arrastra una carpeta o archivos desde el computador ---
+                    // Verificamos si hay 'items' y no hay 'draggedData' para diferenciar de un movimiento interno
+                    if (items && items.length > 0 && !draggedData) {
+                        
+                        // Se utiliza el escáner asíncrono para obtener la lista completa de archivos
+                        const fileList = await this.getFilesFromDroppedItems(items);
+
+                        if (fileList.length > 0) {
+                            // Se pasa la lista de archivos a la función de subida con progreso
+                            this.uploadFilesWithProgress(fileList);
+                        }
+
+                    // --- ESCENARIO B: Se está moviendo un elemento interno ya existente ---
+                    } else if (draggedData) {
+                        let draggedItem = null;
                         try {
                             draggedItem = JSON.parse(draggedData);
                         } catch (e) {
-                            console.warn('Dragged data is not valid JSON or is empty:', draggedData, e);
-                        }
-                    }
-
-                    this.dropTargetFolderId = null;
-                    this.draggingItemId = null;
-                    this.draggingItemType = null;
-                    this.isDraggingFile = false;
-                    this.highlightMainDropArea = false;
-
-                    if (files.length > 0) {
-                        document.getElementById('loading-overlay').classList.remove('hidden');
-                        const actualTargetFolderId = targetFolderId === null ? ({{ $currentFolder ? $currentFolder->id : 'null' }}) : targetFolderId;
-                        const formData = new FormData();
-                        formData.append('folder_id', actualTargetFolderId);
-                        for (let i = 0; i < files.length; i++) {
-                            formData.append('files[]', files[i]);
-                        }
-
-                        fetch('{{ route('folders.uploadDroppedFiles') }}', {
-                            method: 'POST',
-                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                            body: formData
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            document.getElementById('loading-overlay').classList.add('hidden');
-                            if (data.success) {
-                                sessionStorage.setItem('flash_success', data.message);
-                                window.location.reload();
-                            } else {
-                                sessionStorage.setItem('flash_error', data.message);
-                                window.location.reload();
-                            }
-                        })
-                        .catch(error => {
-                            document.getElementById('loading-overlay').classList.add('hidden');
-                            console.error('Error al subir:', error);
-                            sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar subir los archivos.');
-                            window.location.reload();
-                        });
-
-                    }
-                    else if (draggedItem && draggedItem.id && draggedItem.id != targetFolderId) {
-                        let requestBody = {
-                            target_folder_id: targetFolderId
-                        };
-
-                        if (draggedItem.type === 'folder') {
-                            requestBody.folder_ids = [draggedItem.id];
-                            requestBody.file_link_ids = [];
-                        } else if (draggedItem.type === 'file_link') {
-                            requestBody.folder_ids = [];
-                            requestBody.file_link_ids = [draggedItem.id];
-                        } else {
-                            console.warn('Unknown item type dragged:', draggedItem.type);
+                            console.warn('Los datos arrastrados no son un JSON válido:', draggedData, e);
                             return;
                         }
 
-                        fetch('{{ route('items.bulk_move') }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            },
-                            body: JSON.stringify(requestBody)
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                sessionStorage.setItem('flash_success', data.message);
-                                window.location.reload();
-                            } else {
-                                sessionStorage.setItem('flash_error', data.message);
-                                window.location.reload();
+                        if (draggedItem && draggedItem.id && draggedItem.id != targetFolderId) {
+                            
+                            // Construir el cuerpo de la petición para la ruta 'bulk_move'
+                            let requestBody = { target_folder_id: targetFolderId };
+                            if (draggedItem.type === 'folder') {
+                                requestBody.folder_ids = [draggedItem.id];
+                                requestBody.file_link_ids = [];
+                            } else if (draggedItem.type === 'file_link') {
+                                requestBody.folder_ids = [];
+                                requestBody.file_link_ids = [draggedItem.id];
+                            } else { 
+                                return; 
                             }
-                        })
-                        .catch(error => {
-                            console.error('Error al mover:', error);
-                            sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar mover el elemento.');
-                            window.location.reload();
-                        });
+
+                            // Mostrar el overlay de carga genérico para la operación de mover
+                            document.getElementById('loading-overlay').classList.remove('hidden');
+
+                            // Enviar la petición para mover el elemento
+                            fetch('{{ route("items.bulk_move") }}', {
+                                method: 'POST',
+                                headers: { 
+                                    'Content-Type': 'application/json', 
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}' 
+                                },
+                                body: JSON.stringify(requestBody)
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    sessionStorage.setItem('flash_success', data.message);
+                                } else {
+                                    sessionStorage.setItem('flash_error', data.message);
+                                }
+                                window.location.reload();
+                            })
+                            .catch(error => {
+                                console.error('Error al mover:', error);
+                                sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar mover el elemento.');
+                                window.location.reload();
+                            });
+                        }
                     }
                 },
+
 
                 selectedItems: [],
                 toggleSelection(itemId, itemType) {
@@ -1407,51 +1412,127 @@
                 },
 
                 handleFolderSelected(event) {
-                    const files = event.target.files;
-                    if (!files.length) {
+                    const files = event.target.files; // files es un objeto FileList
+                    if (!files || files.length === 0) {
+                        return;
+                    }
+
+                    // --- PASO DE NORMALIZACIÓN ---
+                    // Convertimos el FileList al formato que nuestra función de subida espera: [{file, path}]
+                    const itemsList = [];
+                    for (const file of files) {
+                        itemsList.push({
+                            file: file,
+                            path: file.webkitRelativePath // El input de carpeta nos da esta propiedad directamente
+                        });
+                    }
+
+                    // Ahora sí, llamamos a la función de subida con los datos en el formato correcto
+                    this.uploadFilesWithProgress(itemsList);
+                },
+
+                uploadFilesWithProgress(itemsList) { // Ahora recibe la lista de objetos
+                    if (!itemsList || itemsList.length === 0) {
                         return;
                     }
 
                     const targetFolderId = @json($currentFolder ? $currentFolder->id : null);
-                    const formData = new FormData();
+                    
+                    this.isUploading = true;
+                    this.uploadTotalFiles = itemsList.length;
+                    this.uploadCurrentFile = 0;
+                    this.uploadProgress = 0;
+                    this.uploadCurrentFileName = '';
 
-                    // Solo añadimos el ID si no es nulo
-                    if (targetFolderId) {
-                        formData.append('target_folder_id', targetFolderId);
-                    }
+                    const uploadAllItems = async () => {
+                        for (let i = 0; i < itemsList.length; i++) {
+                            const item = itemsList[i]; // Obtenemos el objeto {file, path}
+                            const formData = new FormData();
+                            
+                            if (targetFolderId) {
+                                formData.append('target_folder_id', targetFolderId);
+                            }
+                            
+                            // Usamos item.file e item.path
+                            formData.append('files[]', item.file);
+                            formData.append('paths[]', item.path);
+                            
+                            this.uploadCurrentFile = i + 1;
+                            this.uploadCurrentFileName = item.file.name;
+                            this.uploadProgress = 0;
 
-                    for (let i = 0; i < files.length; i++) {
-                        // Adjuntamos el archivo y su ruta relativa
-                        formData.append('files[]', files[i]);
-                        formData.append('paths[]', files[i].webkitRelativePath);
+                            try {
+                                await axios.post('{{ route("folders.uploadDirectory") }}', formData, {
+                                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                                    onUploadProgress: (progressEvent) => {
+                                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                                        this.uploadProgress = percentCompleted;
+                                    }
+                                });
+                            } catch (error) {
+                                console.error('Error al subir el archivo:', item.file.name, error);
+                                sessionStorage.setItem('flash_error', `Error al subir "${item.file.name}". La carga se ha detenido.`);
+                                this.isUploading = false;
+                                window.location.reload();
+                                return; 
+                            }
+                        }
+                        
+                        sessionStorage.setItem('flash_success', `Se subieron ${itemsList.length} archivos exitosamente.`);
+                        this.isUploading = false;
+                        window.location.reload();
+                    };
+
+                    uploadAllItems();
+                },
+                
+                async getFilesFromDroppedItems(dataTransferItems) {
+                    const itemsList = []; // Ahora creamos una lista de objetos {file, path}
+                    const promises = [];
+
+                    for (const item of dataTransferItems) {
+                        const entry = item.webkitGetAsEntry();
+                        if (entry) {
+                            promises.push(this.traverseDirectory(entry, "", itemsList));
+                        }
                     }
                     
-                    // Mostramos el overlay de carga
-                    document.getElementById('loading-overlay').classList.remove('hidden');
+                    await Promise.all(promises);
+                    return itemsList;
+                },
 
-                    fetch('{{ route("folders.uploadDirectory") }}', {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json',
-                        },
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            sessionStorage.setItem('flash_success', data.message);
-                        } else {
-                            sessionStorage.setItem('flash_error', data.message || 'Ocurrió un error al subir la carpeta.');
-                        }
-                        window.location.reload();
-                    })
-                    .catch(error => {
-                        console.error('Error al subir la carpeta:', error);
-                        sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar subir la carpeta.');
-                        window.location.reload();
-                    });
-                },                
+                // Función recursiva que construye la lista de objetos {file, path}
+                async traverseDirectory(entry, currentPath, itemsList) {
+                    if (entry.isFile) {
+                        return new Promise(resolve => {
+                            entry.file(file => {
+                                // Creamos un objeto explícito con el archivo y su ruta
+                                itemsList.push({ file: file, path: currentPath + file.name });
+                                resolve();
+                            });
+                        });
+                    } else if (entry.isDirectory) {
+                        const reader = entry.createReader();
+                        const promises = [];
+                        const newPath = currentPath + entry.name + "/";
+
+                        return new Promise(resolve => {
+                            const readEntries = () => {
+                                reader.readEntries(entries => {
+                                    if (entries.length > 0) {
+                                        for (const subEntry of entries) {
+                                            promises.push(this.traverseDirectory(subEntry, newPath, itemsList));
+                                        }
+                                        readEntries();
+                                    } else {
+                                        Promise.all(promises).then(() => resolve());
+                                    }
+                                });
+                            };
+                            readEntries();
+                        });
+                    }
+                },
 
                 init() {
                     const savedView = localStorage.getItem('file_manager_view');
