@@ -1412,7 +1412,7 @@
                 },
 
                 handleFolderSelected(event) {
-                    const files = event.target.files; // files es un objeto FileList
+                    const files = event.target.files;
                     if (!files || files.length === 0) {
                         return;
                     }

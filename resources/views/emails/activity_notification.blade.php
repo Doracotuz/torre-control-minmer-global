@@ -39,16 +39,16 @@
                     <td>Acción:</td>
                     <td><strong>{{ $activity->action }}</strong></td>
                 </tr>
-                @if(is_array($details) && count($details) > 0)
-                    <tr>
-                        <td style="vertical-align: top;">Detalles:</td>
-                        <td>
-                            @foreach($details as $key => $value)
-                                <strong>{{ Str::title(str_replace('_', ' ', $key)) }}:</strong> {{ is_array($value) ? json_encode($value) : $value }}<br>
-                            @endforeach
-                        </td>
-                    </tr>
-                @endif
+                    @if(!empty($activity->details))
+                        <tr>
+                            <td style="vertical-align: top;">Detalles:</td>
+                            <td>
+                                @foreach($activity->details as $key => $value)
+                                    <strong>{{ Str::title(str_replace('_', ' ', $key)) }}:</strong> {{ is_array($value) ? json_encode($value) : $value }}<br>
+                                @endforeach
+                            </td>
+                        </tr>
+                    @endif
             </table>
         </div>
         <div class="footer">
