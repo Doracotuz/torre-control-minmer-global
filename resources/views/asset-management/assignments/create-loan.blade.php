@@ -4,19 +4,17 @@
 
 <style>
     :root {
-        /* Paleta de colores completa y refinada */
         --color-primary: #2c3856;
         --color-accent: #ff9c00;
         --color-text-primary: #2b2b2b;
         --color-text-secondary: #666666;
         --color-surface: #ffffff;
         --color-background: #f3f4f6;
-        --color-border: #d1d5db; /* Color de borde estandarizado */
+        --color-border: #d1d5db;
     }
     body { 
         background-color: var(--color-background); 
     }
-    /* Estilos de formulario consistentes */
     .form-label { font-weight: 600; color: var(--color-text-primary); margin-bottom: 0.5rem; display: block; }
     .form-input, .form-select, .form-textarea { 
         border-radius: 0.5rem; 
@@ -30,18 +28,17 @@
         border-color: var(--color-primary); 
         box-shadow: 0 0 0 2px var(--tw-ring-color); 
     }
-    /* Estilos de botones consistentes */
+
     .btn { padding: 0.65rem 1.25rem; border-radius: 0.5rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); transition: all 200ms ease-in-out; transform: translateY(0); border: 1px solid transparent; }
     .btn:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
     .btn-primary { background-color: var(--color-primary); color: white; }
-    .btn-primary:hover { background-color: #212a41; } /* Darker primary */
+    .btn-primary:hover { background-color: #212a41; }
     .btn-secondary { background-color: var(--color-surface); color: var(--color-text-secondary); border-color: var(--color-border); }
     .btn-secondary:hover { background-color: #f9fafb; }
 </style>
 
 <div class="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-    {{-- Encabezado --}}
     <div class="mb-8">
         <a href="{{ route('asset-management.assets.show', $asset) }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-2 inline-block">
             <i class="fas fa-arrow-left mr-2"></i> Volver a los detalles del activo
@@ -57,7 +54,6 @@
         </div>
     </div>
 
-    {{-- Formulario --}}
     <div class="bg-white p-8 rounded-xl shadow-lg mt-8">
         <form action="{{ route('asset-management.assignments.storeLoan', $asset) }}" method="POST">
             @csrf

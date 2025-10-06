@@ -4,19 +4,17 @@
 
 <style>
     :root {
-        /* Paleta de colores completa y refinada */
         --color-primary: #2c3856;
         --color-accent: #ff9c00;
         --color-text-primary: #2b2b2b;
         --color-text-secondary: #666666;
         --color-surface: #ffffff;
         --color-background: #f3f4f6;
-        --color-border: #d1d5db; /* Color de borde estandarizado */
+        --color-border: #d1d5db;
     }
     body { 
         background-color: var(--color-background); 
     }
-    /* Estilos de formulario consistentes */
     .form-label { font-weight: 600; color: var(--color-text-primary); margin-bottom: 0.5rem; display: block; }
     .form-input, .form-select, .form-textarea { 
         border-radius: 0.5rem; 
@@ -30,16 +28,14 @@
         border-color: var(--color-primary); 
         box-shadow: 0 0 0 2px var(--tw-ring-color); 
     }
-    /* Estilos de botones consistentes */
     .btn { padding: 0.65rem 1.25rem; border-radius: 0.5rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); transition: all 200ms ease-in-out; transform: translateY(0); border: 1px solid transparent; }
     .btn:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
     .btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; }
     .btn-primary { background-color: var(--color-primary); color: white; }
-    .btn-primary:hover { background-color: #212a41; } /* Darker primary */
+    .btn-primary:hover { background-color: #212a41; }
     .btn-secondary { background-color: var(--color-surface); color: var(--color-text-secondary); border-color: var(--color-border); }
     .btn-secondary:hover { background-color: #f9fafb; }
 
-    /* Badges de Estado */
     .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
     .status-en-almacén { background-color: #10B981; color: white; }
     .status-asignado { background-color: #3B82F6; color: white; }
@@ -48,17 +44,13 @@
     .status-de-baja { background-color: var(--color-text-secondary); color: white; }
     .status-en-mantenimiento { background-color: var(--color-text-secondary); color: white; }
     
-    /* Animaciones y Transiciones */
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .kpi-card { animation: fadeIn 0.5s ease-out forwards; }
 
-    /* --- ESTILOS PARA LA TABLA RESPONSIVA --- */
     @media (max-width: 767px) {
-        /* Oculta la cabecera de la tabla en móvil */
         .responsive-table-header {
             display: none;
         }
-        /* Estilo de la tarjeta para cada registro */
         .asset-card {
             display: block;
             border: 1px solid #e5e7eb;
@@ -68,7 +60,6 @@
             background-color: var(--color-surface);
             box-shadow: var(--shadow-sm);
         }
-        /* Contenedor para cada fila de datos dentro de la tarjeta */
         .asset-card-row {
             display: flex;
             justify-content: space-between;
@@ -78,12 +69,10 @@
         .asset-card-row:last-child {
             border-bottom: none;
         }
-        /* Etiqueta del dato (ej. "Estatus:") */
         .asset-card-label {
             font-weight: 600;
             color: var(--color-text-secondary);
         }
-        /* Valor del dato */
         .asset-card-value {
             text-align: right;
             color: var(--color-text-primary);
@@ -91,7 +80,6 @@
     }
 </style>
 
-{{-- El x-data ahora envuelve todo el contenido para controlar el modal --}}
 <div x-data="{ modalOpen: false }" class="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
     
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10">
@@ -100,12 +88,10 @@
             <p class="text-[var(--color-text-secondary)] mt-2">Vista general y filtrado del inventario de hardware.</p>
         </div>
         <div class="flex items-center space-x-3 mt-4 sm:mt-0">
-            {{-- Botón que abre el modal --}}
             <button @click="modalOpen = true" class="btn btn-secondary">
                 <i class="fas fa-chart-pie mr-2"></i> Ver Balance
             </button>
 
-            {{-- Menú de Configuración (Dropdown) --}}
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" class="btn btn-secondary">
                     <i class="fas fa-cog mr-2"></i> Configuración <i class="fas fa-chevron-down ml-2 text-xs transition-transform" :class="{'rotate-180': open}"></i>
@@ -130,7 +116,6 @@
                 </div>
             </div>
             
-            {{-- Botón para Añadir Activo --}}
             <a href="{{ route('asset-management.assets.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus mr-2"></i> Registrar Activo
             </a>
@@ -157,11 +142,10 @@
         </div>
     </div>
 
-    {{-- Filtros y Tabla --}}
     <div class="bg-white p-6 rounded-xl shadow-lg">
         <form action="{{ route('asset-management.dashboard') }}" method="GET" class="mb-6">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                {{-- Barra de Búsqueda --}}
+
                 <div class="lg:col-span-2">
                     <label for="search" class="form-label text-xs">Buscar Activo</label>
                     <div class="relative">
@@ -169,7 +153,6 @@
                         <input type="text" id="search" name="search" placeholder="Etiqueta, serie, modelo..." value="{{ $filters['search'] ?? '' }}" class="form-input w-full pl-10">
                     </div>
                 </div>
-                {{-- Filtro de Estatus --}}
                 <div>
                     <label for="status" class="form-label text-xs">Estatus</label>
                     <select name="status" id="status" class="form-select w-full">
@@ -179,7 +162,6 @@
                         @endforeach
                     </select>
                 </div>
-                {{-- Filtro de Sitio/Ubicación --}}
                 <div>
                     <label for="site_id" class="form-label text-xs">Ubicación</label>
                     <select name="site_id" id="site_id" class="form-select w-full">
@@ -189,7 +171,6 @@
                         @endforeach
                     </select>
                 </div>
-                {{-- Filtro de Categoría --}}
                 <div>
                     <label for="category_id" class="form-label text-xs">Categoría</label>
                     <select name="category_id" id="category_id" class="form-select w-full">
@@ -200,7 +181,6 @@
                     </select>
                 </div>
             </div>
-            {{-- Botones de Acción --}}
             <div class="mt-4 flex items-center space-x-3 border-t pt-4">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-filter mr-2"></i>Aplicar Filtros
@@ -209,7 +189,6 @@
             </div>
         </form>
 
-        {{-- INICIO DE LA TABLA RESPONSIVA --}}
         <div class="table-container border rounded-lg overflow-hidden">
             {{-- Cabecera visible solo en Escritorio (md en adelante) --}}
             <div class="responsive-table-header hidden md:grid md:grid-cols-7 gap-4 bg-[#2c3856] p-4 font-bold text-xs text-[#ffffff] uppercase tracking-wider">
@@ -225,7 +204,6 @@
             {{-- Cuerpo de la Tabla / Contenedor de Tarjetas --}}
             <div class="divide-y md:divide-y-0">
                 @forelse ($assets as $asset)
-                    {{-- Vista de Fila para Escritorio --}}
                     <div class="hidden md:grid md:grid-cols-7 gap-4 p-4 items-center hover:bg-gray-50 transition-colors">
                         <div><a href="{{ route('asset-management.assets.show', $asset) }}" class="font-mono text-[var(--color-primary)] hover:underline font-semibold">{{ $asset->asset_tag }}</a></div>
                         <div class="text-gray-600">{{ $asset->model->category->name ?? 'N/A' }}</div>
@@ -239,7 +217,6 @@
                         </div>
                     </div>
 
-                    {{-- Vista de Tarjeta para Móvil (hasta md) --}}
                     <div class="asset-card md:hidden">
                         <div class="asset-card-row">
                             <span class="asset-card-label">Etiqueta</span>
@@ -282,7 +259,6 @@
         @endif
     </div>
 
-    {{-- MODAL DE BALANCE DE ACTIVOS --}}
     <div x-show="modalOpen" 
          x-transition:enter="ease-out duration-300"
          x-transition:enter-start="opacity-0"
@@ -292,7 +268,6 @@
          x-transition:leave-end="opacity-0"
          class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" x-cloak>
 
-        {{-- Contenido del Modal --}}
         <div @click.away="modalOpen = false" 
              x-show="modalOpen"
              x-transition:enter="ease-out duration-300"
@@ -303,7 +278,6 @@
              x-transition:leave-end="opacity-0 scale-90"
              class="bg-white rounded-xl shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
 
-            {{-- Cabecera del Modal --}}
             <div class="p-6 border-b">
                 <div class="flex justify-between items-center">
                     <h2 class="text-xl font-bold text-[var(--color-primary)]">Balance de Activos por Categoría</h2>
@@ -311,7 +285,6 @@
                 </div>
             </div>
 
-            {{-- Cuerpo del Modal (con scroll) --}}
             <div class="p-6 space-y-4 overflow-y-auto">
                 @forelse($assetBalance as $categoryName => $data)
                     <div x-data="{ expanded: false }" class="bg-gray-50 rounded-lg border">
@@ -339,7 +312,6 @@
                             </div>
                         </div>
                         
-                        {{-- Desglose Colapsable --}}
                         <div x-show="expanded" x-transition class="border-t bg-white p-4">
                             <h4 class="font-semibold text-sm mb-2">Desglose por Estatus:</h4>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
@@ -357,12 +329,11 @@
                 @endforelse
             </div>
 
-            {{-- Pie del Modal --}}
             <div class="bg-gray-100 px-6 py-4 text-right rounded-b-xl border-t">
                 <button @click="modalOpen = false" class="btn btn-secondary">Cerrar</button>
             </div>
         </div>
     </div>
 
-</div> {{-- Cierre del div con x-data --}}
+</div>
 @endsection

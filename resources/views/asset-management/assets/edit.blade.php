@@ -3,15 +3,13 @@
 @section('content')
 <style>
     :root {
-        /* Tu paleta de colores */
         --color-primary: #2c3856;
         --color-accent: #ff9c00;
         --color-text-primary: #2b2b2b;
         --color-text-secondary: #666666;
         --color-surface: #ffffff;
         
-        /* Colores de apoyo */
-        --color-primary-dark: #212a41; /* Versión oscurecida para hover */
+        --color-primary-dark: #212a41;
         --color-background: #f3f4f6;
         --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
         --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -22,7 +20,6 @@
         background-color: var(--color-background);
     }
 
-    /* Estilos para formularios (Inputs, Selects, Textareas) */
     .form-input, .form-select, .form-textarea {
         border-radius: 0.5rem;
         border-color: #d1d5db;
@@ -40,7 +37,6 @@
         display: block;
     }
     
-    /* Botones */
     .btn {
         padding: 0.65rem 1.25rem;
         border-radius: 0.5rem;
@@ -72,7 +68,6 @@
         background-color: #f9fafb;
     }
 
-    /* Badges de Estado */
     .status-badge { 
         padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; 
         font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
@@ -109,7 +104,6 @@
                         <input type="text" id="serial_number" name="serial_number" class="form-input w-full" value="{{ old('serial_number', $asset->serial_number) }}" required>
                     </div>
 
-                    {{-- AlpineJS Componente para Categoría/Modelo --}}
                     <div x-data="{ models: {{ $groupedModels->toJson() }}, categories: {{ $groupedModels->keys()->toJson() }}, selectedCategory: '{{ old('category', $currentCategoryName) }}', filteredModels: [] }"
                          x-init="filteredModels = models[selectedCategory] || []" class="space-y-6">
                         <div>
@@ -127,7 +121,6 @@
                             </select>
                         </div>
 
-                        {{-- Campos dinámicos para Laptops/Desktops --}}
                         <div x-show="selectedCategory === 'Laptop' || selectedCategory === 'Desktop'" x-transition class="space-y-6 border-t border-gray-200 pt-6 mt-6">
                             <h3 class="font-bold text-lg text-[var(--color-text-primary)]">Especificaciones Técnicas</h3>
                             <div><label for="cpu" class="form-label">Procesador</label><input type="text" name="cpu" id="cpu" class="form-input w-full" value="{{ old('cpu', $asset->cpu) }}"></div>
@@ -136,7 +129,6 @@
                             <div><label for="mac_address" class="form-label">MAC Address</label><input type="text" name="mac_address" id="mac_address" class="form-input w-full" value="{{ old('mac_address', $asset->mac_address) }}"></div>
                         </div>
 
-                        {{-- Campos dinámicos para Celulares --}}
                         <div x-show="selectedCategory === 'Celular'" x-transition class="space-y-6 border-t border-gray-200 pt-6 mt-6">
                              <h3 class="font-bold text-lg text-[var(--color-text-primary)]">Detalles de Telefonía</h3>
                              <div>
@@ -148,7 +140,6 @@
                     </div>
                 </div>
 
-                {{-- Columna Derecha --}}
                 <div class="space-y-6">
                     <div>
                         <label for="site_id" class="form-label">Sitio / Ubicación</label>
@@ -185,11 +176,9 @@
                         removePhoto: false
                     }">
                         <div class="aspect-w-1 aspect-h-1 bg-gray-100 rounded-lg flex items-center justify-center relative border-2 border-dashed">
-                            {{-- Vista Previa de la Imagen --}}
                             <template x-if="photoPreview">
                                 <img :src="photoPreview" class="w-full h-full object-cover rounded-lg">
                             </template>
-                            {{-- Icono si no hay imagen --}}
                             <template x-if="!photoPreview">
                                 <div class="text-center text-gray-400 p-4">
                                     <i class="fas fa-camera text-3xl"></i>
@@ -197,7 +186,6 @@
                                 </div>
                             </template>
                             
-                            {{-- Input de archivo --}}
                             <input id="photo_{{ $i }}" name="photo_{{ $i }}" type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                    @change="
                                         const reader = new FileReader();
@@ -206,7 +194,6 @@
                                         removePhoto = false;
                                    ">
 
-                            {{-- Botón para eliminar foto existente --}}
                             <template x-if="photoPreview && !removePhoto">
                                 <button type="button" @click.prevent="photoPreview = null; removePhoto = true; document.getElementById('photo_{{ $i }}').value = ''"
                                         class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-transform hover:scale-110"
@@ -215,7 +202,6 @@
                                 </button>
                             </template>
                         </div>
-                        {{-- Campo oculto para marcar la eliminación en el backend --}}
                         <input type="hidden" name="remove_photo_{{ $i }}" x-model="removePhoto">
                     </div>
                     @endforeach

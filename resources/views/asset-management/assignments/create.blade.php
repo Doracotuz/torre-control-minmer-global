@@ -4,15 +4,13 @@
 
 <style>
     :root {
-        /* Tu paleta de colores */
         --color-primary: #2c3856;
         --color-accent: #ff9c00;
         --color-text-primary: #2b2b2b;
         --color-text-secondary: #666666;
         --color-surface: #ffffff;
         
-        /* Colores de apoyo */
-        --color-primary-dark: #212a41; /* Versión oscurecida para hover */
+        --color-primary-dark: #212a41;
         --color-background: #f3f4f6;
         --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
         --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -43,7 +41,6 @@
 
 <div class="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-    {{-- Encabezado --}}
     <div class="mb-8">
         <a href="{{ route('asset-management.assets.show', $asset) }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-2 inline-block">
             <i class="fas fa-arrow-left mr-2"></i> Volver a los detalles del activo
@@ -59,7 +56,6 @@
         </div>
     </div>
 
-    {{-- Formulario --}}
     <div class="bg-white p-8 rounded-xl shadow-lg mt-8">
         <form action="{{ route('asset-management.assignments.store', $asset) }}" method="POST">
             @csrf

@@ -33,7 +33,6 @@
     .btn-secondary { background-color: var(--color-surface); color: var(--color-text-secondary); border: 1px solid #d1d5db; }
     .btn-secondary:hover { background-color: #f9fafb; }
 
-    /* Estilo para el nuevo componente de subida de fotos */
     .photo-uploader {
         border: 2px dashed #d1d5db;
         border-radius: 0.75rem;
@@ -89,7 +88,6 @@
         @csrf
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {{-- Columna Principal de Datos (más ancha) --}}
             <div class="lg:col-span-2 bg-white p-8 rounded-xl shadow-lg space-y-8">
                 <fieldset>
                     <legend class="text-xl font-bold text-[var(--color-primary)] border-b border-gray-200 pb-2 mb-6 w-full">Información Principal</legend>
@@ -128,7 +126,6 @@
                             </select>
                         </div>
                         
-                        {{-- Campos dinámicos para Laptops/Desktops --}}
                         <div x-show="selectedCategory === 'Laptop' || selectedCategory === 'Desktop'" x-transition class="md:col-span-2 space-y-6">
                             <h3 class="font-semibold text-lg text-gray-700 mt-4">Especificaciones Técnicas</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -139,7 +136,6 @@
                             </div>
                         </div>
 
-                        {{-- Campos dinámicos para Celulares --}}
                         <div x-show="selectedCategory === 'Celular'" x-transition class="md:col-span-2 space-y-6">
                              <h3 class="font-semibold text-lg text-gray-700 mt-4">Detalles de Telefonía</h3>
                              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -160,7 +156,6 @@
                 <fieldset>
                     <legend class="text-xl font-bold text-[var(--color-primary)] border-b border-gray-200 pb-2 mb-6 w-full">Fotografías del Activo (Opcional)</legend>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        {{-- Componente para Foto 1 --}}
                         <div x-data="{ photoName: null, photoPreview: null }">
                             <input name="photo_1" type="file" x-ref="photo1" class="hidden" @change="
                                 photoName = $event.target.files[0].name;
@@ -183,7 +178,6 @@
                                 </template>
                             </label>
                         </div>
-                        {{-- Componente para Foto 2 --}}
                         <div x-data="{ photoName: null, photoPreview: null }">
                             <input name="photo_2" type="file" x-ref="photo2" class="hidden" @change="
                                 photoName = $event.target.files[0].name;
@@ -206,7 +200,6 @@
                                 </template>
                             </label>
                         </div>
-                        {{-- Componente para Foto 3 --}}
                         <div x-data="{ photoName: null, photoPreview: null }">
                             <input name="photo_3" type="file" x-ref="photo3" class="hidden" @change="
                                 photoName = $event.target.files[0].name;
@@ -233,7 +226,6 @@
                 </fieldset>
             </div>
 
-            {{-- Columna Lateral de Estado y Notas --}}
             <div class="lg:col-span-1 bg-white p-8 rounded-xl shadow-lg space-y-8 h-fit">
                 <fieldset>
                     <legend class="text-xl font-bold text-[var(--color-primary)] border-b border-gray-200 pb-2 mb-6 w-full">Estatus y Ubicación</legend>

@@ -3,15 +3,13 @@
 @section('content')
 <style>
     :root {
-        /* Tu paleta de colores */
         --color-primary: #2c3856;
         --color-accent: #ff9c00;
         --color-text-primary: #2b2b2b;
         --color-text-secondary: #666666;
         --color-surface: #ffffff;
         
-        /* Colores de apoyo */
-        --color-primary-dark: #212a41; /* Versión oscurecida para hover */
+        --color-primary-dark: #212a41;
         --color-background: #f3f4f6;
         --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
         --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -22,7 +20,6 @@
         background-color: var(--color-background);
     }
 
-    /* Estilos para formularios (Inputs, Selects, Textareas) */
     .form-input, .form-select, .form-textarea {
         border-radius: 0.5rem;
         border-color: #d1d5db;
@@ -40,7 +37,6 @@
         display: block;
     }
     
-    /* Botones */
     .btn {
         padding: 0.65rem 1.25rem;
         border-radius: 0.5rem;
@@ -72,7 +68,6 @@
         background-color: #f9fafb;
     }
 
-    /* Badges de Estado */
     .status-badge { 
         padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; 
         font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
@@ -85,7 +80,6 @@
 </style>
 <div x-data="{ photoModalOpen: false, currentPhoto: '' }" class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     
-    {{-- Encabezado --}}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
         <div>
             <a href="{{ route('asset-management.dashboard') }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-2 inline-block">
@@ -104,13 +98,10 @@
         </div>
     </div>
 
-    {{-- Layout Principal --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {{-- Columna Izquierda (Detalles, Fotos y Software) --}}
         <div class="lg:col-span-2 space-y-8">
             
-            {{-- Tarjeta de Fotografías del Activo --}}
             @if($asset->photo_1_path || $asset->photo_2_path || $asset->photo_3_path)
             <div class="bg-white p-6 rounded-xl shadow-lg">
                 <h3 class="font-bold text-xl text-[var(--color-text-primary)] border-b pb-3 mb-4">Fotografías del Activo</h3>
@@ -129,7 +120,6 @@
             </div>
             @endif
             
-            {{-- Tarjeta de Detalles --}}
             <div class="bg-white p-6 rounded-xl shadow-lg">
                 <h3 class="font-bold text-xl text-[var(--color-text-primary)] border-b pb-3 mb-4">Detalles del Activo</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
@@ -170,7 +160,6 @@
                 @endif
             </div>
 
-            {{-- Tarjeta de Software Asignado --}}
             <div class="bg-white p-6 rounded-xl shadow-lg">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="font-bold text-xl text-[var(--color-text-primary)]">Software Asignado</h3>
@@ -211,9 +200,7 @@
             </div>
         </div>
 
-        {{-- Columna Derecha (Estado e Historial) --}}
         <div class="space-y-6">
-            {{-- Tarjeta de Estado --}}
             <div x-data="{ returnModalOpen: false }" class="bg-white p-6 rounded-xl shadow-lg">
                 <h3 class="font-bold text-lg mb-3 text-[var(--color-primary)]">Estado Actual</h3>
                 <p class="status-badge status-{{ Str::kebab($asset->status) }} inline-block">{{ $asset->status }}</p>
@@ -225,13 +212,11 @@
                         <p class="text-sm text-gray-500">{{ $asset->currentAssignment->member->position->name ?? 'Sin Puesto' }}</p>
                         <p class="text-sm text-gray-500 mt-1">Desde: {{ date('d/m/Y', strtotime($asset->currentAssignment->assignment_date)) }}</p>
                         
-                        {{-- Botón que abre el modal --}}
                         <button @click="returnModalOpen = true" class="btn bg-[var(--color-accent)] text-white w-full mt-4">
                             Registrar Devolución
                         </button>
                     </div>
 
-                    {{-- Ventana Modal para Registrar Devolución --}}
                     <div x-show="returnModalOpen" 
                         x-transition:enter="ease-out duration-300"
                         x-transition:enter-start="opacity-0"
@@ -253,7 +238,6 @@
                             
                             <form action="{{ route('asset-management.assignments.return', $asset->currentAssignment) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
-                                {{-- Cabecera del Modal --}}
                                 <div class="p-6 border-b">
                                     <h3 class="text-lg font-bold text-[var(--color-primary)] flex items-center">
                                         <i class="fas fa-undo mr-3"></i>
@@ -261,13 +245,11 @@
                                     </h3>
                                 </div>
                                 
-                                {{-- Cuerpo del Modal --}}
                                 <div class="p-6">
                                     <p class="text-sm text-gray-600 mb-6">
                                         Estás a punto de registrar la devolución del activo <strong>{{ $asset->asset_tag }}</strong> por parte de <strong>{{ $asset->currentAssignment->member->name }}</strong>. El estatus del activo cambiará a "En Almacén".
                                     </p>
 
-                                    {{-- Nuevo Componente para Subir Archivo --}}
                                     <div x-data="{ fileName: '' }">
                                         <label class="form-label">Adjuntar Responsiva de Devolución Firmada (PDF, Opcional)</label>
                                         <div class="mt-1 flex items-center justify-center w-full px-6 py-4 border-2 border-gray-300 border-dashed rounded-md">
@@ -288,7 +270,6 @@
                                     </div>
                                 </div>
 
-                                {{-- Pie del Modal --}}
                                 <div class="bg-gray-100 px-6 py-4 flex justify-end items-center space-x-3 rounded-b-xl">
                                     <button type="button" @click="returnModalOpen = false" class="btn btn-secondary">Cancelar</button>
                                     <button type="submit" class="btn btn-primary">Confirmar Devolución</button>
@@ -306,7 +287,6 @@
                 @endif
             </div>
 
-            {{-- Tarjeta de Historial --}}
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <h3 class="text-lg font-bold text-[var(--color-primary)] mb-4">Línea de Vida del Activo</h3>
                 <ul class="space-y-4 text-sm">
@@ -329,11 +309,9 @@
                                 @if($log->user) por {{ $log->user->name }} @endif
                             </p>
 
-                            {{-- Lógica para mostrar documentos --}}
                             @if($log->loggable_type === 'App\Models\Assignment' && $log->loggable)
                                 @php $assignment = $log->loggable; @endphp
                                 
-                                {{-- Si es un evento de Entrega (Asignación o Préstamo) --}}
                                 @if(in_array($log->action_type, ['Asignación', 'Préstamo']))
                                 <div class="mt-2 pl-4 border-l-2 space-y-1">
                                     @if(!$assignment->signed_receipt_path)
@@ -353,13 +331,11 @@
                                 </div>
                                 @endif
 
-                                {{-- **INICIO DE LA LÓGICA CORREGIDA PARA DEVOLUCIONES** --}}
                                 @if($log->action_type === 'Devolución')
                                 <div class="mt-2 pl-4 border-l-2 space-y-1">
                                     @if($assignment->return_receipt_path)
                                         <div><a href="{{ Storage::disk('s3')->url($assignment->return_receipt_path) }}" target="_blank" class="text-xs text-green-600 hover:underline">Ver responsiva</a></div>
                                     @else
-                                    {{-- Si no hay PDF, muestra el formulario para subirlo --}}
                                     <form action="{{ route('asset-management.assignments.uploadReturnReceipt', $assignment) }}" method="POST" enctype="multipart/form-data" class="inline-block">
                                             @csrf
                                             <input type="file" name="return_receipt" class="hidden" id="return-receipt-{{ $assignment->id }}" onchange="this.form.submit()">
