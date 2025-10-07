@@ -16,9 +16,9 @@
          
         <style>
 
-            body {
+            /* body {
                 zoom: 80%;
-            }
+            } */
             a.nav-link-custom:visited {
                 color: #e5e7eb;
             }
