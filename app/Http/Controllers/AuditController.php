@@ -274,9 +274,10 @@ class AuditController extends Controller
             'incidencias.*' => 'string',
             'validated_specs' => 'nullable|array',
             'incluye_tarimas' => 'sometimes|boolean',
-            'tarimas_tipo' => 'required_if:incluye_tarimas,1|in:Chep,Estándar,Ambas',
+            'tarimas_tipo' => 'required_if:incluye_tarimas,1|in:Chep,Estándar,Ambas,Tarima Liverpool',
             'tarimas_cantidad_chep' => 'required_if:tarimas_tipo,Chep|required_if:tarimas_tipo,Ambas|nullable|integer|min:0',
             'tarimas_cantidad_estandar' => 'required_if:tarimas_tipo,Estándar|required_if:tarimas_tipo,Ambas|nullable|integer|min:0',
+            'tarimas_cantidad_liverpool' => 'required_if:tarimas_tipo,Tarima Liverpool|nullable|integer|min:0',
         ]);
         
         DB::transaction(function () use ($validatedData, $guia, $request, $audit) {

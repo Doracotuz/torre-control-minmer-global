@@ -112,10 +112,26 @@
                         <div x-show="incluyeTarimas" x-transition class="mt-4 space-y-4 pl-6 border-l-2 border-indigo-200">
                             <div>
                                 <label for="tarimas_tipo" class="block text-sm font-medium text-gray-700">Tipo de Tarima</label>
-                                <select name="tarimas_tipo" id="tarimas_tipo" x-model="tipoTarima" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"><option value="N/A" disabled>Selecciona...</option><option value="Chep">Chep</option><option value="Estándar">Estándar</option><option value="Ambas">Ambas</option></select>
+                                <select name="tarimas_tipo" id="tarimas_tipo" x-model="tipoTarima" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    <option value="N/A" disabled>Selecciona...</option>
+                                    <option value="Chep">Chep</option>
+                                    <option value="Estándar">Estándar</option>
+                                    <option value="Ambas">Ambas</option>
+                                    <option value="Tarima Liverpool">Tarima Liverpool</option>
+                                </select>
                             </div>
-                            <div x-show="tipoTarima === 'Chep' || tipoTarima === 'Ambas'" x-transition><label for="tarimas_cantidad_chep" class="block text-sm font-medium text-gray-700">Cantidad Tarimas Chep</label><input type="number" name="tarimas_cantidad_chep" id="tarimas_cantidad_chep" value="{{ old('tarimas_cantidad_chep', 0) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" min="0"></div>
-                            <div x-show="tipoTarima === 'Estándar' || tipoTarima === 'Ambas'" x-transition><label for="tarimas_cantidad_estandar" class="block text-sm font-medium text-gray-700">Cantidad Tarimas Estándar</label><input type="number" name="tarimas_cantidad_estandar" id="tarimas_cantidad_estandar" value="{{ old('tarimas_cantidad_estandar', 0) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" min="0"></div>
+                            <div x-show="tipoTarima === 'Chep' || tipoTarima === 'Ambas'" x-transition>
+                                <label for="tarimas_cantidad_chep" class="block text-sm font-medium text-gray-700">Cantidad Tarimas Chep</label>
+                                <input type="number" name="tarimas_cantidad_chep" id="tarimas_cantidad_chep" value="{{ old('tarimas_cantidad_chep', 0) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" min="0">
+                            </div>
+                            <div x-show="tipoTarima === 'Estándar' || tipoTarima === 'Ambas'" x-transition>
+                                <label for="tarimas_cantidad_estandar" class="block text-sm font-medium text-gray-700">Cantidad Tarimas Estándar</label>
+                                <input type="number" name="tarimas_cantidad_estandar" id="tarimas_cantidad_estandar" value="{{ old('tarimas_cantidad_estandar', 0) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" min="0">
+                            </div>
+                            <div x-show="tipoTarima === 'Tarima Liverpool'" x-transition>
+                                <label for="tarimas_cantidad_liverpool" class="block text-sm font-medium text-gray-700">Cantidad Tarimas Liverpool</label>
+                                <input type="number" name="tarimas_cantidad_liverpool" id="tarimas_cantidad_liverpool" value="{{ old('tarimas_cantidad_liverpool', 0) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" min="0">
+                            </div>
                         </div>
                     </div>
                 </div>
