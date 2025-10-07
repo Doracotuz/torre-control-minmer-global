@@ -896,7 +896,7 @@
             x-data="{ fullscreen: false }">
             
             <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col relative"
-                :class="fullscreen && mediaModalData.type === 'pdf' ? '!max-w-none !max-h-none !h-screen !min-h-screen !w-full !m-0 fixed inset-0 z-50 overflow-hidden' : ''"
+                :class="fullscreen && mediaModalData.type === 'pdf' ? '!max-w-none !rounded-none !max-h-none !h-screen !w-screen !m-0 fixed inset-0' : ''"
                 @click.stop>
                 
                 <div class="flex justify-between items-center p-4 border-b border-gray-200"
@@ -918,7 +918,7 @@
                 </div>
 
                 <div class="p-6 overflow-y-auto flex-1 flex flex-col items-center justify-center"
-                    :class="fullscreen && mediaModalData.type === 'pdf' ? '!p-0 !h-full !min-h-full' : ''">
+                    :class="fullscreen && mediaModalData.type === 'pdf' ? '!p-2' : ''">
                     <div class="w-full flex-1 flex items-center justify-center">
                         <template x-if="mediaModalData.type === 'image'">
                             <img :src="mediaModalData.url" alt="Vista previa" class="max-w-full max-h-[70vh] rounded-lg shadow-lg object-contain">
@@ -931,7 +931,7 @@
                         <template x-if="mediaModalData.type === 'pdf'">
                             <iframe :src="mediaModalData.url" 
                                     class="w-full rounded-lg border-2 border-gray-300"
-                                    :class="fullscreen ? '!h-full !min-h-full !w-full !border-0 !rounded-none' : 'h-[70vh]'"></iframe>
+                                    :class="fullscreen ? '!h-[calc(100vh-10rem)] !border-0 !rounded-none' : 'h-[70vh]'"></iframe>
                         </template>
                         
                         <template x-if="mediaModalData.type === 'audio'">
