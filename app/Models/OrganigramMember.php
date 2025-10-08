@@ -84,6 +84,11 @@ class OrganigramMember extends Model
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class);
+    }
+    
+    public function userResponsivas()
+    {
+        return $this->hasMany(UserResponsiva::class)->latest();
     }    
 
     

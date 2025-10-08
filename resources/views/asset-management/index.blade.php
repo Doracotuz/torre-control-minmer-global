@@ -92,6 +92,10 @@
                 <i class="fas fa-chart-pie mr-2"></i> Ver Balance
             </button>
 
+            <a href="{{ route('asset-management.user-dashboard.index') }}" class="btn btn-secondary">
+                <i class="fas fa-user-shield mr-2"></i> Responsivas por Usuario
+            </a>            
+
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" class="btn btn-secondary">
                     <i class="fas fa-cog mr-2"></i> Configuración <i class="fas fa-chevron-down ml-2 text-xs transition-transform" :class="{'rotate-180': open}"></i>

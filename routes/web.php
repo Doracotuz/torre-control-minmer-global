@@ -197,6 +197,10 @@ Route::middleware(['auth', 'high.privilege'])->prefix('asset-management')->name(
     Route::put('maintenances/{maintenance}', [App\Http\Controllers\AssetManagement\MaintenanceController::class, 'update'])->name('maintenances.update');
     Route::get('maintenances/{maintenance}/pdf', [App\Http\Controllers\AssetManagement\MaintenanceController::class, 'generatePdf'])->name('maintenances.pdf');
     Route::post('assignments/{assignment}/upload-return-receipt', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'uploadReturnReceipt'])->name('assignments.uploadReturnReceipt');
+    Route::get('user-dashboard', [App\Http\Controllers\AssetManagement\UserDashboardController::class, 'index'])->name('user-dashboard.index');
+    Route::get('user-dashboard/{member}', [App\Http\Controllers\AssetManagement\UserDashboardController::class, 'show'])->name('user-dashboard.show');
+    Route::get('user-dashboard/{member}/pdf', [App\Http\Controllers\AssetManagement\UserDashboardController::class, 'generateConsolidatedPdf'])->name('user-dashboard.pdf');
+    Route::post('user-dashboard/{member}/upload-receipt', [App\Http\Controllers\AssetManagement\UserDashboardController::class, 'uploadConsolidatedReceipt'])->name('user-dashboard.uploadReceipt');
 
 
 
