@@ -348,7 +348,7 @@ class AuditController extends Controller
             ->where('estatus', '!=', 'Cancelado')
             ->with([
                 'plannings.order.customer',
-                'plannings.order.audits',
+                'plannings.order.audits', // Asegúrate de que esta relación esté cargada
             ]);
 
         if ($selectedOrigen) {
@@ -359,18 +359,47 @@ class AuditController extends Controller
         
         $guias = $query->orderBy('hora_planeada', 'asc')->get();
 
-        // --- INICIO: CÁLCULO DE ESTADÍSTICAS DEL DASHBOARD ---
-        $allPlannings = $guias->flatMap->plannings;
+        // --- INICIO DE LA NUEVA LÓGICA DE AGRUPACIÓN ---
+        $displayItems = collect();
+        foreach ($guias as $guia) {
+            // Verifica si alguna de las órdenes de la guía todavía está pendiente en almacén
+            $hasPendingWarehouse = $guia->plannings->some(function ($planning) {
+                return $planning->order && $planning->order->audits->where('status', 'Pendiente Almacén')->isNotEmpty();
+            });
 
+            if ($hasPendingWarehouse) {
+                // Si hay pendientes, desglosa la guía en órdenes individuales
+                foreach ($guia->plannings as $planning) {
+                    if ($planning->order) {
+                        $displayItems->push((object)[
+                            'type' => 'individual',
+                            'planning' => $planning,
+                            'guia' => $guia
+                        ]);
+                    }
+                }
+            } else {
+                // Si no hay pendientes de almacén, agrupa toda la guía
+                if ($guia->plannings->isNotEmpty()) { // Solo muestra guías que tengan órdenes
+                    $displayItems->push((object)[
+                        'type' => 'group',
+                        'guia' => $guia
+                    ]);
+                }
+            }
+        }
+        // --- FIN DE LA NUEVA LÓGICA ---
+
+        $allPlannings = $guias->flatMap->plannings;
         $stats = [
             'totalGuias' => $guias->count(),
             'totalDocumentos' => $allPlannings->pluck('cs_order_id')->unique()->count(),
             'totalCajas' => $allPlannings->sum('cajas'),
             'totalPiezas' => $allPlannings->sum('pzs'),
         ];
-        // --- FIN: CÁLCULO DE ESTADÍSTICAS ---
 
-        return view('audit.plan-de-carga', compact('guias', 'selectedDate', 'origenes', 'selectedOrigen', 'stats'));
+        // Se pasa $displayItems a la vista en lugar de $guias
+        return view('audit.plan-de-carga', compact('displayItems', 'selectedDate', 'origenes', 'selectedOrigen', 'stats'));
     }
 
     /**

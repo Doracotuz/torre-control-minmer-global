@@ -65,7 +65,6 @@
         <div x-show="isImportModalOpen" @keydown.escape.window="isImportModalOpen = false" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" style="display: none;">
             <div @click.outside="isImportModalOpen = false" class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
                 <h3 class="text-xl font-bold text-[#2c3856] mb-4">Importar Productos desde CSV</h3>
-                <p class="text-sm text-gray-600 mb-2">El archivo debe tener las columnas: SKU, Descripcion, F Empaque, Marca.</p>
                 <p class="text-sm text-gray-600 mb-4">Las marcas deben existir previamente en el sistema.</p>
                 <a href="{{ route('customer-service.products.template') }}" class="text-sm text-blue-600 font-semibold hover:underline mb-4 block">Descargar plantilla de ejemplo</a>
                 <form action="{{ route('customer-service.products.import') }}" method="POST" enctype="multipart/form-data">

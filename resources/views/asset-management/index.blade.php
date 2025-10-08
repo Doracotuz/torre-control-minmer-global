@@ -21,7 +21,7 @@
         border: 1px solid var(--color-border); 
         transition: all 150ms ease-in-out; 
         width: 100%; 
-        padding: 0.75rem 1rem; 
+        padding: 0.75rem 2rem;
     }
     .form-input:focus, .form-select:focus, .form-textarea:focus { 
         --tw-ring-color: var(--color-primary); 

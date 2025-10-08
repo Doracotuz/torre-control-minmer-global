@@ -10,10 +10,13 @@
         </div>
     </x-slot>
 
-    <div class="py-12" x-data="{ isModalOpen: false }">
+    <div class="py-12" x-data="modalManager()">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="flex justify-end mb-4">
-                <button @click="isModalOpen = true" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-green-700">
+                <button 
+                    @click="openModal()" 
+                    class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-green-700"
+                >
                     Añadir Nueva Marca
                 </button>
             </div>
@@ -46,22 +49,124 @@
             <div class="mt-4">{{ $brands->links() }}</div>
         </div>
 
-        <!-- Modal para Crear Marca -->
-        <div x-show="isModalOpen" @keydown.escape.window="isModalOpen = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" style="display: none;">
-            <div @click.outside="isModalOpen = false" class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-                <h3 class="text-xl font-bold text-[#2c3856] mb-4">Crear Nueva Marca</h3>
-                <form action="{{ route('customer-service.brands.store') }}" method="POST">
+        <div 
+            x-show="isModalOpen" 
+            x-cloak
+            x-transition
+            @keydown.escape.window="closeModal()"
+            x-ref="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+            style="display: none;"
+        >
+            <div 
+                class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md"
+                x-ref="modalContent"
+            >
+                <h3 id="modal-title" class="text-xl font-bold text-[#2c3856] mb-4">Crear Nueva Marca</h3>
+                
+                <form action="{{ route('customer-service.brands.store') }}" method="POST" @submit="closeModal()">
                     @csrf
                     <div>
                         <label for="name" class="block text-sm font-medium text-gray-700">Nombre</label>
-                        <input type="text" name="name" id="name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        <input 
+                            type="text" 
+                            name="name" 
+                            id="name" 
+                            required 
+                            x-ref="firstInput"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 border"
+                            placeholder="Ingrese el nombre de la marca"
+                        >
                     </div>
+                    
                     <div class="mt-6 flex justify-end gap-4">
-                        <button type="button" @click="isModalOpen = false" class="px-4 py-2 bg-gray-200 rounded-md">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md">Guardar Marca</button>
+                        <button 
+                            type="button" 
+                            @click="closeModal()"
+                            x-ref="cancelButton"
+                            class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            type="submit" 
+                            x-ref="submitButton"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                            Guardar Marca
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+
+    <script>
+        function modalManager() {
+            return {
+                isModalOpen: false,
+                firstFocusableElement: null,
+                lastFocusableElement: null,
+                
+                openModal() {
+                    this.isModalOpen = true;
+                    this.$nextTick(() => {
+                        this.setupFocusTrap();
+                    });
+                },
+                
+                closeModal() {
+                    this.isModalOpen = false;
+                    if (this.$refs.modal) {
+                        this.$refs.modal.removeEventListener('keydown', this.handleKeydown.bind(this));
+                    }
+                    document.body.style.overflow = 'auto';
+                },
+                
+                setupFocusTrap() {
+                    const focusableElements = this.$refs.modal.querySelectorAll(
+                        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                    );
+                    
+                    if (focusableElements.length > 0) {
+                        this.firstFocusableElement = focusableElements[0];
+                        this.lastFocusableElement = focusableElements[focusableElements.length - 1];
+                        this.$refs.firstInput.focus();
+                        document.body.style.overflow = 'hidden';
+                        this.$refs.modal.addEventListener('keydown', this.handleKeydown.bind(this));
+                    }
+                },
+                
+                handleKeydown(e) {
+                    if (!this.isModalOpen) return;
+                    
+                    if (e.key === 'Tab') {
+                        if (this.firstFocusableElement === this.lastFocusableElement) {
+                            e.preventDefault();
+                            return;
+                        }
+                        if (e.shiftKey) {
+                            if (document.activeElement === this.firstFocusableElement) {
+                                e.preventDefault();
+                                this.lastFocusableElement.focus();
+                            }
+                        } 
+                        else {
+                            if (document.activeElement === this.lastFocusableElement) {
+                                e.preventDefault();
+                                this.firstFocusableElement.focus();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </x-app-layout>
