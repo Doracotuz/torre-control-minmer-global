@@ -147,6 +147,12 @@
                         <span class="font-semibold text-[var(--color-text-secondary)]">Fin de Garantía:</span>
                         <span class="text-[var(--color-text-primary)] font-medium">{{ $asset->warranty_end_date ? date('d/m/Y', strtotime($asset->warranty_end_date)) : 'N/A' }}</span>
                     </div>
+                    @if($asset->notes)
+                    <div class="mt-6 border-t pt-4">
+                        <h4 class="font-semibold text-[var(--color-text-secondary)] text-sm">Notas Adicionales:</h4>
+                        <p class="text-sm text-[var(--color-text-primary)] mt-2 whitespace-pre-wrap">{{ $asset->notes }}</p>
+                    </div>
+                    @endif                    
                 </div>
 
                 @if($asset->model->category->name === 'Laptop' || $asset->model->category->name === 'Desktop' || $asset->model->category->name === 'Celular')
