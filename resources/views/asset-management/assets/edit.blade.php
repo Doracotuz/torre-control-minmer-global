@@ -110,7 +110,9 @@
                             <label for="category" class="form-label">Categoría</label>
                             <select id="category" x-model="selectedCategory" @change="filteredModels = models[selectedCategory] || []" class="form-select w-full">
                                 <option value="">-- Selecciona una categoría --</option>
-                                <template x-for="category in categories" :key="category"><option :value="category" x-text="category"></option></template>
+                                <template x-for="category in categories" :key="category">
+                                    <option :value="category" x-text="category" :selected="category === selectedCategory"></option>
+                                </template>
                             </select>
                         </div>
                         <div x-show="selectedCategory" x-transition>
