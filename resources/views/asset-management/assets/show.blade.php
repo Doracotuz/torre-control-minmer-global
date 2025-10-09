@@ -146,22 +146,35 @@
                     <div class="flex justify-between py-2 border-b">
                         <span class="font-semibold text-[var(--color-text-secondary)]">Fin de Garantía:</span>
                         <span class="text-[var(--color-text-primary)] font-medium">{{ $asset->warranty_end_date ? date('d/m/Y', strtotime($asset->warranty_end_date)) : 'N/A' }}</span>
-                    </div>
-                    @if($asset->notes)
-                    <div class="mt-6 border-t pt-4">
-                        <h4 class="font-semibold text-[var(--color-text-secondary)] text-sm">Notas Adicionales:</h4>
-                        <p class="text-sm text-[var(--color-text-primary)] mt-2 whitespace-pre-wrap">{{ $asset->notes }}</p>
-                    </div>
-                    @endif                    
+                    </div>             
                 </div>
+                @if($asset->notes)
+                <div class="mt-6 border-t pt-4">
+                    <h4 class="font-semibold text-[var(--color-text-secondary)] text-sm">Notas Adicionales:</h4>
+                    <p class="text-sm text-[var(--color-text-primary)] mt-2 whitespace-pre-wrap">{{ $asset->notes }}</p>
+                </div>
+                @endif                
 
-                @if($asset->model->category->name === 'Laptop' || $asset->model->category->name === 'Desktop' || $asset->model->category->name === 'Celular')
+                @php
+                    $categoryName = $asset->model->category->name;
+                    $techSpecCategories = ['Laptop', 'Desktop', 'Celular', 'Impresora', 'Ipad', 'Pantalla', 'Monitor'];
+                @endphp
+
+                @if(in_array($categoryName, $techSpecCategories))
                     <h3 class="font-bold text-lg text-[var(--color-text-primary)] border-b pb-3 my-6">Especificaciones Técnicas</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
                         <div class="flex justify-between py-2 border-b"><span class="font-semibold text-[var(--color-text-secondary)]">Procesador:</span><span class="text-[var(--color-text-primary)] font-medium">{{ $asset->cpu ?? 'N/A' }}</span></div>
                         <div class="flex justify-between py-2 border-b"><span class="font-semibold text-[var(--color-text-secondary)]">RAM:</span><span class="text-[var(--color-text-primary)] font-medium">{{ $asset->ram ?? 'N/A' }}</span></div>
                         <div class="flex justify-between py-2 border-b"><span class="font-semibold text-[var(--color-text-secondary)]">Almacenamiento:</span><span class="text-[var(--color-text-primary)] font-medium">{{ $asset->storage ?? 'N/A' }}</span></div>
                         <div class="flex justify-between py-2 border-b"><span class="font-semibold text-[var(--color-text-secondary)]">MAC Address:</span><span class="text-[var(--color-text-primary)] font-medium">{{ $asset->mac_address ?? 'N/A' }}</span></div>
+                    </div>
+                @endif
+                
+                @if($categoryName === 'Celular')
+                    <h3 class="font-bold text-lg text-[var(--color-text-primary)] border-b pb-3 my-6">Detalles de Telefonía</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                        <div class="flex justify-between py-2 border-b"><span class="font-semibold text-[var(--color-text-secondary)]">Número Telefónico:</span><span class="text-[var(--color-text-primary)] font-medium">{{ $asset->phone_number ?? 'N/A' }}</span></div>
+                        <div class="flex justify-between py-2 border-b"><span class="font-semibold text-[var(--color-text-secondary)]">Tipo de Plan:</span><span class="text-[var(--color-text-primary)] font-medium">{{ $asset->phone_plan_type ?? 'N/A' }}</span></div>
                     </div>
                 @endif
             </div>
