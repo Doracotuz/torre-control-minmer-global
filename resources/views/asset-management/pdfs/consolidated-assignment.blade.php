@@ -1,5 +1,4 @@
 @php
-    // Bloque de íconos SVG (sin cambios)
     $svgIcons = [
         'Laptop' => 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2c3856" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="20" x2="22" y2="20"></line></svg>'),
         'Celular' => 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2c3856" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>'),
@@ -15,7 +14,6 @@
     <title>Carta Responsiva Consolidada</title>
     <style>
         @page {
-            /* Dejamos espacio solo para el footer, el header lo manejaremos con margen en el body */
             margin: 1.5cm 1.5cm 2.5cm 1.5cm;
         }
         body { font-family: 'DejaVu Sans', sans-serif; font-size: 10px; color: #333; line-height: 1.4; }
@@ -35,25 +33,22 @@
             height: 400px;
         }
         
-        /* --- AJUSTE CLAVE 1: Nuevo enfoque para el Header --- */
         #header {
             position: fixed;
-            top: -1.5cm; /* Lo pegamos al borde superior de la página */
+            top: -1.5cm;
             left: -1.5cm;
             right: -1.5cm;
-            padding: 15px 1.5cm 15px 1.5cm; /* Padding interno */
-            background-color: white; /* Fondo blanco para que no sea transparente */
-            border-top: 10px solid var(--color-primary); /* La línea azul ahora es un borde */
+            padding: 15px 1.5cm 15px 1.5cm;
+            background-color: white;
+            border-top: 10px solid var(--color-primary);
         }
 
         #footer { position: fixed; bottom: -2cm; left: 0; right: 0; height: 1.5cm; text-align: center; font-size: 8px; color: #888; border-top: 1px solid #ddd; padding-top: 5px; }
 
-        /* --- AJUSTE CLAVE 2: Se añade margen superior al body para no chocar con el header --- */
         body {
             margin-top: 4cm;
         }
         
-        /* --- El resto de los estilos permanecen casi iguales --- */
         .logo { width: 150px; }
         .info-table { width: 100%; border-spacing: 0; }
         .info-table td { vertical-align: bottom; padding: 0; }
@@ -109,7 +104,6 @@
     </footer>
 
     <main>
-        {{-- El resto del documento permanece igual --}}
         <div class="recipient-box">
             <strong>COLABORADOR:</strong> {{ $member->name }} <br>
             <strong>PUESTO:</strong> {{ $member->position->name ?? 'No especificado' }}
@@ -173,13 +167,15 @@
             <div class="legal">
                 <strong>1. Propiedad y Uso.</strong> "EL COLABORADOR" reconoce que los activos listados son propiedad exclusiva de "LA EMPRESA" y se destinan únicamente para el desempeño de sus funciones laborales. Queda prohibido su uso para fines personales, ilícitos o no autorizados.
                 <br><br>
-                <strong>2. Deber de Cuidado.</strong> "EL COLABORADOR" se compromete a custodiar y conservar el equipo en óptimas condiciones, reportando cualquier anomalía, daño o falla de manera inmediata al departamento de TI. Esto incluye protegerlo de robo, extravío y derramamiento de líquidos.
+                <strong>2. Deber de Cuidado.</strong> "EL COLABORADOR" se compromete a custodiar y conservar el equipo en óptimas condiciones, reportando cualquier anomalía, daño o falla de manera inmediata al departamento de TI. Esto incluye protegerlo de extravío o derramamiento de líquidos.
                 <br><br>
                 <strong>3. Software y Seguridad.</strong> Queda estrictamente prohibida la instalación de software no licenciado o no autorizado por "LA EMPRESA". "EL COLABORADOR" debe cumplir con todas las políticas de seguridad de la información, incluyendo el uso de contraseñas seguras y la no divulgación de información confidencial.
                 <br><br>
-                <strong>4. Responsabilidad Financiera.</strong> En caso de daño por negligencia, dolo, mal uso, o por la pérdida o robo del equipo, "EL COLABORADOR" será responsable y deberá cubrir los costos de reparación o reposición del activo a su valor de mercado actual.
+                <strong>4. Responsabilidad Financiera.</strong> En caso de daño por negligencia, dolo, mal uso, o por la pérdida del equipo, "EL COLABORADOR" será responsable y deberá cubrir los costos de reparación o reposición del activo a su valor de mercado actual.
                 <br><br>
                 <strong>5. Devolución de Activos.</strong> Al término de la relación laboral, o por solicitud expresa de "LA EMPRESA", "EL COLABORADOR" está obligado a devolver la totalidad de los equipos y accesorios asignados en un plazo no mayor a 48 horas, en las mismas condiciones en las que los recibió, salvo el desgaste normal por uso.
+                <br><br>
+                <strong>6. En caso de robo.</strong> En caso de robo, "EL COLABORADOR" está obligado a presentar la denuncia formal a las autoridades correspondientes, notificar y presentar la documentación entregada por la autoridad a "LA EMPRESA" para la gestión de un nuevo equipo.
             </div>
             <br>
             <br>

@@ -169,9 +169,11 @@
             <div class="legal">
                 <p><strong>PRIMERA:</strong> "EL COLABORADOR" recibe de "LA EMPRESA" el equipo y/o software descrito, el cual es propiedad exclusiva de "LA EMPRESA", y se destinará única y exclusivamente para el desempeño de las funciones laborales para las cuales fue contratado.</p>
                 <p><strong>SEGUNDA:</strong> "EL COLABORADOR" se compromete a custodiar y conservar el equipo en excelentes condiciones, salvo el deterioro normal derivado del uso cotidiano y adecuado. Se obliga a no instalar software no autorizado, no alterar la configuración de seguridad y a seguir en todo momento las políticas de seguridad de la información de "LA EMPRESA".</p>
-                <p><strong>TERCERA:</strong> En caso de daño por negligencia, dolo, mal uso, robo o extravío, "EL COLABORADOR" asumirá la total responsabilidad y cubrirá los costos de reparación o de reposición del equipo a valor de mercado.</p>
+                <p><strong>TERCERA:</strong> En caso de daño por negligencia, dolo, mal uso o extravío, "EL COLABORADOR" asumirá la total responsabilidad y cubrirá los costos de reparación o de reposición del equipo a valor de mercado.</p>
                 <p><strong>CUARTA:</strong> "EL COLABORADOR" se obliga a reportar de manera inmediata al Departamento de TI cualquier falla, daño o mal funcionamiento del equipo.</p>
                 <p><strong>QUINTA:</strong> Al término de la relación laboral, o por solicitud expresa de "LA EMPRESA", "EL COLABORADOR" se compromete a devolver el equipo completo, con todos sus accesorios, en las mismas condiciones físicas y operativas en las que lo recibió.</p>
+                <p><strong>SEXTA:</strong> En caso de robo, "EL COLABORADOR" está obligado a presentar la denuncia formal a las autoridades correspondientes, notificar y presentar la documentación entregada por la autoridad a "LA EMPRESA" para la gestión de un nuevo equipo.</p>
+                
             </div>
             
             <p style="text-align: justify; font-size: 10px; margin-top: 20px;">
