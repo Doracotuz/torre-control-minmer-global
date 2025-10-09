@@ -126,7 +126,7 @@
                             </select>
                         </div>
                         
-                        <div x-show="selectedCategory === 'Laptop' || selectedCategory === 'Desktop'" x-transition class="md:col-span-2 space-y-6">
+                        <div x-show="selectedCategory === 'Laptop' || selectedCategory === 'Desktop' || selectedCategory === 'Ipad' || selectedCategory === 'Impresora' || selectedCategory === 'Pantalla' || selectedCategory === 'Monitor' || selectedCategory === 'Escáner'" x-transition class="md:col-span-2 space-y-6">
                             <h3 class="font-semibold text-lg text-gray-700 mt-4">Especificaciones Técnicas</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div><label for="cpu" class="form-label">Procesador</label><input type="text" name="cpu" id="cpu" class="form-input w-full" value="{{ old('cpu') }}"></div>
