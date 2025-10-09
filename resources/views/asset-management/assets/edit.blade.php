@@ -121,7 +121,7 @@
                             </select>
                         </div>
 
-                        <div x-show="selectedCategory === 'Laptop' || selectedCategory === 'Desktop'" x-transition class="space-y-6 border-t border-gray-200 pt-6 mt-6">
+                       <div x-show="selectedCategory === 'Laptop' || selectedCategory === 'Desktop' || selectedCategory === 'Ipad' || selectedCategory === 'Impresora' || selectedCategory === 'Pantalla' || selectedCategory === 'Monitor' || selectedCategory === 'Escáner'" x-transition class="md:col-span-2 space-y-6">
                             <h3 class="font-bold text-lg text-[var(--color-text-primary)]">Especificaciones Técnicas</h3>
                             <div><label for="cpu" class="form-label">Procesador</label><input type="text" name="cpu" id="cpu" class="form-input w-full" value="{{ old('cpu', $asset->cpu) }}"></div>
                             <div><label for="ram" class="form-label">RAM (e.g., 16GB)</label><input type="text" name="ram" id="ram" class="form-input w-full" value="{{ old('ram', $asset->ram) }}"></div>
@@ -136,6 +136,10 @@
                                 <select name="phone_plan_type" id="phone_plan_type" class="form-select w-full"><option value="">-- Selecciona --</option><option value="Prepago" @selected(old('phone_plan_type', $asset->phone_plan_type) == 'Prepago')>Prepago</option><option value="Plan" @selected(old('phone_plan_type', $asset->phone_plan_type) == 'Plan')>Plan</option></select>
                             </div>
                             <div><label for="phone_number" class="form-label">Número Telefónico</label><input type="text" name="phone_number" id="phone_number" class="form-input w-full" value="{{ old('phone_number', $asset->phone_number) }}"></div>
+                            <div><label for="cpu" class="form-label">Procesador</label><input type="text" name="cpu" id="cpu" class="form-input w-full" value="{{ old('cpu') }}"></div>
+                            <div><label for="ram" class="form-label">RAM (e.g., 16GB)</label><input type="text" name="ram" id="ram" class="form-input w-full" value="{{ old('ram') }}"></div>
+                            <div><label for="storage" class="form-label">Almacenamiento (e.g., 512GB SSD)</label><input type="text" name="storage" id="storage" class="form-input w-full" value="{{ old('storage') }}"></div>
+                            <div><label for="mac_address" class="form-label">MAC Address</label><input type="text" name="mac_address" id="mac_address" class="form-input w-full" value="{{ old('mac_address') }}"></div>                                                        
                         </div>
                     </div>
                 </div>
