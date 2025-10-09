@@ -38,6 +38,7 @@ use App\Http\Controllers\RfqController;
 use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\CustomerService\ReverseLogisticsController;
 use App\Http\Controllers\CustomerService\CreditNoteController;
+use App\Http\Controllers\ProjectFileController;
 
 
 
@@ -636,6 +637,31 @@ Route::middleware(['auth', 'verified'])->prefix('audit')->name('audit.')->group(
 
     });
 });
+
+Route::middleware(['auth'])->prefix('projects')->name('projects.')->group(function () {
+    Route::get('/', [App\Http\Controllers\ProjectController::class, 'index'])->name('index');
+    Route::get('/list', [App\Http\Controllers\ProjectController::class, 'list'])->name('list');
+    
+    
+    // CORRECTO: El recurso ahora se registra en la raíz del grupo.
+    Route::resource('/', App\Http\Controllers\ProjectController::class)
+         ->parameters(['' => 'project']); // Buena práctica para evitar ambigüedad
+
+    Route::post('/{project}/tasks', [App\Http\Controllers\TaskController::class, 'store'])->name('tasks.store');
+
+    Route::put('/tasks/{task}', [App\Http\Controllers\TaskController::class, 'update'])->name('tasks.update');
+    Route::patch('/tasks/{task}/status', [App\Http\Controllers\TaskController::class, 'updateStatus'])->name('tasks.status.update');
+    Route::delete('/tasks/{task}', [App\Http\Controllers\TaskController::class, 'destroy'])->name('tasks.destroy');
+    Route::post('/{project}/comments', [App\Http\Controllers\ProjectCommentController::class, 'store'])->name('comments.store');
+    Route::patch('/{project}/status', [App\Http\Controllers\ProjectController::class, 'updateStatus'])->name('update.status');
+    Route::post('/{project}/files', [ProjectFileController::class, 'store'])->name('files.store');
+    
+    
+});
+
+Route::get('/project-files/{file}/download', [ProjectFileController::class, 'download'])
+     ->middleware('auth')
+     ->name('projects.files.download');
 
 Route::middleware('auth')->group(function () {
     Route::get('/api/email-recipients', [App\Http\Controllers\Api\SearchController::class, 'getEmailRecipients'])->name('api.email-recipients');
