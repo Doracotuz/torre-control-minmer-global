@@ -72,7 +72,7 @@
                                     <label for="description-{{ $detail->id }}" class="block font-medium text-sm text-gray-700">
                                         Descripción
                                     </label>
-                                    <input id="description-{{ $detail->id }}" class="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm block mt-1 w-full bg-gray-100" type="text" value="{{ $detail->product->item_description ?? 'N/A' }}" readonly />
+                                    <input id="description-{{ $detail->id }}" class="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm block mt-1 w-full bg-gray-100" type="text" value="{{ $detail->product->description ?? 'N/A' }}" readonly />
                                 </div>
                                 <div>
                                     <label for="quantity-{{ $detail->id }}" class="block font-medium text-sm text-gray-700">

@@ -114,7 +114,11 @@
                         
                         <div>
                             <label for="destination_locality" class="block text-sm font-medium text-gray-700">Localidad Destino</label>
-                            <select name="destination_locality" x-model="destination_locality" @change="calculateCutoffDate()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <select name="destination_locality" 
+                                    x-model="destination_locality" 
+                                    @change="calculateCutoffDate()" 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    @if($order->destination_locality) disabled @endif>
                                 <option value="">Selecciona una localidad</option>
                                 <option value="AGS" {{ old('destination_locality', $order->destination_locality) == 'AGS' ? 'selected' : '' }}>AGS</option>
                                 <option value="BCN" {{ old('destination_locality', $order->destination_locality) == 'BCN' ? 'selected' : '' }}>BCN</option>

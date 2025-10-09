@@ -155,9 +155,23 @@ class AssetController extends Controller
      */
     public function show(HardwareAsset $asset)
     {
+        // Cargamos las relaciones existentes
         $asset->load(['model.category', 'model.manufacturer', 'site', 'assignments.member', 'logs.user']);
-        return view('asset-management.assets.show', compact('asset'));
+
+        // --- INICIO DE LA MODIFICACIÓN ---
+        $userResponsivas = collect(); // Creamos una colección vacía por defecto
+
+        // Verificamos si hay una asignación activa y si esa asignación tiene un miembro asociado
+        if ($asset->currentAssignment && $asset->currentAssignment->member) {
+            // Si es así, obtenemos las responsivas de ese miembro
+            $userResponsivas = $asset->currentAssignment->member->userResponsivas()->get();
+        }
+
+        // Pasamos la variable $userResponsivas a la vista
+        return view('asset-management.assets.show', compact('asset', 'userResponsivas'));
+        // --- FIN DE LA MODIFICACIÓN ---
     }
+
 
     /**
      * Muestra el formulario para editar un activo existente.

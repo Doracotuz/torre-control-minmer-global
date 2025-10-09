@@ -49,22 +49,25 @@ class UserDashboardController extends Controller
      */
     public function generateConsolidatedPdf(OrganigramMember $member)
     {
-        $assignments = $member->assignments()
-            ->whereNull('actual_return_date')
-            ->with(['asset.model.category', 'asset.model.manufacturer', 'asset.softwareAssignments.license'])
-            ->get();
-            
+        $assignments = $member->assignments()->whereNull('actual_return_date')->with(['asset.model.category', 'asset.model.manufacturer', 'asset.softwareAssignments.license'])->get();
+        
         $logoPath = 'LogoAzul.png';
         $logoBase64 = null;
         if (Storage::disk('s3')->exists($logoPath)) {
             $logoContent = Storage::disk('s3')->get($logoPath);
             $logoBase64 = 'data:image/png;base64,' . base64_encode($logoContent);
         }
+        
+        $documentId = 'RESP-CONSOLIDADA-' . $member->id . '-' . date('Ymd');
+
+        // --- SE ELIMINÓ TODA LA LÓGICA DEL CÓDIGO QR DE AQUÍ ---
 
         $data = [
             'member' => $member,
             'assignments' => $assignments,
             'logoBase64' => $logoBase64,
+            'documentId' => $documentId,
+            // Se eliminó la variable 'qrCode'
         ];
 
         $pdf = PDF::loadView('asset-management.pdfs.consolidated-assignment', $data);

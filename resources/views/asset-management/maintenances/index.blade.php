@@ -37,6 +37,9 @@
 </style>
 <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <header class="mb-8">
+        <a href="{{ route('asset-management.dashboard') }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-2 inline-block">
+            <i class="fas fa-arrow-left mr-2"></i> Volver al Dashboard
+        </a>        
         <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight">Dashboard de Mantenimientos</h1>
         <p class="text-[var(--color-text-secondary)] mt-2">Seguimiento de todos los mantenimientos preventivos y reparaciones.</p>
     </header>

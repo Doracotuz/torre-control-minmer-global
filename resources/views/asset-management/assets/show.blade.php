@@ -211,6 +211,24 @@
                         <p class="text-lg font-bold text-[var(--color-primary)]">{{ $asset->currentAssignment->member->name }}</p>
                         <p class="text-sm text-gray-500">{{ $asset->currentAssignment->member->position->name ?? 'Sin Puesto' }}</p>
                         <p class="text-sm text-gray-500 mt-1">Desde: {{ date('d/m/Y', strtotime($asset->currentAssignment->assignment_date)) }}</p>
+                    @if($userResponsivas->isNotEmpty())
+                    <div class="mt-4 border-t pt-4">
+                        <h4 class="text-sm font-semibold text-gray-600 mb-2">Responsivas Consolidadas del Usuario:</h4>
+                        <ul class="space-y-2 text-sm">
+                            @foreach($userResponsivas as $responsiva)
+                            <li class="flex justify-between items-center">
+                                <div>
+                                    <i class="fas fa-file-pdf text-red-500 mr-2"></i>
+                                    <span>{{ \Carbon\Carbon::parse($responsiva->generated_date)->format('d/m/Y') }}</span>
+                                </div>
+                                <a href="{{ Storage::disk('s3')->url($responsiva->file_path) }}" target="_blank" class="font-semibold text-[var(--color-primary)] hover:underline">
+                                    Ver Documento
+                                </a>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    @endif                        
                         
                         <button @click="returnModalOpen = true" class="btn bg-[var(--color-accent)] text-white w-full mt-4">
                             Registrar Devolución
