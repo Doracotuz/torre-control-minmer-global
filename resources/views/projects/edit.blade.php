@@ -84,7 +84,19 @@
                                    step="0.01" min="0"
                                    placeholder="Ej: 5000.00"
                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                        </div>                        
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="areas" class="block text-sm font-medium text-gray-700">Áreas Involucradas</label>
+                            <select name="areas[]" id="areas" multiple class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                @foreach($areas as $area)
+                                    {{-- Para el formulario de edición, pre-selecciona las áreas ya asociadas --}}
+                                    <option value="{{ $area->id }}" @if(isset($project) && $project->areas->contains($area->id)) selected @endif>
+                                        {{ $area->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Mantén presionada la tecla Ctrl (o Cmd en Mac) para seleccionar varias áreas.</p>
+                        </div>                                                
                     </div>
 
                     <div class="mt-8 flex justify-end">

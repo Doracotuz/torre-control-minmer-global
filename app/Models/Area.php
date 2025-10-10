@@ -31,4 +31,10 @@ class Area extends Model
     {
         return $this->hasMany(Folder::class);
     }
+
+    public function projects()
+    {
+        return $this->belongsToMany(Project::class);
+    }
+
 }

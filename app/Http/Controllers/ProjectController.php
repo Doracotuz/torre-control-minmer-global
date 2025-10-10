@@ -2,50 +2,60 @@
 
 namespace App\Http\Controllers;
 
+// Importaciones de todos los modelos y facades que utilizaremos
+use App\Models\Area;
 use App\Models\Project;
-use App\Models\User;
-use App\Models\Task;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
-use Carbon\Carbon;
 use App\Models\ProjectComment;
-
+use App\Models\Task;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ProjectController extends Controller
 {
+    use AuthorizesRequests;
     /**
-     * Muestra una lista de los proyectos.
+     * Muestra el dashboard principal de proyectos con KPIs y gráficos.
+     * Los datos mostrados están filtrados según los permisos del usuario.
      */
     public function index()
     {
-        // --- KPIs para las tarjetas ---
-        $activeProjectsCount = Project::whereIn('status', ['Planeación', 'En Progreso', 'En Pausa'])->count();
-        $overdueProjectsCount = Project::where('due_date', '<', now())->whereNotIn('status', ['Completado', 'Cancelado'])->count();
-        $upcomingDeadlinesCount = Project::whereBetween('due_date', [now(), now()->addDays(7)])->count();
-        $completedThisMonthCount = Project::where('status', 'Completado')->whereMonth('updated_at', now()->month)->count();
+        $this->authorize('viewAny', Project::class);
+        $user = Auth::user();
+
+        // Creamos una consulta base que solo obtiene los proyectos que el usuario puede ver
+        $projectsQuery = Project::query();
+        if (!$user->isSuperAdmin()) {
+            $projectsQuery->where(function ($q) use ($user) {
+                $q->where('leader_id', $user->id)
+                  ->orWhereHas('tasks', fn($t) => $t->where('assignee_id', $user->id))
+                  ->orWhereHas('areas', fn($a) => $a->where('area_id', $user->area_id));
+            });
+        }
+        
+        // --- KPIs para las tarjetas (calculados sobre los proyectos permitidos) ---
+        $activeProjectsCount = (clone $projectsQuery)->whereIn('status', ['Planeación', 'En Progreso', 'En Pausa'])->count();
+        $overdueProjectsCount = (clone $projectsQuery)->where('due_date', '<', now())->whereNotIn('status', ['Completado', 'Cancelado'])->count();
+        $upcomingDeadlinesCount = (clone $projectsQuery)->whereBetween('due_date', [now(), now()->addDays(7)])->count();
+        $completedThisMonthCount = (clone $projectsQuery)->where('status', 'Completado')->whereMonth('updated_at', now()->month)->count();
 
         // --- Datos para los Gráficos y Listas ---
-        // 1. Carga de Trabajo del Equipo (Tareas activas por usuario)
-        $teamWorkload = Task::where('status', '!=', 'Completada')
-            ->whereNotNull('assignee_id')
-            ->with('assignee')
-            ->select('assignee_id', DB::raw('count(*) as tasks_count'))
-            ->groupBy('assignee_id')
-            ->orderBy('tasks_count', 'desc')
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->assignee->name ?? 'Sin asignar', 'tasks' => $item->tasks_count];
-            });
+        $allowedProjectIds = (clone $projectsQuery)->pluck('id');
 
-        // 2. Proyectos con Próximos Vencimientos (próximos 14 días)
-        $upcomingProjects = Project::whereBetween('due_date', [now(), now()->addDays(14)])
-            ->orderBy('due_date', 'asc')
-            ->get();
+        $teamWorkload = Task::whereIn('project_id', $allowedProjectIds)
+            ->where('status', '!=', 'Completada')->whereNotNull('assignee_id')->with('assignee')
+            ->select('assignee_id', DB::raw('count(*) as tasks_count'))->groupBy('assignee_id')
+            ->orderBy('tasks_count', 'desc')->get()
+            ->map(fn ($item) => ['name' => $item->assignee->name ?? 'Sin asignar', 'tasks' => $item->tasks_count]);
 
-        // 3. Salud General de Proyectos (Progreso promedio de proyectos activos)
-        $activeProjects = Project::with('tasks')->whereIn('status', ['En Progreso', 'Planeación'])->get();
-        $totalProgress = 0;
-        $progressCount = 0;
+        $upcomingProjects = (clone $projectsQuery)->whereBetween('due_date', [now(), now()->addDays(14)])
+            ->orderBy('due_date', 'asc')->get();
+            
+        $activeProjects = (clone $projectsQuery)->with('tasks')->whereIn('status', ['En Progreso', 'Planeación'])->get();
+        $totalProgress = 0; $progressCount = 0;
         foreach ($activeProjects as $project) {
             $totalTasks = $project->tasks->count();
             if ($totalTasks > 0) {
@@ -56,39 +66,50 @@ class ProjectController extends Controller
         }
         $overallProgress = $progressCount > 0 ? $totalProgress / $progressCount : 0;
 
-        // 4. Distribución por Estatus (ya lo teníamos, lo mantenemos)
-        $projectsByStatus = Project::select('status', DB::raw('count(*) as count'))
-            ->groupBy('status')
-            ->pluck('count', 'status');
+        $projectsByStatus = (clone $projectsQuery)->select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')->pluck('count', 'status');
 
-        // 5. Actividad Reciente Global
-        $recentActivity = ProjectComment::with('user', 'project')
-            ->latest()
-            ->limit(5)
-            ->get();
+        $recentActivity = ProjectComment::whereIn('project_id', $allowedProjectIds)
+            ->with('user', 'project')->latest()->limit(5)->get();
 
-        // Preparamos los datos para ApexCharts
         $chartData = [
-            'status' => [
-                'labels' => $projectsByStatus->keys(),
-                'series' => $projectsByStatus->values(),
-            ],
-            'workload' => [
-                'labels' => $teamWorkload->pluck('name'),
-                'series' => $teamWorkload->pluck('tasks'),
-            ],
+            'status' => ['labels' => $projectsByStatus->keys(), 'series' => $projectsByStatus->values()],
+            'workload' => ['labels' => $teamWorkload->pluck('name'), 'series' => $teamWorkload->pluck('tasks')],
             'overallProgress' => round($overallProgress),
         ];
 
         return view('projects.index', compact(
-            'activeProjectsCount',
-            'overdueProjectsCount',
-            'upcomingDeadlinesCount',
-            'completedThisMonthCount',
-            'chartData',
-            'upcomingProjects',
-            'recentActivity'
+            'activeProjectsCount', 'overdueProjectsCount', 'upcomingDeadlinesCount', 'completedThisMonthCount', 'chartData', 'upcomingProjects', 'recentActivity'
         ));
+    }
+
+    /**
+     * Muestra el tablero Kanban con los proyectos filtrados por permisos.
+     */
+    public function list()
+    {
+        $this->authorize('viewAny', Project::class);
+        $user = auth()->user();
+        $statuses = ['Planeación', 'En Progreso', 'En Pausa', 'Completado'];
+
+        $query = Project::query();
+        if (!$user->isSuperAdmin()) {
+            $query->where(function ($q) use ($user) {
+                $q->where('leader_id', $user->id)
+                  ->orWhereHas('tasks', fn($t) => $t->where('assignee_id', $user->id))
+                  ->orWhereHas('areas', fn($a) => $a->where('area_id', $user->area_id));
+            });
+        }
+
+        $projectsByStatus = $query->with('leader')->whereIn('status', $statuses)->get()->groupBy('status');
+
+        foreach ($statuses as $status) {
+            if (!$projectsByStatus->has($status)) {
+                $projectsByStatus[$status] = collect();
+            }
+        }
+        
+        return view('projects.list', compact('projectsByStatus', 'statuses'));
     }
 
     /**
@@ -96,9 +117,10 @@ class ProjectController extends Controller
      */
     public function create()
     {
-        // Obtenemos todos los usuarios para poder asignarlos como líderes
+        $this->authorize('create', Project::class);
         $users = User::orderBy('name')->get();
-        return view('projects.create', compact('users'));
+        $areas = Area::orderBy('name')->get();
+        return view('projects.create', compact('users', 'areas'));
     }
 
     /**
@@ -106,97 +128,75 @@ class ProjectController extends Controller
      */
     public function store(Request $request)
     {
-        // Validación de los datos del formulario
+        $this->authorize('create', Project::class);
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'start_date' => 'required|date',
             'due_date' => 'nullable|date|after_or_equal:start_date',
             'leader_id' => 'nullable|exists:users,id',
+            'budget' => 'nullable|numeric|min:0',
+            'areas' => 'nullable|array',
         ]);
 
-        // Creación del proyecto con los datos validados
-        Project::create($validatedData);
+        $project = Project::create($validatedData);
+        if ($request->has('areas')) {
+            $project->areas()->sync($request->areas);
+        }
 
-        // Redirección a la lista de proyectos con un mensaje de éxito
-        return redirect()->route('projects.index')
-                         ->with('success', '¡Proyecto creado exitosamente!');
+        return redirect()->route('projects.index')->with('success', '¡Proyecto creado exitosamente!');
     }
 
     /**
-     * Muestra un proyecto específico. (Lo implementaremos en la Fase 3)
+     * Muestra la página de detalle de un proyecto específico.
      */
     public function show(Project $project)
     {
+        $this->authorize('view', $project);
         $project->load('leader', 'tasks.assignee', 'comments.user', 'files.user');
 
         $completedTasks = $project->tasks->where('status', 'Completada')->count();
         $totalTasks = $project->tasks->count();
         $progress = $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
-
+        
         $users = User::orderBy('name')->get();
 
         $timelineData = $project->tasks->map(function ($task) {
             $startDate = Carbon::parse($task->created_at);
             $endDate = $task->due_date ? Carbon::parse($task->due_date) : $startDate->copy()->addDay();
-
-            $statusColors = [
-                'Completada' => '#28a745', 'En Progreso' => '#0d6efd', 'Pendiente' => '#ffc107',
-            ];
-            
-            // --- INICIO: LÓGICA DE PREFIJOS PARA PRIORIDAD ---
-            $priorityPrefix = match($task->priority) {
-                'Alta' => '🔥 ',
-                'Media' => '🔸 ',
-                'Baja' => '🔹 ',
-                default => ''
-            };
-            // --- FIN: LÓGICA DE PREFIJOS PARA PRIORIDAD ---
-
+            $statusColors = [ 'Completada' => '#28a745', 'En Progreso' => '#0d6efd', 'Pendiente' => '#ffc107' ];
+            $priorityPrefix = match($task->priority) { 'Alta' => '🔥 ', 'Media' => '🔸 ', 'Baja' => '🔹 ', default => '' };
             return [
-                'x' => $priorityPrefix . $task->name, // Añadimos el prefijo al nombre
+                'x' => $priorityPrefix . $task->name,
                 'y' => [$startDate->valueOf(), $endDate->valueOf()],
                 'fillColor' => $statusColors[$task->status] ?? '#6c757d'
             ];
         });
 
-        // --- INICIO: NUEVA LÓGICA PARA EL ZOOM ---
-        // Buscamos la fecha de inicio más temprana entre todas las tareas.
-        $timelineMinDate = null;
-        if ($project->tasks->isNotEmpty()) {
-            $timelineMinDate = Carbon::parse($project->tasks->min('created_at'));
-        }
+        $timelineMinDate = $project->tasks->isNotEmpty() ? Carbon::parse($project->tasks->min('created_at')) : null;
+        $timelineInitialMaxDate = $timelineMinDate ? $timelineMinDate->copy()->addDays(45) : null;
 
-        // Definimos el rango de zoom inicial (ej. los primeros 45 días)
-        $timelineInitialMaxDate = $timelineMinDate ? $timelineMinDate->copy()->addDays(3) : null;
-        // --- FIN: NUEVA LÓGICA PARA EL ZOOM ---
-
-        return view('projects.show', compact(
-            'project', 
-            'progress', 
-            'users', 
-            'timelineData',
-            'timelineMinDate', // Pasamos la fecha mínima a la vista
-            'timelineInitialMaxDate' // Pasamos la fecha máxima inicial a la vista
-        ));
+        return view('projects.show', compact('project', 'progress', 'users', 'timelineData', 'timelineMinDate', 'timelineInitialMaxDate'));
     }
 
     /**
-     * Muestra el formulario para editar un proyecto. (Lo implementaremos después)
+     * Muestra el formulario para editar un proyecto.
      */
     public function edit(Project $project)
     {
-        // Pasamos el proyecto y la lista de usuarios a la vista de edición
+        $this->authorize('update', $project);
         $users = User::orderBy('name')->get();
-        return view('projects.edit', compact('project', 'users'));
+        $areas = Area::orderBy('name')->get();
+        $project->load('areas');
+        return view('projects.edit', compact('project', 'users', 'areas'));
     }
 
     /**
-     * Actualiza un proyecto en la base de datos. (Lo implementaremos después)
+     * Actualiza un proyecto en la base de datos.
      */
     public function update(Request $request, Project $project)
     {
-        // Validación de los datos del formulario
+        $this->authorize('update', $project);
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -205,60 +205,33 @@ class ProjectController extends Controller
             'leader_id' => 'nullable|exists:users,id',
             'status' => 'required|in:Planeación,En Progreso,En Pausa,Completado,Cancelado',
             'budget' => 'nullable|numeric|min:0',
+            'areas' => 'nullable|array',
         ]);
 
-        // Actualizamos el proyecto con los datos validados
         $project->update($validatedData);
+        $project->areas()->sync($request->input('areas', []));
 
-        // Redirección a la lista de proyectos con un mensaje de éxito
-        return redirect()->route('projects.index')
-                         ->with('success', '¡Proyecto actualizado exitosamente!');
+        return redirect()->route('projects.list')->with('success', '¡Proyecto actualizado exitosamente!');
     }
 
     /**
-     * Elimina un proyecto de la base de datos. (Lo implementaremos después)
+     * Elimina un proyecto de la base de datos.
      */
     public function destroy(Project $project)
     {
-        // Usamos la política de cascada que definimos en la migración
-        // para que al eliminar el proyecto, también se eliminen sus tareas.
+        $this->authorize('delete', $project);
         $project->delete();
-
-        return redirect()->route('projects.index')
-                        ->with('success', '¡Proyecto eliminado exitosamente!');
+        return redirect()->route('projects.list')->with('success', '¡Proyecto eliminado exitosamente!');
     }
 
-    public function list()
-    {
-        // Definimos el orden de las columnas
-        $statuses = ['Planeación', 'En Progreso', 'En Pausa', 'Completado'];
-
-        // Obtenemos los proyectos y los agrupamos por su estatus
-        $projectsByStatus = Project::with('leader')
-            ->whereIn('status', $statuses)
-            ->get()
-            ->groupBy('status');
-
-        // Nos aseguramos de que todos los estatus existan en el array para renderizar las columnas vacías
-        foreach ($statuses as $status) {
-            if (!$projectsByStatus->has($status)) {
-                $projectsByStatus[$status] = collect();
-            }
-        }
-
-        return view('projects.list', [
-            'projectsByStatus' => $projectsByStatus,
-            'statuses' => $statuses
-        ]);
-    }
-
+    /**
+     * Actualiza el estatus de un proyecto (usado por el Kanban).
+     */
     public function updateStatus(Request $request, Project $project)
     {
+        $this->authorize('update', $project);
         $request->validate(['status' => 'required|in:Planeación,En Progreso,En Pausa,Completado,Cancelado']);
-
         $project->update(['status' => $request->status]);
-
         return response()->json(['message' => 'Estatus del proyecto actualizado.']);
-    }    
-
+    }
 }

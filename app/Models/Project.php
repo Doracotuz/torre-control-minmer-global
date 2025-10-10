@@ -47,6 +47,11 @@ class Project extends Model
     public function files(): HasMany
     {
         return $this->hasMany(ProjectFile::class)->latest();
+    }
+
+    public function areas()
+    {
+        return $this->belongsToMany(Area::class);
     }    
 
 }
