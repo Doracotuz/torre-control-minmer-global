@@ -12,7 +12,7 @@
 
     <div class="py-12" x-data="kanbanBoard">
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
-            <div class="grid grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 
                 @foreach($statuses as $status)
                 <div class="bg-gray-100 rounded-lg shadow-md">
@@ -25,6 +25,11 @@
                     <div class="p-4 space-y-4 min-h-[60vh] kanban-column" data-status="{{ $status }}">
                         @foreach($projectsByStatus[$status] as $project)
                         <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500 cursor-grab relative project-card" data-id="{{ $project->id }}">
+                            @can('update', $project)
+                                <a href="{{ route('projects.edit', $project) }}" class="absolute top-2 right-2 text-gray-400 hover:text-indigo-600 p-1 rounded-full transition-colors">
+                                    <i class="fas fa-pencil-alt fa-sm"></i>
+                                </a>
+                            @endcan                            
                             <a href="{{ route('projects.show', $project) }}" class="font-bold text-gray-800 hover:text-blue-600 hover:underline transition-colors">
                                 {{ $project->name }}
                             </a>

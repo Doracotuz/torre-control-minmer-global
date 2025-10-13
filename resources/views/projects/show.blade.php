@@ -169,6 +169,51 @@
                             <li class="flex justify-between"><span class="text-gray-500">Tareas Totales:</span><span class="font-semibold text-gray-800">{{ $project->tasks->count() }}</span></li>
                         </ul>
                     </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">Finanzas del Proyecto</h3>
+                            <button @click="isExpenseModalOpen = true" class="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700">+</button>
+                        </div>
+
+                        @php
+                            $totalBudget = $project->budget ?? 0;
+                            $totalSpent = $project->expenses->sum('amount');
+                            $remaining = $totalBudget - $totalSpent;
+                            $percentage = $totalBudget > 0 ? ($totalSpent / $totalBudget) * 100 : 0;
+                        @endphp
+
+                        <div>
+                            <div class="flex justify-between text-sm font-semibold text-gray-600 mb-1">
+                                <span>Gastado</span>
+                                <span>${{ number_format($totalSpent, 2) }}</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-4">
+                                <div class="bg-green-500 h-4 rounded-full text-center text-white text-xs leading-4" style="width: {{ $percentage > 100 ? 100 : $percentage }}%">
+                                    {{ number_format($percentage, 0) }}%
+                                </div>
+                                {{-- Si se excede el presupuesto, mostramos una barra roja --}}
+                                @if($percentage > 100)
+                                <div class="bg-red-500 h-4 rounded-full text-center text-white text-xs leading-4 mt-[-1rem]" style="width: {{ $percentage - 100 }}%; max-width: 100%; margin-left: 100%;"></div>
+                                @endif
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>Restante: ${{ number_format($remaining, 2) }}</span>
+                                <span>Total: ${{ number_format($totalBudget, 2) }}</span>
+                            </div>
+                        </div>
+
+                        <h4 class="text-md font-semibold text-gray-700 mt-6 border-t pt-4">Lista de Gastos</h4>
+                        <ul class="space-y-2 mt-2 max-h-40 overflow-y-auto">
+                            @forelse ($project->expenses as $expense)
+                                <li class="flex justify-between text-sm text-gray-600">
+                                    <span title="{{ $expense->description }}">{{ Str::limit($expense->description, 20) }}</span>
+                                    <span class="font-medium">${{ number_format($expense->amount, 2) }}</span>
+                                </li>
+                            @empty
+                                <li class="text-sm text-gray-500">No hay gastos registrados.</li>
+                            @endforelse
+                        </ul>
+                    </div>                    
 
                     <div class="bg-white p-6 rounded-xl shadow-lg">
                         <h3 class="text-lg font-bold text-gray-800 mb-4">Actividad Reciente</h3>
@@ -331,84 +376,121 @@
                 </div>
             </div>
         </div>
+        <div x-show="isExpenseModalOpen"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style="display: none;">
+
+            <div x-show="isExpenseModalOpen"
+                @click="isExpenseModalOpen = false"
+                x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                class="absolute inset-0 bg-gray-800 bg-opacity-75">
+            </div>
+
+            <div x-show="isExpenseModalOpen"
+                x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100" x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                class="relative bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden">
+                
+                <form action="{{ route('projects.expenses.store', $project) }}" method="POST">
+                    @csrf
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Registrar Nuevo Gasto</h3>
+                        <div class="mt-4 space-y-4">
+                            <div>
+                                <label for="exp_description" class="block text-sm font-medium text-gray-700">Descripción del Gasto</label>
+                                <input type="text" name="description" id="exp_description" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="exp_amount" class="block text-sm font-medium text-gray-700">Monto ($)</label>
+                                    <input type="number" name="amount" id="exp_amount" step="0.01" min="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                </div>
+                                <div>
+                                    <label for="exp_date" class="block text-sm font-medium text-gray-700">Fecha del Gasto</label>
+                                    <input type="date" name="expense_date" id="exp_date" value="{{ now()->format('Y-m-d') }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border-transparent shadow-sm px-4 py-2 bg-green-600 text-white sm:ml-3 sm:w-auto">Registrar Gasto</button>
+                        <button type="button" @click="isExpenseModalOpen = false" class="mt-3 w-full inline-flex justify-center rounded-md border-gray-300 shadow-sm px-4 py-2 bg-white text-gray-700 sm:mt-0 sm:ml-3 sm:w-auto">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
     
 
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
-    <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('projectDetailManager', () => ({
-                isTaskModalOpen: false, isTaskEditModalOpen: false, editingTask: null,
-            }));
-        });
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('projectDetailManager', () => ({
+            isTaskModalOpen: false, isTaskEditModalOpen: false, editingTask: null, isExpenseModalOpen: false,
+        }));
+    });
 
-        document.addEventListener('DOMContentLoaded', function () {
-            const timelineData = @json($timelineData);
-            const chartElement = document.querySelector("#taskTimelineChart");
+    document.addEventListener('DOMContentLoaded', function () {
+        const timelineData = @json($timelineData);
+        const chartElement = document.querySelector("#taskTimelineChart");
 
-            if (timelineData && timelineData.length > 0 && chartElement) {
-                
-                const timelineOptions = {
-                    series: [{ data: timelineData }],
-                    chart: {
-                        height: 100 + (timelineData.length * 50), // Aumentamos un poco la altura por tarea
-                        type: 'rangeBar',
-                        toolbar: { show: true, tools: { download: false, selection: true, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true } }
-                    },
-                    plotOptions: {
-                        bar: {
-                            horizontal: true,
-                            borderRadius: 5,
-                            barHeight: '50%',
-                        }
-                    },
-                    // --- CAMBIO 1: Deshabilitamos las etiquetas DENTRO de las barras ---
-                    dataLabels: {
-                        enabled: false, 
-                    },
-                    xaxis: {
-                        type: 'datetime',
-                        min: new Date(@json($timelineMinDate)).getTime(),
-                        max: new Date(@json($timelineInitialMaxDate)).getTime(),
-                        labels: { datetimeUTC: false, format: 'dd MMM yy', style: { colors: '#6b7280' } }
-                    },
-                    tooltip: { theme: 'dark', x: { format: 'dd MMMM yyyy' } },
-                    // --- CAMBIO 2: Habilitamos y estilizamos el eje Y para que muestre los nombres ---
-                    yaxis: {
-                        show: true,
-                        labels: {
+        if (timelineData && timelineData.length > 0 && chartElement) {
+            
+            const timelineOptions = {
+                series: [{ data: timelineData }],
+                chart: {
+                    height: 100 + (timelineData.length * 50),
+                    type: 'rangeBar',
+                    toolbar: { show: true, tools: { download: false, selection: true, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true } }
+                },
+                plotOptions: { bar: { horizontal: true, borderRadius: 5, barHeight: '50%' } },
+                dataLabels: { enabled: false },
+                xaxis: {
+                    type: 'datetime',
+                    min: new Date(@json($timelineMinDate)).getTime(),
+                    max: new Date(@json($timelineInitialMaxDate)).getTime(),
+                    labels: { datetimeUTC: false, format: 'dd MMM yy', style: { colors: '#6b7280' } }
+                },
+                tooltip: { theme: 'dark', x: { format: 'dd MMMM yyyy' } },
+                yaxis: { show: true, labels: { style: { colors: ['#4b5563'], fontSize: '13px', fontWeight: 600, }, formatter: (val) => val.length > 25 ? val.substr(0, 25) + '...' : val } },
+                grid: { row: { colors: ['#f3f4f5', '#fff'], opacity: 1 }, borderColor: '#e7e7e7', strokeDashArray: 4, padding: { left: 20 } },
+                legend: { show: false },
+
+                // --- INICIO: NUEVA ANOTACIÓN PARA EL DÍA DE HOY ---
+                annotations: {
+                    xaxis: [{
+                        // Usamos JS para obtener el timestamp del inicio del día de hoy
+                        x: new Date().setHours(0, 0, 0, 0),
+                        borderColor: '#e53e3e', // Un color rojo para que destaque
+                        strokeDashArray: 4,      // Hacemos la línea punteada
+                        label: {
+                            borderColor: '#e53e3e',
                             style: {
-                                colors: ['#4b5563'], // Color del texto
-                                fontSize: '13px',
-                                fontWeight: 600,
+                                color: '#fff',
+                                background: '#e53e3e',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                padding: { left: 5, right: 5, top: 2, bottom: 2 }
                             },
-                            // Trunca el texto si es muy largo para que no se desborde
-                            formatter: function (value) {
-                                if (value.length > 25) {
-                                    return value.substr(0, 25) + '...';
-                                }
-                                return value;
-                            }
+                            offsetY: -10, // Sube la etiqueta un poco para que no estorbe
+                            text: 'Hoy'
                         }
-                    },
-                    grid: { 
-                        row: { colors: ['#f3f4f5', '#fff'], opacity: 1 },
-                        borderColor: '#e7e7e7',
-                        strokeDashArray: 4,
-                        // Añadimos un padding a la izquierda para que los nombres no se corten
-                        padding: { left: 20 }
-                    },
-                    legend: { show: false }
-                };
+                    }]
+                }
+                // --- FIN DE LA NUEVA ANOTACIÓN ---
+            };
 
-                const chart = new ApexCharts(chartElement, timelineOptions);
-                chart.render();
+            const chart = new ApexCharts(chartElement, timelineOptions);
+            chart.render();
 
-            } else if (chartElement) {
-                chartElement.innerHTML = '<div class="text-center text-gray-500 p-8 border-2 border-dashed rounded-lg">No hay tareas con fechas para mostrar en la línea de tiempo.</div>';
-            }
-        });
-    </script>
+        } else if (chartElement) {
+            chartElement.innerHTML = '<div class="text-center text-gray-500 p-8 border-2 border-dashed rounded-lg">No hay tareas con fechas para mostrar en la línea de tiempo.</div>';
+        }
+    });
+</script>
 
 </x-app-layout>

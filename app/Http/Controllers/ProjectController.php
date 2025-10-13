@@ -21,65 +21,65 @@ class ProjectController extends Controller
      * Muestra el dashboard principal de proyectos con KPIs y gráficos.
      * Los datos mostrados están filtrados según los permisos del usuario.
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Project::class);
         $user = Auth::user();
 
-        // Creamos una consulta base que solo obtiene los proyectos que el usuario puede ver
+        // --- CONSULTA BASE FILTRADA POR PERMISOS (sin cambios) ---
         $projectsQuery = Project::query();
         if (!$user->isSuperAdmin()) {
             $projectsQuery->where(function ($q) use ($user) {
                 $q->where('leader_id', $user->id)
-                  ->orWhereHas('tasks', fn($t) => $t->where('assignee_id', $user->id))
-                  ->orWhereHas('areas', fn($a) => $a->where('area_id', $user->area_id));
+                ->orWhereHas('tasks', fn($t) => $t->where('assignee_id', $user->id))
+                ->orWhereHas('areas', fn($a) => $a->where('area_id', $user->area_id));
             });
         }
-        
-        // --- KPIs para las tarjetas (calculados sobre los proyectos permitidos) ---
-        $activeProjectsCount = (clone $projectsQuery)->whereIn('status', ['Planeación', 'En Progreso', 'En Pausa'])->count();
-        $overdueProjectsCount = (clone $projectsQuery)->where('due_date', '<', now())->whereNotIn('status', ['Completado', 'Cancelado'])->count();
-        $upcomingDeadlinesCount = (clone $projectsQuery)->whereBetween('due_date', [now(), now()->addDays(7)])->count();
-        $completedThisMonthCount = (clone $projectsQuery)->where('status', 'Completado')->whereMonth('updated_at', now()->month)->count();
 
-        // --- Datos para los Gráficos y Listas ---
-        $allowedProjectIds = (clone $projectsQuery)->pluck('id');
+        $visibleProjects = (clone $projectsQuery)->with('expenses')->get();
 
-        $teamWorkload = Task::whereIn('project_id', $allowedProjectIds)
+        // --- INICIO: NUEVA LÓGICA FINANCIERA ---
+        $totalBudget = $visibleProjects->sum('budget');
+        $totalSpent = $visibleProjects->sum(function ($project) {
+            return $project->expenses->sum('amount');
+        });
+
+        // Preparamos datos para el gráfico financiero por proyecto
+        $financialData = $visibleProjects->where('budget', '>', 0)->map(function ($project) {
+            return [
+                'name' => $project->name,
+                'budget' => (float) $project->budget,
+                'spent' => (float) $project->expenses->sum('amount'),
+            ];
+        })->sortByDesc(function ($item) {
+            // Ordenamos por el porcentaje de gasto para ver los más críticos primero
+            return $item['budget'] > 0 ? ($item['spent'] / $item['budget']) : 0;
+        })->values();
+        // --- FIN: NUEVA LÓGICA FINANCIERA ---
+
+        // --- KPIs para las tarjetas (actualizados) ---
+        $activeProjectsCount = $visibleProjects->whereIn('status', ['Planeación', 'En Progreso', 'En Pausa'])->count();
+        $overdueProjectsCount = $visibleProjects->where('due_date', '<', now())->whereNotIn('status', ['Completado', 'Cancelado'])->count();
+
+        // --- Datos para Gráficos y Listas (existentes) ---
+        $upcomingProjects = $visibleProjects->whereBetween('due_date', [now(), now()->addDays(14)])->sortBy('due_date');
+        $overdueProjects = $visibleProjects->where('due_date', '<', now())->whereNotIn('status', ['Completado', 'Cancelado']);
+        $teamWorkload = Task::whereIn('project_id', $visibleProjects->pluck('id'))
             ->where('status', '!=', 'Completada')->whereNotNull('assignee_id')->with('assignee')
             ->select('assignee_id', DB::raw('count(*) as tasks_count'))->groupBy('assignee_id')
             ->orderBy('tasks_count', 'desc')->get()
             ->map(fn ($item) => ['name' => $item->assignee->name ?? 'Sin asignar', 'tasks' => $item->tasks_count]);
-
-        $upcomingProjects = (clone $projectsQuery)->whereBetween('due_date', [now(), now()->addDays(14)])
-            ->orderBy('due_date', 'asc')->get();
-            
-        $activeProjects = (clone $projectsQuery)->with('tasks')->whereIn('status', ['En Progreso', 'Planeación'])->get();
-        $totalProgress = 0; $progressCount = 0;
-        foreach ($activeProjects as $project) {
-            $totalTasks = $project->tasks->count();
-            if ($totalTasks > 0) {
-                $completedTasks = $project->tasks->where('status', 'Completada')->count();
-                $totalProgress += ($completedTasks / $totalTasks) * 100;
-                $progressCount++;
-            }
-        }
-        $overallProgress = $progressCount > 0 ? $totalProgress / $progressCount : 0;
-
-        $projectsByStatus = (clone $projectsQuery)->select('status', DB::raw('count(*) as count'))
-            ->groupBy('status')->pluck('count', 'status');
-
-        $recentActivity = ProjectComment::whereIn('project_id', $allowedProjectIds)
-            ->with('user', 'project')->latest()->limit(5)->get();
+        $projectsByStatus = $visibleProjects->groupBy('status')->map->count();
+        $recentActivity = ProjectComment::whereIn('project_id', $visibleProjects->pluck('id'))->with('user', 'project')->latest()->limit(5)->get();
 
         $chartData = [
             'status' => ['labels' => $projectsByStatus->keys(), 'series' => $projectsByStatus->values()],
             'workload' => ['labels' => $teamWorkload->pluck('name'), 'series' => $teamWorkload->pluck('tasks')],
-            'overallProgress' => round($overallProgress),
+            'financials' => $financialData, // <-- Añadimos los datos financieros
         ];
 
         return view('projects.index', compact(
-            'activeProjectsCount', 'overdueProjectsCount', 'upcomingDeadlinesCount', 'completedThisMonthCount', 'chartData', 'upcomingProjects', 'recentActivity'
+            'activeProjectsCount', 'overdueProjectsCount', 'totalBudget', 'totalSpent', 'chartData', 'upcomingProjects', 'overdueProjects', 'recentActivity'
         ));
     }
 
@@ -152,20 +152,25 @@ class ProjectController extends Controller
      */
     public function show(Project $project)
     {
-        $this->authorize('view', $project);
-        $project->load('leader', 'tasks.assignee', 'comments.user', 'files.user');
+        $project->load('leader', 'tasks.assignee', 'comments.user', 'files.user', 'expenses');
 
         $completedTasks = $project->tasks->where('status', 'Completada')->count();
         $totalTasks = $project->tasks->count();
         $progress = $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
-        
+
         $users = User::orderBy('name')->get();
 
         $timelineData = $project->tasks->map(function ($task) {
-            $startDate = Carbon::parse($task->created_at);
-            $endDate = $task->due_date ? Carbon::parse($task->due_date) : $startDate->copy()->addDay();
+            // --- CAMBIO: Usamos el inicio del día para la fecha de inicio ---
+            $startDate = Carbon::parse($task->created_at)->startOfDay();
+
+            // --- CAMBIO: Usamos el final del día para la fecha de fin ---
+            // Esto asegura que las tareas de un solo día tengan una barra visible.
+            $endDate = $task->due_date ? Carbon::parse($task->due_date)->endOfDay() : $startDate->copy()->endOfDay();
+
             $statusColors = [ 'Completada' => '#28a745', 'En Progreso' => '#0d6efd', 'Pendiente' => '#ffc107' ];
             $priorityPrefix = match($task->priority) { 'Alta' => '🔥 ', 'Media' => '🔸 ', 'Baja' => '🔹 ', default => '' };
+
             return [
                 'x' => $priorityPrefix . $task->name,
                 'y' => [$startDate->valueOf(), $endDate->valueOf()],
@@ -173,10 +178,16 @@ class ProjectController extends Controller
             ];
         });
 
-        $timelineMinDate = $project->tasks->isNotEmpty() ? Carbon::parse($project->tasks->min('created_at')) : null;
+        // --- CAMBIO: Ajustamos también las fechas del zoom inicial ---
+        $timelineMinDate = null;
+        if ($project->tasks->isNotEmpty()) {
+            $timelineMinDate = Carbon::parse($project->tasks->min('created_at'))->startOfDay();
+        }
         $timelineInitialMaxDate = $timelineMinDate ? $timelineMinDate->copy()->addDays(45) : null;
 
-        return view('projects.show', compact('project', 'progress', 'users', 'timelineData', 'timelineMinDate', 'timelineInitialMaxDate'));
+        return view('projects.show', compact(
+            'project', 'progress', 'users', 'timelineData', 'timelineMinDate', 'timelineInitialMaxDate'
+        ));
     }
 
     /**

@@ -52,6 +52,11 @@ class Project extends Model
     public function areas()
     {
         return $this->belongsToMany(Area::class);
+    }
+
+    public function expenses()
+    {
+        return $this->hasMany(ProjectExpense::class)->latest('expense_date');
     }    
 
 }
