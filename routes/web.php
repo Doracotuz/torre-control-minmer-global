@@ -40,9 +40,19 @@ use App\Http\Controllers\CustomerService\ReverseLogisticsController;
 use App\Http\Controllers\CustomerService\CreditNoteController;
 use App\Http\Controllers\ProjectFileController;
 use App\Http\Controllers\ProjectController;
-
-
-
+use App\Http\Controllers\WMS\WMSBrandController;
+use App\Http\Controllers\WMS\WMSProductTypeController;
+use App\Http\Controllers\WMS\WMSProductController;
+use App\Http\Controllers\WMS\WMSLocationController;
+use App\Http\Controllers\WMS\WMSPurchaseOrderController;
+use App\Http\Controllers\WMS\WMSInboundController;
+use App\Http\Controllers\WMS\WMSInventoryController;
+use App\Http\Controllers\WMS\WMSPhysicalCountController;
+use App\Http\Controllers\WMS\WMSSalesOrderController;
+use App\Http\Controllers\WMS\WMSPickingController;
+use App\Http\Controllers\WMS\WMSReportController;
+use App\Http\Controllers\WMS\WMSWarehouseController;
+use App\Http\Controllers\WMS\WMSReceivingController;
 
 
 Route::get('/terms-conditions', function () {
@@ -656,10 +666,35 @@ Route::middleware(['auth'])->prefix('projects')->name('projects.')->group(functi
     Route::post('/{project}/comments', [App\Http\Controllers\ProjectCommentController::class, 'store'])->name('comments.store');
     Route::patch('/{project}/status', [App\Http\Controllers\ProjectController::class, 'updateStatus'])->name('update.status');
     Route::post('/{project}/files', [ProjectFileController::class, 'store'])->name('files.store');
-    Route::post('/{project}/expenses', [App\Http\Controllers\ProjectExpenseController::class, 'store'])->name('expenses.store');
+    Route::post('/{project}/expenses', [App\Http\Controllers\ProjectExpenseController::class, 'store'])->name('expenses.store');  
+    
+});
 
-    
-    
+Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
+    Route::resource('brands', WMSBrandController::class);
+    Route::resource('product-types', WMSProductTypeController::class);
+    Route::resource('products', WMSProductController::class);
+    Route::resource('locations', WMSLocationController::class);
+    Route::resource('purchase-orders', WMSPurchaseOrderController::class);
+    Route::post('purchase-orders/{purchaseOrder}/receive', [WMSInboundController::class, 'storeReceipt'])->name('inbound.store');
+    Route::get('inventory', [WMSInventoryController::class, 'index'])->name('inventory.index');
+    Route::get('inventory/transfer', [WMSInventoryController::class, 'createTransfer'])->name('inventory.transfer.create');
+    Route::post('inventory/transfer', [WMSInventoryController::class, 'storeTransfer'])->name('inventory.transfer.store');
+    Route::resource('physical-counts', WMSPhysicalCountController::class)->only(['index', 'create', 'store', 'show']);
+    Route::get('physical-counts/tasks/{task}/perform', [WMSPhysicalCountController::class, 'showCountTask'])->name('physical-counts.tasks.perform');
+    Route::post('physical-counts/tasks/{task}/perform', [WMSPhysicalCountController::class, 'recordCount'])->name('physical-counts.tasks.record');    
+    Route::post('physical-counts/tasks/{task}/adjust', [WMSPhysicalCountController::class, 'adjustInventory'])->name('physical-counts.tasks.adjust');
+    Route::resource('sales-orders', WMSSalesOrderController::class);    
+    Route::post('sales-orders/{salesOrder}/generate-picklist', [WMSPickingController::class, 'generate'])->name('picking.generate');
+    Route::get('picking/{pickList}', [WMSPickingController::class, 'show'])->name('picking.show');
+    Route::post('picking/{pickList}/confirm', [WMSPickingController::class, 'confirm'])->name('picking.confirm');
+    Route::get('reports', [WMSReportController::class, 'index'])->name('reports.index');
+    Route::get('reports/inventory', [WMSReportController::class, 'inventoryDashboard'])->name('reports.inventory');
+    Route::resource('warehouses', WMSWarehouseController::class);
+    Route::get('receiving/{purchaseOrder}', [WMSReceivingController::class, 'showReceivingForm'])->name('receiving.show');
+    Route::post('receiving/start-pallet', [WMSReceivingController::class, 'startPallet'])->name('receiving.startPallet');
+    Route::post('receiving/pallets/{pallet}/add-item', [WMSReceivingController::class, 'addItemToPallet'])->name('receiving.addItem');
+
 });
 
 Route::get('/project-files/{file}/download', [ProjectFileController::class, 'download'])

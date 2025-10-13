@@ -753,7 +753,36 @@ document.addEventListener('alpine:init', () => {
                                         </svg>
                                         <span class="nav-text">{{ __('Proyectos') }}</span>
                                     </x-nav-link>  
-                                @endcan                        
+                                @endcan
+                                @if (!Auth::user()->is_client)
+                                    <div x-data="{ isOpen: {{ request()->routeIs('wms.*') ? 'true' : 'false' }} }">
+                                        {{-- Botón principal que abre el submenú --}}
+                                        <button @click="isOpen = !isOpen" class="dropdown-toggle w-full flex justify-between items-center text-left nav-link-custom {{ request()->routeIs('wms.*') ? 'active-link' : '' }}">
+                                            <div class="flex items-center">
+                                                <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h6M9 11.25h6M9 15.75h6" />
+                                                </svg>
+                                                <span class="nav-text">WMS</span>
+                                            </div>
+                                            <svg class="chevron-icon w-4 h-4 transition-transform" :class="{'rotate-180': isOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                                        </button>
+
+                                        {{-- Contenido del submenú (se muestra u oculta) --}}
+                                        <div x-show="isOpen" x-transition class="pl-8 mt-2 space-y-2">
+                                            <a href="{{ route('wms.reports.index') }}" class="block text-gray-400 hover:text-white text-sm font-semibold">Reportes</a>
+                                            <a href="{{ route('wms.inventory.index') }}" class="block text-gray-400 hover:text-white text-sm">Inventario</a>
+                                            <a href="{{ route('wms.purchase-orders.index') }}" class="block text-gray-400 hover:text-white text-sm">Entradas (PO)</a>
+                                            <a href="{{ route('wms.sales-orders.index') }}" class="block text-gray-400 hover:text-white text-sm">Salidas (SO)</a>
+                                            <hr class="border-gray-600">
+                                            <span class="text-xs text-gray-500 font-bold uppercase">Catálogos</span>
+                                            <a href="{{ route('wms.products.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Productos</a>
+                                            <a href="{{ route('wms.warehouses.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Almacenes</a>
+                                            <a href="{{ route('wms.locations.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Ubicaciones</a>
+                                            <a href="{{ route('wms.brands.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Marcas</a>
+                                            <a href="{{ route('wms.product-types.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Tipos de Producto</a>
+                                        </div>
+                                    </div>                                
+                                @endif                                
                                 @if(Auth::user()->is_area_admin && Auth::user()->area?->name === 'Recursos Humanos')
                                     <x-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.*')" class="nav-link-custom {{ request()->routeIs('admin.organigram.*') ? 'active-link' : '' }}">
                                         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
