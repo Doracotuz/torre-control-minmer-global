@@ -53,6 +53,7 @@ use App\Http\Controllers\WMS\WMSPickingController;
 use App\Http\Controllers\WMS\WMSReportController;
 use App\Http\Controllers\WMS\WMSWarehouseController;
 use App\Http\Controllers\WMS\WMSReceivingController;
+use App\Http\Controllers\WMS\WMSLpnController; 
 
 
 Route::get('/terms-conditions', function () {
@@ -694,6 +695,9 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::get('receiving/{purchaseOrder}', [WMSReceivingController::class, 'showReceivingForm'])->name('receiving.show');
     Route::post('receiving/start-pallet', [WMSReceivingController::class, 'startPallet'])->name('receiving.startPallet');
     Route::post('receiving/pallets/{pallet}/add-item', [WMSReceivingController::class, 'addItemToPallet'])->name('receiving.addItem');
+    Route::get('lpns', [WMSLpnController::class, 'index'])->name('lpns.index');
+    Route::post('lpns/generate', [WMSLpnController::class, 'generate'])->name('lpns.generate');
+    Route::get('lpns/print', [WMSLpnController::class, 'printPdf'])->name('lpns.print');    
 
 });
 

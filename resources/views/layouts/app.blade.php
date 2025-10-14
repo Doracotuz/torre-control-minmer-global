@@ -780,6 +780,8 @@ document.addEventListener('alpine:init', () => {
                                             <a href="{{ route('wms.locations.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Ubicaciones</a>
                                             <a href="{{ route('wms.brands.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Marcas</a>
                                             <a href="{{ route('wms.product-types.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Tipos de Producto</a>
+                                            <a href="{{ route('wms.lpns.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Generador de LPNs</a>
+
                                         </div>
                                     </div>                                
                                 @endif                                
