@@ -53,7 +53,8 @@ use App\Http\Controllers\WMS\WMSPickingController;
 use App\Http\Controllers\WMS\WMSReportController;
 use App\Http\Controllers\WMS\WMSWarehouseController;
 use App\Http\Controllers\WMS\WMSReceivingController;
-use App\Http\Controllers\WMS\WMSLpnController; 
+use App\Http\Controllers\WMS\WMSLpnController;
+use App\Http\Controllers\WMS\WMSQualityController;
 
 
 Route::get('/terms-conditions', function () {
@@ -675,7 +676,10 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::resource('brands', WMSBrandController::class);
     Route::resource('product-types', WMSProductTypeController::class);
     Route::resource('products', WMSProductController::class);
-    Route::resource('locations', WMSLocationController::class);
+    Route::resource('locations', WMSLocationController::class)->except(['show']);
+    Route::post('locations/import', [WMSLocationController::class, 'importCsv'])->name('locations.import');
+    Route::post('locations/print-labels', [WMSLocationController::class, 'printLabels'])->name('locations.print-labels');
+    Route::get('locations/template', [WMSLocationController::class, 'downloadTemplate'])->name('locations.template');
     Route::resource('purchase-orders', WMSPurchaseOrderController::class);
     Route::post('purchase-orders/{purchaseOrder}/receive', [WMSInboundController::class, 'storeReceipt'])->name('inbound.store');
     Route::get('inventory', [WMSInventoryController::class, 'index'])->name('inventory.index');
@@ -697,7 +701,10 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::post('receiving/pallets/{pallet}/add-item', [WMSReceivingController::class, 'addItemToPallet'])->name('receiving.addItem');
     Route::get('lpns', [WMSLpnController::class, 'index'])->name('lpns.index');
     Route::post('lpns/generate', [WMSLpnController::class, 'generate'])->name('lpns.generate');
-    Route::get('lpns/print', [WMSLpnController::class, 'printPdf'])->name('lpns.print');    
+    Route::get('lpns/print', [WMSLpnController::class, 'printPdf'])->name('lpns.print');
+    Route::resource('qualities', WMSQualityController::class);
+    Route::post('lpns/reprint', [WMSLpnController::class, 'reprintPdf'])->name('lpns.reprint');
+
 
 });
 

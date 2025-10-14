@@ -1,8 +1,9 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Recepción de PO: {{ $purchaseOrder->po_number }}</h2>
+        <h2 class="font-semibold text-xl text-gray-800">Recepción de PO: {{ $purchaseOrder->po_number }}</h2>
     </x-slot>
 
+    {{-- ESTE ES EL CAMBIO CLAVE: Se ha simplificado el x-data --}}
     <div class="py-12" x-data="receivingApp">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
@@ -15,21 +16,10 @@
                                 <p class="font-semibold text-gray-800" x-text="item.name"></p>
                                 <p class="text-xs text-gray-500 font-mono" x-text="item.sku"></p>
                             </div>
+                            <div class="col-span-4 md:col-span-2 text-center"><span class="font-semibold text-gray-500">Planeado:</span><span class="font-bold text-lg text-gray-800" x-text="item.ordered"></span></div>
+                            <div class="col-span-4 md:col-span-2 text-center"><span class="font-semibold text-gray-500">Recibido:</span><span class="font-bold text-lg text-gray-800" x-text="item.received"></span></div>
                             <div class="col-span-4 md:col-span-2 text-center">
-                                <span class="font-semibold text-gray-500">Planeado:</span>
-                                <span class="font-bold text-lg text-gray-800" x-text="item.ordered"></span>
-                            </div>
-                            <div class="col-span-4 md:col-span-2 text-center">
-                                <span class="font-semibold text-gray-500">Recibido:</span>
-                                <span class="font-bold text-lg text-gray-800" x-text="item.received"></span>
-                            </div>
-                            <div class="col-span-4 md:col-span-2 text-center">
-                                <span class="px-2 py-1 text-xs font-bold rounded-full"
-                                      :class="{
-                                        'bg-green-100 text-green-800': item.balance == 0,
-                                        'bg-yellow-100 text-yellow-800': item.balance > 0,
-                                        'bg-red-100 text-red-800': item.balance < 0
-                                      }">
+                                <span class="px-2 py-1 text-xs font-bold rounded-full" :class="{ 'bg-green-100 text-green-800': item.balance == 0, 'bg-yellow-100 text-yellow-800': item.balance > 0, 'bg-red-100 text-red-800': item.balance < 0 }">
                                     <span x-show="item.balance > 0" x-text="`FALTAN ${item.balance}`"></span>
                                     <span x-show="item.balance == 0">COMPLETO</span>
                                     <span x-show="item.balance < 0" x-text="`SOBRAN ${Math.abs(item.balance)}`"></span>
@@ -39,49 +29,34 @@
                     </template>
                 </div>
             </div>
+
             <div x-show="step === 'start'" class="text-center bg-white p-8 rounded-lg shadow-xl">
-                <h3 class="text-2xl font-bold text-gray-800">Listo para Recibir</h3>
-                <p class="text-gray-600 my-4">Presiona el botón para comenzar a registrar una nueva tarima para esta orden de compra.</p>
-                <button @click="startNewPallet()" :disabled="loading" class="w-full px-8 py-4 bg-indigo-600 text-white font-semibold rounded-md shadow-lg hover:bg-indigo-700 text-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-show="!loading"><i class="fas fa-plus mr-2"></i> Crear Nueva Tarima</span>
-                    <span x-show="loading">Creando tarima...</span>
-                </button>
+                <form @submit.prevent="startNewPallet()">
+                    <h3 class="text-2xl font-bold text-gray-800">Iniciar Nueva Tarima</h3>
+                    <p class="text-gray-600 my-4">Escribe o escanea el código de una etiqueta de LPN pre-impresa para comenzar la recepción.</p>
+                    <div><label for="lpn_input" class="block text-sm font-medium text-gray-700">LPN de la Tarima</label><input type="text" id="lpn_input" x-model="lpnInput" class="mt-1 block w-full text-lg font-mono rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="LPN-..." required autofocus></div>
+                    <button type="submit" :disabled="loading || !lpnInput" class="w-full mt-4 px-8 py-4 bg-indigo-600 text-white font-semibold rounded-md shadow-lg hover:bg-indigo-700 text-lg transition disabled:opacity-50">
+                        <span x-show="!loading"><i class="fas fa-play-circle mr-2"></i> Iniciar Tarima</span><span x-show="loading">Verificando LPN...</span>
+                    </button>
+                </form>
             </div>
 
             <div x-show="step === 'receiving'" class="bg-white p-8 rounded-lg shadow-xl space-y-6">
                 <template x-if="currentPallet">
                     <div>
-                        <div class="text-center p-4 bg-indigo-50 rounded-lg">
-                            <p class="text-sm font-semibold text-indigo-700">Registrando en Tarima</p>
-                            <p class="text-3xl font-mono font-bold text-indigo-900" x-text="currentPallet.lpn"></p>
-                        </div>
+                        <div class="text-center p-4 bg-indigo-50 rounded-lg"><p class="text-sm font-semibold text-indigo-700">Registrando en Tarima</p><p class="text-3xl font-mono font-bold text-indigo-900" x-text="currentPallet.lpn"></p></div>
                         <div class="mt-6">
-                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Producto</label>
-                                    <select x-model.number="newItem.product_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                        <option value="">Seleccione o escanee...</option>
-                                        @foreach ($products as $product)
-                                            <option value="{{ $product->id }}">{{ $product->name }} ({{ $product->sku }})</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700">Cantidad</label>
-                                    <input type="number" x-model.number="newItem.quantity" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                </div>
+                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                <div><label class="block text-sm font-medium">Producto</label><select x-model.number="newItem.product_id" class="mt-1 block w-full rounded-md border-gray-300"><option value="">Seleccione...</option>@foreach ($products as $product)<option value="{{ $product->id }}">{{ $product->name }} ({{ $product->sku }})</option>@endforeach</select></div>
+                                <div><label class="block text-sm font-medium">Calidad</label><select x-model.number="newItem.quality_id" class="mt-1 block w-full rounded-md border-gray-300"><option value="">Seleccione...</option>@foreach ($qualities as $quality)<option value="{{ $quality->id }}">{{ $quality->name }}</option>@endforeach</select></div>
+                                <div><label class="block text-sm font-medium">Cantidad</label><input type="number" x-model.number="newItem.quantity" min="1" class="mt-1 block w-full rounded-md border-gray-300"></div>
                             </div>
-                            <button @click="addItemToPallet" :disabled="loading || !newItem.product_id || !newItem.quantity" class="w-full mt-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed">Añadir a la Tarima</button>
+                            <button @click="addItemToPallet" :disabled="loading || !newItem.product_id || !newItem.quantity || !newItem.quality_id" class="w-full mt-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition disabled:opacity-50">Añadir a la Tarima</button>
                         </div>
                         <div class="border-t pt-4 mt-6">
-                            <h4 class="font-semibold text-lg text-gray-800">Contenido Actual de la Tarima:</h4>
+                            <h4 class="font-semibold text-lg">Contenido Actual de la Tarima:</h4>
                             <ul class="space-y-2 mt-2 max-h-60 overflow-y-auto">
-                                <template x-for="item in currentPallet.items" :key="item.id">
-                                    <li class="flex justify-between p-2 bg-gray-50 rounded-md">
-                                        <span class="truncate pr-4" x-text="`${item.product.name} (${item.product.sku})`"></span>
-                                        <span class="font-bold flex-shrink-0" x-text="`x ${item.quantity}`"></span>
-                                    </li>
-                                </template>
+                                <template x-for="item in currentPallet.items" :key="item.id"><li class="flex justify-between items-center p-2 bg-gray-50 rounded-md"><div><p class="font-semibold" x-text="`${item.product.name} (${item.product.sku})`"></p><p class="text-xs text-indigo-700 font-bold" x-text="item.quality.name"></p></div><span class="font-bold flex-shrink-0" x-text="`x ${item.quantity}`"></span></li></template>
                             </ul>
                         </div>
                         <div class="flex justify-between items-center mt-6 border-t pt-6">
@@ -102,23 +77,29 @@
                 loading: false,
                 purchaseOrderId: {{ $purchaseOrder->id }},
                 currentPallet: null,
-                newItem: { product_id: '', quantity: 1 },
-                
+                newItem: { product_id: '', quantity: 1, quality_id: '' },
+                lpnInput: '',
+
                 async startNewPallet() {
+                    if (!this.lpnInput) return;
                     this.loading = true;
                     this.currentPallet = null;
                     try {
                         const response = await fetch('{{ route('wms.receiving.startPallet') }}', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'},
-                            body: JSON.stringify({ purchase_order_id: this.purchaseOrderId })
+                            body: JSON.stringify({
+                                purchase_order_id: this.purchaseOrderId,
+                                lpn: this.lpnInput
+                            })
                         });
+                        const responseData = await response.json();
                         if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.error || 'Error al crear la tarima.');
+                            throw new Error(responseData.error || `Error del servidor (${response.status})`);
                         }
-                        this.currentPallet = await response.json();
+                        this.currentPallet = responseData;
                         this.step = 'receiving';
+                        this.lpnInput = '';
                     } catch (error) {
                         console.error(error);
                         alert(error.message);
@@ -128,7 +109,7 @@
                 },
 
                 async addItemToPallet() {
-                    if (!this.newItem.product_id || !this.newItem.quantity) return;
+                    if (!this.newItem.product_id || !this.newItem.quantity || !this.newItem.quality_id) return;
                     this.loading = true;
                     try {
                         const response = await fetch(`/wms/receiving/pallets/${this.currentPallet.id}/add-item`, {
@@ -137,9 +118,8 @@
                             body: JSON.stringify(this.newItem)
                         });
                         if (!response.ok) throw new Error('Error al añadir el producto.');
-                        
                         this.currentPallet = await response.json();
-                        this.newItem = { product_id: '', quantity: 1 };
+                        this.newItem = { product_id: '', quantity: 1, quality_id: '' };
                     } catch (error) {
                         console.error(error);
                         alert(error.message);
@@ -154,8 +134,6 @@
                         this.step = 'start';
                         return;
                     }
-
-                    // Actualiza el resumen con los datos de la tarima actual
                     this.currentPallet.items.forEach(palletItem => {
                         const summaryItem = this.summary.find(item => item.product_id == palletItem.product_id);
                         if (summaryItem) {
@@ -163,14 +141,12 @@
                             summaryItem.balance = summaryItem.ordered - summaryItem.received;
                         }
                     });
-
-                    alert(`Tarima ${this.currentPallet.lpn} finalizada y registrada en ubicación de RECEPCION. El inventario ha sido actualizado.`);
-                    
-                    // Resetea para la siguiente tarima
+                    alert(`Tarima ${this.currentPallet.lpn} finalizada. El inventario ha sido actualizado.`);
                     this.currentPallet = null; 
                     this.step = 'start';
                 }
             }));
         });
     </script>
+
 </x-app-layout>

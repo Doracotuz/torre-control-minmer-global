@@ -22,6 +22,11 @@ class Project extends Model
         'leader_id',
     ];
 
+    protected $casts = [
+        'start_date' => 'date',
+        'due_date' => 'date',
+    ];    
+
     /**
      * Un proyecto tiene muchas tareas.
      */
@@ -57,6 +62,6 @@ class Project extends Model
     public function expenses()
     {
         return $this->hasMany(ProjectExpense::class)->latest('expense_date');
-    }    
+    }
 
 }

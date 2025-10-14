@@ -15,10 +15,15 @@ return new class extends Migration
             $table->id();
             $table->foreignId('product_id')->constrained('products');
             $table->foreignId('location_id')->constrained('locations');
+            
+            // Añadimos la columna de calidad directamente aquí
+            $table->foreignId('quality_id')->constrained('qualities');
+
             $table->unsignedBigInteger('quantity');
             $table->timestamps();
-            // Clave única para asegurar que solo haya un registro por producto/ubicación
-            $table->unique(['product_id', 'location_id']);
+
+            // Creamos el índice unique correcto de 3 columnas desde el principio
+            $table->unique(['product_id', 'location_id', 'quality_id']);
         });
     }
 

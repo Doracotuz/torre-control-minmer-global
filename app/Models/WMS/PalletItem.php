@@ -2,6 +2,7 @@
 
 namespace App\Models\WMS;
 
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -9,17 +10,15 @@ class PalletItem extends Model
 {
     use HasFactory;
 
-    /**
-     * Los atributos que se pueden asignar masivamente.
-     */
     protected $fillable = [
         'pallet_id',
         'product_id',
         'quantity',
+        'quality_id',
     ];
 
     /**
-     * Un item pertenece a una Tarima.
+     * An item belongs to a Pallet.
      */
     public function pallet()
     {
@@ -27,10 +26,20 @@ class PalletItem extends Model
     }
 
     /**
-     * Un item se refiere a un Producto.
+     * An item refers to a Product.
      */
     public function product()
     {
+        // Use the fully qualified class name for clarity
         return $this->belongsTo(\App\Models\Product::class);
+    }
+
+    /**
+     * An item has a Quality status.
+     */
+    public function quality()
+    {
+        // Use the fully qualified class name for clarity
+        return $this->belongsTo(\App\Models\WMS\Quality::class);
     }
 }

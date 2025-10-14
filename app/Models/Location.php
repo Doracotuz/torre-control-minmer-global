@@ -20,6 +20,7 @@ class Location extends Model
         'shelf',
         'bin',
         'type',
+        'pick_sequence',
     ];
 
     /**

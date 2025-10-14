@@ -2,6 +2,8 @@
 
 namespace App\Models\WMS;
 
+use App\Models\Location;
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -13,10 +15,11 @@ class InventoryStock extends Model
         'product_id',
         'location_id',
         'quantity',
+        'quality_id',
     ];
 
     /**
-     * Un registro de stock se refiere a un Producto.
+     * A stock record refers to a Product.
      */
     public function product()
     {
@@ -24,10 +27,18 @@ class InventoryStock extends Model
     }
 
     /**
-     * Un registro de stock pertenece a una Ubicación.
+     * A stock record belongs to a Location.
      */
     public function location()
     {
         return $this->belongsTo(\App\Models\Location::class);
+    }
+
+    /**
+     * A stock record has a Quality status.
+     */
+    public function quality()
+    {
+        return $this->belongsTo(\App\Models\WMS\Quality::class);
     }
 }
