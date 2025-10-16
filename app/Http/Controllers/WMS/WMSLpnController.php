@@ -28,7 +28,7 @@ class WMSLpnController extends Controller
             do {
                 // 1. Generamos un código aleatorio y seguro de 10 caracteres
                 $randomCode = strtoupper(bin2hex(random_bytes(5)));
-                $lpn = 'LPN-' . $randomCode;
+                $lpn = 'LPN' . $randomCode;
 
                 // 2. Verificamos en la base de datos si este LPN ya existe
                 $exists = PregeneratedLpn::where('lpn', $lpn)->exists();

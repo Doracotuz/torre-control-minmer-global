@@ -682,6 +682,9 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::get('locations/template', [WMSLocationController::class, 'downloadTemplate'])->name('locations.template');
     Route::resource('purchase-orders', WMSPurchaseOrderController::class);
     Route::post('purchase-orders/{purchaseOrder}/receive', [WMSInboundController::class, 'storeReceipt'])->name('inbound.store');
+    Route::post('purchase-orders/{purchaseOrder}/register-arrival', [WMSPurchaseOrderController::class, 'registerArrival'])->name('purchase-orders.register-arrival');
+    Route::post('purchase-orders/{purchaseOrder}/register-departure', [WMSPurchaseOrderController::class, 'registerDeparture'])->name('purchase-orders.register-departure');
+    Route::post('/purchase-orders/{purchaseOrder}/complete', [WMSPurchaseOrderController::class, 'completeReceipt'])->name('purchase-orders.complete');
     Route::get('inventory', [WMSInventoryController::class, 'index'])->name('inventory.index');
     Route::get('inventory/transfer', [WMSInventoryController::class, 'createTransfer'])->name('inventory.transfer.create');
     Route::post('inventory/transfer', [WMSInventoryController::class, 'storeTransfer'])->name('inventory.transfer.store');
@@ -699,11 +702,15 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::get('receiving/{purchaseOrder}', [WMSReceivingController::class, 'showReceivingForm'])->name('receiving.show');
     Route::post('receiving/start-pallet', [WMSReceivingController::class, 'startPallet'])->name('receiving.startPallet');
     Route::post('receiving/pallets/{pallet}/add-item', [WMSReceivingController::class, 'addItemToPallet'])->name('receiving.addItem');
+    Route::post('/receiving/pallets/{pallet}/finish', [WMSReceivingController::class, 'finishPallet'])->name('wms.receiving.finishPallet');
+    Route::put('/receiving/pallet-items/{palletItem}', [WMSReceivingController::class, 'updatePalletItem'])->name('wms.receiving.updateItem');
+    Route::delete('/receiving/pallet-items/{palletItem}', [WMSReceivingController::class, 'destroyPalletItem'])->name('wms.receiving.destroyItem');    
     Route::get('lpns', [WMSLpnController::class, 'index'])->name('lpns.index');
     Route::post('lpns/generate', [WMSLpnController::class, 'generate'])->name('lpns.generate');
     Route::get('lpns/print', [WMSLpnController::class, 'printPdf'])->name('lpns.print');
     Route::resource('qualities', WMSQualityController::class);
     Route::post('lpns/reprint', [WMSLpnController::class, 'reprintPdf'])->name('lpns.reprint');
+    
 
 
 });

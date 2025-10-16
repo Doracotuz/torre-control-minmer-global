@@ -12,11 +12,16 @@
 }" x-init="generateCode()">
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-            <label for="code" class="block text-sm font-medium text-gray-700">Código de Ubicación (Automático)</label>
-            <input type="text" name="code" id="code" x-ref="locationCode" value="{{ old('code', $location->code ?? '') }}" required placeholder="Ej: A-01-03-B" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100" readonly>
-            @error('code') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-        </div>
+        @if (isset($location))
+            <div class="mb-4">
+                <label for="code" class="block text-sm font-medium text-gray-700">Código (ID Permanente)</label>
+                <input type="text" 
+                    id="code" 
+                    value="{{ $location->code }}" 
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-200" 
+                    disabled>
+            </div>
+        @endif
         <div>
             <label for="warehouse_id" class="block text-sm font-medium text-gray-700">Almacén</label>
             <select name="warehouse_id" id="warehouse_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">

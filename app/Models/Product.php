@@ -13,7 +13,7 @@ class Product extends Model
 
     protected $fillable = [
         'sku', 'name', 'description', 'brand_id', 'product_type_id',
-        'unit_of_measure', 'length', 'width', 'height', 'weight', 'upc'
+        'unit_of_measure', 'length', 'width', 'height', 'weight', 'upc','pieces_per_case'
     ];
 
     // --- INICIO: CÁLCULO DE VOLUMEN CON SINTAXIS CLÁSICA ---

@@ -27,9 +27,10 @@ class WMSProductController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'sku' => 'required|string|max:255|unique:products,sku',
             'name' => 'required|string|max:255',
+            'pieces_per_case' => 'nullable|integer|min:1',
             'brand_id' => 'nullable|exists:brands,id',
             'product_type_id' => 'nullable|exists:product_types,id',
             'unit_of_measure' => 'required|string|max:50',
@@ -40,10 +41,10 @@ class WMSProductController extends Controller
             'upc' => 'nullable|string|max:255|unique:products,upc',
         ]);
 
-        Product::create($request->all());
+        Product::create($validatedData);
 
         return redirect()->route('wms.products.index')
-                         ->with('success', 'Producto creado exitosamente.');
+                                ->with('success', 'Producto creado exitosamente.');
     }
 
     public function edit(Product $product)
@@ -55,9 +56,10 @@ class WMSProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'sku' => 'required|string|max:255|unique:products,sku,' . $product->id,
             'name' => 'required|string|max:255',
+            'pieces_per_case' => 'nullable|integer|min:1',
             'brand_id' => 'nullable|exists:brands,id',
             'product_type_id' => 'nullable|exists:product_types,id',
             'unit_of_measure' => 'required|string|max:50',
@@ -68,10 +70,10 @@ class WMSProductController extends Controller
             'upc' => 'nullable|string|max:255|unique:products,upc,' . $product->id,
         ]);
 
-        $product->update($request->all());
+        $product->update($validatedData);
 
         return redirect()->route('wms.products.index')
-                         ->with('success', 'Producto actualizado exitosamente.');
+                                ->with('success', 'Producto actualizado exitosamente.');
     }
 
     public function destroy(Product $product)

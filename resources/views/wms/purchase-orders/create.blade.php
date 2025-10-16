@@ -29,6 +29,10 @@
                         <div><label for="expected_date">Fecha Esperada</label><input type="date" name="expected_date" id="expected_date" required class="mt-1 block w-full rounded-md border-gray-300"></div>
                     </div>
                     <div>
+                        <label for="total_pallets">Total de Pallets (Opcional)</label>
+                        <input type="number" name="total_pallets" id="total_pallets" class="mt-1 block w-full rounded-md border-gray-300">
+                    </div>
+                    <div>
                         <label for="document_invoice" class="block text-sm font-medium text-gray-700">Documento o Factura</label>
                         <input type="text" name="document_invoice" id="document_invoice" value="{{ old('document_invoice') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                     </div>                        
@@ -54,7 +58,7 @@
                                 <div class="flex items-center space-x-3">
                                     <select :name="`lines[${index}][product_id]`" class="w-1/2 rounded-md border-gray-300">
                                         <option value="">Seleccione Producto...</option>
-                                        @foreach($products as $product)<option value="{{ $product->id }}">{{ $product->name }} ({{ $product->sku }})</option>@endforeach
+                                        @foreach($products as $product)<option value="{{ $product->id }}">{{ $product->sku }} - {{ $product->name }}</option>@endforeach
                                     </select>
                                     <input type="number" :name="`lines[${index}][quantity_ordered]`" placeholder="Cantidad" min="1" required class="w-1/4 rounded-md border-gray-300">
                                     <button type="button" @click="removeLine(index)" class="text-red-500 hover:text-red-700 p-2">&times; Quitar</button>

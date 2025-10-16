@@ -6,7 +6,10 @@
                 <div><label for="name">Nombre</label><input type="text" name="name" required class="mt-1 block w-full rounded-md border-gray-300"></div>
                 <div><label for="description">Descripción</label><textarea name="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300"></textarea></div>
             </div>
-            <div class="mt-6 flex justify-end"><button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Guardar</button></div>
+            <div class="mt-6 flex justify-end">
+                <a href="{{ route('wms.qualities.index') }}" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md mr-4">Cancelar</a>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Guardar</button>
+            </div>
         </form>
     </div></div></div>
 </x-app-layout>

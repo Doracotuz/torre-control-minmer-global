@@ -7,6 +7,7 @@ use App\Models\Location;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
 
 class WMSLocationController extends Controller
 {
@@ -24,10 +25,8 @@ class WMSLocationController extends Controller
 
     public function store(Request $request)
     {
-        // El método validate() ahora devuelve solo los datos seguros
         $validatedData = $request->validate([
             'warehouse_id' => 'required|exists:warehouses,id',
-            'code' => 'required|string|max:255|unique:locations,code',
             'aisle' => 'nullable|string|max:255',
             'rack' => 'nullable|string|max:255',
             'shelf' => 'nullable|string|max:255',
@@ -36,11 +35,25 @@ class WMSLocationController extends Controller
             'pick_sequence' => 'nullable|integer|min:0',
         ]);
 
-        // Usamos los datos validados
+        $exists = Location::where('warehouse_id', $validatedData['warehouse_id'])
+                        ->where('aisle', $validatedData['aisle'])
+                        ->where('rack', $validatedData['rack'])
+                        ->where('shelf', $validatedData['shelf'])
+                        ->where('bin', $validatedData['bin'])
+                        ->exists();
+
+        if ($exists) {
+            return back()->withInput()->with('error', 'Esa combinación física de ubicación ya existe.');
+        }
+
+        $lastCode = Location::max(DB::raw('CAST(code AS UNSIGNED)'));
+        
+        $validatedData['code'] = $lastCode ? $lastCode + 1 : 10001;
+
         Location::create($validatedData);
 
         return redirect()->route('wms.locations.index')
-                        ->with('success', 'Ubicación creada exitosamente.');
+                        ->with('success', 'Ubicación creada. Código asignado: ' . $validatedData['code']);
     }
 
     public function edit(Location $location)
@@ -51,10 +64,8 @@ class WMSLocationController extends Controller
 
     public function update(Request $request, Location $location)
     {
-        // El método validate() ahora devuelve solo los datos seguros
         $validatedData = $request->validate([
             'warehouse_id' => 'required|exists:warehouses,id',
-            'code' => 'required|string|max:255|unique:locations,code,' . $location->id,
             'aisle' => 'nullable|string|max:255',
             'rack' => 'nullable|string|max:255',
             'shelf' => 'nullable|string|max:255',
@@ -62,8 +73,18 @@ class WMSLocationController extends Controller
             'type' => 'required|string',
             'pick_sequence' => 'nullable|integer|min:0',
         ]);
+        
+        $exists = Location::where('warehouse_id', $validatedData['warehouse_id'])
+                        ->where('aisle', $validatedData['aisle'])
+                        ->where('rack', $validatedData['rack'])
+                        ->where('shelf', $validatedData['shelf'])
+                        ->where('bin', '!=', $location->id)
+                        ->exists();
 
-        // Usamos los datos validados
+        if ($exists) {
+            return back()->withInput()->with('error', 'Esa combinación física de ubicación ya existe.');
+        }
+
         $location->update($validatedData);
 
         return redirect()->route('wms.locations.index')
@@ -88,7 +109,17 @@ class WMSLocationController extends Controller
             'Content-type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename=plantilla_ubicaciones.csv',
         ];
-        $columns = ['warehouse_code', 'code', 'type', 'aisle', 'rack', 'shelf', 'bin', 'pick_sequence'];
+        
+        $columns = [
+            'codigo_almacen', 
+            'tipo', 
+            'pasillo', 
+            'rack', 
+            'nivel', 
+            'bin', 
+            'secuencia_pick'
+        ];
+
         $callback = function() use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
@@ -103,27 +134,53 @@ class WMSLocationController extends Controller
         $file = $request->file('file');
         $path = $file->getRealPath();
         $records = array_map('str_getcsv', file($path));
-        $headers = array_shift($records); // Quita los encabezados
+        $headers = array_shift($records);
+
+        $lastCode = Location::max(DB::raw('CAST(code AS UNSIGNED)'));
+        $nextCode = $lastCode ? $lastCode + 1 : 10001;
+
+        $locationsToInsert = [];
+        $now = now();
 
         foreach ($records as $record) {
             $data = array_combine($headers, $record);
-            $warehouse = \App\Models\Warehouse::where('code', $data['warehouse_code'])->first();
+            
+            // Usamos el nuevo encabezado 'codigo_almacen'
+            $warehouse = \App\Models\Warehouse::where('code', $data['codigo_almacen'])->first();
+
             if ($warehouse) {
-                Location::updateOrCreate(
-                    ['code' => $data['code']],
-                    [
+                // Verificamos usando los encabezados en español
+                $exists = Location::where('warehouse_id', $warehouse->id)
+                    ->where('aisle', $data['pasillo'])
+                    ->where('rack', $data['rack'])
+                    ->where('shelf', $data['nivel'])
+                    ->where('bin', $data['bin'])
+                    ->exists();
+
+                if (!$exists) {
+                    $locationsToInsert[] = [
                         'warehouse_id' => $warehouse->id,
-                        'type' => $data['type'],
-                        'aisle' => $data['aisle'],
+                        'code' => $nextCode++,
+                        // Usamos los encabezados en español para obtener los datos
+                        'type' => $data['tipo'],
+                        'aisle' => $data['pasillo'],
                         'rack' => $data['rack'],
-                        'shelf' => $data['shelf'],
+                        'shelf' => $data['nivel'],
                         'bin' => $data['bin'],
-                        'pick_sequence' => $data['pick_sequence'] ?: null,
-                    ]
-                );
+                        'pick_sequence' => $data['secuencia_pick'] ?: null,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
             }
         }
-        return redirect()->route('wms.locations.index')->with('success', 'Ubicaciones importadas exitosamente.');
+
+        if (!empty($locationsToInsert)) {
+            Location::insert($locationsToInsert);
+        }
+        
+        $count = count($locationsToInsert);
+        return redirect()->route('wms.locations.index')->with('success', "$count ubicaciones nuevas fueron importadas exitosamente.");
     }
 
     public function printLabels(Request $request)

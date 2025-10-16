@@ -61,6 +61,13 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-span-6 sm:col-span-3">
+                            <label for="pieces_per_case" class="block text-sm font-medium text-gray-700">Piezas por Caja</label>
+                            <input type="number" name="pieces_per_case" id="pieces_per_case" 
+                                value="{{ old('pieces_per_case', $product->pieces_per_case ?? 1) }}" 
+                                min="1" 
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>                        
                     </div>
                     <div class="mt-8 flex justify-end">
                         <a href="{{ route('wms.products.index') }}" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md mr-4 hover:bg-gray-300">Cancelar</a>

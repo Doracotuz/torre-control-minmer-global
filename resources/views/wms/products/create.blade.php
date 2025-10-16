@@ -40,6 +40,13 @@
                             <label for="unit_of_measure" class="block text-sm font-medium text-gray-700">Unidad de Empaque</label>
                             <input type="text" name="unit_of_measure" id="unit_of_measure" value="{{ old('unit_of_measure') }}" required placeholder="Ej: Caja, Pieza, Pallet" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500">
                         </div>
+                        <div>
+                            <label for="pieces_per_case" class="block text-sm font-medium text-gray-700">Piezas por Caja</label>
+                            <input type="number" name="pieces_per_case" id="pieces_per_case" 
+                                value="{{ old('pieces_per_case', $product->pieces_per_case ?? 1) }}" 
+                                min="1" 
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>                        
                         
                         {{-- Dimensiones --}}
                         <div class="md:col-span-2">
