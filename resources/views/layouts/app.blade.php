@@ -771,13 +771,14 @@ document.addEventListener('alpine:init', () => {
                                         <div x-show="isOpen" x-transition class="pl-8 mt-2 space-y-2">
                                             <a href="{{ route('wms.reports.index') }}" class="block text-gray-400 hover:text-white text-sm font-semibold">Reportes</a>
                                             <a href="{{ route('wms.inventory.index') }}" class="block text-gray-400 hover:text-white text-sm">Inventario</a>
+                                            <a href="{{ route('wms.inventory.adjustments.log') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Registro de Ajustes</a>                                            
                                             <a href="{{ route('wms.purchase-orders.index') }}" class="block text-gray-400 hover:text-white text-sm">Entradas (PO)</a>
                                             <a href="{{ route('wms.sales-orders.index') }}" class="block text-gray-400 hover:text-white text-sm">Salidas (SO)</a>
                                             <hr class="border-gray-600">
                                             <span class="text-xs text-gray-500 font-bold uppercase">Catálogos</span>
                                             <a href="{{ route('wms.products.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Productos</a>
-                                            <a href="{{ route('wms.warehouses.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Almacenes</a>
                                             <a href="{{ route('wms.locations.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Ubicaciones</a>
+                                            <a href="{{ route('wms.warehouses.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Almacenes</a>
                                             <a href="{{ route('wms.brands.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Marcas</a>
                                             <a href="{{ route('wms.qualities.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Calidades</a>
                                             <a href="{{ route('wms.product-types.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Tipos de Producto</a>

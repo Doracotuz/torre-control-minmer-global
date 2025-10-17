@@ -182,7 +182,8 @@ class WMSReceivingController extends Controller
             
             $pallet->update([
                 'status' => 'Finished',
-                'user_id' => Auth::id()
+                'user_id' => Auth::id(),
+                'last_action' => 'Recepción Finalizada'
             ]);
 
             // --- LÓGICA NUEVA Y CRUCIAL ---

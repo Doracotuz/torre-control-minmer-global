@@ -37,7 +37,13 @@
                         </div>
                         <div>
                             <label for="unit_of_measure" class="block text-sm font-medium text-gray-700">Unidad de Empaque</label>
-                            <input type="text" name="unit_of_measure" id="unit_of_measure" value="{{ old('unit_of_measure', $product->unit_of_measure) }}" required placeholder="Ej: Caja, Pieza, Pallet" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500">
+                            <select name="unit_of_measure" id="unit_of_measure" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500">
+                                <option value="" >-- Sin dato --</option>
+                                <option value="Caja" @selected(old('unit_of_measure', $product->unit_of_measure) == 'Caja')>Caja</option>
+                                <option value="Pieza" @selected(old('unit_of_measure', $product->unit_of_measure) == 'Pieza')>Pieza</option>
+                                <option value="Paquete" @selected(old('unit_of_measure', $product->unit_of_measure) == 'Paquete')>Paquete</option>
+                                <option value="Otro" @selected(old('unit_of_measure', $product->unit_of_measure) == 'Otro')>Otro</option>
+                            </select>
                         </div>
                         
                         <div class="md:col-span-2">
@@ -59,15 +65,12 @@
                                     <label for="weight" class="text-xs text-gray-600">Peso (kg)</label>
                                     <input type="number" name="weight" id="weight" value="{{ old('weight', $product->weight) }}" step="0.01" class="block w-full rounded-md border-gray-300 shadow-sm">
                                 </div>
+                                <div>
+                                    <label for="pieces_per_case" class="text-xs text-gray-600">Piezas por Caja</label>
+                                    <input type="number" name="pieces_per_case" id="pieces_per_case" value="{{ old('pieces_per_case', $product->pieces_per_case ?? 1) }}" min="1" step="1" class="block w-full rounded-md border-gray-300 shadow-sm">
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-span-6 sm:col-span-3">
-                            <label for="pieces_per_case" class="block text-sm font-medium text-gray-700">Piezas por Caja</label>
-                            <input type="number" name="pieces_per_case" id="pieces_per_case" 
-                                value="{{ old('pieces_per_case', $product->pieces_per_case ?? 1) }}" 
-                                min="1" 
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>                        
+                        </div>                     
                     </div>
                     <div class="mt-8 flex justify-end">
                         <a href="{{ route('wms.products.index') }}" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md mr-4 hover:bg-gray-300">Cancelar</a>

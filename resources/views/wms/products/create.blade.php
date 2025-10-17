@@ -38,7 +38,13 @@
                         </div>
                         <div>
                             <label for="unit_of_measure" class="block text-sm font-medium text-gray-700">Unidad de Empaque</label>
-                            <input type="text" name="unit_of_measure" id="unit_of_measure" value="{{ old('unit_of_measure') }}" required placeholder="Ej: Caja, Pieza, Pallet" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500">
+                            <select name="unit_of_measure" id="unit_of_measure" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500">
+                                <option value="" selected>-- Sin dato --</option>
+                                <option value="Caja">Caja</option>
+                                <option value="Pieza">Pieza</option>
+                                <option value="Paquete">Paquete</option>
+                                <option value="Otro">Otro</option>
+                            </select>
                         </div>
                         <div>
                             <label for="pieces_per_case" class="block text-sm font-medium text-gray-700">Piezas por Caja</label>

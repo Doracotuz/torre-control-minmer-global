@@ -112,34 +112,49 @@ class WMSPhysicalCountController extends Controller
 
     public function adjustInventory(Request $request, PhysicalCountTask $task)
     {
-        // Reglas de negocio: solo se puede ajustar si hay discrepancia y al menos 3 conteos.
-        if ($task->status !== 'discrepancy' || $task->records()->count() < 3) {
-            return back()->with('error', 'El ajuste solo puede realizarse después del 3er conteo en una tarea con discrepancia.');
+        // 1. Reglas de Negocio: Solo se puede ajustar si hay discrepancia.
+        // (Eliminé la regla de los 3 conteos para darte más flexibilidad, pero puedes volver a añadirla si quieres).
+        if ($task->status !== 'discrepancy') {
+            return back()->with('error', 'El ajuste solo puede realizarse en una tarea con discrepancia.');
+        }
+
+        $lastRecord = $task->records()->latest()->first();
+        if (!$lastRecord) {
+            return back()->with('error', 'No hay conteos registrados para esta tarea.');
         }
 
         DB::beginTransaction();
         try {
-            $finalCount = $task->records()->latest()->first()->counted_quantity;
-            $quantityAdjusted = $finalCount - $task->expected_quantity;
+            // 2. Cálculo de Cantidades
+            $quantityBefore = $task->expected_quantity; // La cantidad que el sistema esperaba
+            $quantityAfter = $lastRecord->counted_quantity; // La cantidad final contada
+            $quantityDifference = $quantityAfter - $quantityBefore; // La diferencia
 
-            // 1. Actualizar el stock a la cantidad final contada
+            // 3. Actualización de Stock
+            // Se busca el registro de stock para este producto y ubicación.
             $stock = InventoryStock::where('product_id', $task->product_id)
                                 ->where('location_id', $task->location_id)
                                 ->firstOrFail();
-            $stock->quantity = $finalCount;
+            
+            // Se actualiza la cantidad de forma segura.
+            $stock->quantity = $quantityAfter;
             $stock->save();
 
-            // 2. Registrar el ajuste para auditoría
+            // 4. Registro de Auditoría Detallado
+            // Se crea un registro inmutable del ajuste.
             InventoryAdjustment::create([
                 'physical_count_task_id' => $task->id,
                 'product_id' => $task->product_id,
                 'location_id' => $task->location_id,
-                'quantity_adjusted' => $quantityAdjusted,
-                'reason' => 'Ajuste por conteo físico.',
-                'user_id' => Auth::id(), // Supervisor que aprueba
+                'quantity_before' => $quantityBefore,
+                'quantity_after' => $quantityAfter,
+                'quantity_difference' => $quantityDifference,
+                'reason' => 'Ajuste por Conteo Cíclico Físico.',
+                'user_id' => Auth::id(), // El supervisor que aprueba el ajuste
+                'source' => 'Conteo Cíclico',
             ]);
 
-            // 3. Marcar la tarea como resuelta
+            // 5. Marcar la tarea como resuelta
             $task->status = 'resolved';
             $task->save();
 
@@ -151,6 +166,5 @@ class WMSPhysicalCountController extends Controller
             DB::rollBack();
             return back()->with('error', 'Error al procesar el ajuste: ' . $e->getMessage());
         }
-    }    
-
+    }
 }

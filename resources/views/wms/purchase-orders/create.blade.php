@@ -29,10 +29,6 @@
                         <div><label for="expected_date">Fecha Esperada</label><input type="date" name="expected_date" id="expected_date" required class="mt-1 block w-full rounded-md border-gray-300"></div>
                     </div>
                     <div>
-                        <label for="total_pallets">Total de Pallets (Opcional)</label>
-                        <input type="number" name="total_pallets" id="total_pallets" class="mt-1 block w-full rounded-md border-gray-300">
-                    </div>
-                    <div>
                         <label for="document_invoice" class="block text-sm font-medium text-gray-700">Documento o Factura</label>
                         <input type="text" name="document_invoice" id="document_invoice" value="{{ old('document_invoice') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                     </div>                        

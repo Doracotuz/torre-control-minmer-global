@@ -18,6 +18,8 @@ class Pallet extends Model
         'location_id',
         'status',
         'purchase_order_id',
+        'user_id',
+        'last_action',
     ];
 
     /**
