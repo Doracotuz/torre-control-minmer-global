@@ -722,7 +722,8 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::get('lpns/print', [WMSLpnController::class, 'printPdf'])->name('lpns.print');
     Route::resource('qualities', WMSQualityController::class);
     Route::post('lpns/reprint', [WMSLpnController::class, 'reprintPdf'])->name('lpns.reprint');
-    
+    Route::post('lpns/print-from-csv', [WMSLpnController::class, 'printFromCsv'])->name('lpns.print-from-csv');
+    Route::get('lpns/template', [WMSLpnController::class, 'downloadTemplate'])->name('lpns.template');
 
 
 });

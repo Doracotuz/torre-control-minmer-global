@@ -91,4 +91,77 @@ class WMSLpnController extends Controller
         $pdf = Pdf::loadView('wms.lpns.pdf', ['lpns' => $lpnsToPrint]);
         return $pdf->stream('lpn-reimpresion.pdf');
     }
+
+    public function printFromCsv(Request $request)
+    {
+        $validated = $request->validate([
+            'lpn_file' => 'required|file|mimes:csv,txt',
+            'quantity' => 'required|integer|min:1|max:50',
+        ]);
+
+        // 1. Leer el archivo CSV y obtener una lista limpia de LPNs
+        $file = $request->file('lpn_file');
+        $csvData = array_map('str_getcsv', file($file->getRealPath()));
+        $lpnList = collect($csvData)->flatten()->map('trim')->filter()->unique()->values()->all();
+
+        if (empty($lpnList)) {
+            return back()->with('error', 'El archivo CSV está vacío o no contiene LPNs válidos.');
+        }
+
+        // --- INICIO DE LA NUEVA LÓGICA ---
+
+        // 2. Buscar cuáles de los LPNs del archivo ya existen en la base de datos
+        $existingLpns = PregeneratedLpn::whereIn('lpn', $lpnList)->pluck('lpn')->all();
+
+        // 3. Determinar cuáles LPNs son nuevos (los que están en el archivo pero no en la BD)
+        $lpnsToCreate = array_diff($lpnList, $existingLpns);
+
+        // 4. Si hay LPNs nuevos, crearlos todos en una sola consulta para mayor eficiencia
+        if (!empty($lpnsToCreate)) {
+            $dataToInsert = [];
+            foreach ($lpnsToCreate as $lpn) {
+                // Preparamos los datos para la inserción masiva
+                $dataToInsert[] = ['lpn' => $lpn, 'created_at' => now(), 'updated_at' => now()];
+            }
+            PregeneratedLpn::insert($dataToInsert);
+        }
+        
+        // --- FIN DE LA NUEVA LÓGICA ---
+
+        // 5. Ahora que todos los LPNs están garantizados en la BD, los obtenemos todos
+        $allLpns = PregeneratedLpn::whereIn('lpn', $lpnList)->get();
+
+        // 6. Creamos la colección final para imprimir, duplicando según la cantidad de copias
+        $lpnsToPrint = collect();
+        for ($i = 0; $i < $validated['quantity']; $i++) {
+            foreach ($allLpns as $lpn) {
+                $lpnsToPrint->push($lpn);
+            }
+        }
+
+        $pdf = Pdf::loadView('wms.lpns.pdf', ['lpns' => $lpnsToPrint]);
+        return $pdf->stream('lpns-desde-csv.pdf');
+    }
+
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=plantilla_lpns.csv',
+        ];
+
+        // La plantilla solo necesita una columna
+        $columns = ['lpn'];
+
+        $callback = function() use ($columns) {
+            $file = fopen('php://output', 'w');
+            // Añadimos el BOM para compatibilidad con acentos en Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, $columns);
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }    
+
 }

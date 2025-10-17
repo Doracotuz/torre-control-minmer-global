@@ -66,6 +66,33 @@
                         </form>
                     </div>
                 </div>
+
+                <div class="bg-white p-8 rounded-lg shadow md:col-span-2">
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800">3. Imprimir LPNs desde Archivo CSV</h3>
+                        <p class="text-sm text-gray-600 mt-1">Sube un archivo CSV con una columna de LPNs para imprimir sus etiquetas.</p>
+                        <a href="{{ route('wms.lpns.template') }}" class="text-xs text-indigo-600 font-semibold hover:underline mt-2 inline-block">
+                            <i class="fas fa-download mr-1"></i> Descargar plantilla de ejemplo
+                        </a>                        
+
+                        <form action="{{ route('wms.lpns.print-from-csv') }}" method="POST" enctype="multipart/form-data" target="_blank" class="mt-4 space-y-4">
+                            @csrf
+                            <div>
+                                <label for="lpn_file" class="block text-sm font-medium text-gray-700">Archivo CSV</label>
+                                <input type="file" name="lpn_file" id="lpn_file" accept=".csv, .txt" required class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-gray-50 hover:file:bg-gray-100">
+                                @error('lpn_file') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                            </div>
+                            <div>
+                                <label for="csv_quantity" class="block text-sm font-medium text-gray-700">Copias de cada etiqueta</label>
+                                <input type="number" name="quantity" id="csv_quantity" value="1" min="1" max="50" required class="mt-1 block w-24 rounded-md border-gray-300 shadow-sm">
+                            </div>
+                            <button type="submit" class="w-full px-4 py-2 bg-teal-600 text-white font-semibold rounded-md hover:bg-teal-700">
+                                <i class="fas fa-file-csv mr-2"></i> Imprimir desde CSV
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
