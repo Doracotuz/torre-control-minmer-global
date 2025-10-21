@@ -112,12 +112,9 @@ class WMSPhysicalCountController extends Controller
 
     public function adjustInventory(Request $request, PhysicalCountTask $task)
     {
-        // 1. Reglas de Negocio: Solo se puede ajustar si hay discrepancia.
-        // (Eliminé la regla de los 3 conteos para darte más flexibilidad, pero puedes volver a añadirla si quieres).
         if ($task->status !== 'discrepancy') {
             return back()->with('error', 'El ajuste solo puede realizarse en una tarea con discrepancia.');
         }
-
         $lastRecord = $task->records()->latest()->first();
         if (!$lastRecord) {
             return back()->with('error', 'No hay conteos registrados para esta tarea.');
@@ -125,46 +122,81 @@ class WMSPhysicalCountController extends Controller
 
         DB::beginTransaction();
         try {
-            // 2. Cálculo de Cantidades
-            $quantityBefore = $task->expected_quantity; // La cantidad que el sistema esperaba
-            $quantityAfter = $lastRecord->counted_quantity; // La cantidad final contada
-            $quantityDifference = $quantityAfter - $quantityBefore; // La diferencia
+            $quantityBefore = $task->expected_quantity;
+            $quantityAfter = $lastRecord->counted_quantity;
 
-            // 3. Actualización de Stock
-            // Se busca el registro de stock para este producto y ubicación.
+            // --- INICIO DE LA LÓGICA DE VALIDACIÓN DE LPN ---
+
+            // 1. Buscamos todas las tarimas en esa ubicación que contengan ese producto
+            $palletItemsToAdjust = \App\Models\WMS\PalletItem::where('product_id', $task->product_id)
+                ->whereHas('pallet', fn($q) => $q->where('location_id', $task->location_id))
+                ->get();
+
+            // 2. Regla de negocio: Si hay más de un LPN, no podemos ajustar automáticamente.
+            if ($palletItemsToAdjust->count() > 1) {
+                throw new \Exception("Existen múltiples LPNs con este producto en la misma ubicación. Realice un Ajuste Manual por LPN desde el módulo de inventario para especificar cuál tarima ajustar.");
+            }
+            if ($palletItemsToAdjust->isEmpty()) {
+                throw new \Exception("No se encontró el LPN correspondiente en la ubicación para ajustar la cantidad.");
+            }
+
+            // 3. Si solo hay un LPN, actualizamos su cantidad
+            $palletItem = $palletItemsToAdjust->first();
+            $palletItem->quantity = $quantityAfter;
+            $palletItem->save();
+
+            // --- FIN DE LA LÓGICA DE VALIDACIÓN ---
+
+            // 4. Actualizamos el stock general (esta parte ya es correcta)
             $stock = InventoryStock::where('product_id', $task->product_id)
                                 ->where('location_id', $task->location_id)
                                 ->firstOrFail();
-            
-            // Se actualiza la cantidad de forma segura.
             $stock->quantity = $quantityAfter;
             $stock->save();
 
-            // 4. Registro de Auditoría Detallado
-            // Se crea un registro inmutable del ajuste.
+            // 5. Creamos el registro de auditoría, ahora incluyendo el pallet_item_id
             InventoryAdjustment::create([
                 'physical_count_task_id' => $task->id,
+                'pallet_item_id' => $palletItem->id, // Ahora registramos qué item se afectó
                 'product_id' => $task->product_id,
                 'location_id' => $task->location_id,
                 'quantity_before' => $quantityBefore,
                 'quantity_after' => $quantityAfter,
-                'quantity_difference' => $quantityDifference,
+                'quantity_difference' => $quantityAfter - $quantityBefore,
                 'reason' => 'Ajuste por Conteo Cíclico Físico.',
-                'user_id' => Auth::id(), // El supervisor que aprueba el ajuste
+                'user_id' => Auth::id(),
                 'source' => 'Conteo Cíclico',
             ]);
 
-            // 5. Marcar la tarea como resuelta
+            // 6. Marcamos la tarea como resuelta
             $task->status = 'resolved';
             $task->save();
 
             DB::commit();
             return redirect()->route('wms.physical-counts.show', $task->physical_count_session_id)
-                            ->with('success', 'Inventario ajustado correctamente.');
+                            ->with('success', 'Inventario ajustado correctamente en el LPN y en el stock general.');
 
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error al procesar el ajuste: ' . $e->getMessage());
         }
     }
+
+    public function getCandidateLpns(PhysicalCountTask $task)
+    {
+        $palletItems = \App\Models\WMS\PalletItem::where('product_id', $task->product_id)
+            ->whereHas('pallet', fn($q) => $q->where('location_id', $task->location_id))
+            ->with([
+                // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+                // Le pedimos explícitamente la clave foránea para que pueda cargar la relación
+                'pallet:id,lpn,purchase_order_id', 
+                
+                'pallet.purchaseOrder:id,pedimento_a4',
+                'quality:id,name'
+            ])
+            ->get();
+
+        return response()->json($palletItems);
+    }
+
 }

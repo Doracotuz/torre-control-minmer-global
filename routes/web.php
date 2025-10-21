@@ -680,6 +680,8 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::post('locations/import', [WMSLocationController::class, 'importCsv'])->name('locations.import');
     Route::post('locations/print-labels', [WMSLocationController::class, 'printLabels'])->name('locations.print-labels');
     Route::get('locations/template', [WMSLocationController::class, 'downloadTemplate'])->name('locations.template');
+    Route::get('locations/fetch-filtered-ids', [WMSLocationController::class, 'fetchFilteredIds'])->name('locations.fetch-filtered-ids');
+    Route::get('locations/export-csv', [WMSLocationController::class, 'exportCsv'])->name('locations.export-csv');
     Route::get('/purchase-orders/export-csv', [WMSPurchaseOrderController::class, 'exportCsv'])->name('purchase-orders.export-csv');
     Route::resource('purchase-orders', WMSPurchaseOrderController::class);
     Route::post('purchase-orders/{purchaseOrder}/receive', [WMSInboundController::class, 'storeReceipt'])->name('inbound.store');
@@ -704,6 +706,7 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::get('physical-counts/tasks/{task}/perform', [WMSPhysicalCountController::class, 'showCountTask'])->name('physical-counts.tasks.perform');
     Route::post('physical-counts/tasks/{task}/perform', [WMSPhysicalCountController::class, 'recordCount'])->name('physical-counts.tasks.record');    
     Route::post('physical-counts/tasks/{task}/adjust', [WMSPhysicalCountController::class, 'adjustInventory'])->name('physical-counts.tasks.adjust');
+    Route::get('physical-counts/tasks/{task}/candidate-lpns', [WMSPhysicalCountController::class, 'getCandidateLpns'])->name('physical-counts.tasks.candidates');
     Route::resource('sales-orders', WMSSalesOrderController::class);    
     Route::post('sales-orders/{salesOrder}/generate-picklist', [WMSPickingController::class, 'generate'])->name('picking.generate');
     Route::get('picking/{pickList}', [WMSPickingController::class, 'show'])->name('picking.show');

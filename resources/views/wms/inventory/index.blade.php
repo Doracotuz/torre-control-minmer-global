@@ -34,20 +34,20 @@
             </div>
 
             <div class="bg-white p-6 rounded-2xl shadow-lg border mb-8">
-                <form action="{{ route('wms.inventory.index') }}" method="GET">
+                <form id="filters-form" action="{{ route('wms.inventory.index') }}" method="GET">
                     <div class="flex flex-wrap gap-4 items-end">
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">LPN</label><input type="text" name="lpn" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('lpn') }}"></div>
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Orden (PO)</label><input type="text" name="po_number" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('po_number') }}"></div>
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">SKU</label><input type="text" name="sku" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('sku') }}"></div>
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Pedimento A4</label><input type="text" name="pedimento_a4" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('pedimento_a4') }}"></div>
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Calidad</label><select name="quality_id" class="w-full rounded-md border-gray-300 shadow-sm text-sm"><option value="">Toda Calidad</option>@foreach($qualities as $quality)<option value="{{ $quality->id }}" @selected(request('quality_id') == $quality->id)>{{ $quality->name }}</option>@endforeach</select></div>
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Desde</label><input type="date" name="start_date" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('start_date') }}"></div>
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Hasta</label><input type="date" name="end_date" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('end_date') }}"></div>
-                        <div class="flex items-center space-x-2 pt-4"><button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">Filtrar</button><a href="{{ route('wms.inventory.index') }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300" title="Limpiar filtros"><i class="fas fa-undo"></i></a></div>
+                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">LPN</label><input type="text" name="lpn" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('lpn') }}"></div>
+                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Orden (PO)</label><input type="text" name="po_number" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('po_number') }}"></div>
+                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">SKU</label><input type="text" name="sku" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('sku') }}"></div>
+                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Pedimento A4</label><input type="text" name="pedimento_a4" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('pedimento_a4') }}"></div>
+                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Ubicación</label><input type="text" name="location" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('location') }}" placeholder="Código o A-01-.."></div>
+                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Calidad</label><select name="quality_id" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm"><option value="">Toda Calidad</option>@foreach($qualities as $quality)<option value="{{ $quality->id }}" @selected(request('quality_id') == $quality->id)>{{ $quality->name }}</option>@endforeach</select></div>
+                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Desde</label><input type="date" name="start_date" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('start_date') }}"></div>
+                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Hasta</label><input type="date" name="end_date" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('end_date') }}"></div>
+                        <div class="flex items-center space-x-2 pt-4"><a href="{{ route('wms.inventory.index') }}" class="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-center" title="Limpiar filtros">Limpiar</a></div>
                     </div>
                 </form>
             </div>
-
             <div class="bg-white overflow-hidden rounded-2xl shadow-lg border">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">

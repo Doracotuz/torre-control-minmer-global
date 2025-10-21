@@ -35,5 +35,18 @@ class Location extends Model
     public function pallets()
     {
         return $this->hasMany(Pallet::class);
-    }    
+    }
+
+    public function getTranslatedTypeAttribute(): string
+    {
+        $types = [
+            'storage' => 'Almacenamiento',
+            'picking' => 'Picking',
+            'receiving' => 'Recepción',
+            'shipping' => 'Embarque',
+            'quality_control' => 'Control de Calidad',
+        ];
+        return $types[$this->type] ?? ucfirst($this->type);
+    }
+
 }

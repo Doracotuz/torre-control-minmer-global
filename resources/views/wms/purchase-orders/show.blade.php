@@ -53,6 +53,15 @@
                                 @endif
                             </div>
                         </div>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-sm pl-16">
+                            <div><p class="text-gray-500">Nº de PO</p><p class="font-mono font-semibold">{{ $purchaseOrder->po_number }}</p></div>
+                            <div><p class="text-gray-500">Fecha Esperada</p><p class="font-semibold">{{ Carbon\Carbon::parse($purchaseOrder->expected_date)->format('d M, Y') }}</p></div>
+                            <div><p class="text-gray-500">Estado</p><span class="px-2.5 py-0.5 text-xs font-semibold rounded-full {{ $purchaseOrder->status == 'Pending' ? 'bg-yellow-100 text-yellow-800' : ($purchaseOrder->status == 'Receiving' ? 'bg-indigo-100 text-indigo-800' : 'bg-green-100 text-green-800') }}">{{ $purchaseOrder->status_in_spanish }}</span></div>
+                            <div><p class="text-gray-500">Contenedor</p><p class="font-mono font-semibold">{{ $purchaseOrder->container_number ?? 'N/A' }}</p></div>
+                            <div><p class="text-gray-500">Factura</p><p class="font-mono font-semibold">{{ $purchaseOrder->document_invoice ?? 'N/A' }}</p></div>
+                            <div><p class="text-gray-500">Creado por</p><p class="font-semibold">{{ $purchaseOrder->user->name }}</p></div>
+                            <div><p class="text-gray-500">Pedimento A4</p><p class="font-semibold">{{ $purchaseOrder->pedimento_a4 ?? 'N/A' }}</p></div>
+                        </div>                        
                     </div>
 
                     <div class="border-t pt-8">

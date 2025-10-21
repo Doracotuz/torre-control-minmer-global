@@ -771,7 +771,8 @@ document.addEventListener('alpine:init', () => {
                                         <div x-show="isOpen" x-transition class="pl-8 mt-2 space-y-2">
                                             <a href="{{ route('wms.reports.index') }}" class="block text-gray-400 hover:text-white text-sm font-semibold">Reportes</a>
                                             <a href="{{ route('wms.inventory.index') }}" class="block text-gray-400 hover:text-white text-sm">Inventario</a>
-                                            <a href="{{ route('wms.inventory.adjustments.log') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Registro de Ajustes</a>                                            
+                                            <a href="{{ route('wms.inventory.adjustments.log') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Registro de Ajustes</a>
+                                            <a href="{{ route('wms.physical-counts.index') }}" class="block text-gray-400 hover:text-white text-sm pl-2">Conteos Físicos</a>                                      
                                             <a href="{{ route('wms.purchase-orders.index') }}" class="block text-gray-400 hover:text-white text-sm">Entradas (PO)</a>
                                             <a href="{{ route('wms.sales-orders.index') }}" class="block text-gray-400 hover:text-white text-sm">Salidas (SO)</a>
                                             <hr class="border-gray-600">

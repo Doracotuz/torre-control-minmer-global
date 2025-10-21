@@ -40,6 +40,14 @@ class WMSInventoryController extends Controller
         if ($request->filled('quality_id')) { $query->whereHas('items.quality', fn($q) => $q->where('id', $request->quality_id)); }
         if ($request->filled('start_date')) { $query->whereDate('pallets.updated_at', '>=', $request->start_date); }
         if ($request->filled('end_date')) { $query->whereDate('pallets.updated_at', '<=', $request->end_date); }
+
+        if ($request->filled('location')) {
+            $locationTerm = $request->location;
+            $query->whereHas('location', function($q) use ($locationTerm) {
+                $q->where('code', 'like', "%{$locationTerm}%")
+                ->orWhere(DB::raw("CONCAT(aisle,'-',rack,'-',shelf,'-',bin)"), 'like', "%{$locationTerm}%");
+            });
+        }        
         
         $pallets = $query->latest('updated_at')->paginate(25)->withQueryString();
 

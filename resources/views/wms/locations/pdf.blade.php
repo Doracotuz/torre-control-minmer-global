@@ -96,7 +96,7 @@
             </div>
             <div class="location-type">
                 {{-- Se muestra el tipo de ubicación --}}
-                Tipo: {{ $location->type }}
+                Tipo: {{ $location->translated_type }}
             </div>
         </div>
     @endforeach

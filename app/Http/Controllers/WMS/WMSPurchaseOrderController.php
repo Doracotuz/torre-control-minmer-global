@@ -93,7 +93,6 @@ class WMSPurchaseOrderController extends Controller
             'container_number' => $validatedData['container_number'],
             'pedimento_a4' => $validatedData['pedimento_a4'],
             'pedimento_g1' => $validatedData['pedimento_g1'],
-            'total_pallets' => $validatedData['total_pallets'],
             'expected_bottles' => $expected_bottles, // Guardamos el total calculado
             'user_id' => auth()->id(),
             'status' => 'Pending',
