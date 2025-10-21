@@ -676,7 +676,8 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::resource('brands', WMSBrandController::class);
     Route::resource('product-types', WMSProductTypeController::class);
     Route::resource('products', WMSProductController::class);
-    Route::resource('locations', WMSLocationController::class)->except(['show']);
+    // Route::resource('locations', WMSLocationController::class)->except(['show']);
+    Route::resource('locations', WMSLocationController::class);
     Route::post('locations/import', [WMSLocationController::class, 'importCsv'])->name('locations.import');
     Route::post('locations/print-labels', [WMSLocationController::class, 'printLabels'])->name('locations.print-labels');
     Route::get('locations/template', [WMSLocationController::class, 'downloadTemplate'])->name('locations.template');
@@ -702,6 +703,7 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::get('inventory/export-csv', [WMSInventoryController::class, 'exportCsv'])->name('inventory.export-csv');
     Route::post('inventory/pallet-items/{palletItem}/adjust', [WMSInventoryController::class, 'adjustItemQuantity'])->name('inventory.item.adjust');
     Route::get('inventory/adjustments', [WMSInventoryController::class, 'showAdjustmentsLog'])->name('inventory.adjustments.log');    
+    Route::get('physical-counts/template', [WMSPhysicalCountController::class, 'downloadTemplate'])->name('physical-counts.template');
     Route::resource('physical-counts', WMSPhysicalCountController::class)->only(['index', 'create', 'store', 'show']);
     Route::get('physical-counts/tasks/{task}/perform', [WMSPhysicalCountController::class, 'showCountTask'])->name('physical-counts.tasks.perform');
     Route::post('physical-counts/tasks/{task}/perform', [WMSPhysicalCountController::class, 'recordCount'])->name('physical-counts.tasks.record');    
@@ -711,6 +713,7 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::post('sales-orders/{salesOrder}/generate-picklist', [WMSPickingController::class, 'generate'])->name('picking.generate');
     Route::get('picking/{pickList}', [WMSPickingController::class, 'show'])->name('picking.show');
     Route::post('picking/{pickList}/confirm', [WMSPickingController::class, 'confirm'])->name('picking.confirm');
+    Route::get('picking/{pickList}/pdf', [WMSPickingController::class, 'generatePickListPdf'])->name('picking.pdf');
     Route::get('reports', [WMSReportController::class, 'index'])->name('reports.index');
     Route::get('reports/inventory', [WMSReportController::class, 'inventoryDashboard'])->name('reports.inventory');
     Route::resource('warehouses', WMSWarehouseController::class);

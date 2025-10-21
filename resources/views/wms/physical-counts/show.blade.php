@@ -15,6 +15,7 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ubicación</th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">LPN</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
                             <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Cant. Sistema</th>
                             <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Último Conteo</th>
@@ -25,16 +26,28 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach ($session->tasks as $task)
                             <tr class="@if($task->status == 'discrepancy') bg-yellow-50 @elseif($task->status == 'resolved') bg-green-50 @endif">
-                                <td class="px-2 py-4 font-mono">{{ $task->location->code }}</td>
+                                <td class="px-2 py-4 font-mono">
+                                    {{ $task->location ? "{$task->location->aisle}-{$task->location->rack}-{$task->location->shelf}-{$task->location->bin}" : 'N/A' }}
+                                </td>
+                                <td class="px-2 py-4 font-mono text-indigo-600 font-semibold">
+                                    {{ $task->pallet->lpn ?? 'N/A' }}
+                                </td>
                                 <td class="px-2 py-4 font-mono">{{ $task->product->sku }}</td>
                                 <td class="px-2 py-4 text-center font-bold text-lg">{{ $task->expected_quantity }}</td>
-                                <td class="px-2 py-4 text-center font-bold text-lg {{ $task->records->last() && $task->records->last()->counted_quantity != $task->expected_quantity ? 'text-red-600' : '' }}">{{ $task->records->last()->counted_quantity ?? '-' }}</td>
-                                <td class="px-2 py-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full @if($task->status == 'discrepancy') bg-yellow-100 text-yellow-800 @elseif($task->status == 'resolved') bg-green-100 text-green-800 @else bg-gray-100 text-gray-800 @endif">{{ $task->status_in_spanish }}</span></td>
+                                <td class="px-2 py-4 text-center font-bold text-lg {{ $task->records->last() && $task->records->last()->counted_quantity != $task->expected_quantity ? 'text-red-600' : '' }}">
+                                    {{ $task->records->last()->counted_quantity ?? '-' }}
+                                </td>
+                                <td class="px-2 py-4">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full @if($task->status == 'discrepancy') bg-yellow-100 text-yellow-800 @elseif($task->status == 'resolved') bg-green-100 text-green-800 @else bg-gray-100 text-gray-800 @endif">
+                                        {{ $task->status_in_spanish }}
+                                    </span>
+                                </td>
                                 <td class="px-2 py-4 text-right">
                                     @if ($task->status == 'pending' || ($task->status == 'discrepancy' && $task->records->count() < 3))
-                                        <a href="{{ route('wms.physical-counts.tasks.perform', $task) }}" class="text-indigo-600 font-semibold">{{ $task->records->count() > 0 ? 'Re-contar' : 'Contar' }}</a>
+                                        <a href="{{ route('wms.physical-counts.tasks.perform', $task) }}" class="text-indigo-600 font-semibold">
+                                            {{ $task->records->count() > 0 ? 'Re-contar' : 'Contar' }}
+                                        </a>
                                     @elseif ($task->status == 'discrepancy')
-                                        {{-- BOTÓN MODIFICADO PARA ABRIR EL MODAL --}}
                                         <button @click="openModal({{ $task->id }})" type="button" class="font-semibold text-red-600 hover:underline">Ajustar Inventario</button>
                                     @elseif ($task->status == 'resolved')
                                         <span class="text-green-600 font-semibold"><i class="fas fa-check-circle"></i> Resuelto</span>
@@ -76,28 +89,27 @@
                         </div>
                     </div>
 
-                    <div x-show="selectedLpnItem">
-                        <form :action="'/wms/inventory/pallet-items/' + selectedLpnItem.id + '/adjust'" method="POST">
-                            @csrf
-                            <div class="mb-4 bg-gray-50 p-4 rounded-lg border">
-                                <p class="text-sm">Ajustando LPN: <strong class="font-mono text-indigo-600" x-text="selectedLpnItem.pallet.lpn"></strong></p>
-                                <div class="mt-2 pt-2 border-t text-sm">
-                                    <p>Cantidad Actual en LPN: <strong x-text="selectedLpnItem.quantity"></strong></p>
-                                    <p>Para corregir la diferencia, esta tarima debe tener:</p>
-                                    <p class="text-3xl font-bold text-center text-green-600 my-2" x-text="adjustmentAmount"></p>
+                    <template x-if="selectedLpnItem">   
+                        <div x-transition>
+                            <form :action="'/wms/inventory/pallet-items/' + selectedLpnItem.id + '/adjust'" method="POST">
+                                @csrf
+                                <div class="mb-4 bg-gray-50 p-4 rounded-lg border">
+                                    <p class="text-sm">Ajustando LPN: <strong class="font-mono text-indigo-600" x-text="selectedLpnItem.pallet.lpn"></strong></p>
+                                    <div class="mt-2 pt-2 border-t text-sm">
+                                        <p>Cantidad Actual en LPN: <strong x-text="selectedLpnItem.quantity"></strong></p>
+                                        <p>Para corregir la discrepancia, la nueva cantidad sugerida es:</p>
+                                        <p class="text-3xl font-bold text-center text-green-600 my-2" x-text="adjustmentAmount"></p>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <input type="hidden" name="new_quantity" :value="adjustmentAmount">
-                            
-                            <div class="mt-4"><label for="reason" class="block font-medium">Motivo del Ajuste</label><textarea name="reason" id="reason" rows="3" class="w-full rounded-md border-gray-300 mt-1" required>Ajuste por discrepancia en Conteo Cíclico.</textarea></div>
-                            
-                            <div class="px-6 py-4 bg-gray-50 -mx-6 -mb-6 mt-6 flex justify-end gap-4 rounded-b-2xl">
-                                <button type="button" @click="selectedLpnItem = null" class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg">&larr; Volver a Seleccionar</button>
-                                <button type="submit" class="px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg">Guardar Ajuste</button>
-                            </div>
-                        </form>
-                    </div>
+                                <input type="hidden" name="new_quantity" :value="adjustmentAmount">
+                                <div class="mt-4"><label for="reason" class="block font-medium">Motivo del Ajuste</label><textarea name="reason" id="reason" rows="3" class="w-full rounded-md border-gray-300 mt-1" required>Ajuste por discrepancia en Conteo Cíclico.</textarea></div>
+                                <div class="px-6 py-4 bg-gray-50 -mx-6 -mb-6 mt-6 flex justify-end gap-4 rounded-b-2xl">
+                                    <button type="button" @click="selectedLpnItem = null" class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg">&larr; Volver a Seleccionar</button>
+                                    <button type="submit" class="px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg">Guardar Ajuste</button>
+                                </div>
+                            </form>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>

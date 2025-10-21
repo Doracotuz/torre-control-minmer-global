@@ -109,6 +109,11 @@ class WMSLocationController extends Controller
                         ->with('success', 'Ubicación creada. Código asignado: ' . $validatedData['code']);
     }
 
+    public function show(Location $location) 
+    {
+        return view('wms.locations.show', compact('location'));
+    }   
+
     public function edit(Location $location)
     {
         $warehouses = Warehouse::orderBy('name')->get();

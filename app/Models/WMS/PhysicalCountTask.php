@@ -20,6 +20,7 @@ class PhysicalCountTask extends Model
         'location_id',
         'expected_quantity',
         'status',
+        'pallet_id',
     ];
 
     /**
@@ -55,5 +56,10 @@ class PhysicalCountTask extends Model
             default => ucfirst($this->status),
         };
     }
+
+    public function pallet()
+    {
+        return $this->belongsTo(\App\Models\WMS\Pallet::class);
+    }    
 
 }

@@ -110,8 +110,13 @@
             <tr><th>Categoría</th><td>{{ $assignment->asset->model->category->name }}</td></tr>
             <tr><th>Modelo</th><td>{{ $assignment->asset->model->manufacturer->name }} {{ $assignment->asset->model->name }}</td></tr>
             <tr><th>Número de Serie</th><td>{{ $assignment->asset->serial_number }}</td></tr>
+            @if($assignment->asset->notes)
+            <tr>
+                <th>Notas Adicionales</th>
+                <td>{{ $assignment->asset->notes }}</td>
+            </tr>
+            @endif            
             
-            {{-- --- CAMBIO: Se reinserta la Ubicación Asignada --- --}}
             <tr>
                 <th>Ubicación Asignada</th>
                 <td>

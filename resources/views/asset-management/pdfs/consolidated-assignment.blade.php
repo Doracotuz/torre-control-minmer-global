@@ -147,6 +147,11 @@
                                 @if($asset->phone_number) <br><strong>Tel:</strong> {{ $asset->phone_number }} ({{ $asset->phone_plan_type ?? 'N/A' }}) @endif
                             </p>
                         @endif
+                        @if($asset->notes)
+                            <p style="border-top: 1px dashed #ddd; padding-top: 4px; margin-top: 4px;">
+                                <strong>Notas:</strong> {{ $asset->notes }}
+                            </p>
+                        @endif                        
                         @if($asset->softwareAssignments->isNotEmpty())
                             <p style="border-top: 1px dashed #ddd; padding-top: 4px; margin-top: 4px;"><strong>Software:</strong></p>
                             <ul>
@@ -202,6 +207,36 @@
                 </div>
             </div>
         </div>
+
+        <div style="margin-top: 40px; border-top: 2px dashed #ccc; padding-top: 20px; page-break-inside: avoid;">
+            <h2>Acta de Devolución Consolidada de Activos</h2>
+            <p style="text-align: justify;">
+                "EL COLABORADOR" hace entrega a "LA EMPRESA" de los equipos descritos en la presente acta, dando por finalizada la responsiva sobre los mismos. Los activos se reciben para su revisión y validación de estado.
+                <br><br>
+                Fecha de Devolución: ______ / _______________ / ______
+            </p>
+            <div class="signatures">
+                <div class="signature-box">
+                    <div class="signature-line">
+                        <strong>Entrega de Conformidad</strong><br>
+                        {{ $member->name }}
+                    </div>
+                </div>
+                <div class="signature-box">
+                    <div class="signature-line">
+                        <strong>Recibe</strong><br>
+                        Departamento de TI
+                    </div>
+                </div>
+                 <div class="signature-box">
+                    <div class="signature-line">
+                        <strong>Vo. Bo.</strong><br>
+                        Recursos Humanos
+                    </div>
+                </div>
+            </div>
+        </div>        
+
     </main>
 </body>
 </html>

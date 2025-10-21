@@ -12,6 +12,7 @@
                     <tr>
                         <th class="px-6 py-3 text-left">Nombre</th><th class="px-6 py-3 text-left">Tipo</th>
                         <th class="px-6 py-3 text-left">Estatus</th><th class="px-6 py-3 text-left">Creado por</th>
+                        <th class="px-6 py-3 text-left">Asignado a</th>
                         <th class="px-6 py-3 text-right">Acciones</th>
                     </tr>
                 </thead>
@@ -22,6 +23,7 @@
                             <td class="px-6 py-4">{{ $session->type }}</td>
                             <td class="px-6 py-4">{{ $session->status }}</td>
                             <td class="px-6 py-4">{{ $session->user->name }}</td>
+                            <td class="px-6 py-4">{{ $session->assignedUser->name ?? 'N/A' }}</td>
                             <td class="px-6 py-4 text-right"><a href="{{ route('wms.physical-counts.show', $session) }}" class="text-indigo-600">Ver Dashboard</a></td>
                         </tr>
                     @endforeach

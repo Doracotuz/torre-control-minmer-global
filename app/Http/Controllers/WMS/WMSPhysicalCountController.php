@@ -5,6 +5,8 @@ use App\Http\Controllers\Controller;
 use App\Models\WMS\PhysicalCountSession;
 use App\Models\WMS\PhysicalCountTask;
 use App\Models\WMS\InventoryStock;
+use App\Models\Location;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,60 +16,123 @@ class WMSPhysicalCountController extends Controller
 {
     public function index()
     {
-        $sessions = PhysicalCountSession::with('user')->latest()->paginate(15);
+        $query = PhysicalCountSession::with(['user', 'assignedUser'])->latest();
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('assigned_user_id', Auth::id());
+        }
+
+        $sessions = $query->paginate(15);
         return view('wms.physical-counts.index', compact('sessions'));
     }
 
     public function create()
     {
-        return view('wms.physical-counts.create');
+        $users = User::where('is_client', false)->orderBy('name')->get();
+        return view('wms.physical-counts.create', compact('users'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|in:cycle,full',
+            'type' => 'required|in:cycle,full,dirigido',
+            'assigned_user_id' => 'required|exists:users,id',
+            'locations_file' => 'required_if:type,dirigido|file|mimes:csv,txt',
         ]);
 
         DB::beginTransaction();
         try {
-            $session = PhysicalCountSession::create([
-                'name' => $validated['name'],
-                'type' => $validated['type'],
-                'user_id' => Auth::id(),
-            ]);
+            $session = PhysicalCountSession::create($validated + ['user_id' => Auth::id()]);
 
-            // Lógica para generar tareas de conteo
-            // Simplificado: contaremos todo el inventario
-            $stocksToCount = InventoryStock::where('quantity', '>', 0)->get();
+            if ($validated['type'] === 'dirigido') {
+                
+                // --- INICIO DE LA CORRECCIÓN ---
+                $file = $request->file('locations_file');
+                $csvData = array_map('str_getcsv', file($file->getRealPath()));
+                
+                // 1. Ignoramos la primera fila (la cabecera) del archivo
+                array_shift($csvData); 
 
-            foreach ($stocksToCount as $stock) {
-                $session->tasks()->create([
-                    'product_id' => $stock->product_id,
-                    'location_id' => $stock->location_id,
-                    'expected_quantity' => $stock->quantity,
-                ]);
+                $locationCodes = collect($csvData)->flatten()->map('trim')->filter()->unique();
+
+                if ($locationCodes->isEmpty()) {
+                    throw new \Exception("El archivo CSV no contiene códigos de ubicación válidos después de la cabecera.");
+                }
+
+                $locations = Location::whereIn('code', $locationCodes)->with('pallets.items')->get();
+
+                // 2. Verificamos si se encontró al menos una ubicación
+                if ($locations->isEmpty()) {
+                    throw new \Exception("Ninguna de las ubicaciones especificadas en el archivo CSV fue encontrada en el sistema.");
+                }
+                // --- FIN DE LA CORRECCIÓN ---
+
+                foreach ($locations as $location) {
+                    foreach ($location->pallets as $pallet) {
+                        foreach ($pallet->items as $item) {
+                            $session->tasks()->create([
+                                'pallet_id' => $pallet->id, 'location_id' => $location->id,
+                                'product_id' => $item->product_id, 'expected_quantity' => $item->quantity,
+                            ]);
+                        }
+                    }
+                }
+
+            } else {
+                // Lógica para 'cycle' y 'full' (se mantiene igual)
+                $palletsToCount = \App\Models\WMS\Pallet::where('status', 'Finished')->with('items')->whereHas('items')->get();
+                foreach ($palletsToCount as $pallet) {
+                    foreach ($pallet->items as $item) {
+                        $session->tasks()->create([
+                            'pallet_id' => $pallet->id, 'location_id' => $pallet->location_id,
+                            'product_id' => $item->product_id, 'expected_quantity' => $item->quantity,
+                        ]);
+                    }
+                }
             }
 
             DB::commit();
-            return redirect()->route('wms.physical-counts.show', $session)->with('success', 'Sesión de conteo creada. Se han generado las tareas.');
+            return redirect()->route('wms.physical-counts.show', $session)->with('success', 'Sesión de conteo creada y tareas generadas.');
+            
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error al crear la sesión: ' . $e->getMessage());
         }
     }
 
+    // --- NUEVO MÉTODO PARA DESCARGAR LA PLANTILLA CSV ---
+    public function downloadTemplate()
+    {
+        $headers = ['Content-type' => 'text/csv', 'Content-Disposition' => 'attachment; filename=plantilla_conteo_dirigido.csv'];
+        $columns = ['location_code'];
+
+        $callback = function() use ($columns) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, $columns);
+            fclose($file);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
     public function show(PhysicalCountSession $physicalCount)
     {
-        // Renombramos la variable para claridad
-        $session = $physicalCount->load(['user', 'tasks.product', 'tasks.location', 'tasks.records']);
+        $session = $physicalCount->load([
+            'user', 
+            'assignedUser',
+            'tasks.product', 
+            'tasks.location', 
+            'tasks.pallet',
+            'tasks.records'
+        ]);
+        
         return view('wms.physical-counts.show', compact('session'));
     }
 
     public function showCountTask(PhysicalCountTask $task)
     {
-        $task->load(['product', 'location']);
+        $task->load(['product', 'location', 'pallet']); 
         return view('wms.physical-counts.perform-task', compact('task'));
     }
 

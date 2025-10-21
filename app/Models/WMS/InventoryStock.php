@@ -41,4 +41,10 @@ class InventoryStock extends Model
     {
         return $this->belongsTo(\App\Models\WMS\Quality::class);
     }
+
+    public function pallet()
+    {
+        return $this->belongsTo(Pallet::class);
+    }
+
 }

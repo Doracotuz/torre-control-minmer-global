@@ -754,7 +754,7 @@ document.addEventListener('alpine:init', () => {
                                         <span class="nav-text">{{ __('Proyectos') }}</span>
                                     </x-nav-link>  
                                 @endcan
-                                @if (!Auth::user()->is_client)
+                                @if (Auth::check() && !Auth::user()->is_client && in_array(Auth::user()->area?->name, ['Administración', 'Almacén']))
                                     <div x-data="{ isOpen: {{ request()->routeIs('wms.*') ? 'true' : 'false' }} }">
                                         {{-- Botón principal que abre el submenú --}}
                                         <button @click="isOpen = !isOpen" class="dropdown-toggle w-full flex justify-between items-center text-left nav-link-custom {{ request()->routeIs('wms.*') ? 'active-link' : '' }}">

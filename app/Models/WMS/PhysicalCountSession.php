@@ -17,7 +17,8 @@ class PhysicalCountSession extends Model
         'name',
         'type',
         'user_id',
-        'status', // Es buena práctica incluir también el status si lo manejas
+        'status',
+        'assigned_user_id',
     ];
 
     /**
@@ -35,4 +36,10 @@ class PhysicalCountSession extends Model
     {
         return $this->hasMany(PhysicalCountTask::class);
     }
+
+    public function assignedUser()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'assigned_user_id');
+    }
+
 }

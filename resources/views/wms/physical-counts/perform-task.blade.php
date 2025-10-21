@@ -10,9 +10,17 @@
                     @csrf
                     <div class="p-8">
                         <div class="text-center">
-                            <p class="text-sm font-medium text-gray-500">UBICACIÓN</p>
-                            <p class="text-4xl font-mono font-bold text-indigo-600 bg-indigo-50 rounded-lg py-2 my-2">
-                                {{ $task->location->code }}
+                            <p class="text-sm font-medium text-gray-500">UBICACIÓN A CONTAR</p>
+                            <p class="text-4xl font-mono font-bold text-gray-800 bg-gray-50 rounded-lg py-2 my-2">
+                                {{ $task->location->aisle }}-{{ $task->location->rack }}-{{ $task->location->shelf }}-{{ $task->location->bin }}
+                            </p>
+                        </div>
+
+                        {{-- NUEVA SECCIÓN PARA MOSTRAR EL LPN --}}
+                        <div class="text-center mt-4">
+                            <p class="text-sm font-medium text-gray-500">TARIMA (LPN)</p>
+                            <p class="text-2xl font-mono font-bold text-indigo-600 bg-indigo-50 rounded-lg py-2 my-2">
+                                {{ $task->pallet->lpn ?? 'N/A' }}
                             </p>
                         </div>
 
