@@ -1,5 +1,6 @@
 @php
     $svgIcons = [
+        'Impresora' => 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2c3856" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>'),
         'Laptop' => 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2c3856" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="20" x2="22" y2="20"></line></svg>'),
         'Celular' => 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2c3856" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>'),
         'Desktop' => 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2c3856" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>'),
@@ -17,7 +18,12 @@
     <meta charset="UTF-8">
     <title>Carta Responsiva Consolidada de Activos</title>
     <style>
-        @page { margin: 1.8cm; }
+        @page {
+        margin-top: 0.7cm;
+        margin-right: 1.8cm;
+        margin-bottom: 1.8cm;
+        margin-left: 1.8cm;
+        }
         :root {
             --color-primary: #2c3856;
             --color-accent: #ff9c00;
@@ -33,7 +39,7 @@
         
         #header { border-bottom: 2px solid var(--color-primary); padding-bottom: 12px; margin-bottom: 20px; }
         #header table { width: 100%; }
-        #header .logo { width: 130px; }
+        #header .logo { width: 160px; }
         #header .doc-info { text-align: right; vertical-align: bottom; }
         .doc-title { font-size: 20px; font-weight: bold; color: var(--color-primary); margin: 0; letter-spacing: 1px; text-transform: uppercase; }
         .doc-subtitle { font-size: 10px; margin: 2px 0 8px 0; color: var(--color-secondary); }
@@ -90,7 +96,6 @@
         <table>
             <tr>
                 <td style="width: 50%;">
-                    {{-- CAMBIO: El logo se ha restaurado --}}
                     @if(isset($logoBase64)) <img src="{{ $logoBase64 }}" alt="Logo" class="logo"> @endif
                 </td>
                 <td style="width: 50%;" class="doc-info">
@@ -117,35 +122,51 @@
                 </tr>
             </thead>
             <tbody>
-            @foreach($assignments as $assignment)
-                @php
-                    $asset = $assignment->asset;
-                    $categoryName = $asset->model->category->name;
-                    $iconSvg = collect($svgIcons)->first(fn($svg, $key) => str_contains($categoryName, $key)) ?? $svgIcons['default'];
-                @endphp
+            @if(isset($assignments) && !$assignments->isEmpty())
+                @foreach($assignments as $assignment)
+                    @php
+                        $asset = $assignment->asset;
+                        $categoryName = $asset->model->category->name;
+                        $iconSvg = collect($svgIcons)->first(fn($svg, $key) => str_contains($categoryName, $key)) ?? $svgIcons['default'];
+                    @endphp
+                    <tr>
+                        <td>
+                            <div class="asset-main-line"><img src="{{ $iconSvg }}" class="asset-icon" alt="">{{ $categoryName }}</div>
+                            <div class="asset-sub-line">{{ $asset->model->manufacturer->name }} {{ $asset->model->name }}</div>
+                        </td>
+                        <td class="details-compact">
+                            <strong>Tag:</strong> {{ $asset->asset_tag }} | <strong>Serie:</strong> {{ $asset->serial_number ?? 'N/A' }}
+                            @if($asset->cpu || $asset->ram || $asset->storage)
+                                <br><strong>Specs:</strong> {{ $asset->cpu }} / {{ $asset->ram }} / {{ $asset->storage }}
+                            @endif
+                            @if($asset->mac_address)
+                                <br><strong>MAC:</strong> {{ $asset->mac_address }}
+                            @endif
+                            @if($asset->phone_number)
+                                <br><strong>Tel:</strong> {{ $asset->phone_number }} ({{ $asset->phone_plan_type ?? 'N/A' }})
+                            @endif
+                            @if($asset->notes)
+                                <br><strong>Notas:</strong> {{ $asset->notes }}
+                            @endif
+                        </td>
+                        <td style="text-align: center; font-size: 9px; color: var(--color-primary);">{{ \Carbon\Carbon::parse($assignment->assignment_date)->isoFormat('L') }}</td>
+                    </tr>
+                @endforeach
+            @else
+                {{-- Fila de ejemplo por si no hay datos dinámicos --}}
                 <tr>
                     <td>
-                        <div class="asset-main-line"><img src="{{ $iconSvg }}" class="asset-icon" alt="">{{ $categoryName }}</div>
-                        <div class="asset-sub-line">{{ $asset->model->manufacturer->name }} {{ $asset->model->name }}</div>
+                        <div class="asset-main-line"><img src="{{ $svgIcons['Laptop'] }}" class="asset-icon" alt="">Laptop</div>
+                        <div class="asset-sub-line">HP EliteBook 840 G8</div>
                     </td>
                     <td class="details-compact">
-                        <strong>Tag:</strong> {{ $asset->asset_tag }} | <strong>Serie:</strong> {{ $asset->serial_number ?? 'N/A' }}
-                        @if($asset->cpu || $asset->ram || $asset->storage)
-                            <br><strong>Specs:</strong> {{ $asset->cpu }} / {{ $asset->ram }} / {{ $asset->storage }}
-                        @endif
-                        @if($asset->mac_address)
-                            <br><strong>MAC:</strong> {{ $asset->mac_address }}
-                        @endif
-                        @if($asset->phone_number)
-                            <br><strong>Tel:</strong> {{ $asset->phone_number }} ({{ $asset->phone_plan_type ?? 'N/A' }})
-                        @endif
-                        @if($asset->notes)
-                            <br><strong>Notas:</strong> {{ $asset->notes }}
-                        @endif
+                        <strong>Tag:</strong> A-MGS-LP-C001 | <strong>Serie:</strong> 5CG123456
+                        <br><strong>Specs:</strong> Intel Core i7 / 16 GB / 512 GB SSD
+                        <br><strong>Notas:</strong> Incluye cargador original.
                     </td>
-                    <td style="text-align: center; font-size: 9px; color: var(--color-primary);">{{ \Carbon\Carbon::parse($assignment->assignment_date)->isoFormat('L') }}</td>
+                    <td style="text-align: center; font-size: 9px; color: var(--color-primary);">{{ \Carbon\Carbon::now()->isoFormat('L') }}</td>
                 </tr>
-            @endforeach
+            @endif
             </tbody>
         </table>
 
@@ -156,7 +177,7 @@
                     <li><strong>Propiedad y Uso:</strong> Los activos son propiedad de la empresa y para uso exclusivamente laboral.</li>
                     <li><strong>Deber de Cuidado:</strong> Es mi responsabilidad custodiar el equipo y reportar fallas a TI.</li>
                     <li><strong>Responsabilidad Financiera:</strong> Asumiré el costo por negligencia, mal uso o pérdida.</li>
-                    <li><strong>En caso de robo:</strong> EL COLABORADOR está obligado a presentar la denuncia formal a las autoridades correspondientes, notificar y presentar la documentación entregada por la autoridad a LA EMPRESA para la gestión de un nuevo equipo.</li>
+                    <li><strong>En caso de robo:</strong> El colaborador está obligado a presentar la denuncia formal a las autoridades correspondientes, notificar y presentar la documentación entregada por la autoridad a la empresa para la gestión de un nuevo equipo.</li>
                     <li><strong>Devolución:</strong> Al finalizar mi relación laboral, devolveré todos los activos en un plazo de 48 horas.</li>
                 </ul>
             </div>
