@@ -72,8 +72,38 @@ class WMSInventoryController extends Controller
             });
         }
 
+        // --- INICIO DE LA MODIFICACIÓN: LÓGICA PARA "COMPROMETIDO" ---
+
+        // 1. Obtener todos los items de las tarimas paginadas
+        $allPalletItems = $pallets->pluck('items')->flatten();
+
+        // 2. Recolectar los IDs únicos de ubicación, producto y calidad de las tarimas
+        $locationIds = $pallets->pluck('location_id')->unique();
+        $productIds = $allPalletItems->pluck('product_id')->unique();
+        $qualityIds = $allPalletItems->pluck('quality_id')->unique();
+
+        // 3. Consultar la tabla InventoryStock para esos IDs
+        // Esto nos trae el stock consolidado (incluyendo 'committed_quantity') 
+        // para las ubicaciones/productos/calidades que estamos viendo.
+        $stockData = \App\Models\WMS\InventoryStock::whereIn('location_id', $locationIds)
+            ->whereIn('product_id', $productIds)
+            ->whereIn('quality_id', $qualityIds)
+            ->get();
+
+        // 4. Mapear los resultados en un array fácil de usar para la vista
+        // La clave será "product_id-quality_id-location_id"
+        $committedStock = [];
+        foreach ($stockData as $stock) {
+            $key = $stock->product_id . '-' . $stock->quality_id . '-' . $stock->location_id;
+            // Nos aseguramos de sumar por si hay algún dato (no debería, pero es seguro)
+            $committedStock[$key] = ($committedStock[$key] ?? 0) + ($stock->committed_quantity ?? 0);
+        }
+
+        // --- FIN DE LA MODIFICACIÓN ---
+
+
         // --- KPIs Ampliados ---
-    $kpis = [
+        $kpis = [
             'total_pallets' => \App\Models\WMS\Pallet::where('status', 'Finished')->count(),
             'total_units' => \App\Models\WMS\InventoryStock::sum('quantity'),
             'total_skus' => \App\Models\WMS\InventoryStock::where('quantity', '>', 0)->distinct('product_id')->count(),
@@ -81,7 +111,8 @@ class WMSInventoryController extends Controller
         ];
         $qualities = \App\Models\WMS\Quality::orderBy('name')->get();
 
-        return view('wms.inventory.index', compact('pallets', 'kpis', 'qualities'));
+        // 5. Pasar el nuevo array a la vista
+        return view('wms.inventory.index', compact('pallets', 'kpis', 'qualities', 'committedStock'));
     }
 
     public function createTransfer()

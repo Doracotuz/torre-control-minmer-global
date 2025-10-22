@@ -24,7 +24,7 @@
     </x-slot>
 
     <div class="py-12" x-data="inventoryPage('{{ session('open_adjustment_modal_for_item') }}')">
-        <div class="max-w-screen-xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-screen-2xl mx-auto sm:px-6 lg:px-8">
             
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-2xl shadow-lg border"><div><span class="text-sm font-medium text-gray-500">Tarimas Totales</span><p class="text-3xl font-bold text-gray-800">{{ number_format($kpis['total_pallets']) }}</p></div></div>
@@ -57,6 +57,7 @@
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Origen (PO) / Pedimento</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Contenido</th>
                                 <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Cantidad</th>
+                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Comprometido</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Recibido</th>
                                 <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Acciones</th>
                             </tr>
@@ -68,6 +69,12 @@
                                     @if ($loop->first)<td class="px-4 py-4 align-top" rowspan="{{ $pallet->items->count() }}"><p class="font-mono font-bold text-indigo-600">{{ $pallet->lpn }}</p><p class="text-sm text-gray-800"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i> {{ $pallet->location ? "{$pallet->location->aisle}-{$pallet->location->rack}-{$pallet->location->shelf}-{$pallet->location->bin}" : 'N/A' }}</p></td><td class="px-4 py-4 align-top" rowspan="{{ $pallet->items->count() }}"><p class="font-mono">{{ $pallet->purchaseOrder->po_number ?? 'N/A' }}</p><p class="text-xs text-gray-500 font-mono">{{ $pallet->purchaseOrder->pedimento_a4 ?? 'N/A' }}</p></td>@endif
                                     <td class="px-4 py-4"><p class="font-semibold text-gray-900 text-sm">{{ $item->product->name ?? 'N/A' }}</p><p class="text-xs text-gray-500"><span class="font-mono">{{ $item->product->sku ?? '' }}</span> | {{ $item->quality->name ?? '' }}</p></td>
                                     <td class="px-4 py-4 text-center text-lg font-bold text-gray-900">{{ $item->quantity }}</td>
+                                    <td class="px-2 py-4 text-center whitespace-nowrap text-sm text-red-600">
+                                        @php
+                                            $key = $item->product_id . '-' . $item->quality_id . '-' . $pallet->location_id;
+                                        @endphp
+                                        {{ $committedStock[$key] ?? 0 }}
+                                    </td>                     
                                     @if ($loop->first)<td class="px-4 py-4 text-sm align-top" rowspan="{{ $pallet->items->count() }}"><p>{{ $pallet->user->name ?? 'N/A' }}</p><p class="text-gray-500 text-xs">{{ $pallet->updated_at->format('d/m/Y') }}</p></td><td class="px-4 py-4 text-center align-top" rowspan="{{ $pallet->items->count() }}"><button @click="openModal({{ json_encode($pallet) }})" class="text-indigo-600 hover:text-indigo-900" title="Ver Detalle Completo"><i class="fas fa-eye fa-lg"></i></button></td>@endif
                                 </tr>
                                 @endforeach

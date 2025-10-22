@@ -40,9 +40,10 @@ class WMSPickingController extends Controller
 
                 $pickListItems[] = [
                     'product_id' => $line->product_id,
-                    'pallet_id' => $palletItem->pallet_id, // <-- Guardamos el pallet específico
+                    'pallet_id' => $palletItem->pallet_id,
                     'location_id' => $palletItem->pallet->location_id,
                     'quantity_to_pick' => $line->quantity_ordered,
+                    'quality_id' => $palletItem->quality_id,
                 ];
             }
 
