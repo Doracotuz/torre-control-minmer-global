@@ -104,7 +104,7 @@
 
     <main>
         <p style="font-size: 10px; text-align: justify;">
-            Por medio del presente, se formaliza la entrega de los activos de Tecnologías de la Información (TI) propiedad de <strong>Estrategias y Soluciones Minmer Global</strong>, los cuales se detallan a continuación. El colaborador receptor se compromete a cumplir con las políticas de uso, cuidado y devolución estipuladas.
+            Por medio del presente, se formaliza la entrega de los activos de Tecnologías de la Información (TI) propiedad de <strong>Estrategias y Soluciones Minmer PC33</strong>, los cuales se detallan a continuación. El colaborador receptor se compromete a cumplir con las políticas de uso, cuidado y devolución estipuladas.
         </p>
         
         <h2>Listado de Activos Asignados</h2>
