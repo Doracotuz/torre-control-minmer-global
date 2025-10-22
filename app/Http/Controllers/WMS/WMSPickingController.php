@@ -109,6 +109,7 @@ class WMSPickingController extends Controller
                 // 2. Descontar del Inventario Específico (el pallet real)
                 $palletItem = \App\Models\WMS\PalletItem::where('pallet_id', $item->pallet_id)
                     ->where('product_id', $item->product_id)
+                    ->where('quality_id', $item->quality_id) // <-- AÑADIR ESTA LÍNEA
                     ->first();
 
                 if ($palletItem) {
