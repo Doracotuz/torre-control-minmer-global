@@ -23,16 +23,13 @@ class WMSInventoryController extends Controller
 {
     public function index(Request $request)
     {
-        // Carga de relaciones optimizada
         $query = \App\Models\WMS\Pallet::query()
             ->with([
                 'purchaseOrder:id,po_number,container_number,operator_name,download_start_time,pedimento_a4,pedimento_g1',
-                'location', // Carga el modelo completo de ubicación
-                'user:id,name', 'items.product', 'items.quality'
+                'location', 'user:id,name', 'items.product', 'items.quality'
             ])
             ->where('status', 'Finished');
 
-        // --- Filtros ---
         if ($request->filled('lpn')) { $query->where('lpn', 'like', '%' . $request->lpn . '%'); }
         if ($request->filled('po_number')) { $query->whereHas('purchaseOrder', fn($q) => $q->where('po_number', 'like', '%' . $request->po_number . '%')); }
         if ($request->filled('sku')) { $query->whereHas('items.product', fn($q) => $q->where('sku', 'like', '%' . $request->sku . '%')); }
@@ -51,12 +48,32 @@ class WMSInventoryController extends Controller
         
         $pallets = $query->latest('updated_at')->paginate(25)->withQueryString();
 
-        // 3. Cargar manualmente la información del 'latestArrival' para evitar errores de SQL
-        // Obtenemos los IDs de las órdenes de compra de las tarimas en la página actual
-        $purchaseOrderIds = $pallets->pluck('purchaseOrder.id')->filter()->unique();
+        $palletItems = $pallets->pluck('items')->flatten();
+        $locationIds = $pallets->pluck('location_id')->unique();
+        $productIds = $palletItems->pluck('product_id')->unique();
+        $qualityIds = $palletItems->pluck('quality_id')->unique();
 
+        $stockData = \App\Models\WMS\InventoryStock::whereIn('location_id', $locationIds)
+            ->whereIn('product_id', $productIds)
+            ->whereIn('quality_id', $qualityIds)
+            ->get();
+
+        $stockLedger = [];
+        foreach ($stockData as $stock) {
+            $key = $stock->product_id . '-' . $stock->quality_id . '-' . $stock->location_id;
+            $stockLedger[$key] = [
+                'quantity' => $stock->quantity,
+                'committed' => $stock->committed_quantity,
+                'available' => $stock->quantity - $stock->committed_quantity,
+            ];
+        }
+        
+        // --- FIN DE MODIFICACIÓN ---
+
+
+        // 3. Cargar manualmente la información del 'latestArrival' ...
+        $purchaseOrderIds = $pallets->pluck('purchaseOrder.id')->filter()->unique();
         if ($purchaseOrderIds->isNotEmpty()) {
-            // Ejecutamos una sola consulta para encontrar el último arribo de CADA orden
             $latestArrivals = \App\Models\WMS\DockArrival::whereIn('id', function($query) use ($purchaseOrderIds) {
                 $query->selectRaw('max(id)')
                     ->from('dock_arrivals')
@@ -64,43 +81,12 @@ class WMSInventoryController extends Controller
                     ->groupBy('purchase_order_id');
             })->get()->keyBy('purchase_order_id');
 
-            // Manualmente "adjuntamos" cada arribo a su orden de compra correspondiente dentro de cada tarima
             $pallets->each(function($pallet) use ($latestArrivals) {
                 if ($pallet->purchaseOrder) {
                     $pallet->purchaseOrder->setRelation('latestArrival', $latestArrivals->get($pallet->purchaseOrder->id));
                 }
             });
         }
-
-        // --- INICIO DE LA MODIFICACIÓN: LÓGICA PARA "COMPROMETIDO" ---
-
-        // 1. Obtener todos los items de las tarimas paginadas
-        $allPalletItems = $pallets->pluck('items')->flatten();
-
-        // 2. Recolectar los IDs únicos de ubicación, producto y calidad de las tarimas
-        $locationIds = $pallets->pluck('location_id')->unique();
-        $productIds = $allPalletItems->pluck('product_id')->unique();
-        $qualityIds = $allPalletItems->pluck('quality_id')->unique();
-
-        // 3. Consultar la tabla InventoryStock para esos IDs
-        // Esto nos trae el stock consolidado (incluyendo 'committed_quantity') 
-        // para las ubicaciones/productos/calidades que estamos viendo.
-        $stockData = \App\Models\WMS\InventoryStock::whereIn('location_id', $locationIds)
-            ->whereIn('product_id', $productIds)
-            ->whereIn('quality_id', $qualityIds)
-            ->get();
-
-        // 4. Mapear los resultados en un array fácil de usar para la vista
-        // La clave será "product_id-quality_id-location_id"
-        $committedStock = [];
-        foreach ($stockData as $stock) {
-            $key = $stock->product_id . '-' . $stock->quality_id . '-' . $stock->location_id;
-            // Nos aseguramos de sumar por si hay algún dato (no debería, pero es seguro)
-            $committedStock[$key] = ($committedStock[$key] ?? 0) + ($stock->committed_quantity ?? 0);
-        }
-
-        // --- FIN DE LA MODIFICACIÓN ---
-
 
         // --- KPIs Ampliados ---
         $kpis = [
@@ -111,8 +97,8 @@ class WMSInventoryController extends Controller
         ];
         $qualities = \App\Models\WMS\Quality::orderBy('name')->get();
 
-        // 5. Pasar el nuevo array a la vista
-        return view('wms.inventory.index', compact('pallets', 'kpis', 'qualities', 'committedStock'));
+        // 4. Pasar el nuevo mapa $stockLedger a la vista
+        return view('wms.inventory.index', compact('pallets', 'kpis', 'qualities', 'stockLedger'));
     }
 
     public function createTransfer()
@@ -197,30 +183,62 @@ class WMSInventoryController extends Controller
             "Expires"             => "0"
         ];
 
-    $callback = function() use ($request) {
+        $callback = function() use ($request) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM para acentos
 
-            // --- Encabezados Exhaustivos ---
+            // --- Encabezados Exhaustivos (CON NUEVAS COLUMNAS) ---
             fputcsv($file, [
                 'ID_Tarima', 'LPN', 'Estado_Tarima', 'Fecha_Recepcion', 'Usuario_Receptor',
                 'Ubicacion_Codigo', 'Ubicacion_Pasillo', 'Ubicacion_Rack', 'Ubicacion_Nivel', 'Ubicacion_Bin',
                 'N_Orden_Compra', 'Estado_Orden', 'Fecha_Esperada_Orden', 'Contenedor', 'Factura', 'Pedimento_A4', 'Pedimento_G1',
                 'Fecha_Arribo_Vehiculo', 'Fecha_Salida_Vehiculo', 'Operador_Vehiculo',
-                'SKU', 'Producto', 'Calidad', 'Piezas_Por_Caja', 'Cantidad_Recibida_Piezas', 'Cantidad_Recibida_Cajas',
+                'SKU', 'Producto', 'Calidad', 'Piezas_Por_Caja', 
+                'Cantidad_en_Pallet', // <-- NOMBRE CAMBIADO
+                'Comprometido (Locacion)', // <-- NUEVA COLUMNA
+                'Disponible (Locacion)', // <-- NUEVA COLUMNA
+                'Cantidad_Recibida_Cajas',
             ]);
 
-            // Procesamiento por lotes para manejar +100,000 filas
+            // Procesamiento por lotes
             \App\Models\WMS\Pallet::query()
                 ->with(['purchaseOrder', 'location', 'user', 'items.product', 'items.quality'])
                 ->where('status', 'Finished')
                 ->when($request->filled('lpn'), fn($q) => $q->where('lpn', 'like', '%' . $request->lpn . '%'))
                 // ... (resto de filtros replicados)
                 ->chunk(500, function ($pallets) use ($file) {
+                    
+                    // --- INICIO DE MODIFICACIÓN: OBTENER STOCK PARA EL CHUNK ---
+                    $palletItems = $pallets->pluck('items')->flatten();
+                    $locationIds = $pallets->pluck('location_id')->unique();
+                    $productIds = $palletItems->pluck('product_id')->unique();
+                    $qualityIds = $palletItems->pluck('quality_id')->unique();
+
+                    $stockData = \App\Models\WMS\InventoryStock::whereIn('location_id', $locationIds)
+                        ->whereIn('product_id', $productIds)
+                        ->whereIn('quality_id', $qualityIds)
+                        ->get();
+
+                    $stockLedger = [];
+                    foreach ($stockData as $stock) {
+                        $key = $stock->product_id . '-' . $stock->quality_id . '-' . $stock->location_id;
+                        $stockLedger[$key] = [
+                            'committed' => $stock->committed_quantity,
+                            'available' => $stock->quantity - $stock->committed_quantity,
+                        ];
+                    }
+                    // --- FIN DE MODIFICACIÓN ---
+
                     foreach ($pallets as $pallet) {
                         foreach ($pallet->items as $item) {
                             $piecesPerCase = $item->product->pieces_per_case > 0 ? $item->product->pieces_per_case : 1;
                             $casesReceived = ceil($item->quantity / $piecesPerCase);
+
+                            // Buscar los datos del ledger
+                            $key = $item->product_id . '-' . $item->quality_id . '-' . $pallet->location_id;
+                            $stock = $stockLedger[$key] ?? ['committed' => 0, 'available' => 0];
+                            $comprometido = $stock['committed'];
+                            $disponible = $stock['available'];
 
                             fputcsv($file, [
                                 $pallet->id, $pallet->lpn, $pallet->status, $pallet->updated_at->format('Y-m-d H:i:s'), $pallet->user->name ?? 'N/A',
@@ -231,7 +249,11 @@ class WMSInventoryController extends Controller
                                 $pallet->purchaseOrder->download_end_time ? \Carbon\Carbon::parse($pallet->purchaseOrder->download_end_time)->format('Y-m-d H:i:s') : '',
                                 $pallet->purchaseOrder->operator_name ?? '',
                                 $item->product->sku ?? 'N/A', $item->product->name ?? 'N/A', $item->quality->name ?? 'N/A',
-                                $item->product->pieces_per_case ?? 1, $item->quantity, $casesReceived,
+                                $item->product->pieces_per_case ?? 1, 
+                                $item->quantity, // Cantidad en Pallet
+                                $comprometido,   // Comprometido (Locación)
+                                $disponible,     // Disponible (Locación)
+                                $casesReceived,
                             ]);
                         }
                     }
