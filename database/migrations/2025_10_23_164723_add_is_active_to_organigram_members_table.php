@@ -12,17 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('organigram_members', function (Blueprint $table) {
-            //
+            // Añadimos la columna 'is_active', por defecto 'true' (visible)
+            $table->boolean('is_active')->default(true)->after('manager_id');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('organigram_members', function (Blueprint $table) {
-            //
+            $table->dropColumn('is_active');
         });
     }
 };

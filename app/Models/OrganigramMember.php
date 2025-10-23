@@ -21,6 +21,7 @@ class OrganigramMember extends Model
         'profile_photo_path',
         'area_id',
         'manager_id',
+        'is_active',
     ];
 
     /**
@@ -89,7 +90,7 @@ class OrganigramMember extends Model
     public function userResponsivas()
     {
         return $this->hasMany(UserResponsiva::class)->latest();
-    }    
+    }
 
     
 }

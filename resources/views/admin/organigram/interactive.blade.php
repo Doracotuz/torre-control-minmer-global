@@ -81,7 +81,6 @@
             font-weight: normal;
         }
 
-        /* --- ESTILOS DE JERARQUÍA (12 NIVELES) --- */
         .orgchart .node {
             border-left: 5px solid #e2e8f0;
         }
@@ -105,7 +104,6 @@
             background-color: #fffaf0 !important;
         }
 
-        /* Estilos para pantalla completa y modales */
         .fullscreen-modal {
             z-index: 99999 !important;
         }
@@ -114,10 +112,9 @@
         :-webkit-full-screen .fullscreen-modal,
         :-moz-full-screen .fullscreen-modal,
         :-ms-fullscreen .fullscreen-modal {
-            z-index: 2147483647 !important; /* Máximo z-index */
+            z-index: 2147483647 !important;
         }
 
-        /* Mejora para el contenedor de arrastre */
         .orgchart-container {
             cursor: grab;
             user-select: none;
@@ -320,13 +317,12 @@
             const oc = chartContainer.orgchart({
                 data: data,
                 pan: false,
-                zoom: true,
+                zoom: false,
                 direction: 't2b',
                 depth: initialDepth,
                 collapsible: true,
                 nodeContent: 'title',
                 createNode: function($node, data) {
-                    // Añadir clase de nivel jerárquico
                     if (data.hierarchy_level) {
                         $node.addClass('level-' + data.hierarchy_level);
                     }
@@ -376,10 +372,8 @@
                 }
             });
 
-            // Configurar arrastre manual para todo el contenedor
             setupManualPanning();
 
-            // Configurar eventos de botones de expansión/colapso
             chartContainer.off('click', '.oc-edge-btn');
             chartContainer.on('click', '.oc-edge-btn', function() {
                 const $button = $(this);
@@ -395,24 +389,21 @@
                 }, 350);
             });
 
-            // Ajustar el gráfico después de renderizar
             setTimeout(() => {
                 centerChart();
             }, 500);
         }
 
-        // ======================= CORRECCIÓN JAVASCRIPT 1 (Panning) =======================
-        // Configuración de arrastre manual
         function setupManualPanning() {
             let isDragging = false;
             let startX, startY;
             let initialX = currentPosition.x;
             let initialY = currentPosition.y;
-            let animationFrameId = null; // Para controlar el requestAnimationFrame
+            let animationFrameId = null;
 
             chartContainer.off('mousedown touchstart');
             chartContainer.off('mousemove touchmove');
-            $(document).off('mouseup mouseleave touchend.orgchartpan'); // Usar un namespace
+            $(document).off('mouseup mouseleave touchend.orgchartpan');
 
             chartContainer.on('mousedown touchstart', function(e) {
                 if (!$(e.target).closest('.node').length && 
@@ -425,14 +416,12 @@
                     const clientX = e.type.includes('touch') ? e.originalEvent.touches[0].clientX : e.clientX;
                     const clientY = e.type.includes('touch') ? e.originalEvent.touches[0].clientY : e.clientY;
                     
-                    // Asegurarse de leer la posición actual al iniciar
                     initialX = currentPosition.x;
                     initialY = currentPosition.y;
 
                     startX = clientX - initialX;
                     startY = clientY - initialY;
 
-                    // Cancelar cualquier frame pendiente si se inicia un nuevo arrastre
                     if (animationFrameId !== null) {
                         cancelAnimationFrame(animationFrameId);
                         animationFrameId = null;
@@ -451,32 +440,27 @@
                 currentPosition.x = clientX - startX;
                 currentPosition.y = clientY - startY;
                 
-                // Solicitar un frame de animación en lugar de actualizar el CSS directamente
                 if (animationFrameId === null) {
                     animationFrameId = requestAnimationFrame(() => {
                         updateChartPosition();
-                        animationFrameId = null; // Permitir que se solicite el siguiente frame
+                        animationFrameId = null;
                     });
                 }
                 
                 e.preventDefault();
             });
 
-            // Usar un namespace (p.ej. '.orgchartpan') para no interferir con otros listeners
             $(document).on('mouseup.orgchartpan mouseleave.orgchartpan touchend.orgchartpan', function() {
                 if (isDragging) {
                     isDragging = false;
                     chartContainer.css('cursor', 'grab');
                 }
-                // Cancelar el frame si el usuario suelta el mouse
                 if (animationFrameId !== null) {
                     cancelAnimationFrame(animationFrameId);
                     animationFrameId = null;
                 }
             });
         }
-        // ======================= FIN CORRECCIÓN JAVASCRIPT 1 =======================
-
 
         function updateChartPosition() {
             const chartElement = chartContainer.find('.orgchart');
@@ -549,7 +533,6 @@
             });
         }
 
-        // Función para aplicar zoom manualmente
         function applyZoom(scale) {
             const chartElement = chartContainer.find('.orgchart');
             if (chartElement.length === 0) return;
@@ -627,7 +610,6 @@
             }
         });
 
-        // Evento para toggle de nodos de área
         toggleAreaNodesCheckbox.on('change', function() {
             const isChecked = this.checked;
             const currentUrl = new URL(window.location.href);
@@ -640,30 +622,24 @@
             window.location.href = currentUrl.toString();
         });
 
-        // --- CONTROLES CORREGIDOS ---
-
-        // Zoom In
         $('#zoom-in-btn').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             applyZoom(currentScale * 1.2);
         });
 
-        // Zoom Out
         $('#zoom-out-btn').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             applyZoom(currentScale / 1.2);
         });
 
-        // Centrar (solo centra, no cambia zoom)
         $('#center-btn').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             centerChart();
         });
 
-        // Pantalla Completa
         $('#fullscreen-btn').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -692,8 +668,6 @@
             }
         });
 
-        // ======================= CORRECCIÓN JAVASCRIPT 2 (Fullscreen Modal) =======================
-        // Escuchar cambios de pantalla completa
         document.addEventListener('fullscreenchange', () => {
             const isFullscreen = !!document.fullscreenElement;
             const chartWrapper = $('#main-chart-wrapper');
@@ -704,8 +678,6 @@
                 $('#fullscreen-icon-enter').hide();
                 $('#fullscreen-icon-exit').show();
 
-                // Mover los modales DENTRO del wrapper que está en fullscreen
-                // para que se muestren por encima.
                 chartWrapper.append(areaModal);
                 chartWrapper.append(memberModal);
 
@@ -713,20 +685,14 @@
                 $('#fullscreen-icon-enter').show();
                 $('#fullscreen-icon-exit').hide();
 
-                // Devolver los modales al <body> para que funcionen
-                // correctamente fuera del modo fullscreen.
                 $('body').append(areaModal);
                 $('body').append(memberModal);
             }
             
-            // Reajustar el centrado después del cambio
             setTimeout(() => {
                 centerChart();
             }, 100);
         });
-        // ======================= FIN CORRECCIÓN JAVASCRIPT 2 =======================
-
-        // Redimensionamiento de ventana
         $(window).on('resize', () => {
             centerChart();
         });

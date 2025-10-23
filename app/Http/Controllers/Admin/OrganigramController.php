@@ -372,6 +372,7 @@ class OrganigramController extends Controller
             'trajectories.*.start_date' => 'nullable|date',
             'trajectories.*.end_date' => 'nullable|date|after_or_equal:trajectories.*.start_date',
             'create_user_account' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
         ]);
 
         $newUserId = null;
@@ -422,6 +423,7 @@ class OrganigramController extends Controller
             'area_id' => $validatedData['area_id'],
             'manager_id' => $validatedData['manager_id'],
             'profile_photo_path' => $path,
+            'is_active' => $request->boolean('is_active'),
         ]);
 
         // Sincronizamos las relaciones
@@ -516,6 +518,7 @@ class OrganigramController extends Controller
             'trajectories.*.start_date' => 'nullable|date',
             'trajectories.*.end_date' => 'nullable|date|after_or_equal:trajectories.*.start_date',
             'create_user_account' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
         ]);
 
         if ($request->boolean('create_user_account') && is_null($organigramMember->user_id)) {
@@ -556,7 +559,8 @@ class OrganigramController extends Controller
             }
         }
 
-        $organigramMember->fill($request->except(['profile_photo', 'remove_profile_photo', 'activities_ids', 'skills_ids', 'trajectories', 'create_user_account']));
+        $organigramMember->fill($request->except(['profile_photo', 'remove_profile_photo', 'activities_ids', 'skills_ids', 'trajectories', 'create_user_account', 'is_active']));
+        $organigramMember->is_active = $request->boolean('is_active');        
         $organigramMember->save();
 
         $organigramMember->activities()->sync($request->input('activities_ids', []));
@@ -739,7 +743,9 @@ class OrganigramController extends Controller
         ];
 
         if ($user && $user->is_client) {
-            $allMembers = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])->get();
+            $allMembers = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])
+            ->where('is_active', true)
+            ->get();
             $areas = Area::whereIn('name', $allowedAreaNames)->get();
 
             $flatNodes = [];
@@ -862,7 +868,9 @@ class OrganigramController extends Controller
         }
 
         // Código para usuarios internos (no clientes)
-        $members = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])->get();
+        $members = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])
+        ->where('is_active', true)
+        ->get();
         $areas = Area::all();
 
         $flatNodes = [];
@@ -999,7 +1007,9 @@ class OrganigramController extends Controller
                 return response()->json(null);
             }
 
-            $allMembers = OrganigramMember::with(['area', 'manager.position', 'position'])->get();
+            $allMembers = OrganigramMember::with(['area', 'manager.position', 'position'])
+            ->where('is_active', true)
+            ->get();
             
             // Encontrar a los "jefes" de las áreas permitidas.
             // Un jefe es un miembro de un área permitida que no tiene manager, o cuyo manager no está en la misma área.
@@ -1083,7 +1093,9 @@ class OrganigramController extends Controller
             $nestedTree = $this->buildNestedTree($flatNodesForMembersOnly);
             return response()->json($nestedTree[0] ?? null);
         }
-        $members = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])->get();
+        $members = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])
+        ->where('is_active', true)
+        ->get();
 
         $flatNodesForMembersOnly = [];
 

@@ -100,7 +100,19 @@
                                         Esto generará un usuario para que pueda iniciar sesión en el sistema y le enviará una notificación de bienvenida.
                                     </p>
                                 @endif
-                            </div>                            
+                            </div>
+
+                            <div class="mt-4 border-t pt-4">
+                                <label class="inline-flex items-center">
+                                    <input type="checkbox" name="is_active" value="1"
+                                        {{ old('is_active', $organigramMember->is_active ?? true) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                    <span class="ml-2 text-gray-700 font-semibold">Mostrar en Organigrama</span>
+                                </label>
+                                <p class="text-sm text-gray-500 ml-6">
+                                    Si se desmarca, este miembro no será visible en el organigrama interactivo.
+                                </p>
+                            </div>                         
 
                             <div class="mb-4">
                                 <x-input-label for="cell_phone" :value="__('Celular')" />
