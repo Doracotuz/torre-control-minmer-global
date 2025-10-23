@@ -150,9 +150,9 @@
                     <button id="zoom-out-btn" title="Alejar" class="w-10 h-10 bg-white border border-gray-300 rounded-full shadow-md flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#2c3856] cursor-pointer">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"></path></svg>
                     </button>
-                    <button id="center-btn" title="Centrar" class="w-10 h-10 bg-white border border-gray-300 rounded-full shadow-md flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#2c3856] cursor-pointer">
+                    <!-- <button id="center-btn" title="Centrar" class="w-10 h-10 bg-white border border-gray-300 rounded-full shadow-md flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#2c3856] cursor-pointer">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5v14"></path></svg>
-                    </button>
+                    </button> -->
                     <button id="fullscreen-btn" title="Pantalla Completa" class="w-10 h-10 bg-white border border-gray-300 rounded-full shadow-md flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#2c3856] cursor-pointer">
                         <svg id="fullscreen-icon-enter" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"></path>
