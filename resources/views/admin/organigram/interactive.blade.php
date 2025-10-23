@@ -319,7 +319,7 @@
 
             const oc = chartContainer.orgchart({
                 data: data,
-                pan: true,
+                pan: false,
                 zoom: true,
                 direction: 't2b',
                 depth: initialDepth,
