@@ -84,6 +84,7 @@
 
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 space-y-4 sm:space-y-0">
                     <h3 class="text-xl font-semibold text-[#2c3856]" style="font-family: 'Raleway', sans-serif;">{{ __('Contenido Actual') }}</h3>
+                    
                     <div class="flex flex-wrap items-center justify-start sm:justify-end gap-3">
 
                         <div class="flex items-center">
@@ -101,26 +102,25 @@
 
                         @if(!Auth::user()->is_client)
                             <button @click="$refs.folderInput.click()"
-                                    class="inline-flex items-center px-4 py-2 bg-[#9CB3ED] border border-transparent rounded-full font-semibold text-xxs sm:text-xs text-white uppercase tracking-widest hover:bg-[#2C3856] focus:bg-[#2C3856] active:bg-[#000000] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
-                                <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                <span class="hidden sm:inline">{{ __('Subir Carpeta') }}</span>
-                                <span class="sm:hidden">{{ __('Carpeta') }}</span>
+                                    title="{{ __('Subir Carpeta') }}"
+                                    class="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 bg-[#FF9C00] border border-transparent rounded-lg font-semibold text-xs text-white hover:bg-orange-600 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
+                                <svg class="w-4 h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                <span class="hidden sm:inline-block">{{ __('Subir Carpeta') }}</span>
                             </button>    
                         @endif                    
 
                         <button @click="deleteSelected()" x-show="isAnySelected()"
-                                class="inline-flex items-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-wider hover:bg-red-700 focus:bg-red-700 active:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
-                            <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            <span class="hidden sm:inline">{{ __('Eliminar Seleccionados') }}</span>
-                            <span class="sm:hidden">{{ __('Eliminar') }}</span>
+                                title="{{ __('Eliminar Seleccionados') }}"
+                                class="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 bg-red-600 border border-transparent rounded-lg font-semibold text-xs text-white hover:bg-red-700 focus:bg-red-700 active:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
+                            <svg class="w-4 h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <span class="hidden sm:inline-block">{{ __('Eliminar') }}</span>
                         </button>
 
-
                         <button @click="openMoveModal()" x-show="isAnySelected()"
-                                class="inline-flex items-center px-3 py-1.5 bg-[#BECEF5] border border-transparent rounded-full font-semibold text-xs text-black uppercase tracking-wider hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
-                            <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                            <span class="hidden sm:inline">{{ __('Mover Seleccionados') }}</span>
-                            <span class="sm:hidden">{{ __('Mover') }}</span>
+                                title="{{ __('Mover Seleccionados') }}"
+                                class="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
+                            <svg class="w-4 h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                            <span class="hidden sm:inline-block">{{ __('Mover') }}</span>
                         </button>
 
 
@@ -160,24 +160,26 @@
                             </button>
                         </div>
                         @if(!Auth::user()->is_client)
-                        <a href="{{ route('folders.create', ['folder' => $currentFolder ? $currentFolder->id : null]) }}" class="inline-flex items-center px-4 py-2 bg-[#2b2b2b] border border-transparent rounded-full font-semibold text-xxs sm:text-xs text-white uppercase tracking-widest hover:bg-[#666666] focus:bg-[#666666] active:bg-[#000000] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
-                            <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            <span class="hidden sm:inline">{{ __('Crear Carpeta') }}</span>
-                            <span class="sm:hidden">{{ __('Carpeta') }}</span>
+                        <a href="{{ route('folders.create', ['folder' => $currentFolder ? $currentFolder->id : null]) }}" 
+                           title="{{ __('Crear Carpeta') }}"
+                           class="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
+                            <svg class="w-4 h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="hidden sm:inline-block">{{ __('Crear Carpeta') }}</span>
                         </a>
                         @endif
 
                         @if (Auth::user()->is_area_admin || (Auth::user()->area && Auth::user()->area->name === 'Administración'))
                             @if ($currentFolder)
-                                <a href="{{ route('file_links.create', $currentFolder) }}" class="inline-flex items-center px-4 py-2 bg-[#ff9c00] border border-transparent rounded-full font-semibold text-xxs sm:text-xs text-white uppercase tracking-widest hover:bg-orange-600 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md">
-                                    <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                    <span class="hidden sm:inline">{{ __('Añadir Elemento') }}</span>
-                                    <span class="sm:hidden">{{ __('Elemento') }}</span>
+                                <a href="{{ route('file_links.create', $currentFolder) }}"
+                                   title="{{ __('Añadir Elemento') }}"
+                                   class="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 bg-[#ff9c00] border border-transparent rounded-lg font-semibold text-xs text-white hover:bg-orange-600 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
+                                    <svg class="w-4 h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                    <span class="hidden sm:inline-block">{{ __('Añadir Elemento') }}</span>
                                 </a>
                             @endif
                         @endif
                     </div>
-                </div>
+                    </div>
 
                 @if ($folders->isEmpty() && $fileLinks->isEmpty())
                     @if (isset($searchQuery) && $searchQuery)
@@ -265,11 +267,11 @@
                                 </div>
                                 @if(!Auth::user()->is_client)
                                 <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full justify-center">
-                                    <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center justify-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-wider hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                    <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center justify-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white tracking-wider hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                         {{ __('Editar') }}
                                     </a>
                                     <button @click.prevent="deleteSingleItem({{ $folderItem->id }}, 'folder')"
-                                        class="inline-flex items-center justify-center px-2 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-wider hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full">
+                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-red-500 border border-transparent rounded-lg font-semibold text-xs text-white tracking-wider hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full">
                                         {{ __('Eliminar') }}
                                     </button>
                                 </div>
@@ -366,11 +368,11 @@
 
                                 @if(!Auth::user()->is_client)
                                 <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full justify-center">
-                                    <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center justify-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-wider hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                    <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center justify-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white tracking-wider hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                         {{ __('Editar') }}
                                     </a>
                                     <button @click.prevent="deleteSingleItem({{ $fileLink->id }}, 'file_link')"
-                                        class="inline-flex items-center justify-center px-2 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xxs text-white uppercase tracking-wider hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full">
+                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-red-500 border border-transparent rounded-lg font-semibold text-xs text-white tracking-wider hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full">
                                         {{ __('Eliminar') }}
                                     </button>
                                 </div>
@@ -478,11 +480,11 @@
                                             </td>
                                             @if(!Auth::user()->is_client)
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                                                <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                                <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                                     {{ __('Editar') }}
                                                 </a>
                                                 <button @click.prevent="deleteSingleItem({{ $folderItem->id }}, 'folder')"
-                                                    class="inline-flex items-center px-2 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                                    class="inline-flex items-center px-3 py-1.5 bg-red-500 border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                                     {{ __('Eliminar') }}
                                                 </button>
                                             </td>
@@ -572,11 +574,11 @@
                                             </td>
                                             @if(!Auth::user()->is_client)
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                                                <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center px-2 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                                <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                                     {{ __('Editar') }}
                                                 </a>
                                                 <button @click.prevent="deleteSingleItem({{ $fileLink->id }}, 'file_link')"
-                                                    class="inline-flex items-center px-2 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                                    class="inline-flex items-center px-3 py-1.5 bg-red-500 border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                                     {{ __('Eliminar') }}
                                                 </button>
                                             </td>
@@ -618,13 +620,13 @@
                                     </div>
                                     @if(!Auth::user()->is_client)
                                     <div class="flex justify-end gap-2 mt-4">
-                                        <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center px-3 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
+                                        <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
                                             {{ __('Editar') }}
                                         </a>
                                         <form action="{{ route('folders.destroy', $folderItem) }}" method="POST" class="inline-block w-full" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta carpeta? Esto también eliminará todo su contenido (subcarpetas, archivos y enlaces).'); event.stopPropagation();">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
+                                            <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-red-500 border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
                                                 {{ __('Eliminar') }}
                                             </button>
                                         </form>
@@ -708,13 +710,13 @@
                                     </div>
                                     @if(!Auth::user()->is_client)
                                     <div class="flex justify-end gap-2 mt-4">
-                                        <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center px-3 py-1 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 focus:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
+                                        <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
                                             {{ __('Editar') }}
                                         </a>
                                         <form action="{{ route('file_links.destroy', $fileLink) }}" method="POST" class="inline-block w-full" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este elemento?'); event.stopPropagation();">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
+                                            <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-red-500 border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
                                                 {{ __('Eliminar') }}
                                             </button>
                                         </form>
