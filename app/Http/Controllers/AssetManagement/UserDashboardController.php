@@ -33,15 +33,28 @@ class UserDashboardController extends Controller
      */
     public function show(OrganigramMember $member)
     {
-        $assignments = $member->assignments()
+        // 1. Obtenemos los activos ASIGNADOS AHORA (la lógica que ya tenías)
+        $currentAssignments = $member->assignments()
             ->whereNull('actual_return_date')
             ->with(['asset.model.category', 'asset.model.manufacturer'])
             ->get();
 
-        // <-- AÑADIR ESTA LÍNEA -->
+        // 2. NUEVO: Obtenemos el HISTORIAL de asignaciones (las que YA fueron devueltas)
+        $assignmentHistory = $member->assignments()
+            ->whereNotNull('actual_return_date') // <-- Esta es la diferencia clave
+            ->with(['asset.model.category', 'asset.model.manufacturer'])
+            ->orderBy('actual_return_date', 'desc') // Opcional: ordenar por fecha de devolución
+            ->get();
+
         $responsivas = $member->userResponsivas; 
 
-        return view('asset-management.user-dashboard.show', compact('member', 'assignments', 'responsivas')); // <-- MODIFICAR
+        // 3. Pasamos AMBAS variables a la vista
+        return view('asset-management.user-dashboard.show', compact(
+            'member', 
+            'currentAssignments', // <-- Actualizamos el nombre
+            'assignmentHistory',  // <-- Nueva variable
+            'responsivas'
+        ));
     }
 
     /**

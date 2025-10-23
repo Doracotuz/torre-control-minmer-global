@@ -69,7 +69,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
-                            @forelse($assignments as $assignment)
+                            @forelse($currentAssignments as $assignment)
                             <tr class="hover:bg-blue-50">
                                 <td class="p-4 font-mono font-semibold text-[var(--color-primary)]">
                                     <a href="{{ route('asset-management.assets.show', $assignment->asset) }}" class="hover:underline">{{ $assignment->asset->asset_tag }}</a>
@@ -87,6 +87,40 @@
                         </tbody>
                     </table>
                 </div>
+
+                <div class="bg-white rounded-xl shadow-lg mt-8">
+                    <div class="p-6 border-b">
+                        <h2 class="text-xl font-bold text-[var(--color-primary)]">Historial de Activos Devueltos</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Etiqueta</th>
+                                    <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Modelo</th>
+                                    <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha Asignación</th>
+                                    <th class="p-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha Devolución</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                @forelse($assignmentHistory as $assignment)
+                                <tr class="hover:bg-gray-50 opacity-70">
+                                    <td class="p-4 font-mono text-gray-600">
+                                        <a href="{{ route('asset-management.assets.show', $assignment->asset) }}" class="hover:underline">{{ $assignment->asset->asset_tag }}</a>
+                                    </td>
+                                    <td class="p-4 font-semibold text-gray-700">{{ $assignment->asset->model->name }}</td>
+                                    <td class="p-4 text-gray-600">{{ \Carbon\Carbon::parse($assignment->assignment_date)->format('d/m/Y') }}</td>
+                                    <td class="p-4 text-right text-gray-600 font-medium">{{ \Carbon\Carbon::parse($assignment->actual_return_date)->format('d/m/Y') }}</td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="4" class="p-8 text-center text-gray-500">Este usuario no tiene un historial de devoluciones.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>                
             </div>
         </div>
         
