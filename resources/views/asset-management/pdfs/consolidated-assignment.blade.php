@@ -101,7 +101,8 @@
                 <td style="width: 50%;" class="doc-info">
                     <h1 class="doc-title">Responsiva de Activos</h1>
                     <p class="doc-subtitle">ID de Documento: {{ $documentId ?? '' }} | {{ \Carbon\Carbon::now()->isoFormat('D MMMM, YYYY') }}</p>
-                    <p class="recipient">Para: <strong>{{ $member->name ?? '' }}</strong> ({{ $member->position->name ?? 'No especificado' }})</p>
+                    <!-- <p class="recipient">Para: <strong>{{ $member->name ?? '' }}</strong> ({{ $member->position->name ?? 'No especificado' }})</p> -->
+                    <p class="recipient">Para: <strong>{{ $member->name ?? '' }}</strong></p>
                 </td>
             </tr>
         </table>

@@ -785,15 +785,12 @@
             <div class="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center w-full max-w-md">
                 <h3 class="text-xl font-semibold text-[#2c3856] mb-2">Subiendo Carpeta</h3>
                 
-                {{-- Indicador de conteo --}}
                 <p class="text-gray-600 mb-4">
                     <span x-text="`Archivo ${uploadCurrentFile} de ${uploadTotalFiles}`"></span>
                 </p>
 
-                {{-- Nombre del archivo actual --}}
                 <p class="text-sm text-gray-500 mb-2 w-full text-center truncate" x-text="uploadCurrentFileName"></p>
 
-                {{-- Barra de Progreso --}}
                 <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
                     <div class="bg-[#FF9C00] h-4 rounded-full transition-all duration-150" 
                         :style="`width: ${uploadProgress}%`">
@@ -1049,30 +1046,21 @@
                 },
 
                 async handleDrop(event, targetFolderId) {
-                    // 1. Prevenir el comportamiento por defecto del navegador
                     event.preventDefault();
                     this.highlightMainDropArea = false;
                     this.dropTargetFolderId = null;
 
-                    // 2. Obtener los datos del evento
-                    // `items` es para archivos/carpetas del sistema operativo
                     const items = event.dataTransfer.items;
-                    // `draggedData` es para elementos internos de la aplicación
                     const draggedData = event.dataTransfer.getData('text/plain');
 
-                    // --- ESCENARIO A: Se arrastra una carpeta o archivos desde el computador ---
-                    // Verificamos si hay 'items' y no hay 'draggedData' para diferenciar de un movimiento interno
                     if (items && items.length > 0 && !draggedData) {
                         
-                        // Se utiliza el escáner asíncrono para obtener la lista completa de archivos
                         const fileList = await this.getFilesFromDroppedItems(items);
 
                         if (fileList.length > 0) {
-                            // Se pasa la lista de archivos a la función de subida con progreso
                             this.uploadFilesWithProgress(fileList);
                         }
 
-                    // --- ESCENARIO B: Se está moviendo un elemento interno ya existente ---
                     } else if (draggedData) {
                         let draggedItem = null;
                         try {
@@ -1084,7 +1072,6 @@
 
                         if (draggedItem && draggedItem.id && draggedItem.id != targetFolderId) {
                             
-                            // Construir el cuerpo de la petición para la ruta 'bulk_move'
                             let requestBody = { target_folder_id: targetFolderId };
                             if (draggedItem.type === 'folder') {
                                 requestBody.folder_ids = [draggedItem.id];
@@ -1096,10 +1083,8 @@
                                 return; 
                             }
 
-                            // Mostrar el overlay de carga genérico para la operación de mover
                             document.getElementById('loading-overlay').classList.remove('hidden');
 
-                            // Enviar la petición para mover el elemento
                             fetch('{{ route("items.bulk_move") }}', {
                                 method: 'POST',
                                 headers: { 
@@ -1418,21 +1403,18 @@
                         return;
                     }
 
-                    // --- PASO DE NORMALIZACIÓN ---
-                    // Convertimos el FileList al formato que nuestra función de subida espera: [{file, path}]
                     const itemsList = [];
                     for (const file of files) {
                         itemsList.push({
                             file: file,
-                            path: file.webkitRelativePath // El input de carpeta nos da esta propiedad directamente
+                            path: file.webkitRelativePath
                         });
                     }
 
-                    // Ahora sí, llamamos a la función de subida con los datos en el formato correcto
                     this.uploadFilesWithProgress(itemsList);
                 },
 
-                uploadFilesWithProgress(itemsList) { // Ahora recibe la lista de objetos
+                uploadFilesWithProgress(itemsList) {
                     if (!itemsList || itemsList.length === 0) {
                         return;
                     }
@@ -1447,14 +1429,13 @@
 
                     const uploadAllItems = async () => {
                         for (let i = 0; i < itemsList.length; i++) {
-                            const item = itemsList[i]; // Obtenemos el objeto {file, path}
+                            const item = itemsList[i];
                             const formData = new FormData();
                             
                             if (targetFolderId) {
                                 formData.append('target_folder_id', targetFolderId);
                             }
                             
-                            // Usamos item.file e item.path
                             formData.append('files[]', item.file);
                             formData.append('paths[]', item.path);
                             
@@ -1488,7 +1469,7 @@
                 },
                 
                 async getFilesFromDroppedItems(dataTransferItems) {
-                    const itemsList = []; // Ahora creamos una lista de objetos {file, path}
+                    const itemsList = [];
                     const promises = [];
 
                     for (const item of dataTransferItems) {
@@ -1502,12 +1483,10 @@
                     return itemsList;
                 },
 
-                // Función recursiva que construye la lista de objetos {file, path}
                 async traverseDirectory(entry, currentPath, itemsList) {
                     if (entry.isFile) {
                         return new Promise(resolve => {
                             entry.file(file => {
-                                // Creamos un objeto explícito con el archivo y su ruta
                                 itemsList.push({ file: file, path: currentPath + file.name });
                                 resolve();
                             });
