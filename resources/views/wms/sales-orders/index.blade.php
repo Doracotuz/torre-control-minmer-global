@@ -81,16 +81,36 @@
 
             <div class="bg-white p-4 rounded-xl shadow-md mb-6">
                 <form action="{{ route('wms.sales-orders.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-                    <input type="text" name="so_number" placeholder="Buscar por Nº SO..." value="{{ request('so_number') }}" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                    <input type="text" name="invoice_number" placeholder="Buscar por Nº Factura..." value="{{ request('invoice_number') }}" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                    <input type="text" name="customer_name" placeholder="Buscar por Cliente..." value="{{ request('customer_name') }}" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                    <select name="status" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                        <option value="">Todos los Estatus</option>
-                        <option value="Pending" @selected(request('status') == 'Pending')>Pendiente</option>
-                        <option value="Picking" @selected(request('status') == 'Picking')>En Surtido</option>
-                        <option value="Packed" @selected(request('status') == 'Packed')>Empacado</option>
-                        <option value="Cancelled" @selected(request('status') == 'Cancelled')>Cancelado</option>
-                    </select>
+                    <div>
+                        <label for="so_number" class="block text-xs font-medium text-gray-500 mb-1">SO</label>
+                        <input type="text" name="so_number" placeholder="Buscar por Nº SO..." value="{{ request('so_number') }}" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    <div>
+                        <label for="invoice_number" class="block text-xs font-medium text-gray-500 mb-1">Factura</label>
+                        <input type="text" name="invoice_number" placeholder="Buscar por Nº Factura..." value="{{ request('invoice_number') }}" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    <div>
+                        <label for="customer_name" class="block text-xs font-medium text-gray-500 mb-1">Cliente</label>
+                        <input type="text" name="customer_name" placeholder="Buscar por Cliente..." value="{{ request('customer_name') }}" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    <div>
+                        <label for="status" class="block text-xs font-medium text-gray-500 mb-1">Estatus</label>
+                        <select name="status" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="">Todos los Estatus</option>
+                            <option value="Pending" @selected(request('status') == 'Pending')>Pendiente</option>
+                            <option value="Picking" @selected(request('status') == 'Picking')>En Surtido</option>
+                            <option value="Packed" @selected(request('status') == 'Packed')>Empacado</option>
+                            <option value="Cancelled" @selected(request('status') == 'Cancelled')>Cancelado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="start_date" class="block text-xs font-medium text-gray-500 mb-1">Desde:</label>
+                        <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}" class="input-filter w-full">
+                    </div>
+                    <div>
+                        <label for="end_date" class="block text-xs font-medium text-gray-500 mb-1">Hasta:</label>
+                        <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}" class="input-filter w-full">
+                    </div>                    
                     <div class="flex items-center space-x-2">
                         <button type="submit" class="w-full inline-flex justify-center px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
                             Filtrar
@@ -200,4 +220,33 @@
             </div>
         </div>
     </div>
+<style>
+    .input-filter {
+        border-color: #e5e7eb; /* gray-200 */
+        border-radius: 0.5rem; /* rounded-lg */
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+        font-size: 0.875rem; /* text-sm */
+        padding-top: 0.625rem; /* Ajusta padding para alinear altura */
+        padding-bottom: 0.625rem;
+    }
+    .input-filter:focus {
+        border-color: #a5b4fc; /* indigo-300 */
+        --tw-ring-color: rgba(165, 180, 252, 0.5); /* ring-indigo-200 ring-opacity-50 */
+        box-shadow: 0 0 0 3px var(--tw-ring-color);
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+    }
+    .button-primary {
+        display: inline-flex; justify-content: center; padding: 0.625rem 1rem; background-color: #4f46e5; /* indigo-600 */
+        color: white; font-weight: 500; /* font-medium */ border-radius: 0.5rem; /* rounded-lg */
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */ transition: background-color 150ms ease-in-out;
+    }
+    .button-primary:hover { background-color: #4338ca; /* indigo-700 */ }
+    .button-secondary {
+        display: inline-flex; justify-content: center; text-align: center; padding: 0.625rem 1rem; color: #374151; /* gray-700 */
+        background-color: white; border: 1px solid #d1d5db; /* gray-300 */ font-weight: 500; border-radius: 0.5rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: background-color 150ms ease-in-out;
+    }
+    .button-secondary:hover { background-color: #f9fafb; /* gray-50 */ }
+</style>    
 </x-app-layout>

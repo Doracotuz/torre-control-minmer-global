@@ -42,6 +42,15 @@ class WMSSalesOrderController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('start_date')) {
+            // Filtra por 'order_date' mayor o igual a la fecha de inicio
+            $query->whereDate('order_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            // Filtra por 'order_date' menor o igual a la fecha de fin
+            $query->whereDate('order_date', '<=', $request->end_date);
+        }        
+
         $salesOrders = $query->latest()->paginate(15)->withQueryString();
 
         // Lógica para las tarjetas de KPI
@@ -52,6 +61,8 @@ class WMSSalesOrderController extends Controller
         if ($request->filled('invoice_number')) { $kpiQuery->where('invoice_number', 'like', '%' . $request->invoice_number . '%'); }
         if ($request->filled('customer_name')) { $kpiQuery->where('customer_name', 'like', '%' . $request->customer_name . '%'); }
         if ($request->filled('status')) { $kpiQuery->where('status', $request->status); }
+        if ($request->filled('start_date')) { $kpiQuery->whereDate('order_date', '>=', $request->start_date); }
+        if ($request->filled('end_date')) { $kpiQuery->whereDate('order_date', '<=', $request->end_date); }
 
         // Clonamos la consulta para obtener los diferentes conteos
         $kpis = [

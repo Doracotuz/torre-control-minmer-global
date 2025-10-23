@@ -371,24 +371,32 @@ class WMSInventoryController extends Controller
 
     public function adjustItemQuantity(Request $request, PalletItem $palletItem)
     {
+        // 1. Verificar Permisos (ya lo tienes)
         if (!Auth::user()->isSuperAdmin()) {
             return back()->with('error', 'No tienes permisos para realizar ajustes.');
         }
 
+        // 2. Validar Input (ya lo tienes)
         $validator = Validator::make($request->all(), [
             'new_quantity' => 'required|integer|min:0',
             'reason' => 'required|string|min:5|max:500',
         ]);
 
+        // Redirigir si falla la validación (ya lo tienes)
         if ($validator->fails()) {
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput()
-                ->with('open_adjustment_modal_for_item', $palletItem->id);
+                // Asegura que el modal se reabra en caso de error
+                ->with('open_adjustment_modal_for_item', $palletItem->id); 
         }
 
         $validated = $validator->validated();
-        $pallet = $palletItem->pallet;
+        
+        // Obtenemos el Pallet padre ANTES de la transacción para usarlo después
+        $pallet = $palletItem->pallet; 
+        // Cargamos la relación del producto para el mensaje de last_action
+        $palletItem->loadMissing('product'); 
 
         DB::beginTransaction();
         try {
@@ -396,22 +404,26 @@ class WMSInventoryController extends Controller
             $newQuantity = $validated['new_quantity'];
             $difference = $newQuantity - $oldQuantity;
 
+            // 3. (Opcional) Actualizar InventoryStock si lo usas (ya lo tienes)
             $stock = InventoryStock::where('product_id', $palletItem->product_id)
                                 ->where('quality_id', $palletItem->quality_id)
                                 ->where('location_id', $pallet->location_id)->first();
             
             if ($stock) {
-                $difference > 0 ? $stock->increment('quantity', $difference) : $stock->decrement('quantity', abs($difference));
+                // Ajusta la cantidad total en la ubicación
+                $newStockQuantity = max(0, $stock->quantity + $difference);
+                $stock->update(['quantity' => $newStockQuantity]);
+                // $difference > 0 ? $stock->increment('quantity', $difference) : $stock->decrement('quantity', abs($difference)); // Alternativa
             }
 
+            // 4. Actualizar la cantidad en el PalletItem específico (ya lo tienes)
             $palletItem->update(['quantity' => $newQuantity]);
 
-            // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
-            // Ahora pasamos todos los datos que la tabla necesita.
+            // 5. Registrar el ajuste en la tabla InventoryAdjustment (ya lo tienes)
             InventoryAdjustment::create([
                 'pallet_item_id' => $palletItem->id,
-                'product_id' => $palletItem->product_id, // <-- AÑADIDO
-                'location_id' => $pallet->location_id,   // <-- AÑADIDO
+                'product_id' => $palletItem->product_id, 
+                'location_id' => $pallet->location_id,   
                 'user_id' => Auth::id(),
                 'quantity_before' => $oldQuantity,
                 'quantity_after' => $newQuantity,
@@ -420,13 +432,29 @@ class WMSInventoryController extends Controller
                 'source' => 'Ajuste Manual LPN'
             ]);
 
+            // --- INICIO DE LA MODIFICACIÓN ---
+            // 6. Actualizar la última acción en el Pallet padre
+            if ($pallet) { // Asegurarse de que el pallet existe
+                $pallet->update([
+                    'last_action' => 'Ajuste Item: ' . ($palletItem->product->sku ?? 'SKU N/A'), // Mensaje descriptivo
+                    'user_id' => Auth::id() // Usuario que hizo el ajuste
+                    // updated_at se actualiza automáticamente
+                ]);
+            }
+            // --- FIN DE LA MODIFICACIÓN ---
+
             DB::commit();
-            // Redirige a la página principal de inventario para ver el resultado
-            return redirect()->route('wms.inventory.index')->with('success', 'Ajuste de inventario realizado exitosamente.');
+            
+            // Redirigir a la página principal de inventario
+            return redirect()->route('wMS.inventory.index')->with('success', 'Ajuste de inventario realizado exitosamente.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Error al procesar el ajuste: ' . $e->getMessage());
+            Log::error("Error al ajustar PalletItem {$palletItem->id}: " . $e->getMessage()); // Registrar error
+            // Redirigir atrás con error Y manteniendo el modal abierto
+            return redirect()->back()
+                ->with('error', 'Error al procesar el ajuste: ' . $e->getMessage())
+                ->with('open_adjustment_modal_for_item', $palletItem->id);
         }
     }
     public function showAdjustmentsLog()
