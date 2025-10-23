@@ -14,6 +14,7 @@ class PalletItem extends Model
         'pallet_id',
         'product_id',
         'quantity',
+        'committed_quantity',
         'quality_id',
     ];
 

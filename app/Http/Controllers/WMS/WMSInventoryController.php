@@ -23,6 +23,7 @@ class WMSInventoryController extends Controller
 {
     public function index(Request $request)
     {
+        // Carga de relaciones optimizada
         $query = \App\Models\WMS\Pallet::query()
             ->with([
                 'purchaseOrder:id,po_number,container_number,operator_name,download_start_time,pedimento_a4,pedimento_g1',
@@ -30,6 +31,7 @@ class WMSInventoryController extends Controller
             ])
             ->where('status', 'Finished');
 
+        // --- Filtros ---
         if ($request->filled('lpn')) { $query->where('lpn', 'like', '%' . $request->lpn . '%'); }
         if ($request->filled('po_number')) { $query->whereHas('purchaseOrder', fn($q) => $q->where('po_number', 'like', '%' . $request->po_number . '%')); }
         if ($request->filled('sku')) { $query->whereHas('items.product', fn($q) => $q->where('sku', 'like', '%' . $request->sku . '%')); }
@@ -48,16 +50,22 @@ class WMSInventoryController extends Controller
         
         $pallets = $query->latest('updated_at')->paginate(25)->withQueryString();
 
+        // --- INICIO DE MODIFICACIÓN: OBTENER STOCK COMPROMETIDO Y DISPONIBLE ---
+
+        // 1. Recolectar IDs de las tarimas paginadas para optimizar la consulta
         $palletItems = $pallets->pluck('items')->flatten();
         $locationIds = $pallets->pluck('location_id')->unique();
         $productIds = $palletItems->pluck('product_id')->unique();
         $qualityIds = $palletItems->pluck('quality_id')->unique();
 
+        // 2. Consultar el "libro mayor" (InventoryStock) para esos items
         $stockData = \App\Models\WMS\InventoryStock::whereIn('location_id', $locationIds)
             ->whereIn('product_id', $productIds)
             ->whereIn('quality_id', $qualityIds)
             ->get();
 
+        // 3. Crear un mapa (diccionario) para acceso rápido en la vista
+        // La clave será "product_id-quality_id-location_id"
         $stockLedger = [];
         foreach ($stockData as $stock) {
             $key = $stock->product_id . '-' . $stock->quality_id . '-' . $stock->location_id;

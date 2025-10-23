@@ -710,11 +710,14 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::post('physical-counts/tasks/{task}/adjust', [WMSPhysicalCountController::class, 'adjustInventory'])->name('physical-counts.tasks.adjust');
     Route::get('physical-counts/tasks/{task}/candidate-lpns', [WMSPhysicalCountController::class, 'getCandidateLpns'])->name('physical-counts.tasks.candidates');
     Route::resource('sales-orders', WMSSalesOrderController::class);
-    Route::post('sales-orders/{salesOrder}/cancel', [WMSSalesOrderController::class, 'cancel'])->name('sales-orders.cancel');    
+    Route::post('sales-orders/{salesOrder}/cancel', [WMSSalesOrderController::class, 'cancel'])->name('sales-orders.cancel');  
+    Route::get('sales-orders-export-csv', [WMSSalesOrderController::class, 'exportCsv'])->name('sales-orders.export-csv');  
     Route::post('sales-orders/{salesOrder}/generate-picklist', [WMSPickingController::class, 'generate'])->name('picking.generate');
     Route::get('picking/{pickList}', [WMSPickingController::class, 'show'])->name('picking.show');
-    Route::post('picking/{pickList}/confirm', [WMSPickingController::class, 'confirm'])->name('picking.confirm');
+    // Route::post('picking/{pickList}/confirm', [WMSPickingController::class, 'confirm'])->name('picking.confirm');
     Route::get('picking/{pickList}/pdf', [WMSPickingController::class, 'generatePickListPdf'])->name('picking.pdf');
+    Route::post('picking/item/{pickListItem}/confirm', [WMSPickingController::class, 'confirmItem'])->name('picking.item.confirm');
+    Route::post('picking/{pickList}/complete', [WMSPickingController::class, 'completePicking'])->name('picking.complete');    
     Route::get('reports', [WMSReportController::class, 'index'])->name('reports.index');
     Route::get('reports/inventory', [WMSReportController::class, 'inventoryDashboard'])->name('reports.inventory');
     Route::resource('warehouses', WMSWarehouseController::class);

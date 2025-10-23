@@ -25,7 +25,8 @@
 
     <div class="py-12" x-data="inventoryPage('{{ session('open_adjustment_modal_for_item') }}')">
         <div class="max-w-screen-2xl mx-auto sm:px-6 lg:px-8">
-            
+
+            {{-- 1. KPIs --}}
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-2xl shadow-lg border"><div><span class="text-sm font-medium text-gray-500">Tarimas Totales</span><p class="text-3xl font-bold text-gray-800">{{ number_format($kpis['total_pallets']) }}</p></div></div>
                 <div class="bg-white p-6 rounded-2xl shadow-lg border"><div><span class="text-sm font-medium text-gray-500">Unidades Totales</span><p class="text-3xl font-bold text-gray-800">{{ number_format($kpis['total_units']) }}</p></div></div>
@@ -33,9 +34,10 @@
                 <div class="bg-white p-6 rounded-2xl shadow-lg border"><div><span class="text-sm font-medium text-gray-500">Ubic. Disponibles</span><p class="text-3xl font-bold text-gray-800">{{ number_format($kpis['available_locations']) }}</p></div></div>
             </div>
 
+            {{-- 2. Filtros --}}
             <div class="bg-white p-6 rounded-2xl shadow-lg border mb-8">
                 <form id="filters-form" action="{{ route('wms.inventory.index') }}" method="GET">
-                    <div class="flex flex-wrap gap-4 items-end">
+                     <div class="flex flex-wrap gap-4 items-end">
                         <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">LPN</label><input type="text" name="lpn" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('lpn') }}"></div>
                         <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Orden (PO)</label><input type="text" name="po_number" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('po_number') }}"></div>
                         <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">SKU</label><input type="text" name="sku" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('sku') }}"></div>
@@ -48,115 +50,296 @@
                     </div>
                 </form>
             </div>
+
+            {{-- 3. Tabla de Inventario --}}
             <div class="bg-white overflow-hidden rounded-2xl shadow-lg border">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-100">
                             <tr>
+                                {{-- ENCABEZADOS AJUSTADOS --}}
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">LPN / Ubicación</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Origen (PO) / Pedimento</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Contenido</th>
-                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Cantidad</th>
-                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Comprometido</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Contenido (SKU / Calidad)</th>
+                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Cant. (Pallet)</th>
+                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Comprometido (LPN)</th>
+                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Disponible (LPN)</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Recibido</th>
-                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Acciones</th>
+                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Acción Pallet</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
                             @forelse ($pallets as $pallet)
-                                @foreach ($pallet->items as $item)
-                                <tr class="hover:bg-gray-50">
-                                    @if ($loop->first)<td class="px-4 py-4 align-top" rowspan="{{ $pallet->items->count() }}"><p class="font-mono font-bold text-indigo-600">{{ $pallet->lpn }}</p><p class="text-sm text-gray-800"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i> {{ $pallet->location ? "{$pallet->location->aisle}-{$pallet->location->rack}-{$pallet->location->shelf}-{$pallet->location->bin}" : 'N/A' }}</p></td><td class="px-4 py-4 align-top" rowspan="{{ $pallet->items->count() }}"><p class="font-mono">{{ $pallet->purchaseOrder->po_number ?? 'N/A' }}</p><p class="text-xs text-gray-500 font-mono">{{ $pallet->purchaseOrder->pedimento_a4 ?? 'N/A' }}</p></td>@endif
-                                    <td class="px-4 py-4"><p class="font-semibold text-gray-900 text-sm">{{ $item->product->name ?? 'N/A' }}</p><p class="text-xs text-gray-500"><span class="font-mono">{{ $item->product->sku ?? '' }}</span> | {{ $item->quality->name ?? '' }}</p></td>
-                                    <td class="px-4 py-4 text-center text-lg font-bold text-gray-900">{{ $item->quantity }}</td>
-                                    <td class="px-2 py-4 text-center whitespace-nowrap text-sm text-red-600">
-                                        @php
-                                            $key = $item->product_id . '-' . $item->quality_id . '-' . $pallet->location_id;
-                                        @endphp
-                                        {{ $committedStock[$key] ?? 0 }}
-                                    </td>                     
-                                    @if ($loop->first)<td class="px-4 py-4 text-sm align-top" rowspan="{{ $pallet->items->count() }}"><p>{{ $pallet->user->name ?? 'N/A' }}</p><p class="text-gray-500 text-xs">{{ $pallet->updated_at->format('d/m/Y') }}</p></td><td class="px-4 py-4 text-center align-top" rowspan="{{ $pallet->items->count() }}"><button @click="openModal({{ json_encode($pallet) }})" class="text-indigo-600 hover:text-indigo-900" title="Ver Detalle Completo"><i class="fas fa-eye fa-lg"></i></button></td>@endif
+                                {{-- Fila Principal (puede tener rowspan si hay >1 item) --}}
+                                <tr class="hover:bg-gray-50 group">
+                                    {{-- LPN / Ubicación --}}
+                                    <td class="px-4 py-4 align-top whitespace-nowrap @if($pallet->items->count() > 1) border-b @endif" rowspan="{{ $pallet->items->count() }}">
+                                        <p class="font-mono font-bold text-indigo-600">{{ $pallet->lpn }}</p>
+                                        <p class="text-sm text-gray-800">
+                                            <i class="fas fa-map-marker-alt text-red-500 mr-1"></i>
+                                            {{ $pallet->location ? "{$pallet->location->aisle}-{$pallet->location->rack}-{$pallet->location->shelf}-{$pallet->location->bin}" : 'N/A' }}
+                                        </p>
+                                    </td>
+                                    {{-- Origen (PO) / Pedimento --}}
+                                    <td class="px-4 py-4 align-top whitespace-nowrap @if($pallet->items->count() > 1) border-b @endif" rowspan="{{ $pallet->items->count() }}">
+                                        <p class="font-mono">{{ $pallet->purchaseOrder->po_number ?? 'N/A' }}</p>
+                                        <p class="text-xs text-gray-500 font-mono">{{ $pallet->purchaseOrder->pedimento_a4 ?? 'N/A' }}</p>
+                                    </td>
+
+                                    {{-- --- INICIO DEL CONTENIDO ANIDADO (ITEMS) --- --}}
+                                    {{-- Mostramos el primer item en la fila principal --}}
+                                    @php $firstItem = $pallet->items->first(); @endphp
+                                    {{-- Contenido (SKU/Calidad) del primer item --}}
+                                    <td class="px-4 py-4">
+                                        <p class="font-semibold text-gray-900 text-sm">{{ $firstItem->product->name ?? 'N/A' }}</p>
+                                        <p class="text-xs text-gray-500">
+                                            <span class="font-mono">{{ $firstItem->product->sku ?? '' }}</span> | {{ $firstItem->quality->name ?? '' }}
+                                        </p>
+                                    </td>
+                                    {{-- Cantidad (Pallet) del primer item --}}
+                                    <td class="px-4 py-4 text-center text-lg font-bold text-gray-900">{{ $firstItem->quantity }}</td>
+
+                                    {{-- Comprometido (LPN) del primer item --}}
+                                    <td class="px-4 py-4 text-center whitespace-nowrap text-sm text-red-600">
+                                        {{ $firstItem->committed_quantity ?? 0 }}
+                                    </td>
+                                    {{-- Disponible (LPN) del primer item --}}
+                                    <td class="px-4 py-4 text-center whitespace-nowrap text-sm font-bold text-green-700">
+                                        {{ ($firstItem->quantity ?? 0) - ($firstItem->committed_quantity ?? 0) }}
+                                    </td>
+                                    {{-- --- FIN DEL CONTENIDO DEL PRIMER ITEM --- --}}
+
+                                    {{-- Recibido (Común para todos los items del pallet) --}}
+                                    <td class="px-4 py-4 text-sm align-top whitespace-nowrap @if($pallet->items->count() > 1) border-b @endif" rowspan="{{ $pallet->items->count() }}">
+                                        <p>{{ $pallet->user->name ?? 'N/A' }}</p>
+                                        <p class="text-gray-500 text-xs">{{ $pallet->updated_at->format('d/m/Y H:i') }}</p>
+                                    </td>
+                                    {{-- Acción Pallet (Común para todos los items) --}}
+                                    <td class="px-4 py-4 text-center align-top @if($pallet->items->count() > 1) border-b @endif" rowspan="{{ $pallet->items->count() }}">
+                                        <button @click="openModal({{ json_encode($pallet) }})" class="text-indigo-600 hover:text-indigo-900" title="Ver Detalle Completo">
+                                            <i class="fas fa-eye fa-lg"></i>
+                                        </button>
+                                    </td>
                                 </tr>
-                                @endforeach
+
+                                {{-- Si hay más de 1 item, crea filas adicionales solo para ellos --}}
+                                @if($pallet->items->count() > 1)
+                                    @foreach($pallet->items->skip(1) as $item) {{-- skip(1) para omitir el primero --}}
+                                        <tr class="hover:bg-gray-50 group">
+                                            {{-- Contenido (SKU/Calidad) del item adicional --}}
+                                            <td class="px-4 py-4">
+                                                <p class="font-semibold text-gray-900 text-sm">{{ $item->product->name ?? 'N/A' }}</p>
+                                                <p class="text-xs text-gray-500">
+                                                    <span class="font-mono">{{ $item->product->sku ?? '' }}</span> | {{ $item->quality->name ?? '' }}
+                                                </p>
+                                            </td>
+                                            {{-- Cantidad (Pallet) del item adicional --}}
+                                            <td class="px-4 py-4 text-center text-lg font-bold text-gray-900">{{ $item->quantity }}</td>
+                                            {{-- Comprometido (LPN) del item adicional --}}
+                                            <td class="px-4 py-4 text-center whitespace-nowrap text-sm text-red-600">
+                                                {{ $item->committed_quantity ?? 0 }}
+                                            </td>
+                                            {{-- Disponible (LPN) del item adicional --}}
+                                            <td class="px-4 py-4 text-center whitespace-nowrap text-sm font-bold text-green-700">
+                                                 {{ ($item->quantity ?? 0) - ($item->committed_quantity ?? 0) }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                @endif
                             @empty
-                                <tr><td colspan="6" class="text-center text-gray-500 py-16"><p>No se encontraron tarimas con los filtros aplicados.</p></td></tr>
+                                <tr>
+                                    {{-- Ajusta el colspan para que coincida con el número total de columnas visibles --}}
+                                    <td colspan="8" class="text-center text-gray-500 py-16">
+                                        <p>No se encontraron tarimas con los filtros aplicados.</p>
+                                    </td>
+                                </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
-                <div class="p-6 border-t">{{ $pallets->links() }}</div>
+                {{-- Paginación --}}
+                <div class="p-6 border-t bg-gray-50">
+                    {{ $pallets->appends(request()->query())->links() }}
+                </div>
             </div>
         </div>
 
-        <div x-show="modalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50" style="display: none;">
+        <div x-show="modalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60" style="display: none;">
             <div @click.away="closeModal()" class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
                 <template x-if="selectedPallet">
                     <div class="flex flex-col h-full">
-                        <div class="p-6 border-b flex justify-between items-center"><h2 class="text-2xl font-bold text-gray-800">Detalle de LPN: <span class="font-mono text-indigo-600" x-text="selectedPallet.lpn"></span></h2><button @click="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button></div>
-                        <div class="p-6 overflow-y-auto">
+                        <div class="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-2xl">
+                            <h2 class="text-2xl font-bold text-gray-800">Detalle de LPN: <span class="font-mono text-indigo-600" x-text="selectedPallet.lpn"></span></h2>
+                            <button @click="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                        </div>
+                        <div class="p-8 overflow-y-auto flex-grow">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div><h3 class="font-bold text-lg text-gray-700 border-b pb-2">Información del Arribo</h3><dl class="mt-2 text-sm grid grid-cols-2 gap-x-4 gap-y-2"><dt class="font-semibold text-gray-500">Orden de Compra:</dt><dd x-text="selectedPallet.purchase_order?.po_number || 'N/A'"></dd><dt class="font-semibold text-gray-500">Contenedor:</dt><dd x-text="selectedPallet.purchase_order?.container_number || 'N/A'"></dd><dt class="font-semibold text-gray-500">Pedimento A4:</dt><dd class="font-mono" x-text="selectedPallet.purchase_order?.pedimento_a4 || 'N/A'"></dd><dt class="font-semibold text-gray-500">Pedimento G1:</dt><dd class="font-mono" x-text="selectedPallet.purchase_order?.pedimento_g1 || 'N/A'"></dd><dt class="font-semibold text-gray-500">Operador:</dt><dd x-text="selectedPallet.purchase_order?.operator_name || 'N/A'"></dd></dl></div>
-                                <div><h3 class="font-bold text-lg text-gray-700 border-b pb-2">Información de la Tarima</h3><dl class="mt-2 text-sm grid grid-cols-2 gap-x-4 gap-y-2"><dt class="font-semibold text-gray-500">Ubicación Actual:</dt><dd x-text="selectedPallet.location ? `${selectedPallet.location.aisle}-${selectedPallet.location.rack}-${selectedPallet.location.shelf}-${selectedPallet.location.bin}` : 'N/A'"></dd><dt class="font-semibold text-gray-500">Última Interacción:</dt><dd class="font-bold" x-text="selectedPallet.last_action || 'N/A'"></dd><dt class="font-semibold text-gray-500">Realizada por:</dt><dd x-text="selectedPallet.user?.name || 'N/A'"></dd><dt class="font-semibold text-gray-500">Fecha Interacción:</dt><dd x-text="new Date(selectedPallet.updated_at).toLocaleString()"></dd></dl></div>
+                                <div>
+                                    <h3 class="font-bold text-lg text-gray-700 border-b pb-2 mb-3">Información del Arribo</h3>
+                                    <dl class="text-sm grid grid-cols-2 gap-x-4 gap-y-2">
+                                        <dt class="font-semibold text-gray-500">Orden de Compra:</dt><dd class="text-gray-800" x-text="selectedPallet.purchase_order?.po_number || 'N/A'"></dd>
+                                        <dt class="font-semibold text-gray-500">Contenedor:</dt><dd class="text-gray-800" x-text="selectedPallet.purchase_order?.container_number || 'N/A'"></dd>
+                                        <dt class="font-semibold text-gray-500">Pedimento A4:</dt><dd class="font-mono text-gray-800" x-text="selectedPallet.purchase_order?.pedimento_a4 || 'N/A'"></dd>
+                                        <dt class="font-semibold text-gray-500">Pedimento G1:</dt><dd class="font-mono text-gray-800" x-text="selectedPallet.purchase_order?.pedimento_g1 || 'N/A'"></dd>
+                                        <dt class="font-semibold text-gray-500">Operador:</dt><dd class="text-gray-800" x-text="selectedPallet.purchase_order?.operator_name || 'N/A'"></dd>
+                                    </dl>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg text-gray-700 border-b pb-2 mb-3">Información de la Tarima</h3>
+                                    <dl class="text-sm grid grid-cols-2 gap-x-4 gap-y-2">
+                                        <dt class="font-semibold text-gray-500">Ubicación Actual:</dt><dd class="text-gray-800 font-mono" x-text="selectedPallet.location ? `${selectedPallet.location.aisle}-${selectedPallet.location.rack}-${selectedPallet.location.shelf}-${selectedPallet.location.bin}` : 'N/A'"></dd>
+                                        <dt class="font-semibold text-gray-500">Última Interacción:</dt><dd class="font-bold text-gray-800" x-text="selectedPallet.last_action || 'N/A'"></dd>
+                                        <dt class="font-semibold text-gray-500">Realizada por:</dt><dd class="text-gray-800" x-text="selectedPallet.user?.name || 'N/A'"></dd>
+                                        <dt class="font-semibold text-gray-500">Fecha Interacción:</dt><dd class="text-gray-800" x-text="new Date(selectedPallet.updated_at).toLocaleString()"></dd>
+                                    </dl>
+                                </div>
                             </div>
-                            <div class="mt-6"><h3 class="font-bold text-lg text-gray-700 border-b pb-2">Contenido de la Tarima</h3><ul class="mt-2 space-y-3"><template x-for="item in selectedPallet.items" :key="item.id"><li class="p-3 bg-gray-50 rounded-md"><div class="flex justify-between items-center"><div><p class="font-semibold text-gray-900" x-text="item.product.name"></p><p class="text-xs text-gray-500"><span class="font-mono" x-text="item.product.sku"></span> | <strong class="text-indigo-700" x-text="item.quality.name"></strong></p></div><div class="flex items-center gap-4"><p class="font-bold text-xl text-gray-800" x-text="`x${item.quantity}`"></p>@if(Auth::user()->isSuperAdmin())<button @click="openAdjustmentModal(item)" class="px-2 py-1 bg-yellow-500 text-white rounded-md text-xs font-semibold hover:bg-yellow-600">Ajustar</button>@endif</div></div></li></template></ul></div>
+                            <div class="mt-8">
+                                <h3 class="font-bold text-lg text-gray-700 border-b pb-2 mb-3">Contenido de la Tarima</h3>
+                                <ul class="space-y-3">
+                                    <template x-for="item in selectedPallet.items" :key="item.id">
+                                        <li class="p-4 bg-gray-50 rounded-lg border">
+                                            <div class="flex justify-between items-center">
+                                                <div>
+                                                    <p class="font-semibold text-gray-900" x-text="item.product.name"></p>
+                                                    <p class="text-xs text-gray-500">
+                                                        <span class="font-mono" x-text="item.product.sku"></span> | <strong class="text-indigo-700" x-text="item.quality.name"></strong>
+                                                    </p>
+                                                    {{-- Mostramos comprometido y disponible también en el modal --}}
+                                                    <p class="text-xs mt-1">
+                                                        <span class="text-red-600">Comprometido: <span x-text="item.committed_quantity || 0"></span></span> | 
+                                                        <span class="font-bold text-green-700">Disponible: <span x-text="(item.quantity || 0) - (item.committed_quantity || 0)"></span></span>
+                                                    </p>
+                                                </div>
+                                                <div class="flex items-center gap-4">
+                                                    <p class="font-bold text-xl text-gray-800" x-text="`x${item.quantity}`"></p>
+                                                    {{-- El botón "Ajustar" AHORA ESTÁ AQUÍ --}}
+                                                    @if(Auth::user()->isSuperAdmin())
+                                                    <button @click="openAdjustmentModal(item)" class="px-3 py-1 bg-yellow-500 text-white rounded-md text-xs font-semibold hover:bg-yellow-600">
+                                                        Ajustar
+                                                    </button>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </template>
             </div>
         </div>
 
-        <div x-show="adjustmentModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60" style="display: none;">
+        <div x-show="adjustmentModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60" style="display: none;">
             <div @click.away="closeAdjustmentModal()" @click.stop class="bg-white rounded-2xl shadow-xl w-full max-w-lg">
                 <template x-if="itemToAdjust">
                     <form :action="`/wms/inventory/pallet-items/${itemToAdjust.id}/adjust`" method="POST">
                         @csrf
+                        {{-- Muestra errores de validación DENTRO del modal si la sesión lo indica --}}
                         @if($errors->any() && session('open_adjustment_modal_for_item'))
-                            <div class="m-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                            <div class="m-6 mb-0 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
                                 <strong class="font-bold">Error de validación:</strong>
-                                <ul class="list-disc list-inside text-sm">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+                                <ul class="list-disc list-inside text-sm mt-1">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
                             </div>
                         @endif
-                        <div class="p-6"><h2 class="text-xl font-bold text-gray-800">Ajustar Cantidad</h2><p class="text-sm text-gray-600 mt-2">Estás ajustando: <strong x-text="itemToAdjust.product.name"></strong> (<span class="font-mono" x-text="itemToAdjust.product.sku"></span>)</p><p class="text-sm text-gray-600">Cantidad Actual: <strong x-text="itemToAdjust.quantity"></strong></p><div class="mt-4"><label for="new_quantity" class="block font-medium">Nueva Cantidad</label><input type="number" name="new_quantity" id="new_quantity" min="0" :value="itemToAdjust.quantity" class="w-full rounded-md border-gray-300 mt-1" required></div><div class="mt-4"><label for="reason" class="block font-medium">Motivo del Ajuste</label><textarea name="reason" id="reason" rows="3" class="w-full rounded-md border-gray-300 mt-1" required placeholder="Ej: Conteo cíclico, producto dañado, etc."></textarea></div></div>
-                        <div class="px-6 py-4 bg-gray-50 flex justify-end gap-4 rounded-b-2xl"><button type="button" @click="closeAdjustmentModal()" class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg">Cancelar</button><button type="submit" class="px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg">Guardar Ajuste</button></div>
+                        <div class="p-6">
+                            <h2 class="text-xl font-bold text-gray-800">Ajustar Cantidad</h2>
+                            <p class="text-sm text-gray-600 mt-2">Estás ajustando: <strong x-text="itemToAdjust.product.name"></strong> (<span class="font-mono" x-text="itemToAdjust.product.sku"></span>)</p>
+                            <p class="text-sm text-gray-600">Cantidad Actual: <strong x-text="itemToAdjust.quantity"></strong></p>
+                            <div class="mt-4">
+                                <label for="new_quantity" class="block font-medium text-sm text-gray-700">Nueva Cantidad</label>
+                                <input type="number" name="new_quantity" id="new_quantity" min="0" :value="itemToAdjust.quantity" class="w-full rounded-md border-gray-300 mt-1 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
+                            </div>
+                            <div class="mt-4">
+                                <label for="reason" class="block font-medium text-sm text-gray-700">Motivo del Ajuste</label>
+                                <textarea name="reason" id="reason" rows="3" class="w-full rounded-md border-gray-300 mt-1 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required placeholder="Ej: Conteo cíclico, producto dañado, etc.">{{ old('reason') }}</textarea>
+                            </div>
+                        </div>
+                        <div class="px-6 py-4 bg-gray-50 flex justify-end gap-4 rounded-b-2xl border-t">
+                            <button type="button" @click="closeAdjustmentModal()" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 font-semibold rounded-lg shadow-sm hover:bg-gray-50">Cancelar</button>
+                            <button type="submit" class="px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg shadow-sm hover:bg-yellow-700">Guardar Ajuste</button>
+                        </div>
                     </form>
                 </template>
             </div>
         </div>
     </div>
     
+    {{-- Script de Alpine.js para manejar los modales --}}
     <script>
         function inventoryPage(failedItemId = null) {
             return {
-                modalOpen: false, selectedPallet: null,
-                adjustmentModalOpen: false, itemToAdjust: null,
-                palletsOnPage: @json($pallets->items()),
+                modalOpen: false, 
+                selectedPallet: null,
+                adjustmentModalOpen: false, 
+                itemToAdjust: null,
+                palletsOnPage: @json($pallets->items()), // Necesario para reabrir modal en error
 
                 init() {
+                    // Si viene un ID de item fallido (por validación), intenta reabrir el modal
                     if (failedItemId) {
                         let targetPallet = null;
                         let targetItem = null;
+                        // Busca en los pallets de la página actual el item que falló
                         for (const pallet of this.palletsOnPage) {
                             if (pallet && pallet.items) {
+                                // find() devuelve el item o undefined
                                 const foundItem = pallet.items.find(item => item.id == failedItemId);
                                 if (foundItem) {
                                     targetPallet = pallet;
                                     targetItem = foundItem;
-                                    break;
+                                    break; // Deja de buscar una vez encontrado
                                 }
                             }
                         }
+                        // Si se encontraron ambos, abre el modal de ajuste
                         if (targetPallet && targetItem) {
-                            this.openModal(targetPallet);
+                            //this.openModal(targetPallet); // Opcional: abre también el de detalle
                             this.openAdjustmentModal(targetItem);
                         }
                     }
                 },
-                openModal(pallet) { this.selectedPallet = pallet; this.modalOpen = true; },
-                closeModal() { this.modalOpen = false; this.selectedPallet = null; },
-                openAdjustmentModal(item) { this.itemToAdjust = item; this.adjustmentModalOpen = true; },
-                closeAdjustmentModal() { this.adjustmentModalOpen = false; this.itemToAdjust = null; },
+                
+                openModal(pallet) { 
+                    // Asegurarse de que las relaciones necesarias estén en el JSON
+                    // Esto depende de cómo se cargaron en el controlador con ->with()
+                    this.selectedPallet = pallet; 
+                    this.modalOpen = true; 
+                },
+                closeModal() { 
+                    this.modalOpen = false; 
+                    this.selectedPallet = null; 
+                },
+                
+                // Pasa el objeto ITEM completo al abrir el modal
+                openAdjustmentModal(item) { 
+                    this.itemToAdjust = item; 
+                    this.adjustmentModalOpen = true; 
+                    // No cierres el modal de detalle si estaba abierto
+                    // this.modalOpen = false; // Comentado o eliminado
+                },
+                closeAdjustmentModal() { 
+                    this.adjustmentModalOpen = false; 
+                    this.itemToAdjust = null; 
+                    // Limpia la URL de error si se cierra manualmente
+                    if (window.location.search.includes('open_adjustment_modal_for_item')) {
+                         // Intenta eliminar el parámetro específico de la URL
+                         const url = new URL(window.location);
+                         url.searchParams.delete('open_adjustment_modal_for_item');
+                         window.history.replaceState({}, document.title, url);
+                    }
+                },
             }
         }
-        document.addEventListener('alpine:init', () => { Alpine.data('inventoryPage', inventoryPage); });
+        
+        // Registra el componente Alpine
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('inventoryPage', inventoryPage);
+        });
     </script>
 </x-app-layout>

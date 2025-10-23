@@ -1,10 +1,20 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4"> {{-- Añadido gap-4 --}}
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 Gestión de Órdenes de Venta
             </h2>
-            <div class="mt-4 md:mt-0">
+            {{-- Agrupa los botones --}}
+            <div class="flex items-center space-x-2 mt-4 md:mt-0">
+                {{-- BOTÓN DE EXPORTAR --}}
+                <a href="{{ route('wms.sales-orders.export-csv', request()->query()) }}" {{-- Pasa los filtros actuales --}}
+                   class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Exportar CSV
+                </a>
+                {{-- Botón Crear SO (existente) --}}
                 <a href="{{ route('wms.sales-orders.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
