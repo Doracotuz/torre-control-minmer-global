@@ -26,9 +26,9 @@ class AssetController extends Controller
             $searchTerm = '%' . $request->search . '%';
             $query->where(function($q) use ($searchTerm) {
                 $q->where('asset_tag', 'like', $searchTerm)
-                  ->orWhere('serial_number', 'like', 'searchTerm')
-                  ->orWhereHas('model', fn($modelQuery) => $modelQuery->where('name', 'like', $searchTerm))
-                  ->orWhereHas('currentAssignment.member', fn($memberQuery) => $memberQuery->where('name', 'like', $searchTerm));
+                ->orWhere('serial_number', 'like', $searchTerm)
+                ->orWhereHas('model', fn($modelQuery) => $modelQuery->where('name', 'like', $searchTerm))
+                ->orWhereHas('currentAssignment.member', fn($memberQuery) => $memberQuery->where('name', 'like', $searchTerm));
             });
         }
 

@@ -8,6 +8,12 @@ class Assignment extends Model {
     use HasFactory;
     protected $fillable = ['hardware_asset_id', 'organigram_member_id', 'assignment_date', 'expected_return_date', 'expected_return_date', 'actual_return_date', 'signed_receipt_path', 'return_receipt_path'];
 
+    protected $casts = [
+        'assignment_date' => 'datetime',
+        'expected_return_date' => 'datetime',
+        'actual_return_date' => 'datetime',
+    ];    
+    
     public function asset(): BelongsTo {
         return $this->belongsTo(HardwareAsset::class, 'hardware_asset_id');
     }

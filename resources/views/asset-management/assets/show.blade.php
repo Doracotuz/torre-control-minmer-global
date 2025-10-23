@@ -282,11 +282,17 @@
                                     </h3>
                                 </div>
                                 
-                                <div class="p-6">
-                                    <p class="text-sm text-gray-600 mb-6">
+                                <div class="p-6 space-y-6">
+                                    <p class="text-sm text-gray-600">
                                         Estás a punto de registrar la devolución del activo <strong>{{ $asset->asset_tag }}</strong> por parte de <strong>{{ $asset->currentAssignment->member->name }}</strong>. El estatus del activo cambiará a "En Almacén".
                                     </p>
 
+                                    <div>
+                                        <label for="actual_return_date" class="form-label">Fecha de Devolución</label>
+                                        <input type="date" id="actual_return_date" name="actual_return_date" 
+                                               value="{{ date('Y-m-d') }}" 
+                                               class="form-input w-full" required>
+                                    </div>
                                     <div x-data="{ fileName: '' }">
                                         <label class="form-label">Adjuntar Responsiva de Devolución Firmada (PDF, Opcional)</label>
                                         <div class="mt-1 flex items-center justify-center w-full px-6 py-4 border-2 border-gray-300 border-dashed rounded-md">
@@ -330,7 +336,6 @@
                 @forelse($asset->logs as $log)
                     <li class="flex items-start space-x-3 border-b pb-3 last:border-b-0">
                         <div class="flex-shrink-0 pt-1">
-                            {{-- Icono dinámico --}}
                             @if($log->action_type == 'Creación') <i class="fas fa-plus-circle text-blue-500"></i>
                             @elseif(in_array($log->action_type, ['Asignación', 'Préstamo'])) <i class="fas fa-user-check text-green-500"></i>
                             @elseif($log->action_type == 'Devolución') <i class="fas fa-undo text-gray-500"></i>

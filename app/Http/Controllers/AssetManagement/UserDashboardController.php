@@ -14,16 +14,54 @@ class UserDashboardController extends Controller
     /**
      * Muestra una lista de usuarios que tienen activos asignados actualmente.
      */
-    public function index()
+    public function index(Request $request) // <-- Añadir Request $request
     {
-        $members = OrganigramMember::whereHas('assignments', function ($query) {
+        // Consulta base
+        $query = OrganigramMember::whereHas('assignments', function ($query) {
                 $query->whereNull('actual_return_date');
             })
             ->withCount(['assignments' => function ($query) {
                 $query->whereNull('actual_return_date');
-            }])
-            ->orderBy('name')
-            ->paginate(20);
+            }]);
+
+        // --- INICIO DE MODIFICACIÓN (PARA BÚSQUEDA Y CONTEO DE ICONOS) ---
+
+        // Lógica de Búsqueda
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhereHas('position', function ($posQuery) use ($searchTerm) {
+                      $posQuery->where('name', 'like', "%{$searchTerm}%");
+                  });
+            });
+        }
+
+        // Conteo de iconos para la vista de cuadrícula
+        $query->withCount(['assignments as laptop_count' => function ($query) {
+            $query->whereNull('actual_return_date')
+                  ->whereHas('asset.model.category', function ($q) {
+                      $q->where('name', 'Laptop');
+                  });
+        }]);
+        
+        $query->withCount(['assignments as phone_count' => function ($query) {
+            $query->whereNull('actual_return_date')
+                  ->whereHas('asset.model.category', function ($q) {
+                      $q->where('name', 'Celular');
+                  });
+        }]);
+
+        $query->withCount(['assignments as monitor_count' => function ($query) {
+            $query->whereNull('actual_return_date')
+                  ->whereHas('asset.model.category', function ($q) {
+                      $q->whereIn('name', ['Monitor', 'Pantalla']); // Puedes ajustar estos nombres
+                  });
+        }]);
+        
+        // --- FIN DE MODIFICACIÓN ---
+
+        $members = $query->orderBy('name')->paginate(12)->withQueryString(); // 12 es un buen número para grids de 3
 
         return view('asset-management.user-dashboard.index', compact('members'));
     }
@@ -33,26 +71,27 @@ class UserDashboardController extends Controller
      */
     public function show(OrganigramMember $member)
     {
-        // 1. Obtenemos los activos ASIGNADOS AHORA (la lógica que ya tenías)
+        // 1. Obtenemos los activos ASIGNADOS AHORA (para la pestaña 1)
         $currentAssignments = $member->assignments()
             ->whereNull('actual_return_date')
             ->with(['asset.model.category', 'asset.model.manufacturer'])
             ->get();
 
-        // 2. NUEVO: Obtenemos el HISTORIAL de asignaciones (las que YA fueron devueltas)
+        // 2. Obtenemos el HISTORIAL de asignaciones (para la pestaña 2)
         $assignmentHistory = $member->assignments()
-            ->whereNotNull('actual_return_date') // <-- Esta es la diferencia clave
+            ->whereNotNull('actual_return_date') // La diferencia clave
             ->with(['asset.model.category', 'asset.model.manufacturer'])
-            ->orderBy('actual_return_date', 'desc') // Opcional: ordenar por fecha de devolución
+            ->orderBy('actual_return_date', 'desc') // Ordenar por más reciente
             ->get();
 
+        // 3. Obtenemos las RESPONSIVAS CONSOLIDADAS (para la pestaña 3)
         $responsivas = $member->userResponsivas; 
 
-        // 3. Pasamos AMBAS variables a la vista
+        // 4. Pasamos TODAS las variables a la vista
         return view('asset-management.user-dashboard.show', compact(
             'member', 
-            'currentAssignments', // <-- Actualizamos el nombre
-            'assignmentHistory',  // <-- Nueva variable
+            'currentAssignments', 
+            'assignmentHistory',  
             'responsivas'
         ));
     }

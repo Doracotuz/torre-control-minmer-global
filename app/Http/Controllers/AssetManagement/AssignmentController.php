@@ -65,26 +65,36 @@ class AssignmentController extends Controller
             ->with('success', 'Activo asignado exitosamente.');
     }
 
+    public function edit(Assignment $assignment)
+    {
+        $assignment->load('member', 'asset.model');
+        $members = OrganigramMember::orderBy('name')->get();
+
+        return view('asset-management.assignments.edit', compact('assignment', 'members'));
+    }    
+
     /**
      * Registra la devolución de un activo.
      */
     public function return(Request $request, Assignment $assignment)
     {
-        $request->validate([
+        $validated = $request->validate([
             'return_receipt' => 'nullable|file|mimes:pdf|max:10048',
+            'actual_return_date' => 'required|date',
         ]);
 
         if ($assignment->actual_return_date) {
             return back()->with('error', 'Esta asignación ya ha sido marcada como devuelta.');
         }
 
-        DB::transaction(function () use ($request, $assignment) {
+        DB::transaction(function () use ($request, $assignment, $validated) {
             $receiptPath = null;
             if ($request->hasFile('return_receipt')) {
                 $receiptPath = $request->file('return_receipt')->store('assets/return-receipts', 's3');
             }
 
-            $assignment->actual_return_date = now();
+            $assignment->actual_return_date = $validated['actual_return_date'];
+
             $assignment->return_receipt_path = $receiptPath;
             $assignment->save();
 
@@ -192,6 +202,56 @@ class AssignmentController extends Controller
         $assignment->update(['return_receipt_path' => $path]);
 
         return back()->with('success', 'Responsiva de devolución subida exitosamente.');
+    }
+
+    public function update(Request $request, Assignment $assignment)
+    {
+        $validated = $request->validate([
+            'organigram_member_id' => 'required|exists:organigram_members,id',
+            'assignment_date' => 'required|date',
+            'expected_return_date' => 'nullable|date|after_or_equal:assignment_date',
+            'actual_return_date' => 'nullable|date|after_or_equal:assignment_date',
+            'signed_receipt' => 'nullable|file|mimes:pdf|max:2048',
+            'return_receipt' => 'nullable|file|mimes:pdf|max:2048',
+        ]);
+
+        // Manejar la carga de la responsiva de asignación
+        if ($request->hasFile('signed_receipt')) {
+            if ($assignment->signed_receipt_path) {
+                Storage::disk('s3')->delete($assignment->signed_receipt_path);
+            }
+            $validated['signed_receipt_path'] = $request->file('signed_receipt')->store('assets/receipts', 's3');
+        }
+
+        // Manejar la carga de la responsiva de devolución
+        if ($request->hasFile('return_receipt')) {
+            if ($assignment->return_receipt_path) {
+                Storage::disk('s3')->delete($assignment->return_receipt_path);
+            }
+            $validated['return_receipt_path'] = $request->file('return_receipt')->store('assets/return-receipts', 's3');
+        }
+        
+        // Si se define una fecha de devolución, pero el estatus del activo sigue
+        // "Asignado", debemos actualizar el estatus del activo.
+        if ($validated['actual_return_date'] && $assignment->asset->status === 'Asignado') {
+             // Solo si esta es la asignación actual
+            if ($assignment->asset->currentAssignment?->id == $assignment->id) {
+                $assignment->asset->update(['status' => 'En Almacén']);
+                
+                $assignment->asset->logs()->create([
+                    'user_id' => Auth::id(),
+                    'action_type' => 'Devolución',
+                    'notes' => 'Devuelto por ' . $assignment->member->name . ' (Editado).',
+                    'loggable_id' => $assignment->id,
+                    'loggable_type' => \App\Models\Assignment::class,
+                ]);
+            }
+        }
+
+        $assignment->update($validated);
+
+        return redirect()->route('asset-management.user-dashboard.show', $assignment->member)
+            ->with('success', 'Asignación actualizada exitosamente.');
     }    
 
 
