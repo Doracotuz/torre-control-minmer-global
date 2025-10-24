@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\Storage;
 
 class OrganigramMember extends Model
 {
@@ -92,5 +94,15 @@ class OrganigramMember extends Model
         return $this->hasMany(UserResponsiva::class)->latest();
     }
 
+    protected $appends = ['profile_photo_path_url'];    
+
+    protected function profilePhotoPathUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->profile_photo_path
+                            ? Storage::disk('s3')->url($this->profile_photo_path)
+                            : null,
+        );
+    }    
     
 }

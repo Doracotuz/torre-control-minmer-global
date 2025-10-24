@@ -53,15 +53,17 @@ class OrganigramController extends Controller
         $managers = OrganigramMember::orderBy('name')->get(); 
 
         // Start building the query with eager loading for efficiency
-        $query = OrganigramMember::with(['area', 'manager', 'position']); // Load relations needed for display
+        $query = OrganigramMember::with(['area', 'manager', 'position']); // Load relations
 
-        // Apply server-side filters (primarily for initial load or if JS is disabled)
-        // Note: The main filtering is now handled client-side by Alpine.js
+        // --- LÓGICA DE FILTRADO DEL LADO DEL SERVIDOR ---
+
+        // Aplicar filtro de Posición
         $selectedPosition = $request->input('position_id');
         if ($selectedPosition) {
             $query->where('position_id', $selectedPosition);
         }
 
+        // Aplicar filtro de Jefe
         $selectedManager = $request->input('manager_id');
         if ($selectedManager) {
             if ($selectedManager === 'null') {
@@ -71,12 +73,13 @@ class OrganigramController extends Controller
             }
         }
 
+        // Aplicar filtro de Área
         $selectedArea = $request->input('area_id');
         if ($selectedArea) {
             $query->where('area_id', $selectedArea);
         }
 
-        // Apply server-side search (also primarily for initial load/non-JS)
+        // Aplicar búsqueda
         $searchQuery = $request->input('search');
         if ($searchQuery) {
             $query->where(function ($q) use ($searchQuery) {
@@ -84,40 +87,30 @@ class OrganigramController extends Controller
                   ->orWhere('email', 'like', '%' . $searchQuery . '%');
             });
         }
-
-        // Execute the query to get the members
-        // It's generally better to fetch ALL members for client-side filtering unless the dataset is huge.
-        // If performance becomes an issue with thousands of members, you'd switch to server-side AJAX filtering.
-        // For now, assuming client-side filtering is desired, we fetch all members matching basic filters.
-        $membersQueryResults = $query->orderBy('name')->get(); 
-
-        // --- ADD FULL PHOTO URL ---
-        // Iterate over the results to add the full S3 URL needed by the frontend <img src="...">
-        $members = $membersQueryResults->map(function ($member) {
-            // Generate the full S3 URL if a path exists, otherwise set to null
-            $member->profile_photo_path_url = $member->profile_photo_path 
-                                              ? Storage::disk('s3')->url($member->profile_photo_path) 
-                                              : null;
-            
-            // Ensure relations potentially used in Alpine templates are loaded. 
-            // `with()` above should cover these, but `loadMissing` is safe.
-            $member->loadMissing(['position', 'area', 'manager']); 
-
-            return $member;
-        });
-        // --- END ADDING PHOTO URL ---
         
-        // Pass the modified $members collection (now including `profile_photo_path_url`)
-        // along with filter data to the Blade view.
+        // --- FIN DE LÓGICA DE FILTRADO ---
+
+
+        // --- CAMBIO CLAVE: PAGINAR RESULTADOS ---
+        // En lugar de ->get(), usamos ->paginate()
+        // withQueryString() asegura que los filtros (?search=...&area_id=...) se mantengan
+        // al cambiar de página.
+        $members = $query->orderBy('name')->paginate(12)->withQueryString();
+
+        // NO SE NECESITA EL BLOQUE ->map()
+        // El Accessor en el modelo OrganigramMember se encarga
+        // de generar 'profile_photo_path_url' automáticamente.
+        
+        // Pass the paginated $members collection and filter data to the Blade view.
         return view('admin.organigram.index', compact(
-            'members',          // This collection goes into the `allMembers` Alpine variable
-            'areas',            // For filter dropdown
-            'positions',        // For filter dropdown
-            'managers',         // For filter dropdown
-            'selectedPosition', // To pre-select filter dropdowns
-            'selectedManager',  // To pre-select filter dropdowns
-            'selectedArea',     // To pre-select filter dropdowns
-            'searchQuery'       // To pre-fill the search input
+            'members',          // ¡Esto ahora es una instancia de Paginator!
+            'areas',            // Para dropdown
+            'positions',        // Para dropdown
+            'managers',         // Para dropdown
+            'selectedPosition', // Para pre-seleccionar dropdown
+            'selectedManager',  // Para pre-seleccionar dropdown
+            'selectedArea',     // Para pre-seleccionar dropdown
+            'searchQuery'       // Para pre-llenar la barra de búsqueda
         ));
     }
 
@@ -1324,4 +1317,90 @@ class OrganigramController extends Controller
                          ->with('browser_notification', $notificationMessage); // Message for browser notification
         // --- END BROWSER NOTIFICATION LOGIC ---
     }
+
+    public function exportCsv()
+    {
+        // 1. Definir las cabeceras del CSV (consistente con la plantilla de importación)
+        $headers = [
+            'id',
+            'name',
+            'email',
+            'cell_phone',
+            'position_name',
+            'area_name',
+            'manager_name', // Usaremos el nombre del manager para legibilidad
+            'skills',
+            'activities',
+            'is_active',
+            'has_user_account',
+            'trajectory_title_1', 'trajectory_description_1', 'trajectory_start_date_1', 'trajectory_end_date_1',
+            'trajectory_title_2', 'trajectory_description_2', 'trajectory_start_date_2', 'trajectory_end_date_2',
+            'trajectory_title_3', 'trajectory_description_3', 'trajectory_start_date_3', 'trajectory_end_date_3',
+            'trajectory_title_4', 'trajectory_description_4', 'trajectory_start_date_4', 'trajectory_end_date_4',
+            'trajectory_title_5', 'trajectory_description_5', 'trajectory_start_date_5', 'trajectory_end_date_5',
+        ];
+
+        // 2. Obtener todos los miembros con sus relaciones (Eager Loading)
+        $members = OrganigramMember::with([
+            'area', 
+            'manager', 
+            'position', 
+            'activities', 
+            'skills', 
+            'trajectories' => function ($query) {
+                $query->orderBy('start_date', 'asc'); // Ordenar la trayectoria
+            }, 
+            'user'
+        ])->orderBy('name')->get();
+
+        // 3. Crear el escritor de CSV
+        $csv = Writer::createFromString('');
+        $csv->setOutputBOM(Writer::BOM_UTF8); // Importante para caracteres especiales (acentos, ñ)
+        $csv->insertOne($headers);
+
+        // 4. Iterar sobre los miembros y construir cada fila
+        foreach ($members as $member) {
+            $row = [
+                $member->id,
+                $member->name,
+                $member->email ?? 'N/A',
+                $member->cell_phone ?? 'N/A',
+                $member->position->name ?? 'N/A',
+                $member->area->name ?? 'N/A',
+                $member->manager->name ?? 'N/A',
+                $member->skills->pluck('name')->implode(', '),
+                $member->activities->pluck('name')->implode(', '),
+                $member->is_active ? 'Sí' : 'No',
+                $member->user ? 'Sí' : 'No',
+            ];
+
+            // Aplanar la trayectoria (hasta 5, igual que en la importación)
+            $maxTrajectories = 5;
+            for ($i = 0; $i < $maxTrajectories; $i++) {
+                $trajectory = $member->trajectories->get($i); // .get(index) es seguro
+                
+                if ($trajectory) {
+                    $row[] = $trajectory->title;
+                    $row[] = $trajectory->description;
+                    $row[] = optional($trajectory->start_date)->format('d/m/Y') ?? '';
+                    $row[] = optional($trajectory->end_date)->format('d/m/Y') ?? '';
+                } else {
+                    // Añadir 4 columnas vacías si no hay trayectoria en este índice
+                    $row = array_merge($row, ['', '', '', '']);
+                }
+            }
+            
+            // Insertar la fila completa en el CSV
+            $csv->insertOne($row);
+        }
+
+        // 5. Preparar y devolver la respuesta de descarga
+        $fileName = 'organigrama_export_' . Carbon::now()->format('Y-m-d_His') . '.csv';
+        
+        return response((string) $csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ]);
+    }
+
 }

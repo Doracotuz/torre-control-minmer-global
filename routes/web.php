@@ -273,6 +273,7 @@ Route::middleware(['auth', 'check.organigram.admin'])->prefix('admin/organigram'
 
     Route::get('/template', [OrganigramController::class, 'downloadTemplate'])->name('download-template');
     Route::post('/import-csv', [OrganigramController::class, 'importCsv'])->name('import-csv');
+    Route::get('/export-csv', [OrganigramController::class, 'exportCsv'])->name('export-csv');    
 
     // Rutas para gestionar Actividades del Organigrama (CRUD)
     Route::prefix('activities')->name('activities.')->group(function () {
