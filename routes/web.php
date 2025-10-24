@@ -183,6 +183,7 @@ Route::middleware(['auth', 'high.privilege'])->prefix('asset-management')->name(
     // CRUD para Activos de Hardware
     Route::resource('assets', App\Http\Controllers\AssetManagement\AssetController::class);
     Route::get('assets-export-csv', [App\Http\Controllers\AssetManagement\AssetController::class, 'exportCsv'])->name('assets.export-csv');
+    Route::get('assets-filter', [App\Http\Controllers\AssetManagement\AssetController::class, 'filter'])->name('assets.filter');    
     // Asignación de Activos
     Route::get('assets/{asset}/assign', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'create'])->name('assignments.create');
     Route::post('assets/{asset}/assign', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'store'])->name('assignments.store');

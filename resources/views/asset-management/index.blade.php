@@ -2,6 +2,7 @@
 
 @section('content')
 
+{{-- Tu sección de <style> completa con los estilos para shimmer y glow --}}
 <style>
     :root {
         --color-primary: #2c3856;
@@ -23,11 +24,6 @@
         width: 100%; 
         padding: 0.75rem 2rem;
     }
-    .form-input:focus, .form-select:focus, .form-textarea:focus { 
-        --tw-ring-color: var(--color-primary); 
-        border-color: var(--color-primary); 
-        box-shadow: 0 0 0 2px var(--tw-ring-color); 
-    }
     .btn { padding: 0.65rem 1.25rem; border-radius: 0.5rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); transition: all 200ms ease-in-out; transform: translateY(0); border: 1px solid transparent; }
     .btn:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
     .btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; }
@@ -48,41 +44,52 @@
     .kpi-card { animation: fadeIn 0.5s ease-out forwards; }
 
     @media (max-width: 767px) {
-        .responsive-table-header {
-            display: none;
-        }
-        .asset-card {
-            display: block;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.75rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            background-color: var(--color-surface);
-            box-shadow: var(--shadow-sm);
-        }
-        .asset-card-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #f3f4f6;
-        }
-        .asset-card-row:last-child {
-            border-bottom: none;
-        }
-        .asset-card-label {
-            font-weight: 600;
-            color: var(--color-text-secondary);
-        }
-        .asset-card-value {
-            text-align: right;
-            color: var(--color-text-primary);
-        }
+        .responsive-table-header { display: none; }
+        .asset-card { display: block; border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 1rem; margin-bottom: 1rem; background-color: var(--color-surface); box-shadow: var(--shadow-sm); }
+        .asset-card-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6; }
+        .asset-card-row:last-child { border-bottom: none; }
+        .asset-card-label { font-weight: 600; color: var(--color-text-secondary); }
+        .asset-card-value { text-align: right; color: var(--color-text-primary); }
     }
+
+    /* --- INICIO DE NUEVOS ESTILOS --- */
+
+    /* 1. Animación de Shimmer (Brillo) para el Skeleton */
+    @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
+    .skeleton-shimmer { animation: shimmer 2s infinite linear; background: linear-gradient(to right, #f3f4f6 4%, #e5e7eb 25%, #f3f4f6 36%); background-size: 1000px 100%; }
+    .skeleton-bar { height: 1.25rem; border-radius: 0.5rem; background-color: #e5e7eb; /* Fallback */ }
+    .skeleton-avatar { height: 2.5rem; width: 2.5rem; border-radius: 9999px; background-color: #e5e7eb; /* Fallback */ }
+
+    /* 2. Nuevo efecto de "Glow" para inputs (más innovador) */
+    .form-input:focus, .form-select:focus, .form-textarea:focus { --tw-ring-color: var(--color-primary); border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(44, 56, 86, 0.15); }
+    
+    /* 3. Nuevo efecto de "Glow" para las tarjetas KPI */
+    .kpi-card { animation: fadeIn 0.5s ease-out forwards; transition: all 0.3s ease-in-out; }
+    .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px -5px rgba(44, 56, 86, 0.1); }
+    
+    /* 4. Transición para el overlay de carga */
+    .loading-overlay { transition: opacity 0.3s ease-in-out; }
+    
+    /* --- FIN DE NUEVOS ESTILOS --- */
 </style>
 
-<div x-data="{ modalOpen: false }" class="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+{{-- 
+  Envolvemos todo en un componente x-data de Alpine
+--}}
+<div x-data="assetDashboard()" 
+     x-init="
+        initFilters(
+            '{{ request('search', '') }}',
+            '{{ request('status', '') }}',
+            '{{ request('site_id', '') }}',
+            '{{ request('category_id', '') }}'
+        );
+        fetchAssetList();
+     "
+     class="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
     
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10">
+        {{-- Tu header, KPIs y Modal son idénticos al archivo original --}}
         <div>
             <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight">Dashboard de Activos</h1>
             <p class="text-[var(--color-text-secondary)] mt-2">Vista general y filtrado del inventario de hardware.</p>
@@ -91,17 +98,14 @@
             <button @click="modalOpen = true" class="btn btn-secondary">
                 <i class="fas fa-chart-pie mr-2"></i> Ver Balance
             </button>
-
             <a href="{{ route('asset-management.user-dashboard.index') }}" class="btn btn-secondary">
                 <i class="fas fa-user-shield mr-2"></i> Responsivas por Usuario
             </a>
-
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" class="btn btn-secondary">
                     <i class="fas fa-cog mr-2"></i> Acciones <i class="fas fa-chevron-down ml-2 text-xs transition-transform" :class="{'rotate-180': open}"></i>
                 </button>
-                <div x-show="open" 
-                     @click.away="open = false" 
+                <div x-show="open" @click.away="open = false" 
                      x-transition:enter="transition ease-out duration-200"
                      x-transition:enter-start="opacity-0 transform -translate-y-2"
                      x-transition:enter-end="opacity-100 transform translate-y-0"
@@ -144,139 +148,125 @@
     </header>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div class="kpi-card bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4 transition-all hover:shadow-xl hover:scale-105">
+        {{-- Tus 4 KPI cards idénticos --}}
+        <div class="kpi-card bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4">
             <div class="bg-blue-100 p-4 rounded-full"><i class="fas fa-desktop text-2xl text-blue-500"></i></div>
             <div><p class="text-3xl font-bold text-gray-800">{{ $stats['total'] }}</p><p class="text-gray-500 text-sm font-medium">Activos Totales</p></div>
         </div>
-        <div class="kpi-card bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4 transition-all hover:shadow-xl hover:scale-105" style="animation-delay: 0.1s;">
+        <div class="kpi-card bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4" style="animation-delay: 0.1s;">
             <div class="bg-green-100 p-4 rounded-full"><i class="fas fa-check-circle text-2xl text-green-500"></i></div>
             <div><p class="text-3xl font-bold text-gray-800">{{ $stats['assigned'] }}</p><p class="text-gray-500 text-sm font-medium">Asignados</p></div>
         </div>
-        <div class="kpi-card bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4 transition-all hover:shadow-xl hover:scale-105" style="animation-delay: 0.2s;">
+        <div class="kpi-card bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4" style="animation-delay: 0.2s;">
             <div class="bg-indigo-100 p-4 rounded-full"><i class="fas fa-warehouse text-2xl text-indigo-500"></i></div>
             <div><p class="text-3xl font-bold text-gray-800">{{ $stats['in_stock'] }}</p><p class="text-gray-500 text-sm font-medium">En Almacén</p></div>
         </div>
-        <div class="kpi-card bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4 transition-all hover:shadow-xl hover:scale-105" style="animation-delay: 0.3s;">
+        <div class="kpi-card bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4" style="animation-delay: 0.3s;">
             <div class="bg-orange-100 p-4 rounded-full"><i class="fas fa-tools text-2xl text-[var(--color-accent)]"></i></div>
             <div><p class="text-3xl font-bold text-gray-800">{{ $stats['in_repair'] }}</p><p class="text-gray-500 text-sm font-medium">En Reparación</p></div>
         </div>
     </div>
 
+    {{-- 
+      INICIO DE LA SECCIÓN DINÁMICA
+    --}}
     <div class="bg-white p-6 rounded-xl shadow-lg">
-        <form action="{{ route('asset-management.dashboard') }}" method="GET" class="mb-6">
+        {{-- Los Filtros (con estilo focus actualizado) --}}
+        <div class="mb-6">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-
                 <div class="lg:col-span-2">
                     <label for="search" class="form-label text-xs">Buscar Activo</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i class="fas fa-search text-gray-400"></i></span>
-                        <input type="text" id="search" name="search" placeholder="Etiqueta, serie, modelo..." value="{{ $filters['search'] ?? '' }}" class="form-input w-full pl-10">
+                        <input type="text" id="search" placeholder="Etiqueta, serie, modelo, usuario..." 
+                               x-model.debounce.350ms="filters.search" 
+                               @change="resetPage(); fetchAssetList();"
+                               class="form-input w-full pl-10">
                     </div>
                 </div>
                 <div>
                     <label for="status" class="form-label text-xs">Estatus</label>
-                    <select name="status" id="status" class="form-select w-full">
+                    <select id="status" class="form-select w-full"
+                            x-model="filters.status"
+                            @change="resetPage(); fetchAssetList();">
                         <option value="">Todos</option>
                         @foreach($statuses as $status)
-                            <option value="{{ $status }}" @selected(request('status') == $status)>{{ $status }}</option>
+                            <option value="{{ $status }}">{{ $status }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div>
                     <label for="site_id" class="form-label text-xs">Ubicación</label>
-                    <select name="site_id" id="site_id" class="form-select w-full">
+                    <select id="site_id" class="form-select w-full"
+                            x-model="filters.site_id"
+                            @change="resetPage(); fetchAssetList();">
                         <option value="">Todas</option>
                         @foreach($sites as $site)
-                            <option value="{{ $site->id }}" @selected(request('site_id') == $site->id)>{{ $site->name }}</option>
+                            <option value="{{ $site->id }}">{{ $site->name }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div>
                     <label for="category_id" class="form-label text-xs">Categoría</label>
-                    <select name="category_id" id="category_id" class="form-select w-full">
+                    <select id="category_id" class="form-select w-full"
+                            x-model="filters.category_id"
+                            @change="resetPage(); fetchAssetList();">
                         <option value="">Todas</option>
                         @foreach($categories as $category)
-                            <option value="{{ $category->id }}" @selected(request('category_id') == $category->id)>{{ $category->name }}</option>
+                            <option value="{{ $category->id }}">{{ $category->name }}</option>
                         @endforeach
                     </select>
                 </div>
             </div>
             <div class="mt-4 flex items-center space-x-3 border-t pt-4">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-filter mr-2"></i>Aplicar Filtros
-                </button>
-                <a href="{{ route('asset-management.dashboard') }}" class="btn btn-secondary">Limpiar</a>
-            </div>
-        </form>
-
-        <div class="table-container border rounded-lg overflow-hidden">
-            <div class="responsive-table-header hidden md:grid md:grid-cols-7 gap-4 bg-[#2c3856] p-4 font-bold text-xs text-[#ffffff] uppercase tracking-wider">
-                <div class="col-span-1">Etiqueta</div>
-                <div class="col-span-1">Categoría</div>
-                <div class="col-span-1">Modelo</div>
-                <div class="col-span-1">Estatus</div>
-                <div class="col-span-1">Asignado a</div>
-                <div class="col-span-1">Ubicación</div>
-                <div class="col-span-1 text-right">Acciones</div>
-            </div>
-
-            <div class="divide-y md:divide-y-0">
-                @forelse ($assets as $asset)
-                    <div class="hidden md:grid md:grid-cols-7 gap-4 p-4 items-center hover:bg-gray-50 transition-colors">
-                        <div><a href="{{ route('asset-management.assets.show', $asset) }}" class="font-mono text-[var(--color-primary)] hover:underline font-semibold">{{ $asset->asset_tag }}</a></div>
-                        <div class="text-gray-600">{{ $asset->model->category->name ?? 'N/A' }}</div>
-                        <div class="font-semibold text-gray-800">{{ $asset->model->name ?? 'N/A' }}</div>
-                        <div><span class="status-badge status-{{ Str::kebab($asset->status) }}">{{ $asset->status }}</span></div>
-                        <div class="text-gray-600">{{ $asset->currentAssignment->member->name ?? '---' }}</div>
-                        <div class="text-gray-600">{{ $asset->site->name ?? 'N/A' }}</div>
-                        <div class="flex items-center justify-end space-x-4">
-                            <a href="{{ route('asset-management.assets.show', $asset) }}" title="Ver Detalles"><i class="fas fa-eye"></i></a>
-                            <a href="{{ route('asset-management.assets.edit', $asset) }}" title="Editar Activo"><i class="fas fa-pencil-alt"></i></a>
-                        </div>
-                    </div>
-
-                    <div class="asset-card md:hidden">
-                        <div class="asset-card-row">
-                            <span class="asset-card-label">Etiqueta</span>
-                            <span class="asset-card-value"><a href="{{ route('asset-management.assets.show', $asset) }}" class="font-mono text-[var(--color-primary)] hover:underline font-semibold">{{ $asset->asset_tag }}</a></span>
-                        </div>
-                        <div class="asset-card-row">
-                            <span class="asset-card-label">Estatus</span>
-                            <span class="asset-card-value"><span class="status-badge status-{{ Str::kebab($asset->status) }}">{{ $asset->status }}</span></span>
-                        </div>
-                        <div class="asset-card-row">
-                            <span class="asset-card-label">Modelo</span>
-                            <span class="asset-card-value font-semibold">{{ $asset->model->name ?? 'N/A' }}</span>
-                        </div>
-                        <div class="asset-card-row">
-                            <span class="asset-card-label">Asignado a</span>
-                            <span class="asset-card-value">{{ $asset->currentAssignment->member->name ?? '---' }}</span>
-                        </div>
-                        <div class="asset-card-row">
-                            <span class="asset-card-label">Ubicación</span>
-                            <span class="asset-card-value">{{ $asset->site->name ?? 'N/A' }}</span>
-                        </div>
-                        <div class="flex items-center justify-end space-x-6 pt-4">
-                            <a href="{{ route('asset-management.assets.show', $asset) }}" class="btn btn-secondary py-2 px-4 text-sm">Ver Detalles</a>
-                            <a href="{{ route('asset-management.assets.edit', $asset) }}" class="btn btn-primary py-2 px-4 text-sm">Editar</a>
-                        </div>
-                    </div>
-                @empty
-                    <div class="text-center p-12 col-span-full">
-                        <i class="fas fa-box-open text-4xl text-gray-300 mb-4"></i>
-                        <p class="text-gray-500">No se encontraron activos que coincidan con los filtros.</p>
-                    </div>
-                @endforelse
+                <button @click="clearFilters()" class="btn btn-secondary">Limpiar</button>
+                {{-- Indicador de Carga Sutil --}}
+                <div x-show="isLoading" class="flex items-center text-sm text-[var(--color-primary)]" x-transition>
+                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                    Actualizando...
+                </div>
             </div>
         </div>
-        
-        @if ($assets->hasPages())
-            <div class="p-4 bg-gray-50 border-t mt-4 rounded-b-lg">
-                {!! $assets->links() !!}
-            </div>
-        @endif
-    </div>
 
+        {{-- Contenedor con Skeleton Loader y Contenido Real --}}
+        <div class="relative min-h-[300px]"> {{-- Altura mínima para que el skeleton sea visible --}}
+            {{-- 1. El Skeleton Loader (se muestra si isLoading es true) --}}
+            <div x-show="isLoading" 
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-300"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="absolute inset-0 z-10" x-cloak>
+                 
+                {{-- Incluimos la vista parcial del skeleton --}}
+                @include('asset-management.assets._list-skeleton')
+            </div>
+
+            {{-- 2. El Contenido Real (se muestra si isLoading es false) --}}
+            <div x-show="!isLoading" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 id="asset-list-container" 
+                 x-html="assetsHtml"
+                 @click.prevent="handlePaginationClick($event)"
+                 class="z-0">
+                {{-- El contenido será inyectado por Alpine --}}
+                {{-- 
+                    Nota: Para la carga inicial, podrías incluir el _list aquí
+                    para evitar mostrar el skeleton al principio si no hay filtros.
+                    @include('asset-management.assets._list', ['assets' => $initialAssets]) 
+                    Y ajustar el JS para que no cargue al inicio si ya hay assets.
+                --}}
+            </div>
+        </div>
+    </div>
+    {{-- FIN DE LA SECCIÓN DINÁMICA --}}
+
+
+    {{-- El Modal "Ver Balance" es idéntico --}}
     <div x-show="modalOpen" 
          x-transition:enter="ease-out duration-300"
          x-transition:enter-start="opacity-0"
@@ -285,7 +275,7 @@
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
          class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" x-cloak>
-
+        
         <div @click.away="modalOpen = false" 
              x-show="modalOpen"
              x-transition:enter="ease-out duration-300"
@@ -306,7 +296,7 @@
             <div class="p-6 space-y-4 overflow-y-auto">
                 @forelse($assetBalance as $categoryName => $data)
                     <div x-data="{ expanded: false }" class="bg-gray-50 rounded-lg border">
-                        {{-- Fila Principal de la Categoría --}}
+                        {{-- Fila Principal --}}
                         <div class="grid grid-cols-5 gap-4 items-center p-4">
                             <div class="col-span-2 md:col-span-1 font-bold text-gray-800">{{ $categoryName }}</div>
                             <div class="text-center">
@@ -330,6 +320,7 @@
                             </div>
                         </div>
                         
+                        {{-- Desglose --}}
                         <div x-show="expanded" x-transition class="border-t bg-white p-4">
                             <h4 class="font-semibold text-sm mb-2">Desglose por Estatus:</h4>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
@@ -354,4 +345,89 @@
     </div>
 
 </div>
+
+{{-- EL SCRIPT DE ALPINE (ACTUALIZADO CON TIEMPO MÍNIMO DE CARGA) --}}
+<script>
+    function assetDashboard() {
+        return {
+            modalOpen: false,
+            filters: {
+                search: '',
+                status: '',
+                site_id: '',
+                category_id: '',
+                page: 1
+            },
+            assetsHtml: '', 
+            isLoading: true,
+            
+            initFilters(search, status, siteId, categoryId) {
+                this.filters.search = search;
+                this.filters.status = status;
+                this.filters.site_id = siteId;
+                this.filters.category_id = categoryId;
+            },
+
+            clearFilters() {
+                this.filters.search = '';
+                this.filters.status = '';
+                this.filters.site_id = '';
+                this.filters.category_id = '';
+                this.filters.page = 1;
+                this.fetchAssetList();
+            },
+
+            resetPage() {
+                this.filters.page = 1;
+            },
+
+            async fetchAssetList() {
+                this.isLoading = true;
+                const startTime = Date.now(); // Marca el tiempo de inicio
+                const params = new URLSearchParams(this.filters);
+                const url = `{{ route('asset-management.assets.filter') }}?${params.toString()}`;
+                
+                // Usamos replaceState para no llenar el historial del navegador
+                window.history.replaceState({}, '', `{{ route('asset-management.dashboard') }}?${params.toString()}`);
+
+                try {
+                    const response = await fetch(url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    
+                    if (!response.ok) throw new Error('Network response was not ok.');
+                    
+                    this.assetsHtml = await response.text();
+
+                } catch (error) {
+                    console.error('Error al cargar los activos:', error);
+                    this.assetsHtml = '<p class="text-center p-12 text-red-600">Error al cargar la lista de activos. Intenta de nuevo.</p>';
+                } finally {
+                    // Forzamos un tiempo mínimo de carga (ej. 300ms)
+                    const elapsedTime = Date.now() - startTime;
+                    const remainingTime = 300 - elapsedTime; 
+
+                    if (remainingTime > 0) {
+                        await new Promise(resolve => setTimeout(resolve, remainingTime));
+                    }
+                    
+                    this.isLoading = false;
+                }
+            },
+
+            handlePaginationClick(event) {
+                const link = event.target.closest('a[href]');
+                if (link && link.href.includes('page=')) {
+                    const url = new URL(link.href);
+                    const page = url.searchParams.get('page');
+                    if (page) {
+                        this.filters.page = page;
+                        this.fetchAssetList();
+                    }
+                }
+            }
+        }
+    }
+</script>
+
 @endsection

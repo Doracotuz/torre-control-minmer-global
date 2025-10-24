@@ -316,4 +316,39 @@ class AssetController extends Controller
         ]);
     }
 
+    public function filter(Request $request)
+    {
+        // Esta lógica de consulta es la misma que tenías en index()
+        $query = HardwareAsset::with(['model.category', 'model.manufacturer', 'site', 'currentAssignment.member']);
+
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->search . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('asset_tag', 'like', $searchTerm)
+                ->orWhere('serial_number', 'like', $searchTerm)
+                ->orWhereHas('model', fn($modelQuery) => $modelQuery->where('name', 'like', $searchTerm))
+                ->orWhereHas('currentAssignment.member', fn($memberQuery) => $memberQuery->where('name', 'like', $searchTerm));
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('site_id')) {
+            $query->where('site_id', $request->site_id);
+        }
+
+        if ($request->filled('category_id')) {
+            $query->whereHas('model.category', function ($q) use ($request) {
+                $q->where('id', $request->category_id);
+            });
+        }
+
+        $assets = $query->latest()->paginate(15)->withQueryString();
+        
+        // La clave: devolvemos SOLO la vista parcial, no el layout completo.
+        return view('asset-management.assets._list', compact('assets'));
+    }    
+
 }

@@ -377,7 +377,7 @@ class AssignmentController extends Controller
                     $asset->logs()->create([
                         'user_id' => Auth::id(),
                         'action_type' => 'Asignación',
-                        'notes' => 'Asignado a ' . $member->name . ' (Importación Masiva)',
+                        'notes' => 'Asignado a ' . $member->name,
                         'loggable_id' => $assignment->id,
                         'loggable_type' => Assignment::class,
                     ]);
