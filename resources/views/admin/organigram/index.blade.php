@@ -38,7 +38,7 @@
             select:focus-visible { border-color: #ff9c00 !important; }
             
             .pagination-link { display: inline-flex; align-items: center; justify-content: center; padding: 0.5rem 1rem; margin: 0 0.25rem; border: 1px solid #d1d5db; background-color: white; color: #374151; font-size: 0.875rem; font-weight: 500; border-radius: 0.375rem; transition: all 0.2s ease-in-out; }
-            .pagination-link:hover:not(.disabled):not(.active) { background-color: #f3f4f6; border-color: #9ca3af; } 
+            .pagination-link:hover:not(.disabled):not(.active) { background-color: #E8ECF7; border-color: #9ca3af; } 
             .pagination-link.active { background-color: #ff9c00; border-color: #ff9c00; color: white; cursor: default; }
             .pagination-link.disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
         </style>
