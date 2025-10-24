@@ -182,10 +182,13 @@ Route::middleware(['auth', 'high.privilege'])->prefix('asset-management')->name(
 
     // CRUD para Activos de Hardware
     Route::resource('assets', App\Http\Controllers\AssetManagement\AssetController::class);
-
+    Route::get('assets-export-csv', [App\Http\Controllers\AssetManagement\AssetController::class, 'exportCsv'])->name('assets.export-csv');
     // Asignación de Activos
     Route::get('assets/{asset}/assign', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'create'])->name('assignments.create');
     Route::post('assets/{asset}/assign', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'store'])->name('assignments.store');
+    Route::get('assignments/import', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'createImport'])->name('assignments.import.create');
+    Route::post('assignments/import', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'storeImport'])->name('assignments.import.store');
+    Route::get('assignments/import-template', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'downloadTemplate'])->name('assignments.import.template');    
     
     // Devolución de Activos
     Route::post('assignments/{assignment}/return', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'return'])->name('assignments.return');

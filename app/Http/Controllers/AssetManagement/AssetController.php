@@ -12,6 +12,8 @@ use App\Models\HardwareCategory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use League\Csv\Writer;
+use Carbon\Carbon;
 
 class AssetController extends Controller
 {
@@ -265,4 +267,53 @@ class AssetController extends Controller
 
         return redirect()->route('asset-management.dashboard')->with('success', 'Activo eliminado exitosamente.');
     }
+
+    public function exportCsv()
+    {
+        $headers = [
+            'asset_tag',
+            'serial_number',
+            'status',
+            'model_name',
+            'category_name',
+            'manufacturer_name',
+            'site_name',
+            'assigned_to_member_name',
+            'assigned_to_member_email',
+        ];
+
+        // Obtenemos todos los activos con sus relaciones
+        $assets = HardwareAsset::with([
+            'model.category', 
+            'model.manufacturer', 
+            'site', 
+            'currentAssignment.member' // Carga la asignación actual y el miembro
+        ])->get();
+
+        $csv = Writer::createFromString('');
+        $csv->setOutputBOM(Writer::BOM_UTF8);
+        $csv->insertOne($headers);
+
+        foreach ($assets as $asset) {
+            $csv->insertOne([
+                $asset->asset_tag,
+                $asset->serial_number,
+                $asset->status,
+                $asset->model->name ?? 'N/A',
+                $asset->model->category->name ?? 'N/A',
+                $asset->model->manufacturer->name ?? 'N/A',
+                $asset->site->name ?? 'N/A',
+                $asset->currentAssignment->member->name ?? 'N/A',
+                $asset->currentAssignment->member->email ?? 'N/A',
+            ]);
+        }
+
+        $fileName = 'export_inventario_activos_' . Carbon::now()->format('Y-m-d_His') . '.csv';
+
+        return response((string) $csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ]);
+    }
+
 }

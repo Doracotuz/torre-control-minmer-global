@@ -94,11 +94,11 @@
 
             <a href="{{ route('asset-management.user-dashboard.index') }}" class="btn btn-secondary">
                 <i class="fas fa-user-shield mr-2"></i> Responsivas por Usuario
-            </a>            
+            </a>
 
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" class="btn btn-secondary">
-                    <i class="fas fa-cog mr-2"></i> Configuración <i class="fas fa-chevron-down ml-2 text-xs transition-transform" :class="{'rotate-180': open}"></i>
+                    <i class="fas fa-cog mr-2"></i> Acciones <i class="fas fa-chevron-down ml-2 text-xs transition-transform" :class="{'rotate-180': open}"></i>
                 </button>
                 <div x-show="open" 
                      @click.away="open = false" 
@@ -108,25 +108,41 @@
                      x-transition:leave="transition ease-in duration-150"
                      x-transition:leave-start="opacity-100 transform translate-y-0"
                      x-transition:leave-end="opacity-0 transform -translate-y-2"
-                     class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl z-20 overflow-hidden border border-gray-200" style="display: none;" x-cloak>
-                    <a href="{{ route('asset-management.sites.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Sitios</a>
-                    <a href="{{ route('asset-management.manufacturers.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Fabricantes</a>
-                    <a href="{{ route('asset-management.categories.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Categorías</a>
-                    <a href="{{ route('asset-management.models.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Modelos</a>
-                    <a href="{{ route('asset-management.software-licenses.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all border-t border-gray-100">Gestionar Software</a>    
-                    <a href="{{ route('asset-management.maintenances.index') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">
-                        Mantenimientos
-                    </a>
+                     class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl z-20 overflow-hidden border border-gray-200" style="display: none;" x-cloak>
+                    
+                    @auth
+                        @if (Auth::user()->is_area_admin && Auth::user()->area?->name === 'Administración')
+                            <div class="p-2">
+                                <p class="text-xs font-semibold text-gray-400 uppercase px-3 pt-1 pb-2">Acciones</p>
+                                <a href="{{ route('asset-management.assignments.import.create') }}" class="flex items-center w-full text-left px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">
+                                    <i class="fas fa-upload mr-3 w-4 text-center text-gray-500"></i> Importar Asignaciones
+                                </a>
+                                <a href="{{ route('asset-management.assets.export-csv') }}" class="flex items-center w-full text-left px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">
+                                    <i class="fas fa-download mr-3 w-4 text-center text-gray-500"></i> Exportar Inventario
+                                </a>
+                            </div>
+                        @endif
+                    @endauth
+
+                    <div class="border-t border-gray-100 p-2">
+                        <p class="text-xs font-semibold text-gray-400 uppercase px-3 pt-1 pb-2">Configuración</p>
+                        <a href="{{ route('asset-management.sites.index') }}" class="flex items-center w-full text-left px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Sitios</a>
+                        <a href="{{ route('asset-management.manufacturers.index') }}" class="flex items-center w-full text-left px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Fabricantes</a>
+                        <a href="{{ route('asset-management.categories.index') }}" class="flex items-center w-full text-left px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Categorías</a>
+                        <a href="{{ route('asset-management.models.index') }}" class="flex items-center w-full text-left px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Modelos</a>
+                        <a href="{{ route('asset-management.software-licenses.index') }}" class="flex items-center w-full text-left px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">Gestionar Software</a>    
+                        <a href="{{ route('asset-management.maintenances.index') }}" class="flex items-center w-full text-left px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-[var(--color-primary)] transition-all">
+                            Mantenimientos
+                        </a>
+                    </div>
                 </div>
             </div>
-            
             <a href="{{ route('asset-management.assets.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus mr-2"></i> Registrar Activo
             </a>
         </div>
     </header>
 
-    {{-- KPIs --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <div class="kpi-card bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4 transition-all hover:shadow-xl hover:scale-105">
             <div class="bg-blue-100 p-4 rounded-full"><i class="fas fa-desktop text-2xl text-blue-500"></i></div>
@@ -194,7 +210,6 @@
         </form>
 
         <div class="table-container border rounded-lg overflow-hidden">
-            {{-- Cabecera visible solo en Escritorio (md en adelante) --}}
             <div class="responsive-table-header hidden md:grid md:grid-cols-7 gap-4 bg-[#2c3856] p-4 font-bold text-xs text-[#ffffff] uppercase tracking-wider">
                 <div class="col-span-1">Etiqueta</div>
                 <div class="col-span-1">Categoría</div>
@@ -205,7 +220,6 @@
                 <div class="col-span-1 text-right">Acciones</div>
             </div>
 
-            {{-- Cuerpo de la Tabla / Contenedor de Tarjetas --}}
             <div class="divide-y md:divide-y-0">
                 @forelse ($assets as $asset)
                     <div class="hidden md:grid md:grid-cols-7 gap-4 p-4 items-center hover:bg-gray-50 transition-colors">

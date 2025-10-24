@@ -10,6 +10,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use League\Csv\Reader;
+use League\Csv\Writer;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class AssignmentController extends Controller
 {
@@ -252,7 +256,120 @@ class AssignmentController extends Controller
 
         return redirect()->route('asset-management.user-dashboard.show', $assignment->member)
             ->with('success', 'Asignación actualizada exitosamente.');
-    }    
+    }
+
+    public function createImport()
+    {
+        return view('asset-management.assignments.import');
+    }
+
+    /**
+     * Descarga la plantilla CSV para la importación masiva.
+     */
+    public function downloadTemplate()
+    {
+        $headers = ['asset_tag', 'organigram_member_email', 'assignment_date'];
+        $data = [
+            ['ACT-001', 'juan.perez@empresa.com', '2025-10-24'],
+            ['ACT-002', 'maria.lopez@empresa.com', '2025-10-25'],
+        ];
+
+        $csv = Writer::createFromString('');
+        $csv->setOutputBOM(Writer::BOM_UTF8);
+        $csv->insertOne($headers);
+        $csv->insertAll($data);
+        
+        return response((string) $csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="plantilla_asignacion_masiva.csv"',
+        ]);
+    }
+
+    /**
+     * Procesa el CSV de asignaciones masivas.
+     */
+    public function storeImport(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|mimes:csv,txt|max:2048',
+        ]);
+
+        $path = $request->file('csv_file')->getRealPath();
+        $csv = Reader::createFromPath($path, 'r');
+        $csv->setHeaderOffset(0);
+        $records = $csv->getRecords();
+
+        $errors = [];
+        $successCount = 0;
+
+        foreach ($records as $index => $record) {
+            $rowNum = $index + 2; // +1 por el 0-index, +1 por la cabecera
+            Log::info("Procesando fila $rowNum: ", $record);
+
+            // 1. Validar datos del CSV
+            $validator = Validator::make($record, [
+                'asset_tag' => 'required|string',
+                'organigram_member_email' => 'required|email',
+                'assignment_date' => 'required|date_format:Y-m-d',
+            ]);
+
+            if ($validator->fails()) {
+                $errors[] = "Fila $rowNum: Datos inválidos o faltantes. ({$validator->errors()->first()})";
+                continue;
+            }
+
+            // 2. Validar Lógica de Negocio
+            $asset = HardwareAsset::where('asset_tag', $record['asset_tag'])->first();
+            if (!$asset) {
+                $errors[] = "Fila $rowNum: No se encontró el activo con etiqueta '{$record['asset_tag']}'.";
+                continue;
+            }
+
+            if ($asset->status !== 'En Almacén') {
+                $errors[] = "Fila $rowNum: El activo '{$record['asset_tag']}' no está 'En Almacén'. Su estado actual es '{$asset->status}'. No se puede asignar.";
+                continue;
+            }
+
+            $member = OrganigramMember::where('email', $record['organigram_member_email'])->first();
+            if (!$member) {
+                $errors[] = "Fila $rowNum: No se encontró al miembro con email '{$record['organigram_member_email']}'.";
+                continue;
+            }
+
+            // 3. Procesar la asignación (usando transacción como en tu método store)
+            try {
+                DB::transaction(function () use ($asset, $member, $record) {
+                    $assignment = Assignment::create([
+                        'hardware_asset_id' => $asset->id,
+                        'organigram_member_id' => $member->id,
+                        'assignment_date' => $record['assignment_date'],
+                    ]);
+
+                    $asset->logs()->create([
+                        'user_id' => Auth::id(),
+                        'action_type' => 'Asignación',
+                        'notes' => 'Asignado a ' . $member->name . ' (Importación Masiva)',
+                        'loggable_id' => $assignment->id,
+                        'loggable_type' => Assignment::class,
+                    ]);
+
+                    $asset->status = 'Asignado';
+                    $asset->save();
+                });
+                $successCount++;
+            } catch (\Exception $e) {
+                Log::error("Error procesando Fila $rowNum: " . $e->getMessage(), $record);
+                $errors[] = "Fila $rowNum: Error inesperado en la base de datos. ({$e->getMessage()})";
+            }
+        }
+
+        if (empty($errors)) {
+            return redirect()->route('asset-management.dashboard')->with('success', "Se han importado y asignado $successCount activos exitosamente.");
+        } else {
+            $errorMessage = "Se completaron $successCount asignaciones, pero ocurrieron errores: <br><ul><li>" . implode('</li><li>', $errors) . "</li></ul>";
+            return redirect()->route('asset-management.assignments.import.create')->with('error', $errorMessage);
+        }
+    }
 
 
 }
