@@ -37,52 +37,88 @@ class OrganigramController extends Controller
     /**
      * Display a listing of the organigram members with optional filters.
      */
+    /**
+     * Display a listing of the organigram members with optional filters.
+     * This version adds the full photo URL for client-side rendering.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
+     */
     public function index(Request $request)
     {
+        // Fetch necessary data for filter dropdowns
         $areas = Area::orderBy('name')->get();
         $positions = OrganigramPosition::orderBy('name')->get();
-        $managers = OrganigramMember::orderBy('name')->get();
+        // Fetch all members as potential managers for the filter
+        $managers = OrganigramMember::orderBy('name')->get(); 
 
-        $query = OrganigramMember::with(['area', 'manager', 'subordinates', 'activities', 'skills', 'trajectories', 'position']);
+        // Start building the query with eager loading for efficiency
+        $query = OrganigramMember::with(['area', 'manager', 'position']); // Load relations needed for display
 
-        if ($request->filled('position_id')) {
-            $query->where('position_id', $request->position_id);
+        // Apply server-side filters (primarily for initial load or if JS is disabled)
+        // Note: The main filtering is now handled client-side by Alpine.js
+        $selectedPosition = $request->input('position_id');
+        if ($selectedPosition) {
+            $query->where('position_id', $selectedPosition);
         }
 
-        if ($request->filled('manager_id')) {
-            if ($request->manager_id === 'null') {
+        $selectedManager = $request->input('manager_id');
+        if ($selectedManager) {
+            if ($selectedManager === 'null') {
                 $query->whereNull('manager_id');
             } else {
-                $query->where('manager_id', $request->manager_id);
+                $query->where('manager_id', $selectedManager);
             }
         }
 
-        if ($request->filled('area_id')) {
-            $query->where('area_id', $request->area_id);
+        $selectedArea = $request->input('area_id');
+        if ($selectedArea) {
+            $query->where('area_id', $selectedArea);
         }
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('email', 'like', '%' . $search . '%');
+        // Apply server-side search (also primarily for initial load/non-JS)
+        $searchQuery = $request->input('search');
+        if ($searchQuery) {
+            $query->where(function ($q) use ($searchQuery) {
+                $q->where('name', 'like', '%' . $searchQuery . '%')
+                  ->orWhere('email', 'like', '%' . $searchQuery . '%');
             });
         }
 
-        $members = $query->get()->sortBy(function($member) {
-            return $member->position->name ?? '';
+        // Execute the query to get the members
+        // It's generally better to fetch ALL members for client-side filtering unless the dataset is huge.
+        // If performance becomes an issue with thousands of members, you'd switch to server-side AJAX filtering.
+        // For now, assuming client-side filtering is desired, we fetch all members matching basic filters.
+        $membersQueryResults = $query->orderBy('name')->get(); 
+
+        // --- ADD FULL PHOTO URL ---
+        // Iterate over the results to add the full S3 URL needed by the frontend <img src="...">
+        $members = $membersQueryResults->map(function ($member) {
+            // Generate the full S3 URL if a path exists, otherwise set to null
+            $member->profile_photo_path_url = $member->profile_photo_path 
+                                              ? Storage::disk('s3')->url($member->profile_photo_path) 
+                                              : null;
+            
+            // Ensure relations potentially used in Alpine templates are loaded. 
+            // `with()` above should cover these, but `loadMissing` is safe.
+            $member->loadMissing(['position', 'area', 'manager']); 
+
+            return $member;
         });
-
-        $hierarchicalMembers = $members->whereNull('manager_id')->map(function ($member) use ($members) {
-            return $this->buildHierarchy($member, $members);
-        });
-
-        $selectedPosition = $request->input('position_id');
-        $selectedManager = $request->input('manager_id');
-        $selectedArea = $request->input('area_id');
-        $searchQuery = $request->input('search');
-
-        return view('admin.organigram.index', compact('members', 'hierarchicalMembers', 'areas', 'positions', 'managers', 'selectedPosition', 'selectedManager', 'selectedArea', 'searchQuery'));
+        // --- END ADDING PHOTO URL ---
+        
+        // Pass the modified $members collection (now including `profile_photo_path_url`)
+        // along with filter data to the Blade view.
+        return view('admin.organigram.index', compact(
+            'members',          // This collection goes into the `allMembers` Alpine variable
+            'areas',            // For filter dropdown
+            'positions',        // For filter dropdown
+            'managers',         // For filter dropdown
+            'selectedPosition', // To pre-select filter dropdowns
+            'selectedManager',  // To pre-select filter dropdowns
+            'selectedArea',     // To pre-select filter dropdowns
+            'searchQuery'       // To pre-fill the search input
+        ));
     }
 
     public function downloadTemplate()

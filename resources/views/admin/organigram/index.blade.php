@@ -58,7 +58,7 @@
         </h2>
     </x-slot>
 
-    <div class="py-12 bg-[#E8ECF7]" style="font-family: 'Montserrat', sans-serif;">
+    <div class="py-12 bg-[#F3F4F6]" style="font-family: 'Montserrat', sans-serif;">
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
             <div x-data="{ 
                     selectedMembers: [], 
@@ -110,19 +110,18 @@
                     {{-- Filters Section --}}
                     <div x-show="showFilters" x-transition ... style="display: none;"> 
                         <form action="{{ route('admin.organigram.index') }}" method="GET" class="p-6 border-b border-gray-200 bg-gray-50/75"> 
-                            {{-- ... Filter inputs and buttons ... --}}
                             <h4 class="text-md font-semibold text-[#2c3856] mb-4 font-raleway">Aplicar Filtros <span class="text-xs font-normal text-gray-500">(Recarga la página)</span></h4> <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end"> <div> <label for="position_id" class="block text-sm font-medium text-gray-700 mb-1">Posición</label> <select id="position_id" name="position_id" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm"> <option value="">Todas</option> @foreach($positions as $position) <option value="{{ $position->id }}" {{ (string)$position->id === (string)$selectedPosition ? 'selected' : '' }}> {{ $position->name }} </option> @endforeach </select> </div> <div> <label for="manager_id" class="block text-sm font-medium text-gray-700 mb-1">Jefe Directo</label> <select id="manager_id" name="manager_id" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm"> <option value="">Todos</option> <option value="null" {{ 'null' === (string)$selectedManager ? 'selected' : '' }}>Sin Jefe</option> @foreach($managers as $manager) <option value="{{ $manager->id }}" {{ (string)$manager->id === (string)$selectedManager ? 'selected' : '' }}> {{ $manager->name }} </option> @endforeach </select> </div> <div> <label for="area_id" class="block text-sm font-medium text-gray-700 mb-1">Área</label> <select id="area_id" name="area_id" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm"> <option value="">Todas</option> @foreach($areas as $area) <option value="{{ $area->id }}" {{ (string)$area->id === (string)$selectedArea ? 'selected' : '' }}> {{ $area->name }} </option> @endforeach </select> </div> </div> <div class="flex justify-end mt-4 space-x-3"> <button type="submit" @click="isLoading = true" class="inline-flex items-center px-4 py-2 bg-[#2c3856] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#4a5d8c] focus:bg-[#4a5d8c] active:bg-[#1a233a] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-1 transition ease-in-out duration-300 transform hover:scale-105 shadow-md"> <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V19l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg> Aplicar </button> <a href="{{ route('admin.organigram.index') }}" @click="isLoading = true" class="inline-flex items-center px-4 py-2 bg-gray-300 border border-transparent rounded-full font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-400 focus:bg-gray-400 active:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 transition ease-in-out duration-300 transform hover:scale-105 shadow-md"> Limpiar </a> </div> 
                         </form> 
                     </div>
                     
                     {{-- Results Count & Select All --}}
-                    {{-- *** CORRECCIÓN: Checkbox movido aquí dentro *** --}}
+                    {{-- *** CORRECCIÓN: Checkbox movido dentro del flex *** --}}
                     <div class="px-6 py-3 border-t border-b border-gray-200 bg-gray-50/75 flex items-center justify-between">
                          <span class="text-sm text-gray-600">
                              <strong x-text="filteredMembers.length"></strong> <span x-text="filteredMembers.length === 1 ? 'miembro' : 'miembros'"></span>
                              <template x-if="searchQuery"> / <strong x-text="allMembers.length"></strong> total</template>
                          </span>
-                         {{-- Checkbox moved to the right --}}
+                         {{-- Checkbox moved here --}}
                          <template x-if="paginatedMembers.length > 0">
                              <label class="flex items-center cursor-pointer">
                                 <input type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] member-checkbox h-5 w-5 mr-2" 
@@ -133,8 +132,7 @@
                     </div>
 
                     {{-- Container for View Modes --}}
-                    {{-- *** CORRECCIÓN: Quitamos 'relative' y 'min-h-[]' *** --}}
-                    <div class="relative"> {{-- Relative needed ONLY for loading overlay --}}
+                    <div class="relative"> 
                         {{-- Loading/Filtering Overlay --}}
                         <div x-show="isFiltering" x-transition:enter="fade-enter-active ease-out duration-100" x-transition:leave="fade-leave-active ease-in duration-200" 
                              class="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-30 pt-10" style="display: none;">
@@ -142,23 +140,23 @@
                         </div>
 
                         {{-- Grid View --}}
-                        {{-- *** CORRECCIÓN: Quitamos 'absolute' *** --}}
                         <div x-show="viewMode === 'grid'" 
                              x-transition:enter="fade-enter-active" x-transition:enter-start="fade-enter-from"
                              x-transition:leave="fade-leave-active" x-transition:leave-end="fade-leave-to">
                             <template x-if="paginatedMembers.length === 0 && !isFiltering">
-                                {{-- ... (Empty State) ... --}}
                                 <div class="text-center py-16 px-6"> <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> <h3 class="text-xl font-semibold text-gray-600 font-raleway mb-2">No se encontraron miembros</h3> <template x-if="searchQuery"> <p class="text-gray-500">Intenta ajustar tu búsqueda para "<strong x-text="searchQuery"></strong>"</p> </template> <template x-if="!searchQuery"> <p class="text-gray-500">Prueba usando filtros o <a href="{{ route('admin.organigram.create') }}" class="text-[#ff9c00] hover:underline font-medium">añade un miembro</a>.</p> </template> </div>
                             </template>
                             <template x-if="paginatedMembers.length > 0">
                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 p-6">
                                     <template x-for="member in paginatedMembers" :key="member.id">
+                                        {{-- *** CORRECCIÓN: Añadido 'relative' aquí *** --}}
                                         <div x-transition:enter="list-enter-active" x-transition:enter-start="list-enter-from"
                                              x-transition:leave="list-leave-active" x-transition:leave-end="list-leave-to"
-                                             class="member-card" :class="{'ring-2 ring-[#ff9c00] ring-offset-2': selectedMembers.includes(member.id)}">
+                                             class="member-card relative" :class="{'ring-2 ring-[#ff9c00] ring-offset-2': selectedMembers.includes(member.id)}">
                                             <div class="absolute top-4 left-4 z-10"> <input type="checkbox" class="rounded border-gray-400 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] member-checkbox h-5 w-5" :value="member.id" x-model="selectedMembers" @click.stop> </div> 
                                             <div class="flex flex-col items-center p-6 pt-8 flex-grow"> 
                                                 <div class="mb-4 relative"> 
+                                                    {{-- *** CORRECCIÓN: Usar member.profile_photo_path_url *** --}}
                                                     <template x-if="member.profile_photo_path_url"> <img class="h-24 w-24 rounded-full object-cover ring-4 ring-offset-1 ring-[#ff9c00]" :src="member.profile_photo_path_url" :alt="member.name" loading="lazy"> </template> 
                                                     <template x-if="!member.profile_photo_path_url"> <div class="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 ring-4 ring-offset-1 ring-gray-300"> <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg> </div> </template>
                                                 </div> 
@@ -177,7 +175,6 @@
                         </div>
 
                         {{-- List View --}}
-                        {{-- *** CORRECCIÓN: Quitamos 'absolute' *** --}}
                         <div x-show="viewMode === 'list'" 
                              x-transition:enter="fade-enter-active" x-transition:enter-start="fade-enter-from"
                              x-transition:leave="fade-leave-active" x-transition:leave-end="fade-leave-to" 
@@ -195,7 +192,19 @@
                                             <tr x-transition:enter="list-enter-active" x-transition:enter-start="list-enter-from"
                                                 x-transition:leave="list-leave-active" x-transition:leave-end="list-leave-to"
                                                 class="member-row group" :class="{'bg-orange-50': selectedMembers.includes(member.id)}">
-                                                 <td class="pl-6 py-4 whitespace-nowrap"> <input type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] member-checkbox h-4 w-4" :value="member.id" x-model="selectedMembers"> </td> <td class="px-6 py-4 whitespace-nowrap"> <div class="flex items-center"> <template x-if="member.profile_photo_path_url"> <img class="h-10 w-10 rounded-full object-cover mr-4 flex-shrink-0" :src="member.profile_photo_path_url" :alt="member.name" loading="lazy"> </template> <template x-if="!member.profile_photo_path_url"> <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 mr-4 flex-shrink-0"> <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg> </div> </template> <div> <div class="text-sm font-medium text-gray-900" x-text="member.name"></div> <a :href="'mailto:' + member.email" class="text-xs text-blue-600 hover:underline" x-text="member.email" x-show="member.email" @click.stop></a> <span class="text-xs text-gray-400" x-show="!member.email">Sin Email</span> </div> </div> </td> <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="member.position?.name || 'N/A'"></td> <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="member.area?.name || 'N/A'"></td> <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="member.manager?.name || 'N/A'"></td> <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium"> <div class="flex items-center justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"> <button @click="openQuickView(member.id)" title="Vista Rápida" class="text-gray-400 hover:text-[#ff9c00] p-1.5 rounded-full hover:bg-orange-100 transition duration-150"> <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg> </button> <a :href="`/admin/organigram/${member.id}/edit`" title="Editar" class="text-gray-400 hover:text-[#2c3856] p-1.5 rounded-full hover:bg-gray-100 transition duration-150"> <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg> </a> <form :action="`/admin/organigram/${member.id}`" method="POST" class="inline-block" onsubmit="return confirm('¿Seguro?');"> @csrf @method('DELETE') <button type="submit" title="Eliminar" class="text-gray-400 hover:text-red-600 p-1.5 rounded-full hover:bg-red-100 transition duration-150"> <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> </button> </form> </div> </td>
+                                                 <td class="pl-6 py-4 whitespace-nowrap"> <input type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] member-checkbox h-4 w-4" :value="member.id" x-model="selectedMembers"> </td> 
+                                                 <td class="px-6 py-4 whitespace-nowrap"> 
+                                                     <div class="flex items-center"> 
+                                                         {{-- *** CORRECCIÓN: Usar member.profile_photo_path_url *** --}}
+                                                         <template x-if="member.profile_photo_path_url"> <img class="h-10 w-10 rounded-full object-cover mr-4 flex-shrink-0" :src="member.profile_photo_path_url" :alt="member.name" loading="lazy"> </template> 
+                                                         <template x-if="!member.profile_photo_path_url"> <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 mr-4 flex-shrink-0"> <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg> </div> </template> 
+                                                         <div> <div class="text-sm font-medium text-gray-900" x-text="member.name"></div> <a :href="'mailto:' + member.email" class="text-xs text-blue-600 hover:underline" x-text="member.email" x-show="member.email" @click.stop></a> <span class="text-xs text-gray-400" x-show="!member.email">Sin Email</span> </div> 
+                                                     </div> 
+                                                 </td> 
+                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="member.position?.name || 'N/A'"></td> 
+                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="member.area?.name || 'N/A'"></td> 
+                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="member.manager?.name || 'N/A'"></td> 
+                                                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium"> <div class="flex items-center justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"> <button @click="openQuickView(member.id)" title="Vista Rápida" class="text-gray-400 hover:text-[#ff9c00] p-1.5 rounded-full hover:bg-orange-100 transition duration-150"> <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg> </button> <a :href="`/admin/organigram/${member.id}/edit`" title="Editar" class="text-gray-400 hover:text-[#2c3856] p-1.5 rounded-full hover:bg-gray-100 transition duration-150"> <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg> </a> <form :action="`/admin/organigram/${member.id}`" method="POST" class="inline-block" onsubmit="return confirm('¿Seguro?');"> @csrf @method('DELETE') <button type="submit" title="Eliminar" class="text-gray-400 hover:text-red-600 p-1.5 rounded-full hover:bg-red-100 transition duration-150"> <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> </button> </form> </div> </td>
                                             </tr>
                                         </template>
                                     </tbody>
