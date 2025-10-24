@@ -30,14 +30,12 @@
                 </form>
             </div>
 
-            {{-- Muestra de Errores --}}
             @if(session('error'))
                 <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-8" role="alert">
                     <p class="font-bold">{{ session('error') }}</p>
                 </div>
             @endif
 
-            {{-- Resultados de la Búsqueda --}}
             @if($pallet)
             <div class="bg-white p-8 rounded-2xl shadow-xl border space-y-8 animate-pulse-once" style="--animate-duration: 0.5s;">
                 

@@ -21,7 +21,6 @@
                             <input type="text" name="name" id="name" value="{{ old('name') }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500">
                         </div>
                         
-                        {{-- Selectores para catálogos --}}
                         <div>
                             <label for="brand_id" class="block text-sm font-medium text-gray-700">Marca</label>
                             <select name="brand_id" id="brand_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500">
@@ -54,7 +53,6 @@
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         </div>                        
                         
-                        {{-- Dimensiones --}}
                         <div class="md:col-span-2">
                             <p class="block text-sm font-medium text-gray-700">Dimensiones y Peso</p>
                             <div class="grid grid-cols-4 gap-4 mt-1">

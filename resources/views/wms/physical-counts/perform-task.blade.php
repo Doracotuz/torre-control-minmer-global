@@ -16,7 +16,6 @@
                             </p>
                         </div>
 
-                        {{-- NUEVA SECCIÓN PARA MOSTRAR EL LPN --}}
                         <div class="text-center mt-4">
                             <p class="text-sm font-medium text-gray-500">TARIMA (LPN)</p>
                             <p class="text-2xl font-mono font-bold text-indigo-600 bg-indigo-50 rounded-lg py-2 my-2">

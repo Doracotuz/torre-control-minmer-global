@@ -1,15 +1,12 @@
 <x-app-layout>
-    {{-- Header Section --}}
     <x-slot name="header">
         <div class="flex flex-col md:flex-row justify-between items-center gap-y-4">
-            {{-- Title --}}
             <div class="flex items-center space-x-3">
                 <h2 class="font-bold text-3xl text-gray-800 leading-tight tracking-tight">
                     Historial de Movimientos
                 </h2>
             </div>
 
-            {{-- Export Button --}}
             <a href="{{ route('wms.reports.stock-movements.export', request()->query()) }}" 
                class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-lg shadow-md hover:shadow-lg hover:from-emerald-600 hover:to-green-700 transition-all duration-300 ease-in-out transform hover:-translate-y-px">
                 <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -20,15 +17,12 @@
         </div>
     </x-slot>
 
-    {{-- Main Content Area --}}
     <div class="py-12">
         <div class="max-w-screen-2xl mx-auto sm:px-6 lg:px-8 space-y-8">
 
-            {{-- Filters Section --}}
             <div class="bg-gradient-to-br from-white to-gray-50 p-6 rounded-2xl shadow-lg border border-gray-200">
                 <form id="filters-form" action="{{ route('wms.reports.stock-movements') }}" method="GET">
                      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-4 items-end">
-                        {{-- Date Filters --}}
                         <div>
                             <label for="start_date" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Desde</label>
                             <input type="date" id="start_date" name="start_date" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3" value="{{ request('start_date') }}">
@@ -37,7 +31,6 @@
                             <label for="end_date" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Hasta</label>
                             <input type="date" id="end_date" name="end_date" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3" value="{{ request('end_date') }}">
                         </div>
-                        {{-- Text Filters --}}
                         <div>
                             <label for="sku" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">SKU</label>
                             <input type="text" id="sku" name="sku" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3" placeholder="Buscar SKU..." value="{{ request('sku') }}">
@@ -46,7 +39,6 @@
                             <label for="lpn" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">LPN</label>
                             <input type="text" id="lpn" name="lpn" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3" placeholder="Buscar LPN..." value="{{ request('lpn') }}">
                         </div>
-                        {{-- Select Filter --}}
                         <div>
                             <label for="movement_type" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Tipo Movimiento</label>
                             <select id="movement_type" name="movement_type" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3 appearance-none bg-white pr-8 bg-no-repeat" style="background-image: url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3E%3Cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3E%3C/svg%3E'); background-position: right 0.5rem center; background-size: 1.5em 1.5em;">
@@ -56,7 +48,6 @@
                                 @endforeach
                             </select>
                         </div>
-                        {{-- Clear Button --}}
                         <div class="pt-5">
                             <a href="{{ route('wms.reports.stock-movements') }}" class="w-full inline-flex justify-center items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg shadow-sm hover:bg-gray-300 text-sm font-semibold transition duration-150 ease-in-out" title="Limpiar filtros">
                                 <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -67,7 +58,6 @@
                 </form>
             </div>
 
-            {{-- Movements Timeline/List Section --}}
             <div class="space-y-6">
                 @forelse ($movements as $mov)
                     @php
@@ -91,7 +81,6 @@
                     @endphp
 
                     <div class="flex items-start space-x-4 p-5 {{ $bgColor }} rounded-xl shadow-md border {{ $borderColor }} hover:shadow-lg transition-shadow duration-300">
-                        {{-- Icon & Type --}}
                         <div class="flex-shrink-0 flex flex-col items-center pt-1">
                             <span class="w-10 h-10 rounded-full flex items-center justify-center bg-white shadow border {{ $borderColor }}">
                                 <i class="fas {{ $iconClass }} text-lg"></i>
@@ -101,15 +90,12 @@
                             </span>
                         </div>
 
-                        {{-- Main Content --}}
                         <div class="flex-grow grid grid-cols-1 md:grid-cols-5 gap-x-6 gap-y-2">
-                            {{-- Product Info --}}
                             <div class="md:col-span-2">
                                 <p class="text-sm font-bold text-gray-900 leading-tight">{{ $mov->product->name ?? 'Producto Desconocido' }}</p>
                                 <p class="text-xs text-gray-500 font-mono mt-0.5">{{ $mov->product->sku ?? 'N/A' }}</p>
                             </div>
 
-                            {{-- LPN / Location --}}
                             <div>
                                 <p class="text-sm font-semibold text-gray-700 font-mono">
                                     <span class="text-indigo-600">{{ $mov->palletItem->pallet->lpn ?? 'N/A' }}</span>
@@ -119,7 +105,6 @@
                                 </p>
                             </div>
 
-                            {{-- Source (PO/Pedimento) --}}
                             <div class="text-xs">
                                 <p class="text-gray-600 font-semibold">
                                     PO: <span class="font-mono">{{ $mov->palletItem->pallet->purchaseOrder->po_number ?? 'N/A' }}</span>
@@ -129,7 +114,6 @@
                                 </p>
                             </div>
                             
-                            {{-- Quantity & User/Time --}}
                             <div class="md:col-span-1 md:text-right flex flex-col justify-between items-end">
                                 <span class="text-2xl font-bold {{ $textColor }}">
                                     {{ $mov->quantity > 0 ? '+' : '' }}{{ number_format($mov->quantity) }}
@@ -142,7 +126,6 @@
                         </div>
                     </div>
                 @empty
-                    {{-- Empty State --}}
                     <div class="text-center py-20 bg-white rounded-2xl shadow-lg border border-gray-200">
                         <svg class="mx-auto h-16 w-16 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
@@ -153,7 +136,6 @@
                 @endforelse
             </div>
 
-            {{-- Pagination Section --}}
             @if ($movements->hasPages())
                 <div class="mt-10 px-6 py-4 bg-white rounded-2xl shadow-lg border border-gray-200">
                     {{ $movements->appends(request()->query())->links() }}

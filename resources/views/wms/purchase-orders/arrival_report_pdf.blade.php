@@ -5,8 +5,8 @@
     <title>Reporte de Arribo - PO {{ $purchaseOrder->po_number }}</title>
     <style>
         :root {
-            --primary-color: #1f2937; /* Color principal oscuro */
-            --secondary-color: #4f46e5; /* Color de acento (índigo) */
+            --primary-color: #1f2937;
+            --secondary-color: #4f46e5;
             --text-color: #333;
             --border-color: #dee2e6;
             --header-bg: #f8f9fa;

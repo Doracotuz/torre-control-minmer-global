@@ -1,7 +1,5 @@
-{{-- Quitamos todo el contenedor x-data y la lógica de generateCode() --}}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-    {{-- En la vista de edición, se sigue mostrando el código permanente --}}
     @if (isset($location))
         <div>
             <label for="code" class="block text-sm font-medium text-gray-700">Código (ID Permanente)</label>

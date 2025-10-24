@@ -15,7 +15,6 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            {{-- Mensajes de éxito o error --}}
             @if (session('success'))
                 <div class="mb-4 p-4 text-sm text-green-700 bg-green-100 rounded-lg" role="alert">
                     <span class="font-medium">Éxito:</span> {{ session('success') }}
@@ -30,7 +29,6 @@
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                 <div class="p-6 sm:px-10 bg-white">
 
-                    {{-- SECCIÓN 1: Información de Cabecera --}}
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                             <span class="text-sm font-medium text-gray-500">Cliente</span>
@@ -66,7 +64,6 @@
                         </div>
                     </div>
 
-                    {{-- SECCIÓN 2: Líneas de Producto (Tabla Detallada) --}}
                     <div class="mt-8 border-t border-gray-200 pt-6">
                         <h3 class="text-lg font-medium text-gray-900">Productos Ordenados</h3>
                         
@@ -125,11 +122,9 @@
                         </div>
                     </div>
 
-                    {{-- SECCIÓN 3: Acciones --}}
                     <div class="mt-8 border-t border-gray-200 pt-6">
                         <div class="flex items-center justify-between">
                             
-                            {{-- Lado Izquierdo: Acciones de Flujo (Picking) --}}
                             <div>
                                 <h3 class="text-lg font-medium text-gray-900">Estado de Surtido</h3>
                                 @if ($salesOrder->status == 'Pending')
@@ -155,7 +150,6 @@
                                 @endif
                             </div>
 
-                            {{-- Lado Derecho: Acciones de Edición/Cancelación --}}
                             @if ($salesOrder->status == 'Pending')
                                 <div class="flex items-center gap-x-4">
                                     <a href="{{ route('wms.sales-orders.edit', $salesOrder) }}" class="px-4 py-2 bg-yellow-500 text-white rounded-md shadow-sm hover:bg-yellow-600">

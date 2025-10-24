@@ -1,7 +1,6 @@
 <x-app-layout>
     <x-slot name="header"><h2 class="font-semibold text-xl text-gray-800">Crear Orden de Venta (Salida)</h2></x-slot>
     
-    {{-- La llamada a x-data ahora es más simple --}}
     <div class="py-12" x-data="soForm()">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <form action="{{ route('wms.sales-orders.store') }}" method="POST">
@@ -52,12 +51,9 @@
         </div>
     </div>
 
-    {{-- INICIO DE LA CORRECCIÓN --}}
     <script>
-        // Primero, definimos los datos del inventario en una variable de JavaScript normal
         const stockData = @json($stockData);
 
-        // Luego, definimos la función que usa esa variable
         function soForm() {
             const createLine = () => ({
                 product_id: '', pallet_item_id: '', quantity: 1, selectedProduct: null, searchTerm: '',
@@ -88,5 +84,4 @@
             }
         }
     </script>
-    {{-- FIN DE LA CORRECCIÓN --}}
 </x-app-layout>

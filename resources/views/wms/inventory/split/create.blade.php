@@ -9,7 +9,6 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white rounded-2xl shadow-xl border p-8">
                 
-                {{-- Muestra errores de sesión del backend --}}
                 @if (session('error'))
                     <div class="mb-6 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert">
                         <p class="font-bold">Error:</p>

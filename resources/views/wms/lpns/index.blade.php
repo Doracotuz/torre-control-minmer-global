@@ -51,7 +51,6 @@
                             @csrf
                             <div>
                                 <label for="lpns" class="block text-sm font-medium text-gray-700">LPN o lista de LPNs</label>
-                                {{-- Usamos un textarea para que sea más fácil pegar listas --}}
                                 <textarea name="lpns" id="lpns" rows="3" required placeholder="LPN-ABC123, LPN-DEF456, ..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm font-mono"></textarea>
                                 <p class="text-xs text-gray-500 mt-1">Separa cada LPN con una coma.</p>
                                 @error('lpns') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror

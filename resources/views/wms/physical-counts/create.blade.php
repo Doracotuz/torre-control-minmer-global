@@ -8,7 +8,6 @@
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-8">
                 <form action="{{ route('wms.physical-counts.store') }}" method="POST" enctype="multipart/form-data" x-data="{ countType: 'cycle' }">
                     @csrf
-                    {{-- Bloque para mostrar errores --}}
                     @if (session('error'))<div class="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert"><p>{{ session('error') }}</p></div>@endif
                     @if ($errors->any())<div class="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert"><ul class="list-disc list-inside">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 

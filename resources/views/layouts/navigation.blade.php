@@ -1,3 +1,9 @@
+@php
+    $whatsappNumber = "5215536583392";
+    $whatsappMessage = urlencode("Hola, me gustaría recibir asistencia para la plataforma \"Control Tower - Minmer Global\"");
+    $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
+@endphp
+
 <nav x-data="{
         open: false,
         search: '',
@@ -5,8 +11,13 @@
         showSuggestions: false,
         loading: false,
         timeout: null,
+
         isMobileSuperAdminMenuOpen: {{ request()->routeIs('admin.*') ? 'true' : 'false' }},
-        isMobileAreaAdminMenuOpen: {{ request()->routeIs('area_admin.*') ? 'true' : 'false' }}
+        isMobileAreaAdminMenuOpen: {{ request()->routeIs('area_admin.*') ? 'true' : 'false' }},
+        
+        isMobileWmsOpen: {{ request()->routeIs('wms.*') ? 'true' : 'false' }},
+        isMobileWmsInventoryOpen: {{ request()->routeIs('wms.inventory.*', 'wms.physical-counts.*') ? 'true' : 'false' }},
+        isMobileWmsCatalogsOpen: {{ request()->routeIs('wms.products.*', 'wms.locations.*', 'wms.warehouses.*', 'wms.brands.*', 'wms.qualities.*', 'wms.product-types.*', 'wms.lpns.*') ? 'true' : 'false' }}
      }"
 x-init="$watch('search', value => {
     clearTimeout(timeout);
@@ -162,8 +173,18 @@ x-init="$watch('search', value => {
         </div>
     </div>
 
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden bg-[#2c3856] transition-all duration-300 ease-in-out">
+    <div :class="{'block': open, 'hidden': ! open}" 
+         class="hidden sm:hidden bg-[#344266] transition-all duration-300 ease-in-out shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto"
+         x-show="open"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 transform -translate-y-4"
+         x-transition:enter-end="opacity-100 transform translate-y-0"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 transform translate-y-0"
+         x-transition:leave-end="opacity-0 transform -translate-y-4">
+        
         <div class="pt-2 pb-3 space-y-1">
+            
             @if(!Auth::user()->is_client)
                 <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                     {{ __('Dashboard') }}
@@ -204,11 +225,12 @@ x-init="$watch('search', value => {
                         {{ __('Organigrama') }}
                     </x-responsive-nav-link>
 
-                    <x-responsive-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    <x-responsive-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700" target="_blank" rel="noopener noreferrer">
                         {{ __('Tracking') }}
                     </x-responsive-nav-link>
                 @endif
-                <x-responsive-nav-link :href="route('rfq.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                
+                <x-responsive-nav-link :href="route('rfq.index')" class="text-[#FF9C00] hover:text-orange-400 focus:text-orange-400 font-semibold focus:outline-none focus:bg-gray-700">
                     {{ __('RFQ Moët Hennessy') }}
                 </x-responsive-nav-link>
 
@@ -220,11 +242,6 @@ x-init="$watch('search', value => {
                         <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                             {{ __('Certificaciones') }}
                         </x-responsive-nav-link>
-                        @php
-                            $whatsappNumber = "5215536583392";
-                            $whatsappMessage = urlencode("Hola, me gustaría recibir asistencia para la plataforma \"Control Tower - Minmer Global\"");
-                            $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
-                        @endphp
                         <x-responsive-nav-link :href="$whatsappLink" target="_blank" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                             {{ __('Asistencia') }}
                         </x-responsive-nav-link>
@@ -235,11 +252,6 @@ x-init="$watch('search', value => {
                         <x-responsive-nav-link href="#" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                             {{ __('Certificaciones') }}
                         </x-responsive-nav-link>
-                        @php
-                            $whatsappNumber = "5215536583392";
-                            $whatsappMessage = urlencode("Hola, me gustaría recibir asistencia para la plataforma \"Control Tower - Minmer Global\"");
-                            $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
-                        @endphp
                         <x-responsive-nav-link :href="$whatsappLink" target="_blank" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                             {{ __('Asistencia') }}
                         </x-responsive-nav-link>
@@ -262,13 +274,74 @@ x-init="$watch('search', value => {
                     {{ __('Tickets de Soporte') }}
                 </x-responsive-nav-link>
 
+                @can('viewAny', App\Models\Project::class)
+                    <x-responsive-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        {{ __('Proyectos') }}
+                    </x-responsive-nav-link>  
+                @endcan
+
+                @if (Auth::check() && !Auth::user()->is_client && in_array(Auth::user()->area?->name, ['Administración', 'Almacén']))
+                    <div class="pt-2">
+                        <button @click="isMobileWmsOpen = !isMobileWmsOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
+                            <span class="font-semibold">WMS</span>
+                            <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileWmsOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                        </button>
+                        
+                        <div x-show="isMobileWmsOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
+                            
+                            <x-responsive-nav-link :href="route('wms.reports.index')" :active="request()->routeIs('wms.reports.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                                Reportes
+                            </x-responsive-nav-link>
+
+                            {{-- Sub-desplegable Inventario --}}
+                            <div class="pt-1">
+                                <button @click="isMobileWmsInventoryOpen = !isMobileWmsInventoryOpen" class="flex items-center justify-between w-full pl-3 pr-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
+                                    <span>Inventario</span>
+                                    <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileWmsInventoryOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                                </button>
+                                <div x-show="isMobileWmsInventoryOpen" class="mt-1 space-y-1 pl-4 border-l-2 border-gray-500 ml-4">
+                                    <x-responsive-nav-link :href="route('wms.inventory.index')" :active="request()->routeIs('wms.inventory.index')" class="text-white ...">Vista General</x-responsive-nav-link>
+                                    <x-responsive-nav-link :href="route('wms.inventory.adjustments.log')" :active="request()->routeIs('wms.inventory.adjustments.log')" class="text-white ...">Registro de Ajustes</x-responsive-nav-link>
+                                    <x-responsive-nav-link :href="route('wms.physical-counts.index')" :active="request()->routeIs('wms.physical-counts.*')" class="text-white ...">Conteos Físicos</x-responsive-nav-link>
+                                </div>
+                            </div>
+                            
+                            <x-responsive-nav-link :href="route('wms.purchase-orders.index')" :active="request()->routeIs('wms.purchase-orders.*')" class="text-white ...">
+                                Entradas (PO)
+                            </x-responsive-nav-link>
+                            <x-responsive-nav-link :href="route('wms.sales-orders.index')" :active="request()->routeIs('wms.sales-orders.*', 'wms.picking.*')" class="text-white ...">
+                                Salidas (SO)
+                            </x-responsive-nav-link>
+
+                            <div class="!my-3 border-t border-gray-600/50"></div>
+
+                            {{-- Sub-desplegable Catálogos --}}
+                             <div class="pt-1">
+                                <button @click="isMobileWmsCatalogsOpen = !isMobileWmsCatalogsOpen" class="flex items-center justify-between w-full pl-3 pr-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
+                                    <span>Catálogos</span>
+                                    <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileWmsCatalogsOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                                </button>
+                                <div x-show="isMobileWmsCatalogsOpen" class="mt-1 space-y-1 pl-4 border-l-2 border-gray-500 ml-4">
+                                    <x-responsive-nav-link :href="route('wms.products.index')" :active="request()->routeIs('wms.products.*')" class="text-white ...">Productos</x-responsive-nav-link>
+                                    <x-responsive-nav-link :href="route('wms.locations.index')" :active="request()->routeIs('wms.locations.*')" class="text-white ...">Ubicaciones</x-responsive-nav-link>
+                                    <x-responsive-nav-link :href="route('wms.warehouses.index')" :active="request()->routeIs('wms.warehouses.*')" class="text-white ...">Almacenes</x-responsive-nav-link>
+                                    <x-responsive-nav-link :href="route('wms.brands.index')" :active="request()->routeIs('wms.brands.*')" class="text-white ...">Marcas</x-responsive-nav-link>
+                                    <x-responsive-nav-link :href="route('wms.qualities.index')" :active="request()->routeIs('wms.qualities.*')" class="text-white ...">Calidades</x-responsive-nav-link>
+                                    <x-responsive-nav-link :href="route('wms.product-types.index')" :active="request()->routeIs('wms.product-types.*')" class="text-white ...">Tipos de Producto</x-responsive-nav-link>
+                                    <x-responsive-nav-link :href="route('wms.lpns.index')" :active="request()->routeIs('wms.lpns.*')" class="text-white ...">Generador de LPNs</x-responsive-nav-link>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif   
+
                 @if(Auth::user()->is_area_admin && Auth::user()->area?->name === 'Recursos Humanos')
                     <x-responsive-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                         {{ __('Organigrama') }}
                     </x-responsive-nav-link>
                 @endif
 
-                @if(in_array(Auth::user()->area?->name, ['Customer Service', 'Administración']))
+                @if(in_array(Auth::user()->area?->name, ['Customer Service', 'Administración', 'Tráfico']))
                     <x-responsive-nav-link :href="route('customer-service.index')" :active="request()->routeIs('customer-service.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                         {{ __('Customer Service') }}
                     </x-responsive-nav-link>
@@ -281,7 +354,7 @@ x-init="$watch('search', value => {
                         <span class="font-semibold">Super Admin</span>
                         <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileSuperAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                     </button>
-                    <div x-show="isMobileSuperAdminMenuOpen" class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
+                    <div x-show="isMobileSuperAdminMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
                         <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                             {{ __('Panel General') }}
                         </x-responsive-nav-link>
@@ -290,15 +363,13 @@ x-init="$watch('search', value => {
                         </x-responsive-nav-link>
                     </div>
                 </div>
-            @endif
-
-            @if (Auth::user()->is_area_admin)
+            @elseif (Auth::user()->is_area_admin)
                 <div class="pt-4 pb-3 border-t border-gray-600/50">
                     <button @click="isMobileAreaAdminMenuOpen = !isMobileAreaAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
                         <span class="font-semibold">Admin de Área</span>
                         <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileAreaAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                     </button>
-                    <div x-show="isMobileAreaAdminMenuOpen" class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
+                    <div x-show="isMobileAreaAdminMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
                         <x-responsive-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                             {{ __('Panel de Área') }}
                         </x-responsive-nav-link>
@@ -312,6 +383,7 @@ x-init="$watch('search', value => {
                 </div>
             @endif
         </div>
+
         <div class="pt-4 pb-1 border-t border-gray-600/50">
             <div class="px-4">
                 <div class="font-medium text-base text-white">{{ Auth::user()->name }}</div>
@@ -320,7 +392,7 @@ x-init="$watch('search', value => {
 
             <div class="mt-3 space-y-1">
                 <x-responsive-nav-link :href="route('profile.edit')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                    {{ __('Profile') }}
+                    {{ __('Perfil') }}
                 </x-responsive-nav-link>
 
                 <form method="POST" action="{{ route('logout') }}">
@@ -328,7 +400,7 @@ x-init="$watch('search', value => {
                     <x-responsive-nav-link :href="route('logout')"
                             onclick="event.preventDefault();
                                         this.closest('form').submit();" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                        {{ __('Log Out') }}
+                        {{ __('Cerrar Sesión') }}
                     </x-responsive-nav-link>
                 </form>
             </div>

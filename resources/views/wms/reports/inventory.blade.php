@@ -1,23 +1,15 @@
 <x-app-layout>
-    {{-- Header Section --}}
     <x-slot name="header">
         <div class="flex items-center space-x-3">
-            <span class="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
-                <svg class="w-8 h-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                   <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-                </svg>
-            </span>
             <h2 class="font-bold text-3xl text-gray-800 leading-tight tracking-tight">
                 Dashboard Inteligente de Inventario WMS
             </h2>
         </div>
     </x-slot>
 
-    {{-- Main Content Area --}}
     <div class="py-12">
         <div class="max-w-screen-2xl mx-auto sm:px-6 lg:px-8 space-y-8">
 
-            {{-- Row 1: KPIs Principales & Precisión --}}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 col-span-1 md:col-span-2 lg:col-span-3">
                     <h3 class="text-lg font-semibold text-gray-700 mb-4">Vista General del Inventario</h3>
@@ -30,7 +22,6 @@
                 </div>
             </div>
 
-            {{-- Row 2: Antigüedad y Flujo --}}
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-700 mb-4">Perfil de Antigüedad (Aging)</h3>
@@ -42,7 +33,6 @@
                 </div>
             </div>
 
-             {{-- Row 3: Análisis de Productos Top --}}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-700 mb-4">Top 10 Productos por Cantidad</h3>
@@ -54,7 +44,6 @@
                 </div>
             </div>
 
-            {{-- Row 4: ABC Analysis & Disponibilidad --}}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                  <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-700 mb-4">Análisis ABC por Cantidad</h3>
@@ -66,7 +55,6 @@
                 </div>
             </div>
 
-            {{-- Row 5: Ubicaciones --}}
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-700 mb-4">Distribución por Tipo de Ubicación</h3>
@@ -82,7 +70,6 @@
                 </div>
             </div>
 
-            {{-- Row 6: Tendencias Operacionales --}}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-700 mb-4">Tendencia de Recepciones (Unidades Diarias)</h3>
@@ -94,14 +81,11 @@
                 </div>
             </div>
 
-            {{-- Row 7: Volumen y Marca --}}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {{-- CAMBIO DE DIV ID Y TÍTULO --}}
                 <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-700 mb-4">Top 10 Productos por Volumen Ocupado (m³)</h3>
                     <div id="chart-top-products-volume"></div> {{-- Chart 14 - NUEVO ID --}}
                 </div>
-                 {{-- CAMBIO DE DIV ID Y TÍTULO --}}
                 <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-700 mb-4">Distribución de Stock por Marca</h3>
                     <div id="chart-stock-by-brand"></div> {{-- Chart 15 - NUEVO ID --}}
@@ -111,13 +95,10 @@
         </div>
     </div>
 
-    {{-- Incluir ApexCharts --}}
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
-    {{-- Script para inicializar los gráficos --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // --- Opciones Comunes ---
         const commonOptions = {
             chart: {
                 fontFamily: 'Montserrat, sans-serif',
@@ -145,16 +126,13 @@
             colors: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6'],
         };
 
-        // --- Chart 1: Inventory Overview (Radial Bars) ---
         var options1 = {
                 ...commonOptions,
-                // --- CORRECCIÓN: Usar los valores reales directamente ---
                 series: [
-                    {{ $kpis['totalUnits'] ?? 0 }},      // Valor real de Unidades Totales
-                    {{ $kpis['skusWithStock'] ?? 0 }},   // Valor real de SKUs Únicos
-                    {{ $kpis['locationsUsed'] ?? 0 }}    // Valor real de Ubicaciones Ocupadas
+                    {{ $kpis['totalUnits'] ?? 0 }},
+                    {{ $kpis['skusWithStock'] ?? 0 }},
+                    {{ $kpis['locationsUsed'] ?? 0 }}
                 ],
-                // --- FIN CORRECCIÓN ---
                 chart: { type: 'radialBar', height: 250 },
                 plotOptions: {
                     radialBar: {
@@ -162,20 +140,18 @@
                         hollow: { margin: 5, size: '30%', background: 'transparent', image: undefined },
                         dataLabels: {
                             name: { show: false },
-                            value: { show: false } // Mantenemos oculto el valor % en la barra
+                            value: { show: false }
                         },
                          track: { background: '#f0f0f0' },
                     }
                 },
-                // colors: ['#4F46E5', '#10B981', '#F59E0B'], // Puedes descomentar si quieres colores específicos
+                colors: ['#4F46E5', '#10B981', '#F59E0B'],
                 labels: ['Unidades Totales', 'SKUs Únicos', 'Ubicaciones Ocupadas'],
                 legend: {
                     show: true, floating: true, fontSize: '14px', position: 'left', offsetX: -20, offsetY: 15,
                     labels: { useSeriesColors: true },
                     markers: { size: 0 },
-                    // El formatter sigue mostrando los valores correctos
                     formatter: function(seriesName, opts) {
-                         // Usar ?? 0 como fallback por si alguna clave no existe
                          if (opts.seriesIndex === 0) return seriesName + ": " + ({{ $kpis['totalUnits'] ?? 0 }}).toLocaleString();
                          if (opts.seriesIndex === 1) return seriesName + ": " + ({{ $kpis['skusWithStock'] ?? 0 }}).toLocaleString();
                          if (opts.seriesIndex === 2) return seriesName + ": " + ({{ $kpis['locationsUsed'] ?? 0 }}).toLocaleString();
@@ -188,7 +164,6 @@
             var chart1 = new ApexCharts(document.querySelector("#chart-kpi-overview"), options1);
             chart1.render();
 
-        // --- Chart 4: Inventory Accuracy (Gauge) ---
         var options4 = {
             ...commonOptions,
             series: [{{ number_format($kpis['inventoryAccuracy'] ?? 0, 1) }}],
@@ -226,7 +201,6 @@
         var chart4 = new ApexCharts(document.querySelector("#chart-inventory-accuracy"), options4);
         chart4.render();
 
-        // --- Chart 2: Inventory Aging Profile (Donut) ---
         var options2 = {
             ...commonOptions,
             series: @json(array_values($kpis['agingData'])),
@@ -239,7 +213,6 @@
         var chart2 = new ApexCharts(document.querySelector("#chart-inventory-aging"), options2);
         chart2.render();
 
-        // --- Chart 3: Inbound vs. Outbound Trend (Mixed) ---
         var options3 = {
             ...commonOptions,
             series: [{
@@ -273,7 +246,6 @@
         var chart3 = new ApexCharts(document.querySelector("#chart-inbound-outbound"), options3);
         chart3.render();
 
-        // --- Chart 5: Top 10 Products by Quantity (Horizontal Bar) ---
         var options5 = {
             ...commonOptions,
             series: [{ data: @json($kpis['topProductsQty']['quantities'] ?? []) }],
@@ -289,7 +261,6 @@
         var chart5 = new ApexCharts(document.querySelector("#chart-top-products-qty"), options5);
         chart5.render();
 
-        // --- Chart 6: Top 10 Products by Movement Frequency (Horizontal Bar) ---
         var options6 = {
             ...commonOptions,
             series: [{ data: @json($kpis['topProductsFreq']['frequencies'] ?? []) }],
@@ -306,7 +277,6 @@
         var chart6 = new ApexCharts(document.querySelector("#chart-top-products-freq"), options6);
         chart6.render();
 
-        // --- Chart 7: ABC Analysis (Stacked Bar) ---
         var options7 = {
             ...commonOptions,
             series: @json($kpis['abcAnalysis']['series'] ?? []),
@@ -323,7 +293,6 @@
         var chart7 = new ApexCharts(document.querySelector("#chart-abc-analysis"), options7);
         chart7.render();
 
-        // --- Chart 8: Available vs. Committed Stock (Grouped Bar) ---
         var options8 = {
             ...commonOptions,
             series: [{
@@ -356,7 +325,6 @@
         var chart8 = new ApexCharts(document.querySelector("#chart-available-committed"), options8);
         chart8.render();
 
-        // --- Chart 9: Stock Distribution by Location Type (Pie) ---
         var options9 = {
             ...commonOptions,
             series: @json(array_values($kpis['stockByLocationType']['data'] ?? [])),
@@ -374,7 +342,6 @@
         var chart9 = new ApexCharts(document.querySelector("#chart-stock-by-location-type"), options9);
         chart9.render();
 
-        // --- Chart 11: Location Utilization (Donut) ---
         var options11 = {
             ...commonOptions,
             series: @json(array_values($kpis['locationUtilization'] ?? [0, 0])),
@@ -387,7 +354,6 @@
         var chart11 = new ApexCharts(document.querySelector("#chart-location-utilization"), options11);
         chart11.render();
 
-        // --- Chart 10: Top 10 Locations by Unit Count (Horizontal Bar) ---
         var options10 = {
             ...commonOptions,
             series: [{ data: @json($kpis['topLocationsQty']['quantities'] ?? []) }],
@@ -404,7 +370,6 @@
         var chart10 = new ApexCharts(document.querySelector("#chart-top-locations-qty"), options10);
         chart10.render();
 
-        // --- Chart 12: Receiving Volume Trend (Area) ---
         var options12 = {
             ...commonOptions,
             series: [{ 
@@ -431,7 +396,6 @@
         var chart12 = new ApexCharts(document.querySelector("#chart-receiving-trend"), options12);
         chart12.render();
 
-        // --- Chart 13: Picking Volume Trend (Area) ---
         var options13 = {
             ...commonOptions,
             series: [{ 
@@ -458,7 +422,6 @@
         var chart13 = new ApexCharts(document.querySelector("#chart-picking-trend"), options13);
         chart13.render();
 
-        // --- Chart 14: Top 10 Products by Volume ---
         var options14 = {
             ...commonOptions,
             series: [{ 
@@ -482,7 +445,6 @@
             chart14.render();
         }
 
-        // --- Chart 15: Stock Distribution by Brand ---
         var options15 = {
             ...commonOptions,
             series: @json($kpis['stockByBrandSeries'] ?? []),
@@ -503,6 +465,6 @@
             chart15.render();
         }
 
-    }); // Fin del addEventListener
+    });
 </script>
 </x-app-layout>

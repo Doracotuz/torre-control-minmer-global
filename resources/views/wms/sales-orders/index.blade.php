@@ -4,9 +4,7 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 Gestión de Órdenes de Venta
             </h2>
-            {{-- Agrupa los botones --}}
             <div class="flex items-center space-x-2 mt-4 md:mt-0">
-                {{-- BOTÓN DE EXPORTAR --}}
                 <a href="{{ route('wms.sales-orders.export-csv', request()->query()) }}" {{-- Pasa los filtros actuales --}}
                    class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -14,7 +12,6 @@
                     </svg>
                     Exportar CSV
                 </a>
-                {{-- Botón Crear SO (existente) --}}
                 <a href="{{ route('wms.sales-orders.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -127,9 +124,7 @@
                     <a href="{{ route('wms.sales-orders.show', $so) }}" class="block bg-white p-6 rounded-xl shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow duration-200 group">
                         <div class="flex justify-between items-start">
                             
-                            {{-- Información Principal (Izquierda) --}}
                             <div class="flex-1">
-                                {{-- Fila 1: N° SO y Estatus --}}
                                 <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-2">
                                     <span class="text-lg font-semibold text-indigo-700 group-hover:text-indigo-900 transition-colors">
                                         {{ $so->so_number }}
@@ -156,34 +151,28 @@
                                     </span>
                                 </div>
                                 
-                                {{-- Fila 2: Cliente y Factura --}}
                                 <p class="text-sm text-gray-700 font-medium">{{ $so->customer_name }}</p>
                                 <p class="text-sm text-gray-500">{{ $so->invoice_number ?? 'Sin Factura' }}</p>
 
-                                {{-- Fila 3: Micro-datos --}}
                                 <div class="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mt-4">
-                                    {{-- Volumen --}}
                                     <span class="flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                         </svg>
                                         <strong class="text-gray-700 mr-1">{{ (int)$so->lines_sum_quantity_ordered }}</strong> Unidades
                                     </span>
-                                    {{-- Items --}}
                                     <span class="flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                                         </svg>
                                         {{ $so->lines_count }} Items
                                     </span>
-                                    {{-- Fecha --}}
                                     <span class="flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
                                         {{ $so->order_date->format('d/m/Y') }}
                                     </span>
-                                    {{-- Usuario --}}
                                     <span class="flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -193,7 +182,6 @@
                                 </div>
                             </div>
                             
-                            {{-- Indicador de Acción (Derecha) --}}
                             <div class="pl-4 flex items-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-300 group-hover:text-indigo-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -222,31 +210,31 @@
     </div>
 <style>
     .input-filter {
-        border-color: #e5e7eb; /* gray-200 */
-        border-radius: 0.5rem; /* rounded-lg */
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
-        font-size: 0.875rem; /* text-sm */
-        padding-top: 0.625rem; /* Ajusta padding para alinear altura */
+        border-color: #e5e7eb;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        font-size: 0.875rem;
+        padding-top: 0.625rem;
         padding-bottom: 0.625rem;
     }
     .input-filter:focus {
-        border-color: #a5b4fc; /* indigo-300 */
-        --tw-ring-color: rgba(165, 180, 252, 0.5); /* ring-indigo-200 ring-opacity-50 */
+        border-color: #a5b4fc;
+        --tw-ring-color: rgba(165, 180, 252, 0.5);
         box-shadow: 0 0 0 3px var(--tw-ring-color);
         outline: 2px solid transparent;
         outline-offset: 2px;
     }
     .button-primary {
-        display: inline-flex; justify-content: center; padding: 0.625rem 1rem; background-color: #4f46e5; /* indigo-600 */
-        color: white; font-weight: 500; /* font-medium */ border-radius: 0.5rem; /* rounded-lg */
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */ transition: background-color 150ms ease-in-out;
-    }
-    .button-primary:hover { background-color: #4338ca; /* indigo-700 */ }
-    .button-secondary {
-        display: inline-flex; justify-content: center; text-align: center; padding: 0.625rem 1rem; color: #374151; /* gray-700 */
-        background-color: white; border: 1px solid #d1d5db; /* gray-300 */ font-weight: 500; border-radius: 0.5rem;
+        display: inline-flex; justify-content: center; padding: 0.625rem 1rem; background-color: #4f46e5;
+        color: white; font-weight: 500; border-radius: 0.5rem;
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: background-color 150ms ease-in-out;
     }
-    .button-secondary:hover { background-color: #f9fafb; /* gray-50 */ }
+    .button-primary:hover { background-color: #4338ca; }
+    .button-secondary {
+        display: inline-flex; justify-content: center; text-align: center; padding: 0.625rem 1rem; color: #374151;
+        background-color: white; border: 1px solid #d1d5db; font-weight: 500; border-radius: 0.5rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: background-color 150ms ease-in-out;
+    }
+    .button-secondary:hover { background-color: #f9fafb; }
 </style>    
 </x-app-layout>

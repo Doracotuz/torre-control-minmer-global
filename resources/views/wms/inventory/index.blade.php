@@ -26,7 +26,6 @@
     <div class="py-12" x-data="inventoryPage('{{ session('open_adjustment_modal_for_item') }}')">
         <div class="max-w-screen-2xl mx-auto sm:px-6 lg:px-8">
 
-            {{-- 1. KPIs --}}
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-2xl shadow-lg border"><div><span class="text-sm font-medium text-gray-500">Tarimas Totales</span><p class="text-3xl font-bold text-gray-800">{{ number_format($kpis['total_pallets']) }}</p></div></div>
                 <div class="bg-white p-6 rounded-2xl shadow-lg border"><div><span class="text-sm font-medium text-gray-500">Unidades Totales</span><p class="text-3xl font-bold text-gray-800">{{ number_format($kpis['total_units']) }}</p></div></div>
@@ -34,7 +33,6 @@
                 <div class="bg-white p-6 rounded-2xl shadow-lg border"><div><span class="text-sm font-medium text-gray-500">Ubic. Disponibles</span><p class="text-3xl font-bold text-gray-800">{{ number_format($kpis['available_locations']) }}</p></div></div>
             </div>
 
-            {{-- 2. Filtros --}}
             <div class="bg-white p-6 rounded-2xl shadow-lg border mb-8">
                 <form id="filters-form" action="{{ route('wms.inventory.index') }}" method="GET">
                      <div class="flex flex-wrap gap-4 items-end">
@@ -51,13 +49,11 @@
                 </form>
             </div>
 
-            {{-- 3. Tabla de Inventario --}}
             <div class="bg-white overflow-hidden rounded-2xl shadow-lg border">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-100">
                             <tr>
-                                {{-- ENCABEZADOS AJUSTADOS --}}
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">LPN / Ubicación</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Origen (PO) / Pedimento</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Contenido (SKU / Calidad)</th>
@@ -70,9 +66,7 @@
                         </thead>
                         <tbody class="divide-y divide-gray-200">
                             @forelse ($pallets as $pallet)
-                                {{-- Fila Principal (puede tener rowspan si hay >1 item) --}}
                                 <tr class="hover:bg-gray-50 group">
-                                    {{-- LPN / Ubicación --}}
                                     <td class="px-4 py-4 align-top whitespace-nowrap @if($pallet->items->count() > 1) border-b @endif" rowspan="{{ $pallet->items->count() }}">
                                         <p class="font-mono font-bold text-indigo-600">{{ $pallet->lpn }}</p>
                                         <p class="text-sm text-gray-800">
@@ -80,41 +74,30 @@
                                             {{ $pallet->location ? "{$pallet->location->aisle}-{$pallet->location->rack}-{$pallet->location->shelf}-{$pallet->location->bin}" : 'N/A' }}
                                         </p>
                                     </td>
-                                    {{-- Origen (PO) / Pedimento --}}
                                     <td class="px-4 py-4 align-top whitespace-nowrap @if($pallet->items->count() > 1) border-b @endif" rowspan="{{ $pallet->items->count() }}">
                                         <p class="font-mono">{{ $pallet->purchaseOrder->po_number ?? 'N/A' }}</p>
                                         <p class="text-xs text-gray-500 font-mono">{{ $pallet->purchaseOrder->pedimento_a4 ?? 'N/A' }}</p>
                                     </td>
 
-                                    {{-- --- INICIO DEL CONTENIDO ANIDADO (ITEMS) --- --}}
-                                    {{-- Mostramos el primer item en la fila principal --}}
                                     @php $firstItem = $pallet->items->first(); @endphp
-                                    {{-- Contenido (SKU/Calidad) del primer item --}}
                                     <td class="px-4 py-4">
                                         <p class="font-semibold text-gray-900 text-sm">{{ $firstItem->product->name ?? 'N/A' }}</p>
                                         <p class="text-xs text-gray-500">
                                             <span class="font-mono">{{ $firstItem->product->sku ?? '' }}</span> | {{ $firstItem->quality->name ?? '' }}
                                         </p>
                                     </td>
-                                    {{-- Cantidad (Pallet) del primer item --}}
                                     <td class="px-4 py-4 text-center text-lg font-bold text-gray-900">{{ $firstItem->quantity }}</td>
 
-                                    {{-- Comprometido (LPN) del primer item --}}
                                     <td class="px-4 py-4 text-center whitespace-nowrap text-sm text-red-600">
                                         {{ $firstItem->committed_quantity ?? 0 }}
                                     </td>
-                                    {{-- Disponible (LPN) del primer item --}}
                                     <td class="px-4 py-4 text-center whitespace-nowrap text-sm font-bold text-green-700">
                                         {{ ($firstItem->quantity ?? 0) - ($firstItem->committed_quantity ?? 0) }}
                                     </td>
-                                    {{-- --- FIN DEL CONTENIDO DEL PRIMER ITEM --- --}}
-
-                                    {{-- Recibido (Común para todos los items del pallet) --}}
                                     <td class="px-4 py-4 text-sm align-top whitespace-nowrap @if($pallet->items->count() > 1) border-b @endif" rowspan="{{ $pallet->items->count() }}">
                                         <p>{{ $pallet->user->name ?? 'N/A' }}</p>
                                         <p class="text-gray-500 text-xs">{{ $pallet->updated_at->format('d/m/Y H:i') }}</p>
                                     </td>
-                                    {{-- Acción Pallet (Común para todos los items) --}}
                                     <td class="px-4 py-4 text-center align-top @if($pallet->items->count() > 1) border-b @endif" rowspan="{{ $pallet->items->count() }}">
                                         <button @click="openModal({{ json_encode($pallet) }})" class="text-indigo-600 hover:text-indigo-900" title="Ver Detalle Completo">
                                             <i class="fas fa-eye fa-lg"></i>
@@ -122,24 +105,19 @@
                                     </td>
                                 </tr>
 
-                                {{-- Si hay más de 1 item, crea filas adicionales solo para ellos --}}
                                 @if($pallet->items->count() > 1)
-                                    @foreach($pallet->items->skip(1) as $item) {{-- skip(1) para omitir el primero --}}
+                                    @foreach($pallet->items->skip(1) as $item)
                                         <tr class="hover:bg-gray-50 group">
-                                            {{-- Contenido (SKU/Calidad) del item adicional --}}
                                             <td class="px-4 py-4">
                                                 <p class="font-semibold text-gray-900 text-sm">{{ $item->product->name ?? 'N/A' }}</p>
                                                 <p class="text-xs text-gray-500">
                                                     <span class="font-mono">{{ $item->product->sku ?? '' }}</span> | {{ $item->quality->name ?? '' }}
                                                 </p>
                                             </td>
-                                            {{-- Cantidad (Pallet) del item adicional --}}
                                             <td class="px-4 py-4 text-center text-lg font-bold text-gray-900">{{ $item->quantity }}</td>
-                                            {{-- Comprometido (LPN) del item adicional --}}
                                             <td class="px-4 py-4 text-center whitespace-nowrap text-sm text-red-600">
                                                 {{ $item->committed_quantity ?? 0 }}
                                             </td>
-                                            {{-- Disponible (LPN) del item adicional --}}
                                             <td class="px-4 py-4 text-center whitespace-nowrap text-sm font-bold text-green-700">
                                                  {{ ($item->quantity ?? 0) - ($item->committed_quantity ?? 0) }}
                                             </td>
@@ -148,7 +126,6 @@
                                 @endif
                             @empty
                                 <tr>
-                                    {{-- Ajusta el colspan para que coincida con el número total de columnas visibles --}}
                                     <td colspan="8" class="text-center text-gray-500 py-16">
                                         <p>No se encontraron tarimas con los filtros aplicados.</p>
                                     </td>
@@ -157,7 +134,6 @@
                         </tbody>
                     </table>
                 </div>
-                {{-- Paginación --}}
                 <div class="p-6 border-t bg-gray-50">
                     {{ $pallets->appends(request()->query())->links() }}
                 </div>
@@ -205,7 +181,6 @@
                                                     <p class="text-xs text-gray-500">
                                                         <span class="font-mono" x-text="item.product.sku"></span> | <strong class="text-indigo-700" x-text="item.quality.name"></strong>
                                                     </p>
-                                                    {{-- Mostramos comprometido y disponible también en el modal --}}
                                                     <p class="text-xs mt-1">
                                                         <span class="text-red-600">Comprometido: <span x-text="item.committed_quantity || 0"></span></span> | 
                                                         <span class="font-bold text-green-700">Disponible: <span x-text="(item.quantity || 0) - (item.committed_quantity || 0)"></span></span>
@@ -213,7 +188,6 @@
                                                 </div>
                                                 <div class="flex items-center gap-4">
                                                     <p class="font-bold text-xl text-gray-800" x-text="`x${item.quantity}`"></p>
-                                                    {{-- El botón "Ajustar" AHORA ESTÁ AQUÍ --}}
                                                     @if(Auth::user()->isSuperAdmin())
                                                     <button @click="openAdjustmentModal(item)" class="px-3 py-1 bg-yellow-500 text-white rounded-md text-xs font-semibold hover:bg-yellow-600">
                                                         Ajustar
@@ -236,7 +210,6 @@
                 <template x-if="itemToAdjust">
                     <form :action="`/wms/inventory/pallet-items/${itemToAdjust.id}/adjust`" method="POST">
                         @csrf
-                        {{-- Muestra errores de validación DENTRO del modal si la sesión lo indica --}}
                         @if($errors->any() && session('open_adjustment_modal_for_item'))
                             <div class="m-6 mb-0 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
                                 <strong class="font-bold">Error de validación:</strong>
@@ -270,7 +243,6 @@
         </div>
     </div>
     
-    {{-- Script de Alpine.js para manejar los modales --}}
     <script>
         function inventoryPage(failedItemId = null) {
             return {
@@ -278,26 +250,22 @@
                 selectedPallet: null,
                 adjustmentModalOpen: false, 
                 itemToAdjust: null,
-                palletsOnPage: @json($pallets->items()), // Necesario para reabrir modal en error
+                palletsOnPage: @json($pallets->items()),
 
                 init() {
-                    // Si viene un ID de item fallido (por validación), intenta reabrir el modal
                     if (failedItemId) {
                         let targetPallet = null;
                         let targetItem = null;
-                        // Busca en los pallets de la página actual el item que falló
                         for (const pallet of this.palletsOnPage) {
                             if (pallet && pallet.items) {
-                                // find() devuelve el item o undefined
                                 const foundItem = pallet.items.find(item => item.id == failedItemId);
                                 if (foundItem) {
                                     targetPallet = pallet;
                                     targetItem = foundItem;
-                                    break; // Deja de buscar una vez encontrado
+                                    break;
                                 }
                             }
                         }
-                        // Si se encontraron ambos, abre el modal de ajuste
                         if (targetPallet && targetItem) {
                             //this.openModal(targetPallet); // Opcional: abre también el de detalle
                             this.openAdjustmentModal(targetItem);
@@ -306,8 +274,6 @@
                 },
                 
                 openModal(pallet) { 
-                    // Asegurarse de que las relaciones necesarias estén en el JSON
-                    // Esto depende de cómo se cargaron en el controlador con ->with()
                     this.selectedPallet = pallet; 
                     this.modalOpen = true; 
                 },
@@ -316,19 +282,15 @@
                     this.selectedPallet = null; 
                 },
                 
-                // Pasa el objeto ITEM completo al abrir el modal
                 openAdjustmentModal(item) { 
                     this.itemToAdjust = item; 
                     this.adjustmentModalOpen = true; 
-                    // No cierres el modal de detalle si estaba abierto
                     // this.modalOpen = false; // Comentado o eliminado
                 },
                 closeAdjustmentModal() { 
                     this.adjustmentModalOpen = false; 
                     this.itemToAdjust = null; 
-                    // Limpia la URL de error si se cierra manualmente
                     if (window.location.search.includes('open_adjustment_modal_for_item')) {
-                         // Intenta eliminar el parámetro específico de la URL
                          const url = new URL(window.location);
                          url.searchParams.delete('open_adjustment_modal_for_item');
                          window.history.replaceState({}, document.title, url);
@@ -337,7 +299,6 @@
             }
         }
         
-        // Registra el componente Alpine
         document.addEventListener('alpine:init', () => {
             Alpine.data('inventoryPage', inventoryPage);
         });

@@ -18,7 +18,6 @@
     <div class="py-12">
         <div class="max-w-screen-xl mx-auto sm:px-6 lg:px-8">
             
-            {{-- KPIs (Ya son responsivos) --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-6 rounded-2xl shadow-lg flex items-center justify-between"><div><span class="text-sm font-light">En Recepción</span><p class="text-3xl font-bold">{{ $kpis['receiving'] }}</p></div><i class="fas fa-truck-loading fa-3x opacity-50"></i></div>
                 <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-2xl shadow-lg flex items-center justify-between"><div><span class="text-sm font-light">Arribos de Hoy</span><p class="text-3xl font-bold">{{ $kpis['arrivals_today'] }}</p></div><i class="fas fa-calendar-day fa-3x opacity-50"></i></div>
@@ -26,7 +25,6 @@
                 <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-2xl shadow-lg flex items-center justify-between"><div><span class="text-sm font-light">T. Promedio Descarga</span><p class="text-3xl font-bold">{{ $kpis['avg_unload_time'] }} <span class="text-xl">min</span></p></div><i class="fas fa-hourglass-half fa-3x opacity-50"></i></div>
             </div>
 
-            {{-- Filtros (Ya son responsivos) --}}
             <div class="bg-white p-6 rounded-2xl shadow-lg border mb-8">
                 <form action="{{ route('wms.purchase-orders.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <input type="text" name="search" class="rounded-md border-gray-300 shadow-sm" placeholder="Buscar N° Orden o Contenedor..." value="{{ request('search') }}">
@@ -61,7 +59,6 @@
                                     <tr class="hover:bg-gray-50 cursor-pointer" @click="expanded = !expanded">
                                         <td class="px-2 py-4 text-center text-gray-400"><i class="fas" :class="expanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i></td>
                                         <td class="px-4 py-4 whitespace-nowrap">
-                                            {{-- CORRECCIÓN 1: Se usa po_number en lugar de order_number --}}
                                             <p class="font-bold text-gray-900 font-mono">{{ $order->po_number }}</p>
                                             <p class="text-xs text-gray-500 font-mono">{{ $order->container_number ?? 'N/A' }}</p>
                                         </td>
@@ -80,7 +77,6 @@
                                             <p class="text-xs text-gray-500 font-mono">{{ $order->latestArrival->truck_plate ?? 'N/A' }}</p>
                                         </td>
                                         <td class="px-4 py-4 whitespace-nowrap">
-                                            {{-- CORRECCIÓN 2: Lógica de progreso más robusta --}}
                                             @php 
                                                 $progress = $order->expected_bottles > 0 ? ($order->received_bottles / $order->expected_bottles) * 100 : 0; 
                                             @endphp

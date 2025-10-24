@@ -14,7 +14,6 @@
 
     <div class="py-12">
         <div class="max-w-screen-xl mx-auto sm:px-6 lg:px-8 space-y-8">
-            {{-- Bloque de Mensajes y Alertas --}}
             @if (session('success'))
                 <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow-md" role="alert">
                     <div class="flex"><div class="py-1"><i class="fas fa-check-circle mr-3"></i></div><div><p class="font-bold">{{ session('success') }}</p></div></div>
@@ -38,14 +37,12 @@
                                 <h3 class="font-bold text-xl text-gray-800">Información General</h3>
                             </div>
                             <div class="mt-4 sm:mt-0 self-start sm:self-center flex items-center space-x-2">
-                                {{-- El botón de EDITAR solo aparece si la orden NO está completada --}}
                                 @if ($purchaseOrder->status != 'Completed')
                                     <a href="{{ route('wms.purchase-orders.edit', $purchaseOrder) }}" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:bg-gray-50">
                                         <i class="fas fa-pencil-alt mr-2"></i> Editar Orden
                                     </a>
                                 @endif
 
-                                {{-- El botón de PDF solo aparece si la orden SÍ está completada --}}
                                 @if ($purchaseOrder->status == 'Completed')
                                     <a href="{{ route('wms.purchase-orders.arrival-report-pdf', $purchaseOrder) }}" target="_blank" class="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-red-700">
                                         <i class="fas fa-file-pdf mr-2"></i> Generar Reporte
@@ -268,7 +265,6 @@
     </div>
 </div>
 
-{{-- Script para manejar la lógica de la vista --}}
 <script>
     function evidenceHandler() {
         return {

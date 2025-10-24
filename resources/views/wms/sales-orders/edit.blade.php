@@ -5,10 +5,6 @@
         </h2>
     </x-slot>
     
-    {{-- 
-      Volvemos al patrón original pero MÁS LIMPIO.
-      Usamos comillas simples ( ' ) para x-data.
-    --}}
     <div class="py-12" x-data='soForm(@json($salesOrder->lines))'>
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             
@@ -27,7 +23,6 @@
                 @endif
                 
                 <div class="bg-white p-8 rounded-lg shadow-xl space-y-6">
-                    {{-- Campos de la cabecera (SO, Factura, Cliente, Fecha) --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label for="so_number" class="block text-sm font-medium text-gray-700">Nº de Orden de Venta (SO)</label>
@@ -47,14 +42,12 @@
                         </div>
                     </div>
 
-                    {{-- Sección de Productos --}}
                     <div class="border-t pt-6">
                         <h3 class="font-semibold text-lg">Productos a Enviar</h3>
                         <div class="space-y-4 mt-2">
                             <template x-for="(line, index) in lines" :key="index">
                                 <div class="grid grid-cols-12 gap-x-4 gap-y-2 bg-gray-50 p-4 rounded-md border">
                                     
-                                    {{-- 1. Buscar Producto --}}
                                     <div class="col-span-12 relative">
                                         <label :for="`product_search_${index}`" class="block text-sm font-medium">1. Buscar Producto (SKU o Nombre)</label>
                                         <input type="text"
@@ -77,7 +70,6 @@
                                         </div>
                                     </div>
 
-                                    {{-- 2. Seleccionar Lote --}}
                                     <div class="col-span-12">
                                         <label :for="`pallet_item_${index}`" class="block text-sm font-medium">2. Seleccionar Lote (LPN / Calidad / Pedimento)</label>
                                         <select :id="`pallet_item_${index}`" :name="`lines[${index}][pallet_item_id]`" x-model.number="line.pallet_item_id" @change="line.updateAvailableQuantity()" class="mt-1 w-full rounded-md" :disabled="line.product_id === ''">
@@ -90,7 +82,6 @@
                                         </select>
                                     </div>
                                     
-                                    {{-- 3. Cantidad a Enviar --}}
                                     <div class="col-span-12">
                                         <label :for="`quantity_${index}`" class="block text-sm font-medium">3. Cantidad a Enviar</label>
                                         <div class="flex items-center">
@@ -107,7 +98,6 @@
                         <button type="button" @click="addLine()" class="mt-4 px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-md hover:bg-gray-300">+ Añadir Producto</button>
                     </div>
                     
-                    {{-- Botones de Acción --}}
                     <div class="mt-6 flex justify-end">
                         <a href="{{ route('wms.sales-orders.show', $salesOrder) }}" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md mr-4">Cancelar</a>
                         <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700">Actualizar Orden</button>
@@ -117,18 +107,13 @@
         </div>
     </div>
 
-    {{-- --- INICIO DEL SCRIPT CORREGIDO --- --}}
     <script>
-        // 1. Define los datos de stock global
         const stockData = @json($stockData);
 
-        // 2. Define la función que CREA un objeto de línea (con datos y métodos)
-        // Esta es una "fábrica" de líneas
         const createLine = (lineData = {}) => {
             
             const hasData = lineData && lineData.pallet_item;
             const initialProductId = hasData ? lineData.pallet_item.product_id : '';
-            // Lo dejamos como NÚMERO (o null) para que coincida con el x-model.number
             const initialPalletItemId = hasData ? lineData.pallet_item_id : null; 
             const initialSelectedProduct = hasData ? lineData.pallet_item.product : null;
             
@@ -140,10 +125,9 @@
                 ? (initialStockItem.quantity + lineData.quantity_ordered) 
                 : (lineData.quantity_ordered || 1);
 
-            // Devuelve el objeto completo (propiedades Y métodos)
             return {
                 product_id: initialProductId,
-                pallet_item_id: initialPalletItemId, // Es un NÚMERO
+                pallet_item_id: initialPalletItemId,
                 quantity: lineData.quantity_ordered || 1,
                 selectedProduct: initialSelectedProduct,
                 searchTerm: '',
@@ -152,7 +136,6 @@
                 availableQuantity: initialAvailableQty, 
                 availableQuantityForInput: initialQtyForInput,
 
-                // --- MÉTODOS (para que el buscador funcione) ---
                 filterProducts(term) {
                     this.searchTerm = term.toLowerCase();
                     if (!this.searchTerm) { this.filteredProducts = []; return; }
@@ -164,7 +147,7 @@
                     this.product_id = product.id; 
                     this.selectedProduct = product; 
                     this.searchTerm = ''; 
-                    this.pallet_item_id = null; // Reinicia a null
+                    this.pallet_item_id = null;
                     this.availableStock = stockData.filter(s => s.product_id == this.product_id);
                     this.availableQuantity = 0;
                     this.availableQuantityForInput = 1;
@@ -195,18 +178,14 @@
                     this.filteredProducts = [];
                 }
             };
-        }; // --- Fin de createLine ---
+        };
 
 
-        // 3. Define la función Alpine principal
-        // Esta función recibe los datos de Laravel y DEVUELVE el objeto completo
         function soForm(initialLines = []) {
           
           return {
-              // 1. Mapea los datos JSON a objetos "completos"
               lines: initialLines.length > 0 ? initialLines.map(line => createLine(line)) : [createLine()],
 
-              // 2. Métodos para AÑADIR/QUITAR líneas
               addLine() {
                   this.lines.push(createLine()); 
               },
@@ -214,7 +193,6 @@
                   this.lines.splice(index, 1);
               }
           };
-        } // --- Fin de soForm ---
+        }
     </script>
-    {{-- --- FIN DEL SCRIPT --- --}}
 </x-app-layout>

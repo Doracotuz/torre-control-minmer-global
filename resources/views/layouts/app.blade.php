@@ -64,7 +64,6 @@
                 color: #ffffff;
                 font-weight: 600;
                 color: #1F222B;
-                /* box-shadow: 0 4px 12px rgba(255, 156, 0, 0.2); */
             }
             .nav-link-custom.active-link::before {
                 height: 100%;
@@ -353,7 +352,6 @@
             });
 
             guiaData.eventos.forEach(evento => {
-                // SVG Paths
                 const icons = {
                     'Factura Entregada': { path: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z', fillColor: '#28a745', fillOpacity: 1, strokeWeight: 0, scale: 1.2 },
                     'Factura no entregada': { path: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z', fillColor: '#dc3545', fillOpacity: 1, strokeWeight: 0, scale: 1.2 },
@@ -613,7 +611,6 @@ document.addEventListener('alpine:init', () => {
                         </div>
 
                         <nav class="flex-1 px-4 py-6 space-y-2">
-                            {{-- ENLACE AL DASHBOARD (Visible para todos los empleados) --}}
                             @if(!Auth::user()->is_client)
                             <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="nav-link-custom {{ request()->routeIs('dashboard') ? 'active-link' : '' }}">
                                 <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.2099 15.89C20.5737 17.3945 19.5787 18.7202 18.3118 19.7513C17.0449 20.7824 15.5447 21.4874 13.9424 21.8048C12.34 22.1221 10.6843 22.0421 9.12006 21.5718C7.55578 21.1014 6.13054 20.2551 4.96893 19.1067C3.80733 17.9582 2.94473 16.5428 2.45655 14.9839C1.96837 13.4251 1.86948 11.7705 2.16851 10.1646C2.46755 8.55878 3.15541 7.05063 4.17196 5.77203C5.18851 4.49343 6.5028 3.48332 7.99992 2.83M21.9999 12C21.9999 10.6868 21.7413 9.38642 21.2387 8.17317C20.7362 6.95991 19.9996 5.85752 19.071 4.92893C18.1424 4.00035 17.04 3.26375 15.8267 2.7612C14.6135 2.25866 13.3131 2 11.9999 2V12H21.9999Z" /></svg>
@@ -621,7 +618,6 @@ document.addEventListener('alpine:init', () => {
                             </x-nav-link>
                             @endif
 
-                            {{-- ENLACE AL DASHBOARD (Visible solo para clientes) --}}
                             @if (Auth::user()->is_client)
                                 <x-nav-link :href="route('tablero.index')" :active="request()->routeIs('tablero.index')" class="nav-link-custom {{ request()->routeIs('tablero.index') ? 'active-link' : '' }}">
                                     <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.2099 15.89C20.5737 17.3945 19.5787 18.7202 18.3118 19.7513C17.0449 20.7824 15.5447 21.4874 13.9424 21.8048C12.34 22.1221 10.6843 22.0421 9.12006 21.5718C7.55578 21.1014 6.13054 20.2551 4.96893 19.1067C3.80733 17.9582 2.94473 16.5428 2.45655 14.9839C1.96837 13.4251 1.86948 11.7705 2.16851 10.1646C2.46755 8.55878 3.15541 7.05063 4.17196 5.77203C5.18851 4.49343 6.5028 3.48332 7.99992 2.83M21.9999 12C21.9999 10.6868 21.7413 9.38642 21.2387 8.17317C20.7362 6.95991 19.9996 5.85752 19.071 4.92893C18.1424 4.00035 17.04 3.26375 15.8267 2.7612C14.6135 2.25866 13.3131 2 11.9999 2V12H21.9999Z" /></svg>
@@ -629,7 +625,6 @@ document.addEventListener('alpine:init', () => {
                                 </x-nav-link>
                             @endif                    
 
-                            {{-- ENLACE A ARCHIVOS (Texto cambia para clientes) --}}
                             @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
                                 <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
                                     <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8V21H3V8M10 12H14M1 3H23V8H1V3Z" /></svg>
@@ -648,7 +643,6 @@ document.addEventListener('alpine:init', () => {
                                 </x-nav-link>
                             @endif
 
-                            {{-- BOTONES EXCLUSIVOS PARA CLIENTES --}}
                             @if (Auth::user()->is_client)
                                 @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
                                     <x-nav-link href="#" class="nav-link-custom" @click.prevent="checkAccess($event)">
@@ -676,7 +670,6 @@ document.addEventListener('alpine:init', () => {
                                     </x-nav-link>
                                 @endif
 
-                                {{-- RFQ Moët Hennessy Button --}}
                                 <x-nav-link :href="route('rfq.index')" class="nav-link-custom glowing-button">
                                     <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#FF9C00">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
@@ -747,7 +740,6 @@ document.addEventListener('alpine:init', () => {
                                 </div>
                             @endif
 
-                            {{-- BOTONES OCULTOS PARA CLIENTES --}}
                             @if (!Auth::user()->is_client)
                                 <x-nav-link :href="route('area_admin.visits.index')" :active="request()->routeIs('area_admin.visits.*')" class="nav-link-custom {{ request()->routeIs('area_admin.visits.*') ? 'active-link' : '' }}">
                                     <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -779,13 +771,11 @@ document.addEventListener('alpine:init', () => {
                                     </x-nav-link>  
                                 @endcan
                                 @if (Auth::check() && !Auth::user()->is_client && in_array(Auth::user()->area?->name, ['Administración', 'Almacén']))
-                                    {{-- x-data para el menú WMS principal y sus submenús --}}
                                     <div x-data="{
                                         isWmsOpen: {{ request()->routeIs('wms.*') ? 'true' : 'false' }},
                                         isInventoryOpen: {{ request()->routeIs('wms.inventory.*', 'wms.physical-counts.*') ? 'true' : 'false' }},
                                         isCatalogsOpen: {{ request()->routeIs('wms.products.*', 'wms.locations.*', 'wms.warehouses.*', 'wms.brands.*', 'wms.qualities.*', 'wms.product-types.*', 'wms.lpns.*') ? 'true' : 'false' }}
                                     }">
-                                        {{-- Botón principal WMS --}}
                                         <button @click="isWmsOpen = !isWmsOpen" class="dropdown-toggle w-full flex justify-between items-center text-left nav-link-custom {{ request()->routeIs('wms.*') ? 'active-link' : '' }}">
                                             <div class="flex items-center">
                                                 <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -796,10 +786,8 @@ document.addEventListener('alpine:init', () => {
                                             <svg class="chevron-icon w-4 h-4 transition-transform" :class="{'rotate-180': isWmsOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                                         </button>
 
-                                        {{-- Contenido del submenú WMS --}}
                                         <div x-show="isWmsOpen" x-transition class="pl-4 mt-2 space-y-2"> {{-- Aumentar padding izquierdo --}}
 
-                                            {{-- Enlace Directo a Reportes --}}
                                             <a href="{{ route('wms.reports.index') }}" class="block text-gray-400 hover:text-white text-sm font-semibold pl-4 {{ request()->routeIs('wms.reports.index') ? 'text-white font-bold' : '' }}">
                                                 Reportes
                                             </a>
@@ -808,7 +796,6 @@ document.addEventListener('alpine:init', () => {
                                             </a> -->
 
 
-                                            {{-- Submenú Inventario --}}
                                             <div>
                                                 <button @click="isInventoryOpen = !isInventoryOpen" class="sub-dropdown-toggle">
                                                     <span>Inventario</span>
@@ -821,7 +808,6 @@ document.addEventListener('alpine:init', () => {
                                                 </div>
                                             </div>
 
-                                            {{-- Enlaces Directos Entrada/Salida --}}
                                             <a href="{{ route('wms.purchase-orders.index') }}" class="block text-gray-400 hover:text-white text-sm font-semibold pl-4 {{ request()->routeIs('wms.purchase-orders.*') ? 'text-white font-bold' : '' }}">
                                                 Entradas (PO)
                                             </a>
@@ -831,7 +817,6 @@ document.addEventListener('alpine:init', () => {
 
                                             <hr class="border-gray-600 my-3 mx-4"> {{-- Separador --}}
 
-                                            {{-- Submenú Catálogos --}}
                                             <div>
                                                 <button @click="isCatalogsOpen = !isCatalogsOpen" class="sub-dropdown-toggle">
                                                     <span>Catálogos</span>
@@ -848,8 +833,8 @@ document.addEventListener('alpine:init', () => {
                                                 </div>
                                             </div>
 
-                                        </div> {{-- Fin contenido submenú WMS --}}
-                                    </div> {{-- Fin x-data WMS --}}
+                                        </div>
+                                    </div>
                                 @endif                             
                                 @if(Auth::user()->is_area_admin && Auth::user()->area?->name === 'Recursos Humanos')
                                     <x-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.*')" class="nav-link-custom {{ request()->routeIs('admin.organigram.*') ? 'active-link' : '' }}">
@@ -869,7 +854,6 @@ document.addEventListener('alpine:init', () => {
                             @endif
 
 
-                            {{-- Menu Super Admin --}}
                             @if (Auth::user()->isSuperAdmin())
                                 <div class="pt-4 mt-2 border-t border-white/10">
                                     <button @click="isSuperAdminMenuOpen = !isSuperAdminMenuOpen" class="dropdown-toggle text-xs">
@@ -908,7 +892,6 @@ document.addEventListener('alpine:init', () => {
                                         x-transition:leave-end="opacity-0 transform -translate-y-2"
                                         class="overflow-hidden">
                                         <div class="pl-4 mt-2 space-y-2">
-                                            {{-- Links para Admin de Área --}}
                                             <x-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="nav-link-custom {{ request()->routeIs('area_admin.dashboard') ? 'active-link' : '' }}">
                                                 <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-1.621-1.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                                 <span class="nav-text">{{ __('Panel de Área') }}</span>

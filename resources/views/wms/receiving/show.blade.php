@@ -97,23 +97,17 @@
 <script>
     function receivingApp() {
         return {
-            // Datos iniciales
             summary: @json($receivingSummary),
             purchaseOrderId: {{ $purchaseOrder->id }},
             
-            // Estado de la aplicación
             step: 'start', loading: false, currentPallet: null,
             newItem: { product_id: '', quantity: 1, quality_id: '' },
             lpnInput: '', finishedPallets: [],
 
-            // NUEVO: Estado para la edición
             editingItemId: null,
             editForm: { product_id: '', quality_id: '', quantity: 0 },
             finishedPallets: @json($finishedPallets),
 
-            // --- Funciones (Actions) ---
-
-            // Función startNewPallet (sin cambios)
             async startNewPallet() {
                 if (!this.lpnInput.trim()) return;
                 this.loading = true;
@@ -136,18 +130,15 @@
                 }
             },
             
-            // Función addItemToPallet (CORREGIDA Y MEJORADA)
             async addItemToPallet() {
                 console.log('Iniciando addItemToPallet...');
 
-                // 1. Validar que los campos no estén vacíos
                 if (!this.newItem.product_id || !this.newItem.quantity || !this.newItem.quality_id) {
                     console.error('Validación fallida: Faltan datos en el formulario.');
                     alert('Por favor, seleccione un producto, calidad y cantidad.');
                     return;
                 }
 
-                // 2. Validación de sobre-recepción (código robustecido)
                 try {
                     const summaryItem = this.summary.find(s => s.product_id == this.newItem.product_id);
                     if (summaryItem) {
@@ -168,7 +159,6 @@
                     return;
                 }
 
-                // 3. Enviar los datos al servidor
                 this.loading = true;
                 console.log('Enviando datos al servidor:', this.newItem);
                 try {
@@ -191,7 +181,6 @@
                 }
             },
 
-            // Función finishPallet (sin cambios)
             async finishPallet() {
                 if (!this.currentPallet || this.currentPallet.items.length === 0) {
                     alert('La tarima está vacía. Se cancelará sin guardar.');
@@ -211,12 +200,9 @@
                         throw new Error(data.error || 'Error del servidor al finalizar.');
                     }
 
-                    // Si el backend confirma, actualizamos la UI
                     this.currentPallet.items.forEach(palletItem => {
                         const summaryItem = this.summary.find(s => s.product_id == palletItem.product_id);
                         if (summaryItem) {
-                            // --- ¡LA CORRECCIÓN ESTÁ AQUÍ! ---
-                            // Nos aseguramos de que ambos valores sean números antes de sumar
                             summaryItem.received = Number(summaryItem.received) + Number(palletItem.quantity);
                             summaryItem.balance = summaryItem.ordered - summaryItem.received;
                         }
@@ -237,7 +223,6 @@
             },
             startEditing(item) {
                 this.editingItemId = item.id;
-                // Clonamos el objeto para no modificar el original hasta guardar
                 this.editForm = JSON.parse(JSON.stringify({
                     product_id: item.product_id,
                     quality_id: item.quality_id,
@@ -265,8 +250,8 @@
                     const data = await response.json();
                     if (!response.ok) throw new Error(data.error);
 
-                    this.currentPallet = data; // Actualiza la tarima con los nuevos datos del servidor
-                    this.cancelEditing(); // Cierra el formulario de edición
+                    this.currentPallet = data;
+                    this.cancelEditing();
                 } catch (error) {
                     alert(`Error al guardar: ${error.message}`);
                 } finally {
@@ -286,7 +271,7 @@
                     const data = await response.json();
                     if (!response.ok) throw new Error(data.error);
 
-                    this.currentPallet = data; // Actualiza la tarima con los nuevos datos del servidor
+                    this.currentPallet = data;
                 } catch (error) {
                     alert(`Error al eliminar: ${error.message}`);
                 } finally {

@@ -28,7 +28,6 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold">{{ $adjustment->user->name ?? 'N/A' }}</td>
                                     <td class="px-6 py-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">{{ $adjustment->source ?? 'N/A' }}</span></td>
                                     
-                                    {{-- Lógica condicional para LPN o Ubicación --}}
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-mono">
                                         @if ($adjustment->palletItem)
                                             {{ $adjustment->palletItem->pallet->lpn ?? 'N/A' }}
@@ -37,7 +36,6 @@
                                         @endif
                                     </td>
                                     
-                                    {{-- Lógica condicional para Producto --}}
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                                         @php
                                             $product = $adjustment->palletItem->product ?? $adjustment->product;

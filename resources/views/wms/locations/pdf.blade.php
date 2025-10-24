@@ -31,7 +31,7 @@
             box-sizing: border-box;
             
             min-height: 100%;
-            overflow: hidden; /* Añadido para asegurar que nada se desborde */
+            overflow: hidden;
         }
         
         .label-page:last-child {
@@ -62,7 +62,7 @@
             margin: 0 auto;
         }
 
-        .code-text { /* Renombrado de .lpn-text para mayor claridad */
+        .code-text {
             font-size: 40px;
             font-weight: bold;
             margin: 0;
@@ -86,16 +86,13 @@
         <div class="label-page">
             <div class="barcode-wrapper">
                 <div class="barcode-container">
-                    {{-- Parámetros replicados del archivo de LPNs --}}
                     {!! DNS1D::getBarcodeHTML($location->code, 'C128', 4.3, 100, 'black', true) !!}
                 </div>
             </div>
             <div class="code-text">
-                {{-- Se muestra el código de la ubicación --}}
                 {{ $location->aisle }}-{{ $location->rack }}-{{ $location->shelf }}-{{$location->bin}}
             </div>
             <div class="location-type">
-                {{-- Se muestra el tipo de ubicación --}}
                 Tipo: {{ $location->translated_type }}
             </div>
         </div>

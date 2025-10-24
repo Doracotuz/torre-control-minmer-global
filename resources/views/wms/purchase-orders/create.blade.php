@@ -11,7 +11,6 @@
                     </div>
                 @endif
 
-                {{-- Muestra errores específicos de validación (ej. campos vacíos, duplicados) --}}
                 @if ($errors->any())
                     <div class="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
                         <p class="font-bold">Por favor, corrige los siguientes errores:</p>
@@ -23,7 +22,6 @@
                     </div>
                 @endif                
                 <div class="bg-white p-8 rounded-lg shadow-xl space-y-6">
-                    {{-- Datos Generales --}}
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div><label for="po_number">Nº de PO</label><input type="text" name="po_number" id="po_number" required class="mt-1 block w-full rounded-md border-gray-300"></div>
                         <div><label for="expected_date">Fecha Esperada</label><input type="date" name="expected_date" id="expected_date" required class="mt-1 block w-full rounded-md border-gray-300"></div>
@@ -46,7 +44,6 @@
                     </div>                                     
                     
 
-                    {{-- Líneas de Productos --}}
                     <div class="border-t pt-6">
                         <h3 class="font-semibold text-lg">Productos</h3>
                         <div class="space-y-3 mt-2">
