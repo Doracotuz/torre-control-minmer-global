@@ -14,6 +14,7 @@ use League\Csv\Reader;
 use League\Csv\Writer;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class AssignmentController extends Controller
 {
@@ -306,17 +307,45 @@ class AssignmentController extends Controller
             $rowNum = $index + 2; // +1 por el 0-index, +1 por la cabecera
             Log::info("Procesando fila $rowNum: ", $record);
 
-            // 1. Validar datos del CSV
+            // 1. Validar datos del CSV (Regla de fecha actualizada)
             $validator = Validator::make($record, [
                 'asset_tag' => 'required|string',
                 'organigram_member_email' => 'required|email',
-                'assignment_date' => 'required|date_format:Y-m-d',
+                'assignment_date' => 'required|string', // <-- CAMBIO: Se valida solo que exista
             ]);
 
             if ($validator->fails()) {
                 $errors[] = "Fila $rowNum: Datos inválidos o faltantes. ({$validator->errors()->first()})";
                 continue;
             }
+
+            // --- INICIO DE NUEVO PARSEO DE FECHA ---
+            $parsedDate = null;
+            $dateString = trim($record['assignment_date']);
+            
+            try {
+                // Intenta formato YYYY-MM-DD (Ej: 2025-10-24)
+                $parsedDate = Carbon::createFromFormat('Y-m-d', $dateString);
+            } catch (\Exception $e) {
+                try {
+                    // Si falla, intenta formato DD/MM/YYYY (Ej: 24/10/2025)
+                    $parsedDate = Carbon::createFromFormat('d/m/Y', $dateString);
+                } catch (\Exception $e2) {
+                    try {
+                        // Si falla, intenta formato MM/DD/YYYY (Ej: 10/24/2025)
+                        $parsedDate = Carbon::createFromFormat('m/d/Y', $dateString);
+                    } catch (\Exception $e3) {
+                         // Si todos fallan, reporta el error
+                         $errors[] = "Fila $rowNum: El formato de fecha '{$dateString}' no es válido. Usa YYYY-MM-DD o DD/MM/YYYY.";
+                         continue;
+                    }
+                }
+            }
+            
+            // Si llegamos aquí, $parsedDate es un objeto Carbon válido
+            $formattedDate = $parsedDate->format('Y-m-d'); // Formatear para la BD
+            // --- FIN DE NUEVO PARSEO DE FECHA ---
+
 
             // 2. Validar Lógica de Negocio
             $asset = HardwareAsset::where('asset_tag', $record['asset_tag'])->first();
@@ -336,13 +365,13 @@ class AssignmentController extends Controller
                 continue;
             }
 
-            // 3. Procesar la asignación (usando transacción como en tu método store)
+            // 3. Procesar la asignación (usando transacción)
             try {
-                DB::transaction(function () use ($asset, $member, $record) {
+                DB::transaction(function () use ($asset, $member, $formattedDate) { // <-- CAMBIO
                     $assignment = Assignment::create([
                         'hardware_asset_id' => $asset->id,
                         'organigram_member_id' => $member->id,
-                        'assignment_date' => $record['assignment_date'],
+                        'assignment_date' => $formattedDate, // <-- CAMBIO: Usar la fecha parseada
                     ]);
 
                     $asset->logs()->create([
