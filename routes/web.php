@@ -269,6 +269,7 @@ Route::middleware(['auth', 'check.organigram.admin'])->prefix('admin/organigram'
     Route::get('/{organigram_member}/edit', [OrganigramController::class, 'edit'])->name('edit');
     Route::put('/{organigram_member}', [OrganigramController::class, 'update'])->name('update');
     Route::delete('/{organigram_member}', [OrganigramController::class, 'destroy'])->name('destroy');
+    Route::delete('/bulk-delete', [OrganigramController::class, 'bulkDestroy'])->name('bulk-delete');    
 
     Route::get('/template', [OrganigramController::class, 'downloadTemplate'])->name('download-template');
     Route::post('/import-csv', [OrganigramController::class, 'importCsv'])->name('import-csv');

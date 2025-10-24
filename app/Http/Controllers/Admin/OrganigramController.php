@@ -39,12 +39,16 @@ class OrganigramController extends Controller
      */
     public function index(Request $request)
     {
+        // Fetch necessary data for filters
         $areas = Area::orderBy('name')->get();
         $positions = OrganigramPosition::orderBy('name')->get();
-        $managers = OrganigramMember::orderBy('name')->get();
+        // Fetch only potential managers (you might refine this logic if needed)
+        $managers = OrganigramMember::orderBy('name')->get(); 
 
-        $query = OrganigramMember::with(['area', 'manager', 'subordinates', 'activities', 'skills', 'trajectories', 'position']);
+        // Start building the query with eager loading
+        $query = OrganigramMember::with(['area', 'manager', 'position']); // Eager load base relations
 
+        // Apply filters based on request input
         if ($request->filled('position_id')) {
             $query->where('position_id', $request->position_id);
         }
@@ -61,28 +65,58 @@ class OrganigramController extends Controller
             $query->where('area_id', $request->area_id);
         }
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('email', 'like', '%' . $search . '%');
+        // Apply search query (live search now handled by Alpine, but keep for initial load/non-JS)
+        $searchQuery = $request->input('search');
+        if ($searchQuery) {
+            $query->where(function ($q) use ($searchQuery) {
+                $q->where('name', 'like', '%' . $searchQuery . '%')
+                  ->orWhere('email', 'like', '%' . $searchQuery . '%');
             });
         }
 
-        $members = $query->get()->sortBy(function($member) {
-            return $member->position->name ?? '';
-        });
+        // Execute the query to get filtered results (or all if no filters)
+        $membersQueryResults = $query->orderBy('name')->get(); 
 
-        $hierarchicalMembers = $members->whereNull('manager_id')->map(function ($member) use ($members) {
-            return $this->buildHierarchy($member, $members);
-        });
+        // --- MODIFICATION TO ADD FULL PHOTO URL ---
+        // Map over the results to add the S3 URL and ensure needed relations for JSON are loaded
+        $members = $membersQueryResults->map(function ($member) {
+            // Generate the full S3 URL if a path exists
+            $member->profile_photo_path_url = $member->profile_photo_path 
+                                              ? Storage::disk('s3')->url($member->profile_photo_path) 
+                                              : null;
+            
+            // Ensure relations needed by Alpine/JSON are loaded (position, area, manager were loaded by `with`)
+            // $member->loadMissing(['position', 'area', 'manager']); // Redundant if already in `with`
+            
+            // You might load other relations here if needed for the JSON, e.g.,
+            // $member->loadMissing(['activities', 'skills']); 
 
+            return $member;
+        });
+        // --- END OF MODIFICATION ---
+
+        // (Keep hierarchicalMembers logic only if you still use it elsewhere in the Blade file)
+        // $hierarchicalMembers = $members->whereNull('manager_id')->map(function ($member) use ($members) {
+        //     return $this->buildHierarchy($member, $members);
+        // });
+
+        // Get selected filter values to pass back to the view
         $selectedPosition = $request->input('position_id');
         $selectedManager = $request->input('manager_id');
         $selectedArea = $request->input('area_id');
-        $searchQuery = $request->input('search');
-
-        return view('admin.organigram.index', compact('members', 'hierarchicalMembers', 'areas', 'positions', 'managers', 'selectedPosition', 'selectedManager', 'selectedArea', 'searchQuery'));
+        
+        // Pass the MODIFIED $members collection (with URLs) and filter data to the view
+        return view('admin.organigram.index', compact(
+            'members', // This now includes 'profile_photo_path_url'
+            'areas', 
+            'positions', 
+            'managers', // Pass the list of potential managers for the filter dropdown
+            'selectedPosition', 
+            'selectedManager', 
+            'selectedArea', 
+            'searchQuery'
+            // 'hierarchicalMembers', // Only include if still needed by Blade
+        ));
     }
 
     public function downloadTemplate()
@@ -1220,5 +1254,43 @@ class OrganigramController extends Controller
 
         return $descendants;
     }
+
+    /**
+     * Remove multiple specified organigram members from storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function bulkDestroy(Request $request)
+    {
+        // 1. Validar que los IDs seleccionados sean un array y existan
+        $validatedData = $request->validate([
+            'selected_ids' => 'required|array',
+            'selected_ids.*' => 'exists:organigram_members,id', // Asegura que cada ID exista
+        ]);
+
+        $idsToDelete = $validatedData['selected_ids'];
+
+        // 2. (Opcional pero recomendado) Eliminar fotos de perfil de S3 antes de borrar
+        // Recuperamos los miembros para obtener las rutas de las fotos
+        $membersToDelete = OrganigramMember::whereIn('id', $idsToDelete)->get();
+        foreach ($membersToDelete as $member) {
+            if ($member->profile_photo_path) {
+                try {
+                    Storage::disk('s3')->delete($member->profile_photo_path);
+                } catch (\Exception $e) {
+                    // Registrar el error si la eliminación de S3 falla, pero continuar
+                    Log::error("Error al eliminar foto de S3 para miembro ID {$member->id}: " . $e->getMessage());
+                }
+            }
+        }
+
+        // 3. Eliminar los miembros de la base de datos
+        $deleteCount = OrganigramMember::whereIn('id', $idsToDelete)->delete();
+
+        // 4. Redirigir con mensaje de éxito
+        return redirect()->route('admin.organigram.index')
+                         ->with('success', $deleteCount . ' miembro(s) eliminado(s) exitosamente.');
+    }    
 
 }
