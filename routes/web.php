@@ -264,12 +264,12 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
 }); // Cierra Route::middleware(['auth', 'check.area:Administración'])
 Route::middleware(['auth', 'check.organigram.admin'])->prefix('admin/organigram')->name('admin.organigram.')->group(function () {
     Route::get('/', [OrganigramController::class, 'index'])->name('index');
+    Route::delete('/bulk-delete', [OrganigramController::class, 'bulkDestroy'])->name('bulk-delete');    
     Route::get('/create', [OrganigramController::class, 'create'])->name('create');
     Route::post('/', [OrganigramController::class, 'store'])->name('store');
     Route::get('/{organigram_member}/edit', [OrganigramController::class, 'edit'])->name('edit');
     Route::put('/{organigram_member}', [OrganigramController::class, 'update'])->name('update');
     Route::delete('/{organigram_member}', [OrganigramController::class, 'destroy'])->name('destroy');
-    Route::delete('/bulk-delete', [OrganigramController::class, 'bulkDestroy'])->name('bulk-delete');    
 
     Route::get('/template', [OrganigramController::class, 'downloadTemplate'])->name('download-template');
     Route::post('/import-csv', [OrganigramController::class, 'importCsv'])->name('import-csv');

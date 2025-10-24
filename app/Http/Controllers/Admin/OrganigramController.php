@@ -1229,34 +1229,63 @@ class OrganigramController extends Controller
      */
     public function bulkDestroy(Request $request)
     {
-        // 1. Validar que los IDs seleccionados sean un array y existan
+        // 1. Validate incoming IDs
         $validatedData = $request->validate([
             'selected_ids' => 'required|array',
-            'selected_ids.*' => 'exists:organigram_members,id', // Asegura que cada ID exista
+            'selected_ids.*' => 'exists:organigram_members,id',
         ]);
 
         $idsToDelete = $validatedData['selected_ids'];
+        $deleteCount = 0; // Initialize count
 
-        // 2. (Opcional pero recomendado) Eliminar fotos de perfil de S3 antes de borrar
-        // Recuperamos los miembros para obtener las rutas de las fotos
-        $membersToDelete = OrganigramMember::whereIn('id', $idsToDelete)->get();
+        // --- HANDLING RELATED ASSIGNMENTS ---
+        try {
+             \App\Models\Assignment::whereIn('organigram_member_id', $idsToDelete)
+                                   ->update(['organigram_member_id' => null]);
+            Log::info('Assignments successfully disassociated (set to NULL) for members being deleted.', ['member_ids' => $idsToDelete]);
+
+        } catch (\Illuminate\Database\QueryException $e) {
+             // ... (error handling as before) ...
+             Log::error("Error disassociating assignments during bulk member deletion: " . $e->getMessage(), [ /* ... */ ]);
+             $errorMessage = 'No se pudieron eliminar los miembros. ';
+             // ... (error message logic) ...
+             return redirect()->route('admin.organigram.index')->with('error', $errorMessage);
+        } catch (\Exception $e) {
+             // ... (error handling as before) ...
+            Log::error("Unexpected error during assignment handling in bulk member deletion: " . $e->getMessage(), ['member_ids' => $idsToDelete]);
+            return redirect()->route('admin.organigram.index')->with('error', 'Ocurrió un error inesperado al gestionar las asignaciones.');
+        }
+
+        // 2. Delete S3 profile photos
+        $membersToDelete = OrganigramMember::whereIn('id', $idsToDelete)->get(['id', 'profile_photo_path']);
         foreach ($membersToDelete as $member) {
-            if ($member->profile_photo_path) {
+            // ... (photo deletion logic) ...
+             if ($member->profile_photo_path) {
                 try {
                     Storage::disk('s3')->delete($member->profile_photo_path);
                 } catch (\Exception $e) {
-                    // Registrar el error si la eliminación de S3 falla, pero continuar
-                    Log::error("Error al eliminar foto de S3 para miembro ID {$member->id}: " . $e->getMessage());
+                    Log::error("Error deleting S3 photo for member ID {$member->id} during bulk delete: " . $e->getMessage());
                 }
             }
         }
 
-        // 3. Eliminar los miembros de la base de datos
-        $deleteCount = OrganigramMember::whereIn('id', $idsToDelete)->delete();
+        // 3. Delete the members
+        try {
+            $deleteCount = OrganigramMember::whereIn('id', $idsToDelete)->delete();
+        } catch (\Exception $e) {
+             // ... (error handling) ...
+             Log::error("Error occurred during the final member deletion step: " . $e->getMessage(), ['member_ids' => $idsToDelete]);
+             return redirect()->route('admin.organigram.index')->with('error', 'Ocurrió un error al intentar eliminar los miembros.');
+        }
 
-        // 4. Redirigir con mensaje de éxito
+        // --- BROWSER NOTIFICATION LOGIC ---
+        $notificationMessage = $deleteCount . ' miembro(s) eliminado(s) exitosamente.';
+        $successMessage = $notificationMessage . ' Las asignaciones asociadas fueron desvinculadas.';
+
+        // Redirect with both standard flash and browser notification data
         return redirect()->route('admin.organigram.index')
-                         ->with('success', $deleteCount . ' miembro(s) eliminado(s) exitosamente.');
-    }    
-
+                         ->with('success', $successMessage) // Standard flash message
+                         ->with('browser_notification', $notificationMessage); // Message for browser notification
+        // --- END BROWSER NOTIFICATION LOGIC ---
+    }
 }
