@@ -1,5 +1,4 @@
 <div class="table-container border rounded-lg overflow-hidden">
-    {{-- Cabecera de la tabla (sin cambios) --}}
     <div class="responsive-table-header hidden md:grid md:grid-cols-7 gap-4 bg-[#2c3856] p-4 font-bold text-xs text-[#ffffff] uppercase tracking-wider">
         <div class="col-span-1">Etiqueta</div>
         <div class="col-span-1">Categoría</div>
@@ -10,7 +9,6 @@
         <div class="col-span-1 text-right">Acciones</div>
     </div>
 
-    {{-- Cuerpo de la tabla (el "fantasma") --}}
     <div class="divide-y md:divide-y-0">
         @for ($i = 0; $i < 5; $i++) {{-- Muestra 5 filas fantasma --}}
             <div class="hidden md:grid md:grid-cols-7 gap-4 p-4 items-center">
@@ -26,7 +24,6 @@
                 </div>
             </div>
             
-            {{-- Vista móvil fantasma --}}
             <div class="asset-card md:hidden">
                 <div class="asset-card-row">
                     <span class="asset-card-label"><div class="skeleton-bar skeleton-shimmer w-1/4"></div></span>
@@ -36,7 +33,6 @@
                     <span class="asset-card-label"><div class="skeleton-bar skeleton-shimmer w-1/4"></div></span>
                     <span class="asset-card-value"><div class="skeleton-bar skeleton-shimmer w-1/3"></div></span>
                 </div>
-                {{-- ... puedes añadir más filas si lo deseas ... --}}
                 <div class="flex items-center justify-end space-x-6 pt-4">
                     <div class="skeleton-bar skeleton-shimmer w-1/3 h-8"></div>
                     <div class="skeleton-bar skeleton-shimmer w-1/3 h-8"></div>

@@ -52,30 +52,20 @@
         .asset-card-value { text-align: right; color: var(--color-text-primary); }
     }
 
-    /* --- INICIO DE NUEVOS ESTILOS --- */
-
-    /* 1. Animación de Shimmer (Brillo) para el Skeleton */
     @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
     .skeleton-shimmer { animation: shimmer 2s infinite linear; background: linear-gradient(to right, #f3f4f6 4%, #e5e7eb 25%, #f3f4f6 36%); background-size: 1000px 100%; }
     .skeleton-bar { height: 1.25rem; border-radius: 0.5rem; background-color: #e5e7eb; /* Fallback */ }
     .skeleton-avatar { height: 2.5rem; width: 2.5rem; border-radius: 9999px; background-color: #e5e7eb; /* Fallback */ }
 
-    /* 2. Nuevo efecto de "Glow" para inputs (más innovador) */
     .form-input:focus, .form-select:focus, .form-textarea:focus { --tw-ring-color: var(--color-primary); border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(44, 56, 86, 0.15); }
     
-    /* 3. Nuevo efecto de "Glow" para las tarjetas KPI */
     .kpi-card { animation: fadeIn 0.5s ease-out forwards; transition: all 0.3s ease-in-out; }
     .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px -5px rgba(44, 56, 86, 0.1); }
     
-    /* 4. Transición para el overlay de carga */
     .loading-overlay { transition: opacity 0.3s ease-in-out; }
     
-    /* --- FIN DE NUEVOS ESTILOS --- */
 </style>
 
-{{-- 
-  Envolvemos todo en un componente x-data de Alpine
---}}
 <div x-data="assetDashboard()" 
      x-init="
         initFilters(
@@ -89,7 +79,6 @@
      class="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
     
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10">
-        {{-- Tu header, KPIs y Modal son idénticos al archivo original --}}
         <div>
             <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight">Dashboard de Activos</h1>
             <p class="text-[var(--color-text-secondary)] mt-2">Vista general y filtrado del inventario de hardware.</p>
@@ -148,7 +137,6 @@
     </header>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        {{-- Tus 4 KPI cards idénticos --}}
         <div class="kpi-card bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4">
             <div class="bg-blue-100 p-4 rounded-full"><i class="fas fa-desktop text-2xl text-blue-500"></i></div>
             <div><p class="text-3xl font-bold text-gray-800">{{ $stats['total'] }}</p><p class="text-gray-500 text-sm font-medium">Activos Totales</p></div>
@@ -167,11 +155,7 @@
         </div>
     </div>
 
-    {{-- 
-      INICIO DE LA SECCIÓN DINÁMICA
-    --}}
     <div class="bg-white p-6 rounded-xl shadow-lg">
-        {{-- Los Filtros (con estilo focus actualizado) --}}
         <div class="mb-6">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div class="lg:col-span-2">
@@ -220,7 +204,6 @@
             </div>
             <div class="mt-4 flex items-center space-x-3 border-t pt-4">
                 <button @click="clearFilters()" class="btn btn-secondary">Limpiar</button>
-                {{-- Indicador de Carga Sutil --}}
                 <div x-show="isLoading" class="flex items-center text-sm text-[var(--color-primary)]" x-transition>
                     <i class="fas fa-spinner fa-spin mr-2"></i>
                     Actualizando...
@@ -228,9 +211,7 @@
             </div>
         </div>
 
-        {{-- Contenedor con Skeleton Loader y Contenido Real --}}
-        <div class="relative min-h-[300px]"> {{-- Altura mínima para que el skeleton sea visible --}}
-            {{-- 1. El Skeleton Loader (se muestra si isLoading es true) --}}
+        <div class="relative min-h-[300px]">
             <div x-show="isLoading" 
                  x-transition:enter="transition ease-out duration-200"
                  x-transition:enter-start="opacity-0"
@@ -240,11 +221,9 @@
                  x-transition:leave-end="opacity-0"
                  class="absolute inset-0 z-10" x-cloak>
                  
-                {{-- Incluimos la vista parcial del skeleton --}}
                 @include('asset-management.assets._list-skeleton')
             </div>
 
-            {{-- 2. El Contenido Real (se muestra si isLoading es false) --}}
             <div x-show="!isLoading" 
                  x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0"
@@ -253,20 +232,9 @@
                  x-html="assetsHtml"
                  @click.prevent="handlePaginationClick($event)"
                  class="z-0">
-                {{-- El contenido será inyectado por Alpine --}}
-                {{-- 
-                    Nota: Para la carga inicial, podrías incluir el _list aquí
-                    para evitar mostrar el skeleton al principio si no hay filtros.
-                    @include('asset-management.assets._list', ['assets' => $initialAssets]) 
-                    Y ajustar el JS para que no cargue al inicio si ya hay assets.
-                --}}
             </div>
         </div>
     </div>
-    {{-- FIN DE LA SECCIÓN DINÁMICA --}}
-
-
-    {{-- El Modal "Ver Balance" es idéntico --}}
     <div x-show="modalOpen" 
          x-transition:enter="ease-out duration-300"
          x-transition:enter-start="opacity-0"
@@ -296,7 +264,6 @@
             <div class="p-6 space-y-4 overflow-y-auto">
                 @forelse($assetBalance as $categoryName => $data)
                     <div x-data="{ expanded: false }" class="bg-gray-50 rounded-lg border">
-                        {{-- Fila Principal --}}
                         <div class="grid grid-cols-5 gap-4 items-center p-4">
                             <div class="col-span-2 md:col-span-1 font-bold text-gray-800">{{ $categoryName }}</div>
                             <div class="text-center">
@@ -320,7 +287,6 @@
                             </div>
                         </div>
                         
-                        {{-- Desglose --}}
                         <div x-show="expanded" x-transition class="border-t bg-white p-4">
                             <h4 class="font-semibold text-sm mb-2">Desglose por Estatus:</h4>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
@@ -346,7 +312,6 @@
 
 </div>
 
-{{-- EL SCRIPT DE ALPINE (ACTUALIZADO CON TIEMPO MÍNIMO DE CARGA) --}}
 <script>
     function assetDashboard() {
         return {
@@ -383,11 +348,10 @@
 
             async fetchAssetList() {
                 this.isLoading = true;
-                const startTime = Date.now(); // Marca el tiempo de inicio
+                const startTime = Date.now();
                 const params = new URLSearchParams(this.filters);
                 const url = `{{ route('asset-management.assets.filter') }}?${params.toString()}`;
                 
-                // Usamos replaceState para no llenar el historial del navegador
                 window.history.replaceState({}, '', `{{ route('asset-management.dashboard') }}?${params.toString()}`);
 
                 try {
@@ -403,7 +367,6 @@
                     console.error('Error al cargar los activos:', error);
                     this.assetsHtml = '<p class="text-center p-12 text-red-600">Error al cargar la lista de activos. Intenta de nuevo.</p>';
                 } finally {
-                    // Forzamos un tiempo mínimo de carga (ej. 300ms)
                     const elapsedTime = Date.now() - startTime;
                     const remainingTime = 300 - elapsedTime; 
 
