@@ -288,18 +288,11 @@
                         </div>
                     </div>
 
-                    @if ($members->hasPages())
-                        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50/75 rounded-b-lg flex items-center justify-between flex-wrap gap-4">
-                            <span class="text-sm text-gray-600">
-                                Mostrando <strong class="font-medium">{{ $members->firstItem() }}</strong> a <strong class="font-medium">{{ $members->lastItem() }}</strong> de <strong class="font-medium">{{ $members->total() }}</strong> resultados
-                            </span>
-                            
-                            <nav role="navigation" aria-label="Pagination">
-                                {{-- Esto renderizará los enlaces de paginación con el estilo de Tailwind --}}
-                                {{ $members->links() }} 
-                            </nav>
-                        </div>
-                    @endif
+                @if ($members->hasPages())
+                    <div class="px-6 py-4 border-t border-gray-200 bg-gray-50/75 rounded-b-lg">
+                        {{ $members->links() }} 
+                    </div>
+                @endif
 
                 </div>
 
