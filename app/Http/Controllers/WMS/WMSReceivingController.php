@@ -159,15 +159,16 @@ class WMSReceivingController extends Controller
             );
             $stock->increment('quantity', $validated['quantity']);
 
-            $palletItem->stockMovements()->create([
+            StockMovement::create([ // Llama directamente al modelo StockMovement
                 'user_id' => Auth::id(),
                 'product_id' => $validated['product_id'],
                 'location_id' => $pallet->location_id,
+                'pallet_item_id' => $palletItem->id, // Pasa el ID aquí
                 'quantity' => $validated['quantity'], // Positivo para entrada
                 'movement_type' => 'RECEPCION',
-                'source_id' => $palletItem->id, // Fuente es el propio PalletItem
+                'source_id' => $palletItem->id,
                 'source_type' => \App\Models\WMS\PalletItem::class,
-            ]);            
+            ]);
 
             DB::commit();
             return response()->json($pallet->load('items.product', 'items.quality'));
@@ -271,15 +272,16 @@ class WMSReceivingController extends Controller
                 ->where('quality_id', $palletItem->quality_id)->first();
             if ($stock) $stock->decrement('quantity', $palletItem->quantity);
 
-            $palletItem->stockMovements()->create([
+            StockMovement::create([ // Llama directamente al modelo StockMovement
                 'user_id' => Auth::id(),
                 'product_id' => $palletItem->product_id,
                 'location_id' => $pallet->location_id,
+                'pallet_item_id' => $palletItem->id, // Pasa el ID aquí
                 'quantity' => -$palletItem->quantity, // Negativo para reversa
                 'movement_type' => 'RECEPCION-REVERSA',
                 'source_id' => $palletItem->id,
                 'source_type' => \App\Models\WMS\PalletItem::class,
-            ]);            
+            ]);          
             
             // 2. Eliminar el item de la tarima
             $palletItem->delete();

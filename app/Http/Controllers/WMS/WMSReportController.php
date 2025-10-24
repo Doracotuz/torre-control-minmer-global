@@ -300,7 +300,7 @@ class WMSReportController extends Controller
         $query = StockMovement::with([
             'user:id,name', 
             'product:id,sku,name', 
-            'location:id,code', 
+            'location:id,code,aisle,rack,shelf,bin',
             'palletItem.pallet:id,lpn,purchase_order_id', // Carga LPN y PO
             'palletItem.pallet.purchaseOrder:id,po_number,pedimento_a4' // Carga Pedimento
         ])->latest(); // Ordenar por el más reciente primero
@@ -335,64 +335,79 @@ class WMSReportController extends Controller
      * Exporta el reporte de movimientos a CSV.
      */
     public function exportStockMovements(Request $request)
-    {
-        $fileName = 'reporte_movimientos_inventario_' . date('Y-m-d') . '.csv';
+        {
+            $fileName = 'reporte_movimientos_inventario_' . date('Y-m-d') . '.csv';
 
-        $callback = function() use ($request) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM para UTF-8
+            $callback = function() use ($request) {
+                $file = fopen('php://output', 'w');
+                fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM para UTF-8
 
-            // Encabezados del CSV
-            fputcsv($file, [
-                'Fecha', 'Hora', 'Usuario', 'Tipo Movimiento', 'SKU', 'Producto',
-                'LPN', 'Ubicacion', 'Cantidad', 'PO Origen', 'Pedimento A4', 'ID Documento Fuente'
-            ]);
+                // Encabezados del CSV (Añadimos columna "Ubicación Completa")
+                fputcsv($file, [
+                    'Fecha', 'Hora', 'Usuario', 'Tipo Movimiento', 'SKU', 'Producto',
+                    'LPN', 'Ubicacion Completa', 'Ubicacion Codigo', // <-- Cambio aquí
+                    'Cantidad', 'PO Origen', 'Pedimento A4', 'ID Documento Fuente'
+                ]);
 
-            // Query (replicar filtros de showStockMovements)
-            $query = StockMovement::with([
-                'user:id,name', 'product:id,sku,name', 'location:id,code', 
-                'palletItem.pallet:id,lpn,purchase_order_id',
-                'palletItem.pallet.purchaseOrder:id,po_number,pedimento_a4'
-            ])->latest();
+                // Query (replicar filtros de showStockMovements)
+                $query = StockMovement::with([
+                    'user:id,name',
+                    'product:id,sku,name',
+                    'location:id,code,aisle,rack,shelf,bin', // <-- Asegurar campos aquí
+                    'palletItem.pallet:id,lpn,purchase_order_id',
+                    'palletItem.pallet.purchaseOrder:id,po_number,pedimento_a4'
+                ])->latest();
 
-            if ($request->filled('start_date')) { $query->whereDate('created_at', '>=', $request->start_date); }
-            if ($request->filled('end_date')) { $query->whereDate('created_at', '<=', $request->end_date); }
-            if ($request->filled('sku')) { $query->whereHas('product', fn($q) => $q->where('sku', 'like', "%{$request->sku}%")); }
-            if ($request->filled('lpn')) { $query->whereHas('palletItem.pallet', fn($q) => $q->where('lpn', 'like', "%{$request->lpn}%")); }
-            if ($request->filled('movement_type')) { $query->where('movement_type', $request->movement_type); }
+                // Aplicar filtros (igual que en showStockMovements)
+                if ($request->filled('start_date')) { $query->whereDate('created_at', '>=', $request->start_date); }
+                if ($request->filled('end_date')) { $query->whereDate('created_at', '<=', $request->end_date); }
+                if ($request->filled('sku')) { $query->whereHas('product', fn($q) => $q->where('sku', 'like', "%{$request->sku}%")); }
+                if ($request->filled('lpn')) { $query->whereHas('palletItem.pallet', fn($q) => $q->where('lpn', 'like', "%{$request->lpn}%")); }
+                if ($request->filled('movement_type')) { $query->where('movement_type', $request->movement_type); }
 
-            // Procesar en lotes (chunks) para no agotar memoria
-            $query->chunk(500, function ($movements) use ($file) {
-                foreach ($movements as $mov) {
-                    fputcsv($file, [
-                        $mov->created_at->format('Y-m-d'),
-                        $mov->created_at->format('H:i:s'),
-                        $mov->user->name ?? 'Sistema',
-                        $mov->movement_type,
-                        $mov->product->sku ?? 'N/A',
-                        $mov->product->name ?? 'N/A',
-                        $mov->palletItem->pallet->lpn ?? 'N/A',
-                        $mov->location->code ?? 'N/A',
-                        $mov->quantity,
-                        $mov->palletItem->pallet->purchaseOrder->po_number ?? 'N/A',
-                        $mov->palletItem->pallet->purchaseOrder->pedimento_a4 ?? 'N/A',
-                        $mov->source_id,
-                    ]);
-                }
-            });
+                // Procesar en lotes (chunks) para no agotar memoria
+                $query->chunk(500, function ($movements) use ($file) {
+                    foreach ($movements as $mov) {
+                        // --- INICIO: Construir Ubicación Completa ---
+                        $ubicacionCompleta = 'N/A';
+                        if ($mov->location) {
+                            $ubicacionCompleta = ($mov->location->aisle ?? '?') . '-' .
+                                                ($mov->location->rack ?? '?') . '-' .
+                                                ($mov->location->shelf ?? '?') . '-' .
+                                                ($mov->location->bin ?? '?');
+                        }
+                        // --- FIN: Construir Ubicación Completa ---
 
-            fclose($file);
-        };
+                        fputcsv($file, [
+                            $mov->created_at->format('Y-m-d'),
+                            $mov->created_at->format('H:i:s'),
+                            $mov->user->name ?? 'Sistema',
+                            $mov->movement_type,
+                            $mov->product->sku ?? 'N/A',
+                            $mov->product->name ?? 'N/A',
+                            $mov->palletItem->pallet->lpn ?? 'N/A',
+                            $ubicacionCompleta, // <-- Usar la variable construida
+                            $mov->location->code ?? 'N/A', // <-- Mantenemos el código también
+                            $mov->quantity,
+                            $mov->palletItem->pallet->purchaseOrder->po_number ?? 'N/A',
+                            $mov->palletItem->pallet->purchaseOrder->pedimento_a4 ?? 'N/A',
+                            $mov->source_id,
+                        ]);
+                    }
+                });
 
-        $headers = [
-            "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ];
+                fclose($file);
+            };
 
-        return new StreamedResponse($callback, 200, $headers);
-    }    
+            $headers = [
+                "Content-type"        => "text/csv; charset=UTF-8",
+                "Content-Disposition" => "attachment; filename=$fileName",
+                "Pragma"              => "no-cache",
+                "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+                "Expires"             => "0"
+            ];
+
+            return new StreamedResponse($callback, 200, $headers);
+        }
 
 }
