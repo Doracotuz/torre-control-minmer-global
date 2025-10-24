@@ -95,7 +95,7 @@ class OrganigramController extends Controller
         // En lugar de ->get(), usamos ->paginate()
         // withQueryString() asegura que los filtros (?search=...&area_id=...) se mantengan
         // al cambiar de página.
-        $members = $query->orderBy('name')->paginate(12)->withQueryString();
+        $members = $query->orderBy('name')->paginate(15)->withQueryString();
 
         // NO SE NECESITA EL BLOQUE ->map()
         // El Accessor en el modelo OrganigramMember se encarga
