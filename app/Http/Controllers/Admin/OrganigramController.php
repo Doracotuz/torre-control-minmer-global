@@ -39,16 +39,12 @@ class OrganigramController extends Controller
      */
     public function index(Request $request)
     {
-        // Fetch necessary data for filters
         $areas = Area::orderBy('name')->get();
         $positions = OrganigramPosition::orderBy('name')->get();
-        // Fetch only potential managers (you might refine this logic if needed)
-        $managers = OrganigramMember::orderBy('name')->get(); 
+        $managers = OrganigramMember::orderBy('name')->get();
 
-        // Start building the query with eager loading
-        $query = OrganigramMember::with(['area', 'manager', 'position']); // Eager load base relations
+        $query = OrganigramMember::with(['area', 'manager', 'subordinates', 'activities', 'skills', 'trajectories', 'position']);
 
-        // Apply filters based on request input
         if ($request->filled('position_id')) {
             $query->where('position_id', $request->position_id);
         }
@@ -65,58 +61,28 @@ class OrganigramController extends Controller
             $query->where('area_id', $request->area_id);
         }
 
-        // Apply search query (live search now handled by Alpine, but keep for initial load/non-JS)
-        $searchQuery = $request->input('search');
-        if ($searchQuery) {
-            $query->where(function ($q) use ($searchQuery) {
-                $q->where('name', 'like', '%' . $searchQuery . '%')
-                  ->orWhere('email', 'like', '%' . $searchQuery . '%');
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                  ->orWhere('email', 'like', '%' . $search . '%');
             });
         }
 
-        // Execute the query to get filtered results (or all if no filters)
-        $membersQueryResults = $query->orderBy('name')->get(); 
-
-        // --- MODIFICATION TO ADD FULL PHOTO URL ---
-        // Map over the results to add the S3 URL and ensure needed relations for JSON are loaded
-        $members = $membersQueryResults->map(function ($member) {
-            // Generate the full S3 URL if a path exists
-            $member->profile_photo_path_url = $member->profile_photo_path 
-                                              ? Storage::disk('s3')->url($member->profile_photo_path) 
-                                              : null;
-            
-            // Ensure relations needed by Alpine/JSON are loaded (position, area, manager were loaded by `with`)
-            // $member->loadMissing(['position', 'area', 'manager']); // Redundant if already in `with`
-            
-            // You might load other relations here if needed for the JSON, e.g.,
-            // $member->loadMissing(['activities', 'skills']); 
-
-            return $member;
+        $members = $query->get()->sortBy(function($member) {
+            return $member->position->name ?? '';
         });
-        // --- END OF MODIFICATION ---
 
-        // (Keep hierarchicalMembers logic only if you still use it elsewhere in the Blade file)
-        // $hierarchicalMembers = $members->whereNull('manager_id')->map(function ($member) use ($members) {
-        //     return $this->buildHierarchy($member, $members);
-        // });
+        $hierarchicalMembers = $members->whereNull('manager_id')->map(function ($member) use ($members) {
+            return $this->buildHierarchy($member, $members);
+        });
 
-        // Get selected filter values to pass back to the view
         $selectedPosition = $request->input('position_id');
         $selectedManager = $request->input('manager_id');
         $selectedArea = $request->input('area_id');
-        
-        // Pass the MODIFIED $members collection (with URLs) and filter data to the view
-        return view('admin.organigram.index', compact(
-            'members', // This now includes 'profile_photo_path_url'
-            'areas', 
-            'positions', 
-            'managers', // Pass the list of potential managers for the filter dropdown
-            'selectedPosition', 
-            'selectedManager', 
-            'selectedArea', 
-            'searchQuery'
-            // 'hierarchicalMembers', // Only include if still needed by Blade
-        ));
+        $searchQuery = $request->input('search');
+
+        return view('admin.organigram.index', compact('members', 'hierarchicalMembers', 'areas', 'positions', 'managers', 'selectedPosition', 'selectedManager', 'selectedArea', 'searchQuery'));
     }
 
     public function downloadTemplate()
