@@ -737,7 +737,8 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::post('lpns/reprint', [WMSLpnController::class, 'reprintPdf'])->name('lpns.reprint');
     Route::post('lpns/print-from-csv', [WMSLpnController::class, 'printFromCsv'])->name('lpns.print-from-csv');
     Route::get('lpns/template', [WMSLpnController::class, 'downloadTemplate'])->name('lpns.template');
-
+    Route::get('reports/stock-movements', [WMSReportController::class, 'showStockMovements'])->name('reports.stock-movements');
+    Route::get('reports/stock-movements/export', [WMSReportController::class, 'exportStockMovements'])->name('reports.stock-movements.export');
 
 });
 

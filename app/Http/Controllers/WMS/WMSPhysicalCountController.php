@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\WMS\InventoryAdjustment;
+use App\Models\WMS\StockMovement;
 
 class WMSPhysicalCountController extends Controller
 {
@@ -189,6 +190,7 @@ class WMSPhysicalCountController extends Controller
         try {
             $quantityBefore = $task->expected_quantity;
             $quantityAfter = $lastRecord->counted_quantity;
+            $difference = $quantityAfter - $quantityBefore; // <-- Calculamos la diferencia
 
             // --- INICIO DE LA LÓGICA DE VALIDACIÓN DE LPN ---
 
@@ -220,20 +222,34 @@ class WMSPhysicalCountController extends Controller
             $stock->save();
 
             // 5. Creamos el registro de auditoría, ahora incluyendo el pallet_item_id
-            InventoryAdjustment::create([
+            $adjustment = InventoryAdjustment::create([ // <-- Guardamos la instancia en una variable
                 'physical_count_task_id' => $task->id,
                 'pallet_item_id' => $palletItem->id, // Ahora registramos qué item se afectó
                 'product_id' => $task->product_id,
                 'location_id' => $task->location_id,
                 'quantity_before' => $quantityBefore,
                 'quantity_after' => $quantityAfter,
-                'quantity_difference' => $quantityAfter - $quantityBefore,
+                'quantity_difference' => $difference, // Usamos la diferencia calculada
                 'reason' => 'Ajuste por Conteo Cíclico Físico.',
                 'user_id' => Auth::id(),
                 'source' => 'Conteo Cíclico',
             ]);
 
-            // 6. Marcamos la tarea como resuelta
+            // --- INICIO DE NUEVO CÓDIGO ---
+            // 6. Registrar el movimiento en el Libro Mayor (Ledger)
+            StockMovement::create([
+                'user_id' => Auth::id(),
+                'product_id' => $task->product_id,
+                'location_id' => $task->location_id,
+                'pallet_item_id' => $palletItem->id,
+                'quantity' => $difference, // La diferencia ya tiene el signo (+ o -)
+                'movement_type' => 'AJUSTE-CONTEO',
+                'source_id' => $adjustment->id, // La fuente es el registro de Ajuste
+                'source_type' => InventoryAdjustment::class,
+            ]);
+            // --- FIN DE NUEVO CÓDIGO ---
+
+            // 7. Marcamos la tarea como resuelta
             $task->status = 'resolved';
             $task->save();
 

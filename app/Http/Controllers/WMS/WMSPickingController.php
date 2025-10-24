@@ -19,15 +19,13 @@ use App\Models\Location;
 use Endroid\QrCode\Color\Color;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
-// NO necesitas 'use Endroid\QrCode\QrCode;' aquí si usas el Builder
 use Endroid\QrCode\Label\Label;
 use Endroid\QrCode\Logo\Logo;
-use Endroid\QrCode\Builder\Builder; // <--- SÍ necesitas el Builder para instanciarlo
-use Endroid\QrCode\Writer\PngWriter; // O SvgWriter
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\RoundBlockSizeMode;
-// El namespace de RoundBlockSizeMode puede variar, ajusta si es necesario
 use Endroid\QrCode\RoundBlockSizeMode\RoundBlockSizeModeMargin;
-// --- FIN: Imports CORRECTOS para endroid/qr-code v5 ---
+use App\Models\WMS\StockMovement;
 
 class WMSPickingController extends Controller
 {
@@ -214,6 +212,17 @@ class WMSPickingController extends Controller
                 $generalStock->update([
                     'quantity' => $newGeneralQuantity,
                     'committed_quantity' => $newGeneralCommitted
+                ]);
+
+                StockMovement::create([
+                    'user_id' => Auth::id(),
+                    'product_id' => $pickListItem->product_id,
+                    'location_id' => $pickListItem->location_id,
+                    'pallet_item_id' => $palletItem->id,
+                    'quantity' => -$pickListItem->quantity_to_pick, // Negativo para salida
+                    'movement_type' => 'SALIDA-PICKING',
+                    'source_id' => $pickListItem->id, // Fuente es el PickListItem
+                    'source_type' => \App\Models\WMS\PickListItem::class,
                 ]);
 
             } else {

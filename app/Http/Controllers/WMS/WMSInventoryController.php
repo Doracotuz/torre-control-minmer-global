@@ -18,6 +18,7 @@ use App\Models\WMS\PalletItem;
 use App\Models\WMS\InventoryAdjustment;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use App\Models\WMS\StockMovement;
 
 class WMSInventoryController extends Controller
 {
@@ -162,12 +163,35 @@ class WMSInventoryController extends Controller
                     ->where('location_id', $originLocation->id)->first();
                 if ($originStock) $originStock->decrement('quantity', $item->quantity);
 
+                StockMovement::create([
+                    'user_id' => Auth::id(),
+                    'product_id' => $item->product_id,
+                    'location_id' => $originLocation->id, // Ubicación de Origen
+                    'pallet_item_id' => $item->id,
+                    'quantity' => -$item->quantity, // Negativo
+                    'movement_type' => 'TRANSFER-OUT',
+                    'source_id' => $pallet->id, // Fuente es el Pallet
+                    'source_type' => \App\Models\WMS\Pallet::class,
+                ]);                
+
                 // Incrementa stock en destino
                 $destinationStock = InventoryStock::firstOrCreate(
                     ['product_id' => $item->product_id, 'quality_id' => $item->quality_id, 'location_id' => $destinationLocation->id],
                     ['quantity' => 0]
                 );
                 $destinationStock->increment('quantity', $item->quantity);
+
+                StockMovement::create([
+                    'user_id' => Auth::id(),
+                    'product_id' => $item->product_id,
+                    'location_id' => $destinationLocation->id, // Ubicación de Destino
+                    'pallet_item_id' => $item->id,
+                    'quantity' => $item->quantity, // Positivo
+                    'movement_type' => 'TRANSFER-IN',
+                    'source_id' => $pallet->id, // Fuente es el Pallet
+                    'source_type' => \App\Models\WMS\Pallet::class,
+                ]);
+
             }
 
             DB::commit();
@@ -303,7 +327,7 @@ class WMSInventoryController extends Controller
             // Crear la nueva tarima (hereda la información)
             $newPallet = Pallet::create([
                 'lpn' => $validated['new_lpn'], 'purchase_order_id' => $sourcePallet->purchase_order_id,
-                'status' => 'Finished', 'location_id' => $sourcePallet->location_id,
+                'status' => 'Finished', 'location_id' => $sourcePallet->location_id, // <-- Se queda en la misma ubicación
                 'user_id' => Auth::id(),
                 'last_action' => 'Creado desde Split de ' . $sourcePallet->lpn
             ]);
@@ -311,11 +335,47 @@ class WMSInventoryController extends Controller
             // Mover los items
             foreach ($validated['items_to_split'] as $splitData) {
                 $sourceItem = \App\Models\WMS\PalletItem::findOrFail($splitData['item_id']);
-                if ($splitData['quantity'] > $sourceItem->quantity) {
+                $splitQuantity = $splitData['quantity']; // Cantidad a mover
+
+                if ($splitQuantity > $sourceItem->quantity) {
                     throw new \Exception("La cantidad a dividir del producto {$sourceItem->product->sku} es mayor a la existente.");
                 }
-                $sourceItem->decrement('quantity', $splitData['quantity']);
-                $newPallet->items()->create(['product_id' => $sourceItem->product_id, 'quality_id' => $sourceItem->quality_id, 'quantity' => $splitData['quantity']]);
+
+                // 1. Decrementa la cantidad del item de la tarima origen
+                $sourceItem->decrement('quantity', $splitQuantity);
+
+                // 2. Crea el nuevo item en la tarima destino
+                $newItem = $newPallet->items()->create([
+                    'product_id' => $sourceItem->product_id, 
+                    'quality_id' => $sourceItem->quality_id, 
+                    'quantity' => $splitQuantity
+                ]);
+
+                // --- INICIO DE NUEVO CÓDIGO ---
+                // 3. Registrar Salida (SPLIT-OUT) del PalletItem de origen
+                StockMovement::create([
+                    'user_id' => Auth::id(),
+                    'product_id' => $sourceItem->product_id,
+                    'location_id' => $sourcePallet->location_id,
+                    'pallet_item_id' => $sourceItem->id, // El item de origen
+                    'quantity' => -$splitQuantity, // Negativo
+                    'movement_type' => 'SPLIT-OUT',
+                    'source_id' => $newPallet->id, // La causa es el nuevo pallet
+                    'source_type' => Pallet::class,
+                ]);
+
+                // 4. Registrar Entrada (SPLIT-IN) al PalletItem de destino
+                StockMovement::create([
+                    'user_id' => Auth::id(),
+                    'product_id' => $newItem->product_id,
+                    'location_id' => $newPallet->location_id,
+                    'pallet_item_id' => $newItem->id, // El item nuevo
+                    'quantity' => $splitQuantity, // Positivo
+                    'movement_type' => 'SPLIT-IN',
+                    'source_id' => $sourcePallet->id, // La causa es el pallet origen
+                    'source_type' => Pallet::class,
+                ]);
+                // --- FIN DE NUEVO CÓDIGO ---
             }
 
             $pregeneratedLpn->update(['is_used' => true]);
@@ -420,7 +480,7 @@ class WMSInventoryController extends Controller
             $palletItem->update(['quantity' => $newQuantity]);
 
             // 5. Registrar el ajuste en la tabla InventoryAdjustment (ya lo tienes)
-            InventoryAdjustment::create([
+            $adjustment = InventoryAdjustment::create([
                 'pallet_item_id' => $palletItem->id,
                 'product_id' => $palletItem->product_id, 
                 'location_id' => $pallet->location_id,   
@@ -431,6 +491,17 @@ class WMSInventoryController extends Controller
                 'reason' => $validated['reason'],
                 'source' => 'Ajuste Manual LPN'
             ]);
+
+            StockMovement::create([
+                'user_id' => Auth::id(),
+                'product_id' => $palletItem->product_id,
+                'location_id' => $pallet->location_id,
+                'pallet_item_id' => $palletItem->id,
+                'quantity' => $difference, // Ya viene con signo + o -
+                'movement_type' => 'AJUSTE-MANUAL',
+                'source_id' => $adjustment->id, // Fuente es el registro de Ajuste
+                'source_type' => \App\Models\WMS\InventoryAdjustment::class,
+            ]);            
 
             // --- INICIO DE LA MODIFICACIÓN ---
             // 6. Actualizar la última acción en el Pallet padre

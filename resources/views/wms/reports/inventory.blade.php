@@ -1,53 +1,508 @@
 <x-app-layout>
-    <x-slot name="header"><h2 class="font-semibold text-xl text-gray-800">Dashboard de Inventario</h2></x-slot>
+    {{-- Header Section --}}
+    <x-slot name="header">
+        <div class="flex items-center space-x-3">
+            <span class="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                <svg class="w-8 h-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                   <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                </svg>
+            </span>
+            <h2 class="font-bold text-3xl text-gray-800 leading-tight tracking-tight">
+                Dashboard Inteligente de Inventario WMS
+            </h2>
+        </div>
+    </x-slot>
+
+    {{-- Main Content Area --}}
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="p-6 bg-white rounded-lg shadow"><p class="text-sm text-gray-500">Unidades Totales en Stock</p><p class="text-3xl font-bold">{{ number_format($totalUnits) }}</p></div>
-                <div class="p-6 bg-white rounded-lg shadow"><p class="text-sm text-gray-500">SKUs Únicos con Stock</p><p class="text-3xl font-bold">{{ $skusWithStock }}</p></div>
-                <div class="p-6 bg-white rounded-lg shadow"><p class="text-sm text-gray-500">Ubicaciones Utilizadas</p><p class="text-3xl font-bold">{{ $locationsUsed }}</p></div>
+        <div class="max-w-screen-2xl mx-auto sm:px-6 lg:px-8 space-y-8">
+
+            {{-- Row 1: KPIs Principales & Precisión --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 col-span-1 md:col-span-2 lg:col-span-3">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Vista General del Inventario</h3>
+                    <div id="chart-kpi-overview"></div> {{-- Chart 1 --}}
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 flex flex-col justify-center items-center">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2 text-center">Precisión del Inventario</h3>
+                    <div id="chart-inventory-accuracy" class="w-full h-48"></div> {{-- Chart 4 --}}
+                    <p class="text-xs text-gray-500 mt-2 text-center">Basado en resultados de conteos físicos</p>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="p-6 bg-white rounded-lg shadow">
-                    <h3 class="font-semibold mb-4">Top 10 Productos por Unidades</h3>
-                    <div id="topProductsChart"></div>
+            {{-- Row 2: Antigüedad y Flujo --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Perfil de Antigüedad (Aging)</h3>
+                    <div id="chart-inventory-aging"></div> {{-- Chart 2 --}}
                 </div>
-                <div class="p-6 bg-white rounded-lg shadow">
-                    <h3 class="font-semibold mb-4">Antigüedad del Inventario (Aging)</h3>
-                    <div id="agingChart"></div>
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 lg:col-span-2">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Tendencia de Flujo (Unidades Mensuales)</h3>
+                    <div id="chart-inbound-outbound"></div> {{-- Chart 3 --}}
                 </div>
             </div>
+
+             {{-- Row 3: Análisis de Productos Top --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Top 10 Productos por Cantidad</h3>
+                    <div id="chart-top-products-qty"></div> {{-- Chart 5 --}}
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Top 10 Productos por Frecuencia de Movimiento</h3>
+                    <div id="chart-top-products-freq"></div> {{-- Chart 6 --}}
+                </div>
+            </div>
+
+            {{-- Row 4: ABC Analysis & Disponibilidad --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                 <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Análisis ABC por Cantidad</h3>
+                    <div id="chart-abc-analysis"></div> {{-- Chart 7 --}}
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Stock Disponible vs. Comprometido (Top 10 SKUs)</h3>
+                    <div id="chart-available-committed"></div> {{-- Chart 8 --}}
+                </div>
+            </div>
+
+            {{-- Row 5: Ubicaciones --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Distribución por Tipo de Ubicación</h3>
+                    <div id="chart-stock-by-location-type"></div> {{-- Chart 9 --}}
+                </div>
+                 <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Utilización de Ubicaciones (Almacén)</h3>
+                    <div id="chart-location-utilization"></div> {{-- Chart 11 --}}
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Top 10 Ubicaciones por Cantidad</h3>
+                    <div id="chart-top-locations-qty"></div> {{-- Chart 10 --}}
+                </div>
+            </div>
+
+            {{-- Row 6: Tendencias Operacionales --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Tendencia de Recepciones (Unidades Diarias)</h3>
+                    <div id="chart-receiving-trend"></div> {{-- Chart 12 --}}
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Tendencia de Picking (Unidades Diarias)</h3>
+                    <div id="chart-picking-trend"></div> {{-- Chart 13 --}}
+                </div>
+            </div>
+
+            {{-- Row 7: Volumen y Marca --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {{-- CAMBIO DE DIV ID Y TÍTULO --}}
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Top 10 Productos por Volumen Ocupado (m³)</h3>
+                    <div id="chart-top-products-volume"></div> {{-- Chart 14 - NUEVO ID --}}
+                </div>
+                 {{-- CAMBIO DE DIV ID Y TÍTULO --}}
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Distribución de Stock por Marca</h3>
+                    <div id="chart-stock-by-brand"></div> {{-- Chart 15 - NUEVO ID --}}
+                </div>
+            </div>
+
         </div>
     </div>
 
+    {{-- Incluir ApexCharts --}}
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Gráfico Top 10 Productos
-            const topProductsData = @json($topProducts);
-            if (document.querySelector("#topProductsChart") && topProductsData.length > 0) {
-                const topProductsOptions = {
-                    series: [{ data: topProductsData.map(p => p.total_quantity) }],
-                    chart: { type: 'bar', height: 350 },
-                    plotOptions: { bar: { borderRadius: 4, horizontal: true } },
-                    dataLabels: { enabled: false },
-                    xaxis: { categories: topProductsData.map(p => p.product.name) },
-                };
-                new ApexCharts(document.querySelector("#topProductsChart"), topProductsOptions).render();
-            }
 
-            // Gráfico Antigüedad de Inventario
-            const agingData = @json($agingData);
-            if (document.querySelector("#agingChart")) {
-                const agingOptions = {
-                    series: Object.values(agingData),
-                    chart: { type: 'donut', height: 350 },
-                    labels: Object.keys(agingData),
-                    legend: { position: 'bottom' }
-                };
-                new ApexCharts(document.querySelector("#agingChart"), agingOptions).render();
+    {{-- Script para inicializar los gráficos --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Opciones Comunes ---
+        const commonOptions = {
+            chart: {
+                fontFamily: 'Montserrat, sans-serif',
+                toolbar: { 
+                    show: true, 
+                    tools: { 
+                        download: true, 
+                        selection: false, 
+                        zoom: false, 
+                        zoomin: false, 
+                        zoomout: false, 
+                        pan: false, 
+                        reset: false 
+                    } 
+                },
+                animations: { enabled: true, easing: 'easeinout', speed: 800 },
+            },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 },
+            grid: {
+                borderColor: '#e7e7e7',
+                row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 },
+            },
+            tooltip: { theme: 'dark' },
+            colors: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6'],
+        };
+
+        // --- Chart 1: Inventory Overview (Radial Bars) ---
+        var options1 = {
+                ...commonOptions,
+                // --- CORRECCIÓN: Usar los valores reales directamente ---
+                series: [
+                    {{ $kpis['totalUnits'] ?? 0 }},      // Valor real de Unidades Totales
+                    {{ $kpis['skusWithStock'] ?? 0 }},   // Valor real de SKUs Únicos
+                    {{ $kpis['locationsUsed'] ?? 0 }}    // Valor real de Ubicaciones Ocupadas
+                ],
+                // --- FIN CORRECCIÓN ---
+                chart: { type: 'radialBar', height: 250 },
+                plotOptions: {
+                    radialBar: {
+                        offsetY: 0, startAngle: 0, endAngle: 270,
+                        hollow: { margin: 5, size: '30%', background: 'transparent', image: undefined },
+                        dataLabels: {
+                            name: { show: false },
+                            value: { show: false } // Mantenemos oculto el valor % en la barra
+                        },
+                         track: { background: '#f0f0f0' },
+                    }
+                },
+                // colors: ['#4F46E5', '#10B981', '#F59E0B'], // Puedes descomentar si quieres colores específicos
+                labels: ['Unidades Totales', 'SKUs Únicos', 'Ubicaciones Ocupadas'],
+                legend: {
+                    show: true, floating: true, fontSize: '14px', position: 'left', offsetX: -20, offsetY: 15,
+                    labels: { useSeriesColors: true },
+                    markers: { size: 0 },
+                    // El formatter sigue mostrando los valores correctos
+                    formatter: function(seriesName, opts) {
+                         // Usar ?? 0 como fallback por si alguna clave no existe
+                         if (opts.seriesIndex === 0) return seriesName + ": " + ({{ $kpis['totalUnits'] ?? 0 }}).toLocaleString();
+                         if (opts.seriesIndex === 1) return seriesName + ": " + ({{ $kpis['skusWithStock'] ?? 0 }}).toLocaleString();
+                         if (opts.seriesIndex === 2) return seriesName + ": " + ({{ $kpis['locationsUsed'] ?? 0 }}).toLocaleString();
+                         return seriesName;
+                    },
+                    itemMargin: { vertical: 3 }
+                },
+                responsive: [{ breakpoint: 480, options: { legend: { show: false } } }]
+            };
+            var chart1 = new ApexCharts(document.querySelector("#chart-kpi-overview"), options1);
+            chart1.render();
+
+        // --- Chart 4: Inventory Accuracy (Gauge) ---
+        var options4 = {
+            ...commonOptions,
+            series: [{{ number_format($kpis['inventoryAccuracy'] ?? 0, 1) }}],
+            chart: { type: 'radialBar', height: 200, sparkline: { enabled: true } },
+            plotOptions: {
+                radialBar: {
+                    startAngle: -90, 
+                    endAngle: 90, 
+                    hollow: { size: '60%' },
+                    dataLabels: { 
+                        name: { show: false }, 
+                        value: { 
+                            offsetY: -2, 
+                            fontSize: '22px', 
+                            formatter: function(val) { return val + '%'; } 
+                        } 
+                    },
+                    track: { background: '#e0e0e0', strokeWidth: '97%' },
+                }
+            },
+            fill: { 
+                type: 'gradient', 
+                gradient: { 
+                    shade: 'light', 
+                    type: 'horizontal', 
+                    colorStops: [
+                        { offset: 0, color: "#EF4444"}, 
+                        { offset: 50, color: "#F59E0B"}, 
+                        { offset: 100, color: "#10B981"}
+                    ] 
+                } 
+            },
+            labels: ['Precisión'],
+        };
+        var chart4 = new ApexCharts(document.querySelector("#chart-inventory-accuracy"), options4);
+        chart4.render();
+
+        // --- Chart 2: Inventory Aging Profile (Donut) ---
+        var options2 = {
+            ...commonOptions,
+            series: @json(array_values($kpis['agingData'])),
+            labels: @json(array_keys($kpis['agingData'])),
+            chart: { type: 'donut', height: 350 },
+            plotOptions: { pie: { donut: { size: '65%' } } },
+            legend: { position: 'bottom' },
+            responsive: [{ breakpoint: 480, options: { chart: { width: 200 }, legend: { position: 'bottom' } } }]
+        };
+        var chart2 = new ApexCharts(document.querySelector("#chart-inventory-aging"), options2);
+        chart2.render();
+
+        // --- Chart 3: Inbound vs. Outbound Trend (Mixed) ---
+        var options3 = {
+            ...commonOptions,
+            series: [{
+                name: 'Unidades Recibidas', 
+                type: 'column',
+                data: @json($kpis['inboundTrend']['data'] ?? [])
+            }, {
+                name: 'Unidades Enviadas', 
+                type: 'line',
+                data: @json($kpis['outboundTrend']['data'] ?? [])
+            }],
+            chart: { type: 'line', height: 350, stacked: false },
+            stroke: { width: [0, 3], curve: 'smooth' },
+            xaxis: {
+                categories: @json($kpis['inboundTrend']['labels'] ?? []),
+                labels: { rotate: -45, style: { fontSize: '10px' } }
+            },
+            yaxis: [
+                { title: { text: 'Unidades Recibidas' } }, 
+                { opposite: true, title: { text: 'Unidades Enviadas' } }
+            ],
+            tooltip: { 
+                shared: true, 
+                intersect: false, 
+                y: { 
+                    formatter: function(val) { return val.toLocaleString() + ' Un.'; } 
+                } 
+            },
+            legend: { position: 'top', horizontalAlign: 'left', offsetY: 10 }
+        };
+        var chart3 = new ApexCharts(document.querySelector("#chart-inbound-outbound"), options3);
+        chart3.render();
+
+        // --- Chart 5: Top 10 Products by Quantity (Horizontal Bar) ---
+        var options5 = {
+            ...commonOptions,
+            series: [{ data: @json($kpis['topProductsQty']['quantities'] ?? []) }],
+            chart: { type: 'bar', height: 350 },
+            plotOptions: { bar: { borderRadius: 4, horizontal: true } },
+            xaxis: { categories: @json($kpis['topProductsQty']['names'] ?? []) },
+            tooltip: { 
+                y: { 
+                    formatter: function(val) { return val.toLocaleString() + ' Un.'; } 
+                } 
             }
-        });
-    </script>
+        };
+        var chart5 = new ApexCharts(document.querySelector("#chart-top-products-qty"), options5);
+        chart5.render();
+
+        // --- Chart 6: Top 10 Products by Movement Frequency (Horizontal Bar) ---
+        var options6 = {
+            ...commonOptions,
+            series: [{ data: @json($kpis['topProductsFreq']['frequencies'] ?? []) }],
+            chart: { type: 'bar', height: 350 },
+            plotOptions: { bar: { borderRadius: 4, horizontal: true } },
+            colors: [commonOptions.colors[1]],
+            xaxis: { categories: @json($kpis['topProductsFreq']['names'] ?? []) },
+            tooltip: { 
+                y: { 
+                    formatter: function(val) { return val.toLocaleString() + ' Mov.'; } 
+                } 
+            }
+        };
+        var chart6 = new ApexCharts(document.querySelector("#chart-top-products-freq"), options6);
+        chart6.render();
+
+        // --- Chart 7: ABC Analysis (Stacked Bar) ---
+        var options7 = {
+            ...commonOptions,
+            series: @json($kpis['abcAnalysis']['series'] ?? []),
+            chart: { type: 'bar', height: 350, stacked: true, stackType: '100%' },
+            plotOptions: { bar: { horizontal: true } },
+            xaxis: { categories: ['Distribución por Cantidad'] },
+            tooltip: { 
+                y: { 
+                    formatter: function(val) { return val + "%"; } 
+                } 
+            },
+            legend: { position: 'top', horizontalAlign: 'left' }
+        };
+        var chart7 = new ApexCharts(document.querySelector("#chart-abc-analysis"), options7);
+        chart7.render();
+
+        // --- Chart 8: Available vs. Committed Stock (Grouped Bar) ---
+        var options8 = {
+            ...commonOptions,
+            series: [{
+                name: 'Disponible', 
+                data: @json($kpis['availableCommitted']['available'] ?? [])
+            }, {
+                name: 'Comprometido', 
+                data: @json($kpis['availableCommitted']['committed'] ?? [])
+            }],
+            chart: { type: 'bar', height: 350 },
+            plotOptions: { 
+                bar: { 
+                    horizontal: false, 
+                    columnWidth: '55%', 
+                    endingShape: 'rounded' 
+                } 
+            },
+            dataLabels: { enabled: false },
+            stroke: { show: true, width: 2, colors: ['transparent'] },
+            xaxis: { categories: @json($kpis['availableCommitted']['names'] ?? []) },
+            yaxis: { title: { text: 'Unidades' } },
+            fill: { opacity: 1 },
+            tooltip: { 
+                y: { 
+                    formatter: function(val) { return val.toLocaleString() + ' Un.'; } 
+                } 
+            },
+            legend: { position: 'top' }
+        };
+        var chart8 = new ApexCharts(document.querySelector("#chart-available-committed"), options8);
+        chart8.render();
+
+        // --- Chart 9: Stock Distribution by Location Type (Pie) ---
+        var options9 = {
+            ...commonOptions,
+            series: @json(array_values($kpis['stockByLocationType']['data'] ?? [])),
+            labels: @json(array_keys($kpis['stockByLocationType']['data'] ?? [])),
+            chart: { type: 'pie', height: 350 },
+            legend: { position: 'bottom' },
+            responsive: [{ 
+                breakpoint: 480, 
+                options: { 
+                    chart: { width: 200 }, 
+                    legend: { position: 'bottom' } 
+                } 
+            }]
+        };
+        var chart9 = new ApexCharts(document.querySelector("#chart-stock-by-location-type"), options9);
+        chart9.render();
+
+        // --- Chart 11: Location Utilization (Donut) ---
+        var options11 = {
+            ...commonOptions,
+            series: @json(array_values($kpis['locationUtilization'] ?? [0, 0])),
+            labels: ['Ubic. Ocupadas', 'Ubic. Vacías'],
+            chart: { type: 'donut', height: 350 },
+            colors: [commonOptions.colors[0], '#D1D5DB'],
+            plotOptions: { pie: { donut: { size: '65%' } } },
+            legend: { position: 'bottom' }
+        };
+        var chart11 = new ApexCharts(document.querySelector("#chart-location-utilization"), options11);
+        chart11.render();
+
+        // --- Chart 10: Top 10 Locations by Unit Count (Horizontal Bar) ---
+        var options10 = {
+            ...commonOptions,
+            series: [{ data: @json($kpis['topLocationsQty']['quantities'] ?? []) }],
+            chart: { type: 'bar', height: 350 },
+            plotOptions: { bar: { borderRadius: 4, horizontal: true } },
+            colors: [commonOptions.colors[5]],
+            xaxis: { categories: @json($kpis['topLocationsQty']['codes'] ?? []) },
+            tooltip: { 
+                y: { 
+                    formatter: function(val) { return val.toLocaleString() + ' Un.'; } 
+                } 
+            }
+        };
+        var chart10 = new ApexCharts(document.querySelector("#chart-top-locations-qty"), options10);
+        chart10.render();
+
+        // --- Chart 12: Receiving Volume Trend (Area) ---
+        var options12 = {
+            ...commonOptions,
+            series: [{ 
+                name: 'Unidades Recibidas', 
+                data: @json($kpis['receivingTrend']['data'] ?? []) 
+            }],
+            chart: { type: 'area', height: 350, zoom: { enabled: false } },
+            dataLabels: { enabled: false }, 
+            stroke: { curve: 'smooth', width: 2 },
+            colors: [commonOptions.colors[0]],
+            xaxis: {
+                type: 'datetime', 
+                categories: @json($kpis['receivingTrend']['labels'] ?? []),
+                labels: { format: 'dd MMM' }
+            },
+            yaxis: { title: { text: 'Unidades' } },
+            tooltip: { 
+                x: { format: 'dd MMM yyyy' }, 
+                y: { 
+                    formatter: function(val) { return val.toLocaleString() + ' Un.'; } 
+                } 
+            }
+        };
+        var chart12 = new ApexCharts(document.querySelector("#chart-receiving-trend"), options12);
+        chart12.render();
+
+        // --- Chart 13: Picking Volume Trend (Area) ---
+        var options13 = {
+            ...commonOptions,
+            series: [{ 
+                name: 'Unidades Pickeadas', 
+                data: @json($kpis['pickingTrend']['data'] ?? []) 
+            }],
+            chart: { type: 'area', height: 350, zoom: { enabled: false } },
+            dataLabels: { enabled: false }, 
+            stroke: { curve: 'smooth', width: 2 },
+            colors: [commonOptions.colors[1]],
+            xaxis: {
+                type: 'datetime', 
+                categories: @json($kpis['pickingTrend']['labels'] ?? []),
+                labels: { format: 'dd MMM' }
+            },
+            yaxis: { title: { text: 'Unidades' } },
+            tooltip: { 
+                x: { format: 'dd MMM yyyy' }, 
+                y: { 
+                    formatter: function(val) { return val.toLocaleString() + ' Un.'; } 
+                } 
+            }
+        };
+        var chart13 = new ApexCharts(document.querySelector("#chart-picking-trend"), options13);
+        chart13.render();
+
+        // --- Chart 14: Top 10 Products by Volume ---
+        var options14 = {
+            ...commonOptions,
+            series: [{ 
+                name: 'Volumen (m³)', 
+                data: @json($kpis['topProductsVol']['volumes'] ?? []) 
+            }],
+            chart: { type: 'bar', height: 350 },
+            plotOptions: { bar: { borderRadius: 4, horizontal: true } },
+            colors: [commonOptions.colors[4]],
+            xaxis: { categories: @json($kpis['topProductsVol']['names'] ?? []) },
+            yaxis: { title: { text: 'Volumen Ocupado (m³)' } },
+            tooltip: { 
+                y: { 
+                    formatter: function(val) { return val.toFixed(2) + ' m³'; } 
+                } 
+            }
+        };
+        var chart14Element = document.querySelector("#chart-top-products-volume");
+        if (chart14Element) {
+            var chart14 = new ApexCharts(chart14Element, options14);
+            chart14.render();
+        }
+
+        // --- Chart 15: Stock Distribution by Brand ---
+        var options15 = {
+            ...commonOptions,
+            series: @json($kpis['stockByBrandSeries'] ?? []),
+            labels: @json($kpis['stockByBrandLabels'] ?? []),
+            chart: { type: 'pie', height: 350 },
+            legend: { position: 'bottom' },
+            responsive: [{ 
+                breakpoint: 480, 
+                options: { 
+                    chart: { width: 200 }, 
+                    legend: { position: 'bottom' } 
+                } 
+            }]
+        };
+        var chart15Element = document.querySelector("#chart-stock-by-brand");
+        if (chart15Element) {
+            var chart15 = new ApexCharts(chart15Element, options15);
+            chart15.render();
+        }
+
+    }); // Fin del addEventListener
+</script>
 </x-app-layout>
