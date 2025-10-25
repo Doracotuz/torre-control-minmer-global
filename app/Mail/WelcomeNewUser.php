@@ -35,8 +35,8 @@ class WelcomeNewUser extends Mailable
     {
         $firstName = explode(' ', $this->user->name)[0];
         $subject = $this->isReWelcome
-            ? "¡Bienvenido(a), {$firstName}! Tu cuenta en Minmer Global ha sido creada"
-            : "¡Bienvenido(a), {$firstName}! Tu cuenta en Minmer Global ha sido creada";
+            ? "¡Bienvenido(a), {$firstName}! Tu cuenta en Control Tower ha sido creada"
+            : "¡Bienvenido(a), {$firstName}! Tu cuenta en Control Tower ha sido creada";
 
         return new Envelope(
             subject: $subject,

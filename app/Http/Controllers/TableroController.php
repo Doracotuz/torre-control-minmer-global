@@ -31,9 +31,20 @@ class TableroController extends Controller
         $kpisTimeData = KpiTiempo::all();
 
         $chartData = [];
+
+        // ===== INICIO DE LA CORRECCIÓN =====
+        // Inicializamos las variables aquí con valores predeterminados.
+        // De esta forma, si el 'if' no se cumple, estas variables
+        // se pasarán a la vista como colecciones vacías y no darán error.
+        $mesesOrden = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        $zonas = collect();
+        $años = collect();
+        // ===== FIN DE LA CORRECCIÓN =====
+
+
         if ($kpiGeneralesData->isNotEmpty() && $kpisTimeData->isNotEmpty()) {
             
-            $mesesOrden = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            // La variable $mesesOrden ya se definió arriba, así que la línea original fue movida.
             $zonas = $kpiGeneralesData->pluck('zona')->unique()->sort()->values();
             $años = $kpiGeneralesData->pluck('ano')->unique()->sort()->values();
             $colores = [
@@ -111,6 +122,7 @@ class TableroController extends Controller
             $chartData['tiempoPorMesAño'] = $pivotData($kpisTimeData, 'Entregas a tiempo', 'mes', 'ano', 'porcentaje', collect($mesesOrden), true);
         }
 
+        // Ahora esta línea siempre funcionará, porque $zonas, $años y $mesesOrden siempre existen.
         return view('tablero.index', ['accessibleRootFolders' => $accessibleRootFolders, 'chartData' => $chartData, 'zonas' => $zonas, 'años' => $años, 'meses' => $mesesOrden]);
     }
 
