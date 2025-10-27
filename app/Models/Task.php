@@ -20,6 +20,13 @@ class Task extends Model
         'assignee_id',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'due_date' => 'datetime', // O 'date' si solo guardas la fecha
+        ];
+    }    
+
     /**
      * Una tarea pertenece a un proyecto.
      */

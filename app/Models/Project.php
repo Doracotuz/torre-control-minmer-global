@@ -64,4 +64,9 @@ class Project extends Model
         return $this->hasMany(ProjectExpense::class)->latest('expense_date');
     }
 
+    public function history(): HasMany
+    {
+        return $this->hasMany(ProjectHistory::class)->latest();
+    }
+
 }

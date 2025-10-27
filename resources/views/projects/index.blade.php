@@ -13,9 +13,14 @@
                 <h2 class="font-bold text-3xl text-[#2c3856] leading-tight tracking-tight">Dashboard de Proyectos</h2>
                 <p class="text-md text-gray-500 mt-1">Resumen estratégico y estado actual. Hoy es {{ now()->translatedFormat('l, d \d\e F \d\e Y') }}.</p>
             </div>
-            <a href="{{ route('projects.list') }}" class="px-5 py-2 bg-[#2c3856] text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 transition-colors">
-                <i class="fas fa-grip-horizontal mr-2"></i> Ir al Tablero Kanban
-            </a>
+            <div class="flex justify-between items-center">
+                <a href="{{ route('projects.list') }}" class="px-5 py-2 bg-[#2c3856] text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 transition-colors">
+                    <i class="fas fa-grip-horizontal mr-2"></i> Ir al Tablero Kanban
+                </a>
+                <a href="{{ route('projects.review') }}" class="px-5 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
+                    <i class="fas fa-users mr-2"></i> Vista de Reunión
+                </a>
+            </div>               
         </div>
     </x-slot>
 

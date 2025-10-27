@@ -241,8 +241,74 @@ class ProjectController extends Controller
     public function updateStatus(Request $request, Project $project)
     {
         $this->authorize('update', $project);
-        $request->validate(['status' => 'required|in:Planeación,En Progreso,En Pausa,Completado,Cancelado']);
-        $project->update(['status' => $request->status]);
-        return response()->json(['message' => 'Estatus del proyecto actualizado.']);
+        $validated = $request->validate(['status' => 'required|in:Planeación,En Progreso,En Pausa,Completado,Cancelado']);
+        
+        $oldStatus = $project->status;
+        $newStatus = $validated['status'];
+
+        if ($oldStatus !== $newStatus) {
+            $project->update(['status' => $newStatus]); // 1. Actualiza el estado actual
+
+            // 2. REGISTRA EL HISTORIAL
+            $project->history()->create([
+                'user_id' => Auth::id(),
+                'action_type' => 'status_change',
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+            ]);
+        }
+        
+        // Respuesta para el Kanban (AJAX)
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Estatus del proyecto actualizado.']);
+        }
+        
+        // Respuesta para la vista de Review (Formulario normal)
+        return back()->with('success_status', 'Estatus del proyecto actualizado exitosamente.');
+    }
+
+    public function review()
+    {
+        $this->authorize('viewAny', Project::class);
+        $user = Auth::user();
+
+        // Consulta base
+        $query = Project::query();
+        if (!$user->isSuperAdmin()) {
+            $query->where(function ($q) use ($user) {
+                $q->where('leader_id', $user->id)
+                  ->orWhereHas('tasks', fn($t) => $t->where('assignee_id', $user->id))
+                  ->orWhereHas('areas', fn($a) => $a->where('area_id', $user->area_id));
+            });
+        }
+
+        $activeStatuses = ['Planeación', 'En Progreso', 'En Pausa'];
+        
+        // Cargamos todas las relaciones que la vista necesitará
+        $projects = $query->whereIn('status', $activeStatuses)
+                          ->with(
+                              'leader', 
+                              'comments.user', // Lo mantenemos por si se usa en el historial
+                              'areas', 
+                              'tasks', 
+                              'tasks.assignee'
+                            ) 
+                          ->orderBy('due_date', 'asc')
+                          ->get();
+        
+        // --- INICIO DE NUEVOS DATOS PARA FILTROS ---
+        
+        // Extraemos los líderes únicos de los proyectos cargados
+        $leaders = $projects->pluck('leader')->whereNotNull()->unique('id')->sortBy('name');
+        
+        // Extraemos las áreas únicas de los proyectos cargados
+        $areas = $projects->pluck('areas')->flatten()->whereNotNull()->unique('id')->sortBy('name');
+        
+        // --- FIN DE NUEVOS DATOS PARA FILTROS ---
+
+        $statuses = ['Planeación', 'En Progreso', 'En Pausa', 'Completado', 'Cancelado'];
+
+        // Pasamos los nuevos datos a la vista
+        return view('projects.review', compact('projects', 'statuses', 'leaders', 'areas'));
     }
 }

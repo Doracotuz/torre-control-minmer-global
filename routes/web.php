@@ -662,7 +662,7 @@ Route::middleware(['auth', 'verified'])->prefix('audit')->name('audit.')->group(
 Route::middleware(['auth'])->prefix('projects')->name('projects.')->group(function () {
     Route::get('/', [App\Http\Controllers\ProjectController::class, 'index'])->name('index');
     Route::get('/list', [App\Http\Controllers\ProjectController::class, 'list'])->name('list');
-    
+    Route::get('/review', [App\Http\Controllers\ProjectController::class, 'review'])->name('review');
     
     // CORRECTO: El recurso ahora se registra en la raíz del grupo.
     Route::resource('/', App\Http\Controllers\ProjectController::class)
