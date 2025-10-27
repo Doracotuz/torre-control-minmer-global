@@ -29,52 +29,42 @@
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {{-- Gráfico 1: Acciones por Tipo de Actividad --}}
                         <div class="bg-gray-50 p-6 rounded-lg shadow">
                             <h4 class="font-semibold text-lg text-gray-800 mb-4">Acciones por Tipo de Actividad</h4>
                             <div id="actions-chart"></div>
                         </div>
-                        {{-- Gráfico 2: Actividad por Tipo de Usuario --}}
                         <div class="bg-gray-50 p-6 rounded-lg shadow">
                             <h4 class="font-semibold text-lg text-gray-800 mb-4">Actividad por Tipo de Usuario</h4>
                             <div id="user-type-chart"></div>
                         </div>
-                        {{-- Gráfico 3: Carpetas Creadas por Área --}}
                         <div class="bg-gray-50 p-6 rounded-lg shadow">
                             <h4 class="font-semibold text-lg text-gray-800 mb-4">Carpetas Creadas por Área</h4>
                             <div id="folders-by-area-chart"></div>
                         </div>
-                        {{-- Gráfico 4: Archivos Subidos por Área --}}
                         <div class="bg-gray-50 p-6 rounded-lg shadow">
                             <h4 class="font-semibold text-lg text-gray-800 mb-4">Archivos Subidos por Área</h4>
                             <div id="files-by-area-chart"></div>
                         </div>
-                        {{-- Gráfico 5: Usuarios Activos por Mes --}}
                         <div class="bg-gray-50 p-6 rounded-lg shadow">
                             <h4 class="font-semibold text-lg text-gray-800 mb-4">Usuarios Activos por Mes</h4>
                             <div id="active-users-by-month-chart"></div>
                         </div>
-                        {{-- Gráfico 6: Actividad Total por Mes --}}
                         <div class="bg-gray-50 p-6 rounded-lg shadow">
                             <h4 class="font-semibold text-lg text-gray-800 mb-4">Actividad Total por Mes</h4>
                             <div id="total-activity-by-month-chart"></div>
                         </div>
-                        {{-- Gráfico 7: Archivos vs. Enlaces --}}
                         <div class="bg-gray-50 p-6 rounded-lg shadow">
                             <h4 class="font-semibold text-lg text-gray-800 mb-4">Archivos vs. Enlaces</h4>
                             <div id="file-link-comparison-chart"></div>
                         </div>
-                        {{-- Gráfico 8: Tipo de Archivo más Común --}}
                         <div class="bg-gray-50 p-6 rounded-lg shadow">
                             <h4 class="font-semibold text-lg text-gray-800 mb-4">Tipo de Archivo más Común</h4>
                             <div id="file-types-chart"></div>
                         </div>
-                        {{-- Gráfico 9: Eliminaciones vs. Creaciones --}}
                         <div class="bg-gray-50 p-6 rounded-lg shadow">
                             <h4 class="font-semibold text-lg text-gray-800 mb-4">Eliminaciones vs. Creaciones</h4>
                             <div id="creation-deletion-chart"></div>
                         </div>
-                        {{-- Gráfico 10: Actividad por Hora del Día --}}
                         <div class="bg-gray-50 p-6 rounded-lg shadow">
                             <h4 class="font-semibold text-lg text-gray-800 mb-4">Actividad por Hora del Día</h4>
                             <div id="activity-by-hour-chart"></div>
@@ -103,7 +93,6 @@
                 return ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#d946ef', '#f97316', '#a855f7', '#64748b'];
             }
 
-            // Gráfico 1: Acciones por Tipo de Actividad (Barra)
             const actionsOptions = {
                 chart: { type: 'bar', height: 350 },
                 series: [{ name: 'Total', data: actionData.map(d => d.total) }],
@@ -112,7 +101,6 @@
             };
             new ApexCharts(document.querySelector("#actions-chart"), actionsOptions).render();
 
-            // Gráfico 2: Actividad por Tipo de Usuario (Donut)
             const userTypeOptions = {
                 chart: { type: 'donut', height: 350 },
                 series: Object.values(userTypeData),
@@ -121,7 +109,6 @@
             };
             new ApexCharts(document.querySelector("#user-type-chart"), userTypeOptions).render();
 
-            // Gráfico 3: Carpetas Creadas por Área (Barra)
             const foldersByAreaOptions = {
                 chart: { type: 'bar', height: 350 },
                 series: [{ name: 'Carpetas', data: Object.values(foldersByArea) }],
@@ -130,7 +117,6 @@
             };
             new ApexCharts(document.querySelector("#folders-by-area-chart"), foldersByAreaOptions).render();
 
-            // Gráfico 4: Archivos Subidos por Área (Barra)
             const filesByAreaOptions = {
                 chart: { type: 'bar', height: 350 },
                 series: [{ name: 'Archivos', data: Object.values(filesByArea) }],
@@ -139,7 +125,6 @@
             };
             new ApexCharts(document.querySelector("#files-by-area-chart"), filesByAreaOptions).render();
             
-            // Gráfico 5: Usuarios Activos por Mes (Línea)
             const activeUsersByMonthOptions = {
                 chart: { type: 'line', height: 350 },
                 series: [{ name: 'Usuarios', data: Object.values(activeUsersByMonth) }],
@@ -148,7 +133,6 @@
             };
             new ApexCharts(document.querySelector("#active-users-by-month-chart"), activeUsersByMonthOptions).render();
             
-            // Gráfico 6: Actividad Total por Mes (Línea)
             const totalActivityByMonthOptions = {
                 chart: { type: 'line', height: 350 },
                 series: [{ name: 'Acciones', data: Object.values(totalActivityByMonth) }],
@@ -157,7 +141,6 @@
             };
             new ApexCharts(document.querySelector("#total-activity-by-month-chart"), totalActivityByMonthOptions).render();
             
-            // Gráfico 7: Archivos vs. Enlaces (Dona)
             const fileLinkComparisonOptions = {
                 chart: { type: 'donut', height: 350 },
                 series: [fileLinkComparison.file || 0, fileLinkComparison.link || 0],
@@ -166,7 +149,6 @@
             };
             new ApexCharts(document.querySelector("#file-link-comparison-chart"), fileLinkComparisonOptions).render();
 
-            // Gráfico 8: Tipo de Archivo más Común (Dona)
             const fileTypesOptions = {
                 chart: { type: 'donut', height: 350 },
                 series: Object.values(fileTypes),
@@ -175,7 +157,6 @@
             };
             new ApexCharts(document.querySelector("#file-types-chart"), fileTypesOptions).render();
             
-            // Gráfico 9: Eliminaciones vs. Creaciones (Dona)
             const creationDeletionOptions = {
                 chart: { type: 'donut', height: 350 },
                 series: Object.values(creationDeletion),
@@ -184,7 +165,6 @@
             };
             new ApexCharts(document.querySelector("#creation-deletion-chart"), creationDeletionOptions).render();
 
-            // Gráfico 10: Actividad por Hora del Día (Línea)
             const allHours = Array.from({length: 24}, (_, i) => i);
             const seriesData = allHours.map(hour => activityByHour[hour] || 0);
 

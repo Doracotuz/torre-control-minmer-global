@@ -233,10 +233,6 @@
     </div>
     
     <script>
-        // Hemos simplificado el JS.
-        // El 'debounce' para la búsqueda en vivo es excelente, así que lo mantenemos.
-        // Para los demás filtros, hemos añadido un botón explícito "Filtrar"
-        // que es una mejor UX que recargar la página en cada 'change'.
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('search');
             

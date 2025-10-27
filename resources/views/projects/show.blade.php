@@ -18,7 +18,6 @@
     <div class="py-12" x-data="projectDetailManager">
         <div class="w-full mx-auto sm:px-6 lg:px-8">
 
-            {{-- Mensajes de éxito --}}
             @if (session('success_task'))
                 <div class="mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4" role="alert"><p>{{ session('success_task') }}</p></div>
             @endif
@@ -191,7 +190,6 @@
                                 <div class="bg-green-500 h-4 rounded-full text-center text-white text-xs leading-4" style="width: {{ $percentage > 100 ? 100 : $percentage }}%">
                                     {{ number_format($percentage, 0) }}%
                                 </div>
-                                {{-- Si se excede el presupuesto, mostramos una barra roja --}}
                                 @if($percentage > 100)
                                 <div class="bg-red-500 h-4 rounded-full text-center text-white text-xs leading-4 mt-[-1rem]" style="width: {{ $percentage - 100 }}%; max-width: 100%; margin-left: 100%;"></div>
                                 @endif
@@ -272,7 +270,6 @@
         </div>
     
 
-        {{-- Modal para Añadir Nueva Tarea --}}
         <div x-show="isTaskModalOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" style="display: none;">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div x-show="isTaskModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="isTaskModalOpen = false" aria-hidden="true"></div>
@@ -323,7 +320,6 @@
             </div>
         </div>
 
-        {{-- Modal para Editar Tarea --}}
         <div x-show="isTaskEditModalOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title-edit" role="dialog" aria-modal="true" style="display: none;">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div x-show="isTaskEditModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="isTaskEditModalOpen = false" aria-hidden="true"></div>
@@ -460,13 +456,11 @@
                 grid: { row: { colors: ['#f3f4f5', '#fff'], opacity: 1 }, borderColor: '#e7e7e7', strokeDashArray: 4, padding: { left: 20 } },
                 legend: { show: false },
 
-                // --- INICIO: NUEVA ANOTACIÓN PARA EL DÍA DE HOY ---
                 annotations: {
                     xaxis: [{
-                        // Usamos JS para obtener el timestamp del inicio del día de hoy
                         x: new Date().setHours(0, 0, 0, 0),
-                        borderColor: '#e53e3e', // Un color rojo para que destaque
-                        strokeDashArray: 4,      // Hacemos la línea punteada
+                        borderColor: '#e53e3e',
+                        strokeDashArray: 4,
                         label: {
                             borderColor: '#e53e3e',
                             style: {
@@ -476,12 +470,11 @@
                                 fontWeight: 'bold',
                                 padding: { left: 5, right: 5, top: 2, bottom: 2 }
                             },
-                            offsetY: -10, // Sube la etiqueta un poco para que no estorbe
+                            offsetY: -10,
                             text: 'Hoy'
                         }
                     }]
                 }
-                // --- FIN DE LA NUEVA ANOTACIÓN ---
             };
 
             const chart = new ApexCharts(chartElement, timelineOptions);
@@ -492,5 +485,4 @@
         }
     });
 </script>
-
 </x-app-layout>

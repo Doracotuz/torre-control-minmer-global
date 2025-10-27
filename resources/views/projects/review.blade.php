@@ -283,7 +283,6 @@
     </div>
 
     <script>
-        // --- COMPONENTE DE GRÁFICO DONUT (REUTILIZABLE) ---
         function chartDonut(data, title, colors, onClickCallback) {
             return {
                 chart: null,
@@ -293,8 +292,7 @@
                         labels: data.labels,
                         chart: {
                             type: 'donut',
-                            // --- CAMBIO CLAVE ---
-                            height: '85%', // Deja 15% de espacio para la leyenda
+                            height: '85%',
                             events: {
                                 dataPointSelection: (event, chartContext, config) => {
                                     const statusMap = {'En Tiempo': 'on-track', 'En Riesgo': 'at-risk', 'Vencido': 'overdue'};
@@ -304,17 +302,16 @@
                             }
                         },
                         colors: colors,
-                        // --- CAMBIO CLAVE (Leyenda más compacta) ---
                         legend: {
                             position: 'bottom',
                             horizontalAlign: 'center',
-                            fontSize: '12px', // Letra más pequeña
+                            fontSize: '12px',
                             itemMargin: {
-                                horizontal: 5, // Menos espacio
+                                horizontal: 5,
                                 vertical: 0
                             },
                             markers: {
-                                width: 10, // Marcadores más pequeños
+                                width: 10,
                                 height: 10
                             }
                         },
@@ -323,7 +320,6 @@
                     this.chart = new ApexCharts(this.$refs.chart, options);
                     this.chart.render();
 
-                    // Observar cambios en los datos y actualizar el gráfico
                     this.$watch('biHealthData', (newData) => {
                         this.chart.updateSeries(newData.series);
                     });
@@ -331,8 +327,6 @@
             }
         }
 
-        // --- COMPONENTE DE GRÁFICO DE BARRAS (REUTILIZABLE) ---
-        // (Sin cambios, ya que no tiene leyenda que corregir)
         function chartBar(data, title, colors) {
             return {
                 chart: null,
@@ -349,7 +343,6 @@
                     this.chart = new ApexCharts(this.$refs.chart, options);
                     this.chart.render();
 
-                    // Observar cambios en los datos y actualizar el gráfico
                     this.$watch('biTaskData', (newData) => {
                         this.chart.updateSeries([{ data: newData.series }]);
                     });
@@ -357,25 +350,19 @@
             }
         }
 
-        // --- COMPONENTE PRINCIPAL (EL CEREBRO) ---
         function projectReviewManager() {
             return {
-                // --- Filtros ---
                 search: '',
                 filterLeader: 'all',
                 filterArea: 'all',
-                filterHealth: 'all',       // Filtro de BI
-                filterWorkloadUser: 'all', // Filtro de BI
+                filterHealth: 'all',
+                filterWorkloadUser: 'all',
 
-                // --- Datos Crudos ---
                 allProjects: [],
                 statuses: [],
                 leaders: [],
                 areas: [],
                 
-                /**
-                 * Carga los datos de las "islas" JSON.
-                 */
                 initData() {
                     this.allProjects = JSON.parse(document.getElementById('projects-data').textContent || '[]');
                     this.statuses = JSON.parse(document.getElementById('statuses-data').textContent || '[]');
@@ -383,9 +370,6 @@
                     this.areas = JSON.parse(document.getElementById('areas-data').textContent || '[]');
                 },
 
-                /**
-                 * Limpia todos los filtros a su estado inicial.
-                 */
                 clearFilters() {
                     this.search = '';
                     this.filterLeader = 'all';
@@ -394,9 +378,6 @@
                     this.filterWorkloadUser = 'all';
                 },
                 
-                /**
-                 * Funciones de callback para los filtros de BI.
-                 */
                 setHealthFilter(status) {
                     this.filterHealth = (this.filterHealth === status) ? 'all' : status;
                 },
@@ -404,9 +385,6 @@
                     this.filterWorkloadUser = (this.filterWorkloadUser === userId) ? 'all' : userId;
                 },
 
-                /**
-                 * Helper para calcular la salud de un proyecto.
-                 */
                 getProjectHealth(project) {
                     if (!project.due_date) {
                         return { status: 'on-track', text: 'En Tiempo', color: 'text-green-500' };
@@ -421,20 +399,13 @@
                     return { status: 'on-track', text: 'En Tiempo', color: 'text-green-500' };
                 },
 
-                // --- GETTERS COMPUTADOS (EL MOTOR DE BI) ---
-
-                /**
-                 * [COMPUTADO] La lista de proyectos que se muestra, basada en todos los filtros.
-                 */
                 get filteredProjects() {
                     return this.allProjects.filter(project => {
-                        // Filtros estándar
                         const searchMatch = project.name.toLowerCase().includes(this.search.toLowerCase()) ||
                                             (project.leader && project.leader.name.toLowerCase().includes(this.search.toLowerCase()));
                         const leaderMatch = this.filterLeader === 'all' || project.leader_id == this.filterLeader;
                         const areaMatch = this.filterArea === 'all' || project.areas.some(area => area.id == this.filterArea);
                         
-                        // Filtros de BI
                         const healthMatch = this.filterHealth === 'all' || this.getProjectHealth(project).status === this.filterHealth;
                         const workloadMatch = this.filterWorkloadUser === 'all' || project.tasks.some(t => t.assignee_id == this.filterWorkloadUser);
 
@@ -442,9 +413,6 @@
                     });
                 },
 
-                /**
-                 * [BI COMPUTADO] Datos para el gráfico de Salud.
-                 */
                 get biHealthData() {
                     let onTrack = 0;
                     let atRisk = 0;
@@ -461,9 +429,6 @@
                     };
                 },
 
-                /**
-                 * [BI COMPUTADO] Datos para el gráfico de Tareas.
-                 */
                 get biTaskData() {
                     let pending = 0;
                     let inProgress = 0;
@@ -481,9 +446,6 @@
                     };
                 },
 
-                /**
-                 * [BI COMPUTADO] Datos para la lista de Carga de Trabajo.
-                 */
                 get biWorkloadData() {
                     const workload = new Map();
                     this.filteredProjects.forEach(p => {
@@ -501,13 +463,11 @@
                             }
                         });
                     });
-                    // Convertir el Map a un Array, ordenar por conteo y devolver
                     return Array.from(workload.values()).sort((a, b) => b.tasks_count - a.tasks_count);
                 }
             }
         }
         
-        // Registra los componentes con Alpine
         document.addEventListener('alpine:init', () => {
             Alpine.data('projectReviewManager', projectReviewManager);
             Alpine.data('chartDonut', chartDonut);

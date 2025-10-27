@@ -108,7 +108,6 @@
         document.addEventListener('DOMContentLoaded', function () {
             const chartData = @json($chartData);
 
-            // Gráfico Financiero
             if (document.querySelector("#financialChart") && chartData.financials.length > 0) {
                 const financialOptions = {
                     series: [{
@@ -138,7 +137,6 @@
                 new ApexCharts(document.querySelector("#financialChart"), financialOptions).render();
             }
 
-            // Gráfico: Carga de Trabajo
             if (document.querySelector("#workloadChart") && chartData.workload.series.length > 0) {
                 const workloadOptions = {
                     series: [{ name: 'Tareas Asignadas', data: chartData.workload.series }],
@@ -153,7 +151,6 @@
                 new ApexCharts(document.querySelector("#workloadChart"), workloadOptions).render();
             }
 
-            // Gráfico: Estatus (Donut)
             if (document.querySelector("#statusChart") && chartData.status.series.length > 0) {
                 const statusOptions = {
                     series: chartData.status.series,

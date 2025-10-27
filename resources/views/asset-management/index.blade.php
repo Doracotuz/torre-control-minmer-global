@@ -228,10 +228,10 @@
                  x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0"
                  x-transition:enter-end="opacity-100"
-                 id="asset-list-container" 
-                 x-html="assetsHtml"
-                 @click.prevent="handlePaginationClick($event)"
-                 class="z-0">
+                id="asset-list-container" 
+                x-html="assetsHtml"
+                @click="handlePaginationClick($event)" 
+                class="z-0">
             </div>
         </div>
     </div>
@@ -380,7 +380,10 @@
 
             handlePaginationClick(event) {
                 const link = event.target.closest('a[href]');
+                
                 if (link && link.href.includes('page=')) {
+                    event.preventDefault(); 
+                    
                     const url = new URL(link.href);
                     const page = url.searchParams.get('page');
                     if (page) {
