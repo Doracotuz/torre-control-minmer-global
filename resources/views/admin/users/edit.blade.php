@@ -185,6 +185,19 @@
                                 <span class="ms-2 text-sm text-gray-600">{{ __('Asignar como Usuario Cliente') }}</span>
                                 </label>
                             </div>
+                            <div class="pt-4 border-t border-gray-100 mt-6">
+                                <label for="is_active" class="inline-flex items-center">
+                                    <input type="hidden" name="is_active" value="0">
+                                    <input id="is_active" type="checkbox" 
+                                           class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" 
+                                           name="is_active" value="1" 
+                                           {{ old('is_active', $user->is_active) ? 'checked' : '' }}>
+                                    <span class="ms-2 text-sm text-gray-600">{{ __('Usuario Activo') }}</span>
+                                </label>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    {{ __('Si se desmarca, el usuario no podrá iniciar sesión.') }}
+                                </p>
+                            </div>                            
 
                             <div x-show="isClient" x-transition.opacity class="mt-4">
                                 <x-input-label :value="__('Carpetas Accesibles (para clientes)')" class="font-semibold mb-2" />

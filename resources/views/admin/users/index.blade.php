@@ -118,6 +118,11 @@
                                     @elseif ($user->is_client)
                                         <span class="mt-2 px-2 py-0.5 inline-flex text-xxs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Cliente</span>
                                     @endif
+                                    @if ($user->is_active)
+                                        <span class="px-2 py-0.5 inline-flex text-xxs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
+                                    @else
+                                        <span class="px-2 py-0.5 inline-flex text-xxs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactivo</span>
+                                    @endif                                    
                                 </div>
                                 <div class="mt-4 pt-4 border-t border-gray-100 flex justify-center space-x-2">
                                     <a href="{{ route('admin.users.edit', $user) }}" class="text-sm text-gray-500 hover:text-[#2c3856] p-1">Editar</a>
@@ -149,6 +154,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Email</th>
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Área</th>
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Rol</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Estado</th>
                                     <th class="relative px-6 py-3"><span class="sr-only">Acciones</span></th>
                                 </tr>
                             </thead>
@@ -178,6 +184,13 @@
                                                 <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Normal</span>
                                             @endif
                                         </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            @if ($user->is_active)
+                                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
+                                            @else
+                                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactivo</span>
+                                            @endif
+                                        </td>                                        
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div class="flex items-center justify-end space-x-4">
                                                 <a href="{{ route('admin.users.edit', $user) }}" class="text-[#2c3856] hover:text-[#ff9c00] font-semibold">Editar</a>

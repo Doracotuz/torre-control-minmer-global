@@ -22,17 +22,28 @@
         <div class="mb-6">
             <label for="password" class="block mb-2 text-sm font-medium text-gray-600">Contraseña</label>
             <div class="relative">
-                <div class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20.9998 2L18.9998 4M18.9998 4L21.9998 7L18.4998 10.5L15.4998 7.5M18.9998 4L15.4998 7.5M11.3898 11.61C11.9061 12.1195 12.3166 12.726 12.5975 13.3948C12.8785 14.0635 13.0244 14.7813 13.0268 15.5066C13.0292 16.232 12.8882 16.9507 12.6117 17.6213C12.3352 18.2919 11.9288 18.9012 11.4159 19.4141C10.903 19.9271 10.2937 20.3334 9.62309 20.6099C8.95247 20.8864 8.23379 21.0275 7.50842 21.025C6.78305 21.0226 6.06533 20.8767 5.39658 20.5958C4.72782 20.3148 4.12125 19.9043 3.61179 19.388C2.60992 18.3507 2.05555 16.9614 2.06808 15.5193C2.08061 14.0772 2.65904 12.6977 3.67878 11.678C4.69853 10.6583 6.078 10.0798 7.52008 10.0673C8.96216 10.0548 10.3515 10.6091 11.3888 11.611L11.3898 11.61ZM11.3898 11.61L15.4998 7.5" stroke="#2C3856" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                
+                <button type="button" id="togglePassword" 
+                        class="absolute inset-y-0 right-0 flex items-center pr-3.5 z-10 text-[#2C3856] 
+                               hover:text-[#E58C00] 
+                               focus:outline-none 
+                               rounded-lg transition duration-200 ease-in-out"
+                        aria-label="Mostrar contraseña">
+                    
+                    <svg id="eye-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                     </svg>
-                </div>
+                    <svg id="eye-off-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 1.18 0 2.31.25 3.364.7l-4.225 4.225m0 0a3 3 0 104.242 4.242l4.225-4.225a10.027 10.027 0 01.7 3.364c0 4.057-3.79 7-8.268 7-1.18 0-2.31-.25-3.364-.7m0 0l-4.225-4.225M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </button>
+                
                 <input id="password" type="password" name="password" required autocomplete="current-password" placeholder="Ingrese su contraseña"
                     class="w-full px-4 py-3 pr-10 border-t-0 border-l-0 border-r-0 border-b-2 border-[#E58C00] rounded-t-lg rounded-b-none focus:ring-orange-500 focus:border-orange-500">
             </div>
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
-        
         <div class="flex items-center justify-between mb-8">
             <label for="remember_me" class="flex items-center">
                 <input id="remember_me" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500" name="remember">
@@ -47,4 +58,36 @@
             </button>
         </div>
     </form>
-</x-guest-layout>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            const toggleButton = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            const eyeOffIcon = document.getElementById('eye-off-icon');
+
+            function showPassword() {
+                passwordInput.type = 'text';
+                eyeIcon.classList.add('hidden');
+                eyeOffIcon.classList.remove('hidden');
+            }
+
+            function hidePassword() {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('hidden');
+                eyeOffIcon.classList.add('hidden');
+            }
+
+            toggleButton.addEventListener('mousedown', showPassword);
+            
+            toggleButton.addEventListener('mouseup', hidePassword);
+            
+            toggleButton.addEventListener('mouseleave', hidePassword);
+
+            toggleButton.addEventListener('touchstart', showPassword, { passive: true });
+            
+            toggleButton.addEventListener('touchend', hidePassword);
+        });
+    </script>
+    </x-guest-layout>

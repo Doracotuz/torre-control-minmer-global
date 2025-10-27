@@ -201,6 +201,7 @@ class UserController extends Controller
             'password' => 'nullable|string|min:8|confirmed',
             'is_area_admin' => 'boolean',
             'is_client' => 'boolean',
+            'is_active' => 'boolean',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
 

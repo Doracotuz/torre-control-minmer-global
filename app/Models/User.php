@@ -29,6 +29,7 @@ class User extends Authenticatable
         'area_id',
         'is_area_admin',
         'is_client',
+        'is_active',
     ];
 
     /**
@@ -53,6 +54,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_area_admin' => 'boolean',
             'is_client' => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 
