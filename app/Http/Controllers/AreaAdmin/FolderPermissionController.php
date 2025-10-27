@@ -5,6 +5,7 @@ namespace App\Http\Controllers\AreaAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Folder;
 use App\Models\User;
+use App\Models\Area; // <-- AÑADIR IMPORT
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -12,90 +13,85 @@ use Illuminate\Validation\Rule;
 class FolderPermissionController extends Controller
 {
     /**
-     * Display a list of folders for the area admin to manage permissions, organized hierarchically.
-     * Muestra una lista de carpetas para que el administrador de área gestione los permisos, organizada jerárquicamente.
-     *
-     * @return \Illuminate\View\View
+     * Helper para obtener el área de gestión activa y verificar el permiso.
+     */
+    private function getActiveArea()
+    {
+        $user = Auth::user();
+        $activeAreaId = session('current_admin_area_id', $user->area_id);
+        $activeArea = Area::find($activeAreaId);
+
+        if (!$activeArea) {
+            $activeArea = $user->area;
+            $activeAreaId = $user->area_id;
+            session(['current_admin_area_id' => $activeAreaId, 'current_admin_area_name' => $activeArea->name]);
+        }
+        
+        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
+        if (!$user->is_area_admin || !$manageableAreaIds->contains($activeAreaId)) {
+            abort(403, 'No tienes permiso para gestionar esta área.');
+        }
+        
+        return $activeArea;
+    }
+
+    /**
+     * Muestra una lista de carpetas del área activa.
      */
     public function index()
     {
-        $user = Auth::user();
-        $areaId = $user->area_id;
+        $currentArea = $this->getActiveArea(); // <-- MODIFICADO
+        $areaId = $currentArea->id; // <-- MODIFICADO
 
-        // Obtener solo las carpetas de nivel superior que pertenecen al área del administrador
-        // y cargar recursivamente todos sus hijos
         $folders = Folder::where('area_id', $areaId)
-                         ->whereNull('parent_id') // Obtener solo las carpetas raíz
-                         ->with('childrenRecursive') // Usar una relación recursiva si está definida, o cargar manualmente
+                         ->whereNull('parent_id')
+                         ->with('childrenRecursive')
                          ->orderBy('name')
                          ->get();
-
-        // Si 'childrenRecursive' no está definida en tu modelo Folder, podrías necesitar
-        // cargar los hijos de forma más explícita o procesar la colección.
-        // Asumiendo que has añadido 'childrenRecursive' o que 'children' es suficiente
-        // para el primer nivel y el partial se encargará del resto de la recursión.
-        // Si no tienes 'childrenRecursive', el 'with('children')' original y la recursión en la vista aún funcionarán.
-        // Para asegurar una carga profunda, puedes definir una relación recursiva en Folder.php:
-        // public function childrenRecursive() {
-        //     return $this->children()->with('childrenRecursive');
-        // }
-
 
         return view('area_admin.folder_permissions.index', compact('folders'));
     }
 
     /**
-     * Show the form for managing permissions for a specific folder.
-     * Muestra el formulario para gestionar los permisos de una carpeta específica.
-     *
-     * @param  \App\Models\Folder  $folder
-     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     * Muestra el formulario para gestionar los permisos de una carpeta.
      */
     public function edit(Folder $folder)
     {
-        $user = Auth::user();
+        $currentArea = $this->getActiveArea(); // <-- MODIFICADO
 
-        // Asegurarse de que la carpeta pertenece al área del administrador
-        if ($folder->area_id !== $user->area_id) {
-            return redirect()->route('area_admin.folder_permissions.index')->with('error', 'No tienes permiso para gestionar los permisos de esta carpeta.');
+        // Asegurarse de que la carpeta pertenece al área activa
+        if ($folder->area_id !== $currentArea->id) { // <-- MODIFICADO
+            return redirect()->route('area_admin.folder_permissions.index')->with('error', 'Esta carpeta no pertenece al área que estás gestionando.');
         }
 
-        // Obtener todos los usuarios de la misma área del administrador (excluyendo al propio admin)
-        $areaUsers = User::where('area_id', $user->area_id)
-                         ->where('id', '!=', $user->id) // Excluir al propio administrador
+        // Obtener usuarios de la misma área activa
+        $areaUsers = User::where('area_id', $currentArea->id) // <-- MODIFICADO
+                         ->where('id', '!=', Auth::id()) // Excluir al propio administrador
                          ->orderBy('name')
                          ->get();
-
-        // Obtener los IDs de los usuarios que ya tienen acceso a esta carpeta
+        
         $usersWithAccessIds = $folder->usersWithAccess->pluck('id')->toArray();
 
         return view('area_admin.folder_permissions.edit', compact('folder', 'areaUsers', 'usersWithAccessIds'));
     }
 
     /**
-     * Update the permissions for the specified folder.
      * Actualiza los permisos para la carpeta especificada.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Folder  $folder
-     * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, Folder $folder)
     {
-        $user = Auth::user();
+        $currentArea = $this->getActiveArea(); // <-- MODIFICADO
 
-        // Asegurarse de que la carpeta pertenece al área del administrador
-        if ($folder->area_id !== $user->area_id) {
-            return redirect()->route('area_admin.folder_permissions.index')->with('error', 'No tienes permiso para actualizar los permisos de esta carpeta.');
+        // Asegurarse de que la carpeta pertenece al área activa
+        if ($folder->area_id !== $currentArea->id) { // <-- MODIFICADO
+            return redirect()->route('area_admin.folder_permissions.index')->with('error', 'No tienes permiso para actualizar esta carpeta.');
         }
 
         $request->validate([
             'users_with_access' => 'nullable|array',
-            'users_with_access.*' => ['exists:users,id', Rule::in(User::where('area_id', $user->area_id)->pluck('id')->toArray())], // Asegura que los IDs pertenecen a usuarios de su misma área
+            'users_with_access.*' => ['exists:users,id', Rule::in(User::where('area_id', $currentArea->id)->pluck('id')->toArray())], // <-- MODIFICADO
         ]);
 
-        // Sincronizar los usuarios seleccionados con la relación BelongsToMany
-        // Esto desasocia los que no están en la lista y asocia los nuevos
         $folder->usersWithAccess()->sync($request->input('users_with_access', []));
 
         return redirect()->route('area_admin.folder_permissions.index')->with('success', 'Permisos de carpeta actualizados exitosamente.');

@@ -2,6 +2,25 @@
     $whatsappNumber = "5215536583392";
     $whatsappMessage = urlencode("Hola, me gustaría recibir asistencia para la plataforma \"Control Tower - Minmer Global\"");
     $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
+
+    // --- LÓGICA DEL SELECTOR DE ÁREA ---
+    $manageableAreas = collect();
+    $currentManagingAreaId = Auth::user()->area_id;
+    $currentManagingAreaName = Auth::user()->area?->name;
+
+    if (Auth::user()->is_area_admin) {
+        // Obtener todas las áreas (principal + secundarias)
+        $primaryArea = Auth::user()->area;
+        if ($primaryArea) {
+            $manageableAreas->push($primaryArea);
+        }
+        $manageableAreas = $manageableAreas->merge(Auth::user()->accessibleAreas)->unique('id')->sortBy('name');
+        
+        // Obtener el área activa de la sesión, si no, usar la principal
+        $currentManagingAreaId = session('current_admin_area_id', Auth::user()->area_id);
+        $currentManagingAreaName = session('current_admin_area_name', Auth::user()->area?->name);
+    }
+    // --- FIN DE LÓGICA ---
 @endphp
 
 <nav x-data="{
@@ -56,6 +75,7 @@ x-init="$watch('search', value => {
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
                 </button>                
                 <div class="flex items-center text-white text-sm font-medium">
+                    {{-- ESTE BLOQUE MUESTRA EL ÁREA PRINCIPAL DEL USUARIO --}}
                     @if (Auth::user()->area)
                         @php
                             $areaName = Auth::user()->area->name;
@@ -139,6 +159,35 @@ x-init="$watch('search', value => {
             </div>
 
             <div class="hidden sm:flex sm:items-center sm:ms-6">
+
+                @if (Auth::user()->is_area_admin && $manageableAreas->count() > 1 && request()->routeIs('area_admin.*'))
+                    <div class="ms-3 relative">
+                        <x-dropdown align="right" width="60"> {{-- Un poco más ancho --}}
+                            <x-slot name="trigger">
+                                <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-[#ff9c00] hover:bg-orange-500 focus:outline-none transition ease-in-out duration-150">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m-1 4h1m6-4h1m-1 4h1m-1-8h1m-1 4h1"></path></svg>
+                                    <div>Gestionando: <span class="font-bold">{{ $currentManagingAreaName }}</span></div>
+                                    <div class="ms-1"><svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg></div>
+                                </button>
+                            </x-slot>
+
+                            <x-slot name="content">
+                                <div class="px-4 py-2 text-xs text-gray-400">Cambiar área de gestión</div>
+                                @foreach ($manageableAreas as $area)
+                                    <form method="POST" action="{{ route('area_admin.switch_area') }}" class="block">
+                                        @csrf
+                                        <input type="hidden" name="area_id" value="{{ $area->id }}">
+                                        <button type="submit" 
+                                                class="block w-full text-left px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out
+                                                       {{ $area->id == $currentManagingAreaId ? 'font-bold text-indigo-600' : '' }}">
+                                            {{ $area->name }}
+                                        </button>
+                                    </form>
+                                @endforeach
+                            </x-slot>
+                        </x-dropdown>
+                    </div>
+                @endif
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white hover:text-gray-200 focus:outline-none transition ease-in-out duration-150">
@@ -173,6 +222,7 @@ x-init="$watch('search', value => {
         </div>
     </div>
 
+    {{-- MENÚ MÓVIL (SIN CAMBIOS) --}}
     <div :class="{'block': open, 'hidden': ! open}" 
          class="hidden sm:hidden bg-[#344266] transition-all duration-300 ease-in-out shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto"
          x-show="open"
@@ -321,7 +371,7 @@ x-init="$watch('search', value => {
                                     <span>Catálogos</span>
                                     <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileWmsCatalogsOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                                 </button>
-                                <div x-show="isMobileWmsCatalogsOpen" class="mt-1 space-y-1 pl-4 border-l-2 border-gray-500 ml-4">
+                                <div x-show="isMobileWdmsCatalogsOpen" class="mt-1 space-y-1 pl-4 border-l-2 border-gray-500 ml-4">
                                     <x-responsive-nav-link :href="route('wms.products.index')" :active="request()->routeIs('wms.products.*')" class="text-white ...">Productos</x-responsive-nav-link>
                                     <x-responsive-nav-link :href="route('wms.locations.index')" :active="request()->routeIs('wms.locations.*')" class="text-white ...">Ubicaciones</x-responsive-nav-link>
                                     <x-responsive-nav-link :href="route('wms.warehouses.index')" :active="request()->routeIs('wms.warehouses.*')" class="text-white ...">Almacenes</x-responsive-nav-link>

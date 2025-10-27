@@ -315,6 +315,7 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('area-admin')->name
     Route::get('/dashboard', function () {
         return view('area_admin.dashboard');
     })->name('dashboard');
+    Route::post('/switch-area', [\App\Http\Controllers\AreaAdmin\AreaSwitchController::class, 'switch'])->name('switch_area');    
 
     // Rutas para la gestión de Usuarios por Administrador de Área
     Route::get('/users', [AreaAdminUserController::class, 'index'])->name('users.index');
