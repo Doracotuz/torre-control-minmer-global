@@ -23,14 +23,14 @@ class SearchController extends Controller
         // --- Lógica de Permisos para la Búsqueda ---
         $folderQuery = Folder::query();
         $fileLinkQuery = FileLink::query();
+        $accessibleAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
 
         if ($user->area && $user->area->name === 'Administración') {
             // Super Admin: Sin restricciones.
         } elseif ($user->is_area_admin) {
-            // Administrador de Área: Sugerencias solo de su propia área.
-            $folderQuery->where('area_id', $user->area_id);
-            $fileLinkQuery->whereHas('folder', function($q) use ($user) {
-                $q->where('area_id', $user->area_id);
+            $folderQuery->whereIn('area_id', $accessibleAreaIds);
+            $fileLinkQuery->whereHas('folder', function($q) use ($accessibleAreaIds) {
+                $q->whereIn('area_id', $accessibleAreaIds);
             });
 
         // --- 👇 INICIO DEL CAMBIO ---
@@ -48,13 +48,13 @@ class SearchController extends Controller
             });
 
         } else {
-            // Usuario Normal (NO cliente): Sugerencias de su área y con acceso explícito.
-            $folderQuery->where('area_id', $user->area_id)
+            // Usuario Normal (NO cliente): Sugerencias de sus áreas y con acceso explícito.
+            $folderQuery->whereIn('area_id', $accessibleAreaIds) // <-- CAMBIADO
                         ->whereHas('usersWithAccess', function ($q) use ($user) {
                             $q->where('user_id', $user->id);
                         });
-            $fileLinkQuery->whereHas('folder', function($q) use ($user) {
-                $q->where('area_id', $user->area_id)
+            $fileLinkQuery->whereHas('folder', function($q) use ($user, $accessibleAreaIds) { // <-- CAMBIADO
+                $q->whereIn('area_id', $accessibleAreaIds) // <-- CAMBIADO
                 ->whereHas('usersWithAccess', function ($q2) use ($user) {
                     $q2->where('user_id', $user->id);
                 });

@@ -116,4 +116,9 @@ class User extends Authenticatable
         return $this->hasOne(OrganigramMember::class);
     }
 
+    public function accessibleAreas(): BelongsToMany
+    {
+        return $this->belongsToMany(Area::class, 'user_accessible_areas');
+    }
+
 }

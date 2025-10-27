@@ -142,7 +142,7 @@
                             </div>
                             
                             <div x-show="!isClient" x-transition.opacity>
-                                <x-input-label for="area_id" :value="__('Área')" class="font-semibold" />
+                                <x-input-label for="area_id" :value="__('Área Principal')" class="font-semibold" />
                                 <select id="area_id" name="area_id" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm" required>
                                     <option value="">{{ __('Selecciona un Área') }}</option>
                                     @foreach ($areas as $area)
@@ -151,7 +151,26 @@
                                 </select>
                                 <x-input-error :messages="$errors->get('area_id')" class="mt-2" />
                             </div>
-                            
+
+                            <div x-show="!isClient" x-transition.opacity class="pt-2">
+                                <x-input-label for="accessible_area_ids" :value="__('Áreas Secundarias de Acceso (Opcional)')" class="font-semibold" />
+                                <p class="text-xs text-gray-500 mb-2">
+                                    {{ __('El usuario podrá ver los archivos de estas áreas, además de su área principal.') }}
+                                </p>
+                                
+                                <select name="accessible_area_ids[]" id="accessible_area_ids" multiple
+                                        class="block w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm" 
+                                        size="6">
+                                    @foreach($areas as $area)
+                                        <option value="{{ $area->id }}" 
+                                                {{ in_array($area->id, old('accessible_area_ids', [])) ? 'selected' : '' }}>
+                                            {{ $area->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">Mantén presionado Ctrl (o Cmd en Mac) para seleccionar varias.</p>
+                                <x-input-error :messages="$errors->get('accessible_area_ids')" class="mt-2" />
+                            </div>
                             <div class="pt-2">
                                 <label for="is_area_admin" class="inline-flex items-center">
                                     <input id="is_area_admin" type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" name="is_area_admin" value="1" {{ old('is_area_admin') ? 'checked' : '' }}>

@@ -38,7 +38,7 @@ class FolderController extends Controller
                 $breadcrumbs->prepend($parent);
                 $parent = $parent->parent;
             }
-        }        
+        }
 
         $folderQuery = Folder::query();
         $fileLinkQuery = FileLink::query();
@@ -60,9 +60,11 @@ class FolderController extends Controller
 
         } else { // Administradores de Área y Usuarios Normales
             // Todos los demás usuarios están restringidos a su propia área.
-            $folderQuery->where('area_id', $user->area_id);
-            $fileLinkQuery->whereHas('folder', function($q) use ($user) {
-                $q->where('area_id', $user->area_id);
+            $accessibleAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
+
+            $folderQuery->whereIn('area_id', $accessibleAreaIds);
+            $fileLinkQuery->whereHas('folder', function($q) use ($accessibleAreaIds) {
+                $q->whereIn('area_id', $accessibleAreaIds); // <-- CAMBIADO
             });
 
             // Los usuarios normales (no admins de área) además requieren acceso explícito

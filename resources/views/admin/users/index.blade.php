@@ -109,20 +109,33 @@
                                         alt="{{ $user->name }}">
                                     <h5 class="text-base font-bold text-[#2c3856] truncate w-full" title="{{ $user->name }}">{{ $user->name }}</h5>
                                     <p class="text-xs font-medium text-gray-500 mb-1 truncate w-full" title="{{ $user->position }}">{{ $user->position ?? 'Sin Posición' }}</p>
-                                    <p class="text-xs font-medium text-gray-500 mb-1 truncate w-full" title="{{ $user->phone }}">{{ $user->phone_number ?? 'Sin Teléfono' }}</p>
+                                    <p class="text-xs font-medium text-gray-500 mb-1 truncate w-full" title="{{ $user->phone_number }}">{{ $user->phone_number ?? 'Sin Teléfono' }}</p>
                                     <p class="text-xs text-gray-500 mb-2 truncate w-full" title="{{ $user->email }}">{{ $user->email }}</p>
                                     <p class="text-xs text-gray-600 font-medium">{{ $user->area->name ?? 'Sin área' }}</p>
                                     
-                                    @if ($user->is_area_admin)
-                                        <span class="mt-2 px-2 py-0.5 inline-flex text-xxs leading-5 font-semibold rounded-full bg-orange-100 text-[#ff9c00]">Admin. de Área</span>
-                                    @elseif ($user->is_client)
-                                        <span class="mt-2 px-2 py-0.5 inline-flex text-xxs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Cliente</span>
+                                    <div class="mt-2 flex flex-wrap justify-center gap-1">
+                                        @if ($user->is_area_admin)
+                                            <span class="px-2 py-0.5 inline-flex text-xxs leading-5 font-semibold rounded-full bg-orange-100 text-[#ff9c00]">Admin. de Área</span>
+                                        @elseif ($user->is_client)
+                                            <span class="px-2 py-0.5 inline-flex text-xxs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Cliente</span>
+                                        @endif
+
+                                        @if ($user->is_active)
+                                            <span class="px-2 py-0.5 inline-flex text-xxs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
+                                        @else
+                                            <span class="px-2 py-0.5 inline-flex text-xxs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactivo</span>
+                                        @endif
+                                    </div>
+
+                                    @if(!$user->is_client && $user->accessibleAreas->isNotEmpty())
+                                        <div class="mt-2 pt-2 border-t border-gray-100 w-full max-w-full">
+                                            <span class="text-xxs font-bold text-gray-500 uppercase">Acceso Extra:</span>
+                                            <p class="text-xs text-gray-600 truncate" title="{{ $user->accessibleAreas->pluck('name')->join(', ') }}">
+                                                {{ $user->accessibleAreas->pluck('name')->join(', ') }}
+                                            </p>
+                                        </div>
                                     @endif
-                                    @if ($user->is_active)
-                                        <span class="px-2 py-0.5 inline-flex text-xxs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
-                                    @else
-                                        <span class="px-2 py-0.5 inline-flex text-xxs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactivo</span>
-                                    @endif                                    
+
                                 </div>
                                 <div class="mt-4 pt-4 border-t border-gray-100 flex justify-center space-x-2">
                                     <a href="{{ route('admin.users.edit', $user) }}" class="text-sm text-gray-500 hover:text-[#2c3856] p-1">Editar</a>
@@ -149,7 +162,6 @@
                                         <input type="checkbox" @click="toggleSelectAll()" :checked="isAllSelected" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]">
                                     </th>                                    
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Nombre</th>
-                                    <!-- <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Posición</th> -->
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Teléfono</th>
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Email</th>
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Área</th>
@@ -168,13 +180,22 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <img class="h-9 w-9 rounded-full object-cover mr-3" src="{{ $user->profile_photo_path ? Storage::disk('s3')->url($user->profile_photo_path) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&color=2C3856&background=F3F4F6' }}" alt="{{ $user->name }}">
-                                                <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
+                                                <div>
+                                                    <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
+                                                    <div class="text-xs text-gray-500">{{ $user->position ?? 'Sin posición' }}</div>
+                                                </div>
                                             </div>
                                         </td>
-                                        <!-- <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->position ?? 'Sin posición' }}</div></td> -->
                                         <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->phone_number ?? 'Sin teléfono' }}</div></td>
                                         <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->email }}</div></td>
-                                        <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">{{ $user->area->name ?? 'N/A' }}</div></td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900 font-medium">{{ $user->area->name ?? 'N/A' }}</div>
+                                            @if(!$user->is_client && $user->accessibleAreas->isNotEmpty())
+                                                <div class="text-xs text-gray-500 truncate" title="{{ $user->accessibleAreas->pluck('name')->join(', ') }}">
+                                                    + {{ $user->accessibleAreas->pluck('name')->join(', ') }}
+                                                </div>
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             @if ($user->is_area_admin)
                                                 <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-[#ff9c00]">Admin. de Área</span>
@@ -206,7 +227,7 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="6" class="px-6 py-12 text-center text-gray-500">No se encontraron usuarios con los filtros aplicados.</td></tr>
+                                    <tr><td colspan="8" class="px-6 py-12 text-center text-gray-500">No se encontraron usuarios con los filtros aplicados.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>

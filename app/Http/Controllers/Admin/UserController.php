@@ -173,8 +173,12 @@ class UserController extends Controller
         $areas = Area::orderBy('name')->get();
         $positions = OrganigramPosition::orderBy('name')->get();
         $accessibleFolderIds = $user->accessibleFolders->pluck('id')->toArray();
+        
+        // --- AÑADIR ESTA LÍNEA ---
+        $userAccessibleAreaIds = $user->accessibleAreas->pluck('id')->toArray();
 
-        return view('admin.users.edit', compact('user', 'areas', 'accessibleFolderIds', 'positions')); 
+        // --- ACTUALIZAR EL RETURN ---
+        return view('admin.users.edit', compact('user', 'areas', 'accessibleFolderIds', 'positions', 'userAccessibleAreaIds')); 
     }
 
     /**
@@ -203,6 +207,8 @@ class UserController extends Controller
             'is_client' => 'boolean',
             'is_active' => 'boolean',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'accessible_area_ids' => 'nullable|array',
+            'accessible_area_ids.*' => 'exists:areas,id',            
         ];
 
         // Reglas condicionales para area_id y accessible_folder_ids
@@ -252,16 +258,24 @@ class UserController extends Controller
         $user->update($data); //
 
         if ($user->isClient()) {
+            // Los clientes usan permisos de CARPETA, no de área.
             $folderIds = explode(',', $request->input('accessible_folder_ids')[0] ?? '');
             $folderIds = array_filter(array_map('intval', $folderIds));
-
-            $user->accessibleFolders()->sync($folderIds); //
+            $user->accessibleFolders()->sync($folderIds);
+            
+            // Limpiamos las áreas secundarias por si acaso
+            $user->accessibleAreas()->detach(); 
         } else {
-            // Si el usuario ya no es cliente, desvincula todas las carpetas.
-            $user->accessibleFolders()->detach(); //
-        }
+            // Los usuarios internos (Admin o Normal) usan permisos de ÁREA.
+            $areaIds = $request->input('accessible_area_ids', []);
+            $user->accessibleAreas()->sync($areaIds);
 
-        return redirect()->route('admin.users.index')->with('success', 'Usuario actualizado exitosamente.'); //
+            // Si el usuario ya no es cliente, desvincula todas las carpetas.
+            $user->accessibleFolders()->detach();
+        }
+        // --- FIN DE LA MODIFICACIÓN ---
+
+        return redirect()->route('admin.users.index')->with('success', 'Usuario actualizado exitosamente.');
     }
 
     /**

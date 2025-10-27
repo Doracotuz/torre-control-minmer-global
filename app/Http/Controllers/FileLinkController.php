@@ -202,10 +202,11 @@ class FileLinkController extends Controller
 
         // 2. Lógica de Permisos para descargar el archivo
         $hasPermission = false;
+        $accessibleAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
         if ($user->area && $user->area->name === 'Administración') {
             // Super Admin puede descargar cualquier archivo
             $hasPermission = true;
-        } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
+        } elseif ($user->is_area_admin && $accessibleAreaIds->contains($fileLink->folder->area_id)) {
             // Administrador de Área puede descargar archivos de su área
             $hasPermission = true;
         } elseif ($user->isClient()) {
@@ -213,7 +214,7 @@ class FileLinkController extends Controller
             if ($user->accessibleFolders->contains($fileLink->folder_id)) {
                 $hasPermission = true;
             }
-        } elseif ($fileLink->folder->area_id === $user->area_id && $user->accessibleFolders->contains($fileLink->folder_id)) {
+        } elseif ($accessibleAreaIds->contains($fileLink->folder->area_id) && $user->accessibleFolders->contains($fileLink->folder_id)) {
             // Usuario Normal: archivo de su área y con acceso explícito a la carpeta
             $hasPermission = true;
         }
