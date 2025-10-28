@@ -60,6 +60,7 @@ class AssignmentController extends Controller
                 'notes' => 'Asignado a ' . $assignment->member->name,
                 'loggable_id' => $assignment->id,
                 'loggable_type' => Assignment::class,
+                'event_date' => $assignment->assignment_date,
             ]);
 
             $asset->status = 'Asignado';
@@ -113,6 +114,7 @@ class AssignmentController extends Controller
                 'notes' => 'Devuelto por ' . $assignment->member->name . '. Disponible en almacén.',
                 'loggable_id' => $assignment->id,
                 'loggable_type' => \App\Models\Assignment::class,
+                'event_date' => $validated['actual_return_date'],
             ]);
         });
 
@@ -164,6 +166,7 @@ class AssignmentController extends Controller
                 'notes' => 'Prestado a ' . $member->name . ' hasta el ' . \Carbon\Carbon::parse($validated['expected_return_date'])->format('d/m/Y'),
                 'loggable_id' => $assignment->id,
                 'loggable_type' => \App\Models\Assignment::class,
+                'event_date' => $validated['assignment_date'],
             ]);
 
             // 3. Actualizar el estatus del activo
@@ -249,6 +252,7 @@ class AssignmentController extends Controller
                     'notes' => 'Devuelto por ' . $assignment->member->name . ' (Editado).',
                     'loggable_id' => $assignment->id,
                     'loggable_type' => \App\Models\Assignment::class,
+                    'event_date' => $validated['actual_return_date'],
                 ]);
             }
         }

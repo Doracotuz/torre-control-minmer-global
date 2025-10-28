@@ -36,7 +36,7 @@ class HardwareAsset extends Model {
 
     public function logs()
     {
-        return $this->hasMany(AssetLog::class)->latest(); // Ordenado por más reciente
+        return $this->hasMany(AssetLog::class)->orderBy('event_date', 'asc');
     }
 
     public function maintenances() 

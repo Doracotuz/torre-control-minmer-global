@@ -47,41 +47,41 @@ class MaintenanceController extends Controller
             $originalUserAssignment = $asset->currentAssignment;
             $maintenance = $asset->maintenances()->create($data);
 
-            // 2. Cambiar estatus del activo original.
             $newStatus = $data['type'] === 'Reparación' ? 'En Reparación' : 'En Mantenimiento';
             $asset->status = $newStatus;
             $asset->save();
 
-            // 3. Log para el activo original.
             $asset->logs()->create([
                 'user_id' => Auth::id(),
                 'action_type' => $newStatus,
                 'notes' => 'Enviado a ' . strtolower($newStatus) . ' por: ' . $data['diagnosis'],
+                'event_date' => $data['start_date'],
+                'loggable_id' => $maintenance->id,
+                'loggable_type' => \App\Models\Maintenance::class,
             ]);
 
-            // 4. Si el activo ESTABA asignado, gestionamos la devolución y el sustituto.
             if ($originalUserAssignment) {
-                // A. Finalizamos la asignación original.
-                $originalUserAssignment->actual_return_date = now();
+                $returnDate = now();
+                $originalUserAssignment->actual_return_date = $returnDate;
                 $originalUserAssignment->save();
 
-                // B. Creamos un log para esta devolución forzada.
                 $asset->logs()->create([
                     'user_id' => Auth::id(),
                     'action_type' => 'Devolución',
                     'notes' => 'Devuelto por ' . $originalUserAssignment->member->name . ' para ser enviado a mantenimiento.',
                     'loggable_id' => $originalUserAssignment->id,
                     'loggable_type' => \App\Models\Assignment::class,
+                    'event_date' => $returnDate,
                 ]);
 
-                // C. Si se eligió un sustituto, lo prestamos al mismo usuario.
                 if (!empty($data['substitute_asset_id'])) {
                     $substitute = HardwareAsset::find($data['substitute_asset_id']);
+                    $loanDate = now();
                     
                     $loan = $substitute->assignments()->create([
                         'type' => 'Préstamo',
                         'organigram_member_id' => $originalUserAssignment->organigram_member_id,
-                        'assignment_date' => now(),
+                        'assignment_date' => $loanDate,
                     ]);
 
                     $substitute->status = 'Prestado';
@@ -93,6 +93,7 @@ class MaintenanceController extends Controller
                         'notes' => 'Prestado como sustituto a ' . $originalUserAssignment->member->name,
                         'loggable_id' => $loan->id,
                         'loggable_type' => \App\Models\Assignment::class,
+                        'event_date' => $loanDate,
                     ]);
                 }
             }
@@ -118,44 +119,42 @@ class MaintenanceController extends Controller
         ]);
 
         DB::transaction(function () use ($data, $maintenance) {
-            // 1. Actualizar el registro de mantenimiento.
             $maintenance->update($data);
 
-            // 2. Actualizar el activo principal (el que fue reparado).
             $asset = $maintenance->asset;
             $asset->status = 'En Almacén';
             $asset->save();
 
-            // 3. Registrar en la línea de vida del activo principal.
             $asset->logs()->create([
                 'user_id' => Auth::id(),
                 'action_type' => 'Mantenimiento Completado',
-                'notes' => "Se completó el mantenimiento. El activo vuelve a Almacén."
+                'notes' => "Se completó el mantenimiento. El activo vuelve a Almacén.",
+                'event_date' => $data['end_date'],
+                'loggable_id' => $maintenance->id,
+                'loggable_type' => \App\Models\Maintenance::class,
             ]);
 
-            // 4. Si había un activo sustituto, registrar su devolución.
             if ($maintenance->substitute_asset_id) {
                 $substitute = $maintenance->substituteAsset;
                 
-                // Buscamos el préstamo activo del sustituto.
                 $loan = $substitute->currentAssignment;
 
                 if ($loan) {
-                    // Finalizamos el préstamo.
-                    $loan->actual_return_date = now();
+                    $returnDate = now();
+                    
+                    $loan->actual_return_date = $returnDate;
                     $loan->save();
 
-                    // Actualizamos el estatus del sustituto.
                     $substitute->status = 'En Almacén';
                     $substitute->save();
 
-                    // Registramos la devolución en la línea de vida del sustituto.
                     $substitute->logs()->create([
                         'user_id' => Auth::id(),
                         'action_type' => 'Devolución',
                         'notes' => 'Devuelto por ' . $loan->member->name . '. Fin de préstamo sustituto.',
                         'loggable_id' => $loan->id,
                         'loggable_type' => \App\Models\Assignment::class,
+                        'event_date' => $returnDate,
                     ]);
                 }
             }
@@ -186,5 +185,4 @@ class MaintenanceController extends Controller
 
         return $pdf->stream($fileName);
     }    
-
 }

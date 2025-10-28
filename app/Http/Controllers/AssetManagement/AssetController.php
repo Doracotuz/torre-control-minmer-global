@@ -143,11 +143,12 @@ class AssetController extends Controller
 
         $asset = HardwareAsset::create($validated);
 
-        $asset->logs()->create([
+            $asset->logs()->create([
             'user_id' => Auth::id(),
             'action_type' => 'Creación',
-            'notes' => 'El activo fue registrado en el sistema.'
-        ]);        
+            'notes' => 'El activo fue registrado en el sistema.',
+            'event_date' => $asset->purchase_date ?? $asset->created_at,
+        ]);
 
         return redirect()->route('asset-management.dashboard')->with('success', 'Activo registrado exitosamente.');
     }
@@ -217,6 +218,7 @@ class AssetController extends Controller
         ]);
 
         $originalStatus = $asset->status;
+        $originalPurchaseDate = $asset->purchase_date ? \Carbon\Carbon::parse($asset->purchase_date)->format('Y-m-d') : null;
 
         for ($i = 1; $i <= 3; $i++) {
             $fileInputName = "photo_{$i}";
@@ -245,20 +247,30 @@ class AssetController extends Controller
             $asset->logs()->create([
                 'user_id' => Auth::id(),
                 'action_type' => 'Cambio de Estatus',
-                'notes' => "El estatus cambió de '{$originalStatus}' a '{$asset->status}'."
+                'notes' => "El estatus cambió de '{$originalStatus}' a '{$asset->status}'.",
+                'event_date' => now(),
             ]);
+        }
+
+        $newPurchaseDate = $asset->purchase_date ? \Carbon\Carbon::parse($asset->purchase_date)->format('Y-m-d') : null;
+
+        if ($originalPurchaseDate !== $newPurchaseDate) {
+            $creationLog = $asset->logs()
+                                  ->where('action_type', 'Creación')
+                                  ->orderBy('event_date', 'asc')
+                                  ->first();
+            
+            if ($creationLog) {
+                $creationLog->event_date = $asset->purchase_date ?? $creationLog->created_at;
+                $creationLog->save();
+            }
         }
 
         return redirect()->route('asset-management.assets.show', $asset)->with('success', 'Activo actualizado correctamente.');
     }
 
-    /**
-     * Elimina un activo de la base de datos (Baja Lógica).
-     * Nota: Una mejor práctica es cambiar el estado a "De Baja" en lugar de eliminarlo.
-     */
     public function destroy(HardwareAsset $asset)
     {
-        // Prevenir la eliminación si el activo está actualmente asignado
         if ($asset->status === 'Asignado' || $asset->status === 'Prestado') {
             return back()->with('error', 'No se puede eliminar un activo que está actualmente asignado.');
         }
@@ -282,12 +294,11 @@ class AssetController extends Controller
             'assigned_to_member_email',
         ];
 
-        // Obtenemos todos los activos con sus relaciones
         $assets = HardwareAsset::with([
             'model.category', 
             'model.manufacturer', 
             'site', 
-            'currentAssignment.member' // Carga la asignación actual y el miembro
+            'currentAssignment.member'
         ])->get();
 
         $csv = Writer::createFromString('');

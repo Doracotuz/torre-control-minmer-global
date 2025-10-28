@@ -16,6 +16,7 @@ class AssetLog extends Model
         'notes',
         'loggable_id',
         'loggable_type',
+        'event_date',
     ];
 
     public function user() { return $this->belongsTo(User::class); }
