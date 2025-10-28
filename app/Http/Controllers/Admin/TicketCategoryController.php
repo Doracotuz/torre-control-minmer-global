@@ -4,15 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\TicketCategory;
-use App\Models\TicketSubCategory; // <-- AÑADIR IMPORTACIÓN
+use App\Models\TicketSubCategory;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule; // <-- AÑADIR IMPORTACIÓN
+use Illuminate\Validation\Rule;
 
 class TicketCategoryController extends Controller
 {
     public function index()
     {
-        // Cargamos las categorías con sus subcategorías y el conteo de tickets para cada subcategoría
         $categories = TicketCategory::with(['subCategories' => function ($query) {
             $query->withCount('tickets')->orderBy('name');
         }])->orderBy('name')->get();
@@ -46,12 +45,10 @@ class TicketCategoryController extends Controller
 
     public function destroy(TicketCategory $ticketCategory)
     {
-        // Al eliminar una categoría, las subcategorías se eliminan en cascada por la BD
         $ticketCategory->delete();
         return back()->with('success', 'Categoría y sus subcategorías eliminadas exitosamente.');
     }
 
-    // --- MÉTODOS NUEVOS PARA SUBCATEGORÍAS ---
 
     public function storeSubCategory(Request $request)
     {

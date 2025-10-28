@@ -37,22 +37,16 @@ class ImportKpiCommand extends Command
             $delimiter = substr_count($firstLine, ';') > substr_count($firstLine, ',') ? ';' : ',';
             rewind($handle);
 
-            // --- INICIO DE LA CORRECCIÓN DE CODIFICACIÓN ---
-            // Lista de codificaciones comunes a probar
             $encodings_to_try = ['UTF-8', 'ISO-8859-1', 'Windows-1252'];
 
             $header_raw = fgetcsv($handle, 0, $delimiter);
-            // Se usa la lista de codificaciones en lugar de 'auto'
             $header_utf8 = array_map(fn($h) => mb_convert_encoding($h, 'UTF-8', $encodings_to_try), $header_raw);
             $header = array_map('trim', $header_utf8);
             
             while (($row_raw = fgetcsv($handle, 0, $delimiter)) !== false) {
                 if (count($header) !== count($row_raw)) continue;
                 
-                // Se usa la lista de codificaciones en lugar de 'auto'
                 $row = array_map(fn($r) => mb_convert_encoding($r, 'UTF-8', $encodings_to_try), $row_raw);
-
-                // --- FIN DE LA CORRECCIÓN DE CODIFICACIÓN ---
 
                 $data = array_combine($header, $row);
                 $datosParaBD = [];

@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\DB;
 
 class NotificationSettingsController extends Controller
 {
-    // Define aquí los eventos que se pueden notificar
     private $notifiableEvents = [
         'login' => 'Inicio de Sesión',
         'created_folder' => 'Creó una carpeta',
@@ -30,14 +29,11 @@ class NotificationSettingsController extends Controller
 
     public function index()
     {
-        // Obtenemos solo los usuarios internos para asignarles notificaciones
         $users = User::where('is_client', false)->orderBy('name')->get();
         
-        // Obtenemos la configuración actual y la agrupamos POR USUARIO
         $settings = NotificationSetting::all()
             ->groupBy('user_id')
             ->map(function ($group) {
-                // Para cada usuario, obtenemos una lista de los eventos a los que está suscrito
                 return $group->pluck('event_name');
             });
 
@@ -53,21 +49,17 @@ class NotificationSettingsController extends Controller
         $request->validate([
             'settings' => 'nullable|array',
             'settings.*' => 'nullable|array',
-            'settings.*.*' => 'string', // Los valores ahora son los 'action_key'
+            'settings.*.*' => 'string',
         ]);
 
         DB::transaction(function () use ($request) {
-            // 1. Borramos toda la configuración anterior
             NotificationSetting::query()->delete();
             
-            // 2. Leemos la nueva configuración del formulario
             $newSettings = $request->input('settings', []);
 
-            // 3. Insertamos los nuevos registros
             foreach ($newSettings as $userId => $eventKeys) {
                 if (is_array($eventKeys)) {
                     foreach ($eventKeys as $eventKey) {
-                        // Verificamos que el evento exista para evitar datos maliciosos
                         if (array_key_exists($eventKey, $this->notifiableEvents)) {
                             NotificationSetting::create([
                                 'user_id' => $userId,

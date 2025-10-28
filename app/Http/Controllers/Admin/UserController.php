@@ -15,12 +15,11 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\WelcomeNewUser;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
     /**
-     * Display a listing of the users.
-     * Muestra una lista de todos los usuarios.
      *
      * @return \Illuminate\View\View
      */
@@ -29,7 +28,6 @@ class UserController extends Controller
         $areas = Area::orderBy('name')->get();
         $query = User::with('area')->orderBy('name');
 
-        // 1. Filtro de búsqueda por texto (nombre, email, posición)
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';
             $query->where(function($q) use ($searchTerm) {
@@ -40,12 +38,10 @@ class UserController extends Controller
             });
         }
 
-        // 2. Filtro por Área
         if ($request->filled('area_id')) {
             $query->where('area_id', $request->area_id);
         }
 
-        // 3. Filtro por Rol
         if ($request->filled('role')) {
             switch ($request->role) {
                 case 'admin':
@@ -60,7 +56,7 @@ class UserController extends Controller
             }
         }
 
-        $users = $query->paginate(15)->withQueryString(); // withQueryString() mantiene los filtros en la paginación
+        $users = $query->paginate(15)->withQueryString();
 
         return view('admin.users.index', [
             'users' => $users,
@@ -70,8 +66,6 @@ class UserController extends Controller
     }
 
     /**
-     * Show the form for creating a new user.
-     * Muestra el formulario para crear un nuevo usuario.
      *
      * @return \Illuminate\View\View
      */
@@ -83,8 +77,6 @@ class UserController extends Controller
     }
 
     /**
-     * Store a newly created user in storage.
-     * Almacena un nuevo usuario en la base de datos.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
@@ -102,31 +94,27 @@ class UserController extends Controller
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
 
-        // Reglas condicionales para area_id
-        if (!$request->has('is_client') || !$request->input('is_client')) { // Si NO es cliente
+        if (!$request->has('is_client') || !$request->input('is_client')) {
             $rules['area_id'] = 'required|exists:areas,id';
-            // Asegúrate de que accessible_folder_ids no se valide si no es cliente
-            $request->request->set('accessible_folder_ids', []); // Forzar a un array vacío para que la validación 'nullable|array' pase.
-        } else { // Si SÍ es cliente
+            $request->request->set('accessible_folder_ids', []);
+        } else {
             $rules['area_id'] = 'nullable|exists:areas,id';
             $rules['accessible_folder_ids'] = 'nullable|array';
             $rules['accessible_folder_ids.*'] = 'exists:folders,id';
         }
 
-        $request->validate($rules); //
+        $request->validate($rules);
 
         $data = $request->all();
         $data['password'] = Hash::make($request->password);
         $data['is_area_admin'] = $request->has('is_area_admin');
         $data['is_client'] = $request->has('is_client'); //
 
-        // Si es cliente y no se seleccionó área, asegúrate de que sea null
         if ($data['is_client'] && !$request->filled('area_id')) {
             $data['area_id'] = null;
         }
 
         if ($request->hasFile('profile_photo')) {
-            // CAMBIO: Almacenar en S3
             $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 's3');
         } else {
             $data['profile_photo_path'] = null;
@@ -135,35 +123,25 @@ class UserController extends Controller
         $user = User::create($data);
 
         try {
-            // Usamos $request->password para enviar la contraseña en texto plano,
-            // antes de que se guarde hasheada en la base de datos.
             Mail::to($user->email)->send(new WelcomeNewUser($user, $request->password));
-            // Mail::to('i.sanchez@minmerglobal.com')->send(new WelcomeNewUser($user, $request->password)); // Línea temporal para pruebas
             
         } catch (\Exception $e) {
-            // Opcional: Manejar el error si el correo no se puede enviar.
-            // Por ejemplo, puedes registrar el error sin detener el proceso.
             Log::error("Error al enviar correo de bienvenida a {$user->email}: " . $e->getMessage());
         }        
 
         if ($user->isClient()) {
-            // El hidden input aún envía una cadena. Por eso se mantiene explode.
-            // Pero como la validación ya garantiza que es válido si existe, aquí solo se procesa.
             $folderIds = explode(',', $request->input('accessible_folder_ids')[0] ?? '');
             $folderIds = array_filter(array_map('intval', $folderIds));
 
-            $user->accessibleFolders()->sync($folderIds); //
+            $user->accessibleFolders()->sync($folderIds);
         } else {
-            // Asegurarse de que si se desmarca "is_client", se desvinculen las carpetas
-            $user->accessibleFolders()->detach(); //
+            $user->accessibleFolders()->detach();
         }
 
-        return redirect()->route('admin.users.index')->with('success', 'Usuario creado exitosamente.'); //
+        return redirect()->route('admin.users.index')->with('success', 'Usuario creado exitosamente.');
     }
 
     /**
-     * Show the form for editing the specified user.
-     * Muestra el formulario para editar el usuario especificado.
      *
      * @param  \App\Models\User  $user
      * @return \Illuminate\View\View
@@ -174,17 +152,12 @@ class UserController extends Controller
         $positions = OrganigramPosition::orderBy('name')->get();
         $accessibleFolderIds = $user->accessibleFolders->pluck('id')->toArray();
         
-        // --- AÑADIR ESTA LÍNEA ---
         $userAccessibleAreaIds = $user->accessibleAreas->pluck('id')->toArray();
 
-        // --- ACTUALIZAR EL RETURN ---
         return view('admin.users.edit', compact('user', 'areas', 'accessibleFolderIds', 'positions', 'userAccessibleAreaIds')); 
     }
 
     /**
-     * Update the specified user in storage.
-     * Actualiza el usuario especificado en la base de datos.
-     *
      * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\User  $user
      * @return \Illuminate\Http\RedirectResponse
@@ -211,25 +184,22 @@ class UserController extends Controller
             'accessible_area_ids.*' => 'exists:areas,id',            
         ];
 
-        // Reglas condicionales para area_id y accessible_folder_ids
-        if (!$request->has('is_client') || !$request->input('is_client')) { // Si NO es cliente
+        if (!$request->has('is_client') || !$request->input('is_client')) {
             $rules['area_id'] = 'required|exists:areas,id';
-            // Asegúrate de que accessible_folder_ids no se valide si no es cliente
-            $request->request->set('accessible_folder_ids', []); // Forzar a un array vacío para que la validación 'nullable|array' pase.
-        } else { // Si SÍ es cliente
+            $request->request->set('accessible_folder_ids', []);
+        } else {
             $rules['area_id'] = 'nullable|exists:areas,id';
             $rules['accessible_folder_ids'] = 'nullable|array';
             $rules['accessible_folder_ids.*'] = 'exists:folders,id';
         }
 
-        $request->validate($rules); //
+        $request->validate($rules);
 
-        $data = $request->except(['_token', '_method', 'password_confirmation']); //
+        $data = $request->except(['_token', '_method', 'password_confirmation']);
 
-        $data['is_area_admin'] = $request->has('is_area_admin'); //
-        $data['is_client'] = $request->has('is_client'); //
+        $data['is_area_admin'] = $request->has('is_area_admin');
+        $data['is_client'] = $request->has('is_client');
 
-        // Si es cliente y no se seleccionó área, asegúrate de que sea null
         if ($data['is_client'] && !$request->filled('area_id')) {
             $data['area_id'] = null;
         }
@@ -241,53 +211,43 @@ class UserController extends Controller
         }
 
         if ($request->hasFile('profile_photo')) {
-            if ($user->profile_photo_path && Storage::disk('s3')->exists($user->profile_photo_path)) { // CAMBIO: Usar S3
-                Storage::disk('s3')->delete($user->profile_photo_path); // CAMBIO: Usar S3
+            if ($user->profile_photo_path && Storage::disk('s3')->exists($user->profile_photo_path)) {
+                Storage::disk('s3')->delete($user->profile_photo_path);
             }
-            // CAMBIO: Almacenar en S3
             $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 's3');
         } elseif ($request->input('remove_profile_photo')) {
-            if ($user->profile_photo_path && Storage::disk('s3')->exists($user->profile_photo_path)) { // CAMBIO: Usar S3
-                Storage::disk('s3')->delete($user->profile_photo_path); // CAMBIO: Usar S3
+            if ($user->profile_photo_path && Storage::disk('s3')->exists($user->profile_photo_path)) {
+                Storage::disk('s3')->delete($user->profile_photo_path);
             }
             $data['profile_photo_path'] = null;
         } else {
             $data['profile_photo_path'] = $user->profile_photo_path;
         }
 
-        $user->update($data); //
+        $user->update($data);
 
         if ($user->isClient()) {
-            // Los clientes usan permisos de CARPETA, no de área.
             $folderIds = explode(',', $request->input('accessible_folder_ids')[0] ?? '');
             $folderIds = array_filter(array_map('intval', $folderIds));
             $user->accessibleFolders()->sync($folderIds);
             
-            // Limpiamos las áreas secundarias por si acaso
             $user->accessibleAreas()->detach(); 
         } else {
-            // Los usuarios internos (Admin o Normal) usan permisos de ÁREA.
             $areaIds = $request->input('accessible_area_ids', []);
             $user->accessibleAreas()->sync($areaIds);
 
-            // Si el usuario ya no es cliente, desvincula todas las carpetas.
             $user->accessibleFolders()->detach();
         }
-        // --- FIN DE LA MODIFICACIÓN ---
-
         return redirect()->route('admin.users.index')->with('success', 'Usuario actualizado exitosamente.');
     }
 
     /**
-     * Remove the specified user from storage.
-     * Elimina el usuario especificado de la base de datos.
-     *
      * @param  \App\Models\User  $user
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(User $user)
     {
-        if ($user->profile_photo_path && Storage::disk('s3')->exists($user->profile_photo_path)) { // CAMBIO: Usar S3
+        if ($user->profile_photo_path && Storage::disk('s3')->exists($user->profile_photo_path)) {
             Storage::disk('s3')->delete($user->profile_photo_path);
         }
 
@@ -303,7 +263,6 @@ class UserController extends Controller
         $request->validate(['ids' => 'required|array|min:1']);
         $ids = $request->input('ids');
 
-        // Evitar que el super admin se elimine a sí mismo
         if (in_array(auth()->id(), $ids)) {
             throw ValidationException::withMessages(['ids' => 'No puedes eliminar tu propia cuenta en una acción masiva.']);
         }
@@ -320,10 +279,6 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', count($ids) . ' usuarios eliminados exitosamente.');
     }
 
-    /**
-     * Reenvía una notificación de bienvenida a múltiples usuarios.
-     * Por seguridad, en lugar de reenviar una contraseña, se envía un enlace para restablecerla.
-     */
     public function bulkResendWelcome(Request $request)
     {
         $request->validate(['ids' => 'required|array|min:1']);
@@ -333,16 +288,12 @@ class UserController extends Controller
         $count = 0;
 
         foreach ($users as $user) {
-            // 1. Generar una nueva contraseña temporal segura
-            $temporaryPassword = Str::random(10); // Genera una contraseña de 10 caracteres
+            $temporaryPassword = Str::random(10);
 
-            // 2. Actualizar la contraseña del usuario en la base de datos (encriptada)
             $user->password = Hash::make($temporaryPassword);
             $user->save();
 
-            // 3. Enviar el correo de bienvenida con la contraseña en texto plano
             try {
-                // Pasamos `true` para indicar que es un reenvío
                 Mail::to($user->email)->send(new WelcomeNewUser($user, $temporaryPassword, true));
                 $count++;
             } catch (\Exception $e) {

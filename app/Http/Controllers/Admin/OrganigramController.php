@@ -35,35 +35,22 @@ use Illuminate\Support\Facades\Mail;
 class OrganigramController extends Controller
 {
     /**
-     * Display a listing of the organigram members with optional filters.
-     */
-    /**
-     * Display a listing of the organigram members with optional filters.
-     * This version adds the full photo URL for client-side rendering.
-     *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
     {
-        // Fetch necessary data for filter dropdowns
         $areas = Area::orderBy('name')->get();
         $positions = OrganigramPosition::orderBy('name')->get();
-        // Fetch all members as potential managers for the filter
         $managers = OrganigramMember::orderBy('name')->get(); 
 
-        // Start building the query with eager loading for efficiency
-        $query = OrganigramMember::with(['area', 'manager', 'position']); // Load relations
+        $query = OrganigramMember::with(['area', 'manager', 'position']);
 
-        // --- LÓGICA DE FILTRADO DEL LADO DEL SERVIDOR ---
-
-        // Aplicar filtro de Posición
         $selectedPosition = $request->input('position_id');
         if ($selectedPosition) {
             $query->where('position_id', $selectedPosition);
         }
 
-        // Aplicar filtro de Jefe
         $selectedManager = $request->input('manager_id');
         if ($selectedManager) {
             if ($selectedManager === 'null') {
@@ -73,13 +60,11 @@ class OrganigramController extends Controller
             }
         }
 
-        // Aplicar filtro de Área
         $selectedArea = $request->input('area_id');
         if ($selectedArea) {
             $query->where('area_id', $selectedArea);
         }
 
-        // Aplicar búsqueda
         $searchQuery = $request->input('search');
         if ($searchQuery) {
             $query->where(function ($q) use ($searchQuery) {
@@ -88,29 +73,17 @@ class OrganigramController extends Controller
             });
         }
         
-        // --- FIN DE LÓGICA DE FILTRADO ---
-
-
-        // --- CAMBIO CLAVE: PAGINAR RESULTADOS ---
-        // En lugar de ->get(), usamos ->paginate()
-        // withQueryString() asegura que los filtros (?search=...&area_id=...) se mantengan
-        // al cambiar de página.
         $members = $query->orderBy('name')->paginate(15)->withQueryString();
 
-        // NO SE NECESITA EL BLOQUE ->map()
-        // El Accessor en el modelo OrganigramMember se encarga
-        // de generar 'profile_photo_path_url' automáticamente.
-        
-        // Pass the paginated $members collection and filter data to the Blade view.
         return view('admin.organigram.index', compact(
-            'members',          // ¡Esto ahora es una instancia de Paginator!
-            'areas',            // Para dropdown
-            'positions',        // Para dropdown
-            'managers',         // Para dropdown
-            'selectedPosition', // Para pre-seleccionar dropdown
-            'selectedManager',  // Para pre-seleccionar dropdown
-            'selectedArea',     // Para pre-seleccionar dropdown
-            'searchQuery'       // Para pre-llenar la barra de búsqueda
+            'members',
+            'areas',
+            'positions',
+            'managers',
+            'selectedPosition',
+            'selectedManager',
+            'selectedArea',
+            'searchQuery'
         ));
     }
 
@@ -137,20 +110,16 @@ class OrganigramController extends Controller
         ];
 
         $csv = Writer::createFromString('');
-        // Añadir el BOM de UTF-8 explícitamente
         $csv->setOutputBOM(Writer::BOM_UTF8); 
         $csv->insertOne($headers);
         $csv->insertAll($data);
         
         return response((string) $csv, 200, [
-            'Content-Type' => 'text/csv; charset=UTF-8', // Asegurar el charset en la cabecera
+            'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="organigram_template.csv"',
         ]);
     }
     
-    /**
-     * Importa miembros del organigrama desde un archivo CSV.
-     */
     public function importCsv(Request $request)
     {
         $request->validate([
@@ -173,10 +142,8 @@ class OrganigramController extends Controller
             foreach ($records as $index => $record) {
                 Log::info("--- Procesando Fila CSV: " . ($index + 2) . " ---");
                 
-                // Los valores del registro ahora deberían ser UTF-8 gracias al filtro de stream.
                 Log::info("Datos de la fila (después de filtro de codificación): ", $record);
 
-                // Validación de campos requeridos, limpiando espacios
                 $name = trim($record['name'] ?? '');
                 $positionName = trim($record['position_name'] ?? '');
                 $areaName = trim($record['area_name'] ?? '');
@@ -187,7 +154,6 @@ class OrganigramController extends Controller
                     continue;
                 }
 
-                // Buscar y validar la posición
                 $position = OrganigramPosition::where('name', $positionName)->first();
                 if (!$position) {
                     $errors[] = "Fila " . ($index + 2) . ": La posición '" . $positionName . "' no existe. Las posiciones deben ser creadas manualmente.";
@@ -195,7 +161,6 @@ class OrganigramController extends Controller
                     continue;
                 }
 
-                // Buscar el área
                 $area = Area::where('name', $areaName)->first();
                 if (!$area) {
                     $errors[] = "Fila " . ($index + 2) . ": El área '" . $areaName . "' no existe.";
@@ -203,7 +168,6 @@ class OrganigramController extends Controller
                     continue;
                 }
 
-                // Buscar el manager por email
                 $managerId = null;
                 $managerEmail = trim($record['manager_email'] ?? '');
                 if (!empty($managerEmail)) {
@@ -216,7 +180,6 @@ class OrganigramController extends Controller
                     }
                 }
 
-                // Crear o encontrar actividades
                 $activityIds = [];
                 $activitiesCsv = trim($record['activities'] ?? '');
                 if (!empty($activitiesCsv)) {
@@ -230,7 +193,6 @@ class OrganigramController extends Controller
                     }
                 }
                 
-                // Crear o encontrar habilidades
                 $skillIds = [];
                 $skillsCsv = trim($record['skills'] ?? '');
                 if (!empty($skillsCsv)) {
@@ -244,7 +206,6 @@ class OrganigramController extends Controller
                     }
                 }
                 
-                // Lógica para actualizar o crear el miembro
                 $member = null;
                 $memberEmail = trim($record['email'] ?? '');
                 if (!empty($memberEmail)) {
@@ -252,7 +213,7 @@ class OrganigramController extends Controller
                 } else {
                     $errors[] = "Fila " . ($index + 2) . ": El email está vacío. Se requiere un email para identificar al miembro o crear uno nuevo.";
                     Log::warning("Fila " . ($index + 2) . ": Email del miembro vacío.");
-                    continue; // Skip this record if email is empty and cannot identify
+                    continue;
                 }
 
                 $member->fill([
@@ -266,24 +227,22 @@ class OrganigramController extends Controller
                 Log::info("Miembro guardado/actualizado: ID " . $member->id . ", Nombre: " . $member->name);
 
 
-                // Sincronizar actividades y habilidades
                 if (!empty($activityIds)) {
                     $member->activities()->sync($activityIds);
                     Log::info("Actividades sincronizadas para miembro " . $member->id . ": ", $activityIds);
                 } else {
-                    $member->activities()->detach(); // Eliminar todas si la columna está vacía
+                    $member->activities()->detach();
                     Log::info("Actividades desvinculadas para miembro " . $member->id);
                 }
                 if (!empty($skillIds)) {
                     $member->skills()->sync($skillIds);
                     Log::info("Habilidades sincronizadas para miembro " . $member->id . ": ", $skillIds);
                 } else {
-                    $member->skills()->detach(); // Eliminar todas si la columna está vacía
+                    $member->skills()->detach();
                     Log::info("Habilidades desvinculadas para miembro " . $member->id);
                 }
 
-                // Lógica para la trayectoria (hasta 5 entradas)
-                $member->trajectories()->delete(); // Limpiar la trayectoria anterior para evitar duplicados
+                $member->trajectories()->delete();
                 Log::info("Trayectorias anteriores eliminadas para miembro " . $member->id);
 
                 for ($i = 1; $i <= 5; $i++) {
@@ -292,7 +251,6 @@ class OrganigramController extends Controller
                     $startDateKey = 'trajectory_start_date_' . $i;
                     $endDateKey = 'trajectory_end_date_' . $i;
 
-                    // Limpiar y verificar si el título de trayectoria existe
                     $trajectoryTitle = trim($record[$titleKey] ?? '');
                     
                     Log::info("Procesando trayectoria " . $i . " para miembro " . $member->id . ": Título crudo: '" . ($record[$titleKey] ?? 'N/A') . "', Título limpio: '" . $trajectoryTitle . "'");
@@ -307,7 +265,6 @@ class OrganigramController extends Controller
 
                         Log::info("Trayectoria " . $i . " - Fechas crudas: Inicio='" . $trajectoryStartDateRaw . "', Fin='" . $trajectoryEndDateRaw . "'");
 
-                        // Validar y parsear las fechas en formato dd/mm/aaaa
                         try {
                             if (!empty($trajectoryStartDateRaw)) {
                                 $startDate = Carbon::createFromFormat('d/m/Y', $trajectoryStartDateRaw)->format('Y-m-d');
@@ -327,7 +284,6 @@ class OrganigramController extends Controller
                         } catch (\Exception $e) {
                             $errors[] = "Fila " . ($index + 2) . ": Error en el formato de fecha de la trayectoria " . $i . " ('$trajectoryStartDateRaw' o '$trajectoryEndDateRaw'). Se esperaba 'dd/mm/aaaa'. Detalles: " . $e->getMessage();
                             Log::error("Error al parsear fecha de trayectoria en fila " . ($index + 2) . ", trayectoria " . $i . ": " . $e->getMessage());
-                            // Continúa con la siguiente trayectoria para este miembro, no salta al siguiente miembro.
                             continue; 
                         }
                     } else {
@@ -352,9 +308,6 @@ class OrganigramController extends Controller
         }
     }
 
-    /**
-     * Helper para construir la jerarquía (recursivo)
-     */
     protected function buildHierarchy($member, $allMembers)
     {
         $member->children = $allMembers->where('manager_id', $member->id)->map(function ($child) use ($allMembers) {
@@ -364,9 +317,6 @@ class OrganigramController extends Controller
         return $member;
     }
 
-    /**
-     * Show the form for creating a new organigram member.
-     */
     public function create()
     {
         $areas = Area::orderBy('name')->get();
@@ -378,9 +328,6 @@ class OrganigramController extends Controller
         return view('admin.organigram.create', compact('areas', 'managers', 'activities', 'skills', 'positions'));
     }
 
-    /**
-     * Store a newly created organigram member in storage.
-     */
     public function store(Request $request)
     {
         $validatedData = $request->validate([
@@ -406,15 +353,12 @@ class OrganigramController extends Controller
 
         $newUserId = null;
 
-        // --- LÓGICA ACTUALIZADA PARA CREACIÓN Y VINCULACIÓN DE USUARIO ---
         if ($request->boolean('create_user_account')) {
             $existingUser = User::where('email', $validatedData['email'])->first();
 
             if ($existingUser) {
-                // Si el usuario ya existe, simplemente obtenemos su ID para vincularlo
                 $newUserId = $existingUser->id;
             } else {
-                // Si el usuario no existe, lo creamos
                 $temporaryPassword = Str::random(12);
                 $newUser = User::create([
                     'name' => $validatedData['name'],
@@ -426,14 +370,11 @@ class OrganigramController extends Controller
 
                 $newUserId = $newUser->id;
 
-                // --- LÓGICA DE ENVÍO DE CORREO INTEGRADA ---
                 try {
                     Mail::to($newUser->email)->send(new WelcomeNewUser($newUser, $temporaryPassword));
                 } catch (\Exception $e) {
-                    // Si el correo falla, no detenemos el proceso, pero lo registramos
                     Log::error("Error al enviar correo de bienvenida desde Organigrama a {$newUser->email}: " . $e->getMessage());
                 }
-                // --- FIN DE LA LÓGICA DE CORREO ---
             }
         }
 
@@ -442,9 +383,8 @@ class OrganigramController extends Controller
             $path = $request->file('profile_photo')->store('organigram-photos', 's3');
         }
 
-        // Creamos el miembro del organigrama
         $member = OrganigramMember::create([
-            'user_id' => $newUserId, // <-- Aquí se guarda el vínculo con el usuario
+            'user_id' => $newUserId,
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
             'cell_phone' => $validatedData['cell_phone'],
@@ -455,7 +395,6 @@ class OrganigramController extends Controller
             'is_active' => $request->boolean('is_active'),
         ]);
 
-        // Sincronizamos las relaciones
         $member->activities()->sync($request->input('activities_ids', []));
         $member->skills()->sync($request->input('skills_ids', []));
 
@@ -471,9 +410,6 @@ class OrganigramController extends Controller
         return redirect()->route('admin.organigram.index')->with('success', 'Miembro del organigrama creado exitosamente.');
     }
 
-    /**
-     * Show the form for editing the specified organigram member.
-     */
     public function edit(OrganigramMember $organigramMember)
     {
         $areas = Area::orderBy('name')->get();
@@ -486,36 +422,27 @@ class OrganigramController extends Controller
 
         $organigramMember->load(['activities', 'skills', 'trajectories', 'position']);
 
-        // Mapear las trayectorias para formatear las fechas a YYYY-MM-DD para el input type="date"
-        // y asegurar que se conviertan a un array de arrays simples para json_encode
         $trajectories = $organigramMember->trajectories->map(function ($trajectory) {
             return [
                 'id' => $trajectory->id,
                 'title' => $trajectory->title,
                 'description' => $trajectory->description,
-                'start_date' => optional($trajectory->start_date)->format('Y-m-d'), // Formato YYYY-MM-DD
-                'end_date' => optional($trajectory->end_date)->format('Y-m-d'),     // Formato YYYY-MM-DD
-                // Incluir otros campos si son necesarios en el frontend, pero formatéalos si son fechas
+                'start_date' => optional($trajectory->start_date)->format('Y-m-d'),
+                'end_date' => optional($trajectory->end_date)->format('Y-m-d'),
                 'created_at' => optional($trajectory->created_at)->format('Y-m-d H:i:s'),
                 'updated_at' => optional($trajectory->updated_at)->format('Y-m-d H:i:s'),
                 'organigram_member_id' => $trajectory->organigram_member_id,
             ];
-        })->toArray(); // ¡CAMBIO CLAVE AQUÍ! Convertir a array de arrays PHP
+        })->toArray();
 
-        // === INICIO DE DIAGNÓSTICO ===
         Log::info('Trayectorias formateadas enviadas a la vista de edición (array final):', $trajectories);
-        // === FIN DE DIAGNÓSTICO ===
 
         $memberActivitiesIds = $organigramMember->activities->pluck('id')->toArray();
         $memberSkillsIds = $organigramMember->skills->pluck('id')->toArray();
 
-        // Pasar la variable $trajectories formateada a la vista
         return view('admin.organigram.edit', compact('organigramMember', 'areas', 'managers', 'activities', 'skills', 'memberActivitiesIds', 'memberSkillsIds', 'positions', 'trajectories'));
     }
 
-    /**
-     * Update the specified organigram member in storage.
-     */
     public function update(Request $request, OrganigramMember $organigramMember)
     {
         $validatedData = $request->validate([
@@ -618,9 +545,6 @@ class OrganigramController extends Controller
         return redirect()->route('admin.organigram.index')->with('success', 'Miembro del organigrama actualizado exitosamente.');
     }
 
-    /**
-     * Helper para prevenir ciclos en la jerarquía (ej. A es manager de B, B no puede ser manager de A)
-     */
     protected function isDescendant($potentialManager, $potentialSubordinate)
     {
         if (!$potentialSubordinate) {
@@ -637,9 +561,6 @@ class OrganigramController extends Controller
         return false;
     }
 
-    /**
-     * Remove the specified organigram member from storage.
-     */
     public function destroy(OrganigramMember $organigramMember)
     {
         if ($organigramMember->profile_photo_path) {
@@ -651,9 +572,6 @@ class OrganigramController extends Controller
         return redirect()->route('admin.organigram.index')->with('success', 'Miembro del organigrama eliminado exitosamente.');
     }
 
-    /**
-     * Show the form for managing Activities.
-     */
     public function activitiesIndex()
     {
         $activities = OrganigramActivity::orderBy('name')->get();
@@ -673,9 +591,6 @@ class OrganigramController extends Controller
         return redirect()->route('admin.organigram.activities.index')->with('success', 'Actividad creada.');
     }
 
-    /**
-     * Update an Activity.
-     */
     public function activitiesUpdate(Request $request, OrganigramActivity $activity)
     {
         $request->validate([
@@ -686,27 +601,18 @@ class OrganigramController extends Controller
         return redirect()->route('admin.organigram.activities.index')->with('success', 'Actividad actualizada.');
     }
 
-    /**
-     * Delete an Activity.
-     */
     public function activitiesDestroy(OrganigramActivity $activity)
     {
         $activity->delete();
         return redirect()->route('admin.organigram.activities.index')->with('success', 'Actividad eliminada.');
     }
 
-    /**
-     * Show the form for managing Skills.
-     */
     public function skillsIndex()
     {
         $skills = OrganigramSkill::orderBy('name')->get();
         return view('admin.organigram.skills.index', compact('skills'));
     }
 
-    /**
-     * Store a new Skill.
-     */
     public function skillsStore(Request $request)
     {
         $request->validate([
@@ -717,9 +623,6 @@ class OrganigramController extends Controller
         return redirect()->route('admin.organigram.skills.index')->with('success', 'Habilidad creada.');
     }
 
-    /**
-     * Update a Skill.
-     */
     public function skillsUpdate(Request $request, OrganigramSkill $skill)
     {
         $request->validate([
@@ -730,9 +633,6 @@ class OrganigramController extends Controller
         return redirect()->route('admin.organigram.skills.index')->with('success', 'Habilidad actualizada.');
     }
 
-    /**
-     * Delete a Skill.
-     */
     public function skillsDestroy(OrganigramSkill $skill)
     {
         $skill->delete();
@@ -740,7 +640,6 @@ class OrganigramController extends Controller
     }
 
     /**
-     * Muestra la vista para el organigrama interactivo.
      * @return \Illuminate\View\View
      */
     public function interactiveOrganigram()
@@ -749,15 +648,12 @@ class OrganigramController extends Controller
     }
 
     /**
-     * Genera los datos del organigrama en formato JSON, incluyendo áreas y proxies.
-     * Esta es la vista "completa".
      * @return \Illuminate\Http\JsonResponse
      */
     public function getInteractiveOrganigramData()
     {
         $user = Auth::user();
 
-        // Define las áreas permitidas para el cliente.
         $allowedAreaNames = [
             'Customer Service',
             'Comercial',
@@ -779,7 +675,6 @@ class OrganigramController extends Controller
 
             $flatNodes = [];
 
-            // 1. Nodo Raíz principal para la vista de cliente
             $flatNodes[] = [
                 'id' => 'org_root',
                 'pid' => null,
@@ -789,7 +684,6 @@ class OrganigramController extends Controller
                 'img' => asset('images/LogoAzul.png'),
             ];
 
-            // Nodo del Consejo Directivo
             $flatNodes[] = [
                 'id' => 'consejo_directivo',
                 'pid' => 'org_root',
@@ -799,7 +693,6 @@ class OrganigramController extends Controller
                 'img' => Storage::disk('s3')->url('logoNode1.png'),
             ];
 
-            // 2. Nodos de Áreas
             foreach ($areas as $area) {
                 $flatNodes[] = [
                     'id' => 'area_' . $area->id,
@@ -812,10 +705,8 @@ class OrganigramController extends Controller
                 ];
             }
 
-            // Lógica para mánagers transversales y proxies (clientes)
             $proxiesToCreate = [];
             foreach ($allMembers as $member) {
-                // Solo procesar los miembros de las áreas permitidas.
                 if (!in_array($member->area->name, $allowedAreaNames)) {
                     continue;
                 }
@@ -845,7 +736,6 @@ class OrganigramController extends Controller
                 $flatNodes[] = $proxyNode;
             }
 
-            // 3. Nodos de Miembros
             foreach ($allMembers as $member) {
                 if (!in_array($member->area->name, $allowedAreaNames)) {
                     continue;
@@ -896,7 +786,6 @@ class OrganigramController extends Controller
             return response()->json($nestedTree[0] ?? null);
         }
 
-        // Código para usuarios internos (no clientes)
         $members = OrganigramMember::with(['area', 'manager.position', 'position', 'activities', 'skills', 'trajectories'])
         ->where('is_active', true)
         ->get();
@@ -923,7 +812,6 @@ class OrganigramController extends Controller
             'img' => Storage::disk('s3')->url('logoNode1.png'),
         ];
 
-        // 2. Nodos de Áreas
         foreach ($areas as $area) {
             $flatNodes[] = [
                 'id' => 'area_' . $area->id,
@@ -936,7 +824,6 @@ class OrganigramController extends Controller
             ];
         }
 
-        // Lógica para mánagers transversales y proxies (usuarios internos)
         $proxiesToCreate = [];
         foreach ($members as $member) {
             if ($member->manager && $member->area_id !== $member->manager->area_id) {
@@ -964,7 +851,6 @@ class OrganigramController extends Controller
             $flatNodes[] = $proxyNode;
         }
 
-        // 5. Nodos de Miembros
         foreach ($members as $member) {
             $parentId = null;
 
@@ -1011,8 +897,6 @@ class OrganigramController extends Controller
     }
 
     /**
-     * NUEVA FUNCIÓN: Genera los datos del organigrama en formato JSON, SOLO con miembros reales.
-     * Esta es la vista "sin áreas".
      * @return \Illuminate\Http\JsonResponse
      */
     public function getInteractiveOrganigramDataWithoutAreas()
@@ -1020,7 +904,6 @@ class OrganigramController extends Controller
         $user = Auth::user();
 
         if ($user && $user->is_client) {
-            // Define las áreas permitidas para el cliente.
             $allowedAreaNames = [
                 // 'Customer Service',
                 'Comercial',
@@ -1029,7 +912,6 @@ class OrganigramController extends Controller
                 'Finanzas',
             ];
 
-            // Obtener los IDs de las áreas permitidas
             $allowedAreaIds = Area::whereIn('name', $allowedAreaNames)->pluck('id');
 
             if ($allowedAreaIds->isEmpty()) {
@@ -1040,8 +922,6 @@ class OrganigramController extends Controller
             ->where('is_active', true)
             ->get();
             
-            // Encontrar a los "jefes" de las áreas permitidas.
-            // Un jefe es un miembro de un área permitida que no tiene manager, o cuyo manager no está en la misma área.
             $headsOfService = $allMembers->whereIn('area_id', $allowedAreaIds)->filter(function ($member) {
                 return is_null($member->manager_id) || ($member->manager && $member->manager->area_id != $member->area_id);
             });
@@ -1058,7 +938,6 @@ class OrganigramController extends Controller
 
             $flatNodesForMembersOnly = [];
 
-            // 1. Nodo Raíz principal (único para toda la jerarquía de clientes)
             $flatNodesForMembersOnly[] = [
                 'id' => 'org_root',
                 'pid' => null,
@@ -1070,22 +949,19 @@ class OrganigramController extends Controller
 
             $flatNodesForMembersOnly[] = [
                 'id' => 'consejo_directivo',
-                'pid' => 'org_root', // El padre es el nodo raíz
+                'pid' => 'org_root',
                 'name' => 'Consejo Directivo',
                 'title' => 'Directiva',
                 'type' => 'council',
-                'img' => Storage::disk('s3')->url('logoNode1.png'), // Usar la imagen de S3
+                'img' => Storage::disk('s3')->url('logoNode1.png'),
             ];            
 
-            // 2. Nodos de Miembros (Re-parenting directo)
             foreach ($membersInHierarchy as $member) {
                 $parentId = null;
 
-                // Si es un jefe de servicio, su padre es el nodo raíz principal.
                 if ($headsOfService->contains('id', $member->id)) {
                     $parentId = 'consejo_directivo';
                 } else {
-                    // Si no es un jefe, su padre es su manager real.
                     $parentId = (string)$member->manager_id;
                 }
 
@@ -1128,7 +1004,6 @@ class OrganigramController extends Controller
 
         $flatNodesForMembersOnly = [];
 
-        // 1. Nodo Raíz
         $flatNodesForMembersOnly[] = [
             'id' => 'org_root',
             'pid' => null,
@@ -1140,22 +1015,19 @@ class OrganigramController extends Controller
 
         $flatNodesForMembersOnly[] = [
             'id' => 'consejo_directivo',
-            'pid' => 'org_root', // El padre es el nodo raíz
+            'pid' => 'org_root',
             'name' => 'Consejo Directivo',
             'title' => 'Directiva',
             'type' => 'council',
-            'img' => Storage::disk('s3')->url('logoNode1.png'), // Usar la imagen de S3
+            'img' => Storage::disk('s3')->url('logoNode1.png'),
         ];        
 
-        // 2. Nodos de Miembros (Re-parenting directo)
         foreach ($members as $member) {
             $parentId = null;
 
-            // Si el miembro tiene un manager real
             if ($member->manager_id) {
                 $parentId = (string)$member->manager_id;
             } else {
-                // Si no tiene manager, se asigna al nodo raíz
                 $parentId = 'consejo_directivo';
             }
 
@@ -1166,7 +1038,7 @@ class OrganigramController extends Controller
                 'title' => $member->position->name ?? 'Sin Posición',
                 'img' => $member->profile_photo_path ? Storage::disk('s3')->url($member->profile_photo_path) : null,
                 'type' => 'member',
-                'is_proxy' => false, // Siempre false en esta vista
+                'is_proxy' => false,
                 'full_details' => [
                     'name' => $member->name,
                     'email' => $member->email,
@@ -1192,36 +1064,26 @@ class OrganigramController extends Controller
     }
 
     /**
-     * Convierte una lista plana de nodos en un árbol anidado.
-     * Esta función ha sido optimizada para asegurar la correcta anidación.
      */
     private function buildNestedTree(array &$elements, $parentId = null, int $depth = 0) {
         $branch = [];
         $indexedElements = [];
 
-        // Indexar elementos por ID para acceso rápido
         foreach ($elements as $element) {
             $indexedElements[(string)$element['id']] = $element;
         }
 
         foreach ($elements as &$element) {
             if ((string)$element['pid'] === (string)$parentId) {
-                // Si el elemento ya tiene una clave 'children', asegúrate de que sea un array
                 if (!isset($element['children']) || !is_array($element['children'])) {
                     $element['children'] = [];
                 }
 
-                // =====================================================================
-                // MODIFICACIÓN CLAVE AQUÍ: Marcar como colapsado si no es el nodo raíz
-                // =====================================================================
-                // Si es el nodo raíz ('org_root'), NO lo colapses.
-                // Si NO es el nodo raíz (es un hijo o cualquier otro nivel), colápsalo.
                 if ((string)$element['id'] !== 'org_root') {
                     $element['collapsed'] = true;
                 } else {
-                    $element['collapsed'] = false; // Asegurar que la raíz siempre esté expandida
+                    $element['collapsed'] = false;
                 }
-                // =====================================================================
 
                 $children = $this->buildNestedTree($elements, $element['id'], $depth + 1);
 
@@ -1251,44 +1113,38 @@ class OrganigramController extends Controller
     }
 
     /**
-     * Remove multiple specified organigram members from storage.
-     *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function bulkDestroy(Request $request)
     {
-        // 1. Validate incoming IDs
         $validatedData = $request->validate([
             'selected_ids' => 'required|array',
             'selected_ids.*' => 'exists:organigram_members,id',
         ]);
 
         $idsToDelete = $validatedData['selected_ids'];
-        $deleteCount = 0; // Initialize count
+        $deleteCount = 0;
 
-        // --- HANDLING RELATED ASSIGNMENTS ---
         try {
              \App\Models\Assignment::whereIn('organigram_member_id', $idsToDelete)
                                    ->update(['organigram_member_id' => null]);
             Log::info('Assignments successfully disassociated (set to NULL) for members being deleted.', ['member_ids' => $idsToDelete]);
 
         } catch (\Illuminate\Database\QueryException $e) {
-             // ... (error handling as before) ...
-             Log::error("Error disassociating assignments during bulk member deletion: " . $e->getMessage(), [ /* ... */ ]);
-             $errorMessage = 'No se pudieron eliminar los miembros. ';
-             // ... (error message logic) ...
+             Log::error("Error disassociating assignments during bulk member deletion: " . $e->getMessage(), [
+                 'member_ids' => $idsToDelete,
+                 'sql_error_code' => $e->getCode(),
+             ]);
+             $errorMessage = 'No se pudieron eliminar los miembros. Ocurrió un error al actualizar las asignaciones relacionadas.';
              return redirect()->route('admin.organigram.index')->with('error', $errorMessage);
         } catch (\Exception $e) {
-             // ... (error handling as before) ...
             Log::error("Unexpected error during assignment handling in bulk member deletion: " . $e->getMessage(), ['member_ids' => $idsToDelete]);
             return redirect()->route('admin.organigram.index')->with('error', 'Ocurrió un error inesperado al gestionar las asignaciones.');
         }
 
-        // 2. Delete S3 profile photos
         $membersToDelete = OrganigramMember::whereIn('id', $idsToDelete)->get(['id', 'profile_photo_path']);
         foreach ($membersToDelete as $member) {
-            // ... (photo deletion logic) ...
              if ($member->profile_photo_path) {
                 try {
                     Storage::disk('s3')->delete($member->profile_photo_path);
@@ -1298,29 +1154,23 @@ class OrganigramController extends Controller
             }
         }
 
-        // 3. Delete the members
         try {
             $deleteCount = OrganigramMember::whereIn('id', $idsToDelete)->delete();
         } catch (\Exception $e) {
-             // ... (error handling) ...
-             Log::error("Error occurred during the final member deletion step: " . $e->getMessage(), ['member_ids' => $idsToDelete]);
-             return redirect()->route('admin.organigram.index')->with('error', 'Ocurrió un error al intentar eliminar los miembros.');
+            Log::error("Error occurred during the final member deletion step: " . $e->getMessage(), ['member_ids' => $idsToDelete]);
+            return redirect()->route('admin.organigram.index')->with('error', 'Ocurrió un error al intentar eliminar los miembros.');
         }
 
-        // --- BROWSER NOTIFICATION LOGIC ---
         $notificationMessage = $deleteCount . ' miembro(s) eliminado(s) exitosamente.';
         $successMessage = $notificationMessage . ' Las asignaciones asociadas fueron desvinculadas.';
 
-        // Redirect with both standard flash and browser notification data
         return redirect()->route('admin.organigram.index')
-                         ->with('success', $successMessage) // Standard flash message
-                         ->with('browser_notification', $notificationMessage); // Message for browser notification
-        // --- END BROWSER NOTIFICATION LOGIC ---
+                         ->with('success', $successMessage)
+                         ->with('browser_notification', $notificationMessage);
     }
 
     public function exportCsv()
     {
-        // 1. Definir las cabeceras del CSV (consistente con la plantilla de importación)
         $headers = [
             'id',
             'name',
@@ -1328,7 +1178,7 @@ class OrganigramController extends Controller
             'cell_phone',
             'position_name',
             'area_name',
-            'manager_name', // Usaremos el nombre del manager para legibilidad
+            'manager_name',
             'skills',
             'activities',
             'is_active',
@@ -1340,7 +1190,6 @@ class OrganigramController extends Controller
             'trajectory_title_5', 'trajectory_description_5', 'trajectory_start_date_5', 'trajectory_end_date_5',
         ];
 
-        // 2. Obtener todos los miembros con sus relaciones (Eager Loading)
         $members = OrganigramMember::with([
             'area', 
             'manager', 
@@ -1348,17 +1197,15 @@ class OrganigramController extends Controller
             'activities', 
             'skills', 
             'trajectories' => function ($query) {
-                $query->orderBy('start_date', 'asc'); // Ordenar la trayectoria
+                $query->orderBy('start_date', 'asc');
             }, 
             'user'
         ])->orderBy('name')->get();
 
-        // 3. Crear el escritor de CSV
         $csv = Writer::createFromString('');
-        $csv->setOutputBOM(Writer::BOM_UTF8); // Importante para caracteres especiales (acentos, ñ)
+        $csv->setOutputBOM(Writer::BOM_UTF8);
         $csv->insertOne($headers);
 
-        // 4. Iterar sobre los miembros y construir cada fila
         foreach ($members as $member) {
             $row = [
                 $member->id,
@@ -1374,10 +1221,9 @@ class OrganigramController extends Controller
                 $member->user ? 'Sí' : 'No',
             ];
 
-            // Aplanar la trayectoria (hasta 5, igual que en la importación)
             $maxTrajectories = 5;
             for ($i = 0; $i < $maxTrajectories; $i++) {
-                $trajectory = $member->trajectories->get($i); // .get(index) es seguro
+                $trajectory = $member->trajectories->get($i);
                 
                 if ($trajectory) {
                     $row[] = $trajectory->title;
@@ -1385,16 +1231,13 @@ class OrganigramController extends Controller
                     $row[] = optional($trajectory->start_date)->format('d/m/Y') ?? '';
                     $row[] = optional($trajectory->end_date)->format('d/m/Y') ?? '';
                 } else {
-                    // Añadir 4 columnas vacías si no hay trayectoria en este índice
                     $row = array_merge($row, ['', '', '', '']);
                 }
             }
             
-            // Insertar la fila completa en el CSV
             $csv->insertOne($row);
         }
 
-        // 5. Preparar y devolver la respuesta de descarga
         $fileName = 'organigrama_export_' . Carbon::now()->format('Y-m-d_His') . '.csv';
         
         return response((string) $csv, 200, [
