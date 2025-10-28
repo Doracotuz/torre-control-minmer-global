@@ -40,14 +40,12 @@ class WMSWarehouseController extends Controller
 
     public function update(Request $request, Warehouse $warehouse)
     {
-        // La validación devuelve solo los campos validados
         $validatedData = $request->validate([
             'name' => 'required|string|max:255|unique:warehouses,name,' . $warehouse->id,
             'code' => 'required|string|max:10|unique:warehouses,code,' . $warehouse->id,
             'address' => 'nullable|string',
         ]);
 
-        // Usamos los datos validados en lugar de $request->all()
         $warehouse->update($validatedData);
 
         return redirect()->route('wms.warehouses.index')

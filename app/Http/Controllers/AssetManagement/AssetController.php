@@ -17,12 +17,9 @@ use Carbon\Carbon;
 
 class AssetController extends Controller
 {
-    /**
-     * Muestra el dashboard principal con KPIs y una lista paginada de activos.
-     */
     public function index(Request $request)
     {
-        $query = HardwareAsset::with(['model.category', 'model.manufacturer', 'site', 'currentAssignment.member']);
+        $query = HardwareAsset::with(['model.category', 'model.manufacturer', 'site', 'currentAssignments']);
 
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';
@@ -30,7 +27,7 @@ class AssetController extends Controller
                 $q->where('asset_tag', 'like', $searchTerm)
                 ->orWhere('serial_number', 'like', $searchTerm)
                 ->orWhereHas('model', fn($modelQuery) => $modelQuery->where('name', 'like', $searchTerm))
-                ->orWhereHas('currentAssignment.member', fn($memberQuery) => $memberQuery->where('name', 'like', $searchTerm));
+                ->orWhereHas('currentAssignments.member', fn($memberQuery) => $memberQuery->where('name', 'like', $searchTerm));
             });
         }
 
@@ -98,9 +95,6 @@ class AssetController extends Controller
         ]);
     }
 
-    /**
-     * Muestra el formulario para crear un nuevo activo.
-     */
     public function create()
     {
         $sites = Site::orderBy('name')->get();
@@ -110,9 +104,6 @@ class AssetController extends Controller
         return view('asset-management.assets.create', compact('sites', 'groupedModels'));
     }
 
-    /**
-     * Almacena un nuevo activo en la base de datos.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -143,58 +134,51 @@ class AssetController extends Controller
 
         $asset = HardwareAsset::create($validated);
 
-            $asset->logs()->create([
+        $creationTime = $asset->created_at;
+        $eventDate = $asset->purchase_date 
+                        ? \Carbon\Carbon::parse($asset->purchase_date)->setTime($creationTime->hour, $creationTime->minute, $creationTime->second)
+                        : $creationTime;
+
+        $asset->logs()->create([
             'user_id' => Auth::id(),
             'action_type' => 'Creación',
             'notes' => 'El activo fue registrado en el sistema.',
-            'event_date' => $asset->purchase_date ?? $asset->created_at,
-        ]);
+            'event_date' => $eventDate,
+        ]);        
 
         return redirect()->route('asset-management.dashboard')->with('success', 'Activo registrado exitosamente.');
     }
 
-    /**
-     * Muestra la vista detallada de un activo específico.
-     */
     public function show(HardwareAsset $asset)
     {
-        // Cargamos las relaciones existentes
-        $asset->load(['model.category', 'model.manufacturer', 'site', 'assignments.member', 'logs.user']);
+        $asset->load([
+            'model.category', 
+            'model.manufacturer', 
+            'site', 
+            'currentAssignments.member.userResponsivas',
+            'assignments.member',
+            'logs.user',
+            'softwareAssignments.license'
+        ]);
+        
+        $userResponsivas = collect();
 
-        // --- INICIO DE LA MODIFICACIÓN ---
-        $userResponsivas = collect(); // Creamos una colección vacía por defecto
-
-        // Verificamos si hay una asignación activa y si esa asignación tiene un miembro asociado
-        if ($asset->currentAssignment && $asset->currentAssignment->member) {
-            // Si es así, obtenemos las responsivas de ese miembro
-            $userResponsivas = $asset->currentAssignment->member->userResponsivas()->get();
-        }
-
-        // Pasamos la variable $userResponsivas a la vista
         return view('asset-management.assets.show', compact('asset', 'userResponsivas'));
-        // --- FIN DE LA MODIFICACIÓN ---
     }
 
 
-    /**
-     * Muestra el formulario para editar un activo existente.
-     */
     public function edit(HardwareAsset $asset)
     {
         $sites = Site::orderBy('name')->get();
         $models = HardwareModel::with('category')->orderBy('name')->get();
         $groupedModels = $models->groupBy('category.name');
         
-        // Obtener la categoría actual del modelo para la lógica de Alpine.js
         $asset->load('model.category');
         $currentCategoryName = $asset->model->category->name ?? null;
 
         return view('asset-management.assets.edit', compact('asset', 'sites', 'groupedModels', 'currentCategoryName'));
     }
 
-    /**
-     * Actualiza un activo en la base de datos.
-     */
     public function update(Request $request, HardwareAsset $asset)
     {
         $validated = $request->validate([
@@ -242,6 +226,7 @@ class AssetController extends Controller
         }
 
         $asset->update($validated);
+        $asset->refresh();
 
         if ($originalStatus !== $asset->status) {
             $asset->logs()->create([
@@ -257,11 +242,16 @@ class AssetController extends Controller
         if ($originalPurchaseDate !== $newPurchaseDate) {
             $creationLog = $asset->logs()
                                   ->where('action_type', 'Creación')
-                                  ->orderBy('event_date', 'asc')
+                                  ->orderBy('event_date', 'asc') 
                                   ->first();
             
             if ($creationLog) {
-                $creationLog->event_date = $asset->purchase_date ?? $creationLog->created_at;
+                $creationTime = $creationLog->created_at;
+                $eventDate = $asset->purchase_date
+                                ? \Carbon\Carbon::parse($asset->purchase_date)->setTime($creationTime->hour, $creationTime->minute, $creationTime->second)
+                                : $creationTime;
+                
+                $creationLog->event_date = $eventDate;
                 $creationLog->save();
             }
         }
@@ -271,7 +261,7 @@ class AssetController extends Controller
 
     public function destroy(HardwareAsset $asset)
     {
-        if ($asset->status === 'Asignado' || $asset->status === 'Prestado') {
+        if (in_array($asset->status, ['Asignado', 'Prestado'])) {
             return back()->with('error', 'No se puede eliminar un activo que está actualmente asignado.');
         }
 
@@ -298,7 +288,7 @@ class AssetController extends Controller
             'model.category', 
             'model.manufacturer', 
             'site', 
-            'currentAssignment.member'
+            'currentAssignments.member'
         ])->get();
 
         $csv = Writer::createFromString('');
@@ -306,6 +296,10 @@ class AssetController extends Controller
         $csv->insertOne($headers);
 
         foreach ($assets as $asset) {
+            
+            $assignedNames = $asset->currentAssignments->pluck('member.name')->implode(', ');
+            $assignedEmails = $asset->currentAssignments->pluck('member.email')->implode(', ');
+
             $csv->insertOne([
                 $asset->asset_tag,
                 $asset->serial_number,
@@ -314,8 +308,8 @@ class AssetController extends Controller
                 $asset->model->category->name ?? 'N/A',
                 $asset->model->manufacturer->name ?? 'N/A',
                 $asset->site->name ?? 'N/A',
-                $asset->currentAssignment->member->name ?? 'N/A',
-                $asset->currentAssignment->member->email ?? 'N/A',
+                $assignedNames ?: 'N/A',
+                $assignedEmails ?: 'N/A',
             ]);
         }
 
@@ -329,8 +323,7 @@ class AssetController extends Controller
 
     public function filter(Request $request)
     {
-        // Esta lógica de consulta es la misma que tenías en index()
-        $query = HardwareAsset::with(['model.category', 'model.manufacturer', 'site', 'currentAssignment.member']);
+        $query = HardwareAsset::with(['model.category', 'model.manufacturer', 'site', 'currentAssignments.member']);
 
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';
@@ -338,7 +331,7 @@ class AssetController extends Controller
                 $q->where('asset_tag', 'like', $searchTerm)
                 ->orWhere('serial_number', 'like', $searchTerm)
                 ->orWhereHas('model', fn($modelQuery) => $modelQuery->where('name', 'like', $searchTerm))
-                ->orWhereHas('currentAssignment.member', fn($memberQuery) => $memberQuery->where('name', 'like', $searchTerm));
+                ->orWhereHas('currentAssignments.member', fn($memberQuery) => $memberQuery->where('name', 'like', $searchTerm));
             });
         }
 
@@ -358,7 +351,6 @@ class AssetController extends Controller
 
         $assets = $query->latest()->paginate(15)->withQueryString();
         
-        // La clave: devolvemos SOLO la vista parcial, no el layout completo.
         return view('asset-management.assets._list', compact('assets'));
     }    
 

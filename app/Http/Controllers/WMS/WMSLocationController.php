@@ -16,7 +16,6 @@ class WMSLocationController extends Controller
     {
         $query = Location::with('warehouse')->latest();
 
-        // Aplicar filtros de búsqueda
         if ($request->filled('warehouse_id')) {
             $query->where('warehouse_id', $request->warehouse_id);
         }
@@ -35,7 +34,6 @@ class WMSLocationController extends Controller
 
         $locations = $query->paginate(25)->withQueryString();
 
-        // Datos para los KPIs y los filtros desplegables
         $total_locations = Location::count();
         $kpis = [
             'total_locations' => $total_locations,
@@ -132,21 +130,17 @@ class WMSLocationController extends Controller
             'pick_sequence' => 'nullable|integer|min:0',
         ]);
         
-        // --- INICIO DE LA LÓGICA CORREGIDA ---
-        // Busca si ya existe una ubicación con esta combinación física...
         $exists = Location::where('warehouse_id', $validatedData['warehouse_id'])
                         ->where('aisle', $validatedData['aisle'])
                         ->where('rack', $validatedData['rack'])
                         ->where('shelf', $validatedData['shelf'])
                         ->where('bin', $validatedData['bin'])
-                        // ...pero que no sea la misma que estamos editando.
                         ->where('id', '!=', $location->id) 
                         ->exists();
 
         if ($exists) {
             return back()->withInput()->with('error', 'Esa combinación física de ubicación ya existe en el sistema.');
         }
-        // --- FIN DE LA CORRECCIÓN ---
 
         $location->update($validatedData);
 
@@ -208,11 +202,9 @@ class WMSLocationController extends Controller
         foreach ($records as $record) {
             $data = array_combine($headers, $record);
             
-            // Usamos el nuevo encabezado 'codigo_almacen'
             $warehouse = \App\Models\Warehouse::where('code', $data['codigo_almacen'])->first();
 
             if ($warehouse) {
-                // Verificamos usando los encabezados en español
                 $exists = Location::where('warehouse_id', $warehouse->id)
                     ->where('aisle', $data['pasillo'])
                     ->where('rack', $data['rack'])
@@ -224,7 +216,6 @@ class WMSLocationController extends Controller
                     $locationsToInsert[] = [
                         'warehouse_id' => $warehouse->id,
                         'code' => $nextCode++,
-                        // Usamos los encabezados en español para obtener los datos
                         'type' => $data['tipo'],
                         'aisle' => $data['pasillo'],
                         'rack' => $data['rack'],
@@ -272,19 +263,15 @@ class WMSLocationController extends Controller
         $callback = function() use ($request) {
             $file = fopen('php://output', 'w');
             
-            // Añadir BOM para compatibilidad con acentos en Excel
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            // Encabezados del CSV
             fputcsv($file, [
                 'Codigo', 'Almacen', 'Tipo', 'Ubicacion_Completa',
                 'Pasillo', 'Rack', 'Nivel', 'Bin', 'Sec_Picking'
             ]);
 
-            // Consulta optimizada para procesar por lotes (chunks)
             $query = Location::with('warehouse');
 
-            // Replicar los mismos filtros que en la vista de índice
             if ($request->filled('search')) { $query->where('bin', 'like', '%' . $request->search . '%'); }
             if ($request->filled('aisle')) { $query->where('aisle', $request->aisle); }
             if ($request->filled('rack')) { $query->where('rack', $request->rack); }
@@ -312,5 +299,4 @@ class WMSLocationController extends Controller
 
         return new StreamedResponse($callback, 200, $headers);
     }    
-
 }

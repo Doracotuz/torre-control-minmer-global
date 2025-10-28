@@ -10,17 +10,11 @@ use Illuminate\Support\Facades\Storage;
 
 class ClienteController extends Controller
 {
-    /**
-     * Muestra la página inicial para que el cliente consulte sus facturas.
-     */
     public function index()
     {
         return view('public.cliente.index');
     }
 
-    /**
-     * Busca facturas y devuelve los datos de seguimiento relevantes para el cliente.
-     */
     public function search(Request $request)
     {
         $request->validate([
@@ -33,9 +27,9 @@ class ClienteController extends Controller
         foreach ($facturaNumbers as $num) {
             $facturas = Factura::where('numero_factura', $num)
                                ->with(['guia' => function($query) {
-                                   $query->select('id', 'guia', 'estatus'); // Solo estatus y guia
+                                   $query->select('id', 'guia', 'estatus');
                                }, 'guia.eventos' => function($query) {
-                                   $query->where('tipo', 'Entrega')->orderBy('fecha_evento', 'desc'); // Solo eventos de entrega
+                                   $query->where('tipo', 'Entrega')->orderBy('fecha_evento', 'desc');
                                }])
                                ->get();
 
@@ -49,11 +43,10 @@ class ClienteController extends Controller
             }
 
             foreach ($facturas as $factura) {
-                $latestDeliveryEvent = $factura->guia->eventos->first(); // El evento de entrega más reciente
+                $latestDeliveryEvent = $factura->guia->eventos->first();
                 
                 $mapUrl = null;
                 if ($latestDeliveryEvent && $latestDeliveryEvent->latitud && $latestDeliveryEvent->longitud) {
-                    // Generar URL de Google Static Maps para la ubicación de entrega
                     $mapUrl = "https://maps.googleapis.com/maps/api/staticmap?" .
                               "center={$latestDeliveryEvent->latitud},{$latestDeliveryEvent->longitud}" .
                               "&zoom=14&size=400x200&markers=color:orange%7C{$latestDeliveryEvent->latitud},{$latestDeliveryEvent->longitud}" .
@@ -73,7 +66,7 @@ class ClienteController extends Controller
                         'latitud' => $latestDeliveryEvent->latitud,
                         'longitud' => $latestDeliveryEvent->longitud,
                     ] : null,
-                    'map_url' => $mapUrl, // URL del mapa estático
+                    'map_url' => $mapUrl,
                 ];
             }
         }

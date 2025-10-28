@@ -16,14 +16,10 @@ use Illuminate\Support\Facades\Auth;
 
 class CreditNoteController extends Controller
 {
-    /**
-     * Muestra una lista de notas de crédito con búsqueda y paginación.
-     */
     public function index(Request $request)
     {
         $query = CsCreditNote::with('order', 'createdBy');
 
-        // Aplicar filtro de búsqueda general
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -36,7 +32,6 @@ class CreditNoteController extends Controller
             });
         }
 
-        // Aplicar filtros específicos
         if ($request->has('start_date') && $request->start_date != '') {
             $query->where('capture_date', '>=', $request->start_date);
         }
@@ -55,7 +50,6 @@ class CreditNoteController extends Controller
 
         $creditNotes = $query->latest()->paginate(10)->withQueryString();
         
-        // Si es una solicitud AJAX, devuelve JSON
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'data' => $creditNotes->items(),
@@ -72,12 +66,8 @@ class CreditNoteController extends Controller
         return view('customer-service.credit-notes.index', compact('creditNotes', 'warehouses', 'requestTypes', 'customers'));
     }
 
-    /**
-     * Muestra el formulario para editar una nota de crédito.
-     */
     public function edit(CsCreditNote $creditNote)
     {
-        // Cargar los detalles de la nota de crédito y el producto asociado
         $creditNote->load('details.product');
         $warehouses = CsWarehouse::all();
         $requestTypes = ['Cancelación', 'Rechazo', 'Recolección', 'Devolución'];
@@ -90,9 +80,6 @@ class CreditNoteController extends Controller
         return view('customer-service.credit-notes.edit', compact('creditNote', 'warehouses', 'requestTypes', 'causes'));
     }
 
-    /**
-     * Actualiza la nota de crédito en la base de datos.
-     */
     public function update(Request $request, CsCreditNote $creditNote)
     {
         $validatedData = $request->validate([
@@ -113,7 +100,6 @@ class CreditNoteController extends Controller
 
         $creditNote->update($validatedData);
 
-        // Registro de cambios en la línea de tiempo
         $changes = collect($validatedData)->filter(function ($value, $key) use ($originalData) {
             return $originalData[$key] != $value;
         });
@@ -140,7 +126,6 @@ class CreditNoteController extends Controller
                 $description .= " El campo '{$fieldName}' se cambió de '{$originalValue}' a '{$value}'.";
             }
             
-            // Crear el evento de actualización en la línea de tiempo del pedido
             CsOrderEvent::create([
                 'cs_order_id' => $creditNote->cs_order_id,
                 'user_id' => Auth::id(),
@@ -148,7 +133,6 @@ class CreditNoteController extends Controller
             ]);
         }
         
-        // Lógica para actualizar los detalles del SKU (manteniendo tu implementación)
         if ($request->has('sku_details')) {
             foreach ($request->input('sku_details') as $detailId => $data) {
                 $detail = CsCreditNoteDetail::find($detailId);
@@ -156,7 +140,6 @@ class CreditNoteController extends Controller
                     $originalQuantity = $detail->quantity_returned;
                     $detail->update(['quantity_returned' => $data['quantity_returned']]);
                     
-                    // Crear un evento por cada cambio en la cantidad de SKU
                     $skuDescription = 'El usuario ' . Auth::user()->name . ' cambió la cantidad devuelta para el SKU ' . $detail->sku . ' de ' . $originalQuantity . ' a ' . $data['quantity_returned'] . '.';
                     CsOrderEvent::create([
                         'cs_order_id' => $creditNote->cs_order_id,
@@ -170,9 +153,6 @@ class CreditNoteController extends Controller
         return redirect()->route('customer-service.credit-notes.index')->with('success', 'Nota de crédito actualizada exitosamente.');
     }
 
-    /**
-     * Elimina una nota de crédito.
-     */
     public function destroy(CsCreditNote $creditNote)
     {
         $creditNote->delete();
@@ -180,9 +160,6 @@ class CreditNoteController extends Controller
         return redirect()->route('customer-service.credit-notes.index')->with('success', 'Nota de crédito eliminada exitosamente.');
     }
 
-    /**
-     * Exporta las notas de crédito a un archivo CSV.
-     */
     public function exportCsv(Request $request)
     {
         $creditNotes = CsCreditNote::with(['order', 'details'])->get();
@@ -194,10 +171,8 @@ class CreditNoteController extends Controller
         $callback = function() use ($creditNotes) {
             $file = fopen('php://output', 'w');
             
-            // Agrega la marca de orden de bytes (BOM) para compatibilidad con UTF-8 en Excel
             fputs($file, "\xEF\xBB\xBF");
 
-            // Encabezados del CSV combinando ambas tablas
             fputcsv($file, [
                 'ID Nota Credito', 'ID Orden', 'No. SO', 'Tipo Solicitud',
                 'Fecha Captura', 'Cliente', 'Factura', 'ID Almacen',
@@ -208,7 +183,6 @@ class CreditNoteController extends Controller
             ]);
 
             foreach ($creditNotes as $note) {
-                // Si la nota de crédito tiene detalles, crea una fila por cada uno.
                 if ($note->details->count() > 0) {
                     foreach ($note->details as $detail) {
                         fputcsv($file, [
@@ -237,7 +211,6 @@ class CreditNoteController extends Controller
                         ]);
                     }
                 } else {
-                    // Si no tiene detalles (caso poco común), exporta la fila principal
                     fputcsv($file, [
                         $note->id,
                         $note->cs_order_id,
@@ -270,9 +243,6 @@ class CreditNoteController extends Controller
         return Response::stream($callback, 200, $headers);
     }
 
-    /**
-     * Muestra el dashboard con los gráficos.
-     */
     public function dashboard()
     {
         $requestTypes = CsCreditNote::selectRaw('request_type, count(*) as count')

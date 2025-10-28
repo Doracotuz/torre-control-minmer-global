@@ -17,14 +17,12 @@ class WMSPurchaseOrderController extends Controller
 {
     public function index(Request $request)
     {
-        // Carga de relaciones para eficiencia
         $query = PurchaseOrder::with(['latestArrival', 'lines.product'])
             ->withCount(['pallets' => function($query) {
                 $query->where('status', 'Finished');
             }])
             ->latest();        
 
-        // --- Filtros Avanzados Corregidos ---
         if ($request->filled('search')) {
             $searchTerm = $request->search;
             $query->where(function($q) use ($searchTerm) {
@@ -44,7 +42,6 @@ class WMSPurchaseOrderController extends Controller
 
         $purchaseOrders = $query->paginate(10)->withQueryString();
 
-        // --- KPIs (sin cambios) ---
         $completedOrders = PurchaseOrder::where('status', 'Completed')->whereNotNull(['download_start_time', 'download_end_time']);
         $totalSeconds = $completedOrders->get()->sum(function($order) {
             return \Carbon\Carbon::parse($order->download_end_time)->diffInSeconds(\Carbon\Carbon::parse($order->download_start_time));
@@ -82,10 +79,8 @@ class WMSPurchaseOrderController extends Controller
             'lines.*.quantity_ordered' => 'required|integer|min:1',
         ]);
 
-        // Calculamos el total de botellas esperadas sumando las líneas
         $expected_bottles = collect($validatedData['lines'])->sum('quantity_ordered');
 
-        // Creamos la orden de compra
         $purchaseOrder = PurchaseOrder::create([
             'po_number' => $validatedData['po_number'],
             'expected_date' => $validatedData['expected_date'],
@@ -93,12 +88,11 @@ class WMSPurchaseOrderController extends Controller
             'container_number' => $validatedData['container_number'],
             'pedimento_a4' => $validatedData['pedimento_a4'],
             'pedimento_g1' => $validatedData['pedimento_g1'],
-            'expected_bottles' => $expected_bottles, // Guardamos el total calculado
+            'expected_bottles' => $expected_bottles,
             'user_id' => auth()->id(),
             'status' => 'Pending',
         ]);
 
-        // Guardamos las líneas de la orden
         foreach ($validatedData['lines'] as $line) {
             $purchaseOrder->lines()->create($line);
         }
@@ -109,30 +103,25 @@ class WMSPurchaseOrderController extends Controller
 
     public function show(PurchaseOrder $purchaseOrder)
     {
-        // Carga todas las relaciones necesarias para la vista de detalle
         $purchaseOrder->load([
             'user', 
             'lines.product', 
             'pallets' => function ($query) {
-                $query->where('status', 'Finished')->latest(); // Carga solo tarimas finalizadas, las más nuevas primero
+                $query->where('status', 'Finished')->latest();
             },
-            'pallets.items.product', // Los productos dentro de cada item de la tarima
+            'pallets.items.product',
             'pallets.items.quality',
             'pallets.user',
             'evidences'
         ]);
         
-        // La función getReceiptSummary ya está en el modelo y no necesita más datos
         return view('wms.purchase-orders.show', compact('purchaseOrder'));
     }
 
     public function update(Request $request, PurchaseOrder $purchaseOrder)
     {
-        // El método detecta si se están enviando "líneas de producto".
-        // Si es así, asume que es una edición completa de la orden.
         if ($request->has('lines')) {
             
-            // --- LÓGICA PARA EDITAR LA ORDEN COMPLETA ---
             $validatedData = $request->validate([
                 'po_number' => 'required|string|max:255|unique:purchase_orders,po_number,' . $purchaseOrder->id,
                 'expected_date' => 'required|date',
@@ -145,17 +134,13 @@ class WMSPurchaseOrderController extends Controller
                 'lines.*.quantity_ordered' => 'required|integer|min:1',
             ]);
 
-            // Recalcula el total de unidades esperadas a partir de las nuevas líneas
             $expected_bottles = collect($validatedData['lines'])->sum('quantity_ordered');
             
-            // Prepara los datos para actualizar el modelo principal
             $poData = $validatedData;
             $poData['expected_bottles'] = $expected_bottles;
 
-            // Actualiza los datos principales de la orden de compra
             $purchaseOrder->update($poData);
 
-            // Sincroniza las líneas de producto: borra todas las anteriores y crea las nuevas
             $purchaseOrder->lines()->delete();
             foreach ($validatedData['lines'] as $line) {
                 $purchaseOrder->lines()->create($line);
@@ -166,8 +151,6 @@ class WMSPurchaseOrderController extends Controller
 
         } else {
             
-            // --- LÓGICA PARA ACTUALIZAR SOLO DETALLES DEL ARRIBO ---
-            // Si no se envían "líneas", asume que es una actualización de los detalles de recepción.
             $validatedData = $request->validate([
                 'operator_name' => 'nullable|string|max:255',
                 'received_bottles' => 'nullable|integer|min:0',
@@ -190,7 +173,6 @@ class WMSPurchaseOrderController extends Controller
             'driver_name' => 'required|string|max:255',
         ]);
 
-        // Opcional: Si usas una tabla DockArrival
         DockArrival::create([
             'purchase_order_id' => $purchaseOrder->id,
             'truck_plate' => strtoupper($request->truck_plate),
@@ -199,10 +181,9 @@ class WMSPurchaseOrderController extends Controller
             'status' => 'Arrived',
         ]);
         
-        // Actualizamos la orden de compra directamente
         $purchaseOrder->update([
             'status' => 'Receiving',
-            'operator_name' => $request->driver_name, // Asigna el conductor como operador
+            'operator_name' => $request->driver_name,
             'download_start_time' => now(),
         ]);
 
@@ -211,17 +192,14 @@ class WMSPurchaseOrderController extends Controller
 
     public function registerDeparture(Request $request, PurchaseOrder $purchaseOrder)
     {
-        // Opcional: Actualizar la tabla DockArrival si la usas
         $arrival = DockArrival::where('purchase_order_id', $purchaseOrder->id)->latest()->first();
         if ($arrival) {
             $arrival->update(['departure_time' => now(), 'status' => 'Departed']);
         }
 
-        // Actualizamos la orden de compra
         $purchaseOrder->update(['download_end_time' => now()]);
         
-        // Opcional: Podrías cambiar el estado a 'Completed' si la recepción ya terminó
-        // $purchaseOrder->update(['status' => 'Completed']);
+        $purchaseOrder->update(['status' => 'Completed']);
 
         return back()->with('success', 'Salida del vehículo registrada exitosamente.');
     }
@@ -235,16 +213,14 @@ class WMSPurchaseOrderController extends Controller
     
     public function exportCsv(Request $request)
     {
-        // 1. La consulta principal se basa en las Tarimas (Pallets) finalizadas
         $query = \App\Models\WMS\Pallet::where('status', 'Finished')
             ->with([
-                'purchaseOrder.latestArrival', // Carga los datos del arribo (placas, etc.)
-                'user',                        // Carga el usuario que recibió
-                'items.product',               // Carga el producto de cada item
-                'items.quality'                // Carga la calidad de cada item
+                'purchaseOrder.latestArrival',
+                'user',
+                'items.product',
+                'items.quality'
             ]);
 
-        // 2. Replicar filtros, aplicados a las relaciones
         if ($request->filled('search')) {
             $searchTerm = $request->search;
             $query->whereHas('purchaseOrder', function($q) use ($searchTerm) {
@@ -273,9 +249,8 @@ class WMSPurchaseOrderController extends Controller
 
         $callback = function() use ($pallets) {
             $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM para acentos
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            // --- ENCABEZADOS EXTENDIDOS ---
             fputcsv($file, [
                 'ID_Tarima',
                 'LPN',
@@ -302,7 +277,6 @@ class WMSPurchaseOrderController extends Controller
 
             foreach ($pallets as $pallet) {
                 foreach ($pallet->items as $item) {
-                    // Cálculo de cajas para esta línea específica
                     $piecesPerCase = $item->product->pieces_per_case > 0 ? $item->product->pieces_per_case : 1;
                     $casesReceived = ceil($item->quantity / $piecesPerCase);
 
@@ -387,10 +361,8 @@ class WMSPurchaseOrderController extends Controller
         return back()->with('success', 'Evidencias fotográficas subidas exitosamente.');
     }
 
-    // 3. Añade el nuevo método para eliminar una foto
     public function destroyEvidence(ReceiptEvidence $evidence)
     {
-        // Opcional: Añadir policy de seguridad para verificar permisos
         Storage::delete($evidence->file_path);
         $evidence->delete();
 
@@ -399,36 +371,31 @@ class WMSPurchaseOrderController extends Controller
 
     public function generateArrivalReportPdf(PurchaseOrder $purchaseOrder)
     {
-        // Carga todas las relaciones necesarias para el reporte
         $purchaseOrder->load([
             'user', 'lines.product', 'latestArrival',
             'pallets' => fn($q) => $q->where('status', 'Finished')->with(['user', 'items.product', 'items.quality']),
             'evidences'
         ]);
 
-        // --- ¡AQUÍ ESTÁ LA CORRECCIÓN DEL LOGO! ---
         $logoBase64 = null;
-        $logoPath = 'LogoAzul.png'; // El nombre de tu archivo en el bucket de S3
+        $logoPath = 'LogoAzul.png';
         if (Storage::disk('s3')->exists($logoPath)) {
             try {
                 $fileContent = Storage::disk('s3')->get($logoPath);
                 $logoBase64 = 'data:image/png;base64,' . base64_encode($fileContent);
             } catch (\Exception $e) {
-                // Manejar el error si no se puede obtener el logo
                 $logoBase64 = null;
             }
         }
 
-        // Prepara los datos para la vista del PDF, incluyendo el logo codificado
         $data = [
             'purchaseOrder' => $purchaseOrder,
             'summary' => $purchaseOrder->getReceiptSummary(),
-            'logoBase64' => $logoBase64, // Pasamos el logo ya listo para usar
+            'logoBase64' => $logoBase64,
         ];
         
         $pdf = PDF::loadView('wms.purchase-orders.arrival_report_pdf', $data);
         
         return $pdf->stream('reporte_arribo_' . $purchaseOrder->po_number . '.pdf');
     }   
-
 }

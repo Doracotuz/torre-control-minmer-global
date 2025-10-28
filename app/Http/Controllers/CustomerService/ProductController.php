@@ -39,7 +39,7 @@ class ProductController extends Controller
 
         $products = \App\Models\CsProduct::where('sku', 'like', "%{$searchTerm}%")
             ->orWhere('description', 'like', "%{$searchTerm}%")
-            ->limit(10) // Devolvemos solo los primeros 10 resultados para ser rápidos
+            ->limit(10)
             ->get(['id', 'sku', 'description']);
 
         return response()->json($products);
@@ -64,7 +64,6 @@ class ProductController extends Controller
         if (is_numeric($brandIdentifier)) {
             $brandId = $brandIdentifier;
         } else {
-            // Si no es numérico, es un nombre nuevo. Lo creamos.
             $newBrand = CsBrand::firstOrCreate(['name' => $brandIdentifier]);
             $brandId = $newBrand->id;
         }
@@ -94,7 +93,7 @@ class ProductController extends Controller
             'sku' => ['required', 'string', 'max:255', Rule::unique('cs_products')->ignore($product->id)],
             'description' => 'required|string',
             'packaging_factor' => 'required|integer|min:1',
-            'cs_brand_id' => 'required|string|max:255', // Se cambia a string
+            'cs_brand_id' => 'required|string|max:255',
         ]);
 
         $brandIdentifier = $validatedData['cs_brand_id'];
@@ -109,7 +108,7 @@ class ProductController extends Controller
             'sku' => $validatedData['sku'],
             'description' => $validatedData['description'],
             'packaging_factor' => $validatedData['packaging_factor'],
-            'cs_brand_id' => $brandId, // Se usa el ID final
+            'cs_brand_id' => $brandId,
             'type' => $this->getProductType($validatedData['sku']),
             'updated_by_user_id' => Auth::id(),
         ]);
@@ -160,23 +159,18 @@ class ProductController extends Controller
 
         $path = $request->file('csv_file')->getRealPath();
 
-        // --- INICIA CORRECCIÓN: Se convierte el archivo a UTF-8 ---
         $fileContent = file_get_contents($path);
-        // Detecta la codificación actual y la convierte a UTF-8
         $utf8Content = mb_convert_encoding($fileContent, 'UTF-8', mb_detect_encoding($fileContent, 'UTF-8, ISO-8859-1', true));
         
-        // Se crea un archivo temporal en memoria con el contenido corregido
         $file = fopen("php://memory", 'r+');
         fwrite($file, $utf8Content);
         rewind($file);
-        // --- TERMINA CORRECCIÓN ---
 
-        fgetcsv($file); // Omitir la cabecera
+        fgetcsv($file);
 
         $brands = CsBrand::pluck('id', 'name')->all();
 
         while (($row = fgetcsv($file, 1000, ",")) !== FALSE) {
-            // Se asegura de que la fila no esté completamente vacía
             if (count(array_filter($row)) == 0) continue;
 
             $brandName = trim($row[3]);
@@ -213,12 +207,10 @@ class ProductController extends Controller
 
     public function dashboard()
     {
-        // Gráfico 1: Productos por Tipo
         $productsByType = CsProduct::select('type', DB::raw('count(*) as total'))
             ->groupBy('type')
             ->pluck('total', 'type');
         
-        // Gráfico 2: Productos por Marca (Top 10)
         $productsByBrand = CsProduct::join('cs_brands', 'cs_products.cs_brand_id', '=', 'cs_brands.id')
             ->select('cs_brands.name', DB::raw('count(cs_products.id) as total'))
             ->groupBy('cs_brands.name')
@@ -226,7 +218,6 @@ class ProductController extends Controller
             ->limit(10)
             ->pluck('total', 'name');
 
-        // Gráfico 3: Productos creados en los últimos 30 días
         $recentProducts = CsProduct::where('created_at', '>=', Carbon::now()->subDays(30))
             ->groupBy('date')
             ->orderBy('date', 'ASC')
@@ -235,7 +226,6 @@ class ProductController extends Controller
                 DB::raw('COUNT(*) as count')
             ]);
         
-        // Gráfico 4: Top 5 Marcas con más productos
         $topBrands = $productsByBrand->take(5);
 
         $chartData = [
@@ -270,6 +260,4 @@ class ProductController extends Controller
         };
         return response()->stream($callback, 200, $headers);
     }
-
-
 }

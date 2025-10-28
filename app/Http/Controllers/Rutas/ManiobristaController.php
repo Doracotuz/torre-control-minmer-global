@@ -51,7 +51,6 @@ class ManiobristaController extends Controller
 
         $eventosRealizados = $guia->maniobraEventos->pluck('evento_tipo');
         
-        // --- LÓGICA DE FLUJO ACTUALIZADA ---
         $estadoActual = 'Llegada a carga';
         if ($eventosRealizados->contains('Llegada a carga')) $estadoActual = 'Inicio de ruta';
         if ($eventosRealizados->contains('Inicio de ruta')) $estadoActual = 'En Ruta (Entregas)';
@@ -75,7 +74,6 @@ class ManiobristaController extends Controller
 
     public function storeEvent(Request $request, Guia $guia, $empleado)
     {
-        // AÑADIMOS 'Llegada a destino' A LOS EVENTOS VÁLIDOS
         $validated = $request->validate([
             'evento_tipo' => ['required', \Illuminate\Validation\Rule::in(['Llegada a carga', 'Inicio de ruta', 'Llegada a destino'])],
             'latitud' => 'required|numeric',
@@ -84,7 +82,6 @@ class ManiobristaController extends Controller
             'evidencia' => 'required|image|max:500480',
         ]);
         
-        // La validación de duplicados ya no aplica para "Llegada a destino"
         if ($validated['evento_tipo'] !== 'Llegada a destino') {
             $eventoExistente = ManiobraEvento::where('guia_id', $guia->id)
                 ->where('numero_empleado', $empleado)
@@ -113,7 +110,6 @@ class ManiobristaController extends Controller
     
     public function storeFacturaEvidencias(Request $request, Guia $guia, $empleado) 
     {
-        // Se añade la validación para los nuevos campos
         $validated = $request->validate([
             'latitud' => 'required|numeric',
             'longitud' => 'required|numeric',
@@ -129,7 +125,6 @@ class ManiobristaController extends Controller
                     foreach ($files as $file) {
                         $path = $file->store('factura_evidencias/' . $guia->guia, 's3');
                         
-                        // --- INICIA CORRECCIÓN: Se guardan los datos de ubicación ---
                         $guia->facturas()->find($facturaId)->evidenciasManiobra()->create([
                             'numero_empleado' => $empleado,
                             'evidencia_path' => $path,
@@ -141,15 +136,13 @@ class ManiobristaController extends Controller
                 }
             }
             
-            // Verificamos si todas las facturas ya tienen evidencia
-            $guia->load('facturas.evidenciasManiobra'); // Recargamos la relación
+            $guia->load('facturas.evidenciasManiobra');
             $totalFacturas = $guia->facturas->count();
             $facturasConEvidencia = $guia->facturas->filter(function ($factura) use ($empleado) {
                 return $factura->evidenciasManiobra->where('numero_empleado', $empleado)->isNotEmpty();
             })->count();
 
             if ($totalFacturas === $facturasConEvidencia) {
-                // Si todas están completas, se marca el flujo como finalizado
                 ManiobraEvento::firstOrCreate([
                     'guia_id' => $guia->id,
                     'numero_empleado' => $empleado,

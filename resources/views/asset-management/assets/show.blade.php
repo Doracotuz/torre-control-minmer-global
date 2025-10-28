@@ -77,7 +77,11 @@
     .status-en-reparacion { background-color: var(--color-accent); color: white; }
     .status-prestado { background-color: #8B5CF6; color: white; }
     .status-de-baja { background-color: var(--color-text-secondary); color: white; }
+    .status-en-almacén { background-color: #10B981; color: white; }
+    .status-en-reparación { background-color: var(--color-accent); color: white; }
+    .status-en-mantenimiento { background-color: var(--color-text-secondary); color: white; }
 </style>
+
 <div x-data="{ photoModalOpen: false, currentPhoto: '' }" class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
@@ -220,121 +224,131 @@
         </div>
 
         <div class="space-y-6">
-            <div x-data="{ returnModalOpen: false }" class="bg-white p-6 rounded-xl shadow-lg">
-                <h3 class="font-bold text-lg mb-3 text-[var(--color-primary)]">Estado Actual</h3>
-                <p class="status-badge status-{{ Str::kebab($asset->status) }} inline-block">{{ $asset->status }}</p>
+            
+            <div x-data="{ returnModalOpen: false, assignmentToReturn: null, assignmentMember: '' }" @keydown.escape.window="returnModalOpen = false">
+                <div x-show="returnModalOpen" 
+                    x-transition:enter="ease-out duration-300"
+                    x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100"
+                    x-transition:leave="ease-in duration-200"
+                    x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0"
+                    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" x-cloak>
 
-                @if($asset->currentAssignment)
-                    <div class="mt-4 border-t pt-4">
-                        <p class="text-sm font-semibold text-gray-600">{{ $asset->currentAssignment->type === 'Préstamo' ? 'Prestado a:' : 'Asignado a:' }}</p>
-                        <p class="text-lg font-bold text-[var(--color-primary)]">{{ $asset->currentAssignment->member->name }}</p>
-                        <p class="text-sm text-gray-500">{{ $asset->currentAssignment->member->position->name ?? 'Sin Puesto' }}</p>
-                        <p class="text-sm text-gray-500 mt-1">Desde: {{ date('d/m/Y', strtotime($asset->currentAssignment->assignment_date)) }}</p>
-                        @if($userResponsivas->isNotEmpty())
-                        <div class="mt-4 border-t pt-4">
-                            <h4 class="text-sm font-semibold text-gray-600 mb-2">Responsivas Consolidadas del Usuario:</h4>
-                            <ul class="space-y-2 text-sm">
-                                @foreach($userResponsivas as $responsiva)
-                                <li class="flex justify-between items-center">
-                                    <div>
-                                        <i class="fas fa-file-pdf text-red-500 mr-2"></i>
-                                        <span>{{ \Carbon\Carbon::parse($responsiva->generated_date)->format('d/m/Y') }}</span>
-                                    </div>
-                                    <a href="{{ Storage::disk('s3')->url($responsiva->file_path) }}" target="_blank" class="font-semibold text-[var(--color-primary)] hover:underline">
-                                        Ver Documento
-                                    </a>
-                                </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                        @endif                        
+                    <div @click.away="returnModalOpen = false" 
+                        class="bg-white rounded-xl shadow-lg w-full max-w-lg mx-4">
                         
-                        <div class="grid grid-cols-2 gap-2 mt-4">
-                            <a href="{{ route('asset-management.assignments.edit', $asset->currentAssignment) }}" class="btn btn-secondary w-full text-center">
-                                <i class="fas fa-pencil-alt mr-2"></i> Editar
-                            </a>
-                            <button @click="returnModalOpen = true" class="btn bg-[var(--color-accent)] text-white w-full">
-                                Devolver
-                            </button>
-                        </div>
-                    </div>
-
-                    <div x-show="returnModalOpen" 
-                        x-transition:enter="ease-out duration-300"
-                        x-transition:enter-start="opacity-0"
-                        x-transition:enter-end="opacity-100"
-                        x-transition:leave="ease-in duration-200"
-                        x-transition:leave-start="opacity-100"
-                        x-transition:leave-end="opacity-0"
-                        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" x-cloak>
-
-                        <div @click.away="returnModalOpen = false" 
-                            x-show="returnModalOpen"
-                            x-transition:enter="ease-out duration-300"
-                            x-transition:enter-start="opacity-0 scale-90"
-                            x-transition:enter-end="opacity-100 scale-100"
-                            x-transition:leave="ease-in duration-200"
-                            x-transition:leave-start="opacity-100 scale-100"
-                            x-transition:leave-end="opacity-0 scale-90"
-                            class="bg-white rounded-xl shadow-lg w-full max-w-lg mx-4">
+                        <form :action="'{{ route('asset-management.assignments.return', ['assignment' => 'ASSIGNMENT_ID']) }}'.replace('ASSIGNMENT_ID', assignmentToReturn)" method="POST" enctype="multipart/form-data">
+                            @csrf
+                            <div class="p-6 border-b">
+                                <h3 class="text-lg font-bold text-[var(--color-primary)] flex items-center">
+                                    <i class="fas fa-undo mr-3"></i>
+                                    Confirmar Devolución de Activo
+                                </h3>
+                            </div>
                             
-                            <form action="{{ route('asset-management.assignments.return', $asset->currentAssignment) }}" method="POST" enctype="multipart/form-data">
-                                @csrf
-                                <div class="p-6 border-b">
-                                    <h3 class="text-lg font-bold text-[var(--color-primary)] flex items-center">
-                                        <i class="fas fa-undo mr-3"></i>
-                                        Confirmar Devolución de Activo
-                                    </h3>
+                            <div class="p-6 space-y-6">
+                                <p class="text-sm text-gray-600">
+                                    Estás a punto de registrar la devolución del activo <strong>{{ $asset->asset_tag }}</strong> por parte de <strong x-text="assignmentMember"></strong>.
+                                </p>
+                                <div>
+                                    <label for="actual_return_date" class="form-label">Fecha de Devolución</label>
+                                    <input type="date" id="actual_return_date" name="actual_return_date" 
+                                           value="{{ date('Y-m-d') }}" 
+                                           class="form-input w-full" required>
                                 </div>
-                                
-                                <div class="p-6 space-y-6">
-                                    <p class="text-sm text-gray-600">
-                                        Estás a punto de registrar la devolución del activo <strong>{{ $asset->asset_tag }}</strong> por parte de <strong>{{ $asset->currentAssignment->member->name }}</strong>. El estatus del activo cambiará a "En Almacén".
-                                    </p>
-
-                                    <div>
-                                        <label for="actual_return_date" class="form-label">Fecha de Devolución</label>
-                                        <input type="date" id="actual_return_date" name="actual_return_date" 
-                                               value="{{ date('Y-m-d') }}" 
-                                               class="form-input w-full" required>
-                                    </div>
-                                    <div x-data="{ fileName: '' }">
-                                        <label class="form-label">Adjuntar Responsiva de Devolución Firmada (PDF, Opcional)</label>
-                                        <div class="mt-1 flex items-center justify-center w-full px-6 py-4 border-2 border-gray-300 border-dashed rounded-md">
-                                            <div class="text-center">
-                                                <i class="fas fa-file-pdf text-3xl text-gray-400"></i>
-                                                <div class="flex text-sm text-gray-600 mt-2">
-                                                    <label for="return_receipt" class="relative cursor-pointer bg-white rounded-md font-medium text-[var(--color-primary)] hover:text-[var(--color-accent)] focus-within:outline-none">
-                                                        <span>Haz clic para seleccionar el archivo</span>
-                                                        <input id="return_receipt" name="return_receipt" type="file" class="sr-only" accept=".pdf"
-                                                            @change="fileName = $event.target.files.length > 0 ? $event.target.files[0].name : ''">
-                                                    </label>
-                                                </div>
-                                                <p x-show="fileName" class="text-xs text-gray-500 mt-2" x-cloak>
-                                                    Archivo seleccionado: <span x-text="fileName" class="font-semibold"></span>
-                                                </p>
+                                <div x-data="{ fileName: '' }">
+                                    <label class="form-label">Adjuntar Responsiva de Devolución (Opcional)</label>
+                                    <div class="mt-1 flex items-center justify-center w-full px-6 py-4 border-2 border-gray-300 border-dashed rounded-md">
+                                        <div class="text-center">
+                                            <i class="fas fa-file-pdf text-3xl text-gray-400"></i>
+                                            <div class="flex text-sm text-gray-600 mt-2">
+                                                <label for="return_receipt" class="relative cursor-pointer bg-white rounded-md font-medium text-[var(--color-primary)] hover:text-[var(--color-accent)] focus-within:outline-none">
+                                                    <span>Seleccionar archivo</span>
+                                                    <input id="return_receipt" name="return_receipt" type="file" class="sr-only" accept=".pdf"
+                                                        @change="fileName = $event.target.files.length > 0 ? $event.target.files[0].name : ''">
+                                                </label>
                                             </div>
+                                            <p x-show="fileName" class="text-xs text-gray-500 mt-2" x-cloak>
+                                                Archivo: <span x-text="fileName" class="font-semibold"></span>
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div class="bg-gray-100 px-6 py-4 flex justify-end items-center space-x-3 rounded-b-xl">
-                                    <button type="button" @click="returnModalOpen = false" class="btn btn-secondary">Cancelar</button>
-                                    <button type="submit" class="btn btn-primary">Confirmar Devolución</button>
-                                </div>
-                            </form>
-                        </div>
+                            <div class="bg-gray-100 px-6 py-4 flex justify-end items-center space-x-3 rounded-b-xl">
+                                <button type="button" @click="returnModalOpen = false" class="btn btn-secondary">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Confirmar Devolución</button>
+                            </div>
+                        </form>
                     </div>
-                @else
-                    @if($asset->status === 'En Almacén')
-                        <div class="grid grid-cols-2 gap-2">
-                            <a href="{{ route('asset-management.assignments.create', $asset) }}" class="btn btn-primary w-full mt-4">Asignar</a>
-                            <a href="{{ route('asset-management.assignments.createLoan', $asset) }}" class="btn btn-secondary w-full mt-4">Prestar</a>
-                        </div>
-                    @endif
-                @endif
-            </div>
+                </div>
 
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="font-bold text-lg text-[var(--color-primary)]">Estado Actual</h3>
+                            <p class="status-badge status-{{ Str::kebab($asset->status) }} inline-block">{{ $asset->status }}</p>
+                        </div>
+                        
+                        @if(!in_array($asset->status, ['En Reparación', 'De Baja', 'En Mantenimiento']))
+                            <a href="{{ route('asset-management.assignments.create', $asset) }}" class="btn btn-primary btn-sm py-2 px-3">
+                                <i class="fas fa-plus mr-2"></i> Asignar
+                            </a>
+                        @endif
+                    </div>
+
+                    @forelse($asset->currentAssignments as $assignment)
+                        <div class="mt-4 border-t pt-4">
+                            <p class="text-sm font-semibold text-gray-600">{{ $assignment->type === 'Préstamo' ? 'Prestado a:' : 'Asignado a:' }}</p>
+                            <p class="text-lg font-bold text-[var(--color-primary)]">{{ $assignment->member->name }}</p>
+                            <p class="text-sm text-gray-500">{{ $assignment->member->position->name ?? 'Sin Puesto' }}</p>
+                            <p class="text-sm text-gray-500 mt-1">Desde: {{ date('d/m/Y', strtotime($assignment->assignment_date)) }}</p>
+                            
+                            @php
+                                $memberResponsivas = $assignment->member->userResponsivas;
+                            @endphp
+                            @if($memberResponsivas->isNotEmpty())
+                            <div class="mt-4 border-t pt-4">
+                                <h4 class="text-sm font-semibold text-gray-600 mb-2">Responsivas Consolidadas del Usuario:</h4>
+                                <ul class="space-y-2 text-sm">
+                                    @foreach($memberResponsivas as $responsiva)
+                                    <li class="flex justify-between items-center">
+                                        <div>
+                                            <i class="fas fa-file-pdf text-red-500 mr-2"></i>
+                                            <span>{{ \Carbon\Carbon::parse($responsiva->generated_date)->format('d/m/Y') }}</span>
+                                        </div>
+                                        <a href="{{ Storage::disk('s3')->url($responsiva->file_path) }}" target="_blank" class="font-semibold text-[var(--color-primary)] hover:underline">
+                                            Ver
+                                        </a>
+                                    </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                            @endif
+
+                            <div class="grid grid-cols-2 gap-2 mt-4">
+                                <a href="{{ route('asset-management.assignments.edit', $assignment) }}" class="btn btn-secondary w-full text-center">
+                                    <i class="fas fa-pencil-alt mr-2"></i> Editar
+                                </a>
+                                <button @click="
+                                    assignmentToReturn = {{ $assignment->id }};
+                                    assignmentMember = '{{ $assignment->member->name }}';
+                                    returnModalOpen = true;
+                                " class="btn bg-[var(--color-accent)] text-white w-full">
+                                    Devolver
+                                </button>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center py-4 text-gray-500 text-sm">
+                            Este activo se encuentra <strong class="text-green-600">En Almacén</strong>.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+            
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <h3 class="text-lg font-bold text-[var(--color-primary)] mb-4">Línea de Vida del Activo</h3>
                 <ul class="space-y-4 text-sm">
@@ -351,9 +365,8 @@
                         <div class="flex-grow">
                             <p class="font-semibold text-gray-800">{{ $log->action_type }}</p>
                             <p class="text-gray-600">{{ $log->notes }}</p>
+
                             @php
-                                // Parseamos la fecha del evento. 
-                                // Usamos 'created_at' como fallback si event_date fuera nulo
                                 $eventDate = \Carbon\Carbon::parse($log->event_date ?? $log->created_at);
                             @endphp
                             
@@ -407,7 +420,9 @@
                 </ul>
             </div>
         </div>
+        
     </div>
+
     <div x-show="photoModalOpen" 
          x-transition:enter="ease-out duration-300"
          x-transition:enter-start="opacity-0"

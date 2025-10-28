@@ -86,12 +86,10 @@ class PlanningController extends Controller
             if ($sortBy === 'guia') { 
                 $query->orderBy('guias.guia', $sortDir); 
             } else { 
-                // CORRECCIÓN: Se añade el prefijo de la tabla para evitar ambigüedad
                 $query->orderBy('cs_plannings.' . $sortBy, $sortDir); 
             }
         }
 
-        // Filtros básicos con prefijos de tabla para evitar ambigüedad
         if ($request->filled('search')) { 
             $searchTerm = '%' . $request->search . '%'; 
             $query->where(function ($q) use ($searchTerm) { 
@@ -113,7 +111,6 @@ class PlanningController extends Controller
             $query->whereBetween(DB::raw('DATE(cs_plannings.created_at)'), [$request->date_created_from, $request->date_created_to]); 
         }
         
-        // Filtros avanzados con prefijos de tabla
         if ($request->filled('guia_adv')) { $query->where('guias.guia', 'like', '%' . $request->guia_adv . '%'); }
         if ($request->filled('so_number_adv')) { $query->where('cs_plannings.so_number', 'like', '%' . $request->so_number_adv . '%'); }
         if ($request->filled('factura_adv')) { $query->where('cs_plannings.factura', 'like', '%' . $request->factura_adv . '%'); }
@@ -142,7 +139,6 @@ class PlanningController extends Controller
         $query = $this->getFilteredQuery($request);
         $perPage = $request->input('per_page', 15);
         
-        // Cargar la relación 'guia' después de paginar para el JSON
         $plannings = $query->paginate($perPage)->withQueryString();
         $plannings->getCollection()->load(['guia', 'order']);
 
@@ -161,12 +157,9 @@ class PlanningController extends Controller
         $callback = function() use ($plannings, $allColumns) {
             $file = fopen('php://output', 'w');
             
-            // --- LÍNEA AÑADIDA PARA LA CORRECCIÓN ---
-            // Añade el BOM (Byte Order Mark) para asegurar la compatibilidad de UTF-8 con Excel
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
             
-            // El resto del código no cambia
-            fputcsv($file, array_values($allColumns)); // Escribir los encabezados
+            fputcsv($file, array_values($allColumns));
             foreach ($plannings as $planning) {
                 $row = [];
                 foreach (array_keys($allColumns) as $columnKey) {
@@ -193,9 +186,6 @@ class PlanningController extends Controller
         return view('customer-service.planning.create');
     }
 
-    /**
-     * Guarda el nuevo registro de planificación manual en la base de datos.
-     */
     public function store(Request $request)
     {
         $validatedData = $request->validate([
@@ -245,11 +235,7 @@ class PlanningController extends Controller
                     $newPlanningRecord->is_scale = true;
                     $newPlanningRecord->save();
 
-                    // --- INICIA LÓGICA DE LA SOLUCIÓN ---
-                    // Si la planificación está ligada a una orden, nos aseguramos de que exista su auditoría.
                     if ($newPlanningRecord->cs_order_id) {
-                        // Busca una auditoría para esta orden y esta ubicación de origen.
-                        // Si no la encuentra, la crea. Si ya existe, no hace NADA.
                         Audit::firstOrCreate(
                             [
                                 'cs_order_id' => $newPlanningRecord->cs_order_id,
@@ -260,7 +246,6 @@ class PlanningController extends Controller
                             ]
                         );
                     }
-                    // --- TERMINA LÓGICA DE LA SOLUCIÓN ---
                 }
                 $planning->delete();
             });
@@ -279,17 +264,12 @@ class PlanningController extends Controller
 
     public function show(CsPlanning $planning)
     {
-        // Eager load para optimizar consultas: carga la orden, sus detalles, los productos de esos detalles y sus eventos.
         $planning->load('order.details.product', 'order.events.user');
         return view('customer-service.planning.show', compact('planning'));
     }
 
-    /**
-     * Muestra el formulario para editar un registro de planificación.
-     */
     public function edit(CsPlanning $planning)
     {
-        // Opciones para los menús desplegables. Puedes mover esto a un lugar más central si lo usas en otros sitios.
         $options = [
             'capacidad' => ['1 Ton', '1.5 Ton', '3.5 Ton', '4.5 Ton', 'Torthon', 'Rabón', 'Mudancero', 'Trailer 48"', 'Trailer 53"', 'Automovil', 'Motocicleta', 'Paqueteria', 'Contenedor 20"', 'Contenedor 40"', 'Contenedor 48"', 'Contenedor 53"'],
             'estado' => ['Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas', 'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México', 'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit', 'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí', 'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'],
@@ -306,9 +286,6 @@ class PlanningController extends Controller
         return view('customer-service.planning.edit', compact('planning', 'options'));
     }
 
-    /**
-     * Actualiza un registro de planificación y crea un evento en la línea de tiempo.
-     */
     public function update(Request $request, CsPlanning $planning)
     {
         $validatedData = $request->validate([
@@ -322,7 +299,7 @@ class PlanningController extends Controller
             'destino' => 'required|string|max:255',
             'hora_cita' => 'nullable|string|max:255',
             'fecha_carga' => 'nullable|date',
-            'hora_carga' => 'nullable|date_format:H:i', // La validación se mantiene estricta
+            'hora_carga' => 'nullable|date_format:H:i',
             'capacidad' => 'nullable|string',
             'transporte' => 'nullable|string|max:255',
             'estado' => 'nullable|string',
@@ -385,7 +362,6 @@ class PlanningController extends Controller
         $soNumbers = $plannings->pluck('so_number')->filter()->implode(', ');
         $planningsCount = count($planningIds);
 
-        // Opciones para los menús desplegables
         $options = [
             'capacidad' => ['1 Ton', '1.5 Ton', '3.5 Ton', '4.5 Ton', 'Torthon', 'Rabón', 'Mudancero', 'Trailer 48"', 'Trailer 53"', 'Automovil', 'Motocicleta', 'Paqueteria', 'Contenedor 20"', 'Contenedor 40"', 'Contenedor 48"', 'Contenedor 53"'],
             'estado' => ['Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas', 'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México', 'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit', 'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí', 'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'],
@@ -400,13 +376,10 @@ class PlanningController extends Controller
         return view('customer-service.planning.bulk-edit', compact('planningIds', 'planningsCount', 'options', 'soNumbers'));
     }
 
-    /**
-     * Procesa la actualización masiva de registros de planificación.
-     */
     public function bulkUpdate(Request $request)
     {
         $validatedData = $request->validate([
-            'ids' => 'required|string', // Viene como JSON string
+            'ids' => 'required|string',
             'fecha_carga' => 'nullable|date',
             'hora_carga' => 'nullable|date_format:H:i',
             'capacidad' => 'nullable|string',
@@ -428,17 +401,14 @@ class PlanningController extends Controller
 
         $planningIds = json_decode($validatedData['ids']);
         
-        // Filtramos solo los campos que el usuario realmente llenó
         $dataToUpdate = collect($validatedData)->except('ids')->filter()->all();
         
         if (empty($dataToUpdate)) {
             return redirect()->route('customer-service.planning.index')->with('info', 'No se especificaron cambios para aplicar.');
         }
 
-        // Actualizamos todos los registros en una sola consulta
         CsPlanning::whereIn('id', $planningIds)->update($dataToUpdate);
 
-        // Creamos un evento en la línea de tiempo para cada orden afectada
         $plannings = CsPlanning::whereIn('id', $planningIds)->get();
         $changesDescription = 'actualización masiva en planificación: ' . implode(', ', array_keys($dataToUpdate));
 
@@ -465,14 +435,10 @@ class PlanningController extends Controller
     {
         if ($this->has('hora_carga') && $this->input('hora_carga')) {
             try {
-                // Tomamos el valor que envía el navegador (ej: "16:45" o "15:30:00")
-                // y lo convertimos a un formato consistente con segundos (H:i:s).
                 $formattedTime = Carbon::parse($this->input('hora_carga'))->format('H:i');
                 
-                // Reemplazamos el valor en la solicitud para que la validación lo reciba ya limpio.
                 $this->merge(['hora_carga' => $formattedTime]);
             } catch (\Exception $e) {
-                // Si el formato es inválido, no hacemos nada y dejamos que la validación falle.
             }
         }
     }   
@@ -482,7 +448,6 @@ class PlanningController extends Controller
         try {
             $planning->update(['is_direct_route' => true]);
 
-            // Esta es la respuesta que verá el JavaScript y mostrará la notificación
             return response()->json([
                 'success' => true,
                 'message' => 'Ruta marcada como directa exitosamente.'
@@ -491,7 +456,6 @@ class PlanningController extends Controller
         } catch (\Exception $e) {
             Log::error("Error al marcar ruta como directa: " . $e->getMessage());
             
-            // Si algo falla, también devolvemos una respuesta JSON de error
             return response()->json([
                 'success' => false,
                 'message' => 'Ocurrió un error al procesar la solicitud.'
@@ -508,13 +472,10 @@ class PlanningController extends Controller
         try {
             DB::beginTransaction();
             
-            // Se guarda el ID de la guía antes de desasignarla de la planificación
             $guiaId = $planning->guia_id;
 
-            // 1. Eliminar la factura correspondiente en la tabla de facturas
             \App\Models\Factura::where('cs_planning_id', $planning->id)->delete();
 
-            // 2. Actualizar el registro de planificación para "liberarlo"
             $planning->update([
                 'guia_id' => null,
                 'status' => 'En Espera',
@@ -523,7 +484,6 @@ class PlanningController extends Controller
                 'telefono' => 'Pendiente'
             ]);
 
-            // 3. Obtener la guía y comprobar si se quedó sin facturas
             $guia = Guia::find($guiaId);
             if ($guia && $guia->facturas()->count() === 0) {
                 $guia->update(['estatus' => 'Cancelado']);
@@ -555,10 +515,8 @@ class PlanningController extends Controller
                 return response()->json(['success' => false, 'message' => 'La guía no tiene órdenes asociadas.'], 404);
             }
 
-            // Actualiza la capacidad en todos los registros de planificación
             CsPlanning::whereIn('id', $planningIds)->update(['capacidad' => $validated['capacidad']]);
 
-            // Registra el evento en la línea de tiempo de cada pedido original
             $orderIds = CsPlanning::whereIn('id', $planningIds)->pluck('cs_order_id')->unique()->filter();
             $description = 'El usuario ' . auth()->user()->name . ' actualizó la Capacidad a "' . $validated['capacidad'] . '" para la guía ' . $guia->guia;
 

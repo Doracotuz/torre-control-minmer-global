@@ -371,7 +371,7 @@ x-init="$watch('search', value => {
                                     <span>Catálogos</span>
                                     <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileWmsCatalogsOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                                 </button>
-                                <div x-show="isMobileWdmsCatalogsOpen" class="mt-1 space-y-1 pl-4 border-l-2 border-gray-500 ml-4">
+                                <div x-show="isMobileWmsCatalogsOpen" class="mt-1 space-y-1 pl-4 border-l-2 border-gray-500 ml-4">
                                     <x-responsive-nav-link :href="route('wms.products.index')" :active="request()->routeIs('wms.products.*')" class="text-white ...">Productos</x-responsive-nav-link>
                                     <x-responsive-nav-link :href="route('wms.locations.index')" :active="request()->routeIs('wms.locations.*')" class="text-white ...">Ubicaciones</x-responsive-nav-link>
                                     <x-responsive-nav-link :href="route('wms.warehouses.index')" :active="request()->routeIs('wms.warehouses.*')" class="text-white ...">Almacenes</x-responsive-nav-link>

@@ -28,9 +28,6 @@ use Illuminate\Support\Facades\Storage;
 
 class OrderController extends Controller
 {
-    /**
-     * Muestra la vista principal de gestión de pedidos.
-     */
     public function index(Request $request)
     {
         $warehouses = CsOrder::whereNotNull('origin_warehouse')->where('origin_warehouse', '!=', '')->distinct()->orderBy('origin_warehouse')->pluck('origin_warehouse');
@@ -40,9 +37,6 @@ class OrderController extends Controller
         return view('customer-service.orders.index', compact('warehouses', 'localities', 'executives'));
     }
 
-    /**
-     * Filtra los pedidos según los criterios de búsqueda y paginación (para AJAX).
-     */
     public function filter(Request $request)
     {
         $query = CsOrder::with('plan')->orderBy('creation_date', 'desc');
@@ -73,10 +67,7 @@ class OrderController extends Controller
         if ($request->filled('origin_warehouse')) { $query->whereIn('origin_warehouse', $request->origin_warehouse); }
         if ($request->filled('destination_locality')) { $query->whereIn('destination_locality', $request->destination_locality); }
         
-        // --- INICIA CORRECCIÓN ---
-        // La línea anterior usaba 'like' por error. La correcta es 'whereIn'.
         if ($request->filled('executive')) { $query->whereIn('executive', $request->executive); }
-        // --- TERMINA CORRECCIÓN ---
 
         if ($request->filled('delivery_date')) { $query->whereDate('delivery_date', $request->delivery_date); }
         if ($request->filled('evidence_reception_date')) { $query->whereDate('evidence_reception_date', $request->evidence_reception_date); }
@@ -94,22 +85,16 @@ class OrderController extends Controller
         return response()->json($orders);
     }
 
-    /**
-     * Muestra la vista de detalle de un pedido.
-     */
     public function show(CsOrder $order)
     {
-        // 1. Cargamos las relaciones necesarias como lo hacía tu versión funcional
         $order->load([
             'details.product',
-            'events.user', // Eventos de la tabla cs_order_events
-            'plannings.guia.eventos' // Eventos de la tabla 'eventos' vía Planificación
+            'events.user',
+            'plannings.guia.eventos'
         ]);
 
         $timelineEvents = collect();
 
-        // 2. Procesa los eventos principales de la orden (esto ya funcionaba bien)
-        // Estos son los eventos de Auditoría, Planificación, Creación, etc.
         foreach ($order->events as $event) {
             $type = 'Pedido';
             $color = 'blue';
@@ -139,22 +124,19 @@ class OrderController extends Controller
             ]);
         }
 
-        // 3. --- CAMBIO CLAVE: Procesamos los eventos de Monitoreo y Operador de forma detallada ---
-        // Obtenemos la guía a través del primer registro de planificación
         $planning = $order->plannings->first();
         if ($planning && $planning->guia) {
             foreach ($planning->guia->eventos as $event) {
                 
                 $userName = 'Sistema';
-                $eventType = $event->tipo; // Ej: 'Entrega', 'Incidencias'
+                $eventType = $event->tipo;
 
-                // Asignamos 'Operador' si es un evento manual
                 if (in_array($eventType, ['Notificacion', 'Incidencias', 'Entrega'])) {
                     $userName = $planning->guia->operador ?? 'Operador';
                 }
 
                 $timelineEvents->push([
-                    'type'        => $eventType, // Usamos el tipo real del evento
+                    'type'        => $eventType,
                     'description' => $event->subtipo . ($event->nota ? ': ' . $event->nota : ''),
                     'user_name'   => $userName,
                     'date'        => $event->fecha_evento,
@@ -163,13 +145,11 @@ class OrderController extends Controller
             }
         }
         
-        // 4. Ordenamos la colección final por fecha, como antes
         $timelineEvents = $timelineEvents->sortByDesc('date');
 
         return view('customer-service.orders.show', compact('order', 'timelineEvents'));
     }
 
-    // --- Asegúrate de tener esta función auxiliar en tu controlador ---
     private function getEventColor($eventType)
     {
         switch ($eventType) {
@@ -184,9 +164,6 @@ class OrderController extends Controller
             default: return 'blue';
         }
     }
-    /**
-     * Muestra el formulario para editar un pedido.
-     */
     public function edit(CsOrder $order)
     {
 
@@ -194,9 +171,6 @@ class OrderController extends Controller
         return view('customer-service.orders.edit', compact('order'));
     }
 
-    /**
-     * Actualiza un pedido y registra los cambios en la línea de tiempo.
-     */
     public function update(Request $request, CsOrder $order)
     {
         $validatedData = $request->validate([
@@ -236,12 +210,10 @@ class OrderController extends Controller
 
         $changes = [];
 
-        // Separar los detalles para procesarlos por separado
         $detailsData = $validatedData['details'] ?? [];
         unset($validatedData['details']);
         $validatedData['updated_by_user_id'] = Auth::id();
 
-        // Actualizar los datos del pedido principal
         $oldOrderData = $order->getOriginal();
         $order->update($validatedData);
 
@@ -256,7 +228,6 @@ class OrderController extends Controller
             }
         }
         
-        // Actualizar los detalles del pedido si se enviaron
         if (!empty($detailsData)) {
             foreach ($detailsData as $detailData) {
                 $detail = $order->details()->find($detailData['id']);
@@ -282,37 +253,27 @@ class OrderController extends Controller
         return redirect()->route('customer-service.orders.show', $order)->with('success', 'Pedido actualizado exitosamente.');
     }
 
-    /**
-     * Marca un pedido como "Cancelado".
-     */
     public function cancel(Request $request, CsOrder $order)
     {
         DB::transaction(function () use ($order) {
-            // 1. Actualizar el estatus de la Orden principal
             $order->update(['status' => 'Cancelado', 'updated_by_user_id' => Auth::id()]);
 
-            // 2. Buscar todos los registros de planificación asociados a esta orden
             $planningRecords = CsPlanning::where('cs_order_id', $order->id)->get();
 
             if ($planningRecords->isNotEmpty()) {
                 $planningIds = $planningRecords->pluck('id');
                 $guiaIds = $planningRecords->pluck('guia_id')->filter()->unique();
 
-                // 3. Cancelar todos los registros de planificación de una sola vez
                 CsPlanning::whereIn('id', $planningIds)->update(['status' => 'Cancelado']);
 
-                // 4. Procesar cada guía afectada
                 if ($guiaIds->isNotEmpty()) {
                     $guias = Guia::with('facturas')->whereIn('id', $guiaIds)->get();
                     
                     foreach ($guias as $guia) {
-                        // Eliminar las facturas de esta guía que pertenecen a la orden cancelada
                         $guia->facturas()->whereIn('cs_planning_id', $planningIds)->delete();
                         
-                        // Refrescar la relación para contar las facturas restantes
                         $guia->load('facturas');
 
-                        // Si la guía se quedó sin facturas, se cancela la guía completa
                         if ($guia->facturas->isEmpty()) {
                             $guia->update(['estatus' => 'Cancelado']);
                         }
@@ -320,7 +281,6 @@ class OrderController extends Controller
                 }
             }
             
-            // 5. Registrar el evento en la línea de tiempo de la orden
             CsOrderEvent::create([
                 'cs_order_id' => $order->id,
                 'user_id' => Auth::id(),
@@ -335,12 +295,8 @@ class OrderController extends Controller
         return back()->with('success', 'El pedido ha sido cancelado exitosamente en todos los módulos.');
     }
 
-    /**
-     * Mueve un pedido a la tabla de planificación.
-     */
     public function moveToPlan(CsOrder $order)
     {
-        // Usaremos el cs_order_id para verificar si ya existe en planificación
         if (\App\Models\CsPlanning::where('cs_order_id', $order->id)->exists()) {
             return back()->with('error', 'Este pedido ya ha sido enviado a planificación.');
         }
@@ -348,7 +304,6 @@ class OrderController extends Controller
         DB::transaction(function () use ($order) {
             $order->update(['status' => 'En Planificación', 'updated_by_user_id' => Auth::id()]);
 
-            // Crear el registro en la nueva tabla de planificación
             \App\Models\CsPlanning::create([
                 'cs_order_id' => $order->id,
                 'fecha_entrega' => $order->delivery_date,
@@ -363,7 +318,7 @@ class OrderController extends Controller
                 'subtotal' => $order->subtotal,
                 'canal' => $order->channel,
                 'destino' => $order->destination_locality,
-                'status' => 'En Espera', // Estatus por default
+                'status' => 'En Espera',
             ]);
 
             CsOrderEvent::create([
@@ -376,9 +331,6 @@ class OrderController extends Controller
         return back()->with('success', 'Pedido enviado a planificación.');
     }
 
-    /**
-     * Procesa la importación del archivo CSV de órdenes de venta.
-     */
     public function importCsv(Request $request)
     {
         $request->validate(['csv_file' => 'required|mimes:csv,txt']);
@@ -386,7 +338,6 @@ class OrderController extends Controller
         
         $fileContent = file_get_contents($path);
 
-        // Eliminamos el BOM (ï»¿) si existe
         if (strpos($fileContent, "\xEF\xBB\xBF") === 0) {
             $fileContent = substr($fileContent, 3);
         }
@@ -559,9 +510,6 @@ class OrderController extends Controller
         return redirect()->route('customer-service.orders.index')->with('success', $successMessage ?: 'Archivo procesado. No se encontraron nuevos pedidos para importar.');
     }
 
-    /**
-     * Descarga el archivo CSV con los errores de la última importación.
-     */
     public function downloadImportErrors()
     {
         $errorRows = session('import_error_rows', []);
@@ -569,7 +517,6 @@ class OrderController extends Controller
             return redirect()->route('customer-service.orders.index')->with('info', 'No hay errores de importación para descargar.');
         }
 
-        // --- CORRECCIÓN: Se añade el BOM (Byte Order Mark) para asegurar la codificación UTF-8 en Excel ---
         $headers = [
             'BP Reference No.', 'Document Number', 'Posting Date', 'Customer/Vendor Code',
             'Customer/Vendor Name', 'Warehouse Code', 'Warehouse Name', 'Item No.',
@@ -593,28 +540,21 @@ class OrderController extends Controller
         $callback = function() use ($processedRows, $headers) {
             $file = fopen('php://output', 'w');
             
-            // Escribir el BOM para Excel
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
             
-            // Escribir el encabezado
             fputcsv($file, $headers);
             
-            // Escribir los datos procesados
             foreach ($processedRows as $row) {
                 fputcsv($file, $row);
             }
             fclose($file);
         };
         
-        // Limpiar los errores de la sesión después de generar la descarga
         session()->forget('import_error_rows');
 
         return response()->stream($callback, 200, $responseHeaders);
     }
 
-    /**
-     * Permite descargar la plantilla CSV.
-     */
     public function downloadTemplate()
     {
         $headers = [ "Content-type" => "text/csv", "Content-Disposition" => "attachment; filename=plantilla_carga_so.csv" ];
@@ -631,9 +571,6 @@ class OrderController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    /**
-     * Muestra el dashboard de pedidos.
-     */
     public function dashboard()
     {
         $ordersByChannel = CsOrder::select('channel', DB::raw('count(*) as total'))
@@ -692,7 +629,6 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
-        // Validación actualizada para incluir el subtotal por SKU
         $validatedData = $request->validate([
             'so_number' => 'required|string|max:255|unique:cs_orders,so_number',
             'purchase_order' => 'nullable|string|max:255',
@@ -704,7 +640,7 @@ class OrderController extends Controller
             'details' => 'required|array|min:1',
             'details.*.sku' => 'required|string|exists:cs_products,sku',
             'details.*.quantity' => 'required|integer|min:1',
-            'details.*.subtotal' => 'required|numeric|min:0', // Nueva validación
+            'details.*.subtotal' => 'required|numeric|min:0',
         ]);
 
         $totalBottles = 0;
@@ -720,7 +656,6 @@ class OrderController extends Controller
             $totalBottles += $detail['quantity'];
             $totalBoxes += ($product->packaging_factor > 0) ? ($detail['quantity'] / $product->packaging_factor) : 0;
             
-            // --- CORRECCIÓN: Suma el subtotal proporcionado en el formulario ---
             $totalSubtotal += $detail['subtotal'];
             
             if ($product->type === 'Promocional') {
@@ -740,13 +675,12 @@ class OrderController extends Controller
             'origin_warehouse' => $validatedData['origin_warehouse'],
             'total_bottles' => $totalBottles,
             'total_boxes' => ceil($totalBoxes),
-            'subtotal' => $totalSubtotal, // Usa el subtotal calculado
+            'subtotal' => $totalSubtotal,
             'shipping_address' => $validatedData['shipping_address'],
             'status' => 'Pendiente',
             'created_by_user_id' => Auth::id(),
         ]);
 
-        // Elimina el subtotal de los detalles antes de crear los registros secundarios
         $detailsToCreate = collect($validatedData['details'])->map(function($detail) {
             unset($detail['subtotal']);
             return $detail;
@@ -773,7 +707,6 @@ class OrderController extends Controller
         return view('customer-service.orders.edit-original', compact('order', 'channels', 'customers', 'warehouses', 'products'));
     }
 
-    // Nuevo método para actualizar los datos originales
     public function updateOriginalData(Request $request, CsOrder $order)
     {
         $validatedData = $request->validate([
@@ -817,29 +750,20 @@ class OrderController extends Controller
         $request->validate(['ids' => 'required|array|min:1']);
         $orderIds = $request->query('ids');
 
-        // --- INICIA MODIFICACIÓN ---
-        // 1. Obtenemos las órdenes para acceder a sus datos (id y so_number)
         $orders = CsOrder::whereIn('id', $orderIds)->select('id', 'so_number', 'origin_warehouse')->get();
         $ordersCount = $orders->count();
         
-        // 2. Extraemos solo los números de SO para mostrarlos en el título
         $soNumbers = $orders->pluck('so_number')->all();
 
         $firstOrderOrigin = $orders->first() ? $orders->first()->origin_warehouse : '';
 
-        // 3. Pasamos la colección de órdenes y los números de SO a la vista
         return view('customer-service.orders.bulk-edit', compact('orders', 'ordersCount', 'soNumbers', 'firstOrderOrigin'));
-        // --- TERMINA MODIFICACIÓN ---
     }
 
-    /**
-     * Procesa la actualización masiva de órdenes.
-     */
     public function bulkUpdate(Request $request)
     {
         $validatedData = $request->validate([
             'ids' => 'required|string',
-            // Campos generales
             'delivery_date' => 'nullable|date_format:Y-m-d',
             'schedule' => 'nullable|string|max:255',
             'client_contact' => 'nullable|string|max:255',
@@ -849,12 +773,10 @@ class OrderController extends Controller
             'evidence_reception_date' => 'nullable|date_format:Y-m-d',
             'evidence_cutoff_date' => 'nullable|date_format:Y-m-d',
             'is_oversized' => 'nullable|boolean',
-            // --- INICIA MODIFICACIÓN ---
             'invoices' => 'nullable|array',
             'invoices.*.invoice_number' => 'nullable|string|max:255',
             'invoices.*.invoice_date' => 'nullable|date_format:Y-m-d',
-            'invoices.*.bt_oc' => 'nullable|string|max:255', // Campo BT OC añadido
-            // --- TERMINA MODIFICACIÓN ---
+            'invoices.*.bt_oc' => 'nullable|string|max:255',
         ]);
 
         $orderIds = json_decode($validatedData['ids']);
@@ -898,10 +820,8 @@ class OrderController extends Controller
     
     public function exportCsv(Request $request)
     {
-        // 1. Se inicia la consulta cargando las relaciones.
         $query = CsOrder::with(['plannings.guia'])->orderBy('creation_date', 'desc');
 
-        // 2. Se aplica la misma lógica de filtrado que en la vista, incluyendo TODOS los filtros.
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';
             $query->where(function ($q) use ($searchTerm) {
@@ -913,14 +833,12 @@ class OrderController extends Controller
             });
         }
         
-        // Filtros de selección múltiple y fechas
         if ($request->filled('status')) { $query->whereIn('status', $request->status); }
         if ($request->filled('channel')) { $query->whereIn('channel', $request->channel); }
         if ($request->filled('date_from') && $request->filled('date_to')) {
             $query->whereBetween('creation_date', [$request->date_from, $request->to]);
         }
 
-        // Aplicación de todos los filtros avanzados
         if ($request->filled('purchase_order_adv')) { $query->where('purchase_order', 'like', '%' . $request->purchase_order_adv . '%'); }
         if ($request->filled('bt_oc')) { $query->where('bt_oc', 'like', '%' . $request->bt_oc . '%'); }
         if ($request->filled('customer_name_adv')) { $query->where('customer_name', 'like', '%' . $request->customer_name_adv . '%'); }
@@ -930,12 +848,10 @@ class OrderController extends Controller
         if ($request->filled('evidence_reception_date')) { $query->whereDate('evidence_reception_date', $request->evidence_reception_date); }
         if ($request->filled('evidence_cutoff_date')) { $query->whereDate('evidence_cutoff_date', $request->evidence_cutoff_date); }
         
-        // Filtros avanzados de selección múltiple (corregidos)
         if ($request->filled('origin_warehouse')) { $query->whereIn('origin_warehouse', $request->origin_warehouse); }
         if ($request->filled('destination_locality')) { $query->whereIn('destination_locality', $request->destination_locality); }
         if ($request->filled('executive')) { $query->whereIn('executive', $request->executive); }
 
-        // Filtros "Sí/No"
         if ($request->input('has_delivery_date') === 'yes') { $query->whereNotNull('delivery_date'); } 
         elseif ($request->input('has_delivery_date') === 'no') { $query->whereNull('delivery_date'); }
 
@@ -955,9 +871,8 @@ class OrderController extends Controller
 
         $callback = function() use($orders) {
             $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM para compatibilidad con Excel y acentos
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            // Definimos las columnas del CSV
             fputcsv($file, [
                 'SO', 'Orden Compra', 'Razón Social', 'Estatus', 'F. Creación', 'Canal', 
                 'Factura', 'F. Factura', 'Almacén Origen', 'Localidad Destino', 'Botellas', 'Cajas', 'Subtotal',
@@ -966,7 +881,6 @@ class OrderController extends Controller
             ]);
 
             foreach ($orders as $order) {
-                // Tomamos el primer registro de planificación para los datos heredados
                 $planning = $order->plannings->first();
 
                 $row = [
@@ -976,7 +890,6 @@ class OrderController extends Controller
                     $order->total_bottles, $order->total_boxes, $order->subtotal,
                     $order->delivery_date?->format('Y-m-d'), $order->schedule, $order->client_contact,
                     $order->shipping_address, $order->executive, $order->observations,
-                    // Datos heredados con validación para evitar errores
                     $planning->guia->guia ?? 'N/A',
                     $planning->guia->operador ?? 'N/A',
                     $planning->guia->placas ?? 'N/A',
@@ -1006,13 +919,11 @@ class OrderController extends Controller
             $orders = CsOrder::whereIn('id', $orderIds)->get();
 
             foreach ($orders as $order) {
-                // Solo procesamos pedidos que estén en estatus 'Pendiente'
                 if ($order->status !== 'Pendiente') {
                     $skippedCount++;
                     continue;
                 }
 
-                // Verificamos si ya existe en planificación para evitar duplicados
                 if (CsPlanning::where('cs_order_id', $order->id)->exists()) {
                     $skippedAlreadyPlanned++;
                     continue;
@@ -1020,7 +931,6 @@ class OrderController extends Controller
 
                 $order->update(['status' => 'En Planificación', 'updated_by_user_id' => Auth::id()]);
 
-                // Crear el registro en la tabla de planificación
                 CsPlanning::create([
                     'cs_order_id' => $order->id,
                     'fecha_entrega' => $order->delivery_date,
@@ -1061,45 +971,37 @@ class OrderController extends Controller
     
     public function uploadEvidence(Request $request, CsOrder $order)
     {
-        // 1. Validación
         if (empty($order->invoice_number) || in_array($order->invoice_number, ['N/A', 'Sin dato'])) {
             return response()->json(['message' => 'El pedido debe tener un número de factura válido para subir evidencias.'], 422);
         }
 
         $request->validate([
-            'evidence_file' => 'required|file|mimes:pdf,jpg,jpeg,png,xml|max:10240', // max 10MB
+            'evidence_file' => 'required|file|mimes:pdf,jpg,jpeg,png,xml|max:10240',
         ]);
 
         $file = $request->file('evidence_file');
 
-        // 2. Crear la ruta dinámica
         $year = Carbon::now()->year;
         $month = Carbon::now()->format('m');
         $folderPath = "CustomerService/Evidencias/{$year}/{$month}";
 
-        // 3. Crear el nombre del archivo
         $fileName = $order->invoice_number . '.' . $file->getClientOriginalExtension();
 
-        // 4. Guardar en S3
         $path = $file->storeAs($folderPath, $fileName, 's3');
 
-        // 5. Crear el registro en la base de datos
         $evidence = $order->evidences()->create([
             'file_name' => $fileName,
             'file_path' => $path,
         ]);
 
-        // 6. Actualizar la fecha de recepción en el pedido
         $order->update(['evidence_reception_date' => Carbon::now()]);
 
-        // Registrar el evento en la línea de tiempo
         CsOrderEvent::create([
             'cs_order_id' => $order->id,
             'user_id' => auth()->id(),
             'description' => 'El usuario ' . auth()->user()->name . ' subió la evidencia: ' . $fileName,
         ]);
 
-        // 7. Devolver una respuesta exitosa con los datos del nuevo archivo
         return response()->json([
             'success' => true,
             'message' => 'Evidencia subida exitosamente.',
@@ -1115,15 +1017,12 @@ class OrderController extends Controller
         $orderId = $evidence->cs_order_id;
         $fileName = $evidence->file_name;
 
-        // Eliminar archivo de S3
         if (Storage::disk('s3')->exists($evidence->file_path)) {
             Storage::disk('s3')->delete($evidence->file_path);
         }
 
-        // Eliminar registro de la base de datos
         $evidence->delete();
 
-        // Registrar el evento en la línea de tiempo
         CsOrderEvent::create([
             'cs_order_id' => $orderId,
             'user_id'     => auth()->id(),

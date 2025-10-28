@@ -91,7 +91,7 @@ class WarehouseController extends Controller
         fwrite($file, $utf8Content);
         rewind($file);
 
-        fgetcsv($file); // Omitir cabecera
+        fgetcsv($file);
 
         while (($row = fgetcsv($file, 1000, ",")) !== FALSE) {
             if (count(array_filter($row)) == 0) continue;
@@ -128,7 +128,6 @@ class WarehouseController extends Controller
 
     public function dashboard()
     {
-        // Gráfico 1: Almacenes creados en los últimos 12 meses
         $recentWarehouses = CsWarehouse::where('created_at', '>=', Carbon::now()->subYear())
             ->groupBy('month')
             ->orderBy('month', 'ASC')
@@ -137,7 +136,6 @@ class WarehouseController extends Controller
                 DB::raw('COUNT(*) as count')
             ]);
 
-        // Gráfico 2: Top 5 Usuarios Creadores
         $topCreators = CsWarehouse::join('users', 'cs_warehouses.created_by_user_id', '=', 'users.id')
             ->select('users.name', DB::raw('count(cs_warehouses.id) as total'))
             ->groupBy('users.name')
@@ -145,7 +143,6 @@ class WarehouseController extends Controller
             ->limit(5)
             ->pluck('total', 'name');
         
-        // Gráfico 3: Total de Almacenes (Dato para un gráfico simple)
         $totalWarehouses = CsWarehouse::count();
 
 

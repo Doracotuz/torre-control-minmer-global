@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Rutas;
 
 use App\Http\Controllers\Controller;
 use App\Models\Guia;
-use App\Models\Evento; // <-- AÑADE ESTA LÍNEA
+use App\Models\Evento;
 use App\Models\Factura;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -20,9 +20,6 @@ use Illuminate\Support\Facades\Auth;
 
 class MonitoreoController extends Controller
 {
-    /**
-     * Muestra la vista de monitoreo de rutas.
-     */
     public function index()
     {
         $googleMapsApiKey = config('app.Maps_api_key');
@@ -38,18 +35,15 @@ class MonitoreoController extends Controller
         return response()->json(['paginator' => $paginator, 'guiasJson' => $guiasJson]);
     }
     
-    // --- INICIA CORRECCIÓN: Se añade la lógica completa para generar los datos de la tabla ---
     public function getReportData(Request $request)
     {
         $query = $this->buildFilteredQuery($request);
         $guias = $query->get();
         
-        // 1. PROCESAR DATOS PARA LA TABLA
         $tableData = [];
         foreach ($guias as $guia) {
             foreach ($guia->facturas as $factura) {
                 $tableData[] = [
-                    // Datos de la Guía
                     'guia' => $guia->guia,
                     'operador' => $guia->operador,
                     'placas' => $guia->placas,
@@ -59,7 +53,6 @@ class MonitoreoController extends Controller
                     'hora_planeada' => $guia->hora_planeada ?? 'N/A',
                     'custodia' => $guia->custodia ?? 'N/A',
                     
-                    // Datos de la Factura
                     'factura' => $factura->numero_factura,
                     'so' => $factura->so ?? 'N/A',
                     'destino' => $factura->destino,
@@ -73,7 +66,6 @@ class MonitoreoController extends Controller
             }
         }
         
-        // 2. PROCESAR DATOS PARA LOS GRÁFICOS
         $todasLasFacturas = $guias->pluck('facturas')->flatten();
         $guiasPorEstatus = $guias->countBy('estatus');
         $facturasPorEstatus = $todasLasFacturas->countBy('estatus_entrega');
@@ -83,7 +75,7 @@ class MonitoreoController extends Controller
                                    ->sortDesc();
 
         return response()->json([
-            'tableData' => $tableData, // Se incluye la tabla con datos
+            'tableData' => $tableData,
             'charts' => [
                 'guiasPorEstatus' => ['labels' => $guiasPorEstatus->keys(), 'data' => $guiasPorEstatus->values()],
                 'facturasPorEstatus' => ['labels' => $facturasPorEstatus->keys(), 'data' => $facturasPorEstatus->values()],
@@ -91,7 +83,6 @@ class MonitoreoController extends Controller
             ]
         ]);
     }
-    // --- TERMINA CORRECCIÓN ---
 
     public function exportReportCsv(Request $request)
     {
@@ -140,7 +131,7 @@ class MonitoreoController extends Controller
             'latitud' => 'required|numeric',
             'longitud' => 'required|numeric',
             'municipio' => 'nullable|string',
-            'fecha_inicio_ruta' => 'required|date', // Se añade la validación para la fecha y hora
+            'fecha_inicio_ruta' => 'required|date',
         ]);
         if ($guia->estatus !== 'Planeada') {
             return response()->json(['success' => false, 'message' => 'Esta ruta no puede ser iniciada.'], 409);
@@ -150,7 +141,7 @@ class MonitoreoController extends Controller
             DB::beginTransaction();
 
             $guia->estatus = 'Camino a carga';
-            $guia->fecha_inicio_ruta = $request->fecha_inicio_ruta; // Usa la fecha y hora del request
+            $guia->fecha_inicio_ruta = $request->fecha_inicio_ruta;
             $guia->save();
 
             $guia->facturas()->update(['estatus_entrega' => 'Por recolectar']);
@@ -162,7 +153,7 @@ class MonitoreoController extends Controller
                 'latitud' => $request->latitud,
                 'longitud' => $request->longitud,
                 'municipio' => $request->municipio,
-                'fecha_evento' => $request->fecha_inicio_ruta, // Usa la fecha y hora del request para el evento
+                'fecha_evento' => $request->fecha_inicio_ruta,
                 'nota' => 'Ruta iniciada desde el panel de monitoreo.'
             ]);
 
@@ -196,7 +187,6 @@ class MonitoreoController extends Controller
         try {
             DB::beginTransaction();
 
-            // Lógica para actualizar el estatus de la guía y las facturas
             $newGuiaStatus = null;
             $newFacturaStatus = null;
 
@@ -222,7 +212,6 @@ class MonitoreoController extends Controller
                     break;
             }
 
-            // Aplicar los cambios de estatus si existen
             if ($newGuiaStatus) {
                 $guia->estatus = $newGuiaStatus;
                 $guia->save();
@@ -234,7 +223,6 @@ class MonitoreoController extends Controller
             
             $eventService->handle($guia, $validatedData, $request);
 
-            // Verificar si todas las facturas de la guía están completadas
             $allFacturasCompleted = $guia->facturas->every(fn($f) => in_array($f->estatus_entrega, ['Entregada', 'No entregada']));
 
             if ($allFacturasCompleted) {

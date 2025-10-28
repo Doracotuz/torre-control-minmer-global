@@ -12,14 +12,12 @@ class WMSProductController extends Controller
 {
     public function index()
     {
-        // Eager load relationships for better performance
         $products = Product::with(['brand', 'productType'])->latest()->paginate(10);
         return view('wms.products.index', compact('products'));
     }
 
     public function create()
     {
-        // Get data for dropdowns
         $brands = Brand::orderBy('name')->get();
         $productTypes = ProductType::orderBy('name')->get();
         return view('wms.products.create', compact('brands', 'productTypes'));

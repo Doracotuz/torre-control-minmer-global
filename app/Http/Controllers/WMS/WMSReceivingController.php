@@ -17,14 +17,12 @@ use App\Models\WMS\StockMovement;
 
 class WMSReceivingController extends Controller
 {
-    // Muestra la interfaz principal de recepción
     public function showReceivingForm(PurchaseOrder $purchaseOrder)
     {
         $purchaseOrder->load(['lines.product']);
         $products = Product::orderBy('name')->get(['id', 'name', 'sku']);
         $qualities = Quality::orderBy('name')->get();
 
-        // Suma las cantidades de items en tarimas ya finalizadas para esta orden
         $alreadyReceived = DB::table('pallet_items')
             ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
             ->where('pallets.purchase_order_id', $purchaseOrder->id)
@@ -32,7 +30,6 @@ class WMSReceivingController extends Controller
             ->groupBy('pallet_items.product_id')
             ->pluck('received_qty', 'product_id');
 
-        // Crea el resumen de progreso
         $receivingSummary = $purchaseOrder->lines->map(function ($line) use ($alreadyReceived) {
             $received = $alreadyReceived->get($line->product_id, 0);
             return [
@@ -42,13 +39,10 @@ class WMSReceivingController extends Controller
             ];
         });
 
-        // --- ¡AQUÍ ESTÁ LA LÓGICA CLAVE! ---
-        // Carga las tarimas que ya tienen el estado "Finished" desde la base de datos,
-        // incluyendo la información de su contenido y del usuario que la recibió.
         $finishedPallets = Pallet::where('purchase_order_id', $purchaseOrder->id)
             ->where('status', 'Finished') 
-            ->with(['items.product', 'items.quality', 'user']) // Asegura cargar el usuario
-            ->latest() // Muestra las más recientes primero
+            ->with(['items.product', 'items.quality', 'user'])
+            ->latest()
             ->get();
 
         return view('wms.receiving.show', compact(
@@ -56,11 +50,10 @@ class WMSReceivingController extends Controller
             'products', 
             'qualities', 
             'receivingSummary', 
-            'finishedPallets' // Enviamos el historial persistente a la vista
+            'finishedPallets'
         ));
     }
 
-    // Inicia una tarima usando un LPN pre-generado
     public function startPallet(Request $request)
     {
         $validated = $request->validate([
@@ -68,12 +61,7 @@ class WMSReceivingController extends Controller
             'lpn' => 'required|string',
         ]);
 
-        // --- NUEVA LÍNEA DE "LIMPIEZA" ---
-        // Convierte a mayúsculas y elimina CUALQUIER carácter que no sea letra o número.
         $sanitizedLpn = preg_replace('/[^A-Z0-9]/', '', strtoupper($validated['lpn']));
-        // --- FIN DE LA LÍNEA DE "LIMPIEZA" ---
-
-        // 1. Validamos usando el LPN "limpio"
         $pregeneratedLpn = PregeneratedLpn::where('lpn', $sanitizedLpn)->first();
         if (!$pregeneratedLpn) {
             return response()->json(['error' => 'El LPN no existe o no fue pre-generado.'], 404);
@@ -87,7 +75,7 @@ class WMSReceivingController extends Controller
             
             $pallet = Pallet::firstOrCreate(
                 [
-                    'lpn' => $sanitizedLpn, // Usamos el LPN limpio
+                    'lpn' => $sanitizedLpn,
                     'purchase_order_id' => $validated['purchase_order_id'],
                 ],
                 [
@@ -107,7 +95,6 @@ class WMSReceivingController extends Controller
         }
     }
 
-    // Añade un producto con su calidad a una tarima existente
     public function addItemToPallet(Request $request, Pallet $pallet)
     {
         $validated = $request->validate([
@@ -118,13 +105,11 @@ class WMSReceivingController extends Controller
 
         DB::beginTransaction();
         try {
-            // --- VALIDACIÓN DE SOBRE-RECEPCIÓN ---
             $purchaseOrderLine = $pallet->purchaseOrder->lines()->where('product_id', $validated['product_id'])->first();
             if (!$purchaseOrderLine) {
                 return response()->json(['error' => 'Este producto no pertenece a la orden de compra.'], 422);
             }
 
-            // Calcula cuánto se ha recibido YA para este producto en TODA la orden de compra
             $totalAlreadyReceived = DB::table('pallet_items')
                 ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
                 ->where('pallets.purchase_order_id', $pallet->purchase_order_id)
@@ -133,38 +118,34 @@ class WMSReceivingController extends Controller
             
             $quantityOrdered = $purchaseOrderLine->quantity_ordered;
 
-            // Si lo ya recibido + lo nuevo que se quiere añadir > a lo ordenado, envía un error
             if (($totalAlreadyReceived + $validated['quantity']) > $quantityOrdered) {
                 return response()->json([
                     'error' => 'La cantidad a recibir excede lo ordenado. Total ordenado: ' . $quantityOrdered
                 ], 422);
             }
             
-            // --- LÓGICA DE INSERCIÓN CORREGIDA ---
             $palletItem = $pallet->items()->firstOrCreate(
                 [
                     'product_id' => $validated['product_id'],
                     'quality_id' => $validated['quality_id'],
                 ],
-                ['quantity' => 0] // Si no existe, lo crea con cantidad 0
+                ['quantity' => 0]
             );
             
-            // Incrementa la cantidad en la línea de la tarima
             $palletItem->increment('quantity', $validated['quantity']);
 
-            // Incrementa el stock general
             $stock = InventoryStock::firstOrCreate(
                 ['product_id' => $validated['product_id'], 'location_id' => $pallet->location_id, 'quality_id' => $validated['quality_id']],
                 ['quantity' => 0]
             );
             $stock->increment('quantity', $validated['quantity']);
 
-            StockMovement::create([ // Llama directamente al modelo StockMovement
+            StockMovement::create([
                 'user_id' => Auth::id(),
                 'product_id' => $validated['product_id'],
                 'location_id' => $pallet->location_id,
-                'pallet_item_id' => $palletItem->id, // Pasa el ID aquí
-                'quantity' => $validated['quantity'], // Positivo para entrada
+                'pallet_item_id' => $palletItem->id,
+                'quantity' => $validated['quantity'],
                 'movement_type' => 'RECEPCION',
                 'source_id' => $palletItem->id,
                 'source_type' => \App\Models\WMS\PalletItem::class,
@@ -188,7 +169,6 @@ class WMSReceivingController extends Controller
 
         DB::beginTransaction();
         try {
-            // 1. Compromete el LPN y finaliza la tarima (lógica existente)
             $pregeneratedLpn = PregeneratedLpn::where('lpn', $pallet->lpn)->firstOrFail();
             $pregeneratedLpn->update(['is_used' => true]);
             
@@ -198,20 +178,14 @@ class WMSReceivingController extends Controller
                 'last_action' => 'Recepción Finalizada'
             ]);
 
-            // --- LÓGICA NUEVA Y CRUCIAL ---
-            // 2. Obtenemos la Orden de Compra a la que pertenece la tarima
             $purchaseOrder = $pallet->purchaseOrder;
 
-            // 3. Recalculamos el total de unidades recibidas para TODA la orden de compra
-            // sumando los items de TODAS las tarimas asociadas.
             $totalReceived = DB::table('pallet_items')
                 ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
                 ->where('pallets.purchase_order_id', $purchaseOrder->id)
                 ->sum('pallet_items.quantity');
 
-            // 4. Actualizamos el campo 'received_bottles' en la orden de compra principal
             $purchaseOrder->update(['received_bottles' => $totalReceived]);
-            // --- FIN DE LA LÓGICA NUEVA ---
 
             DB::commit();
             
@@ -235,16 +209,13 @@ class WMSReceivingController extends Controller
         try {
             $pallet = $palletItem->pallet;
 
-            // 1. Revertir el stock del item original
             $oldStock = InventoryStock::where('product_id', $palletItem->product_id)
                 ->where('location_id', $pallet->location_id)
                 ->where('quality_id', $palletItem->quality_id)->first();
             if ($oldStock) $oldStock->decrement('quantity', $palletItem->quantity);
             
-            // 2. Actualizar el item de la tarima con los nuevos datos
             $palletItem->update($validated);
 
-            // 3. Incrementar el stock con los nuevos datos
             $newStock = InventoryStock::firstOrCreate(
                 ['product_id' => $validated['product_id'], 'location_id' => $pallet->location_id, 'quality_id' => $validated['quality_id']],
                 ['quantity' => 0]
@@ -266,24 +237,22 @@ class WMSReceivingController extends Controller
         try {
             $pallet = $palletItem->pallet;
 
-            // 1. Revertir el stock del item que se va a eliminar
             $stock = InventoryStock::where('product_id', $palletItem->product_id)
                 ->where('location_id', $pallet->location_id)
                 ->where('quality_id', $palletItem->quality_id)->first();
             if ($stock) $stock->decrement('quantity', $palletItem->quantity);
 
-            StockMovement::create([ // Llama directamente al modelo StockMovement
+            StockMovement::create([
                 'user_id' => Auth::id(),
                 'product_id' => $palletItem->product_id,
                 'location_id' => $pallet->location_id,
-                'pallet_item_id' => $palletItem->id, // Pasa el ID aquí
-                'quantity' => -$palletItem->quantity, // Negativo para reversa
+                'pallet_item_id' => $palletItem->id,
+                'quantity' => -$palletItem->quantity,
                 'movement_type' => 'RECEPCION-REVERSA',
                 'source_id' => $palletItem->id,
                 'source_type' => \App\Models\WMS\PalletItem::class,
             ]);          
             
-            // 2. Eliminar el item de la tarima
             $palletItem->delete();
 
             DB::commit();

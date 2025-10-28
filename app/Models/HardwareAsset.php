@@ -43,5 +43,9 @@ class HardwareAsset extends Model {
         { 
             return $this->hasMany(Maintenance::class); 
         }
+    
+        public function currentAssignments(): HasMany {
+        return $this->hasMany(Assignment::class)->whereNull('actual_return_date');
+    }
 
 }

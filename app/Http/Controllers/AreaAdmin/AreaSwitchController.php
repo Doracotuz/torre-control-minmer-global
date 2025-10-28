@@ -9,9 +9,6 @@ use Illuminate\Support\Facades\Auth;
 
 class AreaSwitchController extends Controller
 {
-    /**
-     * Cambia el área de gestión activa para el Administrador de Área.
-     */
     public function switch(Request $request)
     {
         $user = Auth::user();
@@ -20,13 +17,10 @@ class AreaSwitchController extends Controller
         $targetAreaId = (int) $request->area_id;
         $targetArea = Area::find($targetAreaId);
 
-        // 1. Obtener todas las áreas que este admin puede gestionar
         $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
 
-        // 2. Verificar que el área solicitada esté en su lista de gestión
         if ($user->is_area_admin && $manageableAreaIds->contains($targetAreaId)) {
 
-            // 3. Almacenar el área seleccionada en la sesión
             session([
                 'current_admin_area_id' => $targetArea->id,
                 'current_admin_area_name' => $targetArea->name,

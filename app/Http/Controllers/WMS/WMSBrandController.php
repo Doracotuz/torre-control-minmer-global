@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use Illuminate\Http\Request;
 
-// El nombre de la clase ahora tiene el prefijo WMS
 class WMSBrandController extends Controller 
 {
     public function index()

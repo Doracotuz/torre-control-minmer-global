@@ -23,10 +23,14 @@ class AssignmentController extends Controller
      */
     public function create(HardwareAsset $asset)
     {
-        if ($asset->status !== 'En Almacén') {
+        // --- MODIFICACIÓN (Lógica 1-a-N) ---
+        // Reemplazamos la comprobación estricta de 'En Almacén'
+        $blockedStatuses = ['En Reparación', 'De Baja', 'En Mantenimiento'];
+        if (in_array($asset->status, $blockedStatuses)) {
             return redirect()->route('asset-management.assets.show', $asset)
-                ->with('error', 'Este activo no está disponible para ser asignado.');
+                ->with('error', "Este activo no está disponible para ser asignado. Su estatus es '{$asset->status}'.");
         }
+        // --- FIN DE MODIFICACIÓN ---
 
         $members = OrganigramMember::orderBy('name')->get();
         return view('asset-management.assignments.create', compact('asset', 'members'));
@@ -37,32 +41,43 @@ class AssignmentController extends Controller
      */
     public function store(Request $request, HardwareAsset $asset)
     {
-        $request->validate([
+        $validated = $request->validate([
             'organigram_member_id' => 'required|exists:organigram_members,id',
             'assignment_date' => 'required|date',
         ]);
 
-        if ($asset->status !== 'En Almacén') {
-            return back()->with('error', 'Este activo ya no está disponible.');
+        // --- MODIFICACIÓN (Lógica 1-a-N) ---
+        $blockedStatuses = ['En Reparación', 'De Baja', 'En Mantenimiento'];
+        if (in_array($asset->status, $blockedStatuses)) {
+            return back()->with('error', "Este activo no está disponible para ser asignado. Su estatus es: {$asset->status}.");
         }
+        // --- FIN DE MODIFICACIÓN ---
 
-        DB::transaction(function () use ($request, $asset) {
+        DB::transaction(function () use ($validated, $asset) {
+            
+            // --- MODIFICACIÓN (Guardar Hora del Evento) ---
+            $eventTime = now();
+            $eventDate = \Carbon\Carbon::parse($validated['assignment_date'])
+                            ->setTime($eventTime->hour, $eventTime->minute, $eventTime->second);
+            // --- FIN DE MODIFICACIÓN ---
+
             // 1. Crear el registro de asignación
             $assignment = Assignment::create([
                 'hardware_asset_id' => $asset->id,
-                'organigram_member_id' => $request->organigram_member_id,
-                'assignment_date' => $request->assignment_date,
+                'organigram_member_id' => $validated['organigram_member_id'],
+                'assignment_date' => $eventDate, // <-- Usar fecha/hora completa
             ]);
 
             $asset->logs()->create([
                 'user_id' => Auth::id(),
-                'action_type' => 'Asignación', // O 'Préstamo' en storeLoan
+                'action_type' => 'Asignación', 
                 'notes' => 'Asignado a ' . $assignment->member->name,
                 'loggable_id' => $assignment->id,
                 'loggable_type' => Assignment::class,
-                'event_date' => $assignment->assignment_date,
+                'event_date' => $assignment->assignment_date, // <-- Usar fecha/hora completa
             ]);
 
+            // El estatus siempre será 'Asignado' si tiene al menos una asignación
             $asset->status = 'Asignado';
             $asset->save();
         });
@@ -99,13 +114,29 @@ class AssignmentController extends Controller
                 $receiptPath = $request->file('return_receipt')->store('assets/return-receipts', 's3');
             }
 
-            $assignment->actual_return_date = $validated['actual_return_date'];
+            // --- MODIFICACIÓN (Guardar Hora del Evento) ---
+            $eventTime = now();
+            $fullReturnDate = \Carbon\Carbon::parse($validated['actual_return_date'])
+                                ->setTime($eventTime->hour, $eventTime->minute, $eventTime->second);
+            // --- FIN DE MODIFICACIÓN ---
 
+            $assignment->actual_return_date = $fullReturnDate; // <-- Usar fecha/hora completa
             $assignment->return_receipt_path = $receiptPath;
             $assignment->save();
 
             $asset = $assignment->asset;
-            $asset->status = 'En Almacén';
+            
+            // --- MODIFICACIÓN (Lógica 1-a-N) ---
+            // Contamos cuántas asignaciones QUEDAN ACTIVAS
+            $activeAssignmentsCount = $asset->currentAssignments()->count();
+
+            if ($activeAssignmentsCount == 0) {
+                // Si ya no quedan asignaciones activas, vuelve a almacén
+                $asset->status = 'En Almacén';
+            }
+            // Si $activeAssignmentsCount > 0, el estatus NO cambia (sigue "Asignado")
+            // --- FIN DE MODIFICACIÓN ---
+            
             $asset->save();
             
             $asset->logs()->create([
@@ -114,7 +145,7 @@ class AssignmentController extends Controller
                 'notes' => 'Devuelto por ' . $assignment->member->name . '. Disponible en almacén.',
                 'loggable_id' => $assignment->id,
                 'loggable_type' => \App\Models\Assignment::class,
-                'event_date' => $validated['actual_return_date'],
+                'event_date' => $fullReturnDate, // <-- Usar fecha/hora completa
             ]);
         });
 
@@ -124,10 +155,13 @@ class AssignmentController extends Controller
 
     public function createLoan(HardwareAsset $asset)
     {
-        if ($asset->status !== 'En Almacén') {
+        // --- MODIFICACIÓN (Lógica 1-a-N) ---
+        $blockedStatuses = ['En Reparación', 'De Baja', 'En Mantenimiento'];
+        if (in_array($asset->status, $blockedStatuses)) {
             return redirect()->route('asset-management.assets.show', $asset)
-                ->with('error', 'Este activo no está disponible para ser prestado.');
+                ->with('error', "Este activo no está disponible para ser prestado. Su estatus es '{$asset->status}'.");
         }
+        // --- FIN DE MODIFICACIÓN ---
 
         $members = OrganigramMember::orderBy('name')->get();
         return view('asset-management.assignments.create-loan', compact('asset', 'members'));
@@ -144,18 +178,27 @@ class AssignmentController extends Controller
             'expected_return_date' => 'required|date|after_or_equal:assignment_date',
         ]);
 
-        if ($asset->status !== 'En Almacén') {
+        // --- MODIFICACIÓN (Lógica 1-a-N) ---
+        $blockedStatuses = ['En Reparación', 'De Baja', 'En Mantenimiento'];
+        if (in_array($asset->status, $blockedStatuses)) {
             return back()->with('error', 'Este activo ya no está disponible.');
         }
+        // --- FIN DE MODIFICACIÓN ---
 
         DB::transaction(function () use ($validated, $asset) {
             $member = \App\Models\OrganigramMember::find($validated['organigram_member_id']);
+
+            // --- MODIFICACIÓN (Guardar Hora del Evento) ---
+            $eventTime = now();
+            $assignmentDate = \Carbon\Carbon::parse($validated['assignment_date'])
+                                ->setTime($eventTime->hour, $eventTime->minute, $eventTime->second);
+            // --- FIN DE MODIFICACIÓN ---
 
             // 1. Crear el registro del préstamo
             $assignment = $asset->assignments()->create([
                 'type' => 'Préstamo',
                 'organigram_member_id' => $validated['organigram_member_id'],
-                'assignment_date' => $validated['assignment_date'],
+                'assignment_date' => $assignmentDate, // <-- Usar fecha/hora completa
                 'expected_return_date' => $validated['expected_return_date'],
             ]);
 
@@ -166,10 +209,11 @@ class AssignmentController extends Controller
                 'notes' => 'Prestado a ' . $member->name . ' hasta el ' . \Carbon\Carbon::parse($validated['expected_return_date'])->format('d/m/Y'),
                 'loggable_id' => $assignment->id,
                 'loggable_type' => \App\Models\Assignment::class,
-                'event_date' => $validated['assignment_date'],
+                'event_date' => $assignmentDate, // <-- Usar fecha/hora completa
             ]);
 
-            // 3. Actualizar el estatus del activo
+            // 3. Actualizar el estatus del activo (siempre 'Asignado' o 'Prestado')
+            // Decidimos usar 'Prestado' si al menos una asignación es préstamo.
             $asset->status = 'Prestado';
             $asset->save();
         });
@@ -223,6 +267,19 @@ class AssignmentController extends Controller
             'return_receipt' => 'nullable|file|mimes:pdf|max:2048',
         ]);
 
+        // --- MODIFICACIÓN (Guardar Hora del Evento) ---
+        $eventTime = now();
+        // Combinar fecha del formulario con hora actual
+        if (isset($validated['assignment_date'])) {
+            $validated['assignment_date'] = \Carbon\Carbon::parse($validated['assignment_date'])
+                                                    ->setTime($eventTime->hour, $eventTime->minute, $eventTime->second);
+        }
+        if (isset($validated['actual_return_date'])) {
+            $validated['actual_return_date'] = \Carbon\Carbon::parse($validated['actual_return_date'])
+                                                    ->setTime($eventTime->hour, $eventTime->minute, $eventTime->second);
+        }
+        // --- FIN DE MODIFICACIÓN ---
+
         // Manejar la carga de la responsiva de asignación
         if ($request->hasFile('signed_receipt')) {
             if ($assignment->signed_receipt_path) {
@@ -239,25 +296,33 @@ class AssignmentController extends Controller
             $validated['return_receipt_path'] = $request->file('return_receipt')->store('assets/return-receipts', 's3');
         }
         
-        // Si se define una fecha de devolución, pero el estatus del activo sigue
-        // "Asignado", debemos actualizar el estatus del activo.
-        if ($validated['actual_return_date'] && $assignment->asset->status === 'Asignado') {
-             // Solo si esta es la asignación actual
-            if ($assignment->asset->currentAssignment?->id == $assignment->id) {
-                $assignment->asset->update(['status' => 'En Almacén']);
-                
-                $assignment->asset->logs()->create([
-                    'user_id' => Auth::id(),
-                    'action_type' => 'Devolución',
-                    'notes' => 'Devuelto por ' . $assignment->member->name . ' (Editado).',
-                    'loggable_id' => $assignment->id,
-                    'loggable_type' => \App\Models\Assignment::class,
-                    'event_date' => $validated['actual_return_date'],
-                ]);
-            }
-        }
+        // --- MODIFICACIÓN (Lógica 1-a-N) ---
+        if ($validated['actual_return_date'] && !$assignment->actual_return_date) {
+            // Si se está *registrando* una devolución (no solo editando una existente)
+            
+            // Primero, actualizamos la asignación
+            $assignment->update($validated);
+            
+            // Contamos cuántas asignaciones activas quedan (usando la relación ya cargada)
+            $activeAssignmentsCount = $assignment->asset->currentAssignments()->count();
 
-        $assignment->update($validated);
+            if ($activeAssignmentsCount == 0) {
+                $assignment->asset->update(['status' => 'En Almacén']);
+            }
+            
+            $assignment->asset->logs()->create([
+                'user_id' => Auth::id(),
+                'action_type' => 'Devolución',
+                'notes' => 'Devuelto por ' . $assignment->member->name . ' (Editado).',
+                'loggable_id' => $assignment->id,
+                'loggable_type' => \App\Models\Assignment::class,
+                'event_date' => $validated['actual_return_date'], // Usar fecha/hora completa
+            ]);
+        } else {
+            // Si no es una devolución nueva, solo actualizamos los datos
+            $assignment->update($validated);
+        }
+        // --- FIN DE MODIFICACIÓN ---
 
         return redirect()->route('asset-management.user-dashboard.show', $assignment->member)
             ->with('success', 'Asignación actualizada exitosamente.');
@@ -306,16 +371,17 @@ class AssignmentController extends Controller
 
         $errors = [];
         $successCount = 0;
+        $eventTime = now(); // Usar la misma hora para todo el lote
 
         foreach ($records as $index => $record) {
             $rowNum = $index + 2; // +1 por el 0-index, +1 por la cabecera
             Log::info("Procesando fila $rowNum: ", $record);
 
-            // 1. Validar datos del CSV (Regla de fecha actualizada)
+            // 1. Validar datos del CSV
             $validator = Validator::make($record, [
                 'asset_tag' => 'required|string',
                 'organigram_member_email' => 'required|email',
-                'assignment_date' => 'required|string', // <-- CAMBIO: Se valida solo que exista
+                'assignment_date' => 'required|string', 
             ]);
 
             if ($validator->fails()) {
@@ -323,33 +389,25 @@ class AssignmentController extends Controller
                 continue;
             }
 
-            // --- INICIO DE NUEVO PARSEO DE FECHA ---
+            // --- Parseo de Fecha ---
             $parsedDate = null;
             $dateString = trim($record['assignment_date']);
             
-            try {
-                // Intenta formato YYYY-MM-DD (Ej: 2025-10-24)
-                $parsedDate = Carbon::createFromFormat('Y-m-d', $dateString);
-            } catch (\Exception $e) {
-                try {
-                    // Si falla, intenta formato DD/MM/YYYY (Ej: 24/10/2025)
-                    $parsedDate = Carbon::createFromFormat('d/m/Y', $dateString);
-                } catch (\Exception $e2) {
-                    try {
-                        // Si falla, intenta formato MM/DD/YYYY (Ej: 10/24/2025)
-                        $parsedDate = Carbon::createFromFormat('m/d/Y', $dateString);
-                    } catch (\Exception $e3) {
-                         // Si todos fallan, reporta el error
+            try { $parsedDate = Carbon::createFromFormat('Y-m-d', $dateString); } 
+            catch (\Exception $e) {
+                try { $parsedDate = Carbon::createFromFormat('d/m/Y', $dateString); } 
+                catch (\Exception $e2) {
+                    try { $parsedDate = Carbon::createFromFormat('m/d/Y', $dateString); } 
+                    catch (\Exception $e3) {
                          $errors[] = "Fila $rowNum: El formato de fecha '{$dateString}' no es válido. Usa YYYY-MM-DD o DD/MM/YYYY.";
                          continue;
                     }
                 }
             }
             
-            // Si llegamos aquí, $parsedDate es un objeto Carbon válido
-            $formattedDate = $parsedDate->format('Y-m-d'); // Formatear para la BD
-            // --- FIN DE NUEVO PARSEO DE FECHA ---
-
+            // --- MODIFICACIÓN (Guardar Hora del Evento) ---
+            $fullAssignmentDate = $parsedDate->setTime($eventTime->hour, $eventTime->minute, $eventTime->second);
+            // --- FIN DE MODIFICACIÓN ---
 
             // 2. Validar Lógica de Negocio
             $asset = HardwareAsset::where('asset_tag', $record['asset_tag'])->first();
@@ -358,10 +416,13 @@ class AssignmentController extends Controller
                 continue;
             }
 
-            if ($asset->status !== 'En Almacén') {
-                $errors[] = "Fila $rowNum: El activo '{$record['asset_tag']}' no está 'En Almacén'. Su estado actual es '{$asset->status}'. No se puede asignar.";
+            // --- MODIFICACIÓN (Lógica 1-a-N) ---
+            $blockedStatuses = ['En Reparación', 'De Baja', 'En Mantenimiento'];
+            if (in_array($asset->status, $blockedStatuses)) {
+                $errors[] = "Fila $rowNum: El activo '{$record['asset_tag']}' no está disponible. Su estado actual es '{$asset->status}'. No se puede asignar.";
                 continue;
             }
+            // --- FIN DE MODIFICACIÓN ---
 
             $member = OrganigramMember::where('email', $record['organigram_member_email'])->first();
             if (!$member) {
@@ -371,11 +432,11 @@ class AssignmentController extends Controller
 
             // 3. Procesar la asignación (usando transacción)
             try {
-                DB::transaction(function () use ($asset, $member, $formattedDate) { // <-- CAMBIO
+                DB::transaction(function () use ($asset, $member, $fullAssignmentDate) { 
                     $assignment = Assignment::create([
                         'hardware_asset_id' => $asset->id,
                         'organigram_member_id' => $member->id,
-                        'assignment_date' => $formattedDate, // <-- CAMBIO: Usar la fecha parseada
+                        'assignment_date' => $fullAssignmentDate, // <-- Usar fecha/hora completa
                     ]);
 
                     $asset->logs()->create([
@@ -384,6 +445,7 @@ class AssignmentController extends Controller
                         'notes' => 'Asignado a ' . $member->name,
                         'loggable_id' => $assignment->id,
                         'loggable_type' => Assignment::class,
+                        'event_date' => $fullAssignmentDate, // <-- Usar fecha/hora completa
                     ]);
 
                     $asset->status = 'Asignado';
@@ -403,6 +465,4 @@ class AssignmentController extends Controller
             return redirect()->route('asset-management.assignments.import.create')->with('error', $errorMessage);
         }
     }
-
-
 }

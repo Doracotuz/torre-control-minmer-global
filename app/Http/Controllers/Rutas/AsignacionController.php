@@ -12,9 +12,6 @@ use Carbon\Carbon;
 
 class AsignacionController extends Controller
 {
-    /**
-     * Muestra la lista de guías para asignación.
-     */
     public function index(Request $request)
     {
         $query = Guia::query()->with('ruta', 'facturas');
@@ -33,22 +30,16 @@ class AsignacionController extends Controller
         }
 
         if ($request->filled('origen')) {
-            // El filtro de origen ahora usa el valor del select
             $query->where('origen', $request->origen);
         }
 
         $guias = $query->withCount('facturas')->orderBy('created_at', 'desc')->paginate(20);
 
-        // --- INICIA CAMBIO: Obtener orígenes para el dropdown ---
         $origenes = Guia::select('origen')->whereNotNull('origen')->where('origen', '!=', '')->distinct()->orderBy('origen')->pluck('origen');
-        // --- TERMINA CAMBIO ---
 
-        return view('rutas.asignaciones.index', compact('guias', 'origenes')); // <-- Se pasa la variable $origenes
+        return view('rutas.asignaciones.index', compact('guias', 'origenes'));
     }
 
-    /**
-     * Descarga la plantilla CSV.
-     */
     public function downloadTemplate()
     {
         $headers = [
@@ -61,25 +52,23 @@ class AsignacionController extends Controller
 
         $callback = function () {
             $file = fopen('php://output', 'w');
-            // --- INICIA CAMBIO: Nuevas columnas en la plantilla CSV ---
             fputcsv($file, [
-                'guia',             // 0
-                'fecha_asignacion', // 1
-                'hora_planeada',    // 2
-                'origen',           // 3
-                'destino',          // 4
-                'hora_cita',        // 5
-                'factura',          // 6
-                'botellas',         // 7
-                'cajas',            // 8
-                'custodia',         // 9
-                'operador',         // 10
-                'placas',           // 11
-                'pedimento',        // 12
-                'so',               // 13 <-- AÑADIDO
-                'fecha_entrega'     // 14 <-- AÑADIDO (Formato YYYY-MM-DD o DD/MM/YYYY)
+                'guia',
+                'fecha_asignacion',
+                'hora_planeada',
+                'origen',
+                'destino',
+                'hora_cita',
+                'factura',
+                'botellas',
+                'cajas',
+                'custodia',
+                'operador',
+                'placas',
+                'pedimento',
+                'so',
+                'fecha_entrega'
             ]);
-            // --- TERMINA CAMBIO ---
             fclose($file);
         };
         return response()->stream($callback, 200, $headers);
@@ -94,7 +83,7 @@ class AsignacionController extends Controller
         $file = fopen("php://memory", 'r+');
         fwrite($file, $utf8Content);
         rewind($file);
-        fgetcsv($file); // Omitir cabecera
+        fgetcsv($file);
 
         $guiasData = [];
         while (($row = fgetcsv($file, 1000, ",")) !== FALSE) {
@@ -115,11 +104,9 @@ class AsignacionController extends Controller
                 ];
             }
             
-            // --- INICIA CAMBIO: Leer nuevos campos del CSV ---
             $fechaEntrega = null;
             if (!empty(trim($row[14]))) {
                 try {
-                    // Intenta con formato 'd/m/Y' primero, luego 'Y-m-d'
                     $fechaEntrega = Carbon::createFromFormat('d/m/Y', trim($row[14]))->format('Y-m-d');
                 } catch (\Exception $e) {
                     try {
@@ -140,7 +127,6 @@ class AsignacionController extends Controller
                 'so'               => !empty(trim($row[13])) ? trim($row[13]) : null,
                 'fecha_entrega'    => $fechaEntrega,
             ];
-            // --- TERMINA CAMBIO ---
         }
         fclose($file);
         
@@ -240,7 +226,6 @@ class AsignacionController extends Controller
         
         $planning_ids = json_encode($request->query('planning_ids', []));
 
-        // Añadimos la nueva variable a los datos que se envían a la vista
         return view('rutas.asignaciones.create', compact('facturasData', 'guiaData', 'planning_ids', 'planningRecords', 'observacionesConSO'));
     }
 
@@ -284,13 +269,11 @@ class AsignacionController extends Controller
             $skippedIds = [];
 
             foreach ($planningRecords as $planning) {
-                // VERIFICACIÓN CLAVE: Si ya tiene una guía asignada, se salta el registro.
                 if ($planning->guia_id !== null) {
                     $skippedIds[] = $planning->id;
                     continue;
                 }
 
-                // Lógica para crear o actualizar facturas
                 $facturaExistente = $guia->facturas()->where('cs_planning_id', $planning->id)->first();
                 if (!$facturaExistente) {
                     $guia->facturas()->create([
@@ -315,7 +298,6 @@ class AsignacionController extends Controller
                     ]);
                 }
                 
-                // Actualizar la planificación
                 $planning->update([
                     'guia_id' => $guia->id,
                     'status' => 'Asignado en Guía',
@@ -342,28 +324,24 @@ class AsignacionController extends Controller
     {
         $guia->load('facturas', 'plannings');
 
-        // ✅ INICIA CAMBIO: Nueva lógica para obtener observaciones con SO
         $observacionesConSO = $guia->plannings
-            ->filter(fn($p) => !empty($p->observaciones)) // Filtramos solo los que tienen observaciones
-            ->map(fn($p) => ['so' => $p->so_number ?? 'Manual', 'observacion' => $p->observaciones]) // Creamos el array estructurado
-            ->values(); // Obtenemos un array limpio
+            ->filter(fn($p) => !empty($p->observaciones))
+            ->map(fn($p) => ['so' => $p->so_number ?? 'Manual', 'observacion' => $p->observaciones])
+            ->values();
 
         $capacidad = $guia->plannings->firstWhere('capacidad')['capacidad'] ?? 'No definida';
             
 
         if ($request->ajax() || $request->wantsJson()) {
-            // ✅ INICIA CAMBIO: Añadimos el cálculo y la propiedad que faltaba
             $guia->total_maniobras = $guia->plannings->sum('maniobras');
             $guia->observaciones_con_so = $observacionesConSO;
             $guia->capacidad = $capacidad;
 
             return response()->json($guia);
-            // ⏹️ TERMINA CAMBIO
         }
 
         $totalManiobras = $guia->plannings->sum('maniobras');
         
-        // Pasamos el nuevo array a la vista de página completa
         return view('rutas.asignaciones.edit', compact('guia', 'totalManiobras', 'observacionesConSO', 'capacidad'));
     }
 
@@ -393,7 +371,6 @@ class AsignacionController extends Controller
 
         DB::beginTransaction();
         try {
-            // Mapeo de nombres de campos para la descripción del evento
             $fieldNames = [
                 'operador' => 'Operador',
                 'placas' => 'Placas',
@@ -406,10 +383,8 @@ class AsignacionController extends Controller
                 'transporte' => 'Transporte'
             ];
 
-            // 1. Detectamos los cambios ANTES de actualizar la guía
             $descriptionParts = [];
             foreach ($fieldNames as $field => $friendlyName) {
-                // Comparamos el valor actual del modelo con el valor que llega del formulario
                 if (isset($validatedData[$field]) && $guia->$field != $validatedData[$field]) {
                     $oldValue = $guia->$field ?? 'vacío';
                     $newValue = $validatedData[$field] ?? 'vacío';
@@ -418,10 +393,8 @@ class AsignacionController extends Controller
             }
             $changesDescription = implode('. ', $descriptionParts);
 
-            // 2. Ahora sí, actualizamos la guía
             $guia->update($request->only(array_keys($fieldNames)));
 
-            // 3. Procesamos las facturas (añadir, editar)
             $facturasIdsActuales = [];
             foreach ($validatedData['facturas'] as $facturaData) {
                 if (!empty($facturaData['id'])) {
@@ -447,7 +420,6 @@ class AsignacionController extends Controller
                 }
             }
 
-            // 4. Desasignamos las órdenes de las facturas que fueron eliminadas
             $facturasParaEliminar = $guia->facturas()->whereNotIn('id', $facturasIdsActuales)->get();
             if ($facturasParaEliminar->isNotEmpty()) {
                 $planningIdsParaDesasignar = $facturasParaEliminar->whereNotNull('cs_planning_id')->pluck('cs_planning_id');
@@ -457,7 +429,6 @@ class AsignacionController extends Controller
                 $guia->facturas()->whereNotIn('id', $facturasIdsActuales)->delete();
             }
 
-            // 5. Sincronizamos los datos de la guía a todas las órdenes (plannings) asociadas
             $planningIds = $guia->facturas()->whereNotNull('cs_planning_id')->pluck('cs_planning_id');
             if ($planningIds->isNotEmpty()) {
                 \App\Models\CsPlanning::whereIn('id', $planningIds)->update([
@@ -468,15 +439,12 @@ class AsignacionController extends Controller
                 ]);
             }
 
-            // 6. Creamos la descripción final para el evento
             $finalDescription = !empty($changesDescription)
                 ? 'Datos de la Guía ' . $guia->guia . ' actualizados por ' . auth()->user()->name . '. ' . $changesDescription
                 : 'Se actualizaron las facturas de la Guía ' . $guia->guia . ' por ' . auth()->user()->name . '.';
             
-            // Obtenemos los IDs de las órdenes afectadas
             $orderIds = \App\Models\CsPlanning::whereIn('id', $planningIds)->pluck('cs_order_id')->unique()->filter();
 
-            // Creamos un evento para CADA orden afectada
             foreach ($orderIds as $orderId) {
                 \App\Models\CsOrderEvent::create([
                     'cs_order_id' => $orderId,
@@ -495,9 +463,6 @@ class AsignacionController extends Controller
         return response()->json(['success' => true, 'message' => 'Guía actualizada, órdenes sincronizadas y evento registrado exitosamente.']);
     }
 
-    /**
-     * Exporta la vista actual a un archivo CSV.
-     */
     public function exportCsv(Request $request)
     {
         $query = Guia::query()->with('facturas');
@@ -530,7 +495,6 @@ class AsignacionController extends Controller
 
         $callback = function() use($guias) {
             $file = fopen('php://output', 'w');
-            // --- INICIA CAMBIO: Nuevas columnas en la exportación CSV ---
             fputcsv($file, [
                 'Guia', 'Operador', 'Placas', 'Pedimento', 'Custodia', 'Hora Planeada', 'Fecha Asignacion', 'Origen', 'Estatus',
                 '# Factura', 'Destino', 'Cajas', 'Botellas', 'Hora Cita', 'SO', 'Fecha Entrega'
@@ -562,9 +526,6 @@ class AsignacionController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    /**
-     * Asigna una plantilla de ruta a una guía.
-     */
     public function assignRoute(Request $request, Guia $guia)
     {
         $request->validate([
@@ -591,16 +552,13 @@ class AsignacionController extends Controller
                               ->orWhere('operador', 'like', "%{$term}%")
                               ->orWhere('placas', 'like', "%{$term}%");
                     })
-                    ->whereNotIn('estatus', ['Completada', 'Cancelado']) // Solo guías activas
+                    ->whereNotIn('estatus', ['Completada', 'Cancelado'])
                     ->limit(10)
                     ->get(['id', 'guia', 'operador', 'placas']);
 
         return response()->json($guias);
     }
 
-    /**
-     * Añade nuevos registros de planificación (órdenes) a una guía existente.
-     */
     public function addOrdersToGuia(Request $request)
     {
         $validatedData = $request->validate([
@@ -615,7 +573,6 @@ class AsignacionController extends Controller
             $guia = Guia::findOrFail($validatedData['guia_id']);
             $incomingPlanningIds = collect($validatedData['planning_ids']);
             
-            // Paso 1: Obtener TODOS los registros de planificación involucrados (los nuevos Y los que ya estaban en la guía)
             $existingPlanningIds = $guia->plannings()->pluck('cs_plannings.id');
             $allRelevantIds = $incomingPlanningIds->merge($existingPlanningIds)->unique();
             $allRelevantPlanningRecords = \App\Models\CsPlanning::find($allRelevantIds);
@@ -623,16 +580,12 @@ class AsignacionController extends Controller
             $masterData = [ 'operador' => null, 'placas' => null, 'telefono' => null ];
             $fields = ['operador', 'placas', 'telefono'];
 
-            // Paso 2: Iterar sobre TODOS los registros para buscar conflictos y datos maestros
             foreach ($allRelevantPlanningRecords as $planning) {
                 foreach ($fields as $field) {
-                    // Se ignora el valor 'Pendiente' y los vacíos al buscar un dato maestro
                     if (!empty($planning->$field) && $planning->$field !== 'Pendiente') {
                         if ($masterData[$field] === null) {
-                            // Se encuentra el primer dato válido y se establece como maestro
                             $masterData[$field] = $planning->$field;
                         } elseif ($masterData[$field] !== $planning->$field) {
-                            // Se encuentra un segundo dato válido diferente: ¡Conflicto!
                             DB::rollBack();
                             $fieldNameSpanish = ucfirst($field);
                             return back()->with('error', "Conflicto en '{$fieldNameSpanish}'. Se encontraron datos diferentes ('{$masterData[$field]}' y '{$planning->$field}').");
@@ -641,7 +594,6 @@ class AsignacionController extends Controller
                 }
             }
             
-            // Paso 3: Identificar solo las órdenes que son realmente nuevas para agregarlas
             $newPlanningIds = $incomingPlanningIds->diff($existingPlanningIds);
 
             if ($newPlanningIds->isEmpty()) {
@@ -651,20 +603,16 @@ class AsignacionController extends Controller
             
             $newPlanningRecords = \App\Models\CsPlanning::find($newPlanningIds);
 
-            // Paso 4: Actualizar la Guía con los datos maestros si está vacía o en "Pendiente"
             if ($masterData['operador'] && (empty($guia->operador) || $guia->operador === 'Pendiente')) $guia->operador = $masterData['operador'];
             if ($masterData['placas'] && (empty($guia->placas) || $guia->placas === 'Pendiente')) $guia->placas = $masterData['placas'];
             if ($masterData['telefono'] && empty($guia->telefono)) $guia->telefono = $masterData['telefono'];
             $guia->save();
 
-            // Paso 5: Iterar sobre las NUEVAS órdenes para propagar datos y asignarlas
             foreach ($newPlanningRecords as $planning) {
-                // Propagar información a campos vacíos o "Pendiente"
                 if ($masterData['operador'] && (empty($planning->operador) || $planning->operador === 'Pendiente')) $planning->operador = $masterData['operador'];
                 if ($masterData['placas'] && (empty($planning->placas) || $planning->placas === 'Pendiente')) $planning->placas = $masterData['placas'];
                 if ($masterData['telefono'] && (empty($planning->telefono) || $planning->telefono === 'Pendiente')) $planning->telefono = $masterData['telefono'];
                 
-                // Crear la factura
                 $guia->facturas()->create([
                     'cs_planning_id' => $planning->id,
                     'numero_factura' => $planning->factura ?? $planning->so_number,
@@ -676,7 +624,6 @@ class AsignacionController extends Controller
                     'fecha_entrega' => $planning->fecha_entrega,
                 ]);
 
-                // Asignar y guardar TODOS los cambios en el registro de planificación
                 $planning->guia_id = $guia->id;
                 $planning->status = 'Asignado en Guía';
                 $planning->save();
@@ -695,7 +642,6 @@ class AsignacionController extends Controller
 
     public function updateNumber(Request $request, Guia $guia)
     {
-        // 1. Validación mejorada para evitar duplicados
         $validated = $request->validate([
             'guia_number' => 'required|string|max:255|unique:guias,guia,' . $guia->id,
         ]);
@@ -703,7 +649,6 @@ class AsignacionController extends Controller
         $originalGuiaNumber = $guia->guia;
         $newGuiaNumber = $validated['guia_number'];
 
-        // Si no hay cambios, no hacemos nada
         if ($originalGuiaNumber === $newGuiaNumber) {
             return response()->json([
                 'success' => true,
@@ -712,19 +657,14 @@ class AsignacionController extends Controller
             ]);
         }
         
-        // Usamos una transacción para asegurar la integridad de los datos
         DB::beginTransaction();
         try {
-            // 2. Actualizamos la guía
             $guia->update(['guia' => $newGuiaNumber]);
 
-            // 3. Creamos la descripción detallada para el evento
             $description = 'El número de Guía cambió de \'' . $originalGuiaNumber . '\' a \'' . $newGuiaNumber . '\' por ' . auth()->user()->name . '.';
 
-            // 4. Buscamos todas las órdenes asociadas a esta guía
             $orderIds = $guia->plannings()->pluck('cs_order_id')->unique()->filter();
 
-            // 5. Creamos un evento para cada orden afectada
             foreach ($orderIds as $orderId) {
                 \App\Models\CsOrderEvent::create([
                     'cs_order_id' => $orderId,
@@ -785,6 +725,4 @@ class AsignacionController extends Controller
             'observaciones_con_so' => $observacionesConSO->unique()->values()
         ]);
     }
-
-
 }

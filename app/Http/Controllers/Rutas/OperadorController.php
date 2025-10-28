@@ -43,10 +43,8 @@ class OperadorController extends Controller
     {
         $guia->load('facturas');
 
-        // Se lee la clave de la API desde la configuración
         $googleMapsApiKey = config('app.Maps_api_key');
 
-        // Se retornan ambas variables ('guia' y 'googleMapsApiKey') a la vista en un solo paso
         return view('rutas.operador.show', compact('guia', 'googleMapsApiKey'));
     }
 
@@ -55,7 +53,7 @@ class OperadorController extends Controller
         $request->validate([
             'latitud' => 'required|numeric',
             'longitud' => 'required|numeric',
-            'municipio' => 'nullable|string', // AÑADIDO
+            'municipio' => 'nullable|string',
         ]);
 
         if ($guia->estatus !== 'Planeada') {
@@ -64,25 +62,22 @@ class OperadorController extends Controller
 
         DB::beginTransaction();
         try {
-            // --- INICIA CAMBIO: Nuevo estatus al iniciar ---
             $guia->estatus = 'Camino a carga';
             $guia->fecha_inicio_ruta = now();
             $guia->save();
 
-            // Actualizar todas las facturas a "Por recolectar"
             $guia->facturas()->update(['estatus_entrega' => 'Por recolectar']);
 
             Evento::create([
                 'guia_id' => $guia->id,
                 'tipo' => 'Sistema',
-                'subtipo' => 'Inicio de Viaje', // Se cambia de "Inicio de Ruta"
+                'subtipo' => 'Inicio de Viaje',
                 'nota' => 'El operador ha iniciado el viaje hacia el punto de carga.',
                 'latitud' => $request->input('latitud'),
                 'longitud' => $request->input('longitud'),
-                'municipio' => $request->input('municipio'), // AÑADIDO
+                'municipio' => $request->input('municipio'),
                 'fecha_evento' => now(),
             ]);
-            // --- TERMINA CAMBIO ---
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -109,7 +104,6 @@ class OperadorController extends Controller
         ]);
 
         try {
-            // Se llama al servicio para manejar toda la lógica
             $eventService->handle($guia, $validatedData, $request);
         } catch (\Exception $e) {
             Log::error("Error al guardar evento desde operador: " . $e->getMessage());

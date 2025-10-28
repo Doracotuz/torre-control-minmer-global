@@ -48,11 +48,9 @@ class WMSPhysicalCountController extends Controller
 
             if ($validated['type'] === 'dirigido') {
                 
-                // --- INICIO DE LA CORRECCIÓN ---
                 $file = $request->file('locations_file');
                 $csvData = array_map('str_getcsv', file($file->getRealPath()));
                 
-                // 1. Ignoramos la primera fila (la cabecera) del archivo
                 array_shift($csvData); 
 
                 $locationCodes = collect($csvData)->flatten()->map('trim')->filter()->unique();
@@ -63,11 +61,9 @@ class WMSPhysicalCountController extends Controller
 
                 $locations = Location::whereIn('code', $locationCodes)->with('pallets.items')->get();
 
-                // 2. Verificamos si se encontró al menos una ubicación
                 if ($locations->isEmpty()) {
                     throw new \Exception("Ninguna de las ubicaciones especificadas en el archivo CSV fue encontrada en el sistema.");
                 }
-                // --- FIN DE LA CORRECCIÓN ---
 
                 foreach ($locations as $location) {
                     foreach ($location->pallets as $pallet) {
@@ -81,7 +77,6 @@ class WMSPhysicalCountController extends Controller
                 }
 
             } else {
-                // Lógica para 'cycle' y 'full' (se mantiene igual)
                 $palletsToCount = \App\Models\WMS\Pallet::where('status', 'Finished')->with('items')->whereHas('items')->get();
                 foreach ($palletsToCount as $pallet) {
                     foreach ($pallet->items as $item) {
@@ -102,7 +97,6 @@ class WMSPhysicalCountController extends Controller
         }
     }
 
-    // --- NUEVO MÉTODO PARA DESCARGAR LA PLANTILLA CSV ---
     public function downloadTemplate()
     {
         $headers = ['Content-type' => 'text/csv', 'Content-Disposition' => 'attachment; filename=plantilla_conteo_dirigido.csv'];
@@ -137,9 +131,6 @@ class WMSPhysicalCountController extends Controller
         return view('wms.physical-counts.perform-task', compact('task'));
     }
 
-    /**
-     * Guarda el resultado de un conteo físico.
-     */
     public function recordCount(Request $request, PhysicalCountTask $task)
     {
         $validated = $request->validate([
@@ -148,21 +139,18 @@ class WMSPhysicalCountController extends Controller
 
         DB::beginTransaction();
         try {
-            // 1. Determinar el número de este conteo (1er, 2do, etc.)
             $countNumber = $task->records()->count() + 1;
 
-            // 2. Guardar el registro del conteo
             $task->records()->create([
                 'user_id' => Auth::id(),
                 'count_number' => $countNumber,
                 'counted_quantity' => $validated['counted_quantity'],
             ]);
 
-            // 3. Actualizar el estatus de la tarea
             if ($task->expected_quantity == $validated['counted_quantity']) {
-                $task->status = 'resolved'; // Conteo coincide, tarea resuelta
+                $task->status = 'resolved';
             } else {
-                $task->status = 'discrepancy'; // Hay una diferencia, requiere atención
+                $task->status = 'discrepancy';
             }
             $task->save();
 
@@ -190,16 +178,12 @@ class WMSPhysicalCountController extends Controller
         try {
             $quantityBefore = $task->expected_quantity;
             $quantityAfter = $lastRecord->counted_quantity;
-            $difference = $quantityAfter - $quantityBefore; // <-- Calculamos la diferencia
+            $difference = $quantityAfter - $quantityBefore;
 
-            // --- INICIO DE LA LÓGICA DE VALIDACIÓN DE LPN ---
-
-            // 1. Buscamos todas las tarimas en esa ubicación que contengan ese producto
             $palletItemsToAdjust = \App\Models\WMS\PalletItem::where('product_id', $task->product_id)
                 ->whereHas('pallet', fn($q) => $q->where('location_id', $task->location_id))
                 ->get();
 
-            // 2. Regla de negocio: Si hay más de un LPN, no podemos ajustar automáticamente.
             if ($palletItemsToAdjust->count() > 1) {
                 throw new \Exception("Existen múltiples LPNs con este producto en la misma ubicación. Realice un Ajuste Manual por LPN desde el módulo de inventario para especificar cuál tarima ajustar.");
             }
@@ -207,49 +191,39 @@ class WMSPhysicalCountController extends Controller
                 throw new \Exception("No se encontró el LPN correspondiente en la ubicación para ajustar la cantidad.");
             }
 
-            // 3. Si solo hay un LPN, actualizamos su cantidad
             $palletItem = $palletItemsToAdjust->first();
             $palletItem->quantity = $quantityAfter;
             $palletItem->save();
 
-            // --- FIN DE LA LÓGICA DE VALIDACIÓN ---
-
-            // 4. Actualizamos el stock general (esta parte ya es correcta)
             $stock = InventoryStock::where('product_id', $task->product_id)
                                 ->where('location_id', $task->location_id)
                                 ->firstOrFail();
             $stock->quantity = $quantityAfter;
             $stock->save();
 
-            // 5. Creamos el registro de auditoría, ahora incluyendo el pallet_item_id
-            $adjustment = InventoryAdjustment::create([ // <-- Guardamos la instancia en una variable
+            $adjustment = InventoryAdjustment::create([
                 'physical_count_task_id' => $task->id,
-                'pallet_item_id' => $palletItem->id, // Ahora registramos qué item se afectó
+                'pallet_item_id' => $palletItem->id,
                 'product_id' => $task->product_id,
                 'location_id' => $task->location_id,
                 'quantity_before' => $quantityBefore,
                 'quantity_after' => $quantityAfter,
-                'quantity_difference' => $difference, // Usamos la diferencia calculada
+                'quantity_difference' => $difference,
                 'reason' => 'Ajuste por Conteo Cíclico Físico.',
                 'user_id' => Auth::id(),
                 'source' => 'Conteo Cíclico',
             ]);
 
-            // --- INICIO DE NUEVO CÓDIGO ---
-            // 6. Registrar el movimiento en el Libro Mayor (Ledger)
             StockMovement::create([
                 'user_id' => Auth::id(),
                 'product_id' => $task->product_id,
                 'location_id' => $task->location_id,
                 'pallet_item_id' => $palletItem->id,
-                'quantity' => $difference, // La diferencia ya tiene el signo (+ o -)
+                'quantity' => $difference,
                 'movement_type' => 'AJUSTE-CONTEO',
-                'source_id' => $adjustment->id, // La fuente es el registro de Ajuste
+                'source_id' => $adjustment->id,
                 'source_type' => InventoryAdjustment::class,
             ]);
-            // --- FIN DE NUEVO CÓDIGO ---
-
-            // 7. Marcamos la tarea como resuelta
             $task->status = 'resolved';
             $task->save();
 
@@ -268,8 +242,6 @@ class WMSPhysicalCountController extends Controller
         $palletItems = \App\Models\WMS\PalletItem::where('product_id', $task->product_id)
             ->whereHas('pallet', fn($q) => $q->where('location_id', $task->location_id))
             ->with([
-                // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
-                // Le pedimos explícitamente la clave foránea para que pueda cargar la relación
                 'pallet:id,lpn,purchase_order_id', 
                 
                 'pallet.purchaseOrder:id,pedimento_a4',
@@ -279,5 +251,4 @@ class WMSPhysicalCountController extends Controller
 
         return response()->json($palletItems);
     }
-
 }

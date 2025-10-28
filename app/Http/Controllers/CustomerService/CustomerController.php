@@ -89,18 +89,14 @@ class CustomerController extends Controller
         $request->validate(['csv_file' => 'required|mimes:csv,txt']);
         $path = $request->file('csv_file')->getRealPath();
         
-        // --- INICIA CORRECCIÓN: Se convierte el archivo a UTF-8 ---
         $fileContent = file_get_contents($path);
-        // Detecta la codificación actual y la convierte a UTF-8
         $utf8Content = mb_convert_encoding($fileContent, 'UTF-8', mb_detect_encoding($fileContent, 'UTF-8, ISO-8859-1', true));
         
-        // Se crea un archivo temporal en memoria con el contenido corregido
         $file = fopen("php://memory", 'r+');
         fwrite($file, $utf8Content);
         rewind($file);
-        // --- TERMINA CORRECCIÓN ---
 
-        fgetcsv($file); // Omitir cabecera
+        fgetcsv($file);
 
         while (($row = fgetcsv($file, 1000, ",")) !== FALSE) {
             if (count(array_filter($row)) == 0) continue;
@@ -141,12 +137,10 @@ class CustomerController extends Controller
 
     public function dashboard()
     {
-        // Gráfico 1: Clientes por Canal
         $customersByChannel = CsCustomer::select('channel', DB::raw('count(*) as total'))
             ->groupBy('channel')
             ->pluck('total', 'channel');
         
-        // Gráfico 2: Clientes creados en los últimos 12 meses
         $recentCustomers = CsCustomer::where('created_at', '>=', Carbon::now()->subYear())
             ->groupBy('month')
             ->orderBy('month', 'ASC')
@@ -155,7 +149,6 @@ class CustomerController extends Controller
                 DB::raw('COUNT(*) as count')
             ]);
 
-        // Gráfico 3: Top 10 Clientes (por nombre)
         $topCustomers = CsCustomer::select('name', DB::raw('count(*) as total'))
             ->groupBy('name')
             ->orderBy('total', 'desc')
@@ -193,17 +186,13 @@ class CustomerController extends Controller
         return response()->json($customers);
     }
 
-    // Para obtener las especificaciones de un cliente
     public function getSpecifications(CsCustomer $customer)
     {
-        // Devolvemos las especificaciones guardadas o un array vacío si no hay nada
         return response()->json($customer->delivery_specifications ?? []);
     }
 
-    // Para guardar las nuevas especificaciones
     public function updateSpecifications(Request $request, CsCustomer $customer)
     {
-        // El request debería enviar un objeto JSON con las especificaciones
         $specifications = $request->input('specifications', []);
 
         $customer->update(['delivery_specifications' => $specifications]);

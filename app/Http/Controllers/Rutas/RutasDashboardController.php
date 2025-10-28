@@ -17,15 +17,12 @@ class RutasDashboardController extends Controller
 {
     public function index(Request $request)
     {
-        // Determinar el rango de fechas. Default: último mes.
         $endDate = $request->input('end_date', Carbon::today()->format('Y-m-d'));
         $startDate = $request->input('start_date', Carbon::today()->subMonth()->format('Y-m-d'));
 
-        // Convertir a objetos Carbon para las consultas
         $startCarbon = Carbon::parse($startDate)->startOfDay();
         $endCarbon = Carbon::parse($endDate)->endOfDay();
 
-        // Aplicamos el filtro de fecha a cada consulta
         $rutasPorTipo = Ruta::query()->whereBetween('created_at', [$startCarbon, $endCarbon])->select('tipo_ruta', DB::raw('count(*) as total'))->groupBy('tipo_ruta')->pluck('total', 'tipo_ruta');
         $chart1Data = ['labels' => $rutasPorTipo->keys(), 'data' => $rutasPorTipo->values()];
 
@@ -44,7 +41,6 @@ class RutasDashboardController extends Controller
         $estatusEntregas = Factura::query()->whereBetween('created_at', [$startCarbon, $endCarbon])->whereIn('estatus_entrega', ['Entregada', 'No Entregada'])->select('estatus_entrega', DB::raw('count(*) as total'))->groupBy('estatus_entrega')->pluck('total', 'estatus_entrega');
         $chart6Data = ['labels' => $estatusEntregas->keys(), 'data' => $estatusEntregas->values()];
 
-        // Para el gráfico de actividad, filtramos por la fecha de actualización de la guía
         $guiasCompletadasDiarias = Guia::query()->where('estatus', 'Completada')->whereBetween('updated_at', [$startCarbon, $endCarbon])->select(DB::raw('DATE(updated_at) as fecha'), DB::raw('count(*) as total'))->groupBy('fecha')->orderBy('fecha')->pluck('total', 'fecha');
         $fechas = collect();
         $period = Carbon::parse($startDate)->toPeriod($endDate);
@@ -57,13 +53,10 @@ class RutasDashboardController extends Controller
         return view('rutas.dashboard', compact(
             'chart1Data', 'chart2Data', 'chart3Data', 'chart4Data', 
             'chart5Data', 'chart6Data', 'chart7Data',
-            'startDate', 'endDate' // Pasamos las fechas a la vista
+            'startDate', 'endDate'
         ));
     }
 
-    /**
-     * Exporta un resumen de guías a CSV según el rango de fechas.
-     */
     public function exportCsv(Request $request)
     {
         $endDate = $request->input('end_date', Carbon::today()->format('Y-m-d'));
@@ -75,7 +68,6 @@ class RutasDashboardController extends Controller
         $response = new StreamedResponse(function() use ($startCarbon, $endCarbon) {
             $handle = fopen('php://output', 'w');
             
-            // --- INICIA CAMBIO: Nuevas columnas para el reporte de eventos ---
             fputcsv($handle, [
                 'Guia', 'Estatus Guia', 'Operador', 'Placas', 'Ruta Asignada', 'Pedimento',
                 'Fecha Creacion Guia', 'Fecha Evento', 'Tipo Evento', 'Detalle Evento', 
@@ -87,7 +79,6 @@ class RutasDashboardController extends Controller
                 ->get();
 
             foreach ($guias as $guia) {
-                // Si una guía no tiene eventos, se exporta una línea con la info de la guía
                 if ($guia->eventos->isEmpty()) {
                      fputcsv($handle, [
                         $guia->guia, $guia->estatus, $guia->operador, $guia->placas,
@@ -96,7 +87,6 @@ class RutasDashboardController extends Controller
                         'N/A', 'N/A', 'N/A', 'N/A'
                     ]);
                 } else {
-                    // Se itera sobre cada evento y se crea una fila por cada uno
                     foreach($guia->eventos as $evento) {
                          fputcsv($handle, [
                             $guia->guia, $guia->estatus, $guia->operador, $guia->placas,
@@ -147,7 +137,6 @@ class RutasDashboardController extends Controller
             $facturasConcatenadas = $guia->facturas->pluck('numero_factura')->join(' | ');
             $destinosConcatenados = $guia->facturas->pluck('destino')->unique()->join(' | ');
 
-            // 1. Eventos del Operador
             foreach ($guia->eventos as $evento) {
                 $facturaEspecifica = $evento->factura;
                 if ($evento->tipo === 'Entrega' && $facturaEspecifica) {
@@ -171,7 +160,6 @@ class RutasDashboardController extends Controller
                 ];
             }
             
-            // 2. Eventos generales del Maniobrista
             foreach ($guia->maniobraEventos as $evento) {
                 if ($evento->evento_tipo === 'Flujo Completado') continue;
                 $csvData[] = [
@@ -188,13 +176,10 @@ class RutasDashboardController extends Controller
                 ];
             }
 
-            // 3. Eventos de evidencia de maniobra
             foreach ($guia->facturas as $factura) {
                 if ($factura->evidenciasManiobra->isNotEmpty()) {
 
-                    // --- INICIA CORRECCIÓN: Se reemplaza el método inexistente ---
                     $evidenciaConUbicacion = $factura->evidenciasManiobra->whereNotNull('latitud')->first();
-                    // --- TERMINA CORRECCIÓN ---
 
                     $evidenciaParaReporte = $evidenciaConUbicacion ?? $factura->evidenciasManiobra->first();
                     if ($evidenciaParaReporte) {

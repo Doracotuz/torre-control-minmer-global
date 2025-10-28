@@ -11,12 +11,8 @@ use Illuminate\Http\Request;
 
 class UserDashboardController extends Controller
 {
-    /**
-     * Muestra una lista de usuarios que tienen activos asignados actualmente.
-     */
-    public function index(Request $request) // <-- Añadir Request $request
+    public function index(Request $request)
     {
-        // Consulta base
         $query = OrganigramMember::whereHas('assignments', function ($query) {
                 $query->whereNull('actual_return_date');
             })
@@ -24,9 +20,6 @@ class UserDashboardController extends Controller
                 $query->whereNull('actual_return_date');
             }]);
 
-        // --- INICIO DE MODIFICACIÓN (PARA BÚSQUEDA Y CONTEO DE ICONOS) ---
-
-        // Lógica de Búsqueda
         if ($request->filled('search')) {
             $searchTerm = $request->search;
             $query->where(function ($q) use ($searchTerm) {
@@ -37,7 +30,6 @@ class UserDashboardController extends Controller
             });
         }
 
-        // Conteo de iconos para la vista de cuadrícula
         $query->withCount(['assignments as laptop_count' => function ($query) {
             $query->whereNull('actual_return_date')
                   ->whereHas('asset.model.category', function ($q) {
@@ -55,39 +47,30 @@ class UserDashboardController extends Controller
         $query->withCount(['assignments as monitor_count' => function ($query) {
             $query->whereNull('actual_return_date')
                   ->whereHas('asset.model.category', function ($q) {
-                      $q->whereIn('name', ['Monitor', 'Pantalla']); // Puedes ajustar estos nombres
+                      $q->whereIn('name', ['Monitor', 'Pantalla']);
                   });
         }]);
-        
-        // --- FIN DE MODIFICACIÓN ---
 
-        $members = $query->orderBy('name')->paginate(12)->withQueryString(); // 12 es un buen número para grids de 3
+        $members = $query->orderBy('name')->paginate(12)->withQueryString();
 
         return view('asset-management.user-dashboard.index', compact('members'));
     }
 
-    /**
-     * Muestra los detalles y la lista de activos de un usuario específico.
-     */
     public function show(OrganigramMember $member)
     {
-        // 1. Obtenemos los activos ASIGNADOS AHORA (para la pestaña 1)
         $currentAssignments = $member->assignments()
             ->whereNull('actual_return_date')
             ->with(['asset.model.category', 'asset.model.manufacturer'])
             ->get();
 
-        // 2. Obtenemos el HISTORIAL de asignaciones (para la pestaña 2)
         $assignmentHistory = $member->assignments()
-            ->whereNotNull('actual_return_date') // La diferencia clave
+            ->whereNotNull('actual_return_date')
             ->with(['asset.model.category', 'asset.model.manufacturer'])
-            ->orderBy('actual_return_date', 'desc') // Ordenar por más reciente
+            ->orderBy('actual_return_date', 'desc')
             ->get();
 
-        // 3. Obtenemos las RESPONSIVAS CONSOLIDADAS (para la pestaña 3)
         $responsivas = $member->userResponsivas; 
 
-        // 4. Pasamos TODAS las variables a la vista
         return view('asset-management.user-dashboard.show', compact(
             'member', 
             'currentAssignments', 
@@ -96,9 +79,6 @@ class UserDashboardController extends Controller
         ));
     }
 
-    /**
-     * Genera el PDF de responsiva consolidada para un usuario.
-     */
     public function generateConsolidatedPdf(OrganigramMember $member)
     {
         $assignments = $member->assignments()->whereNull('actual_return_date')->with(['asset.model.category', 'asset.model.manufacturer', 'asset.softwareAssignments.license'])->get();
@@ -112,14 +92,11 @@ class UserDashboardController extends Controller
         
         $documentId = 'RESP-CONSOLIDADA-' . $member->id . '-' . date('Ymd');
 
-        // --- SE ELIMINÓ TODA LA LÓGICA DEL CÓDIGO QR DE AQUÍ ---
-
         $data = [
             'member' => $member,
             'assignments' => $assignments,
             'logoBase64' => $logoBase64,
             'documentId' => $documentId,
-            // Se eliminó la variable 'qrCode'
         ];
 
         $pdf = PDF::loadView('asset-management.pdfs.consolidated-assignment', $data);

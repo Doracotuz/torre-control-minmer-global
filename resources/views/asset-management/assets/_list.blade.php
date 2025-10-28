@@ -16,7 +16,26 @@
                 <div class="text-gray-600">{{ $asset->model->category->name ?? 'N/A' }}</div>
                 <div class="font-semibold text-gray-800">{{ $asset->model->name ?? 'N/A' }}</div>
                 <div><span class="status-badge status-{{ Str::kebab($asset->status) }}">{{ $asset->status }}</span></div>
-                <div class="text-gray-600">{{ $asset->currentAssignment->member->name ?? '---' }}</div>
+                <div class="text-gray-600 text-sm">
+                    @php
+                        $assignments = $asset->currentAssignments;
+                        $count = $assignments->count();
+                        $names = $assignments->pluck('member.name');
+                    @endphp
+
+                    @if($count > 0)
+                        @if($count > 2)
+                            {{ $names->take(2)->implode(', ') }}
+                            <a href="{{ route('asset-management.assets.show', $asset) }}" class="text-blue-500 hover:underline whitespace-nowrap">
+                                (+{{ $count - 2 }} más)
+                            </a>
+                        @else
+                            {{ $names->implode(', ') }}
+                        @endif
+                    @else
+                        ---
+                    @endif
+                </div>
                 <div class="text-gray-600">{{ $asset->site->name ?? 'N/A' }}</div>
                 <div class="flex items-center justify-end space-x-4">
                     <a href="{{ route('asset-management.assets.show', $asset) }}" title="Ver Detalles"><i class="fas fa-eye"></i></a>
@@ -39,7 +58,26 @@
                 </div>
                 <div class="asset-card-row">
                     <span class="asset-card-label">Asignado a</span>
-                    <span class="asset-card-value">{{ $asset->currentAssignment->member->name ?? '---' }}</span>
+                    <span class="asset-card-value text-sm">
+                        @php
+                            $assignments = $asset->currentAssignments;
+                            $count = $assignments->count();
+                            $names = $assignments->pluck('member.name');
+                        @endphp
+
+                        @if($count > 0)
+                            @if($count > 2)
+                                {{ $names->take(2)->implode(', ') }}
+                                <a href="{{ route('asset-management.assets.show', $asset) }}" class="text-blue-500 hover:underline whitespace-nowrap">
+                                    (+{{ $count - 2 }} más)
+                                </a>
+                            @else
+                                {{ $names->implode(', ') }}
+                            @endif
+                        @else
+                            ---
+                        @endif
+                    </span>
                 </div>
                 <div class="asset-card-row">
                     <span class="asset-card-label">Ubicación</span>

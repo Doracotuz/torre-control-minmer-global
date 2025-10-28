@@ -24,7 +24,6 @@ class WMSInventoryController extends Controller
 {
     public function index(Request $request)
     {
-        // Carga de relaciones optimizada
         $query = \App\Models\WMS\Pallet::query()
             ->with([
                 'purchaseOrder:id,po_number,container_number,operator_name,download_start_time,pedimento_a4,pedimento_g1',
@@ -32,7 +31,6 @@ class WMSInventoryController extends Controller
             ])
             ->where('status', 'Finished');
 
-        // --- Filtros ---
         if ($request->filled('lpn')) { $query->where('lpn', 'like', '%' . $request->lpn . '%'); }
         if ($request->filled('po_number')) { $query->whereHas('purchaseOrder', fn($q) => $q->where('po_number', 'like', '%' . $request->po_number . '%')); }
         if ($request->filled('sku')) { $query->whereHas('items.product', fn($q) => $q->where('sku', 'like', '%' . $request->sku . '%')); }
@@ -51,22 +49,16 @@ class WMSInventoryController extends Controller
         
         $pallets = $query->latest('updated_at')->paginate(25)->withQueryString();
 
-        // --- INICIO DE MODIFICACIÓN: OBTENER STOCK COMPROMETIDO Y DISPONIBLE ---
-
-        // 1. Recolectar IDs de las tarimas paginadas para optimizar la consulta
         $palletItems = $pallets->pluck('items')->flatten();
         $locationIds = $pallets->pluck('location_id')->unique();
         $productIds = $palletItems->pluck('product_id')->unique();
         $qualityIds = $palletItems->pluck('quality_id')->unique();
 
-        // 2. Consultar el "libro mayor" (InventoryStock) para esos items
         $stockData = \App\Models\WMS\InventoryStock::whereIn('location_id', $locationIds)
             ->whereIn('product_id', $productIds)
             ->whereIn('quality_id', $qualityIds)
             ->get();
 
-        // 3. Crear un mapa (diccionario) para acceso rápido en la vista
-        // La clave será "product_id-quality_id-location_id"
         $stockLedger = [];
         foreach ($stockData as $stock) {
             $key = $stock->product_id . '-' . $stock->quality_id . '-' . $stock->location_id;
@@ -77,10 +69,6 @@ class WMSInventoryController extends Controller
             ];
         }
         
-        // --- FIN DE MODIFICACIÓN ---
-
-
-        // 3. Cargar manualmente la información del 'latestArrival' ...
         $purchaseOrderIds = $pallets->pluck('purchaseOrder.id')->filter()->unique();
         if ($purchaseOrderIds->isNotEmpty()) {
             $latestArrivals = \App\Models\WMS\DockArrival::whereIn('id', function($query) use ($purchaseOrderIds) {
@@ -97,7 +85,6 @@ class WMSInventoryController extends Controller
             });
         }
 
-        // --- KPIs Ampliados ---
         $kpis = [
             'total_pallets' => \App\Models\WMS\Pallet::where('status', 'Finished')->count(),
             'total_units' => \App\Models\WMS\InventoryStock::sum('quantity'),
@@ -106,7 +93,6 @@ class WMSInventoryController extends Controller
         ];
         $qualities = \App\Models\WMS\Quality::orderBy('name')->get();
 
-        // 4. Pasar el nuevo mapa $stockLedger a la vista
         return view('wms.inventory.index', compact('pallets', 'kpis', 'qualities', 'stockLedger'));
     }
 
@@ -149,15 +135,12 @@ class WMSInventoryController extends Controller
                 return back()->with('error', 'La ubicación de origen y destino no pueden ser la misma.');
             }
 
-            // Actualiza la ubicación de la tarima
             $pallet->location_id = $destinationLocation->id;
             $pallet->user_id = Auth::id();
             $pallet->last_action = 'Transferencia a ' . $destinationLocation->code;
             $pallet->save();
 
-            // Mueve el stock de cada item de la tarima
             foreach ($pallet->items as $item) {
-                // Decrementa stock en origen
                 $originStock = InventoryStock::where('product_id', $item->product_id)
                     ->where('quality_id', $item->quality_id)
                     ->where('location_id', $originLocation->id)->first();
@@ -166,15 +149,14 @@ class WMSInventoryController extends Controller
                 StockMovement::create([
                     'user_id' => Auth::id(),
                     'product_id' => $item->product_id,
-                    'location_id' => $originLocation->id, // Ubicación de Origen
+                    'location_id' => $originLocation->id,
                     'pallet_item_id' => $item->id,
-                    'quantity' => -$item->quantity, // Negativo
+                    'quantity' => -$item->quantity,
                     'movement_type' => 'TRANSFER-OUT',
-                    'source_id' => $pallet->id, // Fuente es el Pallet
+                    'source_id' => $pallet->id,
                     'source_type' => \App\Models\WMS\Pallet::class,
                 ]);                
 
-                // Incrementa stock en destino
                 $destinationStock = InventoryStock::firstOrCreate(
                     ['product_id' => $item->product_id, 'quality_id' => $item->quality_id, 'location_id' => $destinationLocation->id],
                     ['quantity' => 0]
@@ -184,11 +166,11 @@ class WMSInventoryController extends Controller
                 StockMovement::create([
                     'user_id' => Auth::id(),
                     'product_id' => $item->product_id,
-                    'location_id' => $destinationLocation->id, // Ubicación de Destino
+                    'location_id' => $destinationLocation->id,
                     'pallet_item_id' => $item->id,
-                    'quantity' => $item->quantity, // Positivo
+                    'quantity' => $item->quantity,
                     'movement_type' => 'TRANSFER-IN',
-                    'source_id' => $pallet->id, // Fuente es el Pallet
+                    'source_id' => $pallet->id,
                     'source_type' => \App\Models\WMS\Pallet::class,
                 ]);
 
@@ -217,30 +199,51 @@ class WMSInventoryController extends Controller
 
         $callback = function() use ($request) {
             $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM para acentos
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            // --- Encabezados Exhaustivos (CON NUEVAS COLUMNAS) ---
             fputcsv($file, [
                 'ID_Tarima', 'LPN', 'Estado_Tarima', 'Fecha_Recepcion', 'Usuario_Receptor',
                 'Ubicacion_Codigo', 'Ubicacion_Pasillo', 'Ubicacion_Rack', 'Ubicacion_Nivel', 'Ubicacion_Bin',
                 'N_Orden_Compra', 'Estado_Orden', 'Fecha_Esperada_Orden', 'Contenedor', 'Factura', 'Pedimento_A4', 'Pedimento_G1',
                 'Fecha_Arribo_Vehiculo', 'Fecha_Salida_Vehiculo', 'Operador_Vehiculo',
                 'SKU', 'Producto', 'Calidad', 'Piezas_Por_Caja', 
-                'Cantidad_en_Pallet', // <-- NOMBRE CAMBIADO
-                'Comprometido (Locacion)', // <-- NUEVA COLUMNA
-                'Disponible (Locacion)', // <-- NUEVA COLUMNA
+                'Cantidad_en_Pallet',
+                'Comprometido (Locacion)',
+                'Disponible (Locacion)',
                 'Cantidad_Recibida_Cajas',
             ]);
-
-            // Procesamiento por lotes
             \App\Models\WMS\Pallet::query()
                 ->with(['purchaseOrder', 'location', 'user', 'items.product', 'items.quality'])
                 ->where('status', 'Finished')
                 ->when($request->filled('lpn'), fn($q) => $q->where('lpn', 'like', '%' . $request->lpn . '%'))
-                // ... (resto de filtros replicados)
+                
+                ->when($request->filled('po_number'), fn($q) => 
+                    $q->whereHas('purchaseOrder', fn($sq) => $sq->where('po_number', 'like', '%' . $request->po_number . '%'))
+                )
+                ->when($request->filled('sku'), fn($q) => 
+                    $q->whereHas('items.product', fn($sq) => $sq->where('sku', 'like', '%' . $request->sku . '%'))
+                )
+                ->when($request->filled('pedimento_a4'), fn($q) => 
+                    $q->whereHas('purchaseOrder', fn($sq) => $sq->where('pedimento_a4', 'like', '%' . $request->pedimento_a4 . '%'))
+                )
+                ->when($request->filled('quality_id'), fn($q) => 
+                    $q->whereHas('items.quality', fn($sq) => $sq->where('id', $request->quality_id))
+                )
+                ->when($request->filled('start_date'), fn($q) => 
+                    $q->whereDate('pallets.updated_at', '>=', $request->start_date)
+                )
+                ->when($request->filled('end_date'), fn($q) => 
+                    $q->whereDate('pallets.updated_at', '<=', $request->end_date)
+                )
+                ->when($request->filled('location'), function($q) use ($request) {
+                    $locationTerm = $request->location;
+                    $q->whereHas('location', function($sq) use ($locationTerm) {
+                        $sq->where('code', 'like', "%{$locationTerm}%")
+                           ->orWhere(DB::raw("CONCAT(aisle,'-',rack,'-',shelf,'-',bin)"), 'like', "%{$locationTerm}%");
+                    });
+                })
                 ->chunk(500, function ($pallets) use ($file) {
                     
-                    // --- INICIO DE MODIFICACIÓN: OBTENER STOCK PARA EL CHUNK ---
                     $palletItems = $pallets->pluck('items')->flatten();
                     $locationIds = $pallets->pluck('location_id')->unique();
                     $productIds = $palletItems->pluck('product_id')->unique();
@@ -259,14 +262,12 @@ class WMSInventoryController extends Controller
                             'available' => $stock->quantity - $stock->committed_quantity,
                         ];
                     }
-                    // --- FIN DE MODIFICACIÓN ---
 
                     foreach ($pallets as $pallet) {
                         foreach ($pallet->items as $item) {
                             $piecesPerCase = $item->product->pieces_per_case > 0 ? $item->product->pieces_per_case : 1;
                             $casesReceived = ceil($item->quantity / $piecesPerCase);
 
-                            // Buscar los datos del ledger
                             $key = $item->product_id . '-' . $item->quality_id . '-' . $pallet->location_id;
                             $stock = $stockLedger[$key] ?? ['committed' => 0, 'available' => 0];
                             $comprometido = $stock['committed'];
@@ -282,9 +283,9 @@ class WMSInventoryController extends Controller
                                 $pallet->purchaseOrder->operator_name ?? '',
                                 $item->product->sku ?? 'N/A', $item->product->name ?? 'N/A', $item->quality->name ?? 'N/A',
                                 $item->product->pieces_per_case ?? 1, 
-                                $item->quantity, // Cantidad en Pallet
-                                $comprometido,   // Comprometido (Locación)
-                                $disponible,     // Disponible (Locación)
+                                $item->quantity,
+                                $comprometido,
+                                $disponible,
                                 $casesReceived,
                             ]);
                         }
@@ -324,58 +325,50 @@ class WMSInventoryController extends Controller
                 throw new \Exception("El nuevo LPN es inválido o ya está en uso.");
             }
 
-            // Crear la nueva tarima (hereda la información)
             $newPallet = Pallet::create([
                 'lpn' => $validated['new_lpn'], 'purchase_order_id' => $sourcePallet->purchase_order_id,
-                'status' => 'Finished', 'location_id' => $sourcePallet->location_id, // <-- Se queda en la misma ubicación
+                'status' => 'Finished', 'location_id' => $sourcePallet->location_id,
                 'user_id' => Auth::id(),
                 'last_action' => 'Creado desde Split de ' . $sourcePallet->lpn
             ]);
             
-            // Mover los items
             foreach ($validated['items_to_split'] as $splitData) {
                 $sourceItem = \App\Models\WMS\PalletItem::findOrFail($splitData['item_id']);
-                $splitQuantity = $splitData['quantity']; // Cantidad a mover
+                $splitQuantity = $splitData['quantity'];
 
                 if ($splitQuantity > $sourceItem->quantity) {
                     throw new \Exception("La cantidad a dividir del producto {$sourceItem->product->sku} es mayor a la existente.");
                 }
 
-                // 1. Decrementa la cantidad del item de la tarima origen
                 $sourceItem->decrement('quantity', $splitQuantity);
 
-                // 2. Crea el nuevo item en la tarima destino
                 $newItem = $newPallet->items()->create([
                     'product_id' => $sourceItem->product_id, 
                     'quality_id' => $sourceItem->quality_id, 
                     'quantity' => $splitQuantity
                 ]);
 
-                // --- INICIO DE NUEVO CÓDIGO ---
-                // 3. Registrar Salida (SPLIT-OUT) del PalletItem de origen
                 StockMovement::create([
                     'user_id' => Auth::id(),
                     'product_id' => $sourceItem->product_id,
                     'location_id' => $sourcePallet->location_id,
-                    'pallet_item_id' => $sourceItem->id, // El item de origen
-                    'quantity' => -$splitQuantity, // Negativo
+                    'pallet_item_id' => $sourceItem->id,
+                    'quantity' => -$splitQuantity,
                     'movement_type' => 'SPLIT-OUT',
-                    'source_id' => $newPallet->id, // La causa es el nuevo pallet
+                    'source_id' => $newPallet->id,
                     'source_type' => Pallet::class,
                 ]);
 
-                // 4. Registrar Entrada (SPLIT-IN) al PalletItem de destino
                 StockMovement::create([
                     'user_id' => Auth::id(),
                     'product_id' => $newItem->product_id,
                     'location_id' => $newPallet->location_id,
-                    'pallet_item_id' => $newItem->id, // El item nuevo
-                    'quantity' => $splitQuantity, // Positivo
+                    'pallet_item_id' => $newItem->id,
+                    'quantity' => $splitQuantity,
                     'movement_type' => 'SPLIT-IN',
-                    'source_id' => $sourcePallet->id, // La causa es el pallet origen
+                    'source_id' => $sourcePallet->id,
                     'source_type' => Pallet::class,
                 ]);
-                // --- FIN DE NUEVO CÓDIGO ---
             }
 
             $pregeneratedLpn->update(['is_used' => true]);
@@ -402,7 +395,6 @@ class WMSInventoryController extends Controller
     
     public function showPalletInfoForm()
     {
-        // Simplemente muestra la vista con el formulario de búsqueda
         return view('wms.inventory.pallet-info.index', ['pallet' => null]);
     }
 
@@ -415,7 +407,7 @@ class WMSInventoryController extends Controller
             ->with([
                 'purchaseOrder.latestArrival',
                 'location',
-                'user', // Usuario que finalizó la recepción
+                'user',
                 'items.product',
                 'items.quality'
             ])
@@ -425,37 +417,30 @@ class WMSInventoryController extends Controller
             return back()->with('error', 'LPN no encontrado.');
         }
         
-        // Devuelve la misma vista, pero ahora con la información del pallet
         return view('wms.inventory.pallet-info.index', compact('pallet'));
     }
 
     public function adjustItemQuantity(Request $request, PalletItem $palletItem)
     {
-        // 1. Verificar Permisos (ya lo tienes)
         if (!Auth::user()->isSuperAdmin()) {
             return back()->with('error', 'No tienes permisos para realizar ajustes.');
         }
 
-        // 2. Validar Input (ya lo tienes)
         $validator = Validator::make($request->all(), [
             'new_quantity' => 'required|integer|min:0',
             'reason' => 'required|string|min:5|max:500',
         ]);
 
-        // Redirigir si falla la validación (ya lo tienes)
         if ($validator->fails()) {
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput()
-                // Asegura que el modal se reabra en caso de error
                 ->with('open_adjustment_modal_for_item', $palletItem->id); 
         }
 
         $validated = $validator->validated();
         
-        // Obtenemos el Pallet padre ANTES de la transacción para usarlo después
         $pallet = $palletItem->pallet; 
-        // Cargamos la relación del producto para el mensaje de last_action
         $palletItem->loadMissing('product'); 
 
         DB::beginTransaction();
@@ -464,22 +449,18 @@ class WMSInventoryController extends Controller
             $newQuantity = $validated['new_quantity'];
             $difference = $newQuantity - $oldQuantity;
 
-            // 3. (Opcional) Actualizar InventoryStock si lo usas (ya lo tienes)
             $stock = InventoryStock::where('product_id', $palletItem->product_id)
                                 ->where('quality_id', $palletItem->quality_id)
                                 ->where('location_id', $pallet->location_id)->first();
             
             if ($stock) {
-                // Ajusta la cantidad total en la ubicación
                 $newStockQuantity = max(0, $stock->quantity + $difference);
                 $stock->update(['quantity' => $newStockQuantity]);
                 // $difference > 0 ? $stock->increment('quantity', $difference) : $stock->decrement('quantity', abs($difference)); // Alternativa
             }
 
-            // 4. Actualizar la cantidad en el PalletItem específico (ya lo tienes)
             $palletItem->update(['quantity' => $newQuantity]);
 
-            // 5. Registrar el ajuste en la tabla InventoryAdjustment (ya lo tienes)
             $adjustment = InventoryAdjustment::create([
                 'pallet_item_id' => $palletItem->id,
                 'product_id' => $palletItem->product_id, 
@@ -497,32 +478,26 @@ class WMSInventoryController extends Controller
                 'product_id' => $palletItem->product_id,
                 'location_id' => $pallet->location_id,
                 'pallet_item_id' => $palletItem->id,
-                'quantity' => $difference, // Ya viene con signo + o -
+                'quantity' => $difference,
                 'movement_type' => 'AJUSTE-MANUAL',
-                'source_id' => $adjustment->id, // Fuente es el registro de Ajuste
+                'source_id' => $adjustment->id,
                 'source_type' => \App\Models\WMS\InventoryAdjustment::class,
             ]);            
 
-            // --- INICIO DE LA MODIFICACIÓN ---
-            // 6. Actualizar la última acción en el Pallet padre
-            if ($pallet) { // Asegurarse de que el pallet existe
+            if ($pallet) {
                 $pallet->update([
-                    'last_action' => 'Ajuste Item: ' . ($palletItem->product->sku ?? 'SKU N/A'), // Mensaje descriptivo
-                    'user_id' => Auth::id() // Usuario que hizo el ajuste
-                    // updated_at se actualiza automáticamente
+                    'last_action' => 'Ajuste Item: ' . ($palletItem->product->sku ?? 'SKU N/A'),
+                    'user_id' => Auth::id()
                 ]);
             }
-            // --- FIN DE LA MODIFICACIÓN ---
 
             DB::commit();
             
-            // Redirigir a la página principal de inventario
             return redirect()->route('wMS.inventory.index')->with('success', 'Ajuste de inventario realizado exitosamente.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error al ajustar PalletItem {$palletItem->id}: " . $e->getMessage()); // Registrar error
-            // Redirigir atrás con error Y manteniendo el modal abierto
+            Log::error("Error al ajustar PalletItem {$palletItem->id}: " . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Error al procesar el ajuste: ' . $e->getMessage())
                 ->with('open_adjustment_modal_for_item', $palletItem->id);
@@ -534,8 +509,8 @@ class WMSInventoryController extends Controller
             'user', 
             'palletItem.pallet', 
             'palletItem.product',
-            'product',  // <-- Carga el producto directamente
-            'location'  // <-- Carga la ubicación directamente
+            'product',
+            'location'
         ])->latest()->paginate(25);
             
         return view('wms.inventory.adjustments.index', compact('adjustments'));
