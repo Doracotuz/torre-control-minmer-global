@@ -207,27 +207,26 @@
 
 <div class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-<header class="mb-8">
-    <a href="{{ route('asset-management.user-dashboard.index') }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-4 inline-block">
-        <i class="fas fa-arrow-left mr-2"></i> Volver a Usuarios
-    </a>
+    <header class="mb-8">
+        <a href="{{ route('asset-management.user-dashboard.index') }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-4 inline-block">
+            <i class="fas fa-arrow-left mr-2"></i> Volver a Usuarios
+        </a>
 
-    <div class="flex items-center gap-6">
-        <div class="avatar-image">
-            @php
-                $photoUrl = $member->photo_path 
-                            ? Storage::disk('s3')->url($member->photo_path)
-                            : 'https://ui-avatars.com/api/?name=' . urlencode($member->name) . '&color=FFFFFF&background=2c3856&size=80';
-            @endphp
-            <img src="{{ $photoUrl }}" alt="Foto de {{ $member->name }}">
-        </div>
+        <div class="flex items-center gap-6">
+            <div class="avatar-image">
+                @php
+                    $photoUrl = $member->profile_photo_path_url
+                                ?: 'https://ui-avatars.com/api/?name=' . urlencode($member->name) . '&color=FFFFFF&background=2c3856&size=80';
+                @endphp
+                <img src="{{ $photoUrl }}" alt="Foto de {{ $member->name }}">
+            </div>
 
-        <div>
-            <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight">{{ $member->name }}</h1>
-            <p class="text-xl text-[var(--color-text-secondary)] mt-1">{{ $member->position->name ?? 'Sin Puesto' }}</p>
+            <div>
+                <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight">{{ $member->name }}</h1>
+                <p class="text-xl text-[var(--color-text-secondary)] mt-1">{{ $member->position->name ?? 'Sin Puesto' }}</p>
+            </div>
         </div>
-    </div>
-</header>
+    </header>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <div class="stats-card">
