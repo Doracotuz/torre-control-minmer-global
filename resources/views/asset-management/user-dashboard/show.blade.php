@@ -381,7 +381,7 @@
                                             <p class="text-sm text-gray-600">Subido el: {{ $responsiva->generated_date->format('d/m/Y h:i A') }}</p>
                                         </div>
                                     </div>
-                                    <a href="{{ Storage::disk('s3')->url($responsiva->file_path) }}" target="_blank" class="btn btn-secondary">
+                                    <a href="{{ Storage::disk('s3')->temporaryUrl($responsiva->file_path, now()->addMinutes(15)) }}" target="_blank" class="btn btn-secondary">
                                         <i class="fas fa-eye mr-2"></i> Ver Documento
                                     </a>
                                 </div>
