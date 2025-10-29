@@ -639,6 +639,9 @@ Route::middleware(['auth'])->prefix('projects')->name('projects.')->group(functi
 Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::resource('brands', WMSBrandController::class);
     Route::resource('product-types', WMSProductTypeController::class);
+    Route::get('products/export-csv', [WMSProductController::class, 'exportCsv'])->name('products.export-csv');
+    Route::get('products-template', [WMSProductController::class, 'downloadTemplate'])->name('products.template');
+    Route::post('products-import', [WMSProductController::class, 'importCsv'])->name('products.import');
     Route::resource('products', WMSProductController::class);
     // Route::resource('locations', WMSLocationController::class)->except(['show']);
     Route::get('locations/export-csv', [WMSLocationController::class, 'exportCsv'])->name('locations.export-csv');

@@ -43,7 +43,56 @@
                         <div x-show="step === 'start'" x-transition:enter.duration.300ms><form @submit.prevent="startNewPallet()" class="text-center"><div class="max-w-md mx-auto relative"><i class="fas fa-barcode absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 text-2xl"></i><input type="text" id="lpn_input" x-model="lpnInput" class="pl-12 w-full text-center text-2xl font-mono rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3" placeholder="ESCANEAR LPN" required autofocus></div><button type="submit" :disabled="loading || !lpnInput" class="mt-4 px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:bg-indigo-700 text-lg transition disabled:opacity-50"><span x-show="!loading"><i class="fas fa-play-circle mr-2"></i> Iniciar Tarima</span><span x-show="loading">Verificando...</span></button></form></div>
 
                         <div x-show="step === 'receiving'" x-transition:enter.duration.300ms class="space-y-6">
-                            <div class="border rounded-lg p-4 bg-gray-50"><div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end"><div class="md:col-span-3"><label class="block text-sm font-medium">Producto</label><select x-model.number="newItem.product_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm"><option value="">Seleccione...</option>@foreach ($products as $product)<option value="{{ $product->id }}">{{ $product->name }} ({{ $product->sku }})</option>@endforeach</select></div><div class="md:col-span-2"><label class="block text-sm font-medium">Calidad</label><select x-model.number="newItem.quality_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm"><option value="">Seleccione...</option>@foreach ($qualities as $quality)<option value="{{ $quality->id }}">{{ $quality->name }}</option>@endforeach</select></div><div><label class="block text-sm font-medium">Cantidad</label><input type="number" x-model.number="newItem.quantity" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm"></div></div><button @click="addItemToPallet" :disabled="loading || !newItem.product_id || !newItem.quantity || !newItem.quality_id" class="w-full mt-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition disabled:opacity-50 text-base"><i class="fas fa-plus mr-2"></i>Añadir Producto a Tarima</button></div>
+                            <div class="border rounded-lg p-4 bg-gray-50">
+                                <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+                                    <div class="md:col-span-3 relative">
+                                        <label class="block text-sm font-medium">Escanear SKU, UPC o buscar Producto</label>
+                                        <input type="text" 
+                                            x-model="productSearchInput" 
+                                            @input.debounce.300ms="findProduct()" 
+                                            @keydown.enter.prevent="selectFirstProduct()"
+                                            @keydown.escape.prevent="clearSearch()"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm"
+                                            placeholder="Escanear o escribir...">
+
+                                        <template x-if="selectedProduct">
+                                            <div class="mt-2 p-2 bg-indigo-50 border border-indigo-200 rounded-md text-sm">
+                                                <span class="font-bold text-indigo-700" x-text="selectedProduct.name"></span>
+                                                <span class="text-gray-500 font-mono" x-text="`(${selectedProduct.sku})`"></span>
+                                                <button type_button @click="clearSearch()" class="ml-2 text-red-500 text-xs font-bold">[X]</button>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="productSearchResults.length > 0">
+                                            <ul class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
+                                                <template x-for="product in productSearchResults" :key="product.id">
+                                                    <li @click="selectProduct(product)" 
+                                                        class="p-3 cursor-pointer hover:bg-gray-100 text-sm">
+                                                        <strong x-text="product.name"></strong>
+                                                        <span class="block text-xs text-gray-500 font-mono" x-text="`SKU: ${product.sku} | UPC: ${product.upc || 'N/A'}`"></span>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium">Calidad</label>
+                                        <select x-model.number="newItem.quality_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                        <option value="">Seleccione...</option>
+                                        @foreach ($qualities as $quality)
+                                            <option value="{{ $quality->id }}">{{ $quality->name }}</option>
+                                        @endforeach</select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium">Cantidad</label>
+                                        <input type="number" x-model.number="newItem.quantity" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                    </div>
+                                </div>
+                                <button @click="addItemToPallet" :disabled="loading || !newItem.product_id || !newItem.quantity || !newItem.quality_id" class="w-full mt-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition disabled:opacity-50 text-base">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Añadir Producto a Tarima
+                                </button>
+                            </div>
                             <div class="border-t pt-4">
                                 <h4 class="font-bold text-gray-700 mb-2">Contenido de la Tarima Actual:</h4>
                                 <div class="space-y-2">
@@ -99,37 +148,20 @@
         return {
             summary: @json($receivingSummary),
             purchaseOrderId: {{ $purchaseOrder->id }},
+            allProducts: @json($products),
             
             step: 'start', loading: false, currentPallet: null,
             newItem: { product_id: '', quantity: 1, quality_id: '' },
-            lpnInput: '', finishedPallets: [],
+            lpnInput: '', finishedPallets: @json($finishedPallets),
+
+            productSearchInput: '',
+            productSearchResults: [],
+            selectedProduct: null,            
 
             editingItemId: null,
             editForm: { product_id: '', quality_id: '', quantity: 0 },
-            finishedPallets: @json($finishedPallets),
+            // finishedPallets: @json($finishedPallets),
 
-            async startNewPallet() {
-                if (!this.lpnInput.trim()) return;
-                this.loading = true;
-                try {
-                    const response = await fetch('{{ route('wms.receiving.startPallet') }}', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'},
-                        body: JSON.stringify({ purchase_order_id: this.purchaseOrderId, lpn: this.lpnInput })
-                    });
-                    const data = await response.json();
-                    if (!response.ok) throw new Error(data.error || 'Error del servidor.');
-                    
-                    this.currentPallet = data;
-                    this.step = 'receiving';
-                    this.lpnInput = '';
-                } catch (error) {
-                    alert(`Error al iniciar tarima: ${error.message}`);
-                } finally {
-                    this.loading = false;
-                }
-            },
-            
             async addItemToPallet() {
                 console.log('Iniciando addItemToPallet...');
 
@@ -141,20 +173,39 @@
 
                 try {
                     const summaryItem = this.summary.find(s => s.product_id == this.newItem.product_id);
-                    if (summaryItem) {
+                    
+                    if (!summaryItem) {
+                        const product = this.allProducts.find(p => p.id == this.newItem.product_id);
+                        const productName = product ? product.name : `ID ${this.newItem.product_id}`;
+                        const productSku = product ? product.sku : 'SKU Desconocido';
+
+                        const message = `¡PRODUCTO NO ESPERADO!\n\n` +
+                                        `El producto "${productName}" (SKU: ${productSku}) no está en esta Orden de Compra.\n\n` +
+                                        `¿Deseas recibirlo de todos modos?`;
+                        
+                        if (!confirm(message)) {
+                            console.log('El usuario canceló la recepción de un producto no esperado.');
+                            this.clearSearch();
+                            return;
+                        }
+
+                    } else {
                         console.log('Producto encontrado en el resumen:', summaryItem);
                         const totalAfterAdd = Number(summaryItem.received) + Number(this.newItem.quantity);
                         
                         if (totalAfterAdd > summaryItem.ordered) {
-                            const message = `¡Atención! Estás a punto de recibir ${this.newItem.quantity} unidades.\n\nEl total recibido sería de ${totalAfterAdd}, superando las ${summaryItem.ordered} unidades ordenadas.\n\n¿Deseas continuar?`;
+                            const message = `¡SOBRE-RECEPCIÓN!\n\n` +
+                                            `Estás a punto de recibir ${this.newItem.quantity} unidades.\n` +
+                                            `El total recibido (${totalAfterAdd}) superaría las ${summaryItem.ordered} unidades ordenadas.\n\n` +
+                                            `¿Deseas continuar?`;
                             if (!confirm(message)) {
                                 console.log('El usuario canceló la sobre-recepción.');
-                                return; 
+                                return;
                             }
                         }
                     }
                 } catch (e) {
-                    console.error('Error durante la validación de sobre-recepción:', e);
+                    console.error('Error durante la validación de recepción:', e);
                     alert('Ocurrió un error al validar las cantidades.');
                     return;
                 }
@@ -173,6 +224,8 @@
                     console.log('Respuesta recibida del servidor:', data);
                     this.currentPallet = data; 
                     this.newItem = { product_id: '', quantity: 1, quality_id: '' };
+                    this.clearSearch();
+
                 } catch (error) {
                     console.error('Error en la llamada fetch:', error);
                     alert(`Error: ${error.message}`);
@@ -277,7 +330,52 @@
                 } finally {
                     this.loading = false;
                 }
+            },
+
+            findProduct() {
+                if (this.productSearchInput.trim() === '') {
+                    this.productSearchResults = [];
+                    return;
+                }
+
+                const search = this.productSearchInput.toLowerCase();
+
+                const exactMatch = this.allProducts.find(p => 
+                    (p.sku && p.sku.toLowerCase() === search) || 
+                    (p.upc && p.upc.toLowerCase() === search)
+                );
+
+                if (exactMatch) {
+                    this.selectProduct(exactMatch);
+                    return;
+                }
+
+                this.productSearchResults = this.allProducts.filter(p => 
+                    (p.name && p.name.toLowerCase().includes(search)) ||
+                    (p.sku && p.sku.toLowerCase().includes(search))
+                ).slice(0, 10);
+            },
+
+            selectProduct(product) {
+                this.selectedProduct = product;
+                this.newItem.product_id = product.id;
+                this.productSearchInput = '';
+                this.productSearchResults = [];
+            },
+
+            selectFirstProduct() {
+                if (this.productSearchResults.length > 0) {
+                    this.selectProduct(this.productSearchResults[0]);
+                }
+            },
+
+            clearSearch() {
+                this.selectedProduct = null;
+                this.newItem.product_id = '';
+                this.productSearchInput = '';
+                this.productSearchResults = [];
             }
+
         }
     }
     document.addEventListener('alpine:init', () => {
