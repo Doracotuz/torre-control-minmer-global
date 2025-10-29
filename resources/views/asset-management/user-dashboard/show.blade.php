@@ -17,9 +17,6 @@
     }
     body { background-color: var(--color-background); }
 
-    /* --- ESTILOS DEL DASHBOARD --- */
-
-    /* Tarjetas de Estadísticas */
     .stats-card {
         background-color: var(--color-surface);
         border-radius: 0.75rem;
@@ -58,7 +55,6 @@
         color: var(--color-text-primary);
     }
 
-    /* Pestañas (Tabs) */
     .tab-nav {
         display: flex;
         border-bottom: 2px solid var(--color-border);
@@ -80,7 +76,6 @@
         border-color: var(--color-primary);
     }
 
-    /* Tarjetas de Activos (Grid) */
     .asset-card {
         background-color: var(--color-surface);
         border-radius: 0.75rem;
@@ -122,7 +117,6 @@
         border-top: 1px solid var(--color-border);
     }
 
-    /* Línea de Tiempo (Historial) */
     .timeline {
         position: relative;
         padding-left: 2.5rem;
@@ -168,7 +162,6 @@
         font-weight: 500;
     }
     
-    /* Lista de Documentos */
     .document-list-item {
         display: flex;
         align-items: center;
@@ -181,12 +174,27 @@
         background-color: #f9fafb;
     }
     .document-icon {
-        color: #ef4444; /* Rojo PDF */
+        color: #ef4444;
         font-size: 1.5rem;
         margin-right: 1rem;
     }
 
-    /* Botones */
+    .avatar-image {
+        width: 80px;
+        height: 80px;
+        border-radius: 9999px;
+        flex-shrink: 0;
+        overflow: hidden;
+        border: 4px solid white;
+        box-shadow: var(--shadow-md);
+        background-color: var(--color-border);
+    }
+    .avatar-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }    
+
     .btn { padding: 0.65rem 1.25rem; border-radius: 0.5rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); transition: all 200ms ease-in-out; transform: translateY(0); border: 1px solid transparent; }
     .btn:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
     .btn-primary { background-color: var(--color-primary); color: white; }
@@ -199,13 +207,27 @@
 
 <div class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-    <header class="mb-8">
-        <a href="{{ route('asset-management.user-dashboard.index') }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-2 inline-block">
-            <i class="fas fa-arrow-left mr-2"></i> Volver a Usuarios
-        </a>
-        <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight">{{ $member->name }}</h1>
-        <p class="text-xl text-[var(--color-text-secondary)] mt-1">{{ $member->position->name ?? 'Sin Puesto' }}</p>
-    </header>
+<header class="mb-8">
+    <a href="{{ route('asset-management.user-dashboard.index') }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-4 inline-block">
+        <i class="fas fa-arrow-left mr-2"></i> Volver a Usuarios
+    </a>
+
+    <div class="flex items-center gap-6">
+        <div class="avatar-image">
+            @php
+                $photoUrl = $member->photo_path 
+                            ? Storage::disk('s3')->url($member->photo_path)
+                            : 'https://ui-avatars.com/api/?name=' . urlencode($member->name) . '&color=FFFFFF&background=2c3856&size=80';
+            @endphp
+            <img src="{{ $photoUrl }}" alt="Foto de {{ $member->name }}">
+        </div>
+
+        <div>
+            <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight">{{ $member->name }}</h1>
+            <p class="text-xl text-[var(--color-text-secondary)] mt-1">{{ $member->position->name ?? 'Sin Puesto' }}</p>
+        </div>
+    </div>
+</header>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <div class="stats-card">

@@ -136,7 +136,6 @@
         color: var(--color-text-secondary);
         position: relative;
     }
-    /* Tooltip para iconos */
     [data-tooltip] { position: relative; }
     [data-tooltip]::after {
         content: attr(data-tooltip);
@@ -163,7 +162,6 @@
         background-color: #f9fafb;
     }
 
-    /* Botones */
     .btn { padding: 0.65rem 1.25rem; border-radius: 0.5rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); transition: all 200ms ease-in-out; transform: translateY(0); border: 1px solid transparent; }
     .btn:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
     .btn-primary { background-color: var(--color-primary); color: white; }
