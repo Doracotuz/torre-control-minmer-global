@@ -180,13 +180,13 @@
     }
 
     .avatar-image {
-        width: 80px;
-        height: 80px;
-        border-radius: 9999px;
+        width: 128px;
+        height: 128px;
+        border-radius: 0.75rem;
         flex-shrink: 0;
         overflow: hidden;
         border: 4px solid white;
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--shadow-lg);
         background-color: var(--color-border);
     }
     .avatar-image img {
@@ -212,11 +212,10 @@
             <i class="fas fa-arrow-left mr-2"></i> Volver a Usuarios
         </a>
 
-        <div class="flex items-center gap-6">
-            <div class="avatar-image">
+        <div class="flex items-center gap-8"> <div class="avatar-image">
                 @php
                     $photoUrl = $member->profile_photo_path_url
-                                ?: 'https://ui-avatars.com/api/?name=' . urlencode($member->name) . '&color=FFFFFF&background=2c3856&size=80';
+                                ?: 'https://ui-avatars.com/api/?name=' . urlencode($member->name) . '&color=FFFFFF&background=2c3856&size=128'; // CAMBIO: size=128
                 @endphp
                 <img src="{{ $photoUrl }}" alt="Foto de {{ $member->name }}">
             </div>
