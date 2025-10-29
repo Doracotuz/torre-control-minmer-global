@@ -9,4 +9,13 @@ class UserResponsiva extends Model
 {
     use HasFactory;
     protected $fillable = ['organigram_member_id', 'file_path', 'generated_date'];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'generated_date' => 'datetime',
+    ];
 }
