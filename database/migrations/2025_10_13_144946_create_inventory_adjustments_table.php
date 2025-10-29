@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('physical_count_task_id')->nullable()->constrained('physical_count_tasks');
             $table->foreignId('product_id')->constrained('products');
             $table->foreignId('location_id')->constrained('locations');
-            $table->integer('quantity_adjusted'); // Puede ser positivo o negativo
+            $table->integer('quantity_adjusted');
             $table->string('reason');
             $table->foreignId('user_id')->comment('Supervisor who approved')->constrained('users');
             $table->timestamps();

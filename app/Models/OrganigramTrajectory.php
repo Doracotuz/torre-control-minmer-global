@@ -23,9 +23,6 @@ class OrganigramTrajectory extends Model
         'end_date' => 'date',
     ];
 
-    /**
-     * Get the organigram member that owns the trajectory entry.
-     */
     public function member(): BelongsTo
     {
         return $this->belongsTo(OrganigramMember::class);

@@ -9,7 +9,6 @@ class OrganigramSkillsActivitiesSeeder extends Seeder
 {
     public function run(): void
     {
-        // 50 Habilidades (Skills)
         $skills = [
             ['name' => 'SAP CRM', 'description' => 'Gestión de clientes en SAP'],
             ['name' => 'Excel Intermedio', 'description' => 'Tablas dinámicas y fórmulas'],
@@ -67,7 +66,6 @@ class OrganigramSkillsActivitiesSeeder extends Seeder
             ['name' => 'API Integration', 'description' => 'Conexión de sistemas']
         ];
 
-        // 50 Actividades (Activities)
         $activities = [
             ['name' => 'Programación Citas', 'description' => 'Agendamiento de entregas'],
             ['name' => 'Seguimiento Entregas', 'description' => 'Tracking en tiempo real'],

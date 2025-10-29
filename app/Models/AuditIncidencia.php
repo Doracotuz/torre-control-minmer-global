@@ -10,8 +10,6 @@ class AuditIncidencia extends Model
     use HasFactory;
 
     /**
-     * The attributes that are mass assignable.
-     *
      * @var array<int, string>
      */
     protected $fillable = [
@@ -20,17 +18,11 @@ class AuditIncidencia extends Model
         'tipo_incidencia',
     ];
 
-    /**
-     * Obtiene la guía a la que pertenece la incidencia.
-     */
     public function guia()
     {
         return $this->belongsTo(Guia::class);
     }
 
-    /**
-     * Obtiene el usuario (auditor) que registró la incidencia.
-     */
     public function user()
     {
         return $this->belongsTo(User::class);

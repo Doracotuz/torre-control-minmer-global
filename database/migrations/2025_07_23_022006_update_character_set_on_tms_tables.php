@@ -16,8 +16,8 @@ return new class extends Migration
             'rutas' => ['nombre' => 'VARCHAR(255)', 'region' => 'VARCHAR(255)'],
             'paradas' => ['nombre_lugar' => 'VARCHAR(255)'],
             'guias' => ['guia' => 'VARCHAR(255)', 'operador' => 'VARCHAR(255)', 'placas' => 'VARCHAR(255)', 'pedimento' => 'VARCHAR(255)'],
-            'facturas' => ['numero_factura' => 'VARCHAR(255)', 'destino' => 'TEXT'], // Especificamos TEXT
-            'eventos' => ['subtipo' => 'VARCHAR(255)', 'nota' => 'TEXT'] // Especificamos TEXT
+            'facturas' => ['numero_factura' => 'VARCHAR(255)', 'destino' => 'TEXT'],
+            'eventos' => ['subtipo' => 'VARCHAR(255)', 'nota' => 'TEXT']
         ];
 
         foreach ($tables as $tableName => $columns) {

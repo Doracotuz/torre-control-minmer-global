@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Certificado de Mantenimiento de Activo</title>
     <style>
-        /* --- ESTILOS GENERALES Y PALETA DE COLORES --- */
         @page {
             margin: 3.5cm 1.5cm 3cm 1.5cm;
         }
@@ -19,7 +18,6 @@
             --color-accent: #ff9c00;
         }
         
-        /* --- ENCABEZADO Y PIE DE PÁGINA --- */
         header {
             position: fixed;
             top: -3cm;
@@ -45,7 +43,6 @@
             padding-top: 10px;
         }
         
-        /* --- TÍTULOS Y SECCIONES --- */
         h1 {
             color: var(--color-primary);
             font-size: 20px;
@@ -63,7 +60,6 @@
             padding-bottom: 5px;
         }
         
-        /* --- TABLAS DE DETALLES --- */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -82,7 +78,6 @@
             width: 30%;
         }
         
-        /* --- TEXTOS Y FIRMAS --- */
         .text-justify { text-align: justify; }
         .notes-section {
             margin-top: 20px;
@@ -177,7 +172,6 @@
         </div>
         @endif
         
-        {{-- SECCIÓN DE FIRMA DEL PERSONAL DE TI --}}
         <div class="signatures">
             <p class="text-justify">
                 El personal de TI certifica que el servicio de mantenimiento descrito ha sido completado y el equipo ha sido verificado para su correcto funcionamiento, dejándolo en estatus de "En Almacén".

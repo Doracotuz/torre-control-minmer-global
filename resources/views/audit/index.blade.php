@@ -54,7 +54,6 @@
             </div>
         </div>
         
-        {{-- SECCIÓN 3: AUDITORÍAS DE GUÍA (POR GUÍA) --}}
         <div class="mb-6">
             <h2 class="text-xl font-bold text-gray-700 mb-3"><i class="fas fa-truck text-green-500 mr-2"></i>Auditorías de Guía (Patio y Carga)</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

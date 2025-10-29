@@ -29,33 +29,24 @@
                 </defs>
                 <ellipse cx="75" cy="220" rx="40" ry="5" fill="#000000" opacity="0.15"/>
                 <g class="robot-body">
-                    <!-- Cabeza -->
                     <circle cx="75" cy="35" r="25" fill="url(#gradienteGris)" stroke="#cccccc" stroke-width="0.5"/>
-                    <!-- Orejas -->
                     <ellipse cx="50" cy="35" rx="5" ry="8" fill="url(#gradienteGris)" stroke="#cccccc" stroke-width="0.5"/>
                     <ellipse cx="100" cy="35" rx="5" ry="8" fill="url(#gradienteGris)" stroke="#cccccc" stroke-width="0.5"/>
-                    <!-- Cabello -->
                     <path d="M60 15 C60 10, 90 10, 90 15 L90 25 C90 25, 60 25, 60 25 Z" fill="#2b2b2b"/>
-                    <!-- Ojos -->
                     <ellipse cx="65" cy="35" rx="5" ry="4" fill="#ff9c00" filter="url(#glow)">
                         <animate attributeName="ry" values="4;1;4;4;4;4" dur="4s" repeatCount="indefinite" />
                     </ellipse>
                     <ellipse cx="85" cy="35" rx="5" ry="4" fill="#ff9c00" filter="url(#glow)">
                         <animate attributeName="ry" values="4;4;4;1;4;4" dur="4s" begin="0.3s" repeatCount="indefinite" />
                     </ellipse>
-                    <!-- Boca -->
                     <path id="robot-mouth" d="M65 45 Q75 50 85 45" fill="none" stroke="#2b2b2b" stroke-width="2">
                         <animate attributeName="d" values="M65 45 Q75 50 85 45;M65 45 Q75 48 85 45;M65 45 Q75 50 85 45" dur="0.7s" begin="indefinite" keyTimes="0;0.5;1" fill="freeze"/>
                     </path>
-                    <!-- Cuello -->
                     <rect x="65" y="60" width="20" height="10" fill="#cccccc"/>
-                    <!-- Torso -->
                     <rect x="45" y="70" width="60" height="80" rx="15" fill="url(#gradienteRopa)" stroke="#cccccc" stroke-width="0.5"/>
                     <rect x="55" y="80" width="40" height="30" rx="5" fill="#2b2b2b"/>
                     <image href="{{ Storage::disk('s3')->url('logominmerrbt.png') }}" x="60" y="85" height="20" width="30"/>
-                    <!-- Hombros -->
                     <rect x="40" y="70" width="70" height="10" rx="5" fill="url(#gradienteRopa)"/>
-                    <!-- Brazo izquierdo (articulado) -->
                     <g id="robot-arm-left" class="robot-arm-swing">
                         <rect x="15" y="80" width="20" height="40" rx="8" fill="url(#gradienteGris)" stroke="#cccccc" stroke-width="0.5"/>
                         <rect x="15" y="120" width="20" height="40" rx="8" fill="url(#gradienteGris)" stroke="#cccccc" stroke-width="0.5"/>
@@ -65,7 +56,6 @@
                             <rect x="28" y="160" width="4" height="10" rx="2" fill="url(#gradienteGris)" stroke="#cccccc" stroke-width="0.5"/>
                         </g>
                     </g>
-                    <!-- Brazo derecho (articulado) -->
                     <g id="robot-arm-right" class="robot-arm-wave">
                         <rect x="115" y="80" width="20" height="40" rx="8" fill="url(#gradienteGris)" stroke="#cccccc" stroke-width="0.5"/>
                         <rect x="115" y="120" width="20" height="40" rx="8" fill="url(#gradienteGris)" stroke="#cccccc" stroke-width="0.5"/>
@@ -75,7 +65,6 @@
                             <rect x="128" y="160" width="4" height="10" rx="2" fill="url(#gradienteGris)" stroke="#cccccc" stroke-width="0.5"/>
                         </g>
                     </g>
-                    <!-- Piernas (con rodillas) -->
                     <g id="robot-leg-left">
                         <rect x="50" y="150" width="20" height="40" rx="8" fill="url(#gradienteRopa)" stroke="#cccccc" stroke-width="0.5"/>
                         <rect x="50" y="190" width="20" height="30" rx="8" fill="url(#gradienteGris)" stroke="#cccccc" stroke-width="0.5"/>

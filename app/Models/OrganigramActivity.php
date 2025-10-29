@@ -12,9 +12,6 @@ class OrganigramActivity extends Model
 
     protected $fillable = ['name', 'description'];
 
-    /**
-     * The organigram members that have this activity.
-     */
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(OrganigramMember::class, 'organigram_member_activity');

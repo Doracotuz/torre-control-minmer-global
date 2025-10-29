@@ -12,8 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Añade la columna para la ruta de la foto de perfil
-            // Será nullable porque no todos los usuarios tendrán una foto
             $table->string('profile_photo_path', 2048)->nullable()->after('password');
         });
     }

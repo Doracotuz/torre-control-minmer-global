@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->boolean('is_area_admin')->default(false)->after('area_id'); // Nueva columna
+            $table->boolean('is_area_admin')->default(false)->after('area_id');
         });
     }
 

@@ -56,24 +56,18 @@
 
     @forelse ($displayItems as $item)
         @if ($item->type === 'group')
-            {{-- ============================================= --}}
-            {{-- VISTA PARA GUÍAS AGRUPADAS (PATIO O CARGA)   --}}
-            {{-- ============================================= --}}
             @php
                 $guia = $item->guia;
-                // Lógica para obtener las auditorías de forma más segura
                 $auditsInGuia = $guia->plannings->flatMap(function ($planning) {
                     return $planning->order ? $planning->order->audits : null;
                 })->filter()->unique('id');
 
-                // Obtenemos la primera auditoría para usarla como referencia
                 $firstAudit = $auditsInGuia->first();
 
                 $buttonClass = 'bg-red-500 cursor-not-allowed';
                 $buttonText = 'Error: Sin Auditorías';
                 $route = '#';
 
-                // SOLO si encontramos una auditoría válida, calculamos la ruta y el botón
                 if ($firstAudit) {
                     $todasListasParaPatio = !$auditsInGuia->contains('status', 'Pendiente Almacén');
                     $todasListasParaCarga = $todasListasParaPatio && !$auditsInGuia->contains('status', 'Pendiente Patio');
@@ -87,7 +81,6 @@
                         $buttonText = 'Auditar Patio';
                         $route = route('audit.patio.show', $firstAudit);
                     } else {
-                        // Fallback por si la lógica del controlador falla, aunque no debería pasar
                         $buttonClass = 'bg-gray-400 cursor-not-allowed';
                         $buttonText = 'Sincronizando...';
                     }
@@ -116,9 +109,6 @@
             </div>
 
         @elseif ($item->type === 'individual')
-            {{-- ================================================== --}}
-            {{-- VISTA PARA ÓRDENES INDIVIDUALES (PEND. ALMACÉN)  --}}
-            {{-- ================================================== --}}
             @php
                 $planning = $item->planning;
                 $order = $planning->order;

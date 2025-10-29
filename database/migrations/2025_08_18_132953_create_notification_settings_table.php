@@ -10,11 +10,10 @@ return new class extends Migration
     {
         Schema::create('notification_settings', function (Blueprint $table) {
             $table->id();
-            $table->string('event_name'); // Ej: 'Creó una carpeta', 'Subió un archivo'
+            $table->string('event_name');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamps();
 
-            // Para evitar duplicados (mismo usuario para el mismo evento)
             $table->unique(['event_name', 'user_id']);
         });
     }

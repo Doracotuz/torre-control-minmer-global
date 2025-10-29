@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('assignments', function (Blueprint $table) {
-            // Nueva columna para el PDF de devolución
             $table->string('return_receipt_path')->nullable()->after('signed_receipt_path');
         });
     }

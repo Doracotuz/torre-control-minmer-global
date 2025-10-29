@@ -12,8 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('cs_plannings', function (Blueprint $table) {
-            // Hacemos que la columna cs_order_id acepte valores nulos (NULL).
-            // El método change() aplica la modificación.
             $table->unsignedBigInteger('cs_order_id')->nullable()->change();
         });
     }
@@ -24,8 +22,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('cs_plannings', function (Blueprint $table) {
-            // Esto revierte el cambio, volviendo a hacer la columna obligatoria.
-            // Es buena práctica definir siempre cómo revertir una migración.
             $table->unsignedBigInteger('cs_order_id')->nullable(false)->change();
         });
     }

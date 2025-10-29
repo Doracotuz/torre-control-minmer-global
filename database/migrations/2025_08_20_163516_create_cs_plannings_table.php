@@ -38,7 +38,7 @@ return new class extends Migration
             $table->string('telefono')->nullable();
             $table->string('estatus_de_entrega')->nullable();
             $table->enum('urgente', ['Si', 'No'])->nullable();
-            $table->string('status')->default('En Espera'); // Estatus del registro de planificación
+            $table->string('status')->default('En Espera');
             $table->timestamps();
         });
     }

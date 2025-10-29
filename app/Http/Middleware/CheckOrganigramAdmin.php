@@ -10,13 +10,10 @@ use Symfony\Component\HttpFoundation\Response;
 class CheckOrganigramAdmin
 {
     /**
-     * Handle an incoming request.
-     *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Your logic goes here
         if (Auth::check() && Auth::user()->is_area_admin && (Auth::user()->area->name === 'Administración' || Auth::user()->area->name === 'Recursos Humanos')) {
             return $next($request);
         }

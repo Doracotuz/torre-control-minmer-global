@@ -14,20 +14,14 @@ class Area extends Model
     protected $fillable = [
         'name',
         'description',
-        'icon_path', // ¡Añade esta línea!
+        'icon_path',
     ];
 
-    /**
-     * Get the users for the Area.
-     */
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
     }
 
-    /**
-     * Get the folders for the Area.
-     */
     public function folders(): HasMany
     {
         return $this->hasMany(Folder::class);

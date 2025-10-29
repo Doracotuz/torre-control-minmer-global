@@ -12,11 +12,8 @@ class OrganigramPosition extends Model
 
     protected $fillable = ['name', 'description', 'hierarchy_level'];
 
-    /**
-     * Get the organigram members that have this position.
-     */
     public function members(): HasMany
     {
-        return $this->hasMany(OrganigramMember::class, 'position_id'); // Asegúrate de usar 'position_id' si cambias el campo
+        return $this->hasMany(OrganigramMember::class, 'position_id');
     }
 }

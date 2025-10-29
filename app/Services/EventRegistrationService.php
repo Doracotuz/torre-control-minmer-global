@@ -16,7 +16,6 @@ class EventRegistrationService
         
         $subtipo = $validatedData['subtipo'];
 
-        // 1. Lógica de cambio de estatus
         switch ($subtipo) {
             case 'Llegada a carga':
                 $guia->estatus = 'En espera de carga';
@@ -53,7 +52,6 @@ class EventRegistrationService
         }
         $guia->save();
 
-        // 2. Procesamiento de Evidencias
         $paths = [];
         if ($request->hasFile('evidencia')) {
             $directory = 'tms_evidencias/' . $guia->guia;
@@ -63,7 +61,6 @@ class EventRegistrationService
             }
         }
         
-        // 3. Creación del Evento
         Evento::create([
             'guia_id' => $guia->id,
             'factura_id' => (count($validatedData['factura_ids'] ?? []) === 1) ? $validatedData['factura_ids'][0] : null,
@@ -77,7 +74,6 @@ class EventRegistrationService
             'fecha_evento' => $validatedData['fecha_evento'] ?? now(),
         ]);
 
-        // 4. Verificar si la guía se ha completado
         $conteoPendientes = $guia->facturas()->whereNotIn('estatus_entrega', ['Entregada', 'No entregada'])->count();
         if ($conteoPendientes === 0) {
             $guia->estatus = 'Completada';

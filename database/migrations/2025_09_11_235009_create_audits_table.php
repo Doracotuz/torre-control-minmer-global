@@ -15,17 +15,16 @@ return new class extends Migration
             $table->id();
             $table->foreignId('cs_order_id')->constrained('cs_orders')->onDelete('cascade');
             $table->foreignId('guia_id')->nullable()->constrained('guias')->onDelete('set null');
-            $table->foreignId('user_id')->nullable()->constrained('users'); // El auditor principal
+            $table->foreignId('user_id')->nullable()->constrained('users');
             
-            $table->string('location'); // Ej: 'MEX', 'GDL', etc.
-            $table->string('status')->default('Pendiente Almacén'); // El estatus de ESTA auditoría específica
+            $table->string('location');
+            $table->string('status')->default('Pendiente Almacén');
             
-            // JSON para guardar los resultados de cada fase
             $table->json('warehouse_audit_data')->nullable();
             $table->json('patio_audit_data')->nullable();
             $table->json('loading_audit_data')->nullable();
             
-            $table->timestamp('completed_at')->nullable(); // Para saber cuándo finalizó
+            $table->timestamp('completed_at')->nullable();
             $table->timestamps();
         });
     }

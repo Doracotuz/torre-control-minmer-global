@@ -7,16 +7,12 @@ use App\Models\CsPlanning;
 
 class CsOrderObserver
 {
-    /**
-     * Handle the CsOrder "updated" event.
-     */
     public function updated(CsOrder $csOrder): void
     {
         if ($csOrder->wasChanged()) {
             $planningRecords = CsPlanning::where('cs_order_id', $csOrder->id)->get();
 
             foreach ($planningRecords as $planningRecord) {
-                // Preparamos los datos a actualizar en Planificación
                 $dataToUpdate = [
                     'fecha_entrega' => $csOrder->delivery_date,
                     'origen' => $csOrder->origin_warehouse,
@@ -31,7 +27,6 @@ class CsOrderObserver
                     'destino' => $csOrder->destination_locality,
                 ];
 
-                // Actualizamos Planificación (esto activará el CsPlanningObserver)
                 $planningRecord->update($dataToUpdate);
             }
         }
@@ -41,7 +36,7 @@ class CsOrderObserver
     {
         \App\Models\Audit::create([
             'cs_order_id' => $csOrder->id,
-            'location' => $csOrder->origin_warehouse, // Asumimos que la orden tiene un campo 'origen'
+            'location' => $csOrder->origin_warehouse,
             'status' => 'Pendiente Almacén',
         ]);
     }    

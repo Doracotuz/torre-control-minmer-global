@@ -36,7 +36,6 @@ class TicketController extends Controller
             });
         }
 
-        // --- 4. Aplicar filtros del formulario ---
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';
             $query->where(function($q) use ($searchTerm) {
@@ -60,7 +59,6 @@ class TicketController extends Controller
             $query->where('agent_id', $request->agent_id);
         }
 
-        // Se cargan las relaciones anidadas correctamente
         $tickets = $query->with(['user', 'subCategory.category', 'agent'])
                         ->latest()
                         ->paginate(15)
@@ -176,9 +174,6 @@ class TicketController extends Controller
             ]);
         }
 
-        // --- LÓGICA DE NOTIFICACIÓN ACTUALIZADA ---
-
-        // Si NO es una nota interna, se notifica al usuario o a los admins como antes.
         if (!$reply->is_internal) {
             if (($user->isSuperAdmin() || $user->id === $ticket->agent_id) && $user->id !== $ticket->user_id) {
                 $ticket->user->notify(new NewReplyNotification($reply));
@@ -194,7 +189,6 @@ class TicketController extends Controller
                 }
             }
         }
-        // Si SÍ es una nota interna, la comunicación es solo entre admins y el agente.
         else {
             if ($user->isSuperAdmin() && $ticket->agent_id && $ticket->agent_id !== $user->id) {
                 // Si un admin escribe, notifica solo al agente (si no es él mismo).
@@ -213,9 +207,6 @@ class TicketController extends Controller
         return back()->with('success', 'Respuesta enviada.');
     }
 
-    /**
-     * MÉTODO AÑADIDO PARA ACTUALIZAR EL ESTADO DEL TICKET
-     */
     public function updateStatus(Request $request, Ticket $ticket)
     {
         $user = Auth::user();
@@ -248,7 +239,7 @@ class TicketController extends Controller
 
             $ticket->status = 'Pendiente de Aprobación';
             $ticket->closure_evidence_path = $evidencePath;
-            $ticket->work_summary = $request->work_summary; // <-- GUARDAR EL RESUMEN
+            $ticket->work_summary = $request->work_summary;
             $ticket->save();
 
             $ticket->statusHistories()->create(['user_id' => Auth::id(), 'status' => 'Pendiente de Aprobación']);
@@ -265,15 +256,12 @@ class TicketController extends Controller
         return back()->with('success', 'El estado del ticket ha sido actualizado.');
     }
 
-    // AÑADE ESTE MÉTODO NUEVO
     public function approveClosure(Ticket $ticket)
     {
-        // Solo el creador del ticket puede aprobar el cierre
         if (Auth::id() !== $ticket->user_id) {
             abort(403, 'No tienes permiso para aprobar el cierre de este ticket.');
         }
 
-        // Solo se puede aprobar si está en el estado correcto
         if ($ticket->status !== 'Pendiente de Aprobación') {
             return back()->with('error', 'Este ticket no está esperando una aprobación.');
         }
@@ -286,7 +274,6 @@ class TicketController extends Controller
             'status' => 'Cerrado'
         ]);
 
-        // NOTIFICAR A SUPERADMINS QUE EL TICKET FUE CERRADO
         $superAdmins = User::where('is_area_admin', true)
             ->whereHas('area', function ($query) {
                 $query->where('name', 'Administración');
@@ -309,7 +296,6 @@ class TicketController extends Controller
 
         $agent = User::find($request->agent_id);
 
-        // Valida que el agente a asignar no sea un cliente
         if ($agent->is_client) {
             return back()->with('error', 'No se puede asignar un ticket a un usuario cliente.');
         }
@@ -317,7 +303,6 @@ class TicketController extends Controller
         $ticket->agent_id = $agent->id;
         $ticket->save();
 
-        // Notificar al agente asignado
         $agent->notify(new AgentAssignedNotification($ticket));
 
         return back()->with('success', 'Ticket asignado a ' . $agent->name . ' exitosamente.');
@@ -325,11 +310,9 @@ class TicketController extends Controller
 
     public function storeRating(Request $request, Ticket $ticket)
     {
-        // Solo el creador del ticket puede calificar
         if (Auth::id() !== $ticket->user_id) {
             abort(403, 'No tienes permiso para calificar este ticket.');
         }
-        // Solo se puede calificar un ticket cerrado
         if ($ticket->status !== 'Cerrado') {
             return back()->with('error', 'Solo puedes calificar un ticket que ha sido cerrado.');
         }
@@ -348,7 +331,6 @@ class TicketController extends Controller
 
     public function rejectClosure(Request $request, Ticket $ticket)
     {
-        // Solo el creador del ticket puede rechazar
         if (Auth::id() !== $ticket->user_id) {
             abort(403, 'No tienes permiso para esta acción.');
         }
@@ -359,24 +341,20 @@ class TicketController extends Controller
         $request->validate(['rejection_reason' => 'required|string|min:10']);
 
         DB::transaction(function () use ($request, $ticket) {
-            // 1. Cambiar el estado de vuelta a "En Proceso"
             $ticket->status = 'En Proceso';
             $ticket->save();
 
-            // 2. Registrar el rechazo en la línea de tiempo
             $ticket->statusHistories()->create([
                 'user_id' => Auth::id(),
                 'status' => 'Cierre Rechazado'
             ]);
 
-            // 3. Añadir el motivo como una respuesta pública en el chat
             $reply = $ticket->replies()->create([
                 'user_id' => Auth::id(),
                 'body' => "Motivo del Rechazo:\n" . $request->rejection_reason,
                 'is_internal' => false
             ]);
 
-            // 4. Notificar al agente y/o admins
             $recipients = collect([$ticket->agent])->merge($this->getSuperAdmins())->whereNotNull()->unique('id');
             if ($recipients->isNotEmpty()) {
                 Notification::send($recipients, new NewReplyNotification($reply));

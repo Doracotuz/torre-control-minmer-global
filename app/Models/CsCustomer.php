@@ -15,12 +15,11 @@ class CsCustomer extends Model
         'client_id',
         'name',
         'channel',
-        'delivery_specifications', // Añadir la nueva columna aquí
+        'delivery_specifications',
         'created_by_user_id',
         'updated_by_user_id',
     ];
 
-    // Añadir el casting para que Laravel lo trate como un array
     protected $casts = [
         'delivery_specifications' => 'array',
     ];

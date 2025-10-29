@@ -16,8 +16,6 @@ class VisitInvitation extends Mailable
     public $qrCodeImage;
 
     /**
-     * Create a new message instance.
-     *
      * @param \App\Models\Tms\Visit $visit
      * @param mixed $qrCodeImage (Raw PNG data of the QR code)
      * @return void
@@ -29,14 +27,12 @@ class VisitInvitation extends Mailable
     }
 
     /**
-     * Build the message.
-     *
      * @return $this
      */
     public function build()
     {
         return $this->subject('Invitación de Visita a Minmer Global')
-                    ->view('emails.visit_invitation') // La plantilla Blade para el correo
+                    ->view('emails.visit_invitation')
                     ->attachData($this->qrCodeImage, 'codigo_qr.png', [
                         'mime' => 'image/png',
                     ]);

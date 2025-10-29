@@ -23,41 +23,26 @@ class StockMovement extends Model
         'source_type',
     ];
 
-    /**
-     * El usuario que realizó el movimiento.
-     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * El producto afectado.
-     */
     public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
-    /**
-     * La ubicación afectada.
-     */
     public function location()
     {
         return $this->belongsTo(Location::class);
     }
 
-    /**
-     * El item de LPN afectado (si aplica).
-     */
     public function palletItem()
     {
         return $this->belongsTo(PalletItem::class);
     }
 
-    /**
-     * El documento que originó el movimiento (PickListItem, InventoryAdjustment, etc.)
-     */
     public function source()
     {
         return $this->morphTo();

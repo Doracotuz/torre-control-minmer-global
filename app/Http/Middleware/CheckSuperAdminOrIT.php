@@ -9,9 +9,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckSuperAdminOrIT
 {
-    /**
-     * Handle an incoming request.
-     */
     public function handle(Request $request, Closure $next): Response
     {
         $user = Auth::user();

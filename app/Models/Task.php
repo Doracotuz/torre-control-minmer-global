@@ -23,21 +23,15 @@ class Task extends Model
     protected function casts(): array
     {
         return [
-            'due_date' => 'datetime', // O 'date' si solo guardas la fecha
+            'due_date' => 'datetime',
         ];
     }    
 
-    /**
-     * Una tarea pertenece a un proyecto.
-     */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    /**
-     * Una tarea está asignada a un usuario.
-     */
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assignee_id');

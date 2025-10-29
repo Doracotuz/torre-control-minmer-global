@@ -18,29 +18,18 @@ class PalletItem extends Model
         'quality_id',
     ];
 
-    /**
-     * An item belongs to a Pallet.
-     */
     public function pallet()
     {
         return $this->belongsTo(Pallet::class);
     }
 
-    /**
-     * An item refers to a Product.
-     */
     public function product()
     {
-        // Use the fully qualified class name for clarity
         return $this->belongsTo(\App\Models\Product::class);
     }
 
-    /**
-     * An item has a Quality status.
-     */
     public function quality()
     {
-        // Use the fully qualified class name for clarity
         return $this->belongsTo(\App\Models\WMS\Quality::class);
     }
 }

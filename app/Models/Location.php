@@ -10,9 +10,6 @@ class Location extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     */
     protected $fillable = [
         'warehouse_id',
         'code',
@@ -24,9 +21,6 @@ class Location extends Model
         'pick_sequence',
     ];
 
-    /**
-     * Una ubicación pertenece a un almacén.
-     */
     public function warehouse()
     {
         return $this->belongsTo(Warehouse::class);

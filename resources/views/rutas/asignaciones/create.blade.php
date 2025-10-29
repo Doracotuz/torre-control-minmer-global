@@ -12,7 +12,6 @@
                     @csrf
 
                     @php
-                        // Decodificamos la cadena JSON de IDs para poder iterarla como un arreglo PHP
                         $planningIdsArray = json_decode($planning_ids ?? '[]');
                     @endphp
 

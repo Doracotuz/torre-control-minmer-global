@@ -18,7 +18,7 @@
                               const deliveryDate = new Date(this.delivery_date + 'T00:00:00');
                               let daysToAdd = (3 - deliveryDate.getDay() + 7) % 7;
                               if (daysToAdd === 0) {
-                                  daysToAdd = 7; // Si es miércoles, saltar al siguiente
+                                  daysToAdd = 7;
                               }
                               
                               if (this.origin_warehouse !== this.destination_locality) {

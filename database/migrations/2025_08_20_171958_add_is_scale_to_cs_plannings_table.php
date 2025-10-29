@@ -9,7 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('cs_plannings', function (Blueprint $table) {
-            // Esta columna nos ayudará a identificar las rutas generadas por escalas
             $table->boolean('is_scale')->default(false)->after('status');
         });
     }

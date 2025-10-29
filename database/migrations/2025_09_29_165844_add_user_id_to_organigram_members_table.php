@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void {
         Schema::table('organigram_members', function (Blueprint $table) {
-            // El user_id es nullable (un miembro puede no tener usuario) y único (un usuario solo puede ser un miembro)
             $table->foreignId('user_id')->nullable()->unique()->after('id')->constrained('users')->onDelete('set null');
         });
     }

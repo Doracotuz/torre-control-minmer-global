@@ -2,7 +2,6 @@
 
 @section('content')
 
-{{-- Estilos --}}
 <style>
     :root {
         --color-primary: #2c3856;

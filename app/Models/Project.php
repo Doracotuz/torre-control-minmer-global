@@ -27,17 +27,11 @@ class Project extends Model
         'due_date' => 'date',
     ];    
 
-    /**
-     * Un proyecto tiene muchas tareas.
-     */
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
     }
 
-    /**
-     * Un proyecto es liderado por un usuario.
-     */
     public function leader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'leader_id');
@@ -45,7 +39,6 @@ class Project extends Model
 
     public function comments(): HasMany
     {
-        // Ordenamos los comentarios para que los más recientes aparezcan primero.
         return $this->hasMany(ProjectComment::class)->latest();
     }
 

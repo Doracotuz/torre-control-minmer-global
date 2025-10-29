@@ -12,7 +12,6 @@ return new class extends Migration
     public function up()
     {
         Schema::table('cs_orders', function (Blueprint $table) {
-            // Modificamos la columna para que tenga un valor por defecto
             $table->string('audit_status')->default('Pendiente Almacén')->change();
         });
     }
@@ -20,7 +19,6 @@ return new class extends Migration
     public function down()
     {
         Schema::table('cs_orders', function (Blueprint $table) {
-            // Revertimos el cambio si es necesario
             $table->string('audit_status')->default(null)->change();
         });
     }

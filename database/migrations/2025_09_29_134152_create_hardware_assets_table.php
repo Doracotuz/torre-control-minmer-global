@@ -15,13 +15,11 @@ return new class extends Migration {
             $table->date('purchase_date')->nullable();
             $table->date('warranty_end_date')->nullable();
             
-            // Especificaciones técnicas
             $table->string('cpu')->nullable();
             $table->string('ram')->nullable();
             $table->string('storage')->nullable();
             $table->string('mac_address')->nullable()->unique();
             
-            // Detalles para celulares
             $table->enum('phone_plan_type', ['Prepago', 'Plan'])->nullable();
             $table->string('phone_number')->nullable();
             

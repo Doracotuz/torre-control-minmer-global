@@ -11,10 +11,9 @@ class SalesOrder extends Model
     use HasFactory;
     protected $fillable = ['so_number', 'invoice_number', 'customer_name', 'user_id', 'order_date', 'status', 'notes'];
     protected $casts = [
-        'order_date' => 'datetime', // <-- AÑADE ESTA LÍNEA
+        'order_date' => 'datetime',
     ];
 
-    // --- RELACIONES ---
 
     public function user()
     {
@@ -28,7 +27,6 @@ class SalesOrder extends Model
     
     public function pickList()
     {
-        // Asumiendo que el modelo se llama PickList
         return $this->hasOne(PickList::class);
     }
 }

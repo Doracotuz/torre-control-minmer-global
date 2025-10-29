@@ -8,9 +8,6 @@ use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
-    /**
-     * Guarda una nueva tarea para un proyecto específico.
-     */
     public function store(Request $request, Project $project)
     {
         $validatedData = $request->validate([
@@ -21,13 +18,10 @@ class TaskController extends Controller
             'assignee_id' => 'nullable|exists:users,id',
         ]);
 
-        // Añadimos el project_id a los datos validados
         $validatedData['project_id'] = $project->id;
 
-        // Creamos la tarea
         Task::create($validatedData);
 
-        // Redireccionamos de vuelta a la página del proyecto con un mensaje
         return back()->with('success_task', '¡Tarea añadida exitosamente!');
     }
 
@@ -46,9 +40,6 @@ class TaskController extends Controller
         return back()->with('success_task', '¡Tarea actualizada exitosamente!');
     }
 
-    /**
-     * Actualiza solo el estatus de una tarea.
-     */
     public function updateStatus(Request $request, Task $task)
     {
         $validatedData = $request->validate([

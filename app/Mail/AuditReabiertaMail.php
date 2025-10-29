@@ -18,8 +18,6 @@ class AuditReabiertaMail extends Mailable
     public $reopenedBy;
 
     /**
-     * Create a new message instance.
-     *
      * @param Guia $guia La guía cuya auditoría fue reabierta.
      * @param User $reopenedBy El usuario que realizó la acción.
      * @return void
@@ -31,8 +29,6 @@ class AuditReabiertaMail extends Mailable
     }
 
     /**
-     * Build the message.
-     *
      * @return $this
      */
     public function build()

@@ -4,19 +4,17 @@
 
 <style>
     :root {
-        /* Paleta de colores completa y refinada */
         --color-primary: #2c3856;
         --color-accent: #ff9c00;
         --color-text-primary: #2b2b2b;
         --color-text-secondary: #666666;
         --color-surface: #ffffff;
         --color-background: #f3f4f6;
-        --color-border: #d1d5db; /* Color de borde estandarizado */
+        --color-border: #d1d5db;
     }
     body { 
         background-color: var(--color-background); 
     }
-    /* Estilos de formulario consistentes */
     .form-label { font-weight: 600; color: var(--color-text-primary); margin-bottom: 0.5rem; display: block; }
     .form-input, .form-select, .form-textarea { 
         border-radius: 0.5rem; 
@@ -30,7 +28,6 @@
         border-color: var(--color-primary); 
         box-shadow: 0 0 0 2px var(--tw-ring-color); 
     }
-    /* Estilos de botones consistentes */
     .btn { padding: 0.65rem 1.25rem; border-radius: 0.5rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); transition: all 200ms ease-in-out; transform: translateY(0); border: 1px solid transparent; }
     .btn:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
     .btn-primary { background-color: var(--color-primary); color: white; }
@@ -50,13 +47,11 @@
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 
-                {{-- Título --}}
                 <div class="md:col-span-2">
                     <label for="title" class="form-label">Título</label>
                     <input type="text" id="title" name="title" class="form-input" required value="{{ old('title') }}" placeholder="Ej: Mi computadora no enciende">
                 </div>
 
-                {{-- Categoría y Subcategoría con AlpineJS --}}
                 <div class="md:col-span-2" 
                      x-data="{ selectedCategory: '{{ old('category_id') }}', categories: {{ $categories->toJson() }}, subCategories: [] }"
                      x-init="if(selectedCategory) { subCategories = categories.find(c => c.id == selectedCategory)?.sub_categories || [] }">
@@ -84,7 +79,6 @@
                     </div>
                 </div>
                 
-                {{-- Activo Relacionado --}}
                 @if($userAssets->isNotEmpty())
                 <div>
                     <label for="hardware_asset_id" class="form-label">Activo Relacionado (Opcional)</label>
@@ -99,7 +93,6 @@
                 </div>
                 @endif
                 
-                {{-- Prioridad --}}
                 <div>
                     <label for="priority" class="form-label">Prioridad</label>
                     <select id="priority" name="priority" class="form-select" required>
@@ -109,13 +102,11 @@
                     </select>
                 </div>
                 
-                {{-- Descripción --}}
                 <div class="md:col-span-2">
                     <label for="description" class="form-label">Descripción Detallada</label>
                     <textarea id="description" name="description" rows="6" class="form-textarea" required placeholder="Por favor, sé lo más específico posible...">{{ old('description') }}</textarea>
                 </div>
 
-                {{-- **NUEVO** Componente para Adjuntar Archivo --}}
                 <div class="md:col-span-2" x-data="{ fileName: '' }">
                     <label class="form-label">Adjuntar Fotografía (Opcional)</label>
                     <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">

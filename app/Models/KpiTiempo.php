@@ -9,6 +9,5 @@ class KpiTiempo extends Model
 {
     use HasFactory;
 
-    // ▼▼ AÑADE ESTA LÍNEA ▼▼
     protected $guarded = [];
 }

@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('receipt_pallets', function (Blueprint $table) {
             $table->id();
-            $table->string('lpn_number')->unique(); // El número de LPN único del pallet
+            $table->string('lpn_number')->unique();
             $table->foreignId('purchase_order_id')->constrained()->onDelete('cascade');
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Quién lo registró
-            $table->integer('quantity'); // Cantidad de ese producto en este pallet
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->integer('quantity');
             $table->timestamps();
         });
     }

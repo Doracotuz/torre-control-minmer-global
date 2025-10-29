@@ -20,10 +20,7 @@ class TableroController extends Controller
 
         $folders = $user->accessibleFolders()->whereNull('parent_id')->with('area')->get();
 
-        // 2. Ordenamos la colección para que "Brockerage" aparezca primero.
         $accessibleRootFolders = $folders->sortBy(function ($folder) {
-            // Si la carpeta pertenece al área "Brockerage", se le da prioridad (0).
-            // A todas las demás se les da una prioridad menor (1).
             return ($folder->area && $folder->area->name === 'Brokerage') ? 0 : 1;
         });
 
@@ -32,19 +29,12 @@ class TableroController extends Controller
 
         $chartData = [];
 
-        // ===== INICIO DE LA CORRECCIÓN =====
-        // Inicializamos las variables aquí con valores predeterminados.
-        // De esta forma, si el 'if' no se cumple, estas variables
-        // se pasarán a la vista como colecciones vacías y no darán error.
         $mesesOrden = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         $zonas = collect();
         $años = collect();
-        // ===== FIN DE LA CORRECCIÓN =====
-
 
         if ($kpiGeneralesData->isNotEmpty() && $kpisTimeData->isNotEmpty()) {
             
-            // La variable $mesesOrden ya se definió arriba, así que la línea original fue movida.
             $zonas = $kpiGeneralesData->pluck('zona')->unique()->sort()->values();
             $años = $kpiGeneralesData->pluck('ano')->unique()->sort()->values();
             $colores = [
@@ -56,7 +46,6 @@ class TableroController extends Controller
                 $datasets = [];
                 $seriesValues = $data->where('concepto', 'like', $filtroConcepto)->pluck($seriesCol)->unique()->sort()->values();
                 
-                // Determinar la operación de agregación correcta
                 $aggregateOperation = ($valueCol === 'porcentaje') ? 'avg' : 'sum';
 
                 foreach($seriesValues as $index => $serie) {
@@ -82,7 +71,6 @@ class TableroController extends Controller
                         'tension' => 0,
                         'fill' => false,
                         'borderDash' => [5, 5],
-                        // Configuración para ApexCharts (solo muestra la primera etiqueta)
                         'dataLabels' => [
                             'enabled' => true,
                             'formatter' => "function(val, { dataPointIndex }) { return dataPointIndex === 0 ? 'Objetivo (90%)' : ''; }",
@@ -122,7 +110,6 @@ class TableroController extends Controller
             $chartData['tiempoPorMesAño'] = $pivotData($kpisTimeData, 'Entregas a tiempo', 'mes', 'ano', 'porcentaje', collect($mesesOrden), true);
         }
 
-        // Ahora esta línea siempre funcionará, porque $zonas, $años y $mesesOrden siempre existen.
         return view('tablero.index', ['accessibleRootFolders' => $accessibleRootFolders, 'chartData' => $chartData, 'zonas' => $zonas, 'años' => $años, 'meses' => $mesesOrden]);
     }
 

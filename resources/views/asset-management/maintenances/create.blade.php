@@ -4,7 +4,6 @@
 
 <style>
     :root {
-        /* Paleta de colores completa y refinada */
         --color-primary: #2c3856;
         --color-accent: #ff9c00;
         --color-text-primary: #2b2b2b;
@@ -39,7 +38,6 @@
 
 <div class="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-    {{-- Encabezado --}}
     <div class="mb-8">
         <a href="{{ route('asset-management.assets.show', $asset) }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-2 inline-block">
             <i class="fas fa-arrow-left mr-2"></i> Volver a los detalles del activo
@@ -55,9 +53,7 @@
         </div>
     </div>
 
-    {{-- Formulario --}}
     <div class="bg-white p-8 rounded-xl shadow-lg mt-8">
-        {{-- Usamos Alpine.js para la lógica condicional del campo 'sustituto' --}}
         <form action="{{ route('asset-management.maintenances.store', $asset) }}" method="POST"
               x-data="{ isAssigned: {{ $asset->status === 'Asignado' ? 'true' : 'false' }} }">
             @csrf
@@ -86,7 +82,6 @@
                     <textarea id="diagnosis" name="diagnosis" rows="4" class="form-textarea w-full" required placeholder="Describe el problema o el motivo del mantenimiento preventivo..."></textarea>
                 </div>
 
-                {{-- CAMPO CONDICIONAL: Aparece solo si el activo está asignado --}}
                 <div x-show="isAssigned" x-transition class="md:col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <label for="substitute_asset_id" class="form-label">Activo Sustituto (Opcional)</label>
                     <p class="text-xs text-gray-600 mb-2">

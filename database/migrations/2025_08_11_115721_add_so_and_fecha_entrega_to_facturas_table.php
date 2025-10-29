@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('facturas', function (Blueprint $table) {
-            // Se añaden las dos nuevas columnas a la tabla 'facturas'
             $table->integer('so')->nullable()->after('hora_cita');
             $table->date('fecha_entrega')->nullable()->after('so');
         });
@@ -24,7 +23,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('facturas', function (Blueprint $table) {
-            // Esto permite revertir los cambios si es necesario
             $table->dropColumn(['so', 'fecha_entrega']);
         });
     }

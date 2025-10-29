@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('physical_count_task_id')->constrained('physical_count_tasks')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users');
-            $table->unsignedTinyInteger('count_number'); // 1, 2, or 3
+            $table->unsignedTinyInteger('count_number');
             $table->unsignedInteger('counted_quantity');
             $table->timestamps();
         });

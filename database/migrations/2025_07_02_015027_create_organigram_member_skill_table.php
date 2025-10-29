@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('organigram_member_skill', function (Blueprint $table) {
             $table->foreignId('organigram_member_id')->constrained('organigram_members')->onDelete('cascade');
             $table->foreignId('organigram_skill_id')->constrained('organigram_skills')->onDelete('cascade');
-            $table->primary(['organigram_member_id', 'organigram_skill_id']); // Clave primaria compuesta
+            $table->primary(['organigram_member_id', 'organigram_skill_id']);
             $table->timestamps();
         });
     }

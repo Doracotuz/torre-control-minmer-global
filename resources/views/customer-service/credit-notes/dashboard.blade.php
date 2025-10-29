@@ -80,7 +80,6 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     <script>
-        // Datos del backend pasados a JavaScript
         const requestTypesData = @json($requestTypes);
         const monthlyCountsData = @json($monthlyCounts);
         const causesData = @json($causes);
@@ -88,10 +87,8 @@
         const topCustomersData = @json($topCustomers);
         const topWarehousesData = @json($topWarehouses);
         
-        // Array de meses para los nombres
         const monthNames = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-        // Gráfico 1: Barras - Notas de Crédito por Tipo de Solicitud
         const requestTypesOptions = {
             chart: { type: 'bar', height: 250 },
             series: [{ name: 'Notas de Crédito', data: Object.values(requestTypesData) }],
@@ -99,7 +96,6 @@
         };
         new ApexCharts(document.querySelector("#chart-request-types"), requestTypesOptions).render();
 
-        // Gráfico 2: Línea - Notas de Crédito Mensuales (con nombres de meses)
         const monthlyCountsOptions = {
             chart: { type: 'line', height: 250 },
             series: [{ name: 'Notas de Crédito', data: Object.values(monthlyCountsData) }],
@@ -109,7 +105,6 @@
         };
         new ApexCharts(document.querySelector("#chart-monthly-counts"), monthlyCountsOptions).render();
 
-        // Gráfico 3: Pastel - Distribución por Causa
         const causesOptions = {
             chart: { type: 'pie', height: 250 },
             series: Object.values(causesData),
@@ -124,7 +119,6 @@
         };
         new ApexCharts(document.querySelector("#chart-causes"), causesOptions).render();
 
-        // Gráfico 4: Barras horizontales - Top 10 SKUs devueltos
         const topSkusOptions = {
             chart: { type: 'bar', height: 350 },
             plotOptions: { bar: { horizontal: true } },
@@ -138,7 +132,6 @@
         };
         new ApexCharts(document.querySelector("#chart-top-skus"), topSkusOptions).render();
 
-        // Gráfico 5: Barras - Top 10 Clientes
         const customersOptions = {
             chart: { type: 'bar', height: 350 },
             plotOptions: { bar: { horizontal: true } },
@@ -147,7 +140,6 @@
         };
         new ApexCharts(document.querySelector("#chart-customers"), customersOptions).render();
 
-        // Gráfico 6: Barras - Top 10 Almacenes
         const warehousesOptions = {
             chart: { type: 'bar', height: 350 },
             plotOptions: { bar: { horizontal: true } },

@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('organigram_skills', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // Nombre de la habilidad (ej. "SAP", "Liderazgo")
-            $table->text('description')->nullable(); // Descripción de la habilidad
+            $table->string('name');
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }

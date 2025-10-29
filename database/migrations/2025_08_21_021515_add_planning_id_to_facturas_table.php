@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void {
         Schema::table('facturas', function (Blueprint $table) {
-            // Vínculo con la tabla de planificación. Lo hacemos nullable por si se crean facturas manuales.
             $table->foreignId('cs_planning_id')->nullable()->constrained('cs_plannings')->after('guia_id');
         });
     }

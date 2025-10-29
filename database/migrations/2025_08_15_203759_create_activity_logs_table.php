@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('activity_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('action'); // 'Crear carpeta', 'Subir archivo', etc.
-            $table->string('item_type')->nullable(); // 'folder' o 'file_link'
-            $table->unsignedBigInteger('item_id')->nullable(); // ID del elemento
-            $table->json('details')->nullable(); // Detalles adicionales
+            $table->string('action');
+            $table->string('item_type')->nullable();
+            $table->unsignedBigInteger('item_id')->nullable();
+            $table->json('details')->nullable();
             $table->timestamps();
         });
     }

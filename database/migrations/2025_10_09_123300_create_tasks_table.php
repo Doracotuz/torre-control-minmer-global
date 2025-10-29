@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
 
-            // Relación con el proyecto al que pertenece
             $table->foreignId('project_id')->constrained('projects')->onDelete('cascade');
 
             $table->string('name');
@@ -22,8 +21,6 @@ return new class extends Migration
             $table->enum('status', ['Pendiente', 'En Progreso', 'Completada'])->default('Pendiente');
             $table->enum('priority', ['Baja', 'Media', 'Alta'])->default('Media');
             $table->date('due_date')->nullable();
-
-            // Relación con el usuario asignado a la tarea
             $table->foreignId('assignee_id')->nullable()->constrained('users')->onDelete('set null');
 
             $table->timestamps();

@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('cs_customers', function (Blueprint $table) {
             $table->id();
-            $table->string('client_id'); // ID Alfanumérico del Cliente
+            $table->string('client_id');
             $table->string('name');
             $table->enum('channel', ['Corporate', 'Especialista', 'Moderno', 'On', 'On trade', 'POSM', 'Private']);
             
@@ -18,7 +18,6 @@ return new class extends Migration
             $table->foreignId('updated_by_user_id')->nullable()->constrained('users');
             $table->timestamps();
 
-            // Un cliente se puede repetir si el canal es diferente
             $table->unique(['client_id', 'channel']);
         });
     }

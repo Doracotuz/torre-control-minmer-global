@@ -15,15 +15,9 @@ class SendActivityNotificationEmail
     {
         $activity = $event->activity;
 
-        // --- INICIO DE LA NUEVA LÓGICA ---
-        // Si la acción es un 'login', verifica si el usuario que lo realizó es un cliente.
-        // Si NO es un cliente, detenemos el envío de la notificación y terminamos.
         if ($activity->action_key === 'login' && !$activity->user->isClient()) {
             return;
         }
-        // --- FIN DE LA NUEVA LÓGICA ---
-
-        // Para todas las demás acciones (o para logins de clientes), el código continúa como antes.
         $subscribedUserIds = NotificationSetting::where('event_name', $activity->action_key)
                                                 ->pluck('user_id');
 

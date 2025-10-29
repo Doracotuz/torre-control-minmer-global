@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('eventos', function (Blueprint $table) {
-            // Se añade la columna 'municipio' después de la columna 'longitud'
             $table->string('municipio')->nullable()->after('longitud');
         });
     }

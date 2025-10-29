@@ -3,7 +3,6 @@
     $whatsappMessage = urlencode("Hola, me gustaría recibir asistencia para la plataforma \"Control Tower - Minmer Global\"");
     $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
 
-    // --- LÓGICA DEL SELECTOR DE ÁREA ---
     $manageableAreas = collect();
     $currentManagingAreaId = Auth::user()->area_id;
     $currentManagingAreaName = Auth::user()->area?->name;
@@ -16,11 +15,9 @@
         }
         $manageableAreas = $manageableAreas->merge(Auth::user()->accessibleAreas)->unique('id')->sortBy('name');
         
-        // Obtener el área activa de la sesión, si no, usar la principal
         $currentManagingAreaId = session('current_admin_area_id', Auth::user()->area_id);
         $currentManagingAreaName = session('current_admin_area_name', Auth::user()->area?->name);
     }
-    // --- FIN DE LÓGICA ---
 @endphp
 
 <nav x-data="{
@@ -75,7 +72,6 @@ x-init="$watch('search', value => {
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
                 </button>                
                 <div class="flex items-center text-white text-sm font-medium">
-                    {{-- ESTE BLOQUE MUESTRA EL ÁREA PRINCIPAL DEL USUARIO --}}
                     @if (Auth::user()->area)
                         @php
                             $areaName = Auth::user()->area->name;
@@ -222,7 +218,6 @@ x-init="$watch('search', value => {
         </div>
     </div>
 
-    {{-- MENÚ MÓVIL (SIN CAMBIOS) --}}
     <div :class="{'block': open, 'hidden': ! open}" 
          class="hidden sm:hidden bg-[#344266] transition-all duration-300 ease-in-out shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto"
          x-show="open"

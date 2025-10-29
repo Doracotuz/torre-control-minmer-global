@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('project_expenses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('project_id')->constrained('projects')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users'); // Quién registró el gasto
+            $table->foreignId('user_id')->constrained('users');
             $table->string('description');
             $table->decimal('amount', 15, 2);
             $table->date('expense_date');

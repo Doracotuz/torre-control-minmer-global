@@ -15,15 +15,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('hardware_asset_id')->constrained()->onDelete('cascade');
             $table->enum('type', ['Preventivo', 'Reparación']);
-            $table->string('supplier')->nullable(); // Proveedor o técnico
+            $table->string('supplier')->nullable();
             $table->date('start_date');
             $table->date('end_date')->nullable();
-            $table->text('diagnosis'); // Diagnóstico o motivo de entrada
-            $table->text('actions_taken')->nullable(); // Acciones realizadas
-            $table->text('parts_used')->nullable(); // Insumos o partes utilizadas
+            $table->text('diagnosis');
+            $table->text('actions_taken')->nullable();
+            $table->text('parts_used')->nullable();
             $table->decimal('cost', 8, 2)->nullable();
-
-            // Para el activo sustituto
             $table->foreignId('substitute_asset_id')->nullable()->constrained('hardware_assets')->onDelete('set null');
 
             $table->timestamps();

@@ -15,7 +15,6 @@ return new class extends Migration
             $table->foreignId('pallet_id')->constrained('pallets')->onDelete('cascade');
             $table->foreignId('product_id')->constrained('products');
             $table->unsignedInteger('quantity');
-            // Aquí puedes añadir más campos de trazabilidad si los necesitas en el futuro, como lote o caducidad.
             $table->timestamps();
         });
     }

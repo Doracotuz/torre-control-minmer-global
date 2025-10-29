@@ -9,6 +9,5 @@ class KpiGeneral extends Model
 {
     use HasFactory;
 
-    // ▼▼ AÑADE ESTA LÍNEA ▼▼
     protected $guarded = [];
 }

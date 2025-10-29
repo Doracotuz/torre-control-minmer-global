@@ -19,8 +19,6 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('due_date')->nullable();
             $table->decimal('budget', 15, 2)->nullable();
-
-            // Relación con el líder del proyecto (un usuario)
             $table->foreignId('leader_id')->nullable()->constrained('users')->onDelete('set null');
 
             $table->timestamps();

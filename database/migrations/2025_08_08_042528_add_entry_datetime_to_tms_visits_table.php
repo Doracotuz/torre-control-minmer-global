@@ -12,8 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tms_visits', function (Blueprint $table) {
-            // Añadimos la nueva columna después de 'visit_datetime'
-            // Es 'nullable' porque estará vacía hasta que el visitante ingrese.
             $table->dateTime('entry_datetime')->nullable()->after('visit_datetime');
         });
     }

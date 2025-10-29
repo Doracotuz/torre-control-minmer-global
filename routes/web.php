@@ -74,20 +74,17 @@ Route::get('/cookies-policy', function () {
 // });
 
 Route::get('/', function () {
-    return view('auth.login'); // O el nombre exacto de tu vista de login, que generalmente es 'auth.login' para Breeze/Jetstream
+    return view('auth.login');
 });
 
 Route::get('/dashboard', function () {
     if (Auth::user()->is_client) {
-        // Si el usuario es un cliente, redirige a la ruta del tablero
         return redirect()->route('tablero.index');
     }
 
-    // Si no, muestra el dashboard normal
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// Rutas protegidas por área (ejemplos del paso anterior)
 Route::middleware(['auth', 'check.area:Recursos Humanos'])->group(function () {
     Route::get('/rh-dashboard', function () {
         return "<h1>Bienvenido al Dashboard de Recursos Humanos!</h1>";
@@ -106,7 +103,6 @@ Route::middleware(['auth', 'check.area:Almacén'])->group(function () {
     })->name('almacen.dashboard');
 });
 
-// Rutas para la gestión de carpetas y archivos/enlaces
 Route::middleware(['auth'])->group(function () {
     Route::get('/folders/create/{folder?}', [FolderController::class, 'create'])->name('folders.create');
     Route::post('/folders', [FolderController::class, 'store'])->name('folders.store');
@@ -125,7 +121,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/folders/api/children', [FolderController::class, 'apiChildren'])->name('folders.api.children');
     Route::post('/items/bulk-move', [FolderController::class, 'bulkMove'])->name('items.bulk_move');
 
-    // Ruta para descarga directa de archivos (usada por la búsqueda predictiva y clics en tabla)
     Route::get('/files/{fileLink}/download', [FileLinkController::class, 'download'])->name('files.download');
     Route::get('/indicadores/{folder}', [IndicadoresController::class, 'show'])->name('indicadores.show')->middleware('auth');
     Route::post('/folders/upload-directory', [FolderController::class, 'uploadDirectory'])->name('folders.uploadDirectory');
@@ -177,24 +172,19 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'high.privilege'])->prefix('asset-management')->name('asset-management.')->group(function () {
-    // Dashboard principal del módulo
     Route::get('/', [App\Http\Controllers\AssetManagement\AssetController::class, 'index'])->name('dashboard');
 
-    // CRUD para Activos de Hardware
     Route::resource('assets', App\Http\Controllers\AssetManagement\AssetController::class);
     Route::get('assets-export-csv', [App\Http\Controllers\AssetManagement\AssetController::class, 'exportCsv'])->name('assets.export-csv');
     Route::get('assets-filter', [App\Http\Controllers\AssetManagement\AssetController::class, 'filter'])->name('assets.filter');    
-    // Asignación de Activos
     Route::get('assets/{asset}/assign', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'create'])->name('assignments.create');
     Route::post('assets/{asset}/assign', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'store'])->name('assignments.store');
     Route::get('assignments/import', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'createImport'])->name('assignments.import.create');
     Route::post('assignments/import', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'storeImport'])->name('assignments.import.store');
     Route::get('assignments/import-template', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'downloadTemplate'])->name('assignments.import.template');    
     
-    // Devolución de Activos
     Route::post('assignments/{assignment}/return', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'return'])->name('assignments.return');
 
-    // Rutas para los sub-recursos (Categorías, Fabricantes, etc.)
     Route::resource('categories', App\Http\Controllers\AssetManagement\CategoryController::class)->except(['show']);
     Route::resource('manufacturers', App\Http\Controllers\AssetManagement\ManufacturerController::class)->except(['show']);
     Route::resource('sites', App\Http\Controllers\AssetManagement\SiteController::class)->except(['show']);
@@ -226,11 +216,10 @@ Route::middleware(['auth', 'high.privilege'])->prefix('asset-management')->name(
 
 });
 
-// Rutas de administración (solo accesibles por el área de Administración)
 Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () { //
-        return view('admin.dashboard'); //
-    })->name('dashboard'); //
+    Route::get('/dashboard', function () {
+        return view('admin.dashboard');
+    })->name('dashboard');
 
     Route::resource('ticket-categories', TicketCategoryController::class);
     Route::post('ticket-sub-categories', [TicketCategoryController::class, 'storeSubCategory'])->name('ticket-sub-categories.store');
@@ -246,7 +235,6 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
 
 
 
-    // Rutas para la gestión de Áreas
     Route::get('/areas', [AreaController::class, 'index'])->name('areas.index');
     Route::get('/areas/create', [AreaController::class, 'create'])->name('areas.create');
     Route::post('/areas', [AreaController::class, 'store'])->name('areas.store');
@@ -254,7 +242,6 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
     Route::put('/areas/{area}', [AreaController::class, 'update'])->name('areas.update');
     Route::delete('/areas/{area}', [AreaController::class, 'destroy'])->name('areas.destroy');
 
-    // Rutas para la gestión de Usuarios
     Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
     Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
     Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
@@ -264,8 +251,8 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
 
     Route::get('/api/folders-for-client-access', [App\Http\Controllers\FolderController::class, 'getFoldersForClientAccess'])->name('api.folders_for_client_access');
 
-    // Rutas para la gestión del Organigrama
-}); // Cierra Route::middleware(['auth', 'check.area:Administración'])
+});
+
 Route::middleware(['auth', 'check.organigram.admin'])->prefix('admin/organigram')->name('admin.organigram.')->group(function () {
     Route::get('/', [OrganigramController::class, 'index'])->name('index');
     Route::delete('/bulk-delete', [OrganigramController::class, 'bulkDestroy'])->name('bulk-delete');    
@@ -279,7 +266,6 @@ Route::middleware(['auth', 'check.organigram.admin'])->prefix('admin/organigram'
     Route::post('/import-csv', [OrganigramController::class, 'importCsv'])->name('import-csv');
     Route::get('/export-csv', [OrganigramController::class, 'exportCsv'])->name('export-csv');    
 
-    // Rutas para gestionar Actividades del Organigrama (CRUD)
     Route::prefix('activities')->name('activities.')->group(function () {
         Route::get('/', [OrganigramController::class, 'activitiesIndex'])->name('index');
         Route::post('/', [OrganigramController::class, 'activitiesStore'])->name('store');
@@ -287,7 +273,6 @@ Route::middleware(['auth', 'check.organigram.admin'])->prefix('admin/organigram'
         Route::delete('/{activity}', [OrganigramController::class, 'activitiesDestroy'])->name('destroy');
     });
 
-    // Rutas para gestionar Habilidades del Organigrama (CRUD)
     Route::prefix('skills')->name('skills.')->group(function () {
         Route::get('/', [OrganigramController::class, 'skillsIndex'])->name('index');
         Route::post('/', [OrganigramController::class, 'skillsStore'])->name('store');
@@ -295,7 +280,6 @@ Route::middleware(['auth', 'check.organigram.admin'])->prefix('admin/organigram'
         Route::delete('/{skill}', [OrganigramController::class, 'skillsDestroy'])->name('destroy');
     });
 
-    // Rutas para gestionar Posiciones del Organigrama (CRUD)
     Route::prefix('positions')->name('positions.')->group(function () {
         Route::get('/', [OrganigramPositionController::class, 'index'])->name('index');
         Route::post('/', [OrganigramPositionController::class, 'store'])->name('store');
@@ -303,21 +287,18 @@ Route::middleware(['auth', 'check.organigram.admin'])->prefix('admin/organigram'
         Route::delete('/{organigram_position}', [OrganigramPositionController::class, 'destroy'])->name('destroy');
     });
 
-    // Rutas interactivas para el organigrama (consolidadas aquí)
     Route::get('/interactive', [OrganigramController::class, 'interactiveOrganigram'])->name('interactive');
     Route::get('/interactive-data', [OrganigramController::class, 'getInteractiveOrganigramData'])->name('interactive.data');
     Route::get('/interactive-data-without-areas', [OrganigramController::class, 'getInteractiveOrganigramDataWithoutAreas'])->name('interactive.data.without-areas');
-}); // Cierra Route::prefix('organigram')
+});
 
 
-// Rutas para Administradores de Área (solo accesibles por usuarios con is_area_admin = true)
 Route::middleware(['auth', 'check.area:area_admin'])->prefix('area-admin')->name('area_admin.')->group(function () {
     Route::get('/dashboard', function () {
         return view('area_admin.dashboard');
     })->name('dashboard');
     Route::post('/switch-area', [\App\Http\Controllers\AreaAdmin\AreaSwitchController::class, 'switch'])->name('switch_area');    
 
-    // Rutas para la gestión de Usuarios por Administrador de Área
     Route::get('/users', [AreaAdminUserController::class, 'index'])->name('users.index');
     Route::get('/users/create', [AreaAdminUserController::class, 'create'])->name('users.create');
     Route::post('/users', [AreaAdminUserController::class, 'store'])->name('users.store');
@@ -325,7 +306,6 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('area-admin')->name
     Route::put('/users/{user}', [AreaAdminUserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [AreaAdminUserController::class, 'destroy'])->name('users.destroy');
 
-    // Rutas para la gestión de Permisos de Carpetas por Administrador de Área
     Route::get('/folder-permissions', [FolderPermissionController::class, 'index'])->name('folder_permissions.index');
     Route::get('/folder-permissions/{folder}/edit', [FolderPermissionController::class, 'edit'])->name('folder_permissions.edit');
     Route::put('/folder-permissions/{folder}', [FolderPermissionController::class, 'update'])->name('folder_permissions.update');
@@ -344,14 +324,12 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('area-admin')->name
 });
 
 Route::middleware(['auth', 'check.area:area_admin'])->prefix('rutas')->name('rutas.')->group(function () {
-    // Rutas principales del módulo
     Route::get('/dashboard', [RutasDashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/export', [RutasDashboardController::class, 'exportCsv'])->name('dashboard.export');
     Route::get('/monitoreo', [MonitoreoController::class, 'index'])->name('monitoreo.index');
     Route::get('/dashboard/export-tiempos', [RutasDashboardController::class, 'exportTiemposReport'])->name('dashboard.exportTiempos');
 
 
-    // --- GRUPO PARA GESTIÓN DE PLANTILLAS DE RUTA ---
     Route::prefix('plantillas')->name('plantillas.')->group(function() {
         Route::get('/', [RutaController::class, 'index'])->name('index');
         Route::get('/create', [RutaController::class, 'create'])->name('create');
@@ -367,7 +345,6 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('rutas')->name('rut
     });
 
 
-    // --- NUEVO GRUPO: Para todo lo relacionado con Asignaciones ---
     Route::prefix('asignaciones')->name('asignaciones.')->group(function () {
         Route::get('/', [AsignacionController::class, 'index'])->name('index');
         Route::get('/create', [AsignacionController::class, 'create'])->name('create');
@@ -408,21 +385,15 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('rutas')->name('rut
 // });
 
 Route::prefix('v')->name('visits.')->group(function () {
-    // Página que muestra la cámara para escanear
     Route::get('/scan', [App\Http\Controllers\VisitController::class, 'showScanPage'])->name('scan.page');
-    // Página a la que redirige el QR para validar el token
     Route::get('/validate/{token}', [App\Http\Controllers\VisitController::class, 'showValidationResult'])->name('validate.show');
 });
 
 Route::prefix('operador')->name('operador.')->group(function () {
-    // Muestra el formulario para ingresar el número de guía
     Route::get('/', [App\Http\Controllers\Rutas\OperadorController::class, 'showLoginForm'])->name('login');
 
-    // Valida el número de guía y redirige a la vista de la ruta
     Route::post('/guia', [App\Http\Controllers\Rutas\OperadorController::class, 'accessGuia'])->name('access');
 
-    // La vista principal del operador para una guía específica
-    // Usaremos un parámetro simple por ahora, luego podemos asegurarlo más
     Route::get('/guia/{guia:guia}', [App\Http\Controllers\Rutas\OperadorController::class, 'showGuia'])->name('guia.show');
 
     Route::post('/guia/{guia:guia}/start', [App\Http\Controllers\Rutas\OperadorController::class, 'startRoute'])->name('guia.start');
@@ -482,13 +453,10 @@ Route::prefix('maniobrista')->name('maniobrista.')->group(function () {
 //     });
 // });
 
-// Rutas de perfil de Breeze
 
 Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico'])->prefix('customer-service')->name('customer-service.')->group(function () {
-    // Ruta para el menú principal de mosaicos
     Route::get('/', [CustomerServiceController::class, 'index'])->name('index');
 
-    // Rutas para la gestión de productos (solo para admins de área)
     Route::middleware('is_area_admin')->prefix('products')->name('products.')->group(function() {
         Route::get('/', [ProductController::class, 'index'])->name('index');
         Route::get('/search', [ProductController::class, 'search'])->name('search');        
@@ -499,12 +467,10 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         Route::put('/{product}', [ProductController::class, 'update'])->name('update');
         Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
 
-        // Rutas para CSV (que usaremos más adelante)
         Route::get('/export', [ProductController::class, 'exportCsv'])->name('export');
         Route::post('/import', [ProductController::class, 'importCsv'])->name('import');
         Route::get('/template', [ProductController::class, 'downloadTemplate'])->name('template');
         
-        // Ruta para el Dashboard
         Route::get('/dashboard', [ProductController::class, 'dashboard'])->name('dashboard');
 
     });
@@ -544,7 +510,6 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         Route::get('/template', [WarehouseController::class, 'downloadTemplate'])->name('template');
         Route::get('/dashboard', [WarehouseController::class, 'dashboard'])->name('dashboard');
 
-        // Aquí añadiremos el resto de las rutas (create, store, etc.)
     });
 
     Route::prefix('orders')->name('orders.')->group(function() {
@@ -564,7 +529,6 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
 
     
         
-        // --- MUEVE LA RUTA DEL DASHBOARD AQUÍ ARRIBA ---
         Route::get('/dashboard', [OrderController::class, 'dashboard'])->name('dashboard');
         Route::get('/bulk-edit', [OrderController::class, 'bulkEdit'])->name('bulk-edit');
         Route::post('/bulk-update', [OrderController::class, 'bulkUpdate'])->name('bulk-update');        
@@ -572,7 +536,6 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         Route::get('/create', [OrderController::class, 'create'])->name('create');
         Route::post('/', [OrderController::class, 'store'])->name('store');
         
-        // --- LAS RUTAS CON PARÁMETROS VAN DESPUÉS ---
         Route::get('/{order}', [OrderController::class, 'show'])->name('show');
         Route::get('/{order}/edit', [OrderController::class, 'edit'])->name('edit');
         Route::put('/{order}', [OrderController::class, 'update'])->name('update');
@@ -592,18 +555,15 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
         Route::resource('credit-notes', CreditNoteController::class);
 
     Route::prefix('planning')->name('planning.')->group(function() {
-        // --- RUTAS ESPECÍFICAS Y ESTÁTICAS VAN PRIMERO ---
         Route::get('/', [App\Http\Controllers\CustomerService\PlanningController::class, 'index'])->name('index');
         Route::get('/filter', [App\Http\Controllers\CustomerService\PlanningController::class, 'filter'])->name('filter');
         Route::get('/create', [App\Http\Controllers\CustomerService\PlanningController::class, 'create'])->name('create');
         Route::get('/bulk-edit', [App\Http\Controllers\CustomerService\PlanningController::class, 'bulkEdit'])->name('bulk-edit');
         Route::get('/export-csv', [App\Http\Controllers\CustomerService\PlanningController::class, 'exportCsv'])->name('export-csv');
         
-        // --- RUTAS CON POST/PUT/DELETE PUEDEN IR DESPUÉS ---
         Route::post('/', [App\Http\Controllers\CustomerService\PlanningController::class, 'store'])->name('store');
         Route::post('/bulk-update', [App\Http\Controllers\CustomerService\PlanningController::class, 'bulkUpdate'])->name('bulk-update');
 
-        // --- RUTAS CON PARÁMETROS DINÁMICOS VAN AL FINAL ---
         Route::get('/{planning}', [App\Http\Controllers\CustomerService\PlanningController::class, 'show'])->name('show');
         Route::get('/{planning}/edit', [App\Http\Controllers\CustomerService\PlanningController::class, 'edit'])->name('edit');
         Route::put('/{planning}', [App\Http\Controllers\CustomerService\PlanningController::class, 'update'])->name('update');
@@ -624,13 +584,10 @@ Route::middleware(['auth', 'check.area:Customer Service,Administración,Tráfico
     });    
 
     Route::prefix('audit-reports')->name('audit-reports.')->group(function() {
-        // 1. Ruta para la lista de guías auditadas
         Route::get('/', [App\Http\Controllers\CustomerService\AuditReportController::class, 'index'])->name('index');
         
-        // 2. Ruta para ver el detalle de una guía específica
         Route::get('/{guia}', [App\Http\Controllers\CustomerService\AuditReportController::class, 'show'])->name('show');
         
-        // 3. Ruta para generar el PDF de una guía
         Route::get('/{guia}/pdf', [App\Http\Controllers\CustomerService\AuditReportController::class, 'generatePdf'])->name('pdf');
     });
 
@@ -654,7 +611,6 @@ Route::middleware(['auth', 'verified'])->prefix('audit')->name('audit.')->group(
         Route::get('/loading/{audit}', [App\Http\Controllers\AuditController::class, 'showLoadingAudit'])->name('loading.show');
         Route::post('/loading/{audit}', [App\Http\Controllers\AuditController::class, 'storeLoadingAudit'])->name('loading.store');
 
-        // La ruta para reabrir ahora necesita un método diferente para encontrar la auditoría
         Route::post('/reopen/guia/{guia}', [App\Http\Controllers\AuditController::class, 'reopenAudit'])->name('reopen');
 
     });
@@ -665,9 +621,8 @@ Route::middleware(['auth'])->prefix('projects')->name('projects.')->group(functi
     Route::get('/list', [App\Http\Controllers\ProjectController::class, 'list'])->name('list');
     Route::get('/review', [App\Http\Controllers\ProjectController::class, 'review'])->name('review');
     
-    // CORRECTO: El recurso ahora se registra en la raíz del grupo.
     Route::resource('/', App\Http\Controllers\ProjectController::class)
-         ->parameters(['' => 'project']); // Buena práctica para evitar ambigüedad
+         ->parameters(['' => 'project']);
 
     Route::post('/{project}/tasks', [App\Http\Controllers\TaskController::class, 'store'])->name('tasks.store');
 

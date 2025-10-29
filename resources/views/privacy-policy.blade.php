@@ -76,7 +76,6 @@
                 </p>
             </section>
 
-            <!-- Finalidades del procesamiento -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">¿Por qué Estrategias y Soluciones Minmer Global procesa sus datos?</h2>
                 <p class="text-gray-600 leading-relaxed mb-4">

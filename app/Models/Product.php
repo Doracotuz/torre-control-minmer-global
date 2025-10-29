@@ -4,8 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-// Quitamos 'Attribute' porque ya no lo usaremos en esta sintaxis
-// use Illuminate\Database\Eloquent\Casts\Attribute; 
 
 class Product extends Model
 {
@@ -16,15 +14,9 @@ class Product extends Model
         'unit_of_measure', 'length', 'width', 'height', 'weight', 'upc','pieces_per_case'
     ];
 
-    // --- INICIO: CÁLCULO DE VOLUMEN CON SINTAXIS CLÁSICA ---
-    /**
-     * Calcula el volumen automáticamente a partir de las dimensiones.
-     * El resultado está en metros cúbicos (m³).
-     */
     public function getVolumeAttribute()
     {
         if ($this->length > 0 && $this->width > 0 && $this->height > 0) {
-            // Convierte cm³ a m³ dividiendo por 1,000,000
             return ($this->length * $this->width * $this->height) / 1000000;
         }
         return 0;

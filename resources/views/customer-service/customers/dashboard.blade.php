@@ -14,17 +14,14 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
-                <!-- Gráfico 1: Clientes por Canal -->
                 <div class="bg-white p-6 rounded-lg shadow-md col-span-1 h-96">
                     <canvas id="customersByChannelChart"></canvas>
                 </div>
 
-                <!-- Gráfico 2: Top 10 Clientes -->
                 <div class="bg-white p-6 rounded-lg shadow-md col-span-1 h-96">
                     <canvas id="topCustomersChart"></canvas>
                 </div>
 
-                <!-- Gráfico 3: Clientes Creados Recientemente -->
                 <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-2 h-96">
                     <canvas id="recentCustomersChart"></canvas>
                 </div>
@@ -39,7 +36,6 @@
         const chartData = @json($chartData);
         const colorPalette = ['#2c3856', '#ff9c00', '#3498db', '#95a5a6', '#e74c3c', '#2ecc71', '#f1c40f'];
 
-        // Gráfico 1: Clientes por Canal (Pie)
         const ctxChannel = document.getElementById('customersByChannelChart').getContext('2d');
         new Chart(ctxChannel, {
             type: 'pie',
@@ -54,7 +50,6 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Distribución de Clientes por Canal' } } }
         });
 
-        // Gráfico 2: Top 10 Clientes (Barra Horizontal)
         const ctxTopCustomers = document.getElementById('topCustomersChart').getContext('2d');
         new Chart(ctxTopCustomers, {
             type: 'bar',
@@ -71,7 +66,6 @@
             options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Top 10 Clientes (por # de canales)' } }, scales: { x: { beginAtZero: true } } }
         });
 
-        // Gráfico 3: Clientes Creados Recientemente (Línea)
         const ctxRecent = document.getElementById('recentCustomersChart').getContext('2d');
         new Chart(ctxRecent, {
             type: 'line',

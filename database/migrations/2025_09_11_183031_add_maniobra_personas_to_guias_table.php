@@ -12,7 +12,6 @@ return new class extends Migration
     public function up()
     {
         Schema::table('guias', function (Blueprint $table) {
-            // Se añade después de la columna que indica si presenta maniobra
             $table->integer('audit_patio_maniobra_personas')->unsigned()->nullable()->after('audit_patio_presenta_maniobra');
         });
     }

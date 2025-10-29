@@ -10,8 +10,6 @@ class Warehouse extends Model
     use HasFactory;
 
     /**
-     * The attributes that are mass assignable.
-     *
      * @var array<int, string>
      */
     protected $fillable = [
@@ -20,9 +18,6 @@ class Warehouse extends Model
         'address',
     ];
 
-    /**
-     * Un almacén tiene muchas ubicaciones.
-     */
     public function locations()
     {
         return $this->hasMany(Location::class);

@@ -8,7 +8,6 @@ class CsOrderDetail extends Model {
     protected $table = 'cs_order_details';
     protected $guarded = [];
     public function order() { return $this->belongsTo(CsOrder::class, 'cs_order_id'); }
-    // Nueva relación para obtener la descripción del producto
     public function product()
     {
         return $this->belongsTo(CsProduct::class, 'sku', 'sku');

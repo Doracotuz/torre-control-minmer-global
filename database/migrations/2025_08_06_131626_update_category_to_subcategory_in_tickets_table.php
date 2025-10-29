@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tickets', function (Blueprint $table) {
-            // Renombramos la columna y la clave foránea existentes
             $table->renameColumn('category_id', 'ticket_sub_category_id');
         });
     }

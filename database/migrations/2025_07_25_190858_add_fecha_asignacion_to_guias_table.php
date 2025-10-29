@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('guias', function (Blueprint $table) {
-            // Añadimos el nuevo campo de tipo fecha, puede ser nulo
             $table->date('fecha_asignacion')->nullable()->after('origen');
         });
     }

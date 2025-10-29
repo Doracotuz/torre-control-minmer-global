@@ -14,22 +14,18 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
-                <!-- Gráfico 1: Productos por Tipo -->
                 <div class="bg-white p-6 rounded-lg shadow-md col-span-1 h-80">
                     <canvas id="productsByTypeChart"></canvas>
                 </div>
 
-                <!-- Gráfico 2: Top 5 Marcas -->
                 <div class="bg-white p-6 rounded-lg shadow-md col-span-1 h-80">
                     <canvas id="topBrandsChart"></canvas>
                 </div>
 
-                <!-- Gráfico 3: Productos por Marca (Top 10) -->
                 <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-2 h-96">
                     <canvas id="productsByBrandChart"></canvas>
                 </div>
 
-                <!-- Gráfico 4: Productos Creados Recientemente -->
                 <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-2 h-96">
                     <canvas id="recentProductsChart"></canvas>
                 </div>
@@ -44,7 +40,6 @@
     document.addEventListener('DOMContentLoaded', function () {
         const chartData = @json($chartData);
 
-        // Gráfico 1: Productos por Tipo (Doughnut)
         const ctxType = document.getElementById('productsByTypeChart').getContext('2d');
         new Chart(ctxType, {
             type: 'doughnut',
@@ -61,7 +56,6 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Distribución por Tipo' } } }
         });
 
-        // Gráfico 2: Top 5 Marcas (Pie)
         const ctxTopBrands = document.getElementById('topBrandsChart').getContext('2d');
         new Chart(ctxTopBrands, {
             type: 'pie',
@@ -76,7 +70,6 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Top 5 Marcas con más Productos' } } }
         });
 
-        // Gráfico 3: Productos por Marca (Barra Horizontal)
         const ctxBrand = document.getElementById('productsByBrandChart').getContext('2d');
         new Chart(ctxBrand, {
             type: 'bar',
@@ -93,7 +86,6 @@
             options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Productos por Marca (Top 10)' } }, scales: { x: { beginAtZero: true } } }
         });
 
-        // Gráfico 4: Productos Creados Recientemente (Línea)
         const ctxRecent = document.getElementById('recentProductsChart').getContext('2d');
         new Chart(ctxRecent, {
             type: 'line',

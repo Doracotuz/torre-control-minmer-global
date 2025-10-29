@@ -9,9 +9,6 @@ use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
         $this->call([
@@ -20,7 +17,6 @@ class DatabaseSeeder extends Seeder
             TicketCategorySeeder::class,
         ]);
 
-        // Crea un usuario de prueba y asigna un área
         $rhArea = Area::where('name', 'Recursos Humanos')->first();
         if ($rhArea) {
             User::firstOrCreate(
@@ -29,7 +25,7 @@ class DatabaseSeeder extends Seeder
                     'name' => 'Admin RH',
                     'password' => Hash::make('password'),
                     'area_id' => $rhArea->id,
-                    'is_area_admin' => true, // ¡Este usuario es ahora un admin de área!
+                    'is_area_admin' => true,
                 ]
             );
         }
@@ -42,12 +38,11 @@ class DatabaseSeeder extends Seeder
                     'name' => 'Customer User',
                     'password' => Hash::make('password'),
                     'area_id' => $customerServiceArea->id,
-                    'is_area_admin' => false, // No es admin de área
+                    'is_area_admin' => false,
                 ]
             );
         }
 
-        // Usuario para el área de Administración (Super Admin)
         $adminArea = Area::where('name', 'Administración')->first();
         if ($adminArea) {
             User::firstOrCreate(
@@ -56,7 +51,7 @@ class DatabaseSeeder extends Seeder
                     'name' => 'Super Administrador',
                     'password' => Hash::make('password'),
                     'area_id' => $adminArea->id,
-                    'is_area_admin' => true, // ¡El Super Admin también es un admin de área!
+                    'is_area_admin' => true,
                 ]
             );
         }

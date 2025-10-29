@@ -12,7 +12,6 @@ return new class extends Migration
     public function up()
     {
         Schema::table('guias', function (Blueprint $table) {
-            // Añadimos las nuevas columnas después de las de validación
             $table->integer('audit_carga_tarimas_cantidad')->unsigned()->nullable()->after('audit_carga_distribucion_correcta');
             $table->string('audit_carga_tarimas_tipo')->nullable()->after('audit_carga_tarimas_cantidad');
         });

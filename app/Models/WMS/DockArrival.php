@@ -12,15 +12,11 @@ class DockArrival extends Model
     use HasFactory;
 
     /**
-     * The table associated with the model.
-     *
      * @var string
      */
     protected $table = 'dock_arrivals';
 
     /**
-     * The attributes that are mass assignable.
-     *
      * @var array<int, string>
      */
     protected $fillable = [
@@ -33,8 +29,6 @@ class DockArrival extends Model
     ];
 
     /**
-     * The attributes that should be cast.
-     *
      * @var array<string, string>
      */
     protected $casts = [
@@ -42,10 +36,6 @@ class DockArrival extends Model
         'departure_time' => 'datetime',
     ];
 
-    /**
-     * Define la relación con la Orden de Compra.
-     * Un arribo pertenece a una Orden de Compra.
-     */
     public function purchaseOrder(): BelongsTo
     {
         return $this->belongsTo(PurchaseOrder::class);

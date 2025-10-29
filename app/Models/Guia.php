@@ -10,12 +10,9 @@ class Guia extends Model
     use HasFactory;
 
     /**
-     * The attributes that are mass assignable.
-     *
      * @var array<int, string>
      */
     protected $fillable = [
-        // Campos originales
         'guia',
         'ruta_id',
         'operador',
@@ -31,7 +28,6 @@ class Guia extends Model
         'fecha_asignacion',
         'origen',
 
-        // Campos de Auditoría de Patio
         'audit_patio_arribo',
         'audit_patio_caja_estado',
         'audit_patio_llantas_estado',
@@ -40,7 +36,6 @@ class Guia extends Model
         'audit_patio_equipo_sujecion',
         'audit_patio_fotos',
         
-        // Campos de Auditoría de Carga
         'marchamo_numero',
         'lleva_custodia',
         'audit_carga_fotos',
@@ -54,8 +49,6 @@ class Guia extends Model
     ];
 
     /**
-     * The attributes that should be cast.
-     *
      * @var array<string, string>
      */
     protected $casts = [
@@ -69,40 +62,25 @@ class Guia extends Model
         'audit_carga_fotos' => 'array',
     ];
 
-    /**
-     * Get the route associated with the Guia.
-     */
     public function ruta()
     {
         return $this->belongsTo(Ruta::class);
     }
 
-    /**
-     * Get the facturas for the Guia.
-     */
     public function facturas()
     {
         return $this->hasMany(Factura::class);
     }
 
-    /**
-     * Get the eventos for the Guia.
-     */
     public function eventos()
     {
         return $this->hasMany(Evento::class)->orderBy('fecha_evento');
     }
 
-    /**
-     * Get the maniobra eventos for the Guia.
-     */
     public function maniobraEventos() {
         return $this->hasMany(\App\Models\ManiobraEvento::class);
     }
 
-    /**
-     * Get the plannings for the Guia.
-     */
     public function plannings()
     {
         return $this->hasMany(\App\Models\CsPlanning::class, 'guia_id');

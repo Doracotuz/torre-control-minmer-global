@@ -23,7 +23,6 @@
     .btn-secondary { background-color: var(--color-surface); color: var(--color-text-secondary); border-color: var(--color-border); }
     .btn-secondary:hover { background-color: #f9fafb; }
 
-    /* Estilos para el nuevo campo de carga de archivos */
     .file-upload-wrapper {
         border: 2px dashed var(--color-border);
         border-radius: 0.5rem;

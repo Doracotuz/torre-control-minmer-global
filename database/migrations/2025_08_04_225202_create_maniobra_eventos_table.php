@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('guia_id')->constrained()->onDelete('cascade');
             $table->string('numero_empleado');
-            $table->string('evento_tipo'); // Llegada a carga, Inicio de ruta, etc.
+            $table->string('evento_tipo');
             $table->string('latitud');
             $table->string('longitud');
             $table->string('municipio')->nullable();

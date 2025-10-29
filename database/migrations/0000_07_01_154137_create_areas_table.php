@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('areas', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique(); // Nombre del área, debe ser único
-            $table->text('description')->nullable(); // Descripción opcional del área
-            $table->timestamps(); // created_at y updated_at
+            $table->string('name')->unique();
+            $table->text('description')->nullable();
+            $table->timestamps();
         });
     }
 

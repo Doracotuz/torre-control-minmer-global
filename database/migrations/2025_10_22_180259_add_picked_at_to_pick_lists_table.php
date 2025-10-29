@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void {
         Schema::table('pick_lists', function (Blueprint $table) {
-            // Añade la columna después de 'status' (o donde prefieras)
             $table->timestamp('picked_at')->nullable()->after('status'); 
         });
     }

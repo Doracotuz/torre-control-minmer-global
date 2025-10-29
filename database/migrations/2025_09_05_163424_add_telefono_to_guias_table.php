@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('guias', function (Blueprint $table) {
-            // Añade una columna para el teléfono, que puede ser nula
             $table->string('telefono')->nullable()->after('placas');
         });
     }

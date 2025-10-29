@@ -14,18 +14,15 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
-                <!-- Gráfico 1: Top Usuarios -->
                 <div class="bg-white p-6 rounded-lg shadow-md col-span-1 h-96">
                     <canvas id="topCreatorsChart"></canvas>
                 </div>
 
-                <!-- Gráfico 2: Total de Almacenes -->
                 <div class="bg-white p-6 rounded-lg shadow-md col-span-1 h-96 flex flex-col items-center justify-center text-center">
                     <h3 class="text-lg font-semibold text-gray-500 mb-4">Total de Almacenes Registrados</h3>
                     <p class="text-7xl font-bold text-[#2c3856]">{{ $chartData['totalWarehouses'] }}</p>
                 </div>
 
-                <!-- Gráfico 3 (Placeholder) -->
                 <div class="bg-white p-6 rounded-lg shadow-md col-span-1 h-96 flex items-center justify-center text-gray-400">
                     <canvas id="recentWarehousesChart"></canvas>
                 </div>
@@ -39,7 +36,6 @@
     document.addEventListener('DOMContentLoaded', function () {
         const chartData = @json($chartData);
 
-        // Gráfico 1: Top Usuarios (Barra)
         const ctxTopCreators = document.getElementById('topCreatorsChart').getContext('2d');
         new Chart(ctxTopCreators, {
             type: 'bar',
@@ -56,7 +52,6 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Top 5 Usuarios Creadores' } }, scales: { y: { beginAtZero: true } } }
         });
 
-        // Gráfico 2: Almacenes Creados Recientemente (Línea)
         const ctxRecent = document.getElementById('recentWarehousesChart').getContext('2d');
         new Chart(ctxRecent, {
             type: 'line',

@@ -12,8 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Añade la columna is_client como booleano, por defecto false.
-            // Colócala después de 'is_area_admin' para mantener el orden lógico.
             $table->boolean('is_client')->default(false)->after('is_area_admin');
         });
     }

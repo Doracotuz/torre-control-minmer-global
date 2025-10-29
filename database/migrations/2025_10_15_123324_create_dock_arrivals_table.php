@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('driver_name');
             $table->timestamp('arrival_time');
             $table->timestamp('departure_time')->nullable();
-            $table->string('status'); // e.g., 'Arrived', 'Departed'
+            $table->string('status');
             $table->timestamps();
         });
     }

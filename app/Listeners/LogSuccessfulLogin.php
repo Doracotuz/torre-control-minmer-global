@@ -38,9 +38,8 @@ class LogSuccessfulLogin
             'action' => 'Inicio de Sesión',
             'action_key' => 'login',
 
-            // El campo 'details' ahora incluye toda la información (la anterior y la nueva).
             'details' => [
-                'email' => $event->user->email, // Mantenemos el email para compatibilidad
+                'email' => $event->user->email,
                 // 'ip_address' => $this->request->ip(),
                 // 'user_agent' => $this->request->header('User-Agent'),
             ],

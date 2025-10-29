@@ -9,7 +9,6 @@ public function up(): void
         Schema::create('kpi_generals', function (Blueprint $table) {
             $table->id();
             $table->integer('ano')->nullable();
-            // Se añade la codificación correcta a las columnas de texto
             $table->string('zona')->nullable()->charset('utf8mb4')->collation('utf8mb4_unicode_ci');
             $table->string('area')->nullable()->charset('utf8mb4')->collation('utf8mb4_unicode_ci');
             $table->string('mes')->nullable()->charset('utf8mb4')->collation('utf8mb4_unicode_ci');

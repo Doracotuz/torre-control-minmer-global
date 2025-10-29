@@ -6,7 +6,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>¡Bienvenido(a)!</title>
     <style>
-        /* ESTILOS PARA CLIENTES MODERNOS (GMAIL, APPLE MAIL) - OUTLOOK LOS IGNORARÁ */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
         body {
@@ -15,7 +14,6 @@
             word-wrap: break-word;
         }
 
-        /* Estilos responsivos */
         @media screen and (max-width: 600px) {
             .email-container {
                 width: 100% !important;

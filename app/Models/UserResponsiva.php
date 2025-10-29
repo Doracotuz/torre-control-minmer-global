@@ -11,8 +11,6 @@ class UserResponsiva extends Model
     protected $fillable = ['organigram_member_id', 'file_path', 'generated_date'];
 
     /**
-     * The attributes that should be cast.
-     *
      * @var array
      */
     protected $casts = [

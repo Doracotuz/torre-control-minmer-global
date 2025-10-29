@@ -9,9 +9,9 @@ return new class extends Migration {
         Schema::table('tickets', function (Blueprint $table) {
             $table->foreignId('hardware_asset_id')
                   ->nullable()
-                  ->after('ticket_sub_category_id') // Lo colocamos después de la categoría
+                  ->after('ticket_sub_category_id')
                   ->constrained('hardware_assets')
-                  ->onDelete('set null'); // Si se borra el activo, el ticket no se borra
+                  ->onDelete('set null');
         });
     }
 

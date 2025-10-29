@@ -10,9 +10,6 @@ class PhysicalCountSession extends Model
 {
     use HasFactory;
 
-    /**
-     * Los atributos que se pueden asignar masivamente.
-     */
     protected $fillable = [
         'name',
         'type',
@@ -21,17 +18,11 @@ class PhysicalCountSession extends Model
         'assigned_user_id',
     ];
 
-    /**
-     * Define la relación con el usuario que creó la sesión.
-     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Define la relación con las tareas de conteo de esta sesión.
-     */
     public function tasks()
     {
         return $this->hasMany(PhysicalCountTask::class);

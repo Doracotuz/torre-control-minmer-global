@@ -22,10 +22,10 @@ return new class extends Migration
             $table->string('license_plate')->nullable();
             $table->dateTime('visit_datetime');
             $table->text('reason');
-            $table->json('companions')->nullable(); // Usamos JSON para guardar la lista de acompañantes
-            $table->string('qr_code_token')->unique(); // Un token único y seguro para el QR
+            $table->json('companions')->nullable();
+            $table->string('qr_code_token')->unique();
             $table->enum('status', ['Programada', 'Ingresado', 'No ingresado', 'Cancelada'])->default('Programada');
-            $table->foreignId('created_by_user_id')->constrained('users'); // Quién generó el registro
+            $table->foreignId('created_by_user_id')->constrained('users');
             $table->timestamps();
         });
     }

@@ -153,7 +153,6 @@
             <tr class="table-header"><th>SKU</th><th>Producto</th><th>Calidad</th><th>Ordenado</th><th>Recibido</th><th>Cajas Rec.</th><th>Diferencia</th></tr>
             @foreach($summary as $line)
                 @php
-                    // Agrupar items recibidos para este producto por calidad
                     $receivedByQuality = $purchaseOrder->pallets->flatMap->items
                                          ->where('product.sku', $line->sku)
                                          ->groupBy('quality.name');

@@ -17,8 +17,8 @@ return new class extends Migration
             $table->foreignId('agent_id')->nullable()->constrained('users')->onDelete('set null');
             $table->string('title');
             $table->text('description');
-            $table->string('status')->default('Abierto'); // Abierto, En Proceso, Cerrado
-            $table->string('priority')->default('Media'); // Baja, Media, Alta
+            $table->string('status')->default('Abierto');
+            $table->string('priority')->default('Media');
             $table->timestamps();
         });
     }

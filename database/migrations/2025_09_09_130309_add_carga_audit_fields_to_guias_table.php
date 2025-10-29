@@ -14,8 +14,6 @@ return new class extends Migration
     public function up()
     {
         Schema::table('guias', function (Blueprint $table) {
-            // Recomiendo agregarlas después de las columnas de la auditoría de patio
-            // si ya existen, para mantener el orden.
             $table->string('marchamo_numero')->nullable()->after('audit_patio_fotos');
             $table->boolean('lleva_custodia')->default(false)->after('marchamo_numero');
             $table->json('audit_carga_fotos')->nullable()->after('lleva_custodia');

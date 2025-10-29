@@ -12,11 +12,9 @@ return new class extends Migration
             $table->id();
             $table->string('sku')->unique();
             $table->text('description');
-            $table->integer('packaging_factor'); // F Empaque
+            $table->integer('packaging_factor');
             $table->foreignId('cs_brand_id')->constrained('cs_brands')->onDelete('cascade');
             $table->enum('type', ['Producto', 'Promocional']);
-            
-            // Campos para rastrear quién creó y modificó
             $table->foreignId('created_by_user_id')->constrained('users');
             $table->foreignId('updated_by_user_id')->nullable()->constrained('users');
 

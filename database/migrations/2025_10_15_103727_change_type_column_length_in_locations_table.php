@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('locations', function (Blueprint $table) {
-            // Aumentamos el tamaño de la columna 'type' a 50 caracteres
             $table->string('type', 50)->change();
         });
     }
@@ -23,8 +22,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('locations', function (Blueprint $table) {
-            // Opcional: revertir al tamaño anterior si es necesario
-            // $table->string('type', 10)->change(); 
         });
     }
 };

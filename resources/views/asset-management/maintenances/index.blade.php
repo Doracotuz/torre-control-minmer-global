@@ -3,7 +3,6 @@
 @section('content')
 <style>
     :root {
-        /* Paleta de colores completa y refinada */
         --color-primary: #2c3856;
         --color-accent: #ff9c00;
         --color-text-primary: #2b2b2b;

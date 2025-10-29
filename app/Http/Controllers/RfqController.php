@@ -12,18 +12,15 @@ class RfqController extends Controller
     {
         $user = Auth::user();
         
-        // Buscar la carpeta principal 'RFQ' del área 'Comercial'
         $rfqFolder = Folder::whereHas('area', function ($query) {
             $query->where('name', 'Comercial');
         })
         ->where('name', 'RFQ')
         ->first();
         
-        // Si no se encuentra la carpeta principal, se devuelve una colección vacía
         $rfqSubfolders = collect();
 
         if ($rfqFolder) {
-            // Se obtienen las subcarpetas de 'RFQ' que el usuario tiene permisos para ver
             $rfqSubfolders = $user->accessibleFolders()->where('parent_id', $rfqFolder->id)->get();
         }
 

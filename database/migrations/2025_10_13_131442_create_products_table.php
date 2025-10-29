@@ -16,17 +16,13 @@ return new class extends Migration
             $table->string('sku')->unique();
             $table->string('name');
             $table->text('description')->nullable();
-
-            // --- NUEVOS CAMPOS RELACIONADOS ---
             $table->foreignId('brand_id')->nullable()->constrained('brands');
             $table->foreignId('product_type_id')->nullable()->constrained('product_types');
-
-            // --- NUEVOS CAMPOS DE UNIDAD Y DIMENSIONES ---
-            $table->string('unit_of_measure'); // Ej: 'caja', 'pieza', 'pallet'
-            $table->decimal('length', 8, 2)->nullable(); // Largo en cm
-            $table->decimal('width', 8, 2)->nullable();  // Ancho en cm
-            $table->decimal('height', 8, 2)->nullable(); // Alto en cm
-            $table->decimal('weight', 8, 2)->nullable(); // en kg
+            $table->string('unit_of_measure');
+            $table->decimal('length', 8, 2)->nullable();
+            $table->decimal('width', 8, 2)->nullable();
+            $table->decimal('height', 8, 2)->nullable();
+            $table->decimal('weight', 8, 2)->nullable();
 
             $table->timestamps();
         });

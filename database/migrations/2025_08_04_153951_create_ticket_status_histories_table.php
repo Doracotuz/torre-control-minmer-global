@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('ticket_status_histories', function (Blueprint $table) {
             $table->id();
             $table->foreignId('ticket_id')->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null'); // Quién hizo el cambio
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
             $table->string('status');
             $table->timestamps();
         });

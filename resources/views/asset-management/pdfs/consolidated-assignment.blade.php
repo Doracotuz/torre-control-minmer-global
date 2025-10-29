@@ -154,7 +154,6 @@
                     </tr>
                 @endforeach
             @else
-                {{-- Fila de ejemplo por si no hay datos dinámicos --}}
                 <tr>
                     <td>
                         <div class="asset-main-line"><img src="{{ $svgIcons['Laptop'] }}" class="asset-icon" alt="">Laptop</div>

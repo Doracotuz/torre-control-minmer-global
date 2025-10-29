@@ -146,9 +146,7 @@
             $size = 8;
             $font = $fontMetrics->getFont("Helvetica", "normal"); // Especifica normal
             $width = $fontMetrics->get_text_width($text, $font, $size);
-            // Centrar el texto en el footer
             $x = ($pdf->get_width() - $width) / 2;
-            // Posición Y ajustada para estar dentro del margen inferior
             $y = $pdf->get_height() - $pdf->get_option('margin_bottom') + 10; // Ajusta +10 según necesites
             $pdf->page_text($x, $y, $text, $font, $size);
         }

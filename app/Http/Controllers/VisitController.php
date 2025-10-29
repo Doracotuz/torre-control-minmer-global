@@ -12,10 +12,6 @@ use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
-
-// ==========================================================
-// USO DE endroid/qr-code (VERSIÓN ACTUALIZADA Y MÁS MANTENIDA)
-// ==========================================================
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Logo\Logo;
@@ -29,14 +25,8 @@ use App\Models\User;
 
 use Endroid\QrCode\RoundBlockSizeMode;
 
-// Se eliminó: use Endroid\QrCode\Builder\Builder;
-// ==========================================================
-
 class VisitController extends Controller
 {
-    /**
-     * Muestra el formulario para crear un nuevo registro de visita.
-     */
     public function create()
     {
         return view('tms.visits.create');
@@ -45,14 +35,11 @@ class VisitController extends Controller
 
 public function index(Request $request)
 {
-    // Inicia la consulta base
     $creatorIds = Visit::select('created_by_user_id')->distinct()->pluck('created_by_user_id');
 
-    // Ahora, buscamos a esos usuarios por su ID para poblar el dropdown.
     $creators = User::whereIn('id', $creatorIds)->orderBy('name')->get();
     $query = Visit::with('creator');
 
-    // 1. Filtro de búsqueda por texto (nombre, email, empresa)
     if ($request->filled('search')) {
         $searchTerm = '%' . $request->search . '%';
         $query->where(function($q) use ($searchTerm) {
@@ -64,7 +51,6 @@ public function index(Request $request)
         });
     }
 
-    // 2. Filtro por rango de fechas
     if ($request->filled('start_date')) {
         $query->whereDate('visit_datetime', '>=', $request->start_date);
     }
@@ -72,29 +58,22 @@ public function index(Request $request)
         $query->whereDate('visit_datetime', '<=', $request->end_date);
     }
 
-    // 3. Filtro por estatus
     if ($request->filled('status') && $request->status != '') {
         $query->where('status', $request->status);
     }
-    // 4. Filtro por Creador
     if ($request->filled('creator_id')) {
         $query->where('created_by_user_id', $request->creator_id);
     }
 
-    // Ordenar los resultados y paginar
     $visits = $query->orderBy('visit_datetime', 'desc')->paginate(15);
 
-    // Renderizar la vista pasando las visitas y los valores de los filtros
     return view('tms.visits.index', [
         'visits' => $visits,
         'creators' => $creators,
-        'filters' => $request->all() // Envía los filtros actuales para rellenar el formulario
+        'filters' => $request->all()
     ]);
 }    
 
-    /**
-     * Almacena una nueva visita, genera el QR y opcionalmente envía un correo.
-     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -124,7 +103,6 @@ public function index(Request $request)
             'license_plate' => $request->license_plate,
             'visit_datetime' => Carbon::parse($request->visit_datetime),
             'reason' => $request->reason,
-            // ✅ LÍNEA CORREGIDA: Se eliminó json_encode()
             'companions' => array_filter(preg_split('/\\r\\n|\\r|\\n/', $request->companions)),
             'qr_code_token' => Str::uuid(),
             'created_by_user_id' => Auth::id(),
@@ -134,7 +112,7 @@ public function index(Request $request)
             if ($request->has('send_email')) {
                 $validationUrl = route('visits.validate.show', ['token' => $visit->qr_code_token]);
 
-                $logoPath = public_path('images/LogoBlanco.png'); // Ruta al logo
+                $logoPath = public_path('images/LogoBlanco.png');
 
             $builder = new \Endroid\QrCode\Builder\Builder(
                 writer: new PngWriter(),
@@ -163,17 +141,11 @@ public function index(Request $request)
             return redirect()->route('area_admin.visits.create')->with('success', 'Visita registrada y QR generado exitosamente.');
         }
 
-    /**
-     * Muestra la página pública con la cámara para escanear el QR.
-     */
     public function showScanPage()
     {
         return view('tms.visits.scan');
     }
 
-    /**
-     * Muestra el resultado de la validación de un QR (página pública).
-     */
     public function showValidationResult($token)
     {
         $visit = Visit::where('qr_code_token', $token)->firstOrFail();
@@ -187,9 +159,6 @@ public function index(Request $request)
         ]);
     }
 
-    /**
-     * Lógica central de validación.
-     */
     private function performValidation(Visit $visit)
     {
         switch ($visit->status) {
@@ -224,8 +193,6 @@ public function index(Request $request)
 
                 $visit->status = 'Finalizada'; 
                 
-                // Asumimos que tienes una columna 'exit_datetime'
-                // Si no la tienes, puedes comentar o eliminar la siguiente línea.
                 if (Schema::hasColumn('tms_visits', 'exit_datetime')) {
                     $visit->exit_datetime = \Carbon\Carbon::now();
                 }
@@ -251,17 +218,12 @@ public function index(Request $request)
         }
     }
 
-    /**
-     * Exporta las visitas filtradas a un archivo CSV.
-     */
     public function exportCsv(Request $request)
     {
         $fileName = 'visitas-' . now()->format('Ymd-His') . '.csv';
 
-        // 1. Eager load al creador para un rendimiento óptimo
         $query = Visit::with('creator');
 
-        // Reutilizamos la misma lógica de filtrado del método index
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';
             $query->where(function($q) use ($searchTerm) {
@@ -298,10 +260,8 @@ public function index(Request $request)
         $callback = function() use ($visits) {
             $file = fopen('php://output', 'w');
             
-            // Ponemos un BOM para asegurar la correcta interpretación de caracteres UTF-8 en Excel
             fputs($file, "\xEF\xBB\xBF");
 
-            // 2. Encabezados del CSV actualizados con toda la información
             fputcsv($file, [
                 'ID',
                 'Estatus',
@@ -320,11 +280,9 @@ public function index(Request $request)
             ]);
 
             foreach ($visits as $visit) {
-                // Se decodifica el JSON de acompañantes para mostrarlo como texto plano
                 $companionsList = json_decode($visit->companions);
                 $companionsText = is_array($companionsList) ? implode(', ', $companionsList) : '';
 
-                // 3. Fila de datos con todos los campos requeridos
                 fputcsv($file, [
                     $visit->id,
                     $visit->status,
@@ -348,12 +306,8 @@ public function index(Request $request)
         return new StreamedResponse($callback, 200, $headers);
     }
 
-    /**
-     * Proporciona datos para los gráficos del dashboard.
-     */
     public function getChartData()
     {
-        // 1. Visitas por día (últimos 30 días)
         $visitsPerDay = Visit::select(
                 DB::raw('DATE(visit_datetime) as date'),
                 DB::raw('count(*) as count')
@@ -363,12 +317,10 @@ public function index(Request $request)
             ->orderBy('date', 'asc')
             ->get();
 
-        // 2. Conteo de visitas por estatus
         $visitsByStatus = Visit::select('status', DB::raw('count(*) as count'))
             ->groupBy('status')
             ->pluck('count', 'status');
 
-        // 3. Top 5 empresas con más visitas
         $visitsByCompany = Visit::select('company', DB::raw('count(*) as count'))
             ->whereNotNull('company')
             ->where('company', '!=', '')
@@ -377,7 +329,6 @@ public function index(Request $request)
             ->limit(5)
             ->pluck('count', 'company');
 
-        // 4. Duración promedio de la visita en minutos
         $averageDuration = Visit::where('status', 'Finalizada')
             ->whereNotNull('exit_datetime')
             ->select(DB::raw('AVG(TIMESTAMPDIFF(MINUTE, visit_datetime, exit_datetime)) as avg_duration'))
@@ -396,18 +347,14 @@ public function index(Request $request)
                 'labels' => $visitsByCompany->keys(),
                 'data' => $visitsByCompany->values(),
             ],
-            'averageDuration' => round($averageDuration) // en minutos
+            'averageDuration' => round($averageDuration)
         ]);
     }
 
     public function destroy(Visit $visit)
     {
-        // La inyección de modelos de ruta (Route Model Binding) ya encuentra la visita por nosotros.
-        // Si no la encuentra, Laravel automáticamente arrojará un error 404.
-        
         $visit->delete();
 
-        // Redirigir de vuelta al índice con un mensaje de éxito.
         return redirect()->route('area_admin.visits.index')
                         ->with('success', 'Visita eliminada exitosamente.');
     }

@@ -15,8 +15,6 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
-     *
      * @var array<int, string>
      */
     protected $fillable = [
@@ -33,8 +31,6 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
      * @var array<int, string>
      */
     protected $hidden = [
@@ -43,8 +39,6 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -58,33 +52,21 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * Get the area that owns the User.
-     */
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);
     }
 
-    /**
-     * Get the folders created by the user.
-     */
     public function folders(): HasMany
     {
         return $this->hasMany(Folder::class);
     }
 
-    /**
-     * Get the file links created by the user.
-     */
     public function fileLinks(): HasMany
     {
         return $this->hasMany(FileLink::class);
     }
 
-    /**
-     * Get the folders the user has access to.
-     */
     public function accessibleFolders(): BelongsToMany
     {
         return $this->belongsToMany(Folder::class, 'folder_user');
@@ -96,8 +78,6 @@ class User extends Authenticatable
     }
 
     /**
-     * Enviar la notificación de restablecimiento de contraseña personalizada.
-     *
      * @param  string  $token
      * @return void
      */

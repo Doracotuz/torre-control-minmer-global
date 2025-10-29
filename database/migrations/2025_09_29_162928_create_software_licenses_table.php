@@ -8,8 +8,8 @@ return new class extends Migration {
         Schema::create('software_licenses', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->text('license_key')->nullable(); // Encriptado
-            $table->integer('total_seats'); // Número de licencias compradas
+            $table->text('license_key')->nullable();
+            $table->integer('total_seats');
             $table->date('purchase_date')->nullable();
             $table->date('expiry_date')->nullable();
             $table->timestamps();

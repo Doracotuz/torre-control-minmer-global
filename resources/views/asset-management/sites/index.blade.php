@@ -3,15 +3,12 @@
 @section('content')
 <style>
     :root {
-        /* Tu paleta de colores */
         --color-primary: #2c3856;
         --color-accent: #ff9c00;
         --color-text-primary: #2b2b2b;
         --color-text-secondary: #666666;
         --color-surface: #ffffff;
-        
-        /* Colores de apoyo */
-        --color-primary-dark: #212a41; /* Versión oscurecida para hover */
+        --color-primary-dark: #212a41;
         --color-background: #f3f4f6;
         --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
         --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -22,7 +19,6 @@
         background-color: var(--color-background);
     }
 
-    /* Estilos para formularios (Inputs, Selects, Textareas) */
     .form-input, .form-select, .form-textarea {
         border-radius: 0.5rem;
         border-color: #d1d5db;
@@ -39,8 +35,6 @@
         margin-bottom: 0.5rem;
         display: block;
     }
-    
-    /* Botones */
     .btn {
         padding: 0.65rem 1.25rem;
         border-radius: 0.5rem;
@@ -71,8 +65,6 @@
     .btn-secondary:hover {
         background-color: #f9fafb;
     }
-
-    /* Badges de Estado */
     .status-badge { 
         padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; 
         font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
@@ -85,7 +77,6 @@
 </style>
 <div class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     
-    {{-- Encabezado --}}
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
         <div>
             <a href="{{ route('asset-management.dashboard') }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-2 inline-block">
@@ -101,7 +92,6 @@
         </div>
     </header>
 
-    {{-- Contenedor de la Tabla --}}
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-sm">

@@ -18,8 +18,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
-            // Añade la columna area_id
-            $table->foreignId('area_id')->nullable()->constrained()->onDelete('set null'); // Clave foránea a la tabla 'areas'
+            $table->foreignId('area_id')->nullable()->constrained()->onDelete('set null');
             $table->timestamps();
         });
     }

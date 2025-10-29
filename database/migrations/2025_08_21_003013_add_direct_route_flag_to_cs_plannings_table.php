@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void {
         Schema::table('cs_plannings', function (Blueprint $table) {
-            // Esta columna nos permitirá marcar una ruta como directa y aprobada.
             $table->boolean('is_direct_route')->default(false)->after('is_scale');
         });
     }

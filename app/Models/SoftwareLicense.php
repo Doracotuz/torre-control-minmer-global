@@ -12,7 +12,7 @@ class SoftwareLicense extends Model
     protected $fillable = ['name', 'license_key', 'total_seats', 'purchase_date', 'expiry_date'];
 
     protected $casts = [
-        'license_key' => 'encrypted', // Encripta automáticamente la clave
+        'license_key' => 'encrypted',
         'purchase_date' => 'date',
         'expiry_date' => 'date',
     ];
@@ -22,7 +22,6 @@ class SoftwareLicense extends Model
         return $this->hasMany(SoftwareAssignment::class);
     }
 
-    // Atributo calculado para saber los asientos usados
     public function getUsedSeatsAttribute(): int
     {
         return $this->assignments()->count();

@@ -593,7 +593,6 @@ function planningManager() {
                         this.guiaModalTotals.maniobras = data.total_maniobras || 0;
                         this.actualCapacity = data.capacidad_actual || 'No definida';
 
-                        // Lógica de sugerencia
                         const cajas = this.guiaModalTotals.cajas;
                         if (cajas <= 30) this.suggestedCapacity = '1 Ton';
                         else if (cajas <= 60) this.suggestedCapacity = '1.5 Ton';

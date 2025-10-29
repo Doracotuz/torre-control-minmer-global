@@ -26,8 +26,6 @@ class ChangeSoToStringInFacturasTable extends Migration
     public function down()
     {
         Schema::table('facturas', function (Blueprint $table) {
-            // Revertir a un tipo de dato numérico si lo necesitas, o a su tipo original
-            // Asegúrate de usar el tipo de dato original de la columna
             $table->integer('so')->nullable()->change(); 
         });
     }

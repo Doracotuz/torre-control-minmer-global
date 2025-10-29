@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('project_files', function (Blueprint $table) {
             $table->id();
             $table->foreignId('project_id')->constrained('projects')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Para saber quién subió el archivo
-            $table->string('file_name'); // Nombre original del archivo
-            $table->string('file_path'); // Ruta donde se guarda el archivo
-            $table->string('file_size'); // Tamaño del archivo
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->string('file_name');
+            $table->string('file_path');
+            $table->string('file_size');
             $table->timestamps();
         });
     }

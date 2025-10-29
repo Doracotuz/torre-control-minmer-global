@@ -36,7 +36,7 @@
 
             @forelse ($results as $item)
                 @if($item->source === 'factura')
-                    @php $factura = $item; // Renombramos para compatibilidad @endphp
+                    @php $factura = $item;
                     <div class="bg-white border rounded-lg p-4 mb-4 shadow-md">
                         <div class="flex flex-col sm:flex-row justify-between items-start border-b pb-3 mb-3 gap-2">
                             <div>
@@ -118,7 +118,7 @@
                     </div>
                 
                 @elseif($item->source === 'order')
-                    @php $order = $item; // Renombramos para claridad @endphp
+                    @php $order = $item;
                     <div class="bg-white border-l-4 border-[#ff9c00] rounded-r-lg p-4 mb-4 shadow-md">
                         <div class="flex flex-col sm:flex-row justify-between items-start pb-3 mb-3 border-b gap-2">
                             <div>

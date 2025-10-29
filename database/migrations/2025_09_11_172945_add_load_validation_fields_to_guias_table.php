@@ -12,7 +12,6 @@ return new class extends Migration
     public function up()
     {
         Schema::table('guias', function (Blueprint $table) {
-            // Añadimos las nuevas columnas booleanas al final de la tabla
             $table->boolean('audit_carga_emplayado_correcto')->default(false)->after('audit_carga_fotos');
             $table->boolean('audit_carga_etiquetado_correcto')->default(false)->after('audit_carga_emplayado_correcto');
             $table->boolean('audit_carga_distribucion_correcta')->default(false)->after('audit_carga_etiquetado_correcto');

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('locations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('warehouse_id')->constrained('warehouses');
-            $table->string('code')->unique(); // Ej: A-01-03-B
+            $table->string('code')->unique();
             $table->string('aisle')->nullable();
             $table->string('rack')->nullable();
             $table->string('shelf')->nullable();

@@ -20,15 +20,12 @@ class PurchaseOrder extends Model
         'download_start_time', 'download_end_time'
     ];
 
-    // --- RELACIONES ---
     public function user() { return $this->belongsTo(User::class); }
     public function lines() { return $this->hasMany(PurchaseOrderLine::class); }
     public function latestArrival() { return $this->hasOne(DockArrival::class)->latestOfMany(); }
 
-    // CORRECCIÓN: Asegúrate de que esta relación apunte a tu modelo Pallet correcto
     public function pallets() { return $this->hasMany(Pallet::class); }
 
-    // --- ACCESORES ---
     public function getStatusInSpanishAttribute(): string
     {
         return match ($this->status) {
@@ -37,7 +34,6 @@ class PurchaseOrder extends Model
         };
     }
     
-    // --- FUNCIÓN DE CÁLCULO CORREGIDA ---
     public function getReceiptSummary()
     {
         $expectedLines = $this->lines()->with('product')->get();
@@ -61,9 +57,7 @@ class PurchaseOrder extends Model
                 'product_name' => $line->product->name,
                 'quantity_ordered' => $line->quantity_ordered,
                 'quantity_received' => $quantity_received,
-                'pallet_count' => $receivedData ? $receivedData->pallet_count : 0,
-                
-                // --- CAMBIO DE round() a ceil() ---
+                'pallet_count' => $receivedData ? $receivedData->pallet_count : 0,                
                 'cases_received' => ceil($quantity_received / $pieces_per_case),
             ];
         });

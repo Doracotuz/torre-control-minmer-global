@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('inventory_adjustments', function (Blueprint $table) {
-            // Añadimos la columna para saber de dónde vino el ajuste
             $table->string('source')->nullable()->after('reason');
         });
     }

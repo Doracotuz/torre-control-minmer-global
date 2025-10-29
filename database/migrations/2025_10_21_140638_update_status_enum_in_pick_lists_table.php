@@ -12,8 +12,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // La nueva lista ahora INCLUYE los valores viejos Y los nuevos,
-        // y mantenemos el valor DEFAULT.
         DB::statement("ALTER TABLE pick_lists CHANGE COLUMN status status ENUM('Pending', 'In Progress', 'Completed', 'Generated', 'Picking', 'Packed') NOT NULL DEFAULT 'Pending'");
     }
 
@@ -22,7 +20,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Esto permite revertir al estado original que se ve en tu captura
         DB::statement("ALTER TABLE pick_lists CHANGE COLUMN status status ENUM('Pending', 'In Progress', 'Completed') NOT NULL DEFAULT 'Pending'");
     }
 };

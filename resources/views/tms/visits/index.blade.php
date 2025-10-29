@@ -53,7 +53,6 @@
         font-size: 0.7rem;
     }
 
-    /* Input Pequeño */
     .form-input-sm {
         font-size: 0.875rem;
         padding: 0.5rem 0.75rem;

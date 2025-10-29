@@ -21,7 +21,7 @@
     if ($audit->status === 'Pendiente Almacén') {
         $buttonClass = 'bg-blue-600 hover:bg-blue-700';
         $buttonText = 'Auditar Almacén';
-        $route = route('audit.warehouse.show', $audit); // Se pasa el objeto $audit
+        $route = route('audit.warehouse.show', $audit);
         $disabled = false;
     }
 @endphp

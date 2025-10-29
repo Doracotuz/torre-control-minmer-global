@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void {
         Schema::table('cs_plannings', function (Blueprint $table) {
-            // Columna para relacionar con la guía
             $table->foreignId('guia_id')->nullable()->constrained('guias')->after('cs_order_id');
         });
     }

@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pick_list_items', function (Blueprint $table) {
-            // Guardaremos de qué pallet específico se debe surtir
             $table->foreignId('pallet_id')->nullable()->after('location_id')->constrained('pallets');
         });
     }

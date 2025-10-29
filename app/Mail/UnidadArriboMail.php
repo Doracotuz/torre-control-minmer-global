@@ -15,15 +15,11 @@ class UnidadArriboMail extends Mailable
     use Queueable, SerializesModels;
 
     /**
-     * La instancia de la guía con los datos del arribo.
-     *
      * @var \App\Models\Guia
      */
     public $guia;
 
     /**
-     * Create a new message instance.
-     *
      * @return void
      */
     public function __construct(Guia $guia)
@@ -32,8 +28,6 @@ class UnidadArriboMail extends Mailable
     }
 
     /**
-     * Get the message envelope.
-     *
      * @return \Illuminate\Mail\Mailables\Envelope
      */
     public function envelope()
@@ -44,8 +38,6 @@ class UnidadArriboMail extends Mailable
     }
 
     /**
-     * Get the message content definition.
-     *
      * @return \Illuminate\Mail\Mailables\Content
      */
     public function content()
@@ -56,8 +48,6 @@ class UnidadArriboMail extends Mailable
     }
 
     /**
-     * Get the attachments for the message.
-     *
      * @return array
      */
     public function attachments()

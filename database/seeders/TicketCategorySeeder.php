@@ -3,16 +3,12 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\TicketCategory; // Asegúrate de importar el modelo
+use App\Models\TicketCategory;
 
 class TicketCategorySeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Limpiar las tablas para evitar duplicados al ejecutar el seeder varias veces
         \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         TicketCategory::truncate();
         \App\Models\TicketSubCategory::truncate();
@@ -59,10 +55,8 @@ class TicketCategorySeeder extends Seeder
         ];
 
         foreach ($categories as $categoryName => $subCategories) {
-            // Crear la categoría principal
             $category = TicketCategory::create(['name' => $categoryName]);
 
-            // Crear las subcategorías asociadas
             foreach ($subCategories as $subCategoryName) {
                 $category->subCategories()->create(['name' => $subCategoryName]);
             }

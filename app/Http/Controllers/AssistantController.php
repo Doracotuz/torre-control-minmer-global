@@ -12,10 +12,8 @@ class AssistantController extends Controller
         $request->validate(['message' => 'required|string|max:500']);
         $userInput = $request->input('message');
         
-        // Obtenemos el nombre del usuario autenticado
         $userName = auth()->user() ? auth()->user()->name : 'Usuario';
 
-        // --- Lógica de 5 interacciones (sin cambios) ---
         $messageCount = $request->session()->get('assistant_message_count', 0);
         $messageCount++;
         $request->session()->put('assistant_message_count', $messageCount);
@@ -31,10 +29,6 @@ class AssistantController extends Controller
                 'whatsapp_link' => $whatsappLink
             ]);
         }
-        // --- Fin de la lógica de escalación ---
-
-
-        // --- Lógica de OpenAI ---
         try {
             $assistantId = env('OPENAI_ASSISTANT_ID');
             $threadId = $request->session()->get('assistant_thread_id');
@@ -45,8 +39,6 @@ class AssistantController extends Controller
                 $request->session()->put('assistant_thread_id', $threadId);
             }
 
-            // --- CAMBIO AQUÍ ---
-            // Añadimos el nombre del usuario al contenido del mensaje para darle contexto a la IA.
             $userMessageWithContext = "Mi nombre es {$userName}. Mi pregunta es: {$userInput}";
 
             OpenAI::threads()->messages()->create($threadId, [

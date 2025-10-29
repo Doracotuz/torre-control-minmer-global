@@ -18,9 +18,6 @@ class WelcomeNewUser extends Mailable
     public $password;
     public $isReWelcome;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct(User $user, string $password, bool $isReWelcome = false)
     {
         $this->user = $user;
@@ -28,9 +25,6 @@ class WelcomeNewUser extends Mailable
         $this->isReWelcome = $isReWelcome; 
     }
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         $firstName = explode(' ', $this->user->name)[0];
@@ -43,19 +37,14 @@ class WelcomeNewUser extends Mailable
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(
-            view: 'emails.users.welcome', // Esta es la vista que crearemos a continuación
+            view: 'emails.users.welcome',
         );
     }
 
     /**
-     * Get the attachments for the message.
-     *
      * @return array<int, \Illuminate\Mail\Mailables\Attachment>
      */
     public function attachments(): array

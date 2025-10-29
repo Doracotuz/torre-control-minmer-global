@@ -31,28 +31,20 @@ class CsOrder extends Model
     public function events() { return $this->hasMany(CsOrderEvent::class)->orderBy('created_at', 'desc'); }
     public function createdBy() { return $this->belongsTo(User::class, 'created_by_user_id'); }
 
-    // --- INICIA CAMBIO: Se añade la relación con Factura ---
-    /**
-     * Define la relación para obtener las facturas asociadas a este pedido
-     * a través del número de Sales Order (SO).
-     */
     public function facturas()
     {
-        // Se asume que la tabla 'facturas' tiene una columna 'so'
-        // y la tabla 'cs_orders' tiene la columna 'so_number'.
         return $this->hasMany(Factura::class, 'so', 'so_number');
     }
-    // --- TERMINA CAMBIO ---
 
     public function planningEvents()
     {
         return $this->hasManyThrough(
             \App\Models\CsPlanningEvent::class,
             \App\Models\CsPlanning::class,
-            'cs_order_id', // Clave foránea en cs_plannings
-            'cs_planning_id', // Clave foránea en cs_planning_events
-            'id', // Clave local en cs_orders
-            'id' // Clave local en cs_plannings
+            'cs_order_id', 
+            'cs_planning_id',
+            'id',
+            'id'
         );
     }
 

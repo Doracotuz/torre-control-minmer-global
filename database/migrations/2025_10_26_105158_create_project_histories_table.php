@@ -9,10 +9,10 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('project_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
-            $table->string('action_type'); // 'status_change', 'comment', 'created'
+            $table->string('action_type');
             $table->string('old_status')->nullable();
             $table->string('new_status')->nullable();
-            $table->text('comment_body')->nullable(); // Para duplicar el comentario aquí
+            $table->text('comment_body')->nullable();
             $table->timestamps();
         });
     }

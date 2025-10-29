@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class FileLink extends Model
 {
@@ -31,9 +32,9 @@ class FileLink extends Model
             if ($fileLink->type === 'file' && $fileLink->path) {
                 if (Storage::disk('s3')->exists($fileLink->path)) {
                     Storage::disk('s3')->delete($fileLink->path);
-                    \Log::info("Archivo físico eliminado: " . $fileLink->path);
+                    Log::info("Archivo físico eliminado: " . $fileLink->path);
                 } else {
-                    \Log::warning("Archivo físico no encontrado para eliminar: " . $fileLink->path);
+                    Log::warning("Archivo físico no encontrado para eliminar: " . $fileLink->path);
                 }
             }
         });
@@ -49,33 +50,23 @@ class FileLink extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Accessor para obtener el nombre del archivo con su extensión original.
-     */
-    public function getNameWithExtensionAttribute(): string // Mantiene el tipo de retorno string
+    public function getNameWithExtensionAttribute(): string
     {
-        $name = $this->name ?? ''; // <-- Asegura que $name nunca sea null
+        $name = $this->name ?? '';
         if ($this->type === 'file' && $this->path) {
             $extension = pathinfo($this->path, PATHINFO_EXTENSION);
             if (!empty($extension) && !Str::endsWith(strtolower($name), '.' . strtolower($extension))) {
                 return $name . '.' . $extension;
             }
         }
-        return $name; // Siempre retorna un string (vacío si $this->name era null)
+        return $name;
     }
 
-    /**
-     * Accessor para obtener la ruta completa del archivo/enlace, incluyendo la ruta de la carpeta.
-     */
     public function getFullPathAttribute(): string
     {
-        // Asegúrate de que $this->folder no sea null si la relación no se cargó correctamente
-        // y que getNameWithExtensionAttribute siempre retorne string.
         if ($this->folder) {
-            // El problema original estaba en getNameWithExtensionAttribute,
-            // si eso devuelve un string, esto funcionará.
             return $this->folder->full_path . '/' . $this->name_with_extension;
         }
-        return 'Raíz/' . $this->name_with_extension; // Asegúrate de que name_with_extension sea siempre string
+        return 'Raíz/' . $this->name_with_extension;
     }
 }

@@ -215,7 +215,7 @@
         <div class="flex items-center gap-8"> <div class="avatar-image">
                 @php
                     $photoUrl = $member->profile_photo_path_url
-                                ?: 'https://ui-avatars.com/api/?name=' . urlencode($member->name) . '&color=FFFFFF&background=2c3856&size=128'; // CAMBIO: size=128
+                                ?: 'https://ui-avatars.com/api/?name=' . urlencode($member->name) . '&color=FFFFFF&background=2c3856&size=128';
                 @endphp
                 <img src="{{ $photoUrl }}" alt="Foto de {{ $member->name }}">
             </div>

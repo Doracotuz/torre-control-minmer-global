@@ -107,7 +107,6 @@
                                 </div>
                             </div>
 
-                            {{-- Hidden input for area_id to maintain current area --}}
                             <input type="hidden" name="area_id" value="{{ $currentArea->id }}">
 
                             <div class="mt-6">
