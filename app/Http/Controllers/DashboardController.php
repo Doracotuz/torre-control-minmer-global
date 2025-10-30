@@ -6,9 +6,11 @@ use App\Models\User;
 use App\Models\Area;
 use App\Models\Folder;
 use App\Models\FileLink;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class DashboardController extends Controller
 {
@@ -21,71 +23,58 @@ class DashboardController extends Controller
         $totalFolders = Folder::count();
         $totalFileLinks = FileLink::count();
 
-        $usersByArea = [];
-        $foldersByArea = [];
-        $fileTypesDistribution = [];
+        $recentActivities = ActivityLog::with('user:id,name')
+            ->latest()
+            ->take(5)
+            ->get();
 
-        if ($user->area && $user->area->name === 'Administración') {
-            $usersByArea = User::select('areas.name as area_name', DB::raw('count(users.id) as count'))
-                                ->join('areas', 'users.area_id', '=', 'areas.id')
-                                ->groupBy('areas.name')
-                                ->orderBy('areas.name')
-                                ->get();
+        $startDate = now()->subDays(30)->format('Y-m-d');
+        $endDate = now()->format('Y-m-d');
 
-            $foldersByArea = Folder::select('areas.name as area_name', DB::raw('count(folders.id) as count'))
-                                    ->join('areas', 'folders.area_id', '=', 'areas.id')
-                                    ->groupBy('areas.name')
-                                    ->orderBy('areas.name')
-                                    ->get();
+        $userTypeData = User::select(DB::raw('CASE
+            WHEN is_area_admin = 1 AND area_id IN (SELECT id FROM areas WHERE name = "Administración") THEN "Super Admin"
+            WHEN is_area_admin = 1 THEN "Admin de Área"
+            WHEN is_client = 1 THEN "Cliente"
+            ELSE "Normal"
+            END AS user_type_label'), DB::raw('count(*) as total'))
+            ->groupBy('user_type_label')
+            ->pluck('total', 'user_type_label');
 
-            $fileTypesDistribution = FileLink::select(DB::raw('CASE
-                                        WHEN type = "file" AND (path LIKE "%.pdf") THEN "PDF"
-                                        WHEN type = "file" AND (path LIKE "%.jpg" OR path LIKE "%.jpeg" OR path LIKE "%.png" OR path LIKE "%.gif" OR path LIKE "%.bmp" OR path LIKE "%.webp") THEN "Imagen"
-                                        WHEN type = "file" THEN UPPER(SUBSTRING_INDEX(path, ".", -1)) /* Extraer extensión para otros archivos */
-                                        ELSE "Enlaces"
-                                    END as type_category'), DB::raw('count(*) as count'))
-                                    ->groupBy('type_category')
-                                    ->orderBy('type_category')
-                                    ->get();
+        $foldersByArea = Folder::select('areas.name as x', DB::raw('count(folders.id) as y'))
+            ->join('areas', 'folders.area_id', '=', 'areas.id')
+            ->groupBy('areas.name')
+            ->get();
 
-        } elseif ($user->is_area_admin || ($user->area_id && $user->area->name !== 'Administración')) {
-            $areaId = $user->area_id;
+        $fileTypes = FileLink::select(DB::raw('LOWER(SUBSTRING_INDEX(name, ".", -1)) as file_extension'), DB::raw('count(*) as total'))
+            ->where('type', 'file')
+            ->where('name', 'like', '%.%')
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->groupBy('file_extension')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->pluck('total', 'file_extension');
 
-            $usersByArea = User::select('areas.name as area_name', DB::raw('count(users.id) as count'))
-                                ->join('areas', 'users.area_id', '=', 'areas.id')
-                                ->where('users.area_id', $areaId)
-                                ->groupBy('areas.name')
-                                ->get();
-
-            $foldersByArea = Folder::select('areas.name as area_name', DB::raw('count(folders.id) as count'))
-                                    ->join('areas', 'folders.area_id', '=', 'areas.id')
-                                    ->where('folders.area_id', $areaId)
-                                    ->groupBy('areas.name')
-                                    ->get();
-
-            $fileTypesDistribution = FileLink::select(DB::raw('CASE
-                                        WHEN type = "file" AND (path LIKE "%.pdf") THEN "PDF"
-                                        WHEN type = "file" AND (path LIKE "%.jpg" OR path LIKE "%.jpeg" OR path LIKE "%.png" OR path LIKE "%.gif" OR path LIKE "%.bmp" OR path LIKE "%.webp") THEN "Imagen"
-                                        WHEN type = "file" THEN UPPER(SUBSTRING_INDEX(path, ".", -1)) /* Extraer extensión para otros archivos */
-                                        ELSE "Enlaces"
-                                    END as type_category'), DB::raw('count(*) as count'))
-                                    ->whereHas('folder', function($q) use ($areaId) {
-                                        $q->where('area_id', $areaId);
-                                    })
-                                    ->groupBy('type_category')
-                                    ->orderBy('type_category')
-                                    ->get();
+        $usersByArea = null;
+        if ($user->isSuperAdmin()) {
+            $usersByArea = User::select('areas.name', DB::raw('count(users.id) as count'))
+                ->join('areas', 'users.area_id', '=', 'areas.id')
+                ->groupBy('areas.name')
+                ->get();
         }
-
 
         return response()->json([
             'totalUsers' => $totalUsers,
             'totalAreas' => $totalAreas,
             'totalFolders' => $totalFolders,
             'totalFileLinks' => $totalFileLinks,
-            'usersByArea' => $usersByArea,
+            
+            'recentActivities' => $recentActivities,
+
+            'userTypeData' => $userTypeData,
             'foldersByArea' => $foldersByArea,
-            'fileTypesDistribution' => $fileTypesDistribution,
+            'fileTypes' => $fileTypes,
+            'usersByArea' => $usersByArea,
         ]);
     }
 }

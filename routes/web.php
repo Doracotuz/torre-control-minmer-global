@@ -78,11 +78,22 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    if (Auth::user()->is_client) {
+    $user = Auth::user();
+
+    if ($user->isClient()) {
         return redirect()->route('tablero.index');
     }
 
-    return view('dashboard');
+    if ($user->isSuperAdmin()) {
+        return redirect()->route('admin.home'); 
+    }
+    
+    if ($user->is_area_admin) {
+        return redirect()->route('area_admin.dashboard');
+    }
+
+    return redirect()->route('user.dashboard');
+
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'check.area:Recursos Humanos'])->group(function () {
@@ -161,6 +172,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/search-suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
     Route::get('/dashboard-data', [App\Http\Controllers\DashboardController::class, 'data'])->name('dashboard.data');
+    Route::get('/area-dashboard-data', [App\Http\Controllers\AreaAdmin\DashboardController::class, 'data'])
+         ->name('area_admin.dashboard.data');
+    Route::get('/my-dashboard', function () {
+        return view('area_admin.dashboard');
+    })->middleware('verified')->name('user.dashboard');    
     Route::get('/organigrama-interactivo', [OrganigramController::class, 'interactiveOrganigram'])->name('client.organigram.interactive');
     Route::get('/organigrama-data', [OrganigramController::class, 'getInteractiveOrganigramData'])->name('client.organigram.data');
     Route::get('/organigrama-data-sin-areas', [OrganigramController::class, 'getInteractiveOrganigramDataWithoutAreas'])->name('client.organigram.data.without-areas');
@@ -220,7 +236,11 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/dashboard', function () {
         return view('admin.dashboard');
     })->name('dashboard');
-
+    Route::get('/dashboard-data', [App\Http\Controllers\Admin\StatisticsController::class, 'getChartData'])->name('dashboard.data');    
+    Route::get('/home', function () {
+        return view('dashboard');
+    })->name('home');    
+    Route::get('/main-dashboard-data', [App\Http\Controllers\DashboardController::class, 'data'])->name('main_dashboard.data');
     Route::resource('ticket-categories', TicketCategoryController::class);
     Route::post('ticket-sub-categories', [TicketCategoryController::class, 'storeSubCategory'])->name('ticket-sub-categories.store');
     Route::put('ticket-sub-categories/{subCategory}', [TicketCategoryController::class, 'updateSubCategory'])->name('ticket-sub-categories.update');

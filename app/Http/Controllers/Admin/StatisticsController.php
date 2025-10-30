@@ -306,4 +306,120 @@ class StatisticsController extends Controller
         
         return Response::stream($callback, 200, $headers);
     }
+
+    public function getChartData(Request $request)
+    {
+        $startDate = now()->subDays(30)->format('Y-m-d');
+        $endDate = now()->format('Y-m-d');
+
+        $actionData = ActivityLog::select('action', DB::raw('count(*) as total'))
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->groupBy('action')
+            ->orderByDesc('total')
+            ->limit(10)
+            ->get();
+
+        $userTypeData = ActivityLog::select(DB::raw('CASE
+            WHEN users.is_area_admin = 1 AND areas.name = "Administración" THEN "Super Admin"
+            WHEN users.is_area_admin = 1 THEN "Admin de Área"
+            WHEN users.is_client = 1 THEN "Cliente"
+            ELSE "Normal"
+            END AS user_type_label'), DB::raw('count(*) as total_actions'))
+            ->join('users', 'users.id', '=', 'activity_logs.user_id')
+            ->leftJoin('areas', 'users.area_id', '=', 'areas.id')
+            ->whereDate('activity_logs.created_at', '>=', $startDate)
+            ->whereDate('activity_logs.created_at', '<=', $endDate)
+            ->groupBy('user_type_label')
+            ->get();
+
+        $foldersByArea = Folder::select('areas.name', DB::raw('count(folders.id) as total_folders'))
+            ->join('areas', 'folders.area_id', '=', 'areas.id')
+            ->groupBy('areas.name')
+            ->get();
+
+        $filesByArea = FileLink::select('areas.name', DB::raw('count(file_links.id) as total_files'))
+            ->join('folders', 'file_links.folder_id', '=', 'folders.id')
+            ->join('areas', 'folders.area_id', '=', 'areas.id')
+            ->where('file_links.type', 'file')
+            ->groupBy('areas.name')
+            ->get();
+            
+        $creationDeletion = ActivityLog::select('action_key', DB::raw('count(*) as total'))
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->whereIn('action_key', [
+                'created_folder', 'uploaded_file', 'uploaded_file_in_directory',
+                'deleted_folder', 'deleted_file_link', 'deleted_folder_bulk', 'deleted_file_link_bulk'
+            ])
+            ->groupBy('action_key')
+            ->get()
+            ->groupBy(function ($item) {
+                return Str::contains($item->action_key, ['created', 'uploaded']) ? 'Creaciones' : 'Eliminaciones';
+            })
+            ->map(function ($group) {
+                return $group->sum('total');
+            });
+
+        $activityByHour = ActivityLog::select(DB::raw('HOUR(created_at) as hour'), DB::raw('count(*) as total_actions'))
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->groupBy('hour')
+            ->orderBy('hour')
+            ->pluck('total_actions', 'hour');
+
+        $recentActivities = ActivityLog::with('user:id,name')
+            ->latest()
+            ->take(5)
+            ->get();
+            
+        $totalUsers = User::count();
+        $totalAreas = Area::count();
+        $totalFolders = Folder::count();
+        $totalFileLinks = FileLink::count();
+
+        $usersByArea = User::select('areas.name', DB::raw('count(users.id) as total_users'))
+            ->join('areas', 'users.area_id', '=', 'areas.id')
+            ->groupBy('areas.name')
+            ->orderByDesc('total_users')
+            ->get();
+
+        $fileTypes = FileLink::select(DB::raw('LOWER(SUBSTRING_INDEX(name, ".", -1)) as file_extension'), DB::raw('count(*) as total'))
+            ->where('type', 'file')
+            ->where('name', 'like', '%.%')
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->groupBy('file_extension')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get();
+
+        $topUsers = ActivityLog::select('users.name', DB::raw('count(*) as total_actions'))
+            ->join('users', 'activity_logs.user_id', '=', 'users.id')
+            ->whereDate('activity_logs.created_at', '>=', $startDate)
+            ->whereDate('activity_logs.created_at', '<=', $endDate)
+            ->groupBy('activity_logs.user_id', 'users.name')
+            ->orderByDesc('total_actions')
+            ->limit(5)
+            ->get();
+
+
+        return response()->json([
+            'totalUsers' => $totalUsers,
+            'totalAreas' => $totalAreas,
+            'totalFolders' => $totalFolders,
+            'totalFileLinks' => $totalFileLinks,
+            'recentActivities' => $recentActivities,
+            'actionData' => $actionData,
+            'userTypeData' => $userTypeData,
+            'foldersByArea' => $foldersByArea,
+            'filesByArea' => $filesByArea,
+            'creationDeletion' => $creationDeletion,
+            'activityByHour' => $activityByHour,
+            'usersByArea' => $usersByArea,
+            'fileTypes' => $fileTypes,
+            'topUsers' => $topUsers,
+        ]);
+    }
+
 }
