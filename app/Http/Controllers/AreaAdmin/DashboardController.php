@@ -69,8 +69,9 @@ class DashboardController extends Controller
         $fileCount = (clone $kpiQuery)->where('type', 'file')->count();
         $linkCount = (clone $kpiQuery)->where('type', 'link')->count();
 
-        $teamMembers = User::where('area_id', $activeAreaId)
-            ->select('id', 'name', 'position', 'profile_photo_path', 'email')
+        $teamMembers = \App\Models\OrganigramMember::where('area_id', $activeAreaId)
+            ->with('position:id,name')
+            ->select('id', 'name', 'position_id', 'profile_photo_path', 'email')
             ->orderBy('name')
             ->get();
             

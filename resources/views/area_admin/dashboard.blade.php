@@ -267,18 +267,20 @@
                     return;
                 }
                 members.forEach(member => {
-                    const profilePhoto = member.profile_photo_path 
-                        ? `<img class="h-10 w-10 rounded-full object-cover" src="${member.profile_photo_path}" alt="${member.name}">`
+                    const profilePhoto = member.profile_photo_path_url
+                        ? `<img class="h-10 w-10 rounded-full object-cover" src="${member.profile_photo_path_url}" alt="${member.name}">`
                         : `<span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-500">
                              <span class="font-medium leading-none text-white">${member.name.charAt(0)}</span>
                            </span>`; 
                     
+                    const positionName = (member.position ? member.position.name : member.email);
+
                     teamList.innerHTML += `
                         <li class="flex items-center space-x-3">
                             <div>${profilePhoto}</div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-[#2c3856] truncate">${member.name}</p>
-                                <p class="text-xs text-gray-500 truncate">${member.position || member.email}</p>
+                                <p class="text-xs text-gray-500 truncate">${positionName}</p>
                             </div>
                         </li>
                     `;
