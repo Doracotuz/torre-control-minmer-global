@@ -28,6 +28,20 @@ class FolderController extends Controller
         $currentFolder = $folder;
         $searchQuery = $request->input('search');
 
+        $manageableAreaIds = collect();
+        $manageableAreas = collect();
+
+        if ($user->isSuperAdmin()) {
+            $manageableAreas = Area::orderBy('name')->get();
+            $manageableAreaIds = $manageableAreas->pluck('id');
+        } elseif ($user->is_area_admin) {
+            $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique(); //
+            $manageableAreas = Area::whereIn('id', $manageableAreaIds)->orderBy('name')->get();
+        } elseif (!$user->isClient()) {
+            $manageableAreaIds->push($user->area_id);
+            $manageableAreas = Area::where('id', $user->area_id)->get();
+        }
+
         $breadcrumbs = collect();
         if ($currentFolder) {
             $parent = $currentFolder->parent;
@@ -52,11 +66,9 @@ class FolderController extends Controller
             }
 
         } else {
-            $accessibleAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
-
-            $folderQuery->whereIn('area_id', $accessibleAreaIds);
-            $fileLinkQuery->whereHas('folder', function($q) use ($accessibleAreaIds) {
-                $q->whereIn('area_id', $accessibleAreaIds);
+            $folderQuery->whereIn('area_id', $manageableAreaIds);
+            $fileLinkQuery->whereHas('folder', function($q) use ($manageableAreaIds) {
+                $q->whereIn('area_id', $manageableAreaIds);
             });
 
             if (!$user->is_area_admin) {
@@ -96,7 +108,14 @@ class FolderController extends Controller
             }
         }
 
-        return view('folders.index', compact('folders', 'currentFolder', 'fileLinks', 'searchQuery', 'breadcrumbs'));
+        return view('folders.index', compact(
+            'folders', 
+            'currentFolder', 
+            'fileLinks', 
+            'searchQuery', 
+            'breadcrumbs',
+            'manageableAreas'
+        ));
     }
 
     /**
@@ -108,22 +127,27 @@ class FolderController extends Controller
     {
         $user = Auth::user();
         $currentFolder = $folder;
+        
+        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique(); 
+        $manageableAreas = Area::whereIn('id', $manageableAreaIds)->orderBy('name')->get();
 
-        if ($user->area && $user->area->name === 'Administración') {
+        $isSuperAdmin = $user->isSuperAdmin();
+        $isAreaAdmin = $user->is_area_admin;
+        
+        if ($user->isClient()) {
+             return redirect()->route('folders.index')->with('error', 'Los usuarios tipo Cliente no tienen permiso para crear carpetas.');
         }
-        elseif ($user->is_area_admin) {
-            if ($currentFolder && $currentFolder->area_id !== $user->area_id) {
-                return redirect()->route('folders.index')->with('error', 'No puedes crear carpetas fuera de tu área.');
+
+        if ($currentFolder) {
+            if (!$isSuperAdmin && !($isAreaAdmin && $manageableAreaIds->contains($currentFolder->area_id))) {
+                return redirect()->route('folders.index')->with('error', 'No tienes permiso para crear carpetas en esta área.');
             }
         }
-        elseif ($user->isClient()) {
-            return redirect()->route('folders.index')->with('error', 'Los usuarios tipo Cliente no tienen permiso para crear carpetas.');
-        }
-        elseif ($currentFolder && $currentFolder->area_id !== $user->area_id) {
-            return redirect()->route('folders.index')->with('error', 'No puedes crear carpetas fuera de tu área.');
+        elseif (!$isSuperAdmin && $manageableAreas->isEmpty()) {
+             return redirect()->route('folders.index')->with('error', 'No tienes asignada un área para crear carpetas.');
         }
 
-        return view('folders.create', compact('currentFolder', 'user'));
+        return view('folders.create', compact('currentFolder', 'user', 'manageableAreas')); 
     }
 
     /**
@@ -135,10 +159,13 @@ class FolderController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'parent_id' => 'nullable|exists:folders,id',
+            'area_id' => 'nullable|required_without:parent_id|exists:areas,id',
         ]);
 
         $user = Auth::user();
         $targetAreaId = null;
+        
+        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
 
         if ($request->parent_id) {
             $parentFolder = Folder::find($request->parent_id);
@@ -147,18 +174,19 @@ class FolderController extends Controller
             }
             $targetAreaId = $parentFolder->area_id;
         } else {
-            $targetAreaId = $user->area_id;
+            $targetAreaId = $request->area_id; 
         }
 
-        if ($user->area && $user->area->name === 'Administración') {
-        } elseif ($user->is_area_admin && $targetAreaId === $user->area_id) {
-        } elseif ($user->isClient()) {
-            return redirect()->route('folders.index')->with('error', 'Los usuarios tipo Cliente no tienen permiso para crear carpetas.');
-        } elseif ($targetAreaId === $user->area_id) {
-        } else {
-            return redirect()->route('folders.index')->with('error', 'No tienes permiso para crear carpetas aquí.');
+        $isSuperAdmin = $user->isSuperAdmin();
+        $isAreaAdmin = $user->is_area_admin;
+
+        if ($user->isClient()) {
+             return redirect()->route('folders.index')->with('error', 'Los usuarios tipo Cliente no tienen permiso para crear carpetas.');
         }
 
+        if (!$isSuperAdmin && !($isAreaAdmin && $manageableAreaIds->contains($targetAreaId))) {
+             return redirect()->route('folders.index')->with('error', 'No tienes permiso para crear carpetas en esta área.');
+        }
 
         $request->validate([
             'name' => [
@@ -170,7 +198,6 @@ class FolderController extends Controller
                                  ->where('area_id', $targetAreaId);
                 }),
             ],
-            'parent_id' => 'nullable|exists:folders,id',
         ]);
 
         $newFolder = Folder::create([
@@ -186,7 +213,7 @@ class FolderController extends Controller
             'action_key' => 'created_folder',
             'item_type' => 'folder',
             'item_id' => $newFolder->id,
-            'details' => ['name' => $newFolder->name, 'parent_id' => $newFolder->parent_id],
+            'details' => ['name' => $newFolder->name, 'parent_id' => $newFolder->parent_id, 'area_id' => $newFolder->area_id],
         ]);
 
         $redirectPath = $request->parent_id ? route('folders.index', $request->parent_id) : route('folders.index');
@@ -306,13 +333,16 @@ class FolderController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->area && $user->area->name === 'Administración') {
-        } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
-        } elseif ($user->isClient()) {
+        $isSuperAdmin = $user->isSuperAdmin();
+        $isAreaAdmin = $user->is_area_admin;
+        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
+        
+        if ($user->isClient()) {
             return redirect()->route('folders.index', $folder)->with('error', 'Los usuarios tipo Cliente no tienen permiso para añadir elementos a esta carpeta.');
-        } elseif ($folder->area_id === $user->area_id) {
-        } else {
-            return redirect()->route('folders.index', $folder)->with('error', 'No tienes permiso para añadir elementos a esta carpeta.');
+        }
+
+        if (!$isSuperAdmin && !($isAreaAdmin && $manageableAreaIds->contains($folder->area_id))) {
+             return redirect()->route('folders.index', $folder)->with('error', 'No tienes permiso para añadir elementos a esta carpeta.');
         }
 
         return view('file_links.create', compact('folder'));
@@ -327,15 +357,17 @@ class FolderController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->area && $user->area->name === 'Administración') {
-        } elseif ($user->is_area_admin && $folder->area_id === $user->area_id) {
-        } elseif ($user->isClient()) {
+        $isSuperAdmin = $user->isSuperAdmin();
+        $isAreaAdmin = $user->is_area_admin;
+        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
+
+        if ($user->isClient()) {
             return response()->json(['message' => 'Los usuarios tipo Cliente no tienen permiso para añadir elementos a esta carpeta.'], 403);
-        } elseif ($folder->area_id === $user->area_id) {
-        } else {
+        }
+        
+        if (!$isSuperAdmin && !($isAreaAdmin && $manageableAreaIds->contains($folder->area_id))) {
             return response()->json(['message' => 'No tienes permiso para añadir elementos a esta carpeta.'], 403);
         }
-
         $validationRules = [
             'type' => 'required|in:file,link',
             'files' => 'nullable|array',
@@ -386,7 +418,7 @@ class FolderController extends Controller
                     }
 
                     if (!Str::endsWith(strtolower($fileNameToStore), '.' . strtolower($extension))) {
-                        $fileNameToStore .= '.' . strtolower($extension);
+                        $fileNameToStore .= '.' . $extension;
                     }
 
                     try {
@@ -398,7 +430,7 @@ class FolderController extends Controller
                             'path' => $path,
                             'folder_id' => $folder->id,
                             'user_id' => Auth::id(),
-                        ]);
+                        ]); //
 
                         ActivityLog::create([
                             'user_id' => Auth::id(),
@@ -406,11 +438,12 @@ class FolderController extends Controller
                             'action_key' => 'uploaded_file',
                             'item_type' => 'file_link',
                             'item_id' => $fileLink->id,
-                            'details' => ['name' => $fileLink->name],
+                            'details' => ['name' => $fileLink->name, 'folder_id' => $folder->id],
                         ]);
                         
                         $uploadedCount++;
                     } catch (\Exception $e) {
+                        Log::error("Error al subir archivo: " . $e->getMessage());
                         $errors[] = "Error al subir {$originalFileName}: " . $e->getMessage();
                     }
                 }
@@ -500,14 +533,17 @@ class FolderController extends Controller
         $errors = [];
 
         $targetAreaId = $targetFolder ? $targetFolder->area_id : ($user->area_id ?? null);
+        
+        $isSuperAdmin = $user->isSuperAdmin();
+        $isAreaAdmin = $user->is_area_admin;
+        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
 
-        if ($user->area && $user->area->name === 'Administración') {
-        } elseif ($user->is_area_admin && $targetAreaId === $user->area_id) {
-        } elseif ($user->isClient()) {
+        if ($user->isClient()) {
             return response()->json(['success' => false, 'message' => 'Los usuarios tipo Cliente no tienen permiso para subir archivos aquí.'], 403);
-        } elseif ($targetAreaId === $user->area_id) {
-        } else {
-            return response()->json(['success' => false, 'message' => 'No tienes permiso para subir archivos aquí.'], 403);
+        }
+
+        if (!$isSuperAdmin && !($isAreaAdmin && $manageableAreaIds->contains($targetAreaId))) {
+             return response()->json(['success' => false, 'message' => 'No tienes permiso para subir archivos aquí.'], 403);
         }
 
         foreach ($request->file('files') as $file) {
@@ -517,7 +553,7 @@ class FolderController extends Controller
 
             $fileNameToStore = $fileNameWithoutExt;
             if (!Str::endsWith(strtolower($fileNameToStore), '.' . strtolower($extension))) {
-                $fileNameToStore .= '.' . strtolower($extension);
+                $fileNameToStore .= '.' . $extension;
             }
 
             try {
@@ -866,6 +902,7 @@ class FolderController extends Controller
     {
         $request->validate([
             'target_folder_id' => 'nullable|exists:folders,id',
+            'area_id' => 'nullable|required_without:target_folder_id|exists:areas,id', 
             'files' => 'required|array',
             'files.*' => 'file|max:500000',
             'paths' => 'required|array',
@@ -881,10 +918,23 @@ class FolderController extends Controller
 
         $baseFolder = $request->target_folder_id ? Folder::findOrFail($request->target_folder_id) : null;
         
-        $baseFolderAreaId = $baseFolder ? $baseFolder->area_id : $user->area_id;
+        $baseFolderAreaId = null;
+        if ($baseFolder) {
+            $baseFolderAreaId = $baseFolder->area_id;
+        } else {
+            $baseFolderAreaId = $request->input('area_id'); 
+        }
 
-        if (!$user->isSuperAdmin() && !$user->is_area_admin && $baseFolderAreaId !== $user->area_id) {
-             return response()->json(['success' => false, 'message' => 'No tienes permiso para subir archivos aquí.'], 403);
+        $isSuperAdmin = $user->isSuperAdmin();
+        $isAreaAdmin = $user->is_area_admin;
+        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
+
+        if ($user->isClient()) {
+             return response()->json(['success' => false, 'message' => 'No tienes permiso para subir carpetas aquí.'], 403);
+        }
+
+        if (!$isSuperAdmin && !($isAreaAdmin && $manageableAreaIds->contains($baseFolderAreaId))) {
+             return response()->json(['success' => false, 'message' => 'No tienes permiso para subir carpetas en esta área.'], 403);
         }
         
         $uploadedCount = 0;
@@ -894,7 +944,7 @@ class FolderController extends Controller
                 $file = $files[$i];
                 $relativePath = $paths[$i];
 
-                $targetFolder = $this->findOrCreateNestedFolder($baseFolder, $relativePath, $user);
+                $targetFolder = $this->findOrCreateNestedFolder($baseFolder, $relativePath, $user, $baseFolderAreaId);
                 
                 $originalFileName = $file->getClientOriginalName();
                 $s3Path = $file->store('files', 's3');
@@ -928,11 +978,11 @@ class FolderController extends Controller
 
     /**
      * @param  \App\Models\Folder|null  $baseFolder La carpeta raíz donde inicia la creación.
-     * @param  string  $filePath La ruta relativa del archivo (ej. "docs/reportes/2024.pdf").
+     * @param  string  $filePath La ruta relativa del archivo.
      * @param  \App\Models\User  $user El usuario que realiza la acción.
      * @return \App\Models\Folder|null La carpeta final donde se debe guardar el archivo.
      */
-    private function findOrCreateNestedFolder(?Folder $baseFolder, string $filePath, $user): ?Folder
+    private function findOrCreateNestedFolder(?Folder $baseFolder, string $filePath, $user, $baseAreaId): ?Folder
     {
         $directoryPath = pathinfo($filePath, PATHINFO_DIRNAME);
 
@@ -943,7 +993,7 @@ class FolderController extends Controller
         $pathSegments = explode('/', $directoryPath);
         $currentFolder = $baseFolder;
         $currentFolderId = $baseFolder ? $baseFolder->id : null;
-        $areaId = $baseFolder ? $baseFolder->area_id : $user->area_id;
+        $areaId = $baseAreaId; 
 
         foreach ($pathSegments as $segment) {
             $currentFolder = Folder::firstOrCreate(

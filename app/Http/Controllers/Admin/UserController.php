@@ -16,6 +16,8 @@ use App\Mail\WelcomeNewUser;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -58,10 +60,13 @@ class UserController extends Controller
 
         $users = $query->paginate(15)->withQueryString();
 
+        $allUsers = User::select('id', 'name')->orderBy('name')->get();
+
         return view('admin.users.index', [
             'users' => $users,
             'areas' => $areas,
-            'filters' => $request->only(['search', 'area_id', 'role'])
+            'filters' => $request->only(['search', 'area_id', 'role']),
+            'allUsers' => $allUsers,
         ]);
     }
 
@@ -134,7 +139,12 @@ class UserController extends Controller
             $folderIds = array_filter(array_map('intval', $folderIds));
 
             $user->accessibleFolders()->sync($folderIds);
+
+            $user->accessibleAreas()->detach(); 
         } else {
+            $areaIds = $request->input('accessible_area_ids', []);
+            $user->accessibleAreas()->sync($areaIds);
+
             $user->accessibleFolders()->detach();
         }
 
@@ -247,15 +257,67 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        if ($user->profile_photo_path && Storage::disk('s3')->exists($user->profile_photo_path)) {
-            Storage::disk('s3')->delete($user->profile_photo_path);
+        if ($user->id === Auth::id()) {
+            return redirect()->route('admin.users.index')->with('error', 'No puedes eliminar tu propia cuenta.');
         }
 
-        $user->accessibleFolders()->detach();
+        DB::transaction(function () use ($user) {
+            $user->folders()->each(function ($folder) {
+                $folder->delete();
+            });
 
-        $user->delete();
+            $user->fileLinks()->each(function ($fileLink) {
+                $fileLink->delete();
+            });
 
-        return redirect()->route('admin.users.index')->with('success', 'Usuario eliminado exitosamente.');
+            $user->accessibleFolders()->detach();
+            $user->accessibleAreas()->detach();
+
+            if ($user->organigramMember) {
+                $user->organigramMember->delete();
+            }
+
+            if ($user->profile_photo_path) {
+                Storage::disk('s3')->delete($user->profile_photo_path);
+            }
+
+            $user->delete();
+        });
+
+        return redirect()->route('admin.users.index')->with('success', 'Usuario y todo su contenido han sido eliminados exitosamente.');
+    }
+
+    public function transferAndDestroy(Request $request, User $userToDelete)
+    {
+        $request->validate([
+            'new_owner_id' => ['required', 'exists:users,id', Rule::notIn([$userToDelete->id])],
+        ]);
+
+        $newOwner = User::find($request->new_owner_id);
+
+        if ($userToDelete->id === Auth::id()) {
+            return redirect()->route('admin.users.index')->with('error', 'No puedes eliminar tu propia cuenta.');
+        }
+
+        DB::transaction(function () use ($userToDelete, $newOwner) {
+            $userToDelete->folders()->update(['user_id' => $newOwner->id]);
+            $userToDelete->fileLinks()->update(['user_id' => $newOwner->id]);
+
+            $userToDelete->accessibleFolders()->detach();
+            $userToDelete->accessibleAreas()->detach();
+
+            if ($userToDelete->organigramMember) {
+                $userToDelete->organigramMember->delete();
+            }
+
+            if ($userToDelete->profile_photo_path) {
+                Storage::disk('s3')->delete($userToDelete->profile_photo_path);
+            }
+
+            $userToDelete->delete();
+        });
+
+        return redirect()->route('admin.users.index')->with('success', "Contenido de {$userToDelete->name} transferido a {$newOwner->name} y usuario eliminado.");
     }
 
     public function bulkDelete(Request $request)

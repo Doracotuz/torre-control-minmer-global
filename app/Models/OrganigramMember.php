@@ -85,6 +85,6 @@ class OrganigramMember extends Model
                             ? Storage::disk('s3')->url($this->profile_photo_path)
                             : null,
         );
-    }    
+    }
     
 }

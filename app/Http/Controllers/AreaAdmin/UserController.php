@@ -14,6 +14,7 @@ use App\Models\OrganigramPosition;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\WelcomeNewUser;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -65,10 +66,16 @@ class UserController extends Controller
 
         $users = $query->paginate(15)->withQueryString();
 
+        $allAreaUsers = User::where('area_id', $areaId)
+                            ->select('id', 'name')
+                            ->orderBy('name')
+                            ->get();        
+
         return view('area_admin.users.index', [
             'users' => $users,
             'currentArea' => $currentArea,
-            'filters' => $request->only(['search', 'role'])
+            'filters' => $request->only(['search', 'role']),
+            'allAreaUsers' => $allAreaUsers,
         ]);
     }
 
@@ -182,7 +189,7 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         $currentArea = $this->getActiveArea();
-        
+
         if ($currentArea->id !== $user->area_id) {
             return redirect()->route('area_admin.users.index')->with('error', 'No tienes permiso para eliminar este usuario.');
         }
@@ -191,12 +198,70 @@ class UserController extends Controller
             return redirect()->route('area_admin.users.index')->with('error', 'No puedes eliminar tu propia cuenta desde aquí.');
         }
 
-        if ($user->profile_photo_path) {
-            Storage::disk('s3')->delete($user->profile_photo_path);
+        DB::transaction(function () use ($user) {
+            $user->folders()->each(function ($folder) {
+                $folder->delete();
+            });
+
+            $user->fileLinks()->each(function ($fileLink) {
+                $fileLink->delete();
+            });
+
+            $user->accessibleFolders()->detach();
+            $user->accessibleAreas()->detach();
+
+            if ($user->organigramMember) {
+                $user->organigramMember->delete();
+            }
+
+            if ($user->profile_photo_path) {
+                Storage::disk('s3')->delete($user->profile_photo_path);
+            }
+
+            $user->delete();
+        });
+
+        return redirect()->route('area_admin.users.index')->with('success', 'Usuario y todo su contenido han sido eliminados exitosamente.');
+    }
+
+    public function transferAndDestroy(Request $request, User $userToDelete)
+    {
+        $request->validate([
+            'new_owner_id' => ['required', 'exists:users,id', Rule::notIn([$userToDelete->id])],
+        ]);
+
+        $currentArea = $this->getActiveArea();
+        $newOwner = User::find($request->new_owner_id);
+
+        if ($currentArea->id !== $userToDelete->area_id) {
+            abort(403, 'Este usuario no pertenece al área que estás gestionando.');
+        }
+        if (Auth::id() === $userToDelete->id) {
+            return redirect()->route('area_admin.users.index')->with('error', 'No puedes eliminar tu propia cuenta.');
+        }
+        if ($newOwner->area_id !== $currentArea->id) {
+            return redirect()->route('area_admin.users.index')->with('error', 'El nuevo propietario debe pertenecer a la misma área.');
         }
 
-        $user->delete();
+        DB::transaction(function () use ($userToDelete, $newOwner) {
+            $userToDelete->folders()->update(['user_id' => $newOwner->id]);
+            $userToDelete->fileLinks()->update(['user_id' => $newOwner->id]);
 
-        return redirect()->route('area_admin.users.index')->with('success', 'Usuario eliminado exitosamente.');
+            $userToDelete->accessibleFolders()->detach();
+            $userToDelete->accessibleAreas()->detach();
+            
+            if ($userToDelete->organigramMember) {
+                $userToDelete->organigramMember->delete();
+            }
+
+            if ($userToDelete->profile_photo_path) {
+                Storage::disk('s3')->delete($userToDelete->profile_photo_path);
+            }
+
+            $userToDelete->delete();
+        });
+
+        return redirect()->route('area_admin.users.index')->with('success', "Contenido de {$userToDelete->name} transferido a {$newOwner->name} y usuario eliminado.");
     }
+
 }

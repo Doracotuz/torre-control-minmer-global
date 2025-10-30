@@ -29,7 +29,12 @@
     </script>
 
 
-    <div class="py-6 sm:py-12 bg-[#E8ECF7]" x-data="fileManager()">
+    <div class="py-6 sm:py-12 bg-[#E8ECF7]" 
+        x-data="fileManager(
+            {{ $currentFolder ? $currentFolder->id : 'null' }},
+            {{ json_encode($manageableAreas) }}
+        )"
+        x-init="init()">
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="text-base font-semibold text-gray-700">
                 @if ($currentFolder)
@@ -966,35 +971,91 @@
                 </div>
             </div>
         </div>
+
+        <div x-show="showAreaModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-[60]"
+             style="display: none;"
+             @keydown.escape.window="showAreaModal = false"
+        >
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" @click.stop="">
+                <h3 class="text-xl font-semibold text-[#2c3856] mb-4">Seleccionar Área de Destino</h3>
+                <p class="text-gray-600 text-sm mb-4">
+                    Vas a subir elementos a la carpeta raíz. Por favor, selecciona a qué área pertenecerán.
+                </p>
+                
+                <div class="mb-4">
+                    <label for="area_id_select" class="block text-sm font-medium text-gray-700">Área</label>
+                    <select id="area_id_select" x-model="selectedUploadAreaId" 
+                            class="mt-1 block w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm">
+                        <option value="" disabled>Selecciona un área...</option>
+                        <template x-for="area in manageableAreas" :key="area.id">
+                            <option :value="area.id" x-text="area.name"></option>
+                        </template>
+                    </select>
+                </div>
+                
+                <div class="flex justify-end pt-4 border-t border-gray-200 mt-4 space-x-3">
+                    <button @click="showAreaModal = false; areaModalCallback = null;"
+                       class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-150">
+                        {{ __('Cancelar') }}
+                    </button>
+                    <button @click="confirmAreaSelection()"
+                       :disabled="selectedUploadAreaId === ''"
+                       class="inline-flex items-center px-4 py-2 bg-[#2c3856] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#1a2233] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-25">
+                        {{ __('Confirmar y Subir') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.8/dist/axios.min.js"></script>
-    <script>
+        <script>
         document.addEventListener('alpine:init', () => {
-            Alpine.data('fileManager', () => ({
+            Alpine.data('fileManager', (currentFolderId, manageableAreas) => ({
                 showPropertiesModal: false,
+                propertiesData: {},
                 isUploading: false,
                 uploadProgress: 0,
                 uploadTotalFiles: 0,
                 uploadCurrentFile: 0,
-                uploadCurrentFileName: '',                
-                propertiesData: {},
+                uploadCurrentFileName: '',
                 isTileView: true,
                 tileSize: 'medium',
-                openPropertiesModal(itemData) {
-                    this.showPropertiesModal = true;
-                    this.propertiesData = itemData;
-                },
-
+                selectedItems: [],
+                draggingItemId: null,
+                draggingItemType: null,
                 dropTargetFolderId: null,
-                highlightMainDropArea: false,                
-
+                highlightMainDropArea: false,
+                isDraggingFile: false,
                 showMediaModal: false,
                 mediaModalData: {
                     name: '',
                     type: '',
                     url: '',
                     downloadUrl: ''
+                },
+                showMoveModal: false,
+                moveTargetFolderId: null,
+                moveTargetFolderName: 'Selecciona una carpeta...',
+                availableMoveFolders: [],
+                currentMoveBrowseFolder: null,
+                showAreaModal: false,
+                areaModalCallback: null,
+                selectedUploadAreaId: '{{ Auth::user()->area_id }}',
+                currentFolderId: currentFolderId,
+                manageableAreas: manageableAreas,
+
+                openPropertiesModal(itemData) {
+                    this.showPropertiesModal = true;
+                    this.propertiesData = itemData;
                 },
 
                 handleDragStart(event, itemId, itemType) {
@@ -1056,13 +1117,15 @@
                     const draggedData = event.dataTransfer.getData('text/plain');
 
                     if (items && items.length > 0 && !draggedData) {
-                        
                         const fileList = await this.getFilesFromDroppedItems(items);
-
                         if (fileList.length > 0) {
-                            this.uploadFilesWithProgress(fileList);
+                            if (targetFolderId === null) {
+                                this.showAreaModal = true;
+                                this.areaModalCallback = () => this.uploadFilesWithProgress(fileList, null, this.selectedUploadAreaId);
+                            } else {
+                                this.uploadFilesWithProgress(fileList, targetFolderId, null);
+                            }
                         }
-
                     } else if (draggedData) {
                         let draggedItem = null;
                         try {
@@ -1072,7 +1135,7 @@
                             return;
                         }
 
-                        if (draggedItem && draggedItem.id && draggedItem.id != targetFolderId) {
+                        if (draggedItem && draggedItem.id && (draggedItem.type !== 'folder' || draggedItem.id != targetFolderId)) {
                             
                             let requestBody = { target_folder_id: targetFolderId };
                             if (draggedItem.type === 'folder') {
@@ -1082,10 +1145,11 @@
                                 requestBody.folder_ids = [];
                                 requestBody.file_link_ids = [draggedItem.id];
                             } else { 
-                                return; 
+                                return;
                             }
-
-                            document.getElementById('loading-overlay').classList.remove('hidden');
+                            
+                            const loadingOverlay = document.getElementById('loading-overlay');
+                            if (loadingOverlay) loadingOverlay.style.display = 'flex';
 
                             fetch('{{ route("items.bulk_move") }}', {
                                 method: 'POST',
@@ -1113,8 +1177,6 @@
                     }
                 },
 
-
-                selectedItems: [],
                 toggleSelection(itemId, itemType) {
                     const index = this.selectedItems.findIndex(item => item.id === itemId && item.type === itemType);
                     if (index > -1) {
@@ -1123,12 +1185,15 @@
                         this.selectedItems.push({ id: itemId, type: itemType });
                     }
                 },
+
                 isSelected(itemId, itemType) {
                     return this.selectedItems.some(item => item.id === itemId && item.type === itemType);
                 },
+
                 isAnySelected() {
                     return this.selectedItems.length > 0;
                 },
+
                 selectAll(event) {
                     this.selectedItems = [];
 
@@ -1401,27 +1466,48 @@
 
                 handleFolderSelected(event) {
                     const files = event.target.files;
-                    if (!files || files.length === 0) {
-                        return;
-                    }
+                    if (!files || files.length === 0) return;
 
                     const itemsList = [];
                     for (const file of files) {
-                        itemsList.push({
-                            file: file,
-                            path: file.webkitRelativePath
-                        });
+                        itemsList.push({ file: file, path: file.webkitRelativePath });
                     }
 
-                    this.uploadFilesWithProgress(itemsList);
+                    if (this.currentFolderId === null) {
+                        this.showAreaModal = true;
+                        this.areaModalCallback = () => this.uploadFilesWithProgress(itemsList, null, this.selectedUploadAreaId);
+                    } else {
+                        this.uploadFilesWithProgress(itemsList, this.currentFolderId, null);
+                    }
+                    
+                    event.target.value = null;
                 },
 
-                uploadFilesWithProgress(itemsList) {
-                    if (!itemsList || itemsList.length === 0) {
+                triggerFolderUpload() {
+                    this.$refs.folderInput.click();
+                },
+                
+                confirmAreaSelection() {
+                    if (this.selectedUploadAreaId === '') {
+                        alert('Por favor, selecciona un área.');
                         return;
                     }
+                    if (typeof this.areaModalCallback === 'function') {
+                        this.areaModalCallback();
+                    }
+                    this.showAreaModal = false;
+                    this.areaModalCallback = null;
+                },                
 
-                    const targetFolderId = @json($currentFolder ? $currentFolder->id : null);
+                uploadFilesWithProgress(itemsList, targetFolderId, targetAreaId = null) {
+                    if (!itemsList || itemsList.length === 0) return;
+
+                    if (targetFolderId === null && targetAreaId === null) {
+                        console.error('Error: Se intentó subir a la raíz sin especificar un área.');
+                        sessionStorage.setItem('flash_error', 'Error: No se especificó un área de destino.');
+                        window.location.reload();
+                        return;
+                    }
                     
                     this.isUploading = true;
                     this.uploadTotalFiles = itemsList.length;
@@ -1436,6 +1522,9 @@
                             
                             if (targetFolderId) {
                                 formData.append('target_folder_id', targetFolderId);
+                            }
+                            if (targetAreaId) {
+                                formData.append('area_id', targetAreaId);
                             }
                             
                             formData.append('files[]', item.file);

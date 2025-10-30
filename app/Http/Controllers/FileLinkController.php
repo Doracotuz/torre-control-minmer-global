@@ -34,6 +34,7 @@ class FileLinkController extends Controller
      */
     public function store(Request $request)
     {
+        // Esta lógica ahora vive en FolderController@storeFileLink
         return redirect()->route('folders.index')->with('error', 'Acceso no permitido.');
     }
 
@@ -54,9 +55,11 @@ class FileLinkController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->area && $user->area->name === 'Administración') {
-        } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
-        } else {
+        $isSuperAdmin = $user->isSuperAdmin();
+        $isAreaAdmin = $user->is_area_admin;
+        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
+
+        if (!$isSuperAdmin && !($isAreaAdmin && $manageableAreaIds->contains($fileLink->folder->area_id))) {
             return redirect()->route('folders.index', $fileLink->folder_id)
                              ->with('error', 'No tienes permiso para editar este elemento.');
         }
@@ -73,10 +76,12 @@ class FileLinkController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->area && $user->area->name === 'Administración') {
-        } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
-        } else {
-            return redirect()->route('folders.index', $fileLink->folder_id)
+        $isSuperAdmin = $user->isSuperAdmin();
+        $isAreaAdmin = $user->is_area_admin;
+        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
+
+        if (!$isSuperAdmin && !($isAreaAdmin && $manageableAreaIds->contains($fileLink->folder->area_id))) {
+             return redirect()->route('folders.index', $fileLink->folder_id)
                              ->with('error', 'No tienes permiso para actualizar este elemento.');
         }
 
@@ -96,6 +101,7 @@ class FileLinkController extends Controller
             $fileLink->url = $request->url;
         }
         $fileLink->save();
+        
         ActivityLog::create([
             'user_id' => $user->id,
             'action' => 'Editó un archivo/enlace',
@@ -117,9 +123,11 @@ class FileLinkController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->area && $user->area->name === 'Administración') {
-        } elseif ($user->is_area_admin && $fileLink->folder->area_id === $user->area_id) {
-        } else {
+        $isSuperAdmin = $user->isSuperAdmin();
+        $isAreaAdmin = $user->is_area_admin;
+        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
+
+        if (!$isSuperAdmin && !($isAreaAdmin && $manageableAreaIds->contains($fileLink->folder->area_id))) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes permiso para eliminar este elemento.'
@@ -129,7 +137,7 @@ class FileLinkController extends Controller
         $folderId = $fileLink->folder_id;
 
         if ($fileLink->type === 'file' && Storage::disk('s3')->exists($fileLink->path)) {
-            Storage::disk('s3')->delete($fileLink->path);
+            Storage::disk('s3')->delete($fileLink->path); //
         }
 
         ActivityLog::create([
@@ -163,6 +171,7 @@ class FileLinkController extends Controller
 
         $hasPermission = false;
         $accessibleAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
+        
         if ($user->area && $user->area->name === 'Administración') {
             $hasPermission = true;
         } elseif ($user->is_area_admin && $accessibleAreaIds->contains($fileLink->folder->area_id)) {
@@ -182,6 +191,7 @@ class FileLinkController extends Controller
         if (!Storage::disk('s3')->exists($fileLink->path)) {
             return back()->with('error', 'El archivo no se encuentra en el almacenamiento.');
         }
+        
         ActivityLog::create([
             'user_id' => $user->id,
             'action' => 'Descargó un archivo',

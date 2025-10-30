@@ -8,10 +8,11 @@ use App\Models\User;
 use App\Models\Folder;
 use App\Models\FileLink;
 use App\Models\ActivityLog;
+use App\Models\OrganigramMember;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate_Support_Str;
+use Illuminate\Support\Str;
 
 class DashboardController extends Controller
 {
@@ -21,16 +22,16 @@ class DashboardController extends Controller
         $activeAreaId = session('current_admin_area_id', $user->area_id);
         $activeArea = Area::find($activeAreaId);
 
-        if (!$user->is_area_admin) {
+        if (!$activeArea) {
             $activeArea = $user->area;
-        } 
-        else {
-            $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique(); //
-            if (!$activeArea || !$manageableAreaIds->contains($activeAreaId)) {
-                $activeArea = $user->area;
-                $activeAreaId = $user->area_id;
-                session(['current_admin_area_id' => $activeAreaId, 'current_admin_area_name' => $activeArea->name]);
-            }
+            $activeAreaId = $user->area_id;
+            session(['current_admin_area_id' => $activeAreaId, 'current_admin_area_name' => $activeArea->name]);
+        }
+        
+        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique(); //
+        if (!$user->is_area_admin || !$manageableAreaIds->contains($activeAreaId)) { //
+            $activeArea = $user->area;
+            session(['current_admin_area_id' => $activeArea->id, 'current_admin_area_name' => $activeArea->name]);
         }
         
         return $activeArea;
@@ -39,42 +40,69 @@ class DashboardController extends Controller
     public function data(Request $request)
     {
         $user = Auth::user();
-        $activeArea = $this->getActiveArea();
-        $activeAreaId = $activeArea->id;
         $isAreaAdmin = $user->is_area_admin;
 
+        $areaScopeIds = collect();
+        $areaName = "";
+        $teamMembers = collect();
         $kpiQuery = FileLink::query();
         $activityQuery = ActivityLog::query();
 
+        $myProfile = null;
+        $recentFiles = collect();
+        
         if ($isAreaAdmin) {
-            $kpiQuery->whereHas('folder', function($q) use ($activeAreaId) {
-                $q->where('area_id', $activeAreaId);
-            });
-            
-            $activityQuery->whereHas('user', function($q) use ($activeAreaId) {
-                $q->where('area_id', $activeAreaId);
-            });
+            $areaScopeIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
+            $areaNames = Area::whereIn('id', $areaScopeIds)->orderBy('name')->pluck('name');
+            $areaName = $areaNames->implode(', ');
 
-            $folderCount = Folder::where('area_id', $activeAreaId)->count();
-            $userCount = User::where('area_id', $activeAreaId)->count();
+            $teamMembers = \App\Models\OrganigramMember::whereIn('area_id', $areaScopeIds)
+                ->with('position:id,name')
+                ->select('id', 'name', 'position_id', 'profile_photo_path', 'email')
+                ->orderBy('name')
+                ->get();
             
+            $kpiQuery->whereHas('folder', function($q) use ($areaScopeIds) {
+                $q->whereIn('area_id', $areaScopeIds);
+            });
+            $activityQuery->whereHas('user', function($q) use ($areaScopeIds) {
+                $q->whereIn('area_id', $areaScopeIds);
+            });
+            
+            $folderCount = Folder::whereIn('area_id', $areaScopeIds)->count();
+            $userCount = $teamMembers->count();
+
         } else {
-            $kpiQuery->where('user_id', $user->id);
-            $activityQuery->where('user_id', $user->id);
+            $areaName = $user->area->name ?? 'Mi Área';
 
+            $teamMembers = \App\Models\OrganigramMember::where('area_id', $user->area_id)
+                ->with('position:id,name')
+                ->select('id', 'name', 'position_id', 'profile_photo_path', 'email')
+                ->orderBy('name')
+                ->get();
+            
+            $kpiQuery->where('user_id', $user->id);
+            $activityQuery->where('user_id', $user->id); 
+            
             $folderCount = Folder::where('user_id', $user->id)->count();
-            $userCount = 1;
+            $userCount = null;
+
+            $myProfile = OrganigramMember::where('user_id', $user->id)
+                ->with('position:id,name')
+                ->select('id', 'name', 'position_id', 'profile_photo_path', 'user_id')
+                ->first();
+
+            $recentFiles = FileLink::where('user_id', $user->id)
+                ->with('folder:id,name')
+                ->latest('updated_at')
+                ->take(5)
+                ->get();
+            
         }
 
         $fileCount = (clone $kpiQuery)->where('type', 'file')->count();
         $linkCount = (clone $kpiQuery)->where('type', 'link')->count();
-
-        $teamMembers = \App\Models\OrganigramMember::where('area_id', $activeAreaId)
-            ->with('position:id,name')
-            ->select('id', 'name', 'position_id', 'profile_photo_path', 'email')
-            ->orderBy('name')
-            ->get();
-            
+        
         $recentActivities = (clone $activityQuery)
             ->with('user:id,name')
             ->latest()
@@ -105,7 +133,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'isAreaAdmin' => $isAreaAdmin,
-            'areaName' => $activeArea->name,
+            'areaName' => $areaName,
             'userCount' => $userCount,
             'folderCount' => $folderCount,
             'fileCount' => $fileCount,
@@ -114,6 +142,8 @@ class DashboardController extends Controller
             'recentActivities' => $recentActivities,
             'activityBreakdown' => $activityBreakdown,
             'fileTypes' => $fileTypes,
+            'myProfile' => $myProfile,
+            'recentFiles' => $recentFiles,
         ]);
     }
 }

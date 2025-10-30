@@ -268,6 +268,7 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
     Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+    Route::post('/users/{userToDelete}/transfer-and-destroy', [AdminUserController::class, 'transferAndDestroy'])->name('users.transfer_and_destroy');    
 
     Route::get('/api/folders-for-client-access', [App\Http\Controllers\FolderController::class, 'getFoldersForClientAccess'])->name('api.folders_for_client_access');
 
@@ -325,6 +326,7 @@ Route::middleware(['auth', 'check.area:area_admin'])->prefix('area-admin')->name
     Route::get('/users/{user}/edit', [AreaAdminUserController::class, 'edit'])->name('users.edit');
     Route::put('/users/{user}', [AreaAdminUserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [AreaAdminUserController::class, 'destroy'])->name('users.destroy');
+    Route::post('/users/{userToDelete}/transfer-and-destroy', [AreaAdminUserController::class, 'transferAndDestroy'])->name('users.transfer_and_destroy');
 
     Route::get('/folder-permissions', [FolderPermissionController::class, 'index'])->name('folder_permissions.index');
     Route::get('/folder-permissions/{folder}/edit', [FolderPermissionController::class, 'edit'])->name('folder_permissions.edit');
