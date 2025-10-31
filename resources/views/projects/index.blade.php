@@ -24,7 +24,7 @@
 
     <div class="py-12 bg-gray-50" x-data="projectDashboard">
         
-        <script typePlease="application/json" id="dashboard-data">
+        <script type="application/json" id="dashboard-data">
             {
                 "projects": @json($visibleProjects),
                 "myTasks": @json($myPendingTasks),
@@ -36,44 +36,66 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                <div class="lg:col-span-2 space-y-8">
-
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-[#2c3856] text-xl" 
-                                x-show="filterStatus === 'all'"
-                                x-transition>Resumen del Portafolio</h3>
-                            <h3 class="font-bold text-[#2c3856] text-xl" 
-                                x-show="filterStatus !== 'all'"
-                                x-transition>
-                                Resumen de: <span class="capitalize" x-text="filterStatus"></span>
-                            </h3>
-                            <button @click="resetFilters()" x-show="filterStatus !== 'all'" x-transition
-                                    class="text-sm text-indigo-600 hover:text-indigo-800 font-semibold">
-                                Limpiar filtro
-                            </button>
+                <div class="lg:col-span-3 bg-white p-6 rounded-xl shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-[#2c3856] text-xl" 
+                            x-show="filterStatus === 'all'"
+                            x-transition>Resumen del Portafolio</h3>
+                        <h3 class="font-bold text-[#2c3856] text-xl" 
+                            x-show="filterStatus !== 'all'"
+                            x-transition>
+                            Resumen de: <span class="capitalize" x-text="filterStatus"></span>
+                        </h3>
+                        <button @click="resetFilters()" x-show="filterStatus !== 'all'" x-transition
+                                class="text-sm text-indigo-600 hover:text-indigo-800 font-semibold">
+                            Limpiar filtro
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="card p-4 rounded-xl flex-row items-center bg-blue-50">
+                            <p class="text-gray-500 text-sm">Proyectos Activos</p>
+                            <p class="text-3xl font-bold text-[#2c3856]" x-text="kpis.activeCount"></p>
                         </div>
-                        
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div class="card p-4 rounded-xl flex-row items-center bg-blue-50">
-                                <p class="text-gray-500 text-sm">Proyectos Activos</p>
-                                <p class="text-3xl font-bold text-[#2c3856]" x-text="kpis.activeCount"></p>
-                            </div>
-                            <div class="card p-4 rounded-xl flex-row items-center bg-red-50">
-                                <p class="text-gray-500 text-sm">Proyectos Atrasados</p>
-                                <p class="text-3xl font-bold text-[#2c3856]" x-text="kpis.overdueCount"></p>
-                            </div>
-                            <div class="card p-4 rounded-xl flex-row items-center bg-green-50">
-                                <p class="text-gray-500 text-sm">Presupuesto</p>
-                                <p class="text-2xl font-bold text-[#2c3856]" x-text="kpis.totalBudget"></p>
-                            </div>
-                            <div class="card p-4 rounded-xl flex-row items-center bg-orange-50">
-                                <p class="text-gray-500 text-sm">Gasto Total</p>
-                                <p class="text-2xl font-bold text-[#2c3856]" x-text="kpis.totalSpent"></p>
-                            </div>
+                        <div class="card p-4 rounded-xl flex-row items-center bg-red-50">
+                            <p class="text-gray-500 text-sm">Proyectos Atrasados</p>
+                            <p class="text-3xl font-bold text-[#2c3856]" x-text="kpis.overdueCount"></p>
+                        </div>
+                        <div class="card p-4 rounded-xl flex-row items-center bg-green-50">
+                            <p class="text-gray-500 text-sm">Presupuesto</p>
+                            <p class="text-2xl font-bold text-[#2c3856]" x-text="kpis.totalBudget"></p>
+                        </div>
+                        <div class="card p-4 rounded-xl flex-row items-center bg-orange-50">
+                            <p class="text-gray-500 text-sm">Gasto Total</p>
+                            <p class="text-2xl font-bold text-[#2c3856]" x-text="kpis.totalSpent"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-1 space-y-8">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="font-bold text-[#2c3856] text-xl mb-4">Mi Enfoque</h3>
+                        <div class="space-y-4 max-h-72 overflow-y-auto">
+                            <template x-for="task in myTasks" :key="task.id">
+                                <a :href="'/projects/' + task.project.id" class="block p-3 rounded-lg hover:bg-gray-100 transition-colors">
+                                    <p class="font-semibold text-gray-800" x-text="task.name"></p>
+                                    <p class="text-sm text-indigo-600" x-text="task.project.name"></p>
+                                    <p class="text-xs text-gray-500 mt-1" x-text="task.due_date ? 'Vence: ' + (new Date(task.due_date)).toLocaleDateString() : 'Sin fecha'"></p>
+                                </a>
+                            </template>
+                            <template x-if="myTasks.length === 0">
+                                <div class="text-sm text-gray-500 text-center py-8">¡Sin tareas pendientes!</div>
+                            </template>
                         </div>
                     </div>
 
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="font-bold text-[#2c3856] text-xl mb-4">Distribución (Filtro)</h3>
+                        <div id="statusChart" x-ref="statusChart" class="flex justify-center -mt-4 -mb-4"></div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 space-y-8">
                     <div class="bg-white p-6 rounded-xl shadow-lg">
                         <h3 class="font-bold text-[#2c3856] text-xl mb-4">Proyectos Críticos</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -110,30 +132,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <div class="lg:col-span-1 space-y-8">
-
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
-                        <h3 class="font-bold text-[#2c3856] text-xl mb-4">Mi Enfoque</h3>
-                        <div class="space-y-4 max-h-72 overflow-y-auto">
-                            <template x-for="task in myTasks" :key="task.id">
-                                <a :href="'/projects/' + task.project.id" class="block p-3 rounded-lg hover:bg-gray-100 transition-colors">
-                                    <p class="font-semibold text-gray-800" x-text="task.name"></p>
-                                    <p class="text-sm text-indigo-600" x-text="task.project.name"></p>
-                                    <p class="text-xs text-gray-500 mt-1" x-text="task.due_date ? 'Vence: ' + (new Date(task.due_date)).toLocaleDateString() : 'Sin fecha'"></p>
-                                </a>
-                            </template>
-                            <template x-if="myTasks.length === 0">
-                                <div class="text-sm text-gray-500 text-center py-8">¡Sin tareas pendientes!</div>
-                            </template>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
-                        <h3 class="font-bold text-[#2c3856] text-xl mb-4">Distribución (Filtro)</h3>
-                        <div id="statusChart" x-ref="statusChart" class="flex justify-center -mt-4 -mb-4"></div>
                     </div>
 
                     <div class="bg-white p-6 rounded-xl shadow-lg">
@@ -176,12 +174,12 @@
                             @endforelse
                         </div>
                     </div>
-
                 </div>
+
             </div>
         </div>
     </div>
-
+    
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('projectDashboard', () => ({
@@ -208,7 +206,9 @@
 
                 resetFilters() {
                     this.filterStatus = 'all';
-                    this.charts.status.clearSelection();
+                    if (this.charts.status) {
+                        this.charts.status.clearSelection();
+                    }
                 },
                 setStatusFilter(status) {
                     this.filterStatus = status;
@@ -254,6 +254,7 @@
                 },
 
                 initStatusChart() {
+                    if (!this.$refs.statusChart) return;
                     const data = this.getChartData().status;
                     const options = {
                         series: data.series,
@@ -278,7 +279,9 @@
 
                 updateCharts() {
                     const data = this.getChartData();
-                    this.charts.status.updateSeries(data.status.series);
+                    if (this.charts.status) {
+                        this.charts.status.updateSeries(data.status.series);
+                    }
                 }
             }));
         });
