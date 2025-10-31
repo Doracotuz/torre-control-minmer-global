@@ -30,6 +30,8 @@ class ProjectController extends Controller
             });
         }
 
+        $projectsQuery->distinct();        
+
         $visibleProjects = (clone $projectsQuery)->with('expenses')->get();
 
         $totalBudget = $visibleProjects->sum('budget');
@@ -57,7 +59,11 @@ class ProjectController extends Controller
             ->orderBy('tasks_count', 'desc')->get()
             ->map(fn ($item) => ['name' => $item->assignee->name ?? 'Sin asignar', 'tasks' => $item->tasks_count]);
         $projectsByStatus = $visibleProjects->groupBy('status')->map->count();
-        $recentActivity = ProjectComment::whereIn('project_id', $visibleProjects->pluck('id'))->with('user', 'project')->latest()->limit(5)->get();
+        $recentActivity = \App\Models\ProjectHistory::whereIn('project_id', $visibleProjects->pluck('id'))
+                                ->with('user', 'project')
+                                ->latest()
+                                ->limit(7)
+                                ->get();
 
         $chartData = [
             'status' => ['labels' => $projectsByStatus->keys(), 'series' => $projectsByStatus->values()],
@@ -84,6 +90,8 @@ class ProjectController extends Controller
                   ->orWhereHas('areas', fn($a) => $a->where('area_id', $user->area_id));
             });
         }
+
+        $query->distinct();        
 
         $projectsByStatus = $query->with('leader')->whereIn('status', $statuses)->get()->groupBy('status');
 
@@ -236,6 +244,8 @@ class ProjectController extends Controller
                   ->orWhereHas('areas', fn($a) => $a->where('area_id', $user->area_id));
             });
         }
+
+        $query->distinct();        
 
         $activeStatuses = ['Planeación', 'En Progreso', 'En Pausa'];
         

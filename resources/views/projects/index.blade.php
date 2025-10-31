@@ -76,16 +76,55 @@
                 <div class="lg:col-span-3 card p-6 rounded-xl">
                     <h3 class="font-bold text-[#2c3856] text-xl mb-4">Actividad Reciente Global</h3>
                     <div class="space-y-6">
-                        @forelse ($recentActivity as $comment)
+                        @forelse ($recentActivity as $activity)
                             <div class="relative flex timeline-item">
                                 <div class="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold z-10 ring-8 ring-white">
-                                    @php $words = explode(" ", $comment->user->name); $initials = ""; foreach (array_slice($words, 0, 2) as $w) { $initials .= mb_substr($w, 0, 1); } @endphp
+                                    @php $words = explode(" ", $activity->user->name); $initials = ""; foreach (array_slice($words, 0, 2) as $w) { $initials .= mb_substr($w, 0, 1); } @endphp
                                     {{ $initials }}
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-gray-800 text-sm"><span class="font-semibold">{{ $comment->user->name }}</span> comentó en <a href="{{ route('projects.show', $comment->project) }}" class="font-semibold text-indigo-600 hover:underline">{{ $comment->project->name }}</a></p>
-                                    <p class="text-gray-600 text-sm mt-1 pl-4 border-l-2 border-gray-200 italic">"{{ Str::limit($comment->body, 90) }}"</p>
-                                    <p class="text-xs text-gray-400 mt-1">{{ $comment->created_at->diffForHumans() }}</p>
+                                    <p class="text-gray-800 text-sm">
+                                        <span class="font-semibold">{{ $activity->user->name }}</span>
+                                        
+                                        @if ($activity->action_type == 'comment')
+                                            comentó en
+                                        @elseif ($activity->action_type == 'status_change')
+                                            actualizó el estatus de
+                                        @elseif ($activity->action_type == 'file_upload')
+                                            subió un archivo a
+                                        @elseif ($activity->action_type == 'expense_added')
+                                            registró un gasto en
+                                        @else
+                                            realizó una acción en
+                                        @endif
+                                        
+                                        <a href="{{ route('projects.show', $activity->project) }}" class="font-semibold text-indigo-600 hover:underline">{{ $activity->project->name }}</a>
+                                    </p>
+
+                                    @if ($activity->action_type == 'comment')
+                                        <p class="text-gray-600 text-sm mt-1 pl-4 border-l-2 border-gray-200 italic">"{{ Str::limit($activity->comment_body, 90) }}"</p>
+                                    
+                                    @elseif ($activity->action_type == 'status_change')
+                                        <p class="text-gray-600 text-sm mt-1">
+                                            <span class="font-semibold px-2 py-0.5 rounded-full text-xs bg-gray-200 text-gray-700">{{ $activity->old_status }}</span>
+                                            <i class="fas fa-long-arrow-alt-right mx-1 text-gray-500"></i>
+                                            <span class="font-semibold px-2 py-0.5 rounded-full text-xs bg-blue-200 text-blue-800">{{ $activity->new_status }}</span>
+                                        </p>
+
+                                    @elseif ($activity->action_type == 'file_upload')
+                                        <p class="text-gray-600 text-sm mt-1">
+                                            <i class="fas fa-file-alt text-gray-500 mr-2"></i>
+                                            <span class="text-gray-700 italic">{{ Str::limit($activity->comment_body, 90) }}</span>
+                                        </p>
+
+                                    @elseif ($activity->action_type == 'expense_added')
+                                        <p class="text-gray-600 text-sm mt-1">
+                                            <i class="fas fa-wallet text-green-600 mr-2"></i>
+                                            <span class="text-gray-700 italic">{{ Str::limit($activity->comment_body, 90) }}</span>
+                                        </p>
+                                    @endif
+                                    
+                                    <p class="text-xs text-gray-400 mt-1">{{ $activity->created_at->diffForHumans() }}</p>
                                 </div>
                             </div>
                         @empty

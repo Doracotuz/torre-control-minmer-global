@@ -24,6 +24,12 @@ class ProjectFileController extends Controller
             'file_size' => $file->getSize(),
         ]);
 
+        $project->history()->create([
+            'user_id' => Auth::id(),
+            'action_type' => 'file_upload',
+            'comment_body' => 'Subió el archivo: ' . $file->getClientOriginalName(),
+        ]);
+
         return back()->with('success_file', '¡Archivo subido a S3 exitosamente!');
     }
 

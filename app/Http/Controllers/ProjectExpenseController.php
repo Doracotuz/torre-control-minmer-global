@@ -15,11 +15,17 @@ class ProjectExpenseController extends Controller
             'expense_date' => 'required|date',
         ]);
 
-        $project->expenses()->create([
+        $expense = $project->expenses()->create([
             'user_id' => Auth::id(),
             'description' => $validated['description'],
             'amount' => $validated['amount'],
             'expense_date' => $validated['expense_date'],
+        ]);
+
+        $project->history()->create([
+            'user_id' => Auth::id(),
+            'action_type' => 'expense_added',
+            'comment_body' => "Registró un gasto: \"{$expense->description}\" por $".number_format($expense->amount, 2),
         ]);
 
         return back()->with('success_expense', '¡Gasto registrado exitosamente!');
