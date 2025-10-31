@@ -98,13 +98,24 @@
                             <p class="text-xs text-gray-500 mt-1">Mantén presionada la tecla Ctrl (o Cmd en Mac) para seleccionar varias áreas.</p>
                         </div>                                                
                     </div>
-
-                    <div class="mt-8 flex justify-end">
-                        <button type="submit" class="px-5 py-2 bg-[#2c3856] text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 transition-colors">
-                            Actualizar Proyecto
-                        </button>
-                    </div>
                 </form>
+                <div class="mt-8 flex justify-between items-center">
+                    
+                    <form action="{{ route('projects.destroy', $project) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este proyecto? Esta acción no se puede deshacer y borrará todas las tareas, archivos y comentarios asociados.');">
+                        @csrf
+                        @method('DELETE')
+                        @can('delete', $project)
+                            <button type="submit" class="px-5 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-800 transition-colors">
+                                <i class="fas fa-trash-alt mr-2"></i>
+                                Eliminar Proyecto
+                            </button>
+                        @endcan
+                    </form>
+                    
+                    <button type="submit" form="updateForm" class="px-5 py-2 bg-[#2c3856] text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 transition-colors">
+                        Actualizar Proyecto
+                    </button>
+                </div>
             </div>
         </div>
     </div>

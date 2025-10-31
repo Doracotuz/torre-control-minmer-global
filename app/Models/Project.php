@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 
 class Project extends Model
@@ -62,4 +63,19 @@ class Project extends Model
         return $this->hasMany(ProjectHistory::class)->latest();
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Project $project) {
+            
+
+            $project->tasks()->delete();
+            $project->comments()->delete();
+            $project->expenses()->delete();
+            $project->history()->delete();
+            $project->files()->delete();
+            $project->areas()->detach();
+    
+            Storage::disk('s3')->deleteDirectory('project_files/' . $project->id);
+        });
+    }
 }
