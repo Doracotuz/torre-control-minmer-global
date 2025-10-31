@@ -93,7 +93,10 @@ class ProjectController extends Controller
 
         $query->distinct();        
 
-        $projectsByStatus = $query->with('leader')->whereIn('status', $statuses)->get()->groupBy('status');
+        $projectsByStatus = $query->with('leader', 'tasks') 
+                                  ->whereIn('status', $statuses)
+                                  ->get()
+                                  ->groupBy('status');
 
         foreach ($statuses as $status) {
             if (!$projectsByStatus->has($status)) {
