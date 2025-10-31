@@ -18,6 +18,11 @@ class ProjectPolicy
 
     public function viewAny(User $user): bool
     {
+
+        if ($user->area?->name === 'Comercial') {
+            return true;
+        }
+
         return Project::where('leader_id', $user->id)
             ->orWhereHas('tasks', fn($q) => $q->where('assignee_id', $user->id))
             ->orWhereHas('areas', fn($q) => $q->where('area_id', $user->area_id))
@@ -26,6 +31,11 @@ class ProjectPolicy
 
     public function view(User $user, Project $project): bool
     {
+
+        if ($user->area?->name === 'Comercial') {
+            return true;
+        }
+
         if ($user->id === $project->leader_id) return true;
         if ($project->tasks()->where('assignee_id', $user->id)->exists()) return true;
         if ($project->areas()->where('area_id', $user->area_id)->exists()) return true;
@@ -35,26 +45,46 @@ class ProjectPolicy
 
     public function create(User $user): bool
     {
+
+        if ($user->area?->name === 'Comercial') {
+            return true;
+        }
         return !$user->is_client;
     }
 
     public function update(User $user, Project $project): bool
     {
+
+        if ($user->area?->name === 'Comercial') {
+            return true;
+        }
         return $user->id === $project->leader_id;
     }
 
     public function delete(User $user, Project $project): bool
     {
+
+        if ($user->area?->name === 'Comercial') {
+            return true;
+        }
         return $user->id === $project->leader_id;
     }
 
     public function restore(User $user, Project $project): bool
     {
+
+        if ($user->area?->name === 'Comercial') {
+            return true;
+        }
         return $user->id === $project->leader_id;
     }
 
     public function forceDelete(User $user, Project $project): bool
     {
+
+        if ($user->area?->name === 'Comercial') {
+            return true;
+        }
         return $user->id === $project->leader_id;
     }
 }
