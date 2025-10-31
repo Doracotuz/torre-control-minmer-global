@@ -16,71 +16,56 @@
                 
                 @php
                     $statusStyles = [
-                        'Planeación' => ['bg' => 'bg-gray-500', 'border' => 'border-gray-500', 'text' => 'text-gray-100'],
-                        'En Progreso' => ['bg' => 'bg-blue-600', 'border' => 'border-blue-600', 'text' => 'text-blue-100'],
-                        'En Pausa' => ['bg' => 'bg-yellow-500', 'border' => 'border-yellow-500', 'text' => 'text-yellow-100'],
-                        'Completado' => ['bg' => 'bg-green-600', 'border' => 'border-green-600', 'text' => 'text-green-100'],
-                        'Cancelado' => ['bg' => 'bg-red-600', 'border' => 'border-red-600', 'text' => 'text-red-100'],
+                        'Planeación' => 'border-gray-500',
+                        'En Progreso' => 'border-blue-600',
+                        'En Pausa' => 'border-yellow-500',
+                        'Completado' => 'border-green-600',
+                        'Cancelado' => 'border-red-600',
                     ];
                 @endphp
 
                 @foreach($statuses as $status)
-                @php $style = $statusStyles[$status] ?? ['bg' => 'bg-gray-400', 'border' => 'border-gray-400', 'text' => 'text-gray-100']; @endphp
+                @php $style = $statusStyles[$status] ?? 'border-gray-400'; @endphp
                 
-                <div class="bg-gray-100 rounded-xl shadow-lg flex flex-col">
-                    <div class="p-4 rounded-t-xl {{ $style['bg'] }} {{ $style['text'] }} shadow-md">
-                        <h3 class="text-lg font-bold flex justify-between items-center">
+                <div class="bg-slate-50 rounded-xl shadow-sm flex flex-col">
+                    
+                    <div class="p-4 border-b border-slate-200">
+                        <h3 class="text-lg font-semibold text-slate-800 flex justify-between items-center">
                             {{ $status }}
-                            <span class="text-sm font-semibold {{ $style['bg'] }} {{ $style['text'] }} bg-opacity-50 rounded-full px-2 py-0.5">
+                            <span class="text-sm font-medium bg-slate-200 text-slate-600 rounded-full px-2.5 py-0.5">
                                 <span class="column-count">{{ $projectsByStatus[$status]->count() }}</span>
                             </span>
                         </h3>
                     </div>
                     
-                    <div class="p-4 space-y-4 min-h-[70vh] kanban-column flex-1" data-status="{{ $status }}">
+                    <div class="p-3 space-y-3 min-h-[70vh] kanban-column flex-1 overflow-y-auto" data-status="{{ $status }}">
                         @foreach($projectsByStatus[$status] as $project)
                         @php
                             $completedTasks = $project->tasks->where('status', 'Completada')->count();
                             $totalTasks = $project->tasks->count();
                             $progress = $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
-                            
-                            $health = 'on-track';
-                            $healthColor = 'text-green-500';
-                            if ($project->due_date) {
-                                $daysLeft = now()->diffInDays($project->due_date, false);
-                                if ($daysLeft < 0 && $project->status !== 'Completado') {
-                                    $health = 'overdue';
-                                    $healthColor = 'text-red-500';
-                                } elseif ($daysLeft <= 7 && $project->status !== 'Completado') {
-                                    $health = 'at-risk';
-                                    $healthColor = 'text-yellow-500';
-                                }
-                            }
                         @endphp
                         
-                        <div class="bg-white p-4 rounded-lg shadow-md border-l-4 {{ $style['border'] }} cursor-grab relative project-card transition-all duration-150 ease-in-out hover:shadow-xl hover:-translate-y-1" data-id="{{ $project->id }}">
+                        <div class="bg-white p-4 rounded-lg shadow-md {{ $style }} border-l-4 cursor-grab relative project-card transition-shadow duration-150 hover:shadow-lg" data-id="{{ $project->id }}">
                             
                             @can('update', $project)
-                                <a href="{{ route('projects.edit', $project) }}" class="absolute top-2 right-2 text-gray-400 hover:text-indigo-600 p-1 rounded-full transition-colors opacity-50 hover:opacity-100" title="Editar Proyecto">
+                                <a href="{{ route('projects.edit', $project) }}" class="absolute top-2 right-2 text-gray-400 hover:text-indigo-600 p-1 rounded-full transition-colors opacity-30 hover:opacity-100" title="Editar Proyecto">
                                     <i class="fas fa-pencil-alt fa-sm"></i>
                                 </a>
                             @endcan
                             
-                            <div class="flex items-center mb-2">
-                                <i class="fas fa-circle fa-xs mr-2 {{ $healthColor }}" title="Salud del proyecto"></i>
-                                <a href="{{ route('projects.show', $project) }}" class="font-bold text-gray-900 hover:text-indigo-700 transition-colors line-clamp-2">
-                                    {{ $project->name }}
-                                </a>
-                            </div>
+                            <a href="{{ route('projects.show', $project) }}" class="font-bold text-gray-800 hover:text-indigo-600 transition-colors line-clamp-2">
+                                {{ $project->name }}
+                            </a>
                             
-                            <p class="text-sm text-gray-600 mt-2 line-clamp-3">
-                                {{ $project->description }}
+                            <p class="text-sm text-gray-500 mt-2 line-clamp-2">
+                                {{ Str::limit($project->description, 80) }}
                             </p>
 
                             @if($totalTasks > 0)
                             <div class="mt-4">
                                 <div class="flex justify-between text-xs text-gray-500 mb-1">
-                                    <span>Progreso Tareas</span>
+                                    <span>Progreso</span>
                                     <span>{{ $completedTasks }} / {{ $totalTasks }}</span>
                                 </div>
                                 <div class="w-full bg-gray-200 rounded-full h-2">
@@ -89,7 +74,7 @@
                             </div>
                             @endif
                             
-                            <div class="flex justify-between items-center mt-4 pt-3 border-t">
+                            <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
                                 <div class="text-xs text-gray-500 flex items-center">
                                     <i class="far fa-calendar-alt mr-2"></i>
                                     <span>{{ $project->due_date ? \Carbon\Carbon::parse($project->due_date)->format('d M, Y') : 'N/A' }}</span>
@@ -129,7 +114,7 @@
                     new Sortable(column, {
                         group: 'kanban',
                         animation: 150,
-                        ghostClass: 'bg-blue-100 border-2 border-dashed border-blue-400 opacity-70',
+                        ghostClass: 'bg-slate-200 border-2 border-dashed border-slate-400 opacity-70',
                         onEnd: this.handleDrop.bind(this),
                     });
                 });
@@ -150,7 +135,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json'
+                        'Accept': 'application/json' 
                     },
                     body: JSON.stringify({ status: newStatus })
                 })
