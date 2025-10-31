@@ -12,11 +12,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Models\ProjectHistory;
 
 class ProjectController extends Controller
 {
     use AuthorizesRequests;
-    public function index(Request $request)
+public function index(Request $request)
     {
         $this->authorize('viewAny', Project::class);
         $user = Auth::user();
@@ -29,51 +30,53 @@ class ProjectController extends Controller
                 ->orWhereHas('areas', fn($a) => $a->where('area_id', $user->area_id));
             });
         }
+        $projectsQuery->distinct();
 
-        $projectsQuery->distinct();        
+        $visibleProjects = $projectsQuery->with(['expenses', 'tasks.assignee', 'leader'])
+            ->get()
+            ->map(function ($project) {
+                $completedTasks = $project->tasks->where('status', 'Completada')->count();
+                $totalTasks = $project->tasks->count();
+                
+                $project->progress = $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
+                $project->spent = $project->expenses->sum('amount');
+                $project->tasks_count = $totalTasks;
+                $project->tasks_completed_count = $completedTasks;
 
-        $visibleProjects = (clone $projectsQuery)->with('expenses')->get();
+                if ($project->status === 'Completado' || $project->status === 'Cancelado') {
+                    $project->health_status = 'archived';
+                } elseif (!$project->due_date) {
+                    $project->health_status = 'on-track';
+                } elseif ($project->due_date < now()) {
+                    $project->health_status = 'overdue';
+                } elseif (Carbon::parse($project->due_date)->between(now(), now()->addDays(7))) {
+                    $project->health_status = 'at-risk';
+                } else {
+                    $project->health_status = 'on-track';
+                }
 
-        $totalBudget = $visibleProjects->sum('budget');
-        $totalSpent = $visibleProjects->sum(function ($project) {
-            return $project->expenses->sum('amount');
-        });
+                return $project;
+            });
 
-        $financialData = $visibleProjects->where('budget', '>', 0)->map(function ($project) {
-            return [
-                'name' => $project->name,
-                'budget' => (float) $project->budget,
-                'spent' => (float) $project->expenses->sum('amount'),
-            ];
-        })->sortByDesc(function ($item) {
-            return $item['budget'] > 0 ? ($item['spent'] / $item['budget']) : 0;
-        })->values();
-        $activeProjectsCount = $visibleProjects->whereIn('status', ['Planeación', 'En Progreso', 'En Pausa'])->count();
-        $overdueProjectsCount = $visibleProjects->where('due_date', '<', now())->whereNotIn('status', ['Completado', 'Cancelado'])->count();
+        $myPendingTasks = Task::where('assignee_id', $user->id)
+            ->where('status', '!=', 'Completada')
+            ->with('project')
+            ->orderBy('due_date', 'asc')
+            ->limit(10)
+            ->get();
 
-        $upcomingProjects = $visibleProjects->whereBetween('due_date', [now(), now()->addDays(14)])->sortBy('due_date');
-        $overdueProjects = $visibleProjects->where('due_date', '<', now())->whereNotIn('status', ['Completado', 'Cancelado']);
-        $teamWorkload = Task::whereIn('project_id', $visibleProjects->pluck('id'))
-            ->where('status', '!=', 'Completada')->whereNotNull('assignee_id')->with('assignee')
-            ->select('assignee_id', DB::raw('count(*) as tasks_count'))->groupBy('assignee_id')
-            ->orderBy('tasks_count', 'desc')->get()
-            ->map(fn ($item) => ['name' => $item->assignee->name ?? 'Sin asignar', 'tasks' => $item->tasks_count]);
-        $projectsByStatus = $visibleProjects->groupBy('status')->map->count();
         $recentActivity = \App\Models\ProjectHistory::whereIn('project_id', $visibleProjects->pluck('id'))
-                                ->with('user', 'project')
-                                ->latest()
-                                ->limit(7)
-                                ->get();
-
-        $chartData = [
-            'status' => ['labels' => $projectsByStatus->keys(), 'series' => $projectsByStatus->values()],
-            'workload' => ['labels' => $teamWorkload->pluck('name'), 'series' => $teamWorkload->pluck('tasks')],
-            'financials' => $financialData,
-        ];
+                            ->with('user', 'project')
+                            ->latest()
+                            ->limit(5)
+                            ->get();
 
         return view('projects.index', compact(
-            'activeProjectsCount', 'overdueProjectsCount', 'totalBudget', 'totalSpent', 'chartData', 'upcomingProjects', 'overdueProjects', 'recentActivity'
+            'visibleProjects', 
+            'myPendingTasks', 
+            'recentActivity'
         ));
+        
     }
 
     public function list()

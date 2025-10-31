@@ -1,4 +1,13 @@
 <x-app-layout>
+    <style>
+        .kanban-ghost-card {
+            background-color: white !important;
+            border: 2px dashed #6366f1 !important;
+            opacity: 0.7 !important;
+            border-radius: 0.5rem !important;
+        }
+    </style>
+
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -10,7 +19,6 @@
         </div>
     </x-slot>
 
-    {{-- 1. FONDO DE PÁGINA SUTIL --}}
     <div class="py-12 bg-gray-50" x-data="kanbanBoard">
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -118,7 +126,9 @@
                     new Sortable(column, {
                         group: 'kanban',
                         animation: 150,
-                        ghostClass: 'bg-white border-2 border-dashed border-indigo-400 opacity-70 rounded-lg',
+                        
+                        ghostClass: 'kanban-ghost-card',
+                        
                         onEnd: this.handleDrop.bind(this),
                     });
                 });
@@ -139,13 +149,13 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json'
+                        'Accept': 'application/json' 
                     },
                     body: JSON.stringify({ status: newStatus })
                 })
                 .then(response => {
                     if (!response.ok) {
-                        fromColumn.appendChild(event.item);
+                        fromColumn.appendChild(event.item); 
                         throw new Error('Falló la respuesta del servidor');
                     }
                     return response.json();
@@ -170,7 +180,7 @@
                 .catch(error => {
                     console.error('Error al actualizar el estatus:', error);
                     alert('Hubo un error al actualizar el proyecto.');
-                    fromColumn.appendChild(event.item);
+                    fromColumn.appendChild(event.item); 
                 });
             },
 
