@@ -162,6 +162,45 @@
             editForm: { product_id: '', quality_id: '', quantity: 0 },
             // finishedPallets: @json($finishedPallets),
 
+            async startNewPallet() {
+                    if (!this.lpnInput.trim()) {
+                        alert('Por favor, escanea o ingresa un LPN.');
+                        return;
+                    }
+
+                    this.loading = true;
+                    try {
+                        const response = await fetch('/wms/receiving/start-pallet', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                lpn: this.lpnInput,
+                                purchase_order_id: this.purchaseOrderId
+                            })
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(data.error || 'Error al verificar el LPN.');
+                        }
+
+                        this.currentPallet = data;
+                        this.step = 'receiving';
+                        this.lpnInput = '';
+
+                    } catch (error) {
+                        console.error('Error en startNewPallet:', error);
+                        alert(`Error: ${error.message}`);
+                        this.lpnInput = '';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
             async addItemToPallet() {
                 console.log('Iniciando addItemToPallet...');
 

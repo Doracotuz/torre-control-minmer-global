@@ -20,7 +20,7 @@ class WMSReceivingController extends Controller
     public function showReceivingForm(PurchaseOrder $purchaseOrder)
     {
         $purchaseOrder->load(['lines.product']);
-        $products = Product::orderBy('name')->get(['id', 'name', 'sku']);
+        $products = Product::orderBy('name')->get(['id', 'name', 'sku', 'upc']);
         $qualities = Quality::orderBy('name')->get();
 
         $alreadyReceived = DB::table('pallet_items')
