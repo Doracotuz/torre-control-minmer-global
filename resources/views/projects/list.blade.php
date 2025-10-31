@@ -43,14 +43,20 @@
                                 </div>
                                 @if($project->leader)
                                 <div class="flex-shrink-0" title="Líder: {{ $project->leader->name }}">
-                                    <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-600 text-white font-bold text-xs">
-                                        @php
-                                            $words = explode(" ", $project->leader->name);
-                                            $initials = "";
-                                            foreach (array_slice($words, 0, 2) as $w) { $initials .= mb_substr($w, 0, 1); }
-                                        @endphp
-                                        {{ $initials }}
-                                    </span>
+                                    
+                                    @if ($project->leader->profile_photo_path)
+                                        <img class="h-8 w-8 rounded-full object-cover" src="{{ Storage::disk('s3')->url($project->leader->profile_photo_path) }}" alt="{{ $project->leader->name }}">
+                                    @else
+                                        <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-600 text-white font-bold text-xs">
+                                            @php
+                                                $words = explode(" ", $project->leader->name);
+                                                $initials = "";
+                                                foreach (array_slice($words, 0, 2) as $w) { $initials .= mb_substr($w, 0, 1); }
+                                            @endphp
+                                            {{ $initials }}
+                                        </span>
+                                    @endif
+
                                 </div>
                                 @endif
                             </div>

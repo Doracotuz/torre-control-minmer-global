@@ -139,10 +139,16 @@
                                         <span class="text-sm text-gray-500 hidden md:block">Vence: {{ $task->due_date ? \Carbon\Carbon::parse($task->due_date)->format('d M, Y') : 'N/A' }}</span>
                                         @if($task->assignee)
                                             <div class="flex-shrink-0" title="Asignado a: {{ $task->assignee->name }}">
-                                                 <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-600 text-white font-bold text-xs">
-                                                    @php $words = explode(" ", $task->assignee->name); $initials = ""; foreach (array_slice($words, 0, 2) as $w) { $initials .= mb_substr($w, 0, 1); } @endphp
-                                                    {{ $initials }}
-                                                </span>
+                                                
+                                                @if ($task->assignee->profile_photo_path)
+                                                    <img class="h-8 w-8 rounded-full object-cover" src="{{ Storage::disk('s3')->url($task->assignee->profile_photo_path) }}" alt="{{ $task->assignee->name }}">
+                                                @else
+                                                    <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-600 text-white font-bold text-xs">
+                                                        @php $words = explode(" ", $task->assignee->name); $initials = ""; foreach (array_slice($words, 0, 2) as $w) { $initials .= mb_substr($w, 0, 1); } @endphp
+                                                        {{ $initials }}
+                                                    </span>
+                                                @endif
+
                                             </div>
                                         @endif
                                         <button @click="editingTask = {{ $task }}; isTaskEditModalOpen = true" class="text-gray-400 hover:text-indigo-600" title="Editar Tarea"><i class="fas fa-pencil-alt"></i></button>
@@ -226,10 +232,14 @@
                             @forelse ($project->comments as $comment)
                                 <div class="flex items-start">
                                     <div class="flex-shrink-0 mr-3">
-                                        <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gray-500 text-white font-bold">
-                                             @php $words = explode(" ", $comment->user->name); $initials = ""; foreach (array_slice($words, 0, 2) as $w) { $initials .= mb_substr($w, 0, 1); } @endphp
-                                            {{ $initials }}
-                                        </span>
+                                        @if ($comment->user->profile_photo_path)
+                                            <img class="h-10 w-10 rounded-full object-cover" src="{{ Storage::disk('s3')->url($comment->user->profile_photo_path) }}" alt="{{ $comment->user->name }}">
+                                        @else
+                                            <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gray-500 text-white font-bold">
+                                                @php $words = explode(" ", $comment->user->name); $initials = ""; foreach (array_slice($words, 0, 2) as $w) { $initials .= mb_substr($w, 0, 1); } @endphp
+                                                {{ $initials }}
+                                            </span>
+                                        @endif
                                     </div>
                                     <div class="bg-gray-100 rounded-lg p-3 flex-1">
                                         <p class="text-sm font-semibold text-gray-900">{{ $comment->user->name }}</p>
