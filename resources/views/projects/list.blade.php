@@ -10,35 +10,39 @@
         </div>
     </x-slot>
 
-    <div class="py-12" x-data="kanbanBoard">
+    {{-- 1. FONDO DE PÁGINA SUTIL --}}
+    <div class="py-12 bg-gray-50" x-data="kanbanBoard">
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 
                 @php
                     $statusStyles = [
-                        'Planeación' => 'border-gray-500',
-                        'En Progreso' => 'border-blue-600',
-                        'En Pausa' => 'border-yellow-500',
-                        'Completado' => 'border-green-600',
-                        'Cancelado' => 'border-red-600',
+                        'Planeación' => ['border' => 'border-gray-500', 'icon' => 'fa-list-alt', 'iconColor' => 'text-gray-500'],
+                        'En Progreso' => ['border' => 'border-blue-600', 'icon' => 'fa-tasks', 'iconColor' => 'text-blue-600'],
+                        'En Pausa' => ['border' => 'border-yellow-500', 'icon' => 'fa-pause-circle', 'iconColor' => 'text-yellow-500'],
+                        'Completado' => ['border' => 'border-green-600', 'icon' => 'fa-check-circle', 'iconColor' => 'text-green-600'],
+                        'Cancelado' => ['border' => 'border-red-600', 'icon' => 'fa-times-circle', 'iconColor' => 'text-red-600'],
                     ];
                 @endphp
 
                 @foreach($statuses as $status)
-                @php $style = $statusStyles[$status] ?? 'border-gray-400'; @endphp
+                @php $style = $statusStyles[$status] ?? ['border' => 'border-gray-400', 'icon' => 'fa-question-circle', 'iconColor' => 'text-gray-400']; @endphp
                 
-                <div class="bg-slate-50 rounded-xl shadow-sm flex flex-col">
+                <div class="bg-white rounded-xl shadow-lg flex flex-col">
                     
-                    <div class="p-4 border-b border-slate-200">
-                        <h3 class="text-lg font-semibold text-slate-800 flex justify-between items-center">
-                            {{ $status }}
-                            <span class="text-sm font-medium bg-slate-200 text-slate-600 rounded-full px-2.5 py-0.5">
+                    <div class="p-4 border-b border-gray-200">
+                        <h3 class="text-lg font-bold text-gray-900 flex justify-between items-center">
+                            <span class="flex items-center gap-2">
+                                <i class="fas {{ $style['icon'] }} {{ $style['iconColor'] }} fa-sm"></i>
+                                {{ $status }}
+                            </span>
+                            <span class="text-sm font-semibold bg-gray-200 text-gray-700 rounded-full px-3 py-1">
                                 <span class="column-count">{{ $projectsByStatus[$status]->count() }}</span>
                             </span>
                         </h3>
                     </div>
                     
-                    <div class="p-3 space-y-3 min-h-[70vh] kanban-column flex-1 overflow-y-auto" data-status="{{ $status }}">
+                    <div class="p-3 space-y-3 min-h-[70vh] kanban-column flex-1 bg-gray-50 rounded-b-xl overflow-y-auto" data-status="{{ $status }}">
                         @foreach($projectsByStatus[$status] as $project)
                         @php
                             $completedTasks = $project->tasks->where('status', 'Completada')->count();
@@ -46,7 +50,7 @@
                             $progress = $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
                         @endphp
                         
-                        <div class="bg-white p-4 rounded-lg shadow-md {{ $style }} border-l-4 cursor-grab relative project-card transition-shadow duration-150 hover:shadow-lg" data-id="{{ $project->id }}">
+                        <div class="bg-white p-4 rounded-lg shadow-md {{ $style['border'] }} border-l-4 cursor-grab relative project-card transition-all duration-200 hover:shadow-lg hover:-translate-y-1" data-id="{{ $project->id }}">
                             
                             @can('update', $project)
                                 <a href="{{ route('projects.edit', $project) }}" class="absolute top-2 right-2 text-gray-400 hover:text-indigo-600 p-1 rounded-full transition-colors opacity-30 hover:opacity-100" title="Editar Proyecto">
@@ -54,7 +58,7 @@
                                 </a>
                             @endcan
                             
-                            <a href="{{ route('projects.show', $project) }}" class="font-bold text-gray-800 hover:text-indigo-600 transition-colors line-clamp-2">
+                            <a href="{{ route('projects.show', $project) }}" class="font-semibold text-gray-800 hover:text-indigo-600 transition-colors line-clamp-2">
                                 {{ $project->name }}
                             </a>
                             
@@ -114,7 +118,7 @@
                     new Sortable(column, {
                         group: 'kanban',
                         animation: 150,
-                        ghostClass: 'bg-slate-200 border-2 border-dashed border-slate-400 opacity-70',
+                        ghostClass: 'bg-white border-2 border-dashed border-indigo-400 opacity-70 rounded-lg',
                         onEnd: this.handleDrop.bind(this),
                     });
                 });
@@ -135,7 +139,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json' 
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({ status: newStatus })
                 })
