@@ -123,7 +123,9 @@
                             <div class="relative flex timeline-item">
                                 <div class="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold z-10 ring-8 ring-white">
                                     <template x-if="activity.user.profile_photo_path">
-                                        <img class="h-10 w-10 rounded-full object-cover" :src="'/storage/' + activity.user.profile_photo_path.replace('public/', '')" :alt="activity.user.name">
+                                        <img class="h-10 w-10 rounded-full object-cover" 
+                                            :src="s3BaseUrl + activity.user.profile_photo_path" 
+                                            :alt="activity.user.name">
                                     </template>
                                     <template x-if="!activity.user.profile_photo_path">
                                         <span x-text="activity.user.name.match(/\b(\w)/g).join('').substring(0, 2)"></span>
@@ -178,6 +180,7 @@
                     financial: null,
                     timeline: null
                 },
+                s3BaseUrl: '{{ Storage::disk("s3")->url("/") }}',
 
                 init() {
                     const data = JSON.parse(document.getElementById('dashboard-data').textContent);
