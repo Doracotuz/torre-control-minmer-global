@@ -42,21 +42,18 @@ public function index(Request $request)
                 
                 $project->progress = $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
                 $project->spent = $project->expenses->sum('amount');
-                $project->tasks_count = $totalTasks;
-                $project->tasks_completed_count = $completedTasks;
 
                 if ($project->status === 'Completado' || $project->status === 'Cancelado') {
-                    $project->health_status = 'archived';
+                    $project->health_status = 'Archivado';
                 } elseif (!$project->due_date) {
-                    $project->health_status = 'on-track';
+                    $project->health_status = 'A Tiempo';
                 } elseif ($project->due_date < now()) {
-                    $project->health_status = 'overdue';
-                } elseif (Carbon::parse($project->due_date)->between(now(), now()->addDays(7))) {
-                    $project->health_status = 'at-risk';
+                    $project->health_status = 'Vencido';
+                } elseif ($project->due_date->between(now(), now()->addDays(7))) {
+                    $project->health_status = 'En Riesgo';
                 } else {
-                    $project->health_status = 'on-track';
+                    $project->health_status = 'A Tiempo';
                 }
-
                 return $project;
             });
 
@@ -70,13 +67,19 @@ public function index(Request $request)
         $recentActivity = \App\Models\ProjectHistory::whereIn('project_id', $visibleProjects->pluck('id'))
                             ->with('user', 'project')
                             ->latest()
-                            ->limit(5)
+                            ->limit(5) 
                             ->get();
 
+        $allTasks = $visibleProjects->pluck('tasks')->flatten();
+        
+        $dashboardData = [
+            'projects' => $visibleProjects,
+            'myTasks' => $myPendingTasks,
+            'recentActivity' => $recentActivity,
+        ];
+
         return view('projects.index', compact(
-            'visibleProjects', 
-            'myPendingTasks', 
-            'recentActivity'
+            'dashboardData'
         ));
         
     }
