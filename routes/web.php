@@ -654,7 +654,8 @@ Route::middleware(['auth'])->prefix('projects')->name('projects.')->group(functi
     Route::post('/{project}/comments', [App\Http\Controllers\ProjectCommentController::class, 'store'])->name('comments.store');
     Route::patch('/{project}/status', [App\Http\Controllers\ProjectController::class, 'updateStatus'])->name('update.status');
     Route::post('/{project}/files', [ProjectFileController::class, 'store'])->name('files.store');
-    Route::post('/{project}/expenses', [App\Http\Controllers\ProjectExpenseController::class, 'store'])->name('expenses.store');  
+    Route::post('/{project}/expenses', [App\Http\Controllers\ProjectExpenseController::class, 'store'])->name('expenses.store');
+    Route::get('/{project}/report-pdf', [App\Http\Controllers\ProjectController::class, 'generateReportPdf'])->name('report.pdf');    
     
 });
 

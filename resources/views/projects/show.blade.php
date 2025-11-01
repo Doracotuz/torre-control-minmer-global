@@ -7,7 +7,12 @@
                 </h2>
                 <p class="text-sm text-gray-500 mt-1">Detalles y progreso del proyecto.</p>
             </div>
-            <div class="mt-4 md:mt-0">
+            <div class="mt-4 md:mt-0 flex gap-2">
+                
+                <a href="{{ route('projects.report.pdf', $project) }}" target="_blank" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700">
+                    <i class="fas fa-file-pdf mr-2"></i> Descargar Reporte
+                </a>
+
                 <a href="{{ route('projects.list') }}" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md text-sm font-semibold hover:bg-gray-400">
                     <i class="fas fa-arrow-left mr-2"></i> Volver al Tablero
                 </a>

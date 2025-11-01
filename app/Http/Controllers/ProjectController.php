@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Models\ProjectHistory;
+use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ProjectController extends Controller
 {
@@ -275,4 +277,111 @@ public function index(Request $request)
 
         return view('projects.review', compact('projects', 'statuses', 'leaders', 'areas'));
     }
+
+    public function generateReportPdf(Project $project)
+    {
+        $this->authorize('view', $project);
+
+        $project->load(
+            'leader', 
+            'areas',
+            'tasks.assignee', 
+            'expenses.user', 
+            'files.user', 
+            'history.user',
+            'comments.user'
+        );
+
+        $tasksTotal = $project->tasks->count();
+        $tasksCompleted = $project->tasks->where('status', 'Completada')->count();
+        $tasksInProgress = $project->tasks->where('status', 'En Progreso')->count();
+        $tasksPending = $project->tasks->where('status', 'Pendiente')->count();
+        $progress = $tasksTotal > 0 ? ($tasksCompleted / $tasksTotal) * 100 : 0;
+
+        $totalSpent = $project->expenses->sum('amount');
+        $budget = $project->budget ?? 0;
+        $budgetProgress = $budget > 0 ? ($totalSpent / $budget) * 100 : 0;
+        
+        $daysRemaining = null;
+        $healthStatus = 'on-track'; 
+        if ($project->due_date) {
+            $daysRemaining = (int) now()->diffInDays($project->due_date, false); 
+            if ($daysRemaining < 0 && $project->status !== 'Completado') {
+                $healthStatus = 'overdue';
+            } elseif ($daysRemaining <= 7 && $project->status !== 'Completado') {
+                $healthStatus = 'at-risk';
+            }
+        }
+
+        $diagnosis_level = 'success'; 
+        $diagnosis_message = "Proyecto saludable y operando dentro de los parámetros esperados.";
+        if ($healthStatus == 'overdue' || $budgetProgress > 100) {
+            $diagnosis_level = 'danger';
+            $diagnosis_message = "ALERTA CRÍTICA: El proyecto está vencido y/o ha excedido su presupuesto. Requiere intervención inmediata.";
+        } elseif ($healthStatus == 'at-risk' || $budgetProgress > 90) {
+            $diagnosis_level = 'warning';
+            $diagnosis_message = "ADVERTENCIA: El proyecto presenta riesgo de vencimiento y/o está cerca de agotar su presupuesto. Se recomienda monitoreo cercano.";
+        } elseif ($progress < 50 && $budgetProgress > 75) {
+             $diagnosis_level = 'warning';
+             $diagnosis_message = "ADVERTENCIA: El presupuesto se está consumiendo más rápido que el avance de las tareas. Revisar alcance y gastos.";
+        }
+
+        $teamWorkload = $project->tasks
+            ->whereNotNull('assignee_id')
+            ->groupBy('assignee_id')
+            ->map(function ($tasks) {
+                $totalActive = $tasks->where('status', '!=', 'Completada')->count();
+                $overdue = $tasks->where('status', '!=', 'Completada')->where('due_date', '<', now())->count();
+                $onTrack = $totalActive - $overdue;
+                
+                return [
+                    'name' => $tasks->first()->assignee->name,
+                    'total_active' => $totalActive,
+                    'on_track' => $onTrack,
+                    'overdue' => $overdue,
+                ];
+            })
+            ->sortByDesc('total_active'); 
+        
+        $overdueTasks = $project->tasks
+            ->where('status', '!=', 'Completada')
+            ->where('due_date', '<', now())
+            ->sortBy('due_date');
+
+        $logoPath = 'LogoAzul.png';
+        $logoBase64 = null;
+        if (Storage::disk('s3')->exists($logoPath)) {
+            $logoContent = Storage::disk('s3')->get($logoPath);
+            $logoBase64 = 'data:image/png;base64,' . base64_encode($logoContent);
+        }
+        
+        $data = [
+            'project' => $project,
+            'logoBase64' => $logoBase64,
+            'kpis' => [
+                'progress' => $progress,
+                'tasksTotal' => $tasksTotal,
+                'tasksCompleted' => $tasksCompleted,
+                'tasksInProgress' => $tasksInProgress,
+                'tasksPending' => $tasksPending,
+                'budget' => $budget,
+                'totalSpent' => $totalSpent,
+                'budgetProgress' => $budgetProgress,
+                'daysRemaining' => $daysRemaining,
+                'healthStatus' => $healthStatus,
+            ],
+            'diagnosis' => [
+                'level' => $diagnosis_level,
+                'message' => $diagnosis_message,
+            ],
+            'teamWorkload' => $teamWorkload,
+            'overdueTasks' => $overdueTasks,
+            'comments' => $project->comments->sortByDesc('created_at'),
+            'allTasks' => $project->tasks->sortBy('due_date'),
+        ];
+
+        $pdf = Pdf::loadView('projects.report', $data);
+        return $pdf->stream('Dossier_Proyecto_' . $project->id . '.pdf');
+    }
+
 }
