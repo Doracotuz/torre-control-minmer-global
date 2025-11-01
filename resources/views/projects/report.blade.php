@@ -31,16 +31,16 @@
         .doc-subtitle { font-size: 11px; margin: 4px 0; color: var(--color-secondary); }
         .page-break { page-break-before: always; }
 
-        
         .section-title {
             font-size: 14px; color: var(--color-primary); font-weight: bold; text-transform: uppercase;
             letter-spacing: 0.8px; border-bottom: 2px solid var(--color-accent);
-            padding-bottom: 6px; margin: 25px 0 15px 0; page-break-after: avoid;
+            padding-bottom: 6px; margin: 20px 0 10px 0; page-break-after: avoid;
         }
         .section-title.first { margin-top: 0; }
         .subsection-title {
              font-size: 11px; color: var(--color-primary); font-weight: bold;
              margin: 15px 0 5px 0; border-bottom: 1px solid var(--color-border-dark); padding-bottom: 3px;
+             page-break-after: avoid;
         }
 
         .diag-box {
@@ -52,9 +52,8 @@
         .diag-box.warning { background-color: #fffaf0; color: #c05621; border-color: #fbd38d; }
         .diag-box.danger { background-color: #fff5f5; color: #c53030; border-color: #feb2b2; }
 
-        .control-panel { width: 100%; table-layout: fixed; margin-top: 15px; border-spacing: 15px 0; margin-left: -15px; }
         .kpi-card {
-            width: 33.33%; background-color: var(--color-bg-light); border: 1px solid var(--color-border-light);
+            background-color: var(--color-bg-light); border: 1px solid var(--color-border-light);
             border-radius: 8px; padding: 15px; vertical-align: top; box-sizing: border-box;
         }
         .kpi-title { font-size: 10px; text-transform: uppercase; font-weight: bold; color: var(--color-primary); }
@@ -64,36 +63,6 @@
         .kpi-main.at-risk { color: var(--color-warning); }
         .kpi-main.overdue { color: var(--color-danger); }
         .kpi-subtext { font-size: 9px; color: var(--color-secondary); }
-
-        @php
-            $total = $kpis['tasksTotal'] == 0 ? 1 : $kpis['tasksTotal'];
-            $p_comp = round(($kpis['tasksCompleted'] / $total) * 100);
-            $p_prog = round(($kpis['tasksInProgress'] / $total) * 100);
-            $p_pend = 100 - $p_comp - $p_prog;
-            $grad_comp = $p_comp;
-            $grad_prog = $grad_comp + $p_prog;
-        @endphp
-        .pie-chart-container { display: block; margin-top: 10px; height: 90px; }
-        .pie-chart {
-            width: 80px; height: 80px; border-radius: 50%; float: left;
-            position: relative;
-            background-image: conic-gradient(
-                var(--color-success) 0% {{ $grad_comp }}%,
-                var(--color-inprogress) {{ $grad_comp }}% {{ $grad_prog }}%,
-                var(--color-pending) {{ $grad_prog }}% 100%
-            );
-        }
-        .pie-chart::after {
-            content: '';
-            position: absolute;
-            left: 20px; top: 20px;
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            background-color: var(--color-bg-light);
-        }
-        .pie-legend { float: left; margin-left: 15px; font-size: 10px; padding-top: 5px; }
-        .legend-item { margin-bottom: 5px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
 
         .dual-chart-container { width: 100%; margin-top: 10px; }
         .dual-bar { margin-bottom: 8px; }
@@ -106,21 +75,61 @@
             box-sizing: border-box;
         }
         
-        .stacked-bar-chart { width: 100%; border-spacing: 0 10px; }
-        .stacked-bar-label { width: 30%; font-weight: bold; padding-right: 10px; }
-        .stacked-bar-bg { width: 70%; background-color: var(--color-border-light); border-radius: 5px; height: 16px; }
-        .stacked-bar-fill { display: inline-block; height: 100%; }
-        .stacked-bar-fill-ontrack { background-color: var(--color-success); }
-        .stacked-bar-fill-overdue { background-color: var(--color-warning); }
-        .stacked-bar-legend { font-size: 8px; margin-top: 5px; }
+        @php
+            $total = $kpis['tasksTotal'] == 0 ? 1 : $kpis['tasksTotal'];
+            $p_comp = round(($kpis['tasksCompleted'] / $total) * 100);
+            $p_prog = round(($kpis['tasksInProgress'] / $total) * 100);
+            $p_pend = 100 - $p_comp - $p_prog;
+        @endphp
+        .task-bar-container {
+            width: 100%; height: 20px;
+            background-color: var(--color-border-dark);
+            border-radius: 5px;
+            overflow: hidden;
+            display: block;
+            font-size: 0;
+            margin-top: 10px;
+        }
+        .task-bar-segment {
+            display: inline-block;
+            height: 100%;
+            font-size: 10px;
+            color: white;
+            font-weight: bold;
+            line-height: 20px;
+            text-align: center;
+        }
+        .task-bar-legend { font-size: 9px; margin-top: 8px; }
+        .legend-item { margin-right: 10px; display: inline-block; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+        
+        .workload-chart { width: 100%; border-spacing: 0 10px; }
+        .workload-label { width: 30%; font-weight: bold; padding-right: 10px; vertical-align: middle; }
+        .workload-bar-cell { width: 70%; vertical-align: middle; }
+        .workload-bar-bg {
+            background-color: var(--color-border-light);
+            border-radius: 5px; height: 16px;
+            font-size: 0;
+        }
+        .workload-bar-fill {
+            display: inline-block; height: 100%;
+            font-size: 9px; color: white; line-height: 16px;
+            text-align: center; font-weight: bold;
+        }
+        .workload-ontrack { background-color: var(--color-success); border-radius: 5px 0 0 5px; }
+        .workload-overdue { background-color: var(--color-warning); border-radius: 0 5px 5px 0; }
+        .workload-ontrack.only { border-radius: 5px; }
+        .workload-overdue.only { border-radius: 5px; }
+
 
         .styled-table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; }
         .styled-table th, .styled-table td { padding: 8px; border-bottom: 1px solid var(--color-border-light); text-align: left; }
         .styled-table th { background-color: var(--color-bg-light); font-weight: bold; color: var(--color-primary); font-size: 9px; text-transform: uppercase; }
-        .styled-table tr { page-break-inside: avoid; }
+        .styled-table tr { page-break-inside: avoid; } /* Evita que las filas se corten */
         .styled-table .task-overdue { color: var(--color-danger); font-weight: bold; }
-        .styled-table .task-inprogress { color: var(--color-inprogress); }
-        .styled-table .task-pending { color: var(--color-pending); }
+        .styled-table .task-inprogress { color: var(--color-inprogress); font-weight: bold; }
+        .styled-table .task-pending { color: var(--color-warning); font-weight: bold; }
         .styled-table .task-completada { color: var(--color-secondary); text-decoration: line-through; }
         .styled-table .total-row { background-color: var(--color-bg-light); border-top: 2px solid var(--color-border-dark); font-weight: bold; }
         .styled-table .total-row td { color: var(--color-primary); }
@@ -178,104 +187,116 @@
             <strong>Diagnóstico Ejecutivo:</strong> {{ $diagnosis['message'] }}
         </div>
 
-        <table class="control-panel">
+        <table style="width: 100%; border-spacing: 15px 0; margin-left: -15px;">
             <tr>
-                <td class="kpi-card">
-                    <div class="kpi-title">Salud del Calendario</div>
-                    @php $dias = $kpis['daysRemaining']; $status = $kpis['healthStatus']; @endphp
-                    @if(is_null($dias))
-                        <div class="kpi-main on-track">N/D</div>
-                        <div class="kpi-subtext">No hay fecha de entrega definida.</div>
-                    @else
-                        <div class="kpi-main {{ $status == 'overdue' ? 'overdue' : ($status == 'at-risk' ? 'at-risk' : 'on-track') }}">
-                            {{ number_format(abs($dias), 0) }} 
-                            <span class="unit">{{ $status == 'overdue' ? 'Días Vencido' : 'Días' }}</span>
+                <td style="width: 50%; vertical-align: top;">
+                    
+                    <div class="kpi-card">
+                        <div class="kpi-title">Salud del Calendario</div>
+                        @php $dias = $kpis['daysRemaining']; $status = $kpis['healthStatus']; @endphp
+                        @if(is_null($dias))
+                            <div class="kpi-main on-track">N/D</div>
+                            <div class="kpi-subtext">No hay fecha de entrega definida.</div>
+                        @else
+                            <div class="kpi-main {{ $status == 'overdue' ? 'overdue' : ($status == 'at-risk' ? 'at-risk' : 'on-track') }}">
+                                {{-- FIX: Formato de número sin decimales --}}
+                                {{ number_format(abs($dias), 0) }} 
+                                <span class="unit">{{ $status == 'overdue' ? 'Días Vencido' : 'Días' }}</span>
+                            </div>
+                            <div class="kpi-subtext">
+                                @if($status == 'overdue') Venció el: {{ $project->due_date->format('d/m/Y') }}
+                                @else Restantes para: {{ $project->due_date->format('d/m/Y') }} @endif
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="kpi-card" style="margin-top: 15px;">
+                        <div class="kpi-title">Salud Financiera</div>
+                        <div class="kpi-main">{{ number_format($kpis['budgetProgress'], 0) }}<span class="unit">% Usado</span></div>
+                        @php $budgetAlert = $kpis['budgetProgress'] > 100 ? 'danger' : ($kpis['budgetProgress'] > 90 ? 'warning' : 'success'); @endphp
+                        <div class="dual-bar-bg">
+                            <div class="dual-bar-fill {{ $budgetAlert }}" style="width: {{ $kpis['budgetProgress'] > 100 ? 100 : $kpis['budgetProgress'] }}%;"></div>
                         </div>
                         <div class="kpi-subtext">
-                            @if($status == 'overdue') Venció el: {{ $project->due_date->format('d/m/Y') }}
-                            @else Restantes para: {{ $project->due_date->format('d/m/Y') }} @endif
+                            ${{ number_format($kpis['totalSpent'], 2) }} / ${{ number_format($kpis['budget'], 2) }}
                         </div>
-                    @endif
+                    </div>
+
+                    <div class="kpi-card" style="margin-top: 15px;">
+                        <div class="kpi-title">Análisis de Eficiencia</div>
+                        <div class="dual-chart-container" style="margin-top: 15px;">
+                            <div class="dual-bar">
+                                <div class="dual-bar-label">Avance del Proyecto (Alcance)</div>
+                                <div class="dual-bar-bg">
+                                    <div class="dual-bar-fill" style="width: {{ $kpis['progress'] }}%; background-color: var(--color-primary);">
+                                        {{ number_format($kpis['progress'], 0) }}%
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dual-bar">
+                                <div class="dual-bar-label">Consumo de Presupuesto (Costo)</div>
+                                <div class="dual-bar-bg">
+                                    <div class="dual-bar-fill {{ $budgetAlert }}" style="width: {{ $kpis['budgetProgress'] > 100 ? 100 : $kpis['budgetProgress'] }}%;">
+                                        {{ number_format($kpis['budgetProgress'], 0) }}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </td>
                 
-                <td class="kpi-card">
-                    <div class="kpi-title">Avance de Tareas ({{ $kpis['tasksTotal'] }})</div>
-                    <div class="pie-chart-container">
-                        <div class="pie-chart"></div>
-                        <div class="pie-legend">
-                            <div class="legend-item"><span class="dot" style="background-color: var(--color-success);"></span> {{ $kpis['tasksCompleted'] }} Completadas</div>
-                            <div class="legend-item"><span class="dot" style="background-color: var(--color-inprogress);"></span> {{ $kpis['tasksInProgress'] }} En Progreso</div>
-                            <div class="legend-item"><span class="dot" style="background-color: var(--color-pending);"></span> {{ $kpis['tasksPending'] }} Pendientes</div>
+                <td style="width: 50%; vertical-align: top;">
+                    
+                    <div class="kpi-card">
+                        <div class="kpi-title">Avance de Tareas ({{ $kpis['tasksTotal'] }} Totales)</div>
+                        <div class="task-bar-container">
+                            <div class="task-bar-segment" style="width: {{ $p_comp }}%; background-color: var(--color-success);">{{ $p_comp > 10 ? $p_comp.'%' : '' }}</div>
+                            <div class="task-bar-segment" style="width: {{ $p_prog }}%; background-color: var(--color-inprogress);">{{ $p_prog > 10 ? $p_prog.'%' : '' }}</div>
+                            <div class="task-bar-segment" style="width: {{ $p_pend }}%; background-color: var(--color-pending);">{{ $p_pend > 10 ? $p_pend.'%' : '' }}</div>
+                        </div>
+                        <div class="task-bar-legend">
+                            <span class="legend-item"><span class="dot" style="background-color: var(--color-success);"></span> {{ $kpis['tasksCompleted'] }} Completadas</span>
+                            <span class="legend-item"><span class="dot" style="background-color: var(--color-inprogress);"></span> {{ $kpis['tasksInProgress'] }} En Progreso</span>
+                            <span class="legend-item"><span class="dot" style="background-color: var(--color-pending);"></span> {{ $kpis['tasksPending'] }} Pendientes</span>
                         </div>
                     </div>
-                </td>
-
-                <td class="kpi-card">
-                    <div class="kpi-title">Salud Financiera</div>
-                    <div class="kpi-main">{{ number_format($kpis['budgetProgress'], 0) }}<span class="unit">%</span></div>
-                    @php $budgetAlert = $kpis['budgetProgress'] > 100 ? 'danger' : ($kpis['budgetProgress'] > 90 ? 'warning' : 'success'); @endphp
-                    <div class="bar-chart-container">
-                        <div class="bar-chart-fill {{ $budgetAlert }}" style="width: {{ $kpis['budgetProgress'] > 100 ? 100 : $kpis['budgetProgress'] }}%"></div>
-                    </div>
-                    <div class="kpi-subtext">
-                        ${{ number_format($kpis['totalSpent'], 2) }} / ${{ number_format($kpis['budget'], 2) }}
+                    
+                    <div class="kpi-card" style="margin-top: 15px;">
+                        <div class="kpi-title">Carga de Trabajo del Equipo (Tareas Activas)</div>
+                        <table class="workload-chart" style="margin-top: 10px;">
+                            @php $max_tasks = max(1, $teamWorkload->max('total_active')); @endphp
+                            @forelse($teamWorkload as $workload)
+                            <tr>
+                                <td class="workload-label">{{ $workload['name'] }}</td>
+                                <td class="workload-bar-cell">
+                                    <div class="workload-bar-bg">
+                                        @php
+                                            $total = max(1, $workload['total_active']);
+                                            $onTrackWidth = ($workload['on_track'] / $total) * 100;
+                                            $overdueWidth = ($workload['overdue'] / $total) * 100;
+                                        @endphp
+                                        <div class="workload-bar-fill workload-ontrack {{ $overdueWidth == 0 ? 'only' : '' }}" style="width: {{ $onTrackWidth }}%;">
+                                            {{ $workload['on_track'] > 0 ? $workload['on_track'] : '' }}
+                                        </div>
+                                        <div class="workload-bar-fill workload-overdue {{ $onTrackWidth == 0 ? 'only' : '' }}" style="width: {{ $overdueWidth }}%;">
+                                            {{ $workload['overdue'] > 0 ? $workload['overdue'] : '' }}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td style="text-align: center; padding: 10px;">N/A</td></tr>
+                            @endforelse
+                        </table>
+                        <div class="task-bar-legend" style="margin-top: 10px;">
+                            <span class="legend-item"><span class="dot" style="background-color: var(--color-success);"></span> A Tiempo</span>
+                            <span class="legend-item"><span class="dot" style="background-color: var(--color-warning);"></span> Vencidas</span>
+                        </div>
                     </div>
                 </td>
             </tr>
         </table>
         
-        <h2 class="section-title">Análisis de Eficiencia y Equipo</h2>
-        <table style="width: 100%;">
-            <tr>
-                <td style="width: 48%; vertical-align: top;">
-                    <div class="subsection-title">Eficiencia (Avance vs Gasto)</div>
-                    <div class="dual-chart-container">
-                        <div class="dual-bar">
-                            <div class="dual-bar-label">Avance del Proyecto (Alcance)</div>
-                            <div class="dual-bar-bg">
-                                <div class="dual-bar-fill" style="width: {{ $kpis['progress'] }}%; background-color: var(--color-primary);">
-                                    {{ number_format($kpis['progress'], 0) }}%
-                                </div>
-                            </div>
-                        </div>
-                        <div class="dual-bar">
-                            <div class="dual-bar-label">Consumo de Presupuesto (Costo)</div>
-                            <div class="dual-bar-bg">
-                                <div class="dual-bar-fill {{ $budgetAlert }}" style="width: {{ $kpis['budgetProgress'] > 100 ? 100 : $kpis['budgetProgress'] }}%;">
-                                    {{ number_format($kpis['budgetProgress'], 0) }}%
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </td>
-                <td style="width: 4%;"></td> <td style="width: 48%; vertical-align: top;">
-                    <div class="subsection-title">Carga de Trabajo del Equipo</div>
-                    <div class="stacked-bar-legend">
-                        <span class="dot" style="background-color: var(--color-success);"></span> A Tiempo
-                        <span class="dot" style="background-color: var(--color-warning); margin-left: 10px;"></span> Vencido
-                    </div>
-                    <table class="stacked-bar-chart">
-                        @php $max_tasks = max(1, $teamWorkload->max('total_active')); @endphp
-                        @forelse($teamWorkload as $workload)
-                        <tr>
-                            <td class="stacked-bar-label">{{ $workload['name'] }}</td>
-                            <td class="stacked-bar-bg">
-                                @php
-                                    $onTrackWidth = ($workload['on_track'] / $max_tasks) * 100;
-                                    $overdueWidth = ($workload['overdue'] / $max_tasks) * 100;
-                                @endphp
-                                <div class="stacked-bar-fill stacked-bar-fill-ontrack" style="width: {{ $onTrackWidth }}%;"></div>
-                                <div class="stacked-bar-fill stacked-bar-fill-overdue" style="width: {{ $overdueWidth }}%;"></div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr><td style="text-align: center; padding: 10px;">N/A</td></tr>
-                        @endforelse
-                    </table>
-                </td>
-            </tr>
-        </table>
-
 
         <h2 class="section-title">Apéndices de Auditoría</h2>
 
@@ -347,7 +368,7 @@
             <div style="text-align: center; font-size: 10px; padding: 10px;">No hay comentarios registrados.</div>
             @endforelse
         </div>
-
+        
         <div class="subsection-title">Apéndice D: Registro de Archivos</div>
         <table class="styled-table">
             <thead>
