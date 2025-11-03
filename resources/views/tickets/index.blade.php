@@ -79,7 +79,7 @@
         </div>
     </header>
 
-    <div class="bg-white p-4 rounded-xl shadow-lg mb-4" x-data="{ filtersOpen: {{ request()->hasAny(['search', 'status', 'priority', 'category_id', 'agent_id']) ? 'true' : 'false' }} }">
+    <div class="bg-white p-4 rounded-xl shadow-lg mb-4" x-data="{filtersOpen: {{ request()->hasAny(['search', 'status', 'priority', 'category_id', 'agent_id']) ? 'true' : 'false' }}, reassignModalOpen: false, reassignTicketId: null}">
         <div class="flex justify-between items-center">
             <h3 class="text-lg font-semibold text-[var(--color-primary)]">Filtros</h3>
             <button @click="filtersOpen = !filtersOpen" class="btn btn-sm bg-gray-100 text-gray-700 hover:bg-gray-200">
@@ -144,10 +144,14 @@
                     @forelse ($tickets as $ticket)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="p-4 whitespace-nowrap">
-                                <a href="{{ route('tickets.show', $ticket) }}" class="font-semibold text-[var(--color-primary)] hover:underline">
-                                    {{ $ticket->title }}
-                                </a>
-                                <div class="text-xs text-[var(--color-text-secondary)] font-mono">#{{ $ticket->id }}</div>
+                                <div class="flex items-center space-x-2">
+                                    @if ($ticket->user->profile_photo_path)
+                                        <img src="{{ Storage::disk('s3')->url($ticket->user->profile_photo_path) }}" alt="{{ $ticket->user->name }}" class="h-8 w-8 rounded-full object-cover">
+                                    @else
+                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($ticket->user->name) }}&color=2c3856&background=e8ecf7&size=32" alt="{{ $ticket->user->name }}" class="h-8 w-8 rounded-full">
+                                    @endif
+                                    <span class="font-medium text-gray-800">{{ $ticket->user->name }}</span>
+                                </div>
                             </td>
 
                             <td class="p-4 whitespace-nowrap">
@@ -216,9 +220,9 @@
                                                 <i class="fas fa-eye w-5 mr-2 text-gray-400"></i> Ver Ticket
                                             </a>
                                             @if(Auth::user()->isSuperAdmin())
-                                            <a href="#" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
-                                                <i class="fas fa-user-plus w-5 mr-2 text-gray-400"></i> Reasignar
-                                            </a>
+                                                <button @click="reassignTicketId = {{ $ticket->id }}; reassignModalOpen = true; open = false;" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                                    <i class="fas fa-user-plus w-5 mr-2 text-gray-400"></i> Reasignar
+                                                </button>
                                             <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este ticket permanentemente?');" class="w-full">
                                                 @csrf
                                                 @method('DELETE')
@@ -256,5 +260,66 @@
             {!! $tickets->links() !!}
         </div>
     </div>
+
+    <div x-show="reassignModalOpen"
+         x-transition:enter="ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed z-50 inset-0 overflow-y-auto"
+         aria-labelledby="modal-title" role="dialog" aria-modal="true" x-cloak>
+        
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div @click="reassignModalOpen = false" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div x-show="reassignModalOpen"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                
+                <form x-bind:action="reassignTicketId ? '{{ url('tickets') }}/' + reassignTicketId + '/assign' : '#'" method="POST">
+                    @csrf
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <i class="fas fa-user-plus text-blue-600"></i>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                    Reasignar Ticket
+                                </h3>
+                                <div class="mt-4 w-full">
+                                    <label for="agent_id" class="block text-sm font-medium text-gray-700">Selecciona un agente:</label>
+                                    <select name="agent_id" class="form-input-sm w-full mt-1" required>
+                                        <option value="">-- Seleccionar Agente --</option>
+                                        @foreach($agents as $agent)
+                                            <option value="{{ $agent->id }}">{{ $agent->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="btn btn-primary w-full sm:w-auto sm:ml-3">
+                            Asignar
+                        </button>
+                        <button type="button" @click="reassignModalOpen = false" class="btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 w-full mt-3 sm:w-auto sm:mt-0">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
 @endsection
