@@ -14,7 +14,7 @@ class CheckOrganigramAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && Auth::user()->is_area_admin && (Auth::user()->area->name === 'Administración' || Auth::user()->area->name === 'Recursos Humanos')) {
+        if (Auth::check() && Auth::user()->is_area_admin && (Auth::user()->area->name === 'Administración' || Auth::user()->area->name === 'Recursos Humanos' || Auth::user()->area->name === 'Innovación y Desarrollo')) {
             return $next($request);
         }
 
