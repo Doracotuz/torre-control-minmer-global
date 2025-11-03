@@ -11,11 +11,9 @@
         --color-surface: #ffffff;
         --color-background: #f3f4f6;
         --color-border: #e5e7eb;
-
         --color-priority-baja: #10B981;
         --color-priority-media: #F59E0B;
         --color-priority-alta: #EF4444;
-
         --color-status-abierto: #3B82F6;
         --color-status-proceso: #A855F7;
         --color-status-pendiente: #F59E0B;
@@ -57,7 +55,12 @@
     .priority-alta { background-color: #FEE2E2; color: #B91C1C; }
 </style>
 
-<div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+     x-data="{ 
+         filtersOpen: {{ request()->hasAny(['search', 'status', 'priority', 'category_id', 'agent_id']) ? 'true' : 'false' }},
+         reassignModalOpen: false,
+         reassignTicketId: null
+     }">
 
     <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
         <div>
@@ -79,7 +82,7 @@
         </div>
     </header>
 
-    <div class="bg-white p-4 rounded-xl shadow-lg mb-4" x-data="{filtersOpen: {{ request()->hasAny(['search', 'status', 'priority', 'category_id', 'agent_id']) ? 'true' : 'false' }}, reassignModalOpen: false, reassignTicketId: null}">
+    <div class="bg-white p-4 rounded-xl shadow-lg mb-4" x-data="{ filtersOpen: {{ request()->hasAny(['search', 'status', 'priority', 'category_id', 'agent_id']) ? 'true' : 'false' }} }">
         <div class="flex justify-between items-center">
             <h3 class="text-lg font-semibold text-[var(--color-primary)]">Filtros</h3>
             <button @click="filtersOpen = !filtersOpen" class="btn btn-sm bg-gray-100 text-gray-700 hover:bg-gray-200">
@@ -144,6 +147,13 @@
                     @forelse ($tickets as $ticket)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="p-4 whitespace-nowrap">
+                                <a href="{{ route('tickets.show', $ticket) }}" class="font-semibold text-[var(--color-primary)] hover:underline">
+                                    {{ $ticket->title }}
+                                </a>
+                                <div class="text-xs text-[var(--color-text-secondary)] font-mono">#{{ $ticket->id }}</div>
+                            </td>
+
+                            <td class="p-4 whitespace-nowrap">
                                 <div class="flex items-center space-x-2">
                                     @if ($ticket->user->profile_photo_path)
                                         <img src="{{ Storage::disk('s3')->url($ticket->user->profile_photo_path) }}" alt="{{ $ticket->user->name }}" class="h-8 w-8 rounded-full object-cover">
@@ -155,13 +165,6 @@
                             </td>
 
                             <td class="p-4 whitespace-nowrap">
-                                <div class="flex items-center space-x-2">
-                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($ticket->user->name) }}&color=2c3856&background=e8ecf7&size=32" alt="{{ $ticket->user->name }}" class="h-8 w-8 rounded-full">
-                                    <span class="font-medium text-gray-800">{{ $ticket->user->name }}</span>
-                                </div>
-                            </td>
-
-                            <td class.="p-4 whitespace-nowrap">
                                 @if($ticket->agent)
                                     <div class="flex items-center space-x-2">
                                         @if ($ticket->agent->profile_photo_path)
@@ -220,14 +223,14 @@
                                                 <i class="fas fa-eye w-5 mr-2 text-gray-400"></i> Ver Ticket
                                             </a>
                                             @if(Auth::user()->isSuperAdmin())
-                                                <button @click="reassignTicketId = {{ $ticket->id }}; reassignModalOpen = true; open = false;" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
-                                                    <i class="fas fa-user-plus w-5 mr-2 text-gray-400"></i> Reasignar
-                                                </button>
+                                            <button @click="reassignTicketId = {{ $ticket->id }}; reassignModalOpen = true; open = false;" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                                <i class="fas fa-user-plus w-5 mr-2 text-gray-400"></i> Reasignar
+                                            </button>
                                             <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este ticket permanentemente?');" class="w-full">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50" role="menuitem">
-                                                    <i class...="fas fa-trash-alt w-5 mr-2 text-red-400"></i> Eliminar
+                                                    <i class="fas fa-trash-alt w-5 mr-2 text-red-400"></i> Eliminar
                                                 </button>
                                             </form>
                                             @endif
@@ -321,5 +324,6 @@
         </div>
     </div>
 
-</div>
+</div> 
+
 @endsection
