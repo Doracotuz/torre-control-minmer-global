@@ -11,9 +11,11 @@
         --color-surface: #ffffff;
         --color-background: #f3f4f6;
         --color-border: #e5e7eb;
+
         --color-priority-baja: #10B981;
         --color-priority-media: #F59E0B;
         --color-priority-alta: #EF4444;
+
         --color-status-abierto: #3B82F6;
         --color-status-proceso: #A855F7;
         --color-status-pendiente: #F59E0B;
@@ -29,40 +31,6 @@
     .btn-primary:hover { background-color: #1e263b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transform: translateY(-1px); }
     .form-input-sm { font-size: 0.875rem; padding: 0.5rem 0.75rem; border-radius: 0.375rem; border: 1px solid var(--color-border); }
     .form-input-sm:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary); outline: none; }
-    .form-checkbox { border-radius: 0.25rem; border-color: var(--color-border); color: var(--color-primary); }
-    .form-checkbox:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary); }
-
-    .modern-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0 0.5rem;
-    }
-    .modern-table th {
-        padding: 0.75rem 1.5rem;
-        text-align: left;
-        font-size: 0.75rem;
-        color: var(--color-text-secondary);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    .modern-table th:hover { color: var(--color-text-primary); cursor: pointer; }
-    .modern-table tr.table-row {
-        background-color: var(--color-surface);
-        box-shadow: 0 1px 3px 0 rgba(0,0,0,0.07), 0 1px 2px -1px rgba(0,0,0,0.07);
-        transition: all 0.2s ease-in-out;
-    }
-    .modern-table tr.table-row:hover {
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
-        transform: translateY(-2px);
-    }
-    .modern-table td {
-        padding: 1rem 1.5rem;
-        vertical-align: middle;
-        font-size: 0.875rem;
-        color: var(--color-text-primary);
-    }
-    .modern-table td:first-child { border-top-left-radius: 0.5rem; border-bottom-left-radius: 0.5rem; }
-    .modern-table td:last-child { border-top-right-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
 
     .badge-pill {
         padding: 0.25rem 0.75rem;
@@ -89,15 +57,7 @@
     .priority-alta { background-color: #FEE2E2; color: #B91C1C; }
 </style>
 
-<div class.="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
-     x-data="{ 
-         selectedTickets: [], 
-         selectAll: false, 
-         allTicketIds: {{ $tickets->pluck('id')->toJson() }},
-         toggleSelectAll() {
-             this.selectedTickets = this.selectAll ? [ ...this.allTicketIds ] : [];
-         }
-     }">
+<div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
     <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
         <div>
@@ -161,107 +121,120 @@
             </div>
             <div class="flex items-center justify-end mt-4 space-x-2">
                 <a href="{{ route('tickets.index') }}" class="btn btn-sm bg-gray-200 text-gray-700 hover:bg-gray-300">Limpiar</a>
-                <button type..." class="btn btn-sm btn-primary">Filtrar</button>
+                <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
             </div>
         </form>
     </div>
 
-    <div x-show="selectedTickets.length > 0" x-transition
-         class="bg-blue-900 text-white p-4 rounded-xl shadow-lg mb-4 flex items-center justify-between" x-cloak>
-        <span class="font-semibold text-lg">
-            <span x-text="selectedTickets.length"></span> ticket(s) seleccionado(s)
-        </span>
-        <div class="flex items-center space-x-2">
-            <button class="btn btn-sm bg-blue-500 hover:bg-blue-400 text-white"><i class="fas fa-user-plus mr-2"></i> Asignar</button>
-            <button class="btn btn-sm bg-yellow-500 hover:bg-yellow-400 text-black"><i class="fas fa-exchange-alt mr-2"></i> Cambiar Estatus</button>
-            <button class="btn btn-sm bg-red-600 hover:bg-red-500 text-white"><i class="fas fa-trash-alt mr-2"></i> Eliminar</button>
-        </div>
-    </div>
-
-
-    <div class="overflow-x-auto">
-        <table class="modern-table">
-            <thead>
-                <tr>
-                    <th class="w-12">
-                        <input type="checkbox" class="form-checkbox"
-                               x-model="selectAll"
-                               @click="toggleSelectAll()">
-                    </th>
-                    <th>Ticket <i class="fas fa-sort-down ml-1 text-gray-300"></i></th>
-                    <th>Usuario</th>
-                    <th>Asignado a</th>
-                    <th>Estatus</th>
-                    <th>Prioridad</th>
-                    <th>Últ. Actividad</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($tickets as $ticket)
-                    <tr class="table-row">
-                        <td>
-                            <input type="checkbox" class="form-checkbox"
-                                   x-model="selectedTickets"
-                                   value="{{ $ticket->id }}">
-                        </td>
-                        
-                        <td>
-                            <a href="{{ route('tickets.show', $ticket) }}" class="font-semibold text-[var(--color-primary)] hover:underline">
-                                {{ $ticket->title }}
-                            </a>
-                            <div class="text-xs text-[var(--color-text-secondary)] font-mono">#{{ $ticket->id }}</div>
-                        </td>
-
-                        <td class="w-48">
-                            <div class="flex items-center space-x-2">
-                                <img src="https://ui-avatars.com/api/?name={{ urlencode($ticket->user->name) }}&color=2c3856&background=e8ecf7&size=32" alt="{{ $ticket->user->name }}" class="h-8 w-8 rounded-full">
-                                <span>{{ $ticket->user->name }}</span>
-                            </div>
-                        </td>
-
-                        <td class="w-48">
-                            @if($ticket->agent)
-                                <div class="flex items-center space-x-2">
-                                    @if ($ticket->agent->profile_photo_path)
-                                        <img src="{{ Storage::disk('s3')->url($ticket->agent->profile_photo_path) }}" alt="{{ $ticket->agent->name }}" class="h-8 w-8 rounded-full object-cover">
-                                    @else
-                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($ticket->agent->name) }}&color=e8ecf7&background=2c3856&size=32" alt="{{ $ticket->agent->name }}" class="h-8 w-8 rounded-full">
-                                    @endif
-                                    <span>{{ $ticket->agent->name }}</span>
-                                </div>
-                            @else
-                                <span class="italic text-gray-500">Sin asignar</span>
-                            @endif
-                        </td>
-                        
-                        <td class="w-48">
-                            <span class="badge-pill status-{{ strtolower(str_replace(' ', '-', $ticket->status)) }}">
-                                <span class..."dot"></span>
-                                {{ $ticket->status }}
-                            </span>
-                        </td>
-                        
-                        <td class="w-32">
-                            <span class="badge-pill priority-{{ strtolower($ticket->priority) }}">
-                                @if(strtolower($ticket->priority) == 'alta')
-                                    <i class="fas fa-fire-alt"></i>
-                                @elseif(strtolower($ticket->priority) == 'media')
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                @else
-                                    <i class="fas fa-check-circle"></i>
-                                @endif
-                                {{ $ticket->priority }}
-                            </span>
-                        </td>
-                        
-                        <td class="w-40 text-sm text-[var(--color-text-secondary)]">
-                            {{ $ticket->updated_at->diffForHumans() }}
-                        </td>
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ticket</th>
+                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Usuario</th>
+                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Asignado a</th>
+                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Estatus</th>
+                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Prioridad</th>
+                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Últ. Actividad</th>
+                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="8">
-                            <div class.="bg-white rounded-xl shadow-lg p-12 text-center">
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    @forelse ($tickets as $ticket)
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="p-4 whitespace-nowrap">
+                                <a href="{{ route('tickets.show', $ticket) }}" class="font-semibold text-[var(--color-primary)] hover:underline">
+                                    {{ $ticket->title }}
+                                </a>
+                                <div class="text-xs text-[var(--color-text-secondary)] font-mono">#{{ $ticket->id }}</div>
+                            </td>
+
+                            <td class="p-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-2">
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($ticket->user->name) }}&color=2c3856&background=e8ecf7&size=32" alt="{{ $ticket->user->name }}" class="h-8 w-8 rounded-full">
+                                    <span class="font-medium text-gray-800">{{ $ticket->user->name }}</span>
+                                </div>
+                            </td>
+
+                            <td class.="p-4 whitespace-nowrap">
+                                @if($ticket->agent)
+                                    <div class="flex items-center space-x-2">
+                                        @if ($ticket->agent->profile_photo_path)
+                                            <img src="{{ Storage::disk('s3')->url($ticket->agent->profile_photo_path) }}" alt="{{ $ticket->agent->name }}" class="h-8 w-8 rounded-full object-cover">
+                                        @else
+                                            <img src="https://ui-avatars.com/api/?name={{ urlencode($ticket->agent->name) }}&color=e8ecf7&background=2c3856&size=32" alt="{{ $ticket->agent->name }}" class="h-8 w-8 rounded-full">
+                                        @endif
+                                        <span class="font-medium text-gray-800">{{ $ticket->agent->name }}</span>
+                                    </div>
+                                @else
+                                    <span class="italic text-gray-500">Sin asignar</span>
+                                @endif
+                            </td>
+                            
+                            <td class="p-4 whitespace-nowrap">
+                                <span class="badge-pill status-{{ strtolower(str_replace(' ', '-', $ticket->status)) }}">
+                                    <span class="dot"></span>
+                                    {{ $ticket->status }}
+                                </span>
+                            </td>
+                            
+                            <td class="p-4 whitespace-nowrap">
+                                <span class="badge-pill priority-{{ strtolower($ticket->priority) }}">
+                                    @if(strtolower($ticket->priority) == 'alta')
+                                        <i class="fas fa-fire-alt opacity-70"></i>
+                                    @elseif(strtolower($ticket->priority) == 'media')
+                                        <i class="fas fa-exclamation-triangle opacity-70"></i>
+                                    @else
+                                        <i class="fas fa-check-circle opacity-70"></i>
+                                    @endif
+                                    {{ $ticket->priority }}
+                                </span>
+                            </td>
+                            
+                            <td class="p-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
+                                {{ $ticket->updated_at->diffForHumans() }}
+                            </td>
+                            
+                            <td class="p-4 whitespace-nowrap text-sm font-medium">
+                                <div x-data="{ open: false }" class="relative">
+                                    <button @click="open = !open" class="text-gray-400 hover:text-gray-600 rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)]">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <div x-show="open"
+                                         @click.away="open = false"
+                                         x-transition:enter="transition ease-out duration-100"
+                                         x-transition:enter-start="opacity-0 scale-95"
+                                         x-transition:enter-end="opacity-100 scale-100"
+                                         x-transition:leave="transition ease-in duration-75"
+                                         x-transition:leave-start="opacity-100 scale-100"
+                                         x-transition:leave-end="opacity-0 scale-95"
+                                         class="absolute z-10 right-0 w-48 mt-2 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                         x-cloak>
+                                        <div class="py-1" role="menu" aria-orientation="vertical">
+                                            <a href="{{ route('tickets.show', $ticket) }}" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                                <i class="fas fa-eye w-5 mr-2 text-gray-400"></i> Ver Ticket
+                                            </a>
+                                            @if(Auth::user()->isSuperAdmin())
+                                            <a href="#" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                                <i class="fas fa-user-plus w-5 mr-2 text-gray-400"></i> Reasignar
+                                            </a>
+                                            <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este ticket permanentemente?');" class="w-full">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50" role="menuitem">
+                                                    <i class...="fas fa-trash-alt w-5 mr-2 text-red-400"></i> Eliminar
+                                                </button>
+                                            </form>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="8" class="text-center p-12">
                                 <i class="fas fa-ticket-alt text-6xl text-gray-300 mb-4"></i>
                                 <h3 class="text-xl font-semibold text-gray-700">No se encontraron tickets</h3>
                                 <p class="text-gray-500 mt-2">
@@ -273,16 +246,15 @@
                                         <a href="{{ route('tickets.create') }}" class="text-blue-600 hover:underline">crear un nuevo ticket</a>.
                                     @endif
                                 </p>
-                            </div>
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    <div class="mt-8">
-        {!! $tickets->links() !!}
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="p-4 bg-gray-50 border-t">
+            {!! $tickets->links() !!}
+        </div>
     </div>
 </div>
 @endsection
