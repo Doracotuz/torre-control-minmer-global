@@ -516,4 +516,28 @@ class WMSInventoryController extends Controller
         return view('wms.inventory.adjustments.index', compact('adjustments'));
     }
 
+    public function apiFindLpn(Request $request)
+    {
+        $request->validate(['lpn' => 'required|string']);
+
+        $sanitizedLpn = preg_replace('/[^A-Z0-9]/', '', strtoupper($request->lpn));
+
+        $pallet = \App\Models\WMS\Pallet::where('lpn', $sanitizedLpn)
+            ->with([
+                'location',
+                'user',
+                'purchaseOrder:id,po_number',
+                'items.product:id,sku,name',
+                'items.quality:id,name'
+            ])
+            ->first();
+
+        if (!$pallet) {
+            return response()->json(['error' => 'LPN no encontrado.'], 404);
+        }
+
+        return response()->json($pallet);
+    }
+}    
+
 }

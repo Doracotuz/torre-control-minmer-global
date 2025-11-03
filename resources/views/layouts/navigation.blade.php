@@ -31,9 +31,6 @@
         isMobileSuperAdminMenuOpen: {{ request()->routeIs('admin.*') ? 'true' : 'false' }},
         isMobileAreaAdminMenuOpen: {{ request()->routeIs('area_admin.*') ? 'true' : 'false' }},
         
-        isMobileWmsOpen: {{ request()->routeIs('wms.*') ? 'true' : 'false' }},
-        isMobileWmsInventoryOpen: {{ request()->routeIs('wms.inventory.*', 'wms.physical-counts.*') ? 'true' : 'false' }},
-        isMobileWmsCatalogsOpen: {{ request()->routeIs('wms.products.*', 'wms.locations.*', 'wms.warehouses.*', 'wms.brands.*', 'wms.qualities.*', 'wms.product-types.*', 'wms.lpns.*') ? 'true' : 'false' }}
      }"
 x-init="$watch('search', value => {
     clearTimeout(timeout);
@@ -326,59 +323,10 @@ x-init="$watch('search', value => {
                 @endcan
 
                 @if (Auth::check() && !Auth::user()->is_client && in_array(Auth::user()->area?->name, ['Administración', 'Almacén']))
-                    <div class="pt-2">
-                        <button @click="isMobileWmsOpen = !isMobileWmsOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
-                            <span class="font-semibold">WMS</span>
-                            <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileWmsOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-                        </button>
-                        
-                        <div x-show="isMobileWmsOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
-                            
-                            <x-responsive-nav-link :href="route('wms.reports.index')" :active="request()->routeIs('wms.reports.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                                Reportes
-                            </x-responsive-nav-link>
-
-                            {{-- Sub-desplegable Inventario --}}
-                            <div class="pt-1">
-                                <button @click="isMobileWmsInventoryOpen = !isMobileWmsInventoryOpen" class="flex items-center justify-between w-full pl-3 pr-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
-                                    <span>Inventario</span>
-                                    <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileWmsInventoryOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-                                </button>
-                                <div x-show="isMobileWmsInventoryOpen" class="mt-1 space-y-1 pl-4 border-l-2 border-gray-500 ml-4">
-                                    <x-responsive-nav-link :href="route('wms.inventory.index')" :active="request()->routeIs('wms.inventory.index')" class="text-white ...">Vista General</x-responsive-nav-link>
-                                    <x-responsive-nav-link :href="route('wms.inventory.adjustments.log')" :active="request()->routeIs('wms.inventory.adjustments.log')" class="text-white ...">Registro de Ajustes</x-responsive-nav-link>
-                                    <x-responsive-nav-link :href="route('wms.physical-counts.index')" :active="request()->routeIs('wms.physical-counts.*')" class="text-white ...">Conteos Físicos</x-responsive-nav-link>
-                                </div>
-                            </div>
-                            
-                            <x-responsive-nav-link :href="route('wms.purchase-orders.index')" :active="request()->routeIs('wms.purchase-orders.*')" class="text-white ...">
-                                Entradas (PO)
-                            </x-responsive-nav-link>
-                            <x-responsive-nav-link :href="route('wms.sales-orders.index')" :active="request()->routeIs('wms.sales-orders.*', 'wms.picking.*')" class="text-white ...">
-                                Salidas (SO)
-                            </x-responsive-nav-link>
-
-                            <div class="!my-3 border-t border-gray-600/50"></div>
-
-                            {{-- Sub-desplegable Catálogos --}}
-                             <div class="pt-1">
-                                <button @click="isMobileWmsCatalogsOpen = !isMobileWmsCatalogsOpen" class="flex items-center justify-between w-full pl-3 pr-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
-                                    <span>Catálogos</span>
-                                    <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileWmsCatalogsOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-                                </button>
-                                <div x-show="isMobileWmsCatalogsOpen" class="mt-1 space-y-1 pl-4 border-l-2 border-gray-500 ml-4">
-                                    <x-responsive-nav-link :href="route('wms.products.index')" :active="request()->routeIs('wms.products.*')" class="text-white ...">Productos</x-responsive-nav-link>
-                                    <x-responsive-nav-link :href="route('wms.locations.index')" :active="request()->routeIs('wms.locations.*')" class="text-white ...">Ubicaciones</x-responsive-nav-link>
-                                    <x-responsive-nav-link :href="route('wms.warehouses.index')" :active="request()->routeIs('wms.warehouses.*')" class="text-white ...">Almacenes</x-responsive-nav-link>
-                                    <x-responsive-nav-link :href="route('wms.brands.index')" :active="request()->routeIs('wms.brands.*')" class="text-white ...">Marcas</x-responsive-nav-link>
-                                    <x-responsive-nav-link :href="route('wms.qualities.index')" :active="request()->routeIs('wms.qualities.*')" class="text-white ...">Calidades</x-responsive-nav-link>
-                                    <x-responsive-nav-link :href="route('wms.product-types.index')" :active="request()->routeIs('wms.product-types.*')" class="text-white ...">Tipos de Producto</x-responsive-nav-link>
-                                    <x-responsive-nav-link :href="route('wms.lpns.index')" :active="request()->routeIs('wms.lpns.*')" class="text-white ...">Generador de LPNs</x-responsive-nav-link>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif   
+                    <x-responsive-nav-link :href="route('wms.dashboard')" :active="request()->routeIs('wms.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        {{ __('WMS') }}
+                    </x-responsive-nav-link>
+                @endif
 
                 @if(Auth::user()->is_area_admin && in_array(Auth::user()->area?->name, ['Recursos Humanos', 'Innovación y Desarrollo']))
                     <x-responsive-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">

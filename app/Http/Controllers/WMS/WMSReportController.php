@@ -16,6 +16,7 @@ use App\Models\Product;
 use Carbon\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Log;
+use App\Models\WMS\Quality;
 
 class WMSReportController extends Controller
 {
@@ -138,7 +139,7 @@ class WMSReportController extends Controller
 
         $availableCommitted = [
             'names' => $availableCommittedData->pluck('product.sku')->toArray(),
-            'available' => $availableCommittedData->map(fn($item) => max(0, $item->total_physical - $item->total_committed))->toArray(), // Asegurar no negativos
+            'available' => $availableCommittedData->map(fn($item) => max(0, $item->total_physical - $item->total_committed))->toArray(),
             'committed' => $availableCommittedData->pluck('total_committed')->toArray(),
         ];
 
@@ -370,5 +371,453 @@ class WMSReportController extends Controller
 
             return new StreamedResponse($callback, 200, $headers);
         }
+
+
+    public function showAgingReport(Request $request)
+    {
+        $query = PalletItem::where('quantity', '>', 0)
+            ->with([
+                'product:id,sku,name',
+                'quality:id,name',
+                'pallet.location:id,code',
+                'pallet.purchaseOrder:id,po_number'
+            ])
+            ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
+            ->select('pallet_items.*', DB::raw('DATEDIFF(NOW(), pallets.created_at) as age_in_days'));
+
+        if ($request->filled('sku')) {
+            $sku = $request->sku;
+            $query->whereHas('product', fn($q) => $q->where('sku', 'like', "%{$sku}%"));
+        }
+        if ($request->filled('lpn')) {
+            $lpn = $request->lpn;
+            $query->whereHas('pallet', fn($q) => $q->where('lpn', 'like', "%{$lpn}%"));
+        }
+        if ($request->filled('age_bucket')) {
+            switch ($request->age_bucket) {
+                case '0-30':
+                    $query->whereRaw('DATEDIFF(NOW(), pallets.created_at) <= 30');
+                    break;
+                case '31-60':
+                    $query->whereRaw('DATEDIFF(NOW(), pallets.created_at) BETWEEN 31 AND 60');
+                    break;
+                case '61-90':
+                    $query->whereRaw('DATEDIFF(NOW(), pallets.created_at) BETWEEN 61 AND 90');
+                    break;
+                case '90+':
+                    $query->whereRaw('DATEDIFF(NOW(), pallets.created_at) > 90');
+                    break;
+            }
+        }
+
+        $agingItems = $query->orderBy('age_in_days', 'desc')
+                            ->paginate(50)
+                            ->withQueryString();
+
+        return view('wms.reports.inventory-aging', compact('agingItems'));
+    }
+
+    public function exportAgingReport(Request $request)
+    {
+        $fileName = 'reporte_antiguedad_inventario_' . date('Y-m-d') . '.csv';
+
+        $callback = function() use ($request) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($file, [
+                'LPN', 'SKU', 'Producto', 'Calidad', 'Cantidad',
+                'Ubicacion', 'PO Origen', 'Fecha Recepcion', 'Dias Antiguedad'
+            ]);
+
+            $query = PalletItem::where('quantity', '>', 0)
+                ->with([
+                    'product:id,sku,name',
+                    'quality:id,name',
+                    'pallet.location:id,code',
+                    'pallet.purchaseOrder:id,po_number'
+                ])
+                ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
+                ->select('pallet_items.*', DB::raw('DATEDIFF(NOW(), pallets.created_at) as age_in_days'));
+
+            if ($request->filled('sku')) {
+                $sku = $request->sku;
+                $query->whereHas('product', fn($q) => $q->where('sku', 'like', "%{$sku}%"));
+            }
+            if ($request->filled('lpn')) {
+                $lpn = $request->lpn;
+                $query->whereHas('pallet', fn($q) => $q->where('lpn', 'like', "%{$lpn}%"));
+            }
+            if ($request->filled('age_bucket')) {
+                 switch ($request->age_bucket) {
+                    case '0-30': $query->whereRaw('DATEDIFF(NOW(), pallets.created_at) <= 30'); break;
+                    case '31-60': $query->whereRaw('DATEDIFF(NOW(), pallets.created_at) BETWEEN 31 AND 60'); break;
+                    case '61-90': $query->whereRaw('DATEDIFF(NOW(), pallets.created_at) BETWEEN 61 AND 90'); break;
+                    case '90+': $query->whereRaw('DATEDIFF(NOW(), pallets.created_at) > 90'); break;
+                }
+            }
+
+            $query->orderBy('age_in_days', 'desc')
+                ->chunk(500, function ($items) use ($file) {
+                    foreach ($items as $item) {
+                        fputcsv($file, [
+                            $item->pallet->lpn ?? 'N/A',
+                            $item->product->sku ?? 'N/A',
+                            $item->product->name ?? 'N/A',
+                            $item->quality->name ?? 'N/A',
+                            $item->quantity,
+                            $item->pallet->location->code ?? 'N/A',
+                            $item->pallet->purchaseOrder->po_number ?? 'N/A',
+                            $item->pallet->created_at->format('Y-m-d'),
+                            $item->age_in_days,
+                        ]);
+                    }
+                });
+
+            fclose($file);
+        };
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        return new StreamedResponse($callback, 200, $headers);
+    }
+    
+    public function showNonAvailableReport(Request $request)
+    {
+        $availableQualityName = 'Disponible';
+
+        $availableQuality = Quality::where('name', $availableQualityName)->first();
+        $availableQualityId = $availableQuality ? $availableQuality->id : -1;
+
+        $query = PalletItem::where('quantity', '>', 0)
+            ->where('quality_id', '!=', $availableQualityId)
+            ->with([
+                'product:id,sku,name',
+                'quality:id,name',
+                'pallet.location:id,code',
+                'pallet.purchaseOrder:id,po_number'
+            ]);
+
+        if ($request->filled('sku')) {
+            $sku = $request->sku;
+            $query->whereHas('product', fn($q) => $q->where('sku', 'like', "%{$sku}%"));
+        }
+        if ($request->filled('lpn')) {
+            $lpn = $request->lpn;
+            $query->whereHas('pallet', fn($q) => $q->where('lpn', 'like', "%{$lpn}%"));
+        }
+        if ($request->filled('quality_id')) {
+            $query->where('quality_id', $request->quality_id);
+        }
+
+        $nonAvailableItems = $query->orderBy('quality_id')
+                                   ->latest('updated_at')
+                                   ->paginate(50)
+                                   ->withQueryString();
+
+        $qualities = Quality::where('name', '!=', $availableQualityName)->orderBy('name')->get();
+
+        return view('wms.reports.non-available-inventory', compact('nonAvailableItems', 'qualities'));
+    }
+
+    public function exportNonAvailableReport(Request $request)
+    {
+        $fileName = 'reporte_inventario_no_disponible_' . date('Y-m-d') . '.csv';
+
+        $callback = function() use ($request) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($file, [
+                'LPN', 'SKU', 'Producto', 'Calidad', 'Cantidad',
+                'Ubicacion', 'PO Origen', 'Fecha Recepcion', 'Ultima Actualizacion'
+            ]);
+
+            $availableQualityName = 'Disponible';
+            $availableQuality = Quality::where('name', $availableQualityName)->first();
+            $availableQualityId = $availableQuality ? $availableQuality->id : -1;
+
+            $query = PalletItem::where('quantity', '>', 0)
+                ->where('quality_id', '!=', $availableQualityId)
+                ->with([
+                    'product:id,sku,name',
+                    'quality:id,name',
+                    'pallet.location:id,code',
+                    'pallet.purchaseOrder:id,po_number'
+                ]);
+
+            if ($request->filled('sku')) {
+                $sku = $request->sku;
+                $query->whereHas('product', fn($q) => $q->where('sku', 'like', "%{$sku}%"));
+            }
+            if ($request->filled('lpn')) {
+                $lpn = $request->lpn;
+                $query->whereHas('pallet', fn($q) => $q->where('lpn', 'like', "%{$lpn}%"));
+            }
+            if ($request->filled('quality_id')) {
+                $query->where('quality_id', $request->quality_id);
+            }
+
+            $query->orderBy('quality_id')
+                ->latest('updated_at')
+                ->chunk(500, function ($items) use ($file) {
+                    foreach ($items as $item) {
+                        fputcsv($file, [
+                            $item->pallet->lpn ?? 'N/A',
+                            $item->product->sku ?? 'N/A',
+                            $item->product->name ?? 'N/A',
+                            $item->quality->name ?? 'N/A',
+                            $item->quantity,
+                            $item->pallet->location->code ?? 'N/A',
+                            $item->pallet->purchaseOrder->po_number ?? 'N/A',
+                            $item->pallet->created_at->format('Y-m-d'),
+                            $item->updated_at->format('Y-m-d H:i'),
+                        ]);
+                    }
+                });
+
+            fclose($file);
+        };
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        return new StreamedResponse($callback, 200, $headers);
+    }
+
+    public function showAbcAnalysis(Request $request)
+    {
+        $days = $request->input('days', 90);
+        $startDate = Carbon::now()->subDays($days);
+
+        $analysisData = $this->getAbcAnalysisData($startDate);
+
+        $matrix = [
+            'AX' => $analysisData->where('volume_class', 'A')->where('freq_class', 'X')->count(),
+            'AY' => $analysisData->where('volume_class', 'A')->where('freq_class', 'Y')->count(),
+            'AZ' => $analysisData->where('volume_class', 'A')->where('freq_class', 'Z')->count(),
+            'BX' => $analysisData->where('volume_class', 'B')->where('freq_class', 'X')->count(),
+            'BY' => $analysisData->where('volume_class', 'B')->where('freq_class', 'Y')->count(),
+            'BZ' => $analysisData->where('volume_class', 'B')->where('freq_class', 'Z')->count(),
+            'CX' => $analysisData->where('volume_class', 'C')->where('freq_class', 'X')->count(),
+            'CY' => $analysisData->where('volume_class', 'C')->where('freq_class', 'Y')->count(),
+            'CZ' => $analysisData->where('volume_class', 'C')->where('freq_class', 'Z')->count(),
+        ];
+
+        return view('wms.reports.abc-analysis', [
+            'analysisData' => $analysisData,
+            'matrix' => $matrix,
+            'days' => $days
+        ]);
+    }
+
+    public function exportAbcAnalysis(Request $request)
+    {
+        $days = $request->input('days', 90);
+        $startDate = Carbon::now()->subDays($days);
+        $fileName = 'reporte_abc_xyz_' . date('Y-m-d') . '.csv';
+
+        $analysisData = $this->getAbcAnalysisData($startDate);
+
+        $callback = function() use ($analysisData) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($file, [
+                'SKU', 'Producto', 
+                'Clase Volumen', 'Volumen Total (Uds)', '% Acum. Volumen',
+                'Clase Frecuencia', 'Total Picks', '% Acum. Frecuencia',
+                'Clase ABC-XYZ'
+            ]);
+
+            foreach ($analysisData as $item) {
+                fputcsv($file, [
+                    $item->sku,
+                    $item->name,
+                    $item->volume_class,
+                    $item->total_volume,
+                    round($item->volume_cum_perc * 100, 2) . '%',
+                    $item->freq_class,
+                    $item->total_frequency,
+                    round($item->freq_cum_perc * 100, 2) . '%',
+                    $item->abc_class
+                ]);
+            }
+            fclose($file);
+        };
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+        return new StreamedResponse($callback, 200, $headers);
+    }
+
+    private function getAbcAnalysisData(Carbon $startDate)
+    {
+        $volumeData = Product::join('inventory_stocks', 'products.id', '=', 'inventory_stocks.product_id')
+            ->select('products.id', 'products.sku', 'products.name', DB::raw('SUM(inventory_stocks.quantity) as total_volume'))
+            ->where('inventory_stocks.quantity', '>', 0)
+            ->groupBy('products.id', 'products.sku', 'products.name')
+            ->get()
+            ->keyBy('id');
+
+        $frequencyData = StockMovement::select('product_id', DB::raw('COUNT(id) as total_frequency'))
+            ->where('quantity', '<', 0)
+            ->whereIn('movement_type', ['SALIDA-PICKING', 'AJUSTE-MANUAL', 'SPLIT-OUT']) //
+            ->where('created_at', '>=', $startDate)
+            ->groupBy('product_id')
+            ->get()
+            ->keyBy('product_id');
+
+        $combinedData = $volumeData->map(function ($item) use ($frequencyData) {
+            $freq = $frequencyData->get($item->id);
+            return (object)[
+                'id' => $item->id,
+                'sku' => $item->sku,
+                'name' => $item->name,
+                'total_volume' => (int) $item->total_volume,
+                'total_frequency' => $freq ? (int) $freq->total_frequency : 0,
+            ];
+        });
+
+        $totalVolume = $combinedData->sum('total_volume');
+        $runningVolume = 0;
+        $classifiedByVolume = $combinedData->sortByDesc('total_volume')->map(function ($item) use ($totalVolume, &$runningVolume) {
+            $runningVolume += $item->total_volume;
+            $cumPerc = ($totalVolume > 0) ? $runningVolume / $totalVolume : 0;
+            $item->volume_cum_perc = $cumPerc;
+
+            if ($cumPerc <= 0.80) $item->volume_class = 'A';
+            elseif ($cumPerc <= 0.95) $item->volume_class = 'B';
+            else $item->volume_class = 'C';
+            
+            return $item;
+        });
+
+        $totalFrequency = $combinedData->sum('total_frequency');
+        $runningFreq = 0;
+        $finalData = $classifiedByVolume->sortByDesc('total_frequency')->map(function ($item) use ($totalFrequency, &$runningFreq) {
+            $runningFreq += $item->total_frequency;
+            $cumPerc = ($totalFrequency > 0) ? $runningFreq / $totalFrequency : 0;
+            $item->freq_cum_perc = $cumPerc;
+
+            if ($cumPerc <= 0.80) $item->freq_class = 'X';
+            elseif ($cumPerc <= 0.95) $item->freq_class = 'Y';
+            else $item->freq_class = 'Z';
+            
+            $item->abc_class = $item->volume_class . $item->freq_class;
+            return $item;
+        });
+
+        return $finalData->sortBy('abc_class');
+    }
+
+    public function showSlottingHeatmap(Request $request)
+    {
+        $days = $request->input('days', 90);
+        $startDate = Carbon::now()->subDays($days);
+        
+        $abcData = $this->getAbcAnalysisData($startDate)->keyBy('id');
+
+        $locationPickFreq = StockMovement::select('location_id', DB::raw('COUNT(id) as pick_frequency'))
+            ->where('quantity', '<', 0)
+            ->where('movement_type', 'SALIDA-PICKING')
+            ->where('created_at', '>=', $startDate)
+            ->whereNotNull('location_id')
+            ->groupBy('location_id')
+            ->get()
+            ->keyBy('location_id');
+            
+        $maxFreq = $locationPickFreq->max('pick_frequency') ?: 1;
+
+        $stockInLocations = PalletItem::where('quantity', '>', 0)
+            ->with([
+                'product:id,sku,name',
+                'quality:id,name',
+                'pallet:id,lpn,location_id,created_at'
+            ])
+            ->whereHas('pallet.location', fn($q) => $q->whereIn('type', ['storage', 'picking']))
+            ->get()
+            ->groupBy('pallet.location_id');
+
+        $locations = Location::whereIn('type', ['storage', 'picking'])
+            ->orderBy('aisle')
+            ->orderBy('rack')
+            ->orderBy('shelf')
+            ->orderBy('bin')
+            ->get();
+
+        $heatmapData = [];
+        foreach ($locations as $loc) {
+            $locStock = $stockInLocations->get($loc->id, collect());
+            $locFreqData = $locationPickFreq->get($loc->id);
+            $locFreq = $locFreqData ? $locFreqData->pick_frequency : 0;
+            $dominantStock = $locStock->sortByDesc('quantity')->first();
+            $productClass = null;
+            $mismatchScore = 0;
+            $mismatchMessage = 'Ubicación vacía o sin picks.';
+
+            if ($dominantStock) {
+                $productAbc = $abcData->get($dominantStock->product_id);
+                $productClass = $productAbc ? $productAbc->abc_class : 'N/A';
+                
+                $isFastProduct = str_contains($productClass, 'A') || str_contains($productClass, 'X');
+                $isSlowProduct = str_contains($productClass, 'C') || str_contains($productClass, 'Z');
+                $isFastLocation = $locFreq > ($maxFreq * 0.5);
+
+                if ($isFastProduct && $isFastLocation) {
+                    $mismatchScore = 10;
+                    $mismatchMessage = 'Ideal: Producto rápido en ubicación rápida.';
+                } elseif ($isFastProduct && !$isFastLocation) {
+                    $mismatchScore = -5;
+                    $mismatchMessage = 'Error: Producto rápido en ubicación lenta.';
+                } elseif ($isSlowProduct && $isFastLocation) {
+                    $mismatchScore = -10;
+                    $mismatchMessage = 'Error Crítico: Producto lento en ubicación de picking rápido.';
+                } elseif ($isSlowProduct && !$isFastLocation) {
+                    $mismatchScore = 5;
+                    $mismatchMessage = 'Correcto: Producto lento en ubicación lenta.';
+                } else {
+                    $mismatchScore = 1;
+                    $mismatchMessage = 'Producto de media rotación en ubicación media.';
+                }
+            }
+            
+            $heatmapData[] = (object)[
+                'id' => $loc->id,
+                'code' => $loc->code,
+                'full_location' => "{$loc->aisle}-{$loc->rack}-{$loc->shelf}-{$loc->bin}",
+                'aisle' => $loc->aisle,
+                'pick_frequency' => $locFreq,
+                'pick_intensity' => ($locFreq / $maxFreq) * 100,
+                'product_class' => $productClass,
+                'mismatch_score' => $mismatchScore,
+                'mismatch_message' => $mismatchMessage,
+                'stock_items' => $locStock
+            ];
+        }
+
+        $groupedHeatmapData = collect($heatmapData)->groupBy('aisle');
+
+        return view('wms.reports.slotting-heatmap', [
+            'heatmapData' => $groupedHeatmapData,
+            'days' => $days
+        ]);
+    }
 
 }

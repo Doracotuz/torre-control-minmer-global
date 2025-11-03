@@ -55,6 +55,7 @@ use App\Http\Controllers\WMS\WMSWarehouseController;
 use App\Http\Controllers\WMS\WMSReceivingController;
 use App\Http\Controllers\WMS\WMSLpnController;
 use App\Http\Controllers\WMS\WMSQualityController;
+use App\Http\Controllers\WMS\WMSDashboardController;
 
 
 Route::get('/terms-conditions', function () {
@@ -660,6 +661,8 @@ Route::middleware(['auth'])->prefix('projects')->name('projects.')->group(functi
 });
 
 Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
+    Route::get('/dashboard', [WMSDashboardController::class, 'index'])->name('dashboard');    
+    Route::get('/api/find-lpn', [WMSInventoryController::class, 'apiFindLpn'])->name('api.find-lpn');
     Route::resource('brands', WMSBrandController::class);
     Route::resource('product-types', WMSProductTypeController::class);
     Route::get('products/export-csv', [WMSProductController::class, 'exportCsv'])->name('products.export-csv');
@@ -726,6 +729,13 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::get('lpns/template', [WMSLpnController::class, 'downloadTemplate'])->name('lpns.template');
     Route::get('reports/stock-movements', [WMSReportController::class, 'showStockMovements'])->name('reports.stock-movements');
     Route::get('reports/stock-movements/export', [WMSReportController::class, 'exportStockMovements'])->name('reports.stock-movements.export');
+    Route::get('reports/inventory-aging', [WMSReportController::class, 'showAgingReport'])->name('reports.inventory-aging');
+    Route::get('reports/inventory-aging/export', [WMSReportController::class, 'exportAgingReport'])->name('reports.inventory-aging.export');
+    Route::get('reports/non-available-inventory', [WMSReportController::class, 'showNonAvailableReport'])->name('reports.non-available-inventory');
+    Route::get('reports/non-available-inventory/export', [WMSReportController::class, 'exportNonAvailableReport'])->name('reports.non-available-inventory.export');
+    Route::get('reports/abc-analysis', [WMSReportController::class, 'showAbcAnalysis'])->name('reports.abc-analysis');
+    Route::get('reports/abc-analysis/export', [WMSReportController::class, 'exportAbcAnalysis'])->name('reports.abc-analysis.export');  
+    Route::get('reports/slotting-heatmap', [WMSReportController::class, 'showSlottingHeatmap'])->name('reports.slotting-heatmap');    
 
 });
 
