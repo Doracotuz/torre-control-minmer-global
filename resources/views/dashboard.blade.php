@@ -1,4 +1,6 @@
 <x-app-layout>
+    <x-slot name="header">
+    </x-slot>    
     <style>
         @keyframes fade-in-up {
             from { opacity: 0; transform: translateY(20px); }
