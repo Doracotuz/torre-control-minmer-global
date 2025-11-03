@@ -10,17 +10,16 @@
         --color-text-secondary: #666666;
         --color-surface: #ffffff;
         --color-background: #f3f4f6;
-        --color-success: #10B981;      /* Baja */
-        --color-danger: #EF4444;       /* Alta */
-        --color-warning: #F59E0B;     /* Media */
-        --color-info: #3B82F6;        /* En Proceso */
-        --color-pending: #A855F7;     /* Pendiente de Aprobación */
-        --color-closed: #6B7280;      /* Cerrado */
+        --color-success: #10B981;
+        --color-danger: #EF4444;
+        --color-warning: #F59E0B;
+        --color-info: #3B82F6;
+        --color-pending: #A855F7;
+        --color-closed: #6B7280;
         --color-border: #e5e7eb;
     }
     body { background-color: var(--color-background); }
 
-    /* Estilos de Insignia de Estado */
     .badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; display: inline-flex; align-items: center; }
     .badge-dot { width: 6px; height: 6px; border-radius: 9999px; margin-right: 6px; }
     
@@ -40,7 +39,6 @@
     .badge-cerrado { background-color: #f3f4f6; color: #4b5563; }
     .badge-cerrado .badge-dot { background-color: var(--color-closed); }
 
-    /* Colores de Borde de Prioridad para las Tarjetas */
     .priority-baja { border-left-color: var(--color-success); }
     .priority-media { border-left-color: var(--color-warning); }
     .priority-alta { border-left-color: var(--color-danger); }
@@ -55,7 +53,6 @@
     .form-input-sm { font-size: 0.875rem; padding: 0.5rem 0.75rem; border-radius: 0.375rem; border: 1px solid var(--color-border); }
     .form-input-sm:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary); outline: none; }
 
-    /* Estilos de Tarjeta */
     .ticket-card {
         background-color: var(--color-surface);
         border-radius: 0.5rem;
@@ -79,11 +76,17 @@
             <p class="text-lg text-[var(--color-text-secondary)] mt-1">Gestiona todas las solicitudes de TI en un solo lugar.</p>
         </div>
         <div class="flex items-center space-x-2 mt-4 sm:mt-0 flex-shrink-0">
+            
             @if(in_array(Auth::user()->area?->name, ['Administración', 'Innovación y Desarrollo']))
                 <a href="{{ route('tickets.dashboard') }}" class="btn bg-white text-[var(--color-primary)] border border-gray-300 hover:bg-gray-50">
                     <i class="fas fa-chart-bar mr-2"></i> Indicadores
                 </a>
+                
+                <a href="{{ route('asset-management.dashboard') }}" class="btn bg-white text-[var(--color-primary)] border border-gray-300 hover:bg-gray-50">
+                    <i class="fas fa-desktop mr-2"></i> Activos
+                </a>
             @endif
+
             <a href="{{ route('tickets.create') }}" class="btn btn-accent">
                 <i class="fas fa-plus mr-2"></i> Crear Ticket
             </a>
