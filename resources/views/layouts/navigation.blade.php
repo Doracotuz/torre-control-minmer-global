@@ -380,7 +380,7 @@ x-init="$watch('search', value => {
                     </div>
                 @endif   
 
-                @if(Auth::user()->is_area_admin && Auth::user()->area?->name === 'Recursos Humanos')
+                @if(Auth::user()->is_area_admin && in_array(Auth::user()->area?->name, ['Recursos Humanos', 'Innovación y Desarrollo']))
                     <x-responsive-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                         {{ __('Organigrama') }}
                     </x-responsive-nav-link>
