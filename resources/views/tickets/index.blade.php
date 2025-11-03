@@ -2,6 +2,10 @@
 
 @section('content')
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=Raleway:wght@700;800&display=swap" rel="stylesheet">
+
 <style>
     :root {
         --color-primary: #2c3856;
@@ -11,23 +15,40 @@
         --color-surface: #ffffff;
         --color-background: #f3f4f6;
         --color-border: #e5e7eb;
-        --color-priority-baja: #10B981;
-        --color-priority-media: #F59E0B;
+        --font-heading: 'Raleway', sans-serif;
+        --font-body: 'Montserrat', sans-serif;
+        --color-status-abierto-bg: #e0e7ff;
+        --color-status-abierto-text: #3730a3;
+        --color-status-proceso-bg: #f3e8ff;
+        --color-status-proceso-text: #7e22ce;
+        --color-status-pendiente-bg: #fffbeb;
+        --color-status-pendiente-text: #b45309;
+        --color-status-cerrado-bg: #f3f4f6;
+        --color-status-cerrado-text: #4b5563;
         --color-priority-alta: #EF4444;
-        --color-status-abierto: #3B82F6;
-        --color-status-proceso: #A855F7;
-        --color-status-pendiente: #F59E0B;
-        --color-status-cerrado: #6B7280;
+        --color-priority-media: #F59E0B;
+        --color-priority-baja: #10B981;
     }
-    body { background-color: var(--color-background); }
+
+    body {
+        background-color: var(--color-background);
+        font-family: var(--font-body);
+        color: var(--color-text-primary);
+    }
     
-    .btn { padding: 0.65rem 1.25rem; border-radius: 0.5rem; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; transition: all 0.2s ease; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
+    .btn { padding: 0.65rem 1.25rem; border-radius: 0.5rem; font-weight: 600; font-family: var(--font-body); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; transition: all 0.2s ease; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
     .btn-sm { padding: 0.5rem 1rem; font-size: 0.7rem; }
+    
     .btn-accent { background-color: var(--color-accent); color: var(--color-primary); }
-    .btn-accent:hover { background-color: #ffb03a; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transform: translateY(-1px); }
+    .btn-accent:hover { background-color: #ffb03a; box-shadow: 0 4px 10px -3px rgba(255,156,0,0.4); transform: translateY(-2px); }
+    
     .btn-primary { background-color: var(--color-primary); color: var(--color-surface); }
-    .btn-primary:hover { background-color: #1e263b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transform: translateY(-1px); }
-    .form-input-sm { font-size: 0.875rem; padding: 0.5rem 0.75rem; border-radius: 0.375rem; border: 1px solid var(--color-border); }
+    .btn-primary:hover { background-color: #1e263b; box-shadow: 0 4px 10px -3px rgba(44,56,86,0.4); transform: translateY(-2px); }
+    
+    .btn-secondary { background-color: var(--color-surface); color: var(--color-text-secondary); border: 1px solid var(--color-border); }
+    .btn-secondary:hover { background-color: #f9fafb; border-color: #d1d5db; }
+    
+    .form-input-sm { font-family: var(--font-body); font-size: 0.875rem; padding: 0.5rem 0.75rem; border-radius: 0.375rem; border: 1px solid var(--color-border); }
     .form-input-sm:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary); outline: none; }
 
     .badge-pill {
@@ -39,20 +60,59 @@
         align-items: center;
         gap: 0.375rem;
     }
-    
-    .status-abierto { background-color: #DBEAFE; color: #1D4ED8; }
-    .status-abierto .dot { background-color: var(--color-status-abierto); }
-    .status-en-proceso { background-color: #F3E8FF; color: #7E22CE; }
-    .status-en-proceso .dot { background-color: var(--color-status-proceso); }
-    .status-pendiente-de-aprobación { background-color: #FEF3C7; color: #B45309; }
-    .status-pendiente-de-aprobación .dot { background-color: var(--color-status-pendiente); }
-    .status-cerrado { background-color: #F3F4F6; color: #4B5563; }
-    .status-cerrado .dot { background-color: var(--color-status-cerrado); }
-    .dot { width: 6px; height: 6px; border-radius: 9999px; }
+    .status-abierto { background-color: var(--color-status-abierto-bg); color: var(--color-status-abierto-text); }
+    .status-en-proceso { background-color: var(--color-status-proceso-bg); color: var(--color-status-proceso-text); }
+    .status-pendiente-de-aprobación { background-color: var(--color-status-pendiente-bg); color: var(--color-status-pendiente-text); }
+    .status-cerrado { background-color: var(--color-status-cerrado-bg); color: var(--color-status-cerrado-text); }
 
-    .priority-baja { background-color: #D1FAE5; color: #065F46; }
-    .priority-media { background-color: #FEF3C7; color: #B45309; }
-    .priority-alta { background-color: #FEE2E2; color: #B91C1C; }
+    .list-view-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 0.5rem;
+    }
+    
+    .list-view-table th {
+        padding: 0 1rem 0.75rem 1rem;
+        text-align: left;
+        font-family: var(--font-body);
+        font-size: 0.7rem;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+    }
+    
+    .list-view-table tr.table-row {
+        background-color: var(--color-surface);
+        box-shadow: 0 1px 3px 0 rgba(0,0,0,0.03), 0 1px 2px -1px rgba(0,0,0,0.03);
+        transition: all 0.2s ease-in-out;
+        border-radius: 0.5rem;
+    }
+    
+    .list-view-table tr.table-row:hover {
+        box-shadow: 0 4px 12px -3px rgba(44,56,86,0.1);
+        transform: translateY(-3px);
+    }
+    
+    .list-view-table td {
+        padding: 1rem;
+        vertical-align: middle;
+        font-size: 0.875rem;
+        color: var(--color-text-primary);
+    }
+    .list-view-table td:first-child { border-top-left-radius: 0.5rem; border-bottom-left-radius: 0.5rem; }
+    .list-view-table td:last-child { border-top-right-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+
+    .ticket-title {
+        font-family: var(--font-heading);
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--color-primary);
+        transition: color 0.2s ease;
+    }
+    .ticket-title:hover {
+        color: var(--color-accent);
+    }
 </style>
 
 <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
@@ -64,15 +124,15 @@
 
     <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
         <div>
-            <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight">Centro de Soporte</h1>
+            <h1 class="text-4xl font-bold text-[var(--color-primary)] tracking-tight" style="font-family: var(--font-heading);">Centro de Soporte</h1>
             <p class="text-lg text-[var(--color-text-secondary)] mt-1">Gestiona todas las solicitudes de TI en un solo lugar.</p>
         </div>
         <div class="flex items-center space-x-2 mt-4 sm:mt-0 flex-shrink-0">
             @if(in_array(Auth::user()->area?->name, ['Administración', 'Innovación y Desarrollo']))
-                <a href="{{ route('tickets.dashboard') }}" class="btn bg-white text-[var(--color-primary)] border border-gray-300 hover:bg-gray-50">
+                <a href="{{ route('tickets.dashboard') }}" class="btn btn-secondary">
                     <i class="fas fa-chart-bar mr-2"></i> Indicadores
                 </a>
-                <a href="{{ route('asset-management.dashboard') }}" class="btn bg-white text-[var(--color-primary)] border border-gray-300 hover:bg-gray-50">
+                <a href="{{ route('asset-management.dashboard') }}" class="btn btn-secondary">
                     <i class="fas fa-desktop mr-2"></i> Activos
                 </a>
             @endif
@@ -82,12 +142,12 @@
         </div>
     </header>
 
-    <div class="bg-white p-4 rounded-xl shadow-lg mb-4" x-data="{ filtersOpen: {{ request()->hasAny(['search', 'status', 'priority', 'category_id', 'agent_id']) ? 'true' : 'false' }} }">
+    <div class="bg-white p-4 rounded-xl shadow-sm mb-4" x-data="{ filtersOpen: {{ request()->hasAny(['search', 'status', 'priority', 'category_id', 'agent_id']) ? 'true' : 'false' }} }">
         <div class="flex justify-between items-center">
-            <h3 class="text-lg font-semibold text-[var(--color-primary)]">Filtros</h3>
-            <button @click="filtersOpen = !filtersOpen" class="btn btn-sm bg-gray-100 text-gray-700 hover:bg-gray-200">
-                <span x-show="!filtersOpen"><i class="fas fa-filter mr-2"></i> Mostrar Filtros</span>
-                <span x-show="filtersOpen"><i class="fas fa-times mr-2"></i> Ocultar Filtros</span>
+            <h3 class="text-lg font-semibold text-[var(--color-primary)]" style="font-family: var(--font-heading);">Filtros</h3>
+            <button @click="filtersOpen = !filtersOpen" class="btn btn-sm btn-secondary">
+                <span x-show="!filtersOpen"><i class="fas fa-filter mr-2"></i> Mostrar</span>
+                <span x-show="filtersOpen"><i class="fas fa-times mr-2"></i> Ocultar</span>
             </button>
         </div>
 
@@ -123,127 +183,126 @@
                 @endif
             </div>
             <div class="flex items-center justify-end mt-4 space-x-2">
-                <a href="{{ route('tickets.index') }}" class="btn btn-sm bg-gray-200 text-gray-700 hover:bg-gray-300">Limpiar</a>
+                <a href="{{ route('tickets.index') }}" class="btn btn-sm btn-secondary">Limpiar</a>
                 <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
             </div>
         </form>
     </div>
 
-    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="bg-gray-50">
-                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ticket</th>
-                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Usuario</th>
-                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Asignado a</th>
-                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Estatus</th>
-                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Prioridad</th>
-                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Últ. Actividad</th>
-                        <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    @forelse ($tickets as $ticket)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="p-4 whitespace-nowrap">
-                                <a href="{{ route('tickets.show', $ticket) }}" class="font-semibold text-[var(--color-primary)] hover:underline">
-                                    {{ $ticket->title }}
-                                </a>
-                                <div class="text-xs text-[var(--color-text-secondary)] font-mono">#{{ $ticket->id }}</div>
-                            </td>
+    <div class="overflow-x-auto">
+        <table class="list-view-table">
+            <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>Usuario</th>
+                    <th>Asignado a</th>
+                    <th>Estatus</th>
+                    <th>Prioridad</th>
+                    <th>Últ. Actividad</th>
+                    <th class="w-12"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($tickets as $ticket)
+                    <tr class="table-row">
+                        <td class="p-4 whitespace-nowrap">
+                            <a href="{{ route('tickets.show', $ticket) }}" class="ticket-title">
+                                {{ $ticket->title }}
+                            </a>
+                            <div class="text-xs text-[var(--color-text-secondary)] font-mono mt-1">#{{ $ticket->id }} &middot; {{ $ticket->subCategory->category->name ?? 'N/A' }}</div>
+                        </td>
 
-                            <td class="p-4 whitespace-nowrap">
-                                <div class="flex items-center space-x-2">
-                                    @if ($ticket->user->profile_photo_path)
-                                        <img src="{{ Storage::disk('s3')->url($ticket->user->profile_photo_path) }}" alt="{{ $ticket->user->name }}" class="h-8 w-8 rounded-full object-cover">
-                                    @else
-                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($ticket->user->name) }}&color=2c3856&background=e8ecf7&size=32" alt="{{ $ticket->user->name }}" class="h-8 w-8 rounded-full">
-                                    @endif
-                                    <span class="font-medium text-gray-800">{{ $ticket->user->name }}</span>
-                                </div>
-                            </td>
-
-                            <td class="p-4 whitespace-nowrap">
-                                @if($ticket->agent)
-                                    <div class="flex items-center space-x-2">
-                                        @if ($ticket->agent->profile_photo_path)
-                                            <img src="{{ Storage::disk('s3')->url($ticket->agent->profile_photo_path) }}" alt="{{ $ticket->agent->name }}" class="h-8 w-8 rounded-full object-cover">
-                                        @else
-                                            <img src="https://ui-avatars.com/api/?name={{ urlencode($ticket->agent->name) }}&color=e8ecf7&background=2c3856&size=32" alt="{{ $ticket->agent->name }}" class="h-8 w-8 rounded-full">
-                                        @endif
-                                        <span class="font-medium text-gray-800">{{ $ticket->agent->name }}</span>
-                                    </div>
+                        <td class="p-4 whitespace-nowrap">
+                            <div class="flex items-center space-x-2">
+                                @if ($ticket->user->profile_photo_path)
+                                    <img src="{{ Storage::disk('s3')->url($ticket->user->profile_photo_path) }}" alt="{{ $ticket->user->name }}" class="h-8 w-8 rounded-full object-cover">
                                 @else
-                                    <span class="italic text-gray-500">Sin asignar</span>
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($ticket->user->name) }}&color=2c3856&background=e8ecf7&size=32" alt="{{ $ticket->user->name }}" class="h-8 w-8 rounded-full">
                                 @endif
-                            </td>
-                            
-                            <td class="p-4 whitespace-nowrap">
-                                <span class="badge-pill status-{{ strtolower(str_replace(' ', '-', $ticket->status)) }}">
-                                    <span class="dot"></span>
-                                    {{ $ticket->status }}
-                                </span>
-                            </td>
-                            
-                            <td class="p-4 whitespace-nowrap">
-                                <span class="badge-pill priority-{{ strtolower($ticket->priority) }}">
-                                    @if(strtolower($ticket->priority) == 'alta')
-                                        <i class="fas fa-fire-alt opacity-70"></i>
-                                    @elseif(strtolower($ticket->priority) == 'media')
-                                        <i class="fas fa-exclamation-triangle opacity-70"></i>
+                                <span class="font-medium text-gray-800">{{ $ticket->user->name }}</span>
+                            </div>
+                        </td>
+
+                        <td class="p-4 whitespace-nowrap">
+                            @if($ticket->agent)
+                                <div class="flex items-center space-x-2">
+                                    @if ($ticket->agent->profile_photo_path)
+                                        <img src="{{ Storage::disk('s3')->url($ticket->agent->profile_photo_path) }}" alt="{{ $ticket->agent->name }}" class="h-8 w-8 rounded-full object-cover">
                                     @else
-                                        <i class="fas fa-check-circle opacity-70"></i>
+                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($ticket->agent->name) }}&color=ffffff&background=2c3856&size=32" alt="{{ $ticket->agent->name }}" class="h-8 w-8 rounded-full">
                                     @endif
-                                    {{ $ticket->priority }}
-                                </span>
-                            </td>
-                            
-                            <td class="p-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
-                                {{ $ticket->updated_at->diffForHumans() }}
-                            </td>
-                            
-                            <td class="p-4 whitespace-nowrap text-sm font-medium">
-                                <div x-data="{ open: false }" class="relative">
-                                    <button @click="open = !open" class="text-gray-400 hover:text-gray-600 rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)]">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </button>
-                                    <div x-show="open"
-                                         @click.away="open = false"
-                                         x-transition:enter="transition ease-out duration-100"
-                                         x-transition:enter-start="opacity-0 scale-95"
-                                         x-transition:enter-end="opacity-100 scale-100"
-                                         x-transition:leave="transition ease-in duration-75"
-                                         x-transition:leave-start="opacity-100 scale-100"
-                                         x-transition:leave-end="opacity-0 scale-95"
-                                         class="absolute z-10 right-0 w-48 mt-2 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-                                         x-cloak>
-                                        <div class="py-1" role="menu" aria-orientation="vertical">
-                                            <a href="{{ route('tickets.show', $ticket) }}" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
-                                                <i class="fas fa-eye w-5 mr-2 text-gray-400"></i> Ver Ticket
-                                            </a>
-                                            @if(Auth::user()->isSuperAdmin())
-                                            <button @click="reassignTicketId = {{ $ticket->id }}; reassignModalOpen = true; open = false;" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
-                                                <i class="fas fa-user-plus w-5 mr-2 text-gray-400"></i> Reasignar
+                                    <span class="font-medium text-gray-800">{{ $ticket->agent->name }}</span>
+                                </div>
+                            @else
+                                <span class="italic text-gray-400">Sin asignar</span>
+                            @endif
+                        </td>
+                        
+                        <td class="p-4 whitespace-nowrap">
+                            <span class="badge-pill status-{{ strtolower(str_replace(' ', '-', $ticket->status)) }}">
+                                {{ $ticket->status }}
+                            </span>
+                        </td>
+                        
+                        <td class.="p-4 whitespace-nowrap">
+                            <span class="inline-flex items-center gap-2 font-medium" style="color: var(--color-priority-{{ strtolower($ticket->priority) }});">
+                                @if(strtolower($ticket->priority) == 'alta')
+                                    <i class="fas fa-arrow-up"></i>
+                                @elseif(strtolower($ticket->priority) == 'media')
+                                    <i class="fas fa-arrow-right"></i>
+                                @else
+                                    <i class="fas fa-arrow-down"></i>
+                                @endif
+                                {{ $ticket->priority }}
+                            </span>
+                        </td>
+                        
+                        <td class.="p-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
+                            {{ $ticket->updated_at->diffForHumans() }}
+                        </td>
+                        
+                        <td class="p-4 whitespace-nowrap text-sm font-medium">
+                            <div x-data="{ open: false }" class="relative">
+                                <button @click="open = !open" class="text-gray-400 hover:text-gray-600 rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)]">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div x-show="open"
+                                     @click.away="open = false"
+                                     x-transition:enter="transition ease-out duration-100"
+                                     x-transition:enter-start="opacity-0 scale-95"
+                                     x-transition:enter-end="opacity-100 scale-100"
+                                     x-transition:leave="transition ease-in duration-75"
+                                     x-transition:leave-start="opacity-100 scale-100"
+                                     x-transition:leave-end="opacity-0 scale-95"
+                                     class="absolute z-10 right-0 w-48 mt-2 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                     x-cloak>
+                                    <div class="py-1" role="menu" aria-orientation="vertical">
+                                        <a href="{{ route('tickets.show', $ticket) }}" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                            <i class="fas fa-eye w-5 mr-2 text-gray-400"></i> Ver Ticket
+                                        </a>
+                                        @if(Auth::user()->isSuperAdmin())
+                                        <button @click="reassignTicketId = {{ $ticket->id }}; reassignModalOpen = true; open = false;" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                            <i class="fas fa-user-plus w-5 mr-2 text-gray-400"></i> Reasignar
+                                        </button>
+                                        <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este ticket permanentemente?');" class="w-full">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class.="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50" role="menuitem">
+                                                <i class="fas fa-trash-alt w-5 mr-2 text-red-400"></i> Eliminar
                                             </button>
-                                            <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este ticket permanentemente?');" class="w-full">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50" role="menuitem">
-                                                    <i class="fas fa-trash-alt w-5 mr-2 text-red-400"></i> Eliminar
-                                                </button>
-                                            </form>
-                                            @endif
-                                        </div>
+                                        </form>
+                                        @endif
                                     </div>
                                 </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="text-center p-12">
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7">
+                            <div class="rounded-lg bg-white text-center p-12 my-4">
                                 <i class="fas fa-ticket-alt text-6xl text-gray-300 mb-4"></i>
-                                <h3 class="text-xl font-semibold text-gray-700">No se encontraron tickets</h3>
+                                <h3 class="text-xl font-semibold text-gray-700" style="font-family: var(--font-heading);">No se encontraron tickets</h3>
                                 <p class="text-gray-500 mt-2">
                                     @if(request()->hasAny(['search', 'status', 'priority', 'category_id', 'agent_id']))
                                         Intenta ajustar tus filtros o
@@ -253,15 +312,16 @@
                                         <a href="{{ route('tickets.create') }}" class="text-blue-600 hover:underline">crear un nuevo ticket</a>.
                                     @endif
                                 </p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        <div class="p-4 bg-gray-50 border-t">
-            {!! $tickets->links() !!}
-        </div>
+                            </div>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-8">
+        {!! $tickets->links() !!}
     </div>
 
     <div x-show="reassignModalOpen"
@@ -276,9 +336,7 @@
         
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div @click="reassignModalOpen = false" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
             <div x-show="reassignModalOpen"
                  x-transition:enter="ease-out duration-300"
                  x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
@@ -290,13 +348,13 @@
                 
                 <form x-bind:action="reassignTicketId ? '{{ url('tickets') }}/' + reassignTicketId + '/assign' : '#'" method="POST">
                     @csrf
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class.="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <div class="sm:flex sm:items-start">
                             <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
                                 <i class="fas fa-user-plus text-blue-600"></i>
                             </div>
                             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title" style="font-family: var(--font-heading);">
                                     Reasignar Ticket
                                 </h3>
                                 <div class="mt-4 w-full">
@@ -315,7 +373,7 @@
                         <button type="submit" class="btn btn-primary w-full sm:w-auto sm:ml-3">
                             Asignar
                         </button>
-                        <button type="button" @click="reassignModalOpen = false" class="btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 w-full mt-3 sm:w-auto sm:mt-0">
+                        <button type="button" @click="reassignModalOpen = false" class="btn btn-secondary w-full mt-3 sm:w-auto sm:mt-0">
                             Cancelar
                         </button>
                     </div>
@@ -324,6 +382,4 @@
         </div>
     </div>
 
-</div> 
-
-@endsection
+</div> @endsection
