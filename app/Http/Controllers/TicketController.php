@@ -18,6 +18,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use App\Models\HardwareAsset;
 use App\Models\OrganigramMember;
+use Illuminate\Support\Facades\Storage;
 
 class TicketController extends Controller
 {
@@ -141,7 +142,7 @@ class TicketController extends Controller
             abort(403, 'No tienes permiso para ver este ticket.');
         }
 
-        $ticket->load(['user', 'agent', 'subCategory', 'replies.user', 'statusHistories.user', 'asset.model']);
+        $ticket->load(['user', 'agent', 'subCategory', 'replies.user', 'statusHistories.user', 'hardwareAsset.model']);
 
         $agents = $this->getAssignableAgents();
 
@@ -363,6 +364,23 @@ class TicketController extends Controller
 
         return redirect()->route('tickets.show', $ticket)->with('success', 'El cierre ha sido rechazado. El ticket vuelve a estar "En Proceso".');
     }
+
+    public function destroy(Ticket $ticket)
+    {
+        if ($ticket->attachment_path) {
+            Storage::disk('s3')->delete($ticket->attachment_path);
+        }
+        if ($ticket->closure_evidence_path) {
+            Storage::disk('s3')->delete($ticket->closure_evidence_path);
+        }
+
+        $ticket->replies()->delete();
+        $ticket->statusHistories()->delete();
+
+        $ticket->delete();
+
+        return redirect()->route('tickets.index')->with('success', 'Ticket eliminado permanentemente.');
+    }    
 
     private function getSuperAdmins()
     {

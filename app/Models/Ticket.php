@@ -55,11 +55,6 @@ class Ticket extends Model
     public function hardwareAsset(): BelongsTo
     {
         return $this->belongsTo(HardwareAsset::class, 'hardware_asset_id');
-    }    
-
-    public function asset(): \Illuminate\Database\Eloquent\Relations\BelongsTo
-    {
-        return $this->belongsTo(\App\Models\HardwareAsset::class, 'hardware_asset_id');
-    }    
+    }
 
 }

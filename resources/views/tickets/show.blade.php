@@ -184,16 +184,16 @@
                     <p><strong>Asignado a:</strong> {{ $ticket->agent->name ?? 'Sin asignar' }}</p>
                     <p><strong>Fecha:</strong> {{ $ticket->created_at->format('d/m/Y') }}</p>
                     <p><strong>Prioridad:</strong> <span class="badge badge-{{ strtolower($ticket->priority) }}">{{ $ticket->priority }}</span></p>
-                    @if($ticket->asset)
+                    @if($ticket->hardwareAsset)
                     <div class="border-t pt-3 mt-3">
                         <p class="font-bold">Activo Vinculado:</p>
                         <p>
-                            <a href="{{ route('asset-management.assets.show', $ticket->asset) }}" class="text-indigo-600 hover:underline">
-                                {{ $ticket->asset->model->name }} ({{ $ticket->asset->asset_tag }})
+                            <a href="{{ route('asset-management.assets.show', $ticket->hardwareAsset) }}" class="text-indigo-600 hover:underline">
+                                {{ $ticket->hardwareAsset->model->name }} ({{ $ticket->hardwareAsset->asset_tag }})
                             </a>
                         </p>
                     </div>
-                    @endif                    
+                    @endif                  
                 </div>
 
                 @if(($isAgent || $isSuperAdmin) && !in_array($ticket->status, ['Cerrado', 'Pendiente de Aprobación']))
@@ -248,6 +248,20 @@
                         @endif
                     </div>
                 @endif
+                @if($isSuperAdmin)
+                <div class="border-t border-red-300 bg-red-50 rounded-lg p-4 mt-4">
+                    <h4 class="font-bold text-sm text-red-700 mb-2">Panel de Super Administrador</h4>
+                    <p class="text-xs text-red-600 mb-3">Esta acción no se puede deshacer.</p>
+                    <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('¿Estás MUY seguro de que deseas eliminar este ticket permanentemente? Toda la información, respuestas y adjuntos se perderán.');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-sm bg-red-600 text-white hover:bg-red-800 w-full">
+                            <i class="fas fa-trash-alt mr-2"></i>
+                            Eliminar Ticket Permanentemente
+                        </button>
+                    </form>
+                </div>
+                @endif                
             </div>
 
             <div class="bg-white rounded-xl shadow-lg p-6">
