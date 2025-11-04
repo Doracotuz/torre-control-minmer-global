@@ -5,11 +5,23 @@ namespace App\Models\WMS;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
+use App\Models\Warehouse;
 
 class SalesOrder extends Model
 {
     use HasFactory;
-    protected $fillable = ['so_number', 'invoice_number', 'customer_name', 'user_id', 'order_date', 'status', 'notes'];
+    
+    protected $fillable = [
+        'so_number', 
+        'invoice_number', 
+        'customer_name', 
+        'user_id', 
+        'warehouse_id',
+        'order_date', 
+        'status', 
+        'notes'
+    ];
+
     protected $casts = [
         'order_date' => 'datetime',
     ];
@@ -28,5 +40,10 @@ class SalesOrder extends Model
     public function pickList()
     {
         return $this->hasOne(PickList::class);
+    }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(Warehouse::class);
     }
 }

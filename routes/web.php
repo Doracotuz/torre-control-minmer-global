@@ -702,9 +702,16 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::post('physical-counts/tasks/{task}/perform', [WMSPhysicalCountController::class, 'recordCount'])->name('physical-counts.tasks.record');    
     Route::post('physical-counts/tasks/{task}/adjust', [WMSPhysicalCountController::class, 'adjustInventory'])->name('physical-counts.tasks.adjust');
     Route::get('physical-counts/tasks/{task}/candidate-lpns', [WMSPhysicalCountController::class, 'getCandidateLpns'])->name('physical-counts.tasks.candidates');
+
+    Route::get('/api/search-stock-products', [App\Http\Controllers\WMS\WMSSalesOrderController::class, 'apiSearchStockProducts'])->name('api.search-stock-products');    
+
     Route::resource('sales-orders', WMSSalesOrderController::class);
     Route::post('sales-orders/{salesOrder}/cancel', [WMSSalesOrderController::class, 'cancel'])->name('sales-orders.cancel');  
-    Route::get('sales-orders-export-csv', [WMSSalesOrderController::class, 'exportCsv'])->name('sales-orders.export-csv');  
+    Route::get('sales-orders-export-csv', [WMSSalesOrderController::class, 'exportCsv'])->name('sales-orders.export-csv');
+    Route::get('sales-orders-template', [WMSSalesOrderController::class, 'downloadTemplate'])->name('sales-orders.template');
+    Route::post('sales-orders-import-new', [WMSSalesOrderController::class, 'importCsv'])->name('sales-orders.import-new');
+    Route::post('sales-orders/{salesOrder}/import-update', [WMSSalesOrderController::class, 'importCsv'])->name('sales-orders.import-update');
+
     Route::post('sales-orders/{salesOrder}/generate-picklist', [WMSPickingController::class, 'generate'])->name('picking.generate');
     Route::get('picking/{pickList}', [WMSPickingController::class, 'show'])->name('picking.show');
     // Route::post('picking/{pickList}/confirm', [WMSPickingController::class, 'confirm'])->name('picking.confirm');

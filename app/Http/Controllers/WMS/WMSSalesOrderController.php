@@ -12,9 +12,13 @@ use App\Models\Product;
 use App\Models\WMS\SalesOrder;
 use App\Models\WMS\SalesOrderLine;
 use App\Models\WMS\PalletItem;
+use App\Models\WMS\Pallet;
+use App\Models\WMS\PregeneratedLpn;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use App\Models\Warehouse;
 
 class WMSSalesOrderController extends Controller
 {
@@ -67,39 +71,11 @@ class WMSSalesOrderController extends Controller
 
     public function create()
     {
-        $availableQuality = \App\Models\WMS\Quality::where('name', 'Disponible')->first();
-        $availableQualityId = $availableQuality ? $availableQuality->id : -1;
-
-        $restrictedLocationTypes = ['Receiving', 'Quality Control', 'Shipping'];
-        $restrictedLocationIds = \App\Models\Location::whereIn('type', $restrictedLocationTypes)->pluck('id');
-
-        $stockData = \App\Models\WMS\PalletItem::query()
-            ->whereRaw('quantity > committed_quantity')
-            ->with([
-                'product:id,sku,name',
-                'quality:id,name',
-                'pallet.purchaseOrder:id,po_number,pedimento_a4',
-                'pallet.location:id,code,type'
-            ])
-            ->get()
-            ->map(function ($item) use ($availableQualityId, $restrictedLocationIds) {
-                
-                $item->is_available = true;
-                $item->warning_message = null;
-
-                if ($item->quality_id != $availableQualityId) {
-                    $item->is_available = false;
-                    $item->warning_message = "Calidad No Disponible: " . ($item->quality->name ?? 'N/A');
-                } 
-                elseif ($restrictedLocationIds->contains($item->pallet->location_id)) {
-                    $item->is_available = false;
-                    $item->warning_message = "Ubicación No Válida: " . ($item->pallet->location->type ?? 'N/A');
-                }
-
-                return $item;
-            });
-            
-        return view('wms.sales-orders.create', compact('stockData'));
+        $products = Product::orderBy('sku')->get(['id', 'sku', 'name', 'upc']);
+        $qualities = Quality::orderBy('name')->get(['id', 'name']);
+        $warehouses = Warehouse::orderBy('name')->get(['id', 'name']);
+        
+        return view('wms.sales-orders.create', compact('products', 'qualities', 'warehouses'));
     }
 
     public function store(Request $request)
@@ -109,9 +85,12 @@ class WMSSalesOrderController extends Controller
             'invoice_number' => 'nullable|string|max:255',
             'customer_name' => 'required|string|max:255',
             'delivery_date' => 'required|date',
+            'warehouse_id' => 'required|exists:warehouses,id',
             'lines' => 'required|array|min:1',
-            'lines.*.pallet_item_id' => 'required|exists:pallet_items,id',
+            'lines.*.product_id' => 'required|exists:products,id',
+            'lines.*.quality_id' => 'required|exists:qualities,id',
             'lines.*.quantity' => 'required|integer|min:1',
+            'lines.*.lpn' => 'nullable|string|exists:pallets,lpn',
         ]);
 
         DB::beginTransaction();
@@ -121,31 +100,38 @@ class WMSSalesOrderController extends Controller
                 'invoice_number' => $validated['invoice_number'],
                 'customer_name' => $validated['customer_name'],
                 'order_date' => $validated['delivery_date'],
+                'warehouse_id' => $validated['warehouse_id'],
                 'user_id' => Auth::id(),
                 'status' => 'Pending',
             ]);
 
             foreach ($validated['lines'] as $line) {
-                $palletItem = PalletItem::with('pallet', 'product')->findOrFail($line['pallet_item_id']);
-
-                $availableQuantityInPallet = $palletItem->quantity - $palletItem->committed_quantity;
-
-                if ($availableQuantityInPallet < $line['quantity']) {
-                    throw new \Exception("La cantidad ({$line['quantity']}) para el SKU {$palletItem->product->sku} en el LPN {$palletItem->pallet->lpn} excede el stock disponible ({$availableQuantityInPallet}) en ese lote.");
+                $palletItemId = null;
+                if (!empty($line['lpn'])) {
+                    $palletItem = PalletItem::where('product_id', $line['product_id'])
+                        ->where('quality_id', $line['quality_id'])
+                        ->whereHas('pallet', fn($q) => $q->where('lpn', $line['lpn']))
+                        ->first();
+                    
+                    if (!$palletItem) {
+                        throw new \Exception("El LPN {$line['lpn']} no contiene el SKU/Calidad especificado.");
+                    }
+                    if (($palletItem->quantity - $palletItem->committed_quantity) < $line['quantity']) {
+                         throw new \Exception("Stock insuficiente en LPN {$line['lpn']} para SKU {$palletItem->product->sku}.");
+                    }
+                    $palletItemId = $palletItem->id;
                 }
-                
-                $palletItem->increment('committed_quantity', $line['quantity']);
 
                 $salesOrder->lines()->create([
-                    'product_id' => $palletItem->product_id,
-                    'pallet_item_id' => $line['pallet_item_id'],
+                    'product_id' => $line['product_id'],
+                    'quality_id' => $line['quality_id'],
                     'quantity_ordered' => $line['quantity'],
-                    // 'quality_id' => $palletItem->quality_id, // Podrías guardar quality_id aquí también si lo necesitas
+                    'pallet_item_id' => $palletItemId,
                 ]);
             }
 
             DB::commit();
-            return redirect()->route('wms.sales-orders.index')->with('success', 'Orden de Venta creada e inventario comprometido exitosamente.');
+            return redirect()->route('wms.sales-orders.index')->with('success', 'Orden de Venta creada. El stock será asignado al generar la Pick List.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -174,25 +160,13 @@ class WMSSalesOrderController extends Controller
             return redirect()->route('wms.sales-orders.show', $salesOrder)->with('error', 'No se puede editar una orden que ya está en proceso de surtido.');
         }
 
-        $salesOrder->load(
-            'lines.palletItem.product',
-            'lines.palletItem.pallet.purchaseOrder',
-            'lines.palletItem.quality'
-        );
+        $salesOrder->load('lines.product', 'lines.quality', 'lines.palletItem.pallet');
+        $products = Product::orderBy('sku')->get(['id', 'sku', 'name', 'upc']);
+        $qualities = Quality::orderBy('name')->get(['id', 'name']);
         
-        $existingItemIds = $salesOrder->lines->pluck('pallet_item_id')->filter()->unique();
-
-        $stockData = PalletItem::query()
-            ->where('quantity', '>', 0)
-            ->orWhereIn('id', $existingItemIds)
-            ->with([
-                'product', 
-                'quality', 
-                'pallet.purchaseOrder'
-            ])
-            ->get();
+        $warehouses = Warehouse::orderBy('name')->get(['id', 'name']);
             
-        return view('wms.sales-orders.edit', compact('salesOrder', 'stockData'));
+        return view('wms.sales-orders.edit', compact('salesOrder', 'products', 'qualities', 'warehouses'));
     }
 
 
@@ -207,20 +181,16 @@ class WMSSalesOrderController extends Controller
             'invoice_number' => 'nullable|string|max:255',
             'customer_name' => 'required|string|max:255',
             'delivery_date' => 'required|date',
+            'warehouse_id' => 'required|exists:warehouses,id',
             'lines' => 'required|array|min:1',
-            'lines.*.pallet_item_id' => 'required|exists:pallet_items,id',
+            'lines.*.product_id' => 'required|exists:products,id',
+            'lines.*.quality_id' => 'required|exists:qualities,id',
             'lines.*.quantity' => 'required|integer|min:1',
+            'lines.*.lpn' => 'nullable|string|exists:pallets,lpn',
         ]);
 
         DB::beginTransaction();
         try {
-            foreach ($salesOrder->lines()->with('palletItem')->get() as $oldLine) {
-                if ($oldLine->palletItem) {
-                    $newCommitted = max(0, $oldLine->palletItem->committed_quantity - $oldLine->quantity_ordered);
-                    $oldLine->palletItem->update(['committed_quantity' => $newCommitted]);
-                }
-            }
-
             $salesOrder->lines()->delete();
 
             $salesOrder->update([
@@ -228,24 +198,31 @@ class WMSSalesOrderController extends Controller
                 'invoice_number' => $validated['invoice_number'],
                 'customer_name' => $validated['customer_name'],
                 'order_date' => $validated['delivery_date'],
+                'warehouse_id' => $validated['warehouse_id'],
             ]);
 
             foreach ($validated['lines'] as $line) {
-                $palletItem = PalletItem::with('pallet', 'product')->findOrFail($line['pallet_item_id']);
-                
-                $availableQuantityInPallet = $palletItem->quantity - $palletItem->committed_quantity;
-
-                if ($availableQuantityInPallet < $line['quantity']) {
-                    throw new \Exception("La cantidad ({$line['quantity']}) para el SKU {$palletItem->product->sku} en el LPN {$palletItem->pallet->lpn} excede el stock disponible ({$availableQuantityInPallet}) en ese lote.");
+                $palletItemId = null;
+                if (!empty($line['lpn'])) {
+                    $palletItem = PalletItem::where('product_id', $line['product_id'])
+                        ->where('quality_id', $line['quality_id'])
+                        ->whereHas('pallet', fn($q) => $q->where('lpn', $line['lpn']))
+                        ->first();
+                    
+                    if (!$palletItem) {
+                        throw new \Exception("El LPN {$line['lpn']} no contiene el SKU/Calidad especificado.");
+                    }
+                    if (($palletItem->quantity - $palletItem->committed_quantity) < $line['quantity']) {
+                         throw new \Exception("Stock insuficiente en LPN {$line['lpn']}.");
+                    }
+                    $palletItemId = $palletItem->id;
                 }
-                
-                $palletItem->increment('committed_quantity', $line['quantity']);
 
                 $salesOrder->lines()->create([
-                    'product_id' => $palletItem->product_id,
-                    'pallet_item_id' => $line['pallet_item_id'],
+                    'product_id' => $line['product_id'],
+                    'quality_id' => $line['quality_id'],
                     'quantity_ordered' => $line['quantity'],
-                    // 'quality_id' => $palletItem->quality_id, // Opcional
+                    'pallet_item_id' => $palletItemId,
                 ]);
             }
 
@@ -267,19 +244,11 @@ class WMSSalesOrderController extends Controller
 
         DB::beginTransaction();
         try {
-            foreach ($salesOrder->lines()->with('palletItem')->get() as $line) {
-                if ($line->palletItem) {
-                    $newCommitted = max(0, $line->palletItem->committed_quantity - $line->quantity_ordered);
-                    $line->palletItem->update(['committed_quantity' => $newCommitted]);
-                    // $line->palletItem->decrement('committed_quantity', $line->quantity_ordered); // Alternativa
-                }
-            }
-
             $salesOrder->status = 'Cancelled';
             $salesOrder->save();
 
             DB::commit();
-            return redirect()->route('wms.sales-orders.index')->with('success', 'La Orden de Venta ha sido cancelada y el inventario ha sido liberado.');
+            return redirect()->route('wms.sales-orders.index')->with('success', 'La Orden de Venta ha sido cancelada.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -410,6 +379,189 @@ class WMSSalesOrderController extends Controller
         };
 
         return new StreamedResponse($callback, 200, $headers);
+    }
+
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename=plantilla_orden_venta.csv',
+        ];
+
+        $columns = [
+            'sku (requerido)', 
+            'cantidad (requerido)', 
+            'calidad (requerido, ej: Disponible)', 
+            'lpn (opcional, para surtido manual)'
+        ];
+
+        $callback = function() use ($columns) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, $columns);
+            fclose($file);
+        };
+
+        return new StreamedResponse($callback, 200, $headers);
+    }
+
+    public function importCsv(Request $request, SalesOrder $salesOrder)
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:csv,txt',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->with('error', 'Se requiere un archivo CSV.');
+        }
+
+        $file = $request->file('file');
+        $content = file_get_contents($file->getRealPath());
+        $utf8Content = mb_convert_encoding($content, 'UTF-8', mb_detect_encoding($content, 'UTF-8, ISO-8859-1', true));
+        $lines = preg_split('/(\r\n|\n|\r)/', $utf8Content, -1, PREG_SPLIT_NO_EMPTY);
+        
+        if (count($lines) < 2) {
+            return back()->with('error', 'El archivo está vacío o solo contiene encabezados.');
+        }
+
+        $headerLine = str_replace('ï»¿', '', array_shift($lines));
+        $delimiter = str_contains($headerLine, ';') ? ';' : ','; 
+        $csvHeaders = str_getcsv($headerLine, $delimiter);
+        $headers = array_map(fn($h) => trim(explode('(', $h)[0]), $csvHeaders);
+
+        $products = Product::whereIn('sku', array_column($lines, 0))->pluck('id', 'sku');
+        $qualities = Quality::pluck('id', 'name');
+        
+        $errors = [];
+        $linesToInsert = [];
+
+        DB::beginTransaction();
+        try {
+            foreach ($lines as $index => $row) {
+                $lineNumber = $index + 2;
+                if (empty(trim($row))) continue;
+                $data = str_getcsv($row, $delimiter);
+                if (count($headers) !== count($data)) continue;
+                $rowData = array_combine($headers, $data);
+
+                $sku = trim($rowData['sku']);
+                $qualityName = trim($rowData['calidad']);
+                $lpn = trim($rowData['lpn']);
+                $quantity = (int)trim($rowData['cantidad']);
+
+                if (empty($sku) || $quantity <= 0 || empty($qualityName)) {
+                    $errors[] = "Línea $lineNumber: Faltan datos requeridos (SKU, Cantidad o Calidad).";
+                    continue;
+                }
+                
+                $product = $products->get($sku);
+                if (!$product) {
+                    $errors[] = "Línea $lineNumber: SKU '$sku' no encontrado.";
+                    continue;
+                }
+
+                $quality = $qualities->get($qualityName);
+                if (!$quality) {
+                    $errors[] = "Línea $lineNumber: Calidad '$qualityName' no encontrada.";
+                    continue;
+                }
+
+                $palletItemId = null;
+                if (!empty($lpn)) {
+                    $palletItem = PalletItem::where('product_id', $product)
+                        ->where('quality_id', $quality)
+                        ->whereHas('pallet', fn($q) => $q->where('lpn', $lpn))
+                        ->first();
+                    
+                    if (!$palletItem) {
+                        $errors[] = "Línea $lineNumber: El LPN '$lpn' no contiene el SKU/Calidad especificado.";
+                        continue;
+                    }
+                    if (($palletItem->quantity - $palletItem->committed_quantity) < $quantity) {
+                        $errors[] = "Línea $lineNumber: Stock insuficiente en LPN '$lpn'.";
+                        continue;
+                    }
+                    $palletItemId = $palletItem->id;
+                }
+
+                $linesToInsert[] = [
+                    'product_id' => $product,
+                    'quality_id' => $quality,
+                    'quantity_ordered' => $quantity,
+                    'pallet_item_id' => $palletItemId,
+                ];
+            }
+
+            if (!empty($errors)) {
+                throw new \Exception(implode(' ', $errors));
+            }
+
+            if (empty($linesToInsert)) {
+                throw new \Exception("No se encontraron líneas válidas para importar.");
+            }
+
+            if ($salesOrder->exists) {
+                $salesOrder->lines()->delete();
+                $salesOrder->lines()->createMany($linesToInsert);
+                $route = 'wms.sales-orders.edit';
+                $params = $salesOrder;
+            } else {
+                session()->put('imported_lines', $linesToInsert);
+                $route = 'wms.sales-orders.create';
+                $params = [];
+            }
+            
+            DB::commit();
+            return redirect()->route($route, $params)
+                ->with('success', count($linesToInsert) . ' líneas cargadas desde plantilla. Por favor, completa los detalles de la orden.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error al importar SO: " . $e->getMessage());
+            return back()->with('error', 'Error al importar: ' . $e->getMessage())->withInput();
+        }
+    }
+
+public function apiSearchStockProducts(Request $request)
+    {
+        $validated = $request->validate([
+            'query' => 'required|string|min:2',
+            'warehouse_id' => 'required|exists:warehouses,id',
+        ]);
+
+        $term = $validated['query'];
+        $warehouseId = $validated['warehouse_id'];
+
+        // 1. Encontrar todos los IDs de productos que tienen stock disponible
+        //    en el almacén correcto.
+        $availableProductIds = \App\Models\WMS\PalletItem::query() //
+            // 1a. Que tengan stock físico (cantidad > comprometido)
+            ->whereRaw('quantity > committed_quantity') //
+            // 1b. Que estén en un pallet...
+            ->whereHas('pallet', function ($q_pallet) use ($warehouseId) { //
+                // 1c. ...que esté en una ubicación...
+                $q_pallet->whereHas('location', function ($q_location) use ($warehouseId) { //
+                    // 1d. ...que pertenezca al almacén correcto.
+                    $q_location->where('warehouse_id', $warehouseId); //
+                });
+            })
+            ->select('product_id') // Solo necesitamos los IDs
+            ->distinct()
+            ->pluck('product_id'); // Obtener un array [1, 5, 22]
+
+        // 2. Ahora, buscar en la tabla de Productos
+        //    que coincidan con el término Y que estén en nuestra lista de IDs.
+        $products = \App\Models\Product::whereIn('id', $availableProductIds) //
+            ->where(function($q) use ($term) {
+                $q->where('sku', 'LIKE', $term . '%')
+                  ->orWhere('name', 'LIKE', '%' . $term . '%')
+                  ->orWhere('upc', 'LIKE', $term . '%');
+            })
+            ->select('id', 'sku', 'name', 'upc')
+            ->limit(10) 
+            ->get();
+
+        return response()->json($products);
     }
 
 }

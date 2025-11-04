@@ -35,59 +35,72 @@ class WMSPickingController extends Controller
             return back()->with('error', 'Esta orden ya está siendo procesada o ya tiene una Pick List.');
         }
 
-        $availableQuality = \App\Models\WMS\Quality::where('name', 'Disponible')->first();
-        $availableQualityId = $availableQuality ? $availableQuality->id : -1;
+        $salesOrder->load('lines.product', 'lines.quality', 'warehouse');
+        
+        if (!$salesOrder->warehouse_id) {
+            return back()->with('error', 'Error Crítico: La Orden de Venta no tiene un almacén de surtido asignado.');
+        }
+        $warehouseId = $salesOrder->warehouse_id;
 
         DB::beginTransaction();
         try {
             $pickListItems = [];
-            $salesOrder->load('lines.product');
+            $availableQualityId = Quality::where('name', 'Disponible')->first()->id ?? -1;
 
             foreach ($salesOrder->lines as $line) {
                 
                 $quantityNeeded = $line->quantity_ordered;
                 $palletItem = null;
+                
+                $warehouseFilter = function ($query) use ($warehouseId) {
+                    $query->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+                };
 
-                $baseQuery = PalletItem::query()
-                    ->where('product_id', $line->product_id)
-                    ->whereRaw('quantity - committed_quantity >= ?', [$quantityNeeded]);
-
-                $palletItem = (clone $baseQuery)
-                    ->where('quality_id', $availableQualityId)
-                    ->whereHas('pallet.location', fn($q) => $q->where('type', 'picking'))
-                    ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
-                    ->join('locations', 'pallets.location_id', '=', 'locations.id')
-                    ->select('pallet_items.*')
-                    ->orderBy('locations.pick_sequence', 'asc')
-                    ->orderBy('pallets.created_at', 'asc')
-                    ->first();
-
-                if (!$palletItem) {
-                    $palletItem = (clone $baseQuery)
-                        ->where('quality_id', $availableQualityId)
-                        ->whereHas('pallet.location', fn($q) => $q->where('type', 'storage'))
+                if ($line->pallet_item_id) {
+                    $palletItem = PalletItem::with('pallet.location', 'quality')
+                                  ->where('id', $line->pallet_item_id)
+                                  ->whereRaw('quantity - committed_quantity >= ?', [$quantityNeeded])
+                                  ->whereHas('pallet', $warehouseFilter)
+                                  ->first();
+                    
+                    if (!$palletItem) {
+                        throw new \Exception("El LPN/lote especificado para SKU {$line->product->sku} no tiene stock suficiente en este almacén.");
+                    }
+                
+                } else {
+                    $palletItem = PalletItem::where('product_id', $line->product_id)
+                        ->where('quality_id', $line->quality_id)
+                        ->whereRaw('quantity - committed_quantity >= ?', [$quantityNeeded])
+                        ->whereHas('pallet', $warehouseFilter)
+                        ->whereHas('pallet.location', fn($q) => $q->where('type', 'picking'))
                         ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
+                        ->join('locations', 'pallets.location_id', '=', 'locations.id')
                         ->select('pallet_items.*')
+                        ->orderBy('locations.pick_sequence', 'asc')
                         ->orderBy('pallets.created_at', 'asc')
                         ->first();
-                }
 
-                if (!$palletItem) {
-                    $palletItem = (clone $baseQuery)
-                        ->where('quality_id', '!=', $availableQualityId)
-                        // podríamos excluir 'Receiving'
-                        // ->whereHas('pallet.location', fn($q) => $q->where('type', '!=', 'Receiving'))
-                        ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
-                        ->select('pallet_items.*')
-                        ->orderBy('pallets.created_at', 'asc')
-                        ->first();
-                }
+                    if (!$palletItem) {
+                        $palletItem = PalletItem::where('product_id', $line->product_id)
+                            ->where('quality_id', $line->quality_id)
+                            ->whereRaw('quantity - committed_quantity >= ?', [$quantityNeeded])
+                            ->whereHas('pallet', $warehouseFilter)
+                            ->whereHas('pallet.location', fn($q) => $q->where('type', 'storage'))
+                            ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
+                            ->select('pallet_items.*')
+                            ->orderBy('pallets.created_at', 'asc')
+                            ->first();
+                    }
 
-                if (!$palletItem) {
-                    throw new \Exception('No hay stock disponible ni alternativo (Dañado/QC) para el producto: ' . $line->product->sku);
+                    if (!$palletItem) {
+                        throw new \Exception("No hay stock automático disponible para el producto: {$line->product->sku} (Calidad: {$line->quality->name}) en este almacén.");
+                    }
+                    
+                    $palletItem->load('pallet.location', 'quality');
                 }
+                
+                $palletItem->increment('committed_quantity', $quantityNeeded);
 
-                $palletItem->load('pallet.location', 'quality');
                 $pickListItems[] = [
                     'product_id' => $line->product_id,
                     'pallet_id' => $palletItem->pallet_id,
@@ -95,11 +108,6 @@ class WMSPickingController extends Controller
                     'quantity_to_pick' => $quantityNeeded,
                     'quality_id' => $palletItem->quality_id,
                 ];
-
-                // el 'generate' original no comprometía el stock,
-                // pero el 'store' de SalesOrder sí lo hace
-                // Si no es así,modifico:
-                // $palletItem->increment('committed_quantity', $quantityNeeded);
             }
 
             $pickList = \App\Models\WMS\PickList::create([
@@ -109,13 +117,22 @@ class WMSPickingController extends Controller
             ]);
 
             $pickList->items()->createMany($pickListItems);
-            $salesOrder->update(['status' => 'Picking']);
+            $salesOrder->update(['status' => 'Picking']); 
 
             DB::commit();
-            return redirect()->route('wms.picking.show', $pickList)->with('success', 'Pick List generada exitosamente con lógica optimizada.');
+            return redirect()->route('wms.picking.show', $pickList)->with('success', 'Pick List generada y stock comprometido exitosamente.');
 
         } catch (\Exception $e) {
             DB::rollBack();
+            if (isset($pickListItems) && !empty($pickListItems)) {
+                foreach ($pickListItems as $item) {
+                    $pItem = PalletItem::where('pallet_id', $item['pallet_id'])
+                                     ->where('product_id', $item['product_id'])
+                                     ->where('quality_id', $item['quality_id'])
+                                     ->first();
+                    if ($pItem) $pItem->decrement('committed_quantity', $item['quantity_to_pick']);
+                }
+            }
             return back()->with('error', 'Error al generar Pick List: ' . $e->getMessage());
         }
     }
