@@ -135,6 +135,7 @@ class WMSSalesOrderController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            // dd($e);
             Log::error("Error al crear SO: " . $e->getMessage());
             return back()->with('error', 'Error al crear la orden: ' . $e->getMessage())->withInput();
         }
@@ -144,11 +145,16 @@ class WMSSalesOrderController extends Controller
     {
         $salesOrder->load([
             'user', 
+            'warehouse',
+            
             'lines.product',
+            'lines.quality',
             'lines.palletItem.pallet.location',
             'lines.palletItem.pallet.purchaseOrder',
-            'lines.palletItem.quality',
-            'pickList'
+            'pickList.items.product',
+            'pickList.items.quality',
+            'pickList.items.pallet.location',
+            'pickList.items.pallet.purchaseOrder'
         ]);
 
         return view('wms.sales-orders.show', compact('salesOrder'));
@@ -522,46 +528,54 @@ class WMSSalesOrderController extends Controller
         }
     }
 
-public function apiSearchStockProducts(Request $request)
+    public function apiSearchStockProducts(Request $request)
     {
         $validated = $request->validate([
             'query' => 'required|string|min:2',
             'warehouse_id' => 'required|exists:warehouses,id',
+            'quality_id' => 'required|exists:qualities,id',
         ]);
 
         $term = $validated['query'];
         $warehouseId = $validated['warehouse_id'];
+        $qualityId = $validated['quality_id'];
 
-        // 1. Encontrar todos los IDs de productos que tienen stock disponible
-        //    en el almacén correcto.
-        $availableProductIds = \App\Models\WMS\PalletItem::query() //
-            // 1a. Que tengan stock físico (cantidad > comprometido)
-            ->whereRaw('quantity > committed_quantity') //
-            // 1b. Que estén en un pallet...
-            ->whereHas('pallet', function ($q_pallet) use ($warehouseId) { //
-                // 1c. ...que esté en una ubicación...
-                $q_pallet->whereHas('location', function ($q_location) use ($warehouseId) { //
-                    // 1d. ...que pertenezca al almacén correcto.
-                    $q_location->where('warehouse_id', $warehouseId); //
-                });
+        $availableProductIds = \App\Models\WMS\PalletItem::query()
+            ->where('quality_id', $qualityId)
+            ->whereRaw('quantity > committed_quantity')
+            ->whereHas('pallet.location', function ($q_location) use ($warehouseId) {
+                $q_location->where('warehouse_id', $warehouseId);
             })
-            ->select('product_id') // Solo necesitamos los IDs
+            ->select('product_id')
             ->distinct()
-            ->pluck('product_id'); // Obtener un array [1, 5, 22]
+            ->pluck('product_id');
 
-        // 2. Ahora, buscar en la tabla de Productos
-        //    que coincidan con el término Y que estén en nuestra lista de IDs.
-        $products = \App\Models\Product::whereIn('id', $availableProductIds) //
+        $products = \App\Models\Product::whereIn('id', $availableProductIds)
             ->where(function($q) use ($term) {
                 $q->where('sku', 'LIKE', $term . '%')
                   ->orWhere('name', 'LIKE', '%' . $term . '%')
                   ->orWhere('upc', 'LIKE', $term . '%');
             })
             ->select('id', 'sku', 'name', 'upc')
-            ->limit(10) 
+            ->limit(10)
             ->get();
+            
+        if ($products->isNotEmpty()) {
+            $productIds = $products->pluck('id');
+            
+            $stockData = PalletItem::whereIn('product_id', $productIds)
+                ->where('quality_id', $qualityId)
+                ->whereRaw('quantity > committed_quantity')
+                ->whereHas('pallet.location', fn($q) => $q->where('warehouse_id', $warehouseId))
+                ->select('product_id', DB::raw('SUM(quantity - committed_quantity) as total_available'))
+                ->groupBy('product_id')
+                ->get()
+                ->keyBy('product_id');
 
+            $products->each(function($product) use ($stockData) {
+                $product->total_available = $stockData->get($product->id)?->total_available ?? 0;
+            });
+        }
         return response()->json($products);
     }
-
 }

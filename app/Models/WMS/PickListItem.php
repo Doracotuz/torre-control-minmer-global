@@ -31,4 +31,10 @@ class PickListItem extends Model {
     public function location() { return $this->belongsTo(Location::class); }
     public function quality() { return $this->belongsTo(Quality::class); }
     public function pallet() { return $this->belongsTo(Pallet::class); }
+
+    public function pickList()
+    {
+        return $this->belongsTo(\App\Models\WMS\PickList::class);
+    }
+
 }

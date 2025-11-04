@@ -65,61 +65,86 @@
                     </div>
 
                     <div class="mt-8 border-t border-gray-200 pt-6">
-                        <h3 class="text-lg font-medium text-gray-900">Productos Ordenados</h3>
-                        
-                        <div class="mt-4 flow-root">
-                            <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                                <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                                    <table class="min-w-full divide-y divide-gray-300">
-                                        <thead>
-                                            <tr>
-                                                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">SKU / Producto</th>
-                                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Lote (LPN)</th>
-                                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Ubicación</th>
-                                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Calidad</th>
-                                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Pedimento</th>
-                                                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-0 text-right text-sm font-semibold text-gray-900">Cantidad</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-gray-200">
-                                            @forelse ($salesOrder->lines as $line)
-                                                <tr>
-                                                    <td class="py-4 pl-4 pr-3 text-sm sm:pl-0">
-                                                        <div class="font-medium text-gray-900">{{ $line->product->name ?? 'Producto no encontrado' }}</div>
-                                                        <div class="text-gray-500">{{ $line->product->sku ?? 'N/A' }}</div>
-                                                    </td>
-                                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700 font-mono">
-                                                        {{ $line->palletItem->pallet->lpn ?? 'N/A' }}
-                                                    </td>
-                                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 font-mono">
-                                                        @if($location = $line->palletItem->pallet->location ?? null)
-                                                            {{ $location->aisle }}-{{ $location->rack }}-{{ $location->shelf }}
-                                                        @else
-                                                            N/A
-                                                        @endif
-                                                    </td>
-                                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                        {{ $line->palletItem->quality->name ?? 'N/A' }}
-                                                    </td>
-                                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                        {{ $line->palletItem->pallet->purchaseOrder->pedimento_a4 ?? 'N/A' }}
-                                                    </td>
-                                                    <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-bold text-gray-900 sm:pr-0">
-                                                        {{ $line->quantity_ordered }}
-                                                    </td>
-                                                </tr>
-                                            @empty
-                                                <tr>
-                                                    <td colspan="6" class="px-3 py-4 text-center text-sm text-gray-500">
-                                                        No hay productos en esta orden.
-                                                    </td>
-                                                </tr>
-                                            @endforelse
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">
+                        Productos 
+                        @if($salesOrder->pickList)
+                            <span class="text-gray-500">(Surtidos desde Pick List #{{ $salesOrder->pickList->id }})</span>
+                        @else
+                            <span class="text-gray-500">(Ordenados)</span>
+                        @endif
+                    </h3>
+
+                    <div class="overflow-x-auto border rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU / Producto</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lote (LPN)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Calidad</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pedimento</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                
+                                @if($salesOrder->pickList && $salesOrder->pickList->items->count() > 0)
+                                    
+                                    @foreach($salesOrder->pickList->items as $item)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                <div class="font-medium text-gray-900">{{ $item->product->sku ?? 'N/A' }}</div>
+                                                <div class="text-gray-500">{{ $item->product->name ?? 'N/A' }}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-indigo-600">
+                                                {{ $item->pallet->lpn ?? 'N/A' }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-red-600">
+                                                {{ $item->pallet->location->code ?? 'N/A' }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                {{ $item->quality->name ?? 'N/A' }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
+                                                {{ $item->pallet->purchaseOrder->pedimento_a4 ?? 'N/A' }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                                                {{ $item->quantity_picked ?? $item->quantity_to_pick }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+
+                                @else
+
+                                    @foreach($salesOrder->lines as $line)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                <div class="font-medium text-gray-900">{{ $line->product->sku ?? 'N/A' }}</div>
+                                                <div class="text-gray-500">{{ $line->product->name ?? 'N/A' }}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 italic">
+                                                {{-- Si el LPN fue pre-asignado, muéstralo --}}
+                                                {{ $line->palletItem->pallet->lpn ?? 'N/A' }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 italic">
+                                                {{ $line->palletItem->pallet->location->code ?? 'N/A' }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 italic">
+                                                {{ $line->quality->name ?? 'N/A' }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 italic">
+                                                {{ $line->palletItem->pallet->purchaseOrder->pedimento_a4 ?? 'N/A' }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                                                {{ $line->quantity_ordered }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    
+                                @endif
+
+                            </tbody>
+                        </table>
                     </div>
 
                     <div class="mt-8 border-t border-gray-200 pt-6">

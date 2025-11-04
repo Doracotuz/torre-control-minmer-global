@@ -26,6 +26,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\RoundBlockSizeMode\RoundBlockSizeModeMargin;
 use App\Models\WMS\StockMovement;
+use App\Models\WMS\Quality;
 
 class WMSPickingController extends Controller
 {
@@ -164,7 +165,7 @@ class WMSPickingController extends Controller
             'scanned_lpn' => 'required|string',
         ]);
 
-        $pickListItem->load(['product', 'location', 'pallet', 'quality']);
+        $pickListItem->load(['product', 'location', 'pallet', 'quality', 'pickList.salesOrder']);
 
         DB::beginTransaction();
         try {

@@ -5,11 +5,16 @@
         </h2>
     </x-slot>
 
-    <div class="py-12" x-data="salesOrderForm()" x-init='initData(
-        "{{ route('wms.api.search-stock-products') }}",
-        @json($qualities),
-        @json(session('imported_lines', []))
-    )' x-cloak>
+    <script id="so-create-data" type="application/json">
+    {
+        "apiSearchUrl": "{{ route('wms.api.search-stock-products') }}",
+        "qualities": @json($qualities),
+        "importedLines": @json(session('imported_lines', [])),
+        "oldWarehouseId": "{{ old('warehouse_id') }}"
+    }
+    </script>    
+
+        <div class="py-12" x-data="salesOrderForm()" x-init="initData()" x-cloak>   
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
             @if(session('error'))
@@ -26,8 +31,21 @@
                 @php session()->forget('imported_lines'); @endphp
             @endif
 
+            {{-- Bloque para mostrar todos los errores de validación (Recomendado) --}}
+            @if ($errors->any())
+                <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <strong class="font-bold">¡Error de Validación!</strong>
+                    <span class="block sm:inline">El formulario no se pudo enviar por los siguientes motivos:</span>
+                    <ul class="mt-3 list-disc list-inside text-sm">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
-            <form method="POST" action="{{ route('wms.sales-orders.store') }}">
+
+            <form method="POST" action="{{ route('wms.sales-orders.store') }}" id="create-so-form">
                 @csrf
                 
                 <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
@@ -103,10 +121,11 @@
                         @error('lines') <span class="text-sm text-red-500 mb-4 block">{{ $message }}</span> @enderror
 
                         <div class="hidden lg:grid lg:grid-cols-12 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider mb-2 px-4">
-                            <span class="lg:col-span-4">Producto (SKU/Nombre/UPC)</span>
                             <span class="lg:col-span-2">Calidad</span>
+                            <span class="lg:col-span-4">Producto (SKU/Nombre/UPC)</span>
+                            <span class="lg:col-span-1">Dispon.</span>
                             <span class="lg:col-span-1">Qty.</span>
-                            <span class="lg:col-span-3">LPN (Opcional)</span>
+                            <span class="lg:col-span-2">LPN (Opcional)</span>
                             <span class="lg:col-span-2 text-right">Acciones</span>
                         </div>
 
@@ -118,9 +137,21 @@
                             <template x-for="(line, index) in lines" :key="index">
                                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 border rounded-lg hover:bg-gray-50">
                                     
+                                    <div class="lg:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 lg:hidden mb-1">Calidad</label>
+                                        <select x-model="line.quality_id" :name="`lines[${index}][quality_id]`" required
+                                                @change="line.product_id = ''; line.selectedProductName = ''; line.total_available = 0;"
+                                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#ff9c00] focus:ring-[#ff9c00] sm:text-sm"
+                                                :disabled="!warehouse_id">
+                                            <option value="">-- Seleccionar --</option>
+                                            <template x-for="quality in qualities" :key="quality.id">
+                                                <option :value="quality.id" x-text="quality.name"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                    
                                     <div class="lg:col-span-4 relative">
                                         <label class="block text-sm font-medium text-gray-700 lg:hidden mb-1">Producto</label>
-                                        
                                         <input type="hidden" :name="`lines[${index}][product_id]`" x-model.number="line.product_id" required>
                                         
                                         <input type="text"
@@ -130,17 +161,12 @@
                                                @keydown.up.prevent="selectPrevious(index)"
                                                @keydown.enter.prevent="selectProduct(index, line.highlightedIndex)"
                                                @click.away="line.searchResults = []"
-                                               :placeholder="line.selectedProductName || 'Buscar SKU, Nombre o UPC...'"
-                                               :disabled="!warehouse_id"
+                                               :placeholder="line.selectedProductName || 'Buscar SKU...'"
+                                               :disabled="!line.quality_id"
                                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#ff9c00] focus:ring-[#ff9c00] sm:text-sm"
-                                               :class="{ 'border-red-500': !warehouse_id }">
+                                               :class="{ 'border-red-500': !line.quality_id }">
                                         
-                                        <div x-show="line.searchLoading" class="absolute top-2 right-2">
-                                            <svg class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                        </div>
+                                        <div x-show="line.searchLoading" class="absolute top-2 right-2"></div>
                                         
                                         <div x-show="line.searchResults.length > 0" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
                                             <template x-for="(product, prodIndex) in line.searchResults" :key="product.id">
@@ -148,42 +174,41 @@
                                                      @mouseenter="line.highlightedIndex = prodIndex"
                                                      :class="{ 'bg-blue-100': line.highlightedIndex === prodIndex }"
                                                      class="cursor-pointer p-3 hover:bg-blue-50 border-b">
-                                                    <p class="font-medium text-gray-900" x-text="product.sku"></p>
+                                                    <div class="flex justify-between">
+                                                        <span class="font-medium text-gray-900" x-text="product.sku"></span>
+                                                        <span class="font-bold text-green-600" x-text="`Disp: ${product.total_available}`"></span>
+                                                    </div>
                                                     <p class="text-sm text-gray-600" x-text="product.name"></p>
-                                                    <p class="text-xs text-gray-400" x-text="product.upc"></p>
                                                 </div>
                                             </template>
                                         </div>
-                                        <template x-if="!line.searchLoading && line.searchTerm.length > 1 && line.searchResults.length === 0">
-                                            <p class="text-xs text-red-500 mt-1">No se encontraron productos con stock en este almacén.</p>
+                                        
+                                        {{-- 2. Se añade la condición !line.product_id para arreglar el bug visual --}}
+                                        <template x-if="!line.searchLoading && line.searchTerm.length > 1 && line.searchResults.length === 0 && !line.product_id">
+                                            <p class="text-xs text-red-500 mt-1">No se encontraron productos con esa calidad/stock.</p>
                                         </template>
                                     </div>
 
-                                    <div class="lg:col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700 lg:hidden mb-1">Calidad</label>
-                                        <select x-model="line.quality_id" :name="`lines[${index}][quality_id]`" required
-                                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#ff9c00] focus:ring-[#ff9c00] sm:text-sm"
-                                                :disabled="!line.product_id">
-                                            <option value="">-- Seleccionar --</option>
-                                            <template x-for="quality in qualities" :key="quality.id">
-                                                <option :value="quality.id" x-text="quality.name"></option>
-                                            </template>
-                                        </select>
+                                    <div class="lg:col-span-1">
+                                        <label class="block text-sm font-medium text-gray-700 lg:hidden mb-1">Disponible</label>
+                                        <input type="number" x-model.number="line.total_available"
+                                               class="w-full rounded-md border-gray-300 bg-gray-100 shadow-sm sm:text-sm"
+                                               readonly>
                                     </div>
 
                                     <div class="lg:col-span-1">
                                         <label class="block text-sm font-medium text-gray-700 lg:hidden mb-1">Cantidad</label>
                                         <input type="number" x-model.number="line.quantity" :name="`lines[${index}][quantity]`"
-                                               min="1" required
+                                               min="1" :max="line.total_available" required
                                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-[#ff9c00] focus:ring-[#ff9c00] sm:text-sm"
                                                placeholder="Qty" :disabled="!line.product_id">
                                     </div>
 
-                                    <div class="lg:col-span-3">
+                                    <div class="lg:col-span-2">
                                         <label class="block text-sm font-medium text-gray-700 lg:hidden mb-1">LPN (Opcional)</label>
                                         <input type="text" x-model="line.lpn" :name="`lines[${index}][lpn]`"
                                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-[#ff9c00] focus:ring-[#ff9c00] sm:text-sm"
-                                               placeholder="Dejar vacío para automático" :disabled="!line.product_id">
+                                               placeholder="Automático" :disabled="!line.product_id">
                                     </div>
                                     
                                     <div class="lg:col-span-2 flex items-end justify-end space-x-2">
@@ -195,6 +220,8 @@
                             </template>
                         </div>
                     </div>
+
+                </form>
 
                     <div x-show="tab === 'plantilla'" class="text-center">
                         <p class="text-gray-600 mb-4">Carga las líneas de la orden usando una plantilla CSV. Esto reemplazará cualquier línea de la "Entrada Manual".</p>
@@ -229,13 +256,15 @@
                     <a href="{{ route('wms.sales-orders.index') }}" class="mr-4 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                         Cancelar
                     </a>
+                    
                     <button type="submit" 
+                            form="create-so-form"
                             :disabled="!warehouse_id || lines.length === 0 || lines.some(l => !l.product_id || !l.quality_id || !l.quantity)"
                             class="inline-flex items-center justify-center px-6 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-[#2c3856] hover:bg-[#1f2940] disabled:bg-gray-400">
                         Crear Orden de Venta
                     </button>
                 </div>
-            </form>
+            
         </div>
     </div>
 
@@ -245,103 +274,103 @@
                 warehouse_id: '{{ old('warehouse_id') }}' || '',
                 apiSearchUrl: '',
                 qualities: [],
-                lines: [], // <-- 'lines' está definido
+                lines: [],
                 searchTimeout: null,
 
-                // Nueva función para inicializar de forma segura
-                initData(apiSearchUrl, qualities, importedLines) {
-                    this.apiSearchUrl = apiSearchUrl;
-                    this.qualities = qualities;
+                initData() {
+                    const data = JSON.parse(document.getElementById('so-create-data').textContent);
+                    this.apiSearchUrl = data.apiSearchUrl;
+                    this.qualities = data.qualities;
+                    this.warehouse_id = data.oldWarehouseId || '';
                     
-                    if (importedLines && importedLines.length > 0) {
-                        this.lines = importedLines.map(line => ({
+                    if (data.importedLines && data.importedLines.length > 0) {
+                        this.lines = data.importedLines.map(line => ({
                             product_id: line.product_id,
                             quality_id: line.quality_id,
                             quantity: line.quantity_ordered,
-                            lpn: line.pallet_item_id ? 'LPN-PRE-ASIGNADO' : '',
-                            searchTerm: '',
-                            selectedProductName: `Importado: ${line.product_id}`, // Mejorable
+                            lpn: line.pallet_item_id ? 'LPN-PRE-ASIGNADO' : null,
+                            searchTerm: `SKU: ${line.product_id}`,
+                            selectedProductName: `SKU: ${line.product_id}`,
                             searchResults: [],
                             searchLoading: false,
-                            highlightedIndex: -1
+                            highlightedIndex: -1,
+                            total_available: 0
                         }));
                     } else {
                         this.lines = [this.createNewLine()];
                     }
                 },
 
-                // Crea la estructura de una nueva línea
                 createNewLine() {
                     return {
                         product_id: '',
                         quality_id: '',
                         quantity: '',
-                        lpn: '',
+                        lpn: null,
                         searchTerm: '',
                         selectedProductName: '', 
                         searchResults: [],
                         searchLoading: false,
-                        highlightedIndex: -1
+                        highlightedIndex: -1,
+                        total_available: 0
                     };
                 },
 
-                // Añade una nueva línea
                 addLine() {
                     this.lines.push(this.createNewLine());
                 },
 
-                // Elimina una línea
                 removeLine(index) {
                     this.lines.splice(index, 1);
                 },
 
-                // Limpia las líneas si se cambia el almacén
                 clearAllLines() {
                     if (this.lines.length > 0 && this.lines[0].product_id) {
                         if (confirm('¿Cambiar de almacén? Esto borrará todas las líneas de pedido actuales.')) {
                             this.lines = [this.createNewLine()];
                         } else {
-                            // Este es un truco para revertir el <select> si el usuario dice "Cancelar"
-                            // Necesitaríamos almacenar el 'old_warehouse_id' para que funcione 100%
                         }
                     }
                 },
 
-                // Busca productos con stock
                 searchProducts(index) {
                     const line = this.lines[index];
                     
-                    // Limpia el producto seleccionado si la búsqueda cambia
                     line.product_id = '';
                     line.selectedProductName = '';
                     line.highlightedIndex = -1;
+                    line.total_available = 0;
 
+                    if (!this.warehouse_id) {
+                        alert('Por favor, selecciona un almacén de surtido primero.');
+                        line.searchTerm = '';
+                        return;
+                    }
+                    if (!line.quality_id) {
+                        alert('Por favor, selecciona una calidad para esta línea.');
+                        line.searchTerm = '';
+                        return;
+                    }
                     if (line.searchTerm.length < 2) {
                         line.searchResults = [];
                         line.searchLoading = false;
                         return;
                     }
-                    if (!this.warehouse_id) {
-                        alert('Por favor, selecciona un almacén de surtido primero.');
-                        line.searchTerm = '';
-                        line.searchLoading = false;
-                        return;
-                    }
 
                     line.searchLoading = true;
-                    
-                    if(this.searchTimeout) {
-                        clearTimeout(this.searchTimeout);
-                    }
+                    if(this.searchTimeout) clearTimeout(this.searchTimeout);
 
                     this.searchTimeout = setTimeout(() => {
-                        fetch(`${this.apiSearchUrl}?query=${line.searchTerm}&warehouse_id=${this.warehouse_id}`, {
+                        const params = new URLSearchParams({
+                            query: line.searchTerm,
+                            warehouse_id: this.warehouse_id,
+                            quality_id: line.quality_id
+                        });
+
+                        fetch(`${this.apiSearchUrl}?${params.toString()}`, {
                             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                         })
-                        .then(response => {
-                            if (!response.ok) throw new Error('Error de red');
-                            return response.json();
-                        })
+                        .then(response => response.json())
                         .then(data => {
                             line.searchResults = data;
                             line.searchLoading = false;
@@ -350,10 +379,9 @@
                             line.searchLoading = false;
                             line.searchResults = [];
                         });
-                    }, 300); // Debounce de 300ms
+                    }, 300);
                 },
 
-                // Selecciona un producto del dropdown
                 selectProduct(lineIndex, resultIndex) {
                     const line = this.lines[lineIndex];
                     if (!line.searchResults[resultIndex]) return;
@@ -361,12 +389,13 @@
                     const product = line.searchResults[resultIndex];
                     line.product_id = product.id;
                     line.selectedProductName = `${product.sku} | ${product.name}`;
-                    line.searchTerm = `${product.sku} | ${product.name}`; // Pone el texto en el input
-                    line.searchResults = []; // Cierra el dropdown
+                    line.searchTerm = `${product.sku} | ${product.name}`;
+                    line.total_available = product.total_available;
+                    line.quantity = 1;
+                    line.searchResults = []; 
                     line.highlightedIndex = -1;
                 },
 
-                // Navegación con teclado
                 selectNext(lineIndex) {
                     const line = this.lines[lineIndex];
                     if (line.highlightedIndex < line.searchResults.length - 1) {
@@ -378,7 +407,7 @@
                     if (line.highlightedIndex > 0) {
                         line.highlightedIndex--;
                     }
-                } // <--- ESTA VEZ LA COMA ESTÁ ELIMINADA.
+                }
             }
         }
     </script>
