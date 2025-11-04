@@ -22,6 +22,18 @@
                             </select>
                         </div>
 
+                        <div>
+                            <label for="warehouse_id" class="block text-sm font-medium text-gray-700">Almacén de Conteo</label>
+                            <select name="warehouse_id" id="warehouse_id" required class="mt-1 block w-full rounded-md border-gray-300">
+                                <option value="">Seleccione un almacén...</option>
+                                @foreach($warehouses as $warehouse)
+                                    <option value="{{ $warehouse->id }}" @selected(old('warehouse_id') == $warehouse->id)>
+                                        {{ $warehouse->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>                        
+
                         <div x-show="countType === 'dirigido'" x-transition class="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
                             <label for="locations_file" class="block text-sm font-medium text-gray-700">Archivo de Ubicaciones (.csv)</label>
                             <input type="file" name="locations_file" id="locations_file" accept=".csv, .txt" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-white">

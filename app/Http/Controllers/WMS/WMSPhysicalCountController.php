@@ -12,25 +12,37 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\WMS\InventoryAdjustment;
 use App\Models\WMS\StockMovement;
+use App\Models\Warehouse;
 
 class WMSPhysicalCountController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $query = PhysicalCountSession::with(['user', 'assignedUser'])->latest();
+        $warehouseId = $request->input('warehouse_id');
+        $warehouses = Warehouse::orderBy('name')->get();
 
-        if (!Auth::user()->isSuperAdmin()) {
-            $query->where('assigned_user_id', Auth::id());
+        $query = PhysicalCountSession::with(['user', 'assignedUser', 'warehouse'])->latest();
+
+        if ($warehouseId) {
+            $query->where('warehouse_id', $warehouseId);
         }
 
-        $sessions = $query->paginate(15);
-        return view('wms.physical-counts.index', compact('sessions'));
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where(function($q) {
+                $q->where('assigned_user_id', Auth::id())
+                  ->orWhere('user_id', Auth::id());
+            });
+        }
+
+        $sessions = $query->paginate(15)->withQueryString();
+        return view('wms.physical-counts.index', compact('sessions', 'warehouses', 'warehouseId'));
     }
 
     public function create()
     {
         $users = User::where('is_client', false)->orderBy('name')->get();
-        return view('wms.physical-counts.create', compact('users'));
+        $warehouses = Warehouse::orderBy('name')->get();
+        return view('wms.physical-counts.create', compact('users', 'warehouses'));
     }
 
     public function store(Request $request)
@@ -39,30 +51,41 @@ class WMSPhysicalCountController extends Controller
             'name' => 'required|string|max:255',
             'type' => 'required|in:cycle,full,dirigido',
             'assigned_user_id' => 'required|exists:users,id',
+            'warehouse_id' => 'required|exists:warehouses,id',
             'locations_file' => 'required_if:type,dirigido|file|mimes:csv,txt',
         ]);
 
         DB::beginTransaction();
         try {
-            $session = PhysicalCountSession::create($validated + ['user_id' => Auth::id()]);
+            $warehouseId = $validated['warehouse_id'];
+            
+            $session = PhysicalCountSession::create([
+                'name' => $validated['name'],
+                'type' => $validated['type'],
+                'assigned_user_id' => $validated['assigned_user_id'],
+                'warehouse_id' => $warehouseId,
+                'user_id' => Auth::id(),
+                'status' => 'Pending'
+            ]);
 
             if ($validated['type'] === 'dirigido') {
                 
                 $file = $request->file('locations_file');
                 $csvData = array_map('str_getcsv', file($file->getRealPath()));
-                
                 array_shift($csvData); 
-
                 $locationCodes = collect($csvData)->flatten()->map('trim')->filter()->unique();
 
                 if ($locationCodes->isEmpty()) {
-                    throw new \Exception("El archivo CSV no contiene códigos de ubicación válidos después de la cabecera.");
+                    throw new \Exception("El archivo CSV no contiene códigos de ubicación válidos.");
                 }
 
-                $locations = Location::whereIn('code', $locationCodes)->with('pallets.items')->get();
+                $locations = Location::whereIn('code', $locationCodes)
+                                     ->where('warehouse_id', $warehouseId)
+                                     ->with('pallets.items')
+                                     ->get();
 
                 if ($locations->isEmpty()) {
-                    throw new \Exception("Ninguna de las ubicaciones especificadas en el archivo CSV fue encontrada en el sistema.");
+                    throw new \Exception("Ninguna de las ubicaciones especificadas existe en el almacén seleccionado.");
                 }
 
                 foreach ($locations as $location) {
@@ -77,7 +100,12 @@ class WMSPhysicalCountController extends Controller
                 }
 
             } else {
-                $palletsToCount = \App\Models\WMS\Pallet::where('status', 'Finished')->with('items')->whereHas('items')->get();
+                $palletsToCount = \App\Models\WMS\Pallet::where('status', 'Finished')
+                                ->whereHas('items')
+                                ->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId))
+                                ->with('items')
+                                ->get();
+                                
                 foreach ($palletsToCount as $pallet) {
                     foreach ($pallet->items as $item) {
                         $session->tasks()->create([
@@ -87,13 +115,17 @@ class WMSPhysicalCountController extends Controller
                     }
                 }
             }
+            
+            if ($session->tasks()->count() === 0) {
+                 throw new \Exception("No se encontraron tareas para generar. Verifique el inventario o las ubicaciones en el almacén seleccionado.");
+            }
 
             DB::commit();
             return redirect()->route('wms.physical-counts.show', $session)->with('success', 'Sesión de conteo creada y tareas generadas.');
             
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Error al crear la sesión: ' . $e->getMessage());
+            return back()->with('error', 'Error al crear la sesión: ' (e->getMessage()))->withInput();
         }
     }
 

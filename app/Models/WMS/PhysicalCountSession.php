@@ -16,6 +16,7 @@ class PhysicalCountSession extends Model
         'user_id',
         'status',
         'assigned_user_id',
+        'warehouse_id'
     ];
 
     public function user()
@@ -32,5 +33,10 @@ class PhysicalCountSession extends Model
     {
         return $this->belongsTo(\App\Models\User::class, 'assigned_user_id');
     }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(\App\Models\Warehouse::class);
+    }    
 
 }
