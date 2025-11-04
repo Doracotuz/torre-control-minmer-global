@@ -742,7 +742,8 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::get('reports/non-available-inventory/export', [WMSReportController::class, 'exportNonAvailableReport'])->name('reports.non-available-inventory.export');
     Route::get('reports/abc-analysis', [WMSReportController::class, 'showAbcAnalysis'])->name('reports.abc-analysis');
     Route::get('reports/abc-analysis/export', [WMSReportController::class, 'exportAbcAnalysis'])->name('reports.abc-analysis.export');  
-    Route::get('reports/slotting-heatmap', [WMSReportController::class, 'showSlottingHeatmap'])->name('reports.slotting-heatmap');    
+    Route::get('reports/slotting-heatmap', [WMSReportController::class, 'showSlottingHeatmap'])->name('reports.slotting-heatmap');
+    Route::get('/api/search-products', [WMSProductController::class, 'apiSearchProducts'])->name('api.search-products');
 
 });
 

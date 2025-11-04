@@ -205,7 +205,7 @@
 
             <div x-show="tab === 'inventario'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100">
                 
-                <div class="bg-white p-5 rounded-lg shadow-lg mb-6 fade-in-up" x-data="lpnSearch('{{ route('wms.api.find-lpn') }}')">
+                <div class="bg-white p-5 rounded-lg shadow-lg mb-6 fade-in-up relative z-20" x-data="lpnSearch('{{ route('wms.api.find-lpn') }}')">
                     <h3 class="text-lg font-bold text-[#2c3856] mb-3">Consulta Rápida de LPN</h3>
                     <div class="flex items-center space-x-3 relative">
                         <input type="text" 

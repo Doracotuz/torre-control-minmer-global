@@ -12,6 +12,7 @@ use App\Models\WMS\DockArrival;
 use App\Models\WMS\ReceiptEvidence;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Warehouse;
 
 class WMSPurchaseOrderController extends Controller
 {
@@ -61,13 +62,16 @@ class WMSPurchaseOrderController extends Controller
 
     public function create()
     {
-        $products = Product::orderBy('name')->get();
-        return view('wms.purchase-orders.create', compact('products'));
+        $products = Product::orderBy('sku')->get(['id', 'sku', 'name', 'upc']);
+        $warehouses = Warehouse::orderBy('name')->get(['id', 'name']);
+        
+        return view('wms.purchase-orders.create', compact('products', 'warehouses'));
     }
 
     public function store(Request $request)
     {
         $validatedData = $request->validate([
+            'warehouse_id' => 'required|exists:warehouses,id',
             'po_number' => 'required|string|max:255|unique:purchase_orders,po_number',
             'expected_date' => 'required|date',
             'document_invoice' => 'nullable|string|max:255',
@@ -82,6 +86,7 @@ class WMSPurchaseOrderController extends Controller
         $expected_bottles = collect($validatedData['lines'])->sum('quantity_ordered');
 
         $purchaseOrder = PurchaseOrder::create([
+            'warehouse_id' => $validatedData['warehouse_id'],
             'po_number' => $validatedData['po_number'],
             'expected_date' => $validatedData['expected_date'],
             'document_invoice' => $validatedData['document_invoice'],
@@ -123,6 +128,7 @@ class WMSPurchaseOrderController extends Controller
         if ($request->has('lines')) {
             
             $validatedData = $request->validate([
+                'warehouse_id' => 'required|exists:warehouses,id',
                 'po_number' => 'required|string|max:255|unique:purchase_orders,po_number,' . $purchaseOrder->id,
                 'expected_date' => 'required|date',
                 'container_number' => 'nullable|string|max:255',
@@ -137,6 +143,7 @@ class WMSPurchaseOrderController extends Controller
             $expected_bottles = collect($validatedData['lines'])->sum('quantity_ordered');
             
             $poData = $validatedData;
+            $poData['warehouse_id'] = $validatedData['warehouse_id'];
             $poData['expected_bottles'] = $expected_bottles;
 
             $purchaseOrder->update($poData);
@@ -321,9 +328,11 @@ class WMSPurchaseOrderController extends Controller
     {
         $purchaseOrder->load('lines.product');
         
-        $products = Product::orderBy('name')->get();
+        $products = \App\Models\Product::orderBy('name')->get(); 
+        
+        $warehouses = \App\Models\Warehouse::orderBy('name')->get();
 
-        return view('wms.purchase-orders.edit', compact('purchaseOrder', 'products'));
+        return view('wms.purchase-orders.edit', compact('purchaseOrder', 'products', 'warehouses'));
     }
 
     public function uploadEvidence(Request $request, PurchaseOrder $purchaseOrder)

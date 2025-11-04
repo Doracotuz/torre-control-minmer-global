@@ -71,7 +71,15 @@ class WMSReceivingController extends Controller
         }
 
         try {
-            $receivingLocation = Location::where('type', 'receiving')->firstOrFail();
+            $purchaseOrder = PurchaseOrder::findOrFail($validated['purchase_order_id']);
+            
+            $receivingLocation = Location::where('type', 'receiving')
+                                        ->where('warehouse_id', $purchaseOrder->warehouse_id)
+                                        ->first();
+
+            if (!$receivingLocation) {
+                throw new \Exception("No se encontró una ubicación de 'Recepción' configurada para el almacén de esta PO.");
+            }
             
             $pallet = Pallet::firstOrCreate(
                 [

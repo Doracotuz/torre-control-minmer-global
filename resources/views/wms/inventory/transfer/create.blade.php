@@ -7,6 +7,30 @@
 
     <div class="py-12" x-data="transferApp()">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+            @if (session('success'))
+                <div class="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow-md" role="alert">
+                    <p class="font-bold">Éxito</p>
+                    <p>{{ session('success') }}</p>
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md shadow-md" role="alert">
+                    <p class="font-bold">Error</p>
+                    <p>{{ session('error') }}</p>
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div class="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md shadow-md" role="alert">
+                    <p class="font-bold">Error de Validación</p>
+                    <ul class="list-disc list-inside text-sm">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif            
             <div class="bg-white rounded-2xl shadow-xl border p-8">
 
                 <div x-show="step === 1" x-transition>

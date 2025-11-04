@@ -14,7 +14,7 @@ class PurchaseOrder extends Model
     use HasFactory;
 
     protected $fillable = [
-        'po_number', 'expected_date', 'status', 'user_id', 'container_number',
+        'warehouse_id','po_number', 'expected_date', 'status', 'user_id', 'container_number',
         'document_invoice', 'pedimento_a4', 'pedimento_g1', 'total_pallets',
         'expected_bottles', 'received_bottles', 'operator_name',
         'download_start_time', 'download_end_time'
@@ -33,6 +33,12 @@ class PurchaseOrder extends Model
             'Completed' => 'Completado', default => $this->status,
         };
     }
+
+    protected $casts = [
+        'expected_date' => 'datetime',
+        'download_start_time' => 'datetime',
+        'download_end_time' => 'datetime',
+    ];    
     
     public function getReceiptSummary()
     {
@@ -73,6 +79,11 @@ class PurchaseOrder extends Model
     public function evidences()
     {
         return $this->hasMany(ReceiptEvidence::class);
+    }
+    
+    public function warehouse()
+    {
+        return $this->belongsTo(\App\Models\Warehouse::class);
     }    
 
 }

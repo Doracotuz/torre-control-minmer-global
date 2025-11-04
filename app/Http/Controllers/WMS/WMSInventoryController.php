@@ -122,14 +122,26 @@ class WMSInventoryController extends Controller
     {
         $validated = $request->validate([
             'pallet_id' => 'required|exists:pallets,id',
-            'destination_location_code' => 'required|exists:locations,code',
+            'destination_location_code' => 'required|string|exists:locations,code',
         ]);
 
         DB::beginTransaction();
         try {
-            $pallet = Pallet::with('items')->findOrFail($validated['pallet_id']);
+            $pallet = Pallet::with(['items', 'location.warehouse'])->findOrFail($validated['pallet_id']);
             $originLocation = $pallet->location;
-            $destinationLocation = Location::where('code', $validated['destination_location_code'])->firstOrFail();
+
+            if (!$originLocation || !$originLocation->warehouse_id) {
+                throw new \Exception("La tarima no tiene una ubicación de origen válida o la ubicación no tiene un almacén asignado.");
+            }
+            $currentWarehouseId = $originLocation->warehouse_id;
+
+            $destinationLocation = Location::where('code', $validated['destination_location_code'])
+                                              ->where('warehouse_id', $currentWarehouseId)
+                                              ->first();
+
+            if (!$destinationLocation) {
+                throw new \Exception("Ubicación de destino no encontrada o no pertenece a este almacén.");
+            }
 
             if ($originLocation->id === $destinationLocation->id) {
                 return back()->with('error', 'La ubicación de origen y destino no pueden ser la misma.');
@@ -141,10 +153,14 @@ class WMSInventoryController extends Controller
             $pallet->save();
 
             foreach ($pallet->items as $item) {
+                
                 $originStock = InventoryStock::where('product_id', $item->product_id)
                     ->where('quality_id', $item->quality_id)
                     ->where('location_id', $originLocation->id)->first();
-                if ($originStock) $originStock->decrement('quantity', $item->quantity);
+                
+                if ($originStock) {
+                    $originStock->decrement('quantity', $item->quantity);
+                }
 
                 StockMovement::create([
                     'user_id' => Auth::id(),
@@ -158,7 +174,11 @@ class WMSInventoryController extends Controller
                 ]);                
 
                 $destinationStock = InventoryStock::firstOrCreate(
-                    ['product_id' => $item->product_id, 'quality_id' => $item->quality_id, 'location_id' => $destinationLocation->id],
+                    [
+                        'product_id' => $item->product_id, 
+                        'quality_id' => $item->quality_id, 
+                        'location_id' => $destinationLocation->id
+                    ],
                     ['quantity' => 0]
                 );
                 $destinationStock->increment('quantity', $item->quantity);
@@ -173,7 +193,6 @@ class WMSInventoryController extends Controller
                     'source_id' => $pallet->id,
                     'source_type' => \App\Models\WMS\Pallet::class,
                 ]);
-
             }
 
             DB::commit();
