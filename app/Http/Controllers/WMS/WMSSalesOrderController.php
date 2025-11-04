@@ -67,9 +67,37 @@ class WMSSalesOrderController extends Controller
 
     public function create()
     {
-        $stockData = PalletItem::where('quantity', '>', 0)
-            ->with(['product', 'quality', 'pallet.purchaseOrder'])
-            ->get();
+        $availableQuality = \App\Models\WMS\Quality::where('name', 'Disponible')->first();
+        $availableQualityId = $availableQuality ? $availableQuality->id : -1;
+
+        $restrictedLocationTypes = ['Receiving', 'Quality Control', 'Shipping'];
+        $restrictedLocationIds = \App\Models\Location::whereIn('type', $restrictedLocationTypes)->pluck('id');
+
+        $stockData = \App\Models\WMS\PalletItem::query()
+            ->whereRaw('quantity > committed_quantity')
+            ->with([
+                'product:id,sku,name',
+                'quality:id,name',
+                'pallet.purchaseOrder:id,po_number,pedimento_a4',
+                'pallet.location:id,code,type'
+            ])
+            ->get()
+            ->map(function ($item) use ($availableQualityId, $restrictedLocationIds) {
+                
+                $item->is_available = true;
+                $item->warning_message = null;
+
+                if ($item->quality_id != $availableQualityId) {
+                    $item->is_available = false;
+                    $item->warning_message = "Calidad No Disponible: " . ($item->quality->name ?? 'N/A');
+                } 
+                elseif ($restrictedLocationIds->contains($item->pallet->location_id)) {
+                    $item->is_available = false;
+                    $item->warning_message = "Ubicación No Válida: " . ($item->pallet->location->type ?? 'N/A');
+                }
+
+                return $item;
+            });
             
         return view('wms.sales-orders.create', compact('stockData'));
     }

@@ -9,6 +9,8 @@ use App\Models\WMS\SalesOrder;
 use App\Models\WMS\InventoryStock;
 use App\Models\WMS\PhysicalCountTask;
 use App\Models\Location;
+use App\Models\WMS\PalletItem;
+use App\Models\WMS\Quality;
 use Illuminate\Support\Facades\DB;
 
 class WMSDashboardController extends Controller
@@ -33,7 +35,7 @@ class WMSDashboardController extends Controller
         ];
 
         $receivingPOs = PurchaseOrder::where('status', 'Receiving')
-            ->with('latestArrival')
+            ->with('latestArrival') //
             ->latest('updated_at')
             ->limit(10)
             ->get();
@@ -54,16 +56,26 @@ class WMSDashboardController extends Controller
 
         $discrepancyTasks = PhysicalCountTask::where('status', 'discrepancy')
             ->with('product', 'location')
-            ->limit(10)
+            ->limit(5)
             ->get();
+            
+        $availableQuality = Quality::where('name', 'Disponible')->first();
+        $availableQualityId = $availableQuality ? $availableQuality->id : -1;
         
+        $nonAvailableStock = PalletItem::where('quantity', '>', 0)
+            ->where('quality_id', '!=', $availableQualityId)
+            ->with('product:id,sku', 'quality:id,name', 'pallet:id,lpn')
+            ->limit(5)
+            ->get();
+
         return view('wms.dashboard', compact(
             'kpis',
             'receivingPOs',
             'pendingPOs',
             'pickingSOs',
             'pendingSOs',
-            'discrepancyTasks'
+            'discrepancyTasks',
+            'nonAvailableStock'
         ));
     }
 }

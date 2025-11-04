@@ -35,26 +35,71 @@ class WMSPickingController extends Controller
             return back()->with('error', 'Esta orden ya está siendo procesada o ya tiene una Pick List.');
         }
 
+        $availableQuality = \App\Models\WMS\Quality::where('name', 'Disponible')->first();
+        $availableQualityId = $availableQuality ? $availableQuality->id : -1;
+
         DB::beginTransaction();
         try {
             $pickListItems = [];
+            $salesOrder->load('lines.product');
+
             foreach ($salesOrder->lines as $line) {
-                $palletItem = \App\Models\WMS\PalletItem::where('product_id', $line->product_id)
-                    ->where('quantity', '>=', $line->quantity_ordered)
-                    ->orderBy('created_at')
+                
+                $quantityNeeded = $line->quantity_ordered;
+                $palletItem = null;
+
+                $baseQuery = PalletItem::query()
+                    ->where('product_id', $line->product_id)
+                    ->whereRaw('quantity - committed_quantity >= ?', [$quantityNeeded]);
+
+                $palletItem = (clone $baseQuery)
+                    ->where('quality_id', $availableQualityId)
+                    ->whereHas('pallet.location', fn($q) => $q->where('type', 'picking'))
+                    ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
+                    ->join('locations', 'pallets.location_id', '=', 'locations.id')
+                    ->select('pallet_items.*')
+                    ->orderBy('locations.pick_sequence', 'asc')
+                    ->orderBy('pallets.created_at', 'asc')
                     ->first();
 
                 if (!$palletItem) {
-                    throw new \Exception('No hay un pallet con stock suficiente para el producto: ' . $line->product->sku);
+                    $palletItem = (clone $baseQuery)
+                        ->where('quality_id', $availableQualityId)
+                        ->whereHas('pallet.location', fn($q) => $q->where('type', 'storage'))
+                        ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
+                        ->select('pallet_items.*')
+                        ->orderBy('pallets.created_at', 'asc')
+                        ->first();
                 }
 
+                if (!$palletItem) {
+                    $palletItem = (clone $baseQuery)
+                        ->where('quality_id', '!=', $availableQualityId)
+                        // podríamos excluir 'Receiving'
+                        // ->whereHas('pallet.location', fn($q) => $q->where('type', '!=', 'Receiving'))
+                        ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
+                        ->select('pallet_items.*')
+                        ->orderBy('pallets.created_at', 'asc')
+                        ->first();
+                }
+
+                if (!$palletItem) {
+                    throw new \Exception('No hay stock disponible ni alternativo (Dañado/QC) para el producto: ' . $line->product->sku);
+                }
+
+                $palletItem->load('pallet.location', 'quality');
                 $pickListItems[] = [
                     'product_id' => $line->product_id,
                     'pallet_id' => $palletItem->pallet_id,
                     'location_id' => $palletItem->pallet->location_id,
-                    'quantity_to_pick' => $line->quantity_ordered,
+                    'quantity_to_pick' => $quantityNeeded,
                     'quality_id' => $palletItem->quality_id,
                 ];
+
+                // el 'generate' original no comprometía el stock,
+                // pero el 'store' de SalesOrder sí lo hace
+                // Si no es así,modifico:
+                // $palletItem->increment('committed_quantity', $quantityNeeded);
             }
 
             $pickList = \App\Models\WMS\PickList::create([
@@ -67,7 +112,7 @@ class WMSPickingController extends Controller
             $salesOrder->update(['status' => 'Picking']);
 
             DB::commit();
-            return redirect()->route('wms.picking.show', $pickList)->with('success', 'Pick List generada exitosamente.');
+            return redirect()->route('wms.picking.show', $pickList)->with('success', 'Pick List generada exitosamente con lógica optimizada.');
 
         } catch (\Exception $e) {
             DB::rollBack();

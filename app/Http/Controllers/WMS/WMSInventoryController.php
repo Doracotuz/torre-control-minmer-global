@@ -539,5 +539,3 @@ class WMSInventoryController extends Controller
         return response()->json($pallet);
     }
 }    
-
-}
