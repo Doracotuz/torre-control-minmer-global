@@ -23,7 +23,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-8xl mx-auto sm:px-6 lg:px-8">
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 
@@ -77,7 +77,20 @@
             </div>
 
             <div class="bg-white p-4 rounded-xl shadow-md mb-6">
-                <form action="{{ route('wms.sales-orders.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+                <form action="{{ route('wms.sales-orders.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
+                    <div>
+                        <label for="warehouse_id" class="block text-xs font-medium text-gray-500 mb-1">Almacén</label>
+                        <select name="warehouse_id" id="warehouse_id" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full" onchange="this.form.submit()">
+                            <option value="">-- Todos los Almacenes --</option>
+                            
+                            {{-- Estas variables ($warehouses y $warehouseId) las pasa el controlador actualizado --}}
+                            @foreach($warehouses as $warehouse)
+                                <option value="{{ $warehouse->id }}" @if(request('warehouse_id') == $warehouse->id) selected @endif>
+                                    {{ $warehouse->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>                    
                     <div>
                         <label for="so_number" class="block text-xs font-medium text-gray-500 mb-1">SO</label>
                         <input type="text" name="so_number" placeholder="Buscar por Nº SO..." value="{{ request('so_number') }}" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">

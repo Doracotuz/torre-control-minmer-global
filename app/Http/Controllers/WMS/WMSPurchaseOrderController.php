@@ -18,11 +18,18 @@ class WMSPurchaseOrderController extends Controller
 {
     public function index(Request $request)
     {
+        $warehouses = \App\Models\Warehouse::orderBy('name')->get();
+        $warehouseId = $request->input('warehouse_id');
+
         $query = PurchaseOrder::with(['latestArrival', 'lines.product'])
             ->withCount(['pallets' => function($query) {
                 $query->where('status', 'Finished');
             }])
             ->latest();        
+
+        if ($warehouseId) {
+            $query->where('warehouse_id', $warehouseId);
+        }
 
         if ($request->filled('search')) {
             $searchTerm = $request->search;
@@ -43,20 +50,30 @@ class WMSPurchaseOrderController extends Controller
 
         $purchaseOrders = $query->paginate(10)->withQueryString();
 
-        $completedOrders = PurchaseOrder::where('status', 'Completed')->whereNotNull(['download_start_time', 'download_end_time']);
+        $kpiQuery = PurchaseOrder::query();
+        if ($warehouseId) {
+            $kpiQuery->where('warehouse_id', $warehouseId);
+        }
+
+        $completedOrders = (clone $kpiQuery)->where('status', 'Completed')->whereNotNull(['download_start_time', 'download_end_time']);
         $totalSeconds = $completedOrders->get()->sum(function($order) {
             return \Carbon\Carbon::parse($order->download_end_time)->diffInSeconds(\Carbon\Carbon::parse($order->download_start_time));
         });
         $avgTime = $completedOrders->count() > 0 ? ($totalSeconds / $completedOrders->count()) / 60 : 0;
 
         $kpis = [
-            'receiving' => PurchaseOrder::where('status', 'Receiving')->count(),
-            'arrivals_today' => DockArrival::whereDate('arrival_time', today())->count(),
-            'pending' => PurchaseOrder::where('status', 'Pending')->count(),
+            'receiving' => (clone $kpiQuery)->where('status', 'Receiving')->count(),
+            'arrivals_today' => DockArrival::whereDate('arrival_time', today())
+                                ->whereHas('purchaseOrder', function($q) use ($warehouseId) {
+                                    if ($warehouseId) {
+                                        $q->where('warehouse_id', $warehouseId);
+                                    }
+                                })->count(),
+            'pending' => (clone $kpiQuery)->where('status', 'Pending')->count(),
             'avg_unload_time' => round($avgTime),
         ];
 
-        return view('wms.purchase-orders.index', compact('purchaseOrders', 'kpis'));
+        return view('wms.purchase-orders.index', compact('purchaseOrders', 'kpis', 'warehouses', 'warehouseId'));
     }
 
 

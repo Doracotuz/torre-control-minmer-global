@@ -22,27 +22,21 @@ use App\Models\Warehouse;
 
 class WMSSalesOrderController extends Controller
 {
-    public function index(Request $request)
+public function index(Request $request)
     {
+        $warehouses = \App\Models\Warehouse::orderBy('name')->get();
+        $warehouseId = $request->input('warehouse_id');
+
         $query = SalesOrder::with(['user'])
             ->withCount('lines') 
             ->withSum('lines', 'quantity_ordered');
 
+        if ($warehouseId) {
+            $query->where('warehouse_id', $warehouseId);
+        }
+        
         if ($request->filled('so_number')) {
             $query->where('so_number', 'like', '%' . $request->so_number . '%');
-        }
-        if ($request->filled('invoice_number')) {
-            $query->where('invoice_number', 'like', '%' . $request->invoice_number . '%');
-        }
-        if ($request->filled('customer_name')) {
-            $query->where('customer_name', 'like', '%' . $request->customer_name . '%');
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('start_date')) {
-            $query->whereDate('order_date', '>=', $request->start_date);
         }
         if ($request->filled('end_date')) {
             $query->whereDate('order_date', '<=', $request->end_date);
@@ -51,7 +45,10 @@ class WMSSalesOrderController extends Controller
         $salesOrders = $query->latest()->paginate(15)->withQueryString();
 
         $kpiQuery = SalesOrder::query();
-        
+        if ($warehouseId) {
+            $kpiQuery->where('warehouse_id', $warehouseId);
+        }
+
         if ($request->filled('so_number')) { $kpiQuery->where('so_number', 'like', '%' . $request->so_number . '%'); }
         if ($request->filled('invoice_number')) { $kpiQuery->where('invoice_number', 'like', '%' . $request->invoice_number . '%'); }
         if ($request->filled('customer_name')) { $kpiQuery->where('customer_name', 'like', '%' . $request->customer_name . '%'); }
@@ -66,7 +63,7 @@ class WMSSalesOrderController extends Controller
             'packed' => (clone $kpiQuery)->where('status', 'Packed')->count(),
         ];
 
-        return view('wms.sales-orders.index', compact('salesOrders', 'kpis'));
+        return view('wms.sales-orders.index', compact('salesOrders', 'kpis', 'warehouses', 'warehouseId'));
     }
 
     public function create()

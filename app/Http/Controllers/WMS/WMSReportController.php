@@ -13,37 +13,56 @@ use App\Models\WMS\PurchaseOrder;
 use App\Models\WMS\PhysicalCountTask;
 use App\Models\Location;
 use App\Models\Product;
+use App\Models\Warehouse;
+use App\Models\WMS\Quality;
 use Carbon\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Log;
-use App\Models\WMS\Quality;
 
 class WMSReportController extends Controller
 {
     public function index()
     {
-        return view('wms.reports.index');
+        $warehouses = Warehouse::orderBy('name')->get();
+        return view('wms.reports.index', compact('warehouses'));
     }
 
-    public function inventoryDashboard()
+    public function inventoryDashboard(Request $request)
     {
-        $totalUnits = InventoryStock::sum('quantity');
-        $skusWithStock = InventoryStock::where('quantity', '>', 0)->distinct('product_id')->count();
-        $locationsUsed = InventoryStock::where('quantity', '>', 0)->distinct('location_id')->count();
+        $warehouseId = $request->input('warehouse_id');
+        $warehouses = Warehouse::orderBy('name')->get();
 
-        $totalTasks = PhysicalCountTask::whereIn('status', ['resolved', 'discrepancy'])->count();
-        $resolvedTasks = PhysicalCountTask::where('status', 'resolved')->count();
+        $baseStockQuery = InventoryStock::query();
+        $basePalletItemQuery = PalletItem::query();
+        $baseMovementQuery = StockMovement::query();
+        $baseTaskQuery = PhysicalCountTask::query();
+        $baseLocationQuery = Location::query();
+
+        if ($warehouseId) {
+            $baseStockQuery->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+            $basePalletItemQuery->whereHas('pallet.location', fn($q) => $q->where('warehouse_id', $warehouseId));
+            $baseMovementQuery->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+            $baseTaskQuery->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+            $baseLocationQuery->where('warehouse_id', $warehouseId);
+        }
+
+        $totalUnits = (clone $baseStockQuery)->sum('quantity');
+        $skusWithStock = (clone $baseStockQuery)->where('quantity', '>', 0)->distinct('product_id')->count();
+        $locationsUsed = (clone $baseStockQuery)->where('quantity', '>', 0)->distinct('location_id')->count();
+
+        $totalTasks = (clone $baseTaskQuery)->whereIn('status', ['resolved', 'discrepancy'])->count();
+        $resolvedTasks = (clone $baseTaskQuery)->where('status', 'resolved')->count();
         $inventoryAccuracy = ($totalTasks > 0) ? ($resolvedTasks / $totalTasks) * 100 : 0;
 
         $agingData = [
-            '0-30 días' => PalletItem::whereHas('pallet', fn($q) => $q->where('created_at', '>=', now()->subDays(30)))->sum('quantity'),
-            '31-60 días' => PalletItem::whereHas('pallet', fn($q) => $q->whereBetween('created_at', [now()->subDays(60), now()->subDays(31)]))->sum('quantity'),
-            '61-90 días' => PalletItem::whereHas('pallet', fn($q) => $q->whereBetween('created_at', [now()->subDays(90), now()->subDays(61)]))->sum('quantity'),
-            '90+ días' => PalletItem::whereHas('pallet', fn($q) => $q->where('created_at', '<', now()->subDays(90)))->sum('quantity'),
+            '0-30 días' => (clone $basePalletItemQuery)->whereHas('pallet', fn($q) => $q->where('created_at', '>=', now()->subDays(30)))->sum('quantity'),
+            '31-60 días' => (clone $basePalletItemQuery)->whereHas('pallet', fn($q) => $q->whereBetween('created_at', [now()->subDays(60), now()->subDays(31)]))->sum('quantity'),
+            '61-90 días' => (clone $basePalletItemQuery)->whereHas('pallet', fn($q) => $q->whereBetween('created_at', [now()->subDays(90), now()->subDays(61)]))->sum('quantity'),
+            '90+ días' => (clone $basePalletItemQuery)->whereHas('pallet', fn($q) => $q->where('created_at', '<', now()->subDays(90)))->sum('quantity'),
         ];
         $agingData = array_map(fn($v) => (int) $v, $agingData);
 
-        $inboundData = StockMovement::select(DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'), DB::raw('SUM(quantity) as total'))
+        $inboundData = (clone $baseMovementQuery)->select(DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'), DB::raw('SUM(quantity) as total'))
             ->where('quantity', '>', 0)
             ->where('movement_type', 'like', '%RECEPCION%')
             ->where('created_at', '>=', now()->subMonths(6))
@@ -51,7 +70,7 @@ class WMSReportController extends Controller
             ->orderBy('month')
             ->pluck('total', 'month');
 
-        $outboundData = StockMovement::select(DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'), DB::raw('SUM(ABS(quantity)) as total'))
+        $outboundData = (clone $baseMovementQuery)->select(DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'), DB::raw('SUM(ABS(quantity)) as total'))
             ->where('quantity', '<', 0)
             ->where('movement_type', 'like', '%SALIDA%')
              ->where('created_at', '>=', now()->subMonths(6))
@@ -61,11 +80,10 @@ class WMSReportController extends Controller
 
         $trendLabels = collect([]);
         for ($i = 6; $i >= 0; $i--) { $trendLabels->push(now()->subMonths($i)->format('Y-m')); }
-
         $inboundTrend = ['labels' => $trendLabels->toArray(), 'data' => $trendLabels->map(fn($month) => $inboundData->get($month, 0))->toArray()];
         $outboundTrend = ['labels' => $trendLabels->toArray(), 'data' => $trendLabels->map(fn($month) => $outboundData->get($month, 0))->toArray()];
 
-        $topProductsQtyData = InventoryStock::with('product:id,name')
+        $topProductsQtyData = (clone $baseStockQuery)->with('product:id,name')
             ->select('product_id', DB::raw('SUM(quantity) as total_quantity'))
             ->where('quantity', '>', 0)
             ->groupBy('product_id')
@@ -76,8 +94,8 @@ class WMSReportController extends Controller
             'names' => $topProductsQtyData->pluck('product.name')->toArray(),
             'quantities' => $topProductsQtyData->pluck('total_quantity')->toArray()
         ];
-
-         $topProductsFreqData = StockMovement::with('product:id,name')
+        
+         $topProductsFreqData = (clone $baseMovementQuery)->with('product:id,name')
             ->select('product_id', DB::raw('COUNT(*) as movement_count'))
             ->groupBy('product_id')
             ->orderBy('movement_count', 'desc')
@@ -88,7 +106,7 @@ class WMSReportController extends Controller
             'frequencies' => $topProductsFreqData->pluck('movement_count')->toArray()
          ];
 
-         $productQuantities = InventoryStock::select('product_id', DB::raw('SUM(quantity) as total_quantity'))
+         $productQuantities = (clone $baseStockQuery)->select('product_id', DB::raw('SUM(quantity) as total_quantity'))
             ->where('quantity', '>', 0)
             ->groupBy('product_id')
             ->orderBy('total_quantity', 'desc')
@@ -126,7 +144,7 @@ class WMSReportController extends Controller
             ]
          ];
 
-        $availableCommittedData = PalletItem::with('product:id,sku')
+        $availableCommittedData = (clone $basePalletItemQuery)->with('product:id,sku')
             ->select('product_id',
                 DB::raw('SUM(quantity) as total_physical'),
                 DB::raw('SUM(committed_quantity) as total_committed')
@@ -143,7 +161,7 @@ class WMSReportController extends Controller
             'committed' => $availableCommittedData->pluck('total_committed')->toArray(),
         ];
 
-        $stockByLocationTypeData = InventoryStock::join('locations', 'inventory_stocks.location_id', '=', 'locations.id')
+        $stockByLocationTypeData = (clone $baseStockQuery)->join('locations', 'inventory_stocks.location_id', '=', 'locations.id')
             ->select('locations.type', DB::raw('SUM(inventory_stocks.quantity) as total_quantity'))
             ->where('inventory_stocks.quantity', '>', 0)
             ->groupBy('locations.type')
@@ -156,11 +174,11 @@ class WMSReportController extends Controller
         }
         $stockByLocationType = ['data' => $translatedStockByType];
 
-        $totalStorageLocations = Location::where('type', 'storage')->count();
-        $occupiedStorageLocations = Location::where('type', 'storage')->has('pallets')->count();
+        $totalStorageLocations = (clone $baseLocationQuery)->where('type', 'storage')->count();
+        $occupiedStorageLocations = (clone $baseLocationQuery)->where('type', 'storage')->has('pallets')->count();
         $locationUtilization = [$occupiedStorageLocations, max(0, $totalStorageLocations - $occupiedStorageLocations)];
 
-        $topLocationsQtyData = InventoryStock::with('location:id,code')
+        $topLocationsQtyData = (clone $baseStockQuery)->with('location:id,code')
             ->select('location_id', DB::raw('SUM(quantity) as total_quantity'))
             ->where('quantity', '>', 0)
             ->groupBy('location_id')
@@ -172,7 +190,7 @@ class WMSReportController extends Controller
             'quantities' => $topLocationsQtyData->pluck('total_quantity')->toArray()
         ];
 
-        $receivingTrendData = StockMovement::select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(quantity) as total'))
+        $receivingTrendData = (clone $baseMovementQuery)->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(quantity) as total'))
             ->where('quantity', '>', 0)
             ->where('movement_type', 'like', '%RECEPCION%')
             ->where('created_at', '>=', now()->subDays(30))
@@ -187,7 +205,7 @@ class WMSReportController extends Controller
         }
         $receivingTrend = ['labels' => $receivingTrendLabels, 'data' => $receivingTrendValues];
 
-        $pickingTrendData = StockMovement::select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(ABS(quantity)) as total'))
+        $pickingTrendData = (clone $baseMovementQuery)->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(ABS(quantity)) as total'))
             ->where('quantity', '<', 0)
             ->where('movement_type', 'like', '%SALIDA%')
             ->where('created_at', '>=', now()->subDays(30))
@@ -202,7 +220,7 @@ class WMSReportController extends Controller
         }
         $pickingTrend = ['labels' => $pickingTrendLabels, 'data' => $pickingTrendValues];
 
-        $topProductsVolData = InventoryStock::with('product')
+        $topProductsVolData = (clone $baseStockQuery)->with('product')
             ->select('product_id', DB::raw('SUM(quantity) as total_quantity'))
             ->where('quantity', '>', 0)
             ->groupBy('product_id')
@@ -220,7 +238,7 @@ class WMSReportController extends Controller
             'volumes' => $topProductsVolData->pluck('total_volume')->map(fn($v) => round($v, 2))->toArray()
         ];
 
-        $stockByBrandData = InventoryStock::join('products', 'inventory_stocks.product_id', '=', 'products.id')
+        $stockByBrandData = (clone $baseStockQuery)->join('products', 'inventory_stocks.product_id', '=', 'products.id')
             ->join('brands', 'products.brand_id', '=', 'brands.id')
             ->select('brands.name as brand_name', DB::raw('SUM(inventory_stocks.quantity) as total_quantity'))
             ->where('inventory_stocks.quantity', '>', 0)
@@ -229,7 +247,7 @@ class WMSReportController extends Controller
             ->orderBy('total_quantity', 'desc')
             ->pluck('total_quantity', 'brand_name');
 
-        $stockWithoutBrand = InventoryStock::join('products', 'inventory_stocks.product_id', '=', 'products.id')
+        $stockWithoutBrand = (clone $baseStockQuery)->join('products', 'inventory_stocks.product_id', '=', 'products.id')
              ->whereNull('products.brand_id')
              ->where('inventory_stocks.quantity', '>', 0)
              ->sum('inventory_stocks.quantity');
@@ -238,7 +256,6 @@ class WMSReportController extends Controller
         }
 
         $stockByBrandData = $stockByBrandData->map(fn($qty) => (int) $qty);
-
         $stockByBrandSeries = $stockByBrandData->values()->toArray();
         $stockByBrandLabels = $stockByBrandData->keys()->toArray();
 
@@ -264,18 +281,27 @@ class WMSReportController extends Controller
             'stockByBrandLabels' => $stockByBrandLabels,
         ];
 
-        return view('wms.reports.inventory', compact('kpis'));
+        return view('wms.reports.inventory', compact('kpis', 'warehouses', 'warehouseId'));
     }
 
     public function showStockMovements(Request $request)
     {
+        $warehouseId = $request->input('warehouse_id');
+        $warehouses = Warehouse::orderBy('name')->get();
+
         $query = StockMovement::with([
             'user:id,name', 
             'product:id,sku,name', 
-            'location:id,code,aisle,rack,shelf,bin',
+            'location:id,code,aisle,rack,shelf,bin,warehouse_id',
             'palletItem.pallet:id,lpn,purchase_order_id',
             'palletItem.pallet.purchaseOrder:id,po_number,pedimento_a4'
         ])->latest();
+
+        if ($warehouseId) {
+            $query->whereHas('location', function ($q) use ($warehouseId) {
+                $q->where('warehouse_id', $warehouseId);
+            });
+        }
 
         if ($request->filled('start_date')) {
             $query->whereDate('created_at', '>=', $request->start_date);
@@ -299,91 +325,106 @@ class WMSReportController extends Controller
 
         $movementTypes = StockMovement::select('movement_type')->distinct()->pluck('movement_type');
 
-        return view('wms.reports.stock-movements', compact('movements', 'movementTypes'));
+        return view('wms.reports.stock-movements', compact('movements', 'movementTypes', 'warehouses', 'warehouseId'));
     }
 
     public function exportStockMovements(Request $request)
-        {
-            $fileName = 'reporte_movimientos_inventario_' . date('Y-m-d') . '.csv';
+    {
+        $fileName = 'reporte_movimientos_inventario_' . date('Y-m-d') . '.csv';
+        $warehouseId = $request->input('warehouse_id');
 
-            $callback = function() use ($request) {
-                $file = fopen('php://output', 'w');
-                fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+        $callback = function() use ($request, $warehouseId) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
-                fputcsv($file, [
-                    'Fecha', 'Hora', 'Usuario', 'Tipo Movimiento', 'SKU', 'Producto',
-                    'LPN', 'Ubicacion Completa', 'Ubicacion Codigo',
-                    'Cantidad', 'PO Origen', 'Pedimento A4', 'ID Documento Fuente'
-                ]);
+            fputcsv($file, [
+                'Fecha', 'Hora', 'Usuario', 'Tipo Movimiento', 'SKU', 'Producto',
+                'LPN', 'Ubicacion Completa', 'Ubicacion Codigo',
+                'Cantidad', 'PO Origen', 'Pedimento A4', 'ID Documento Fuente'
+            ]);
 
-                $query = StockMovement::with([
-                    'user:id,name',
-                    'product:id,sku,name',
-                    'location:id,code,aisle,rack,shelf,bin',
-                    'palletItem.pallet:id,lpn,purchase_order_id',
-                    'palletItem.pallet.purchaseOrder:id,po_number,pedimento_a4'
-                ])->latest();
+            $query = StockMovement::with([
+                'user:id,name',
+                'product:id,sku,name',
+                'location:id,code,aisle,rack,shelf,bin,warehouse_id',
+                'palletItem.pallet:id,lpn,purchase_order_id',
+                'palletItem.pallet.purchaseOrder:id,po_number,pedimento_a4'
+            ])->latest();
 
-                if ($request->filled('start_date')) { $query->whereDate('created_at', '>=', $request->start_date); }
-                if ($request->filled('end_date')) { $query->whereDate('created_at', '<=', $request->end_date); }
-                if ($request->filled('sku')) { $query->whereHas('product', fn($q) => $q->where('sku', 'like', "%{$request->sku}%")); }
-                if ($request->filled('lpn')) { $query->whereHas('palletItem.pallet', fn($q) => $q->where('lpn', 'like', "%{$request->lpn}%")); }
-                if ($request->filled('movement_type')) { $query->where('movement_type', $request->movement_type); }
-
-                $query->chunk(500, function ($movements) use ($file) {
-                    foreach ($movements as $mov) {
-                        $ubicacionCompleta = 'N/A';
-                        if ($mov->location) {
-                            $ubicacionCompleta = ($mov->location->aisle ?? '?') . '-' .
-                                                ($mov->location->rack ?? '?') . '-' .
-                                                ($mov->location->shelf ?? '?') . '-' .
-                                                ($mov->location->bin ?? '?');
-                        }
-
-                        fputcsv($file, [
-                            $mov->created_at->format('Y-m-d'),
-                            $mov->created_at->format('H:i:s'),
-                            $mov->user->name ?? 'Sistema',
-                            $mov->movement_type,
-                            $mov->product->sku ?? 'N/A',
-                            $mov->product->name ?? 'N/A',
-                            $mov->palletItem->pallet->lpn ?? 'N/A',
-                            $ubicacionCompleta,
-                            $mov->location->code ?? 'N/A',
-                            $mov->quantity,
-                            $mov->palletItem->pallet->purchaseOrder->po_number ?? 'N/A',
-                            $mov->palletItem->pallet->purchaseOrder->pedimento_a4 ?? 'N/A',
-                            $mov->source_id,
-                        ]);
-                    }
+            if ($warehouseId) {
+                $query->whereHas('location', function ($q) use ($warehouseId) {
+                    $q->where('warehouse_id', $warehouseId);
                 });
+            }
 
-                fclose($file);
-            };
+            if ($request->filled('start_date')) { $query->whereDate('created_at', '>=', $request->start_date); }
+            if ($request->filled('end_date')) { $query->whereDate('created_at', '<=', $request->end_date); }
+            if ($request->filled('sku')) { $query->whereHas('product', fn($q) => $q->where('sku', 'like', "%{$request->sku}%")); }
+            if ($request->filled('lpn')) { $query->whereHas('palletItem.pallet', fn($q) => $q->where('lpn', 'like', "%{$request->lpn}%")); }
+            if ($request->filled('movement_type')) { $query->where('movement_type', $request->movement_type); }
 
-            $headers = [
-                "Content-type"        => "text/csv; charset=UTF-8",
-                "Content-Disposition" => "attachment; filename=$fileName",
-                "Pragma"              => "no-cache",
-                "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-                "Expires"             => "0"
-            ];
+            $query->chunk(500, function ($movements) use ($file) {
+                foreach ($movements as $mov) {
+                    $ubicacionCompleta = 'N/A';
+                    if ($mov->location) {
+                        $ubicacionCompleta = ($mov->location->aisle ?? '?') . '-' .
+                                            ($mov->location->rack ?? '?') . '-' .
+                                            ($mov->location->shelf ?? '?') . '-' .
+                                            ($mov->location->bin ?? '?');
+                    }
 
-            return new StreamedResponse($callback, 200, $headers);
-        }
+                    fputcsv($file, [
+                        $mov->created_at->format('Y-m-d'),
+                        $mov->created_at->format('H:i:s'),
+                        $mov->user->name ?? 'Sistema',
+                        $mov->movement_type,
+                        $mov->product->sku ?? 'N/A',
+                        $mov->product->name ?? 'N/A',
+                        $mov->palletItem->pallet->lpn ?? 'N/A',
+                        $ubicacionCompleta,
+                        $mov->location->code ?? 'N/A',
+                        $mov->quantity,
+                        $mov->palletItem->pallet->purchaseOrder->po_number ?? 'N/A',
+                        $mov->palletItem->pallet->purchaseOrder->pedimento_a4 ?? 'N/A',
+                        $mov->source_id,
+                    ]);
+                }
+            });
 
+            fclose($file);
+        };
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        return new StreamedResponse($callback, 200, $headers);
+    }
 
     public function showAgingReport(Request $request)
     {
+        $warehouseId = $request->input('warehouse_id');
+        $warehouses = Warehouse::orderBy('name')->get();
+
         $query = PalletItem::where('quantity', '>', 0)
             ->with([
                 'product:id,sku,name',
                 'quality:id,name',
-                'pallet.location:id,code',
+                'pallet.location:id,code,warehouse_id',
                 'pallet.purchaseOrder:id,po_number'
             ])
             ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
             ->select('pallet_items.*', DB::raw('DATEDIFF(NOW(), pallets.created_at) as age_in_days'));
+
+        if ($warehouseId) {
+            $query->whereHas('pallet.location', function ($q) use ($warehouseId) {
+                $q->where('warehouse_id', $warehouseId);
+            });
+        }
 
         if ($request->filled('sku')) {
             $sku = $request->sku;
@@ -414,14 +455,15 @@ class WMSReportController extends Controller
                             ->paginate(50)
                             ->withQueryString();
 
-        return view('wms.reports.inventory-aging', compact('agingItems'));
+        return view('wms.reports.inventory-aging', compact('agingItems', 'warehouses', 'warehouseId'));
     }
 
     public function exportAgingReport(Request $request)
     {
         $fileName = 'reporte_antiguedad_inventario_' . date('Y-m-d') . '.csv';
+        $warehouseId = $request->input('warehouse_id');
 
-        $callback = function() use ($request) {
+        $callback = function() use ($request, $warehouseId) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
@@ -434,11 +476,17 @@ class WMSReportController extends Controller
                 ->with([
                     'product:id,sku,name',
                     'quality:id,name',
-                    'pallet.location:id,code',
+                    'pallet.location:id,code,warehouse_id',
                     'pallet.purchaseOrder:id,po_number'
                 ])
                 ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
                 ->select('pallet_items.*', DB::raw('DATEDIFF(NOW(), pallets.created_at) as age_in_days'));
+
+            if ($warehouseId) {
+                $query->whereHas('pallet.location', function ($q) use ($warehouseId) {
+                    $q->where('warehouse_id', $warehouseId);
+                });
+            }
 
             if ($request->filled('sku')) {
                 $sku = $request->sku;
@@ -490,6 +538,9 @@ class WMSReportController extends Controller
     
     public function showNonAvailableReport(Request $request)
     {
+        $warehouseId = $request->input('warehouse_id');
+        $warehouses = Warehouse::orderBy('name')->get();
+        
         $availableQualityName = 'Disponible';
 
         $availableQuality = Quality::where('name', $availableQualityName)->first();
@@ -500,9 +551,15 @@ class WMSReportController extends Controller
             ->with([
                 'product:id,sku,name',
                 'quality:id,name',
-                'pallet.location:id,code',
+                'pallet.location:id,code,warehouse_id',
                 'pallet.purchaseOrder:id,po_number'
             ]);
+
+        if ($warehouseId) {
+            $query->whereHas('pallet.location', function ($q) use ($warehouseId) {
+                $q->where('warehouse_id', $warehouseId);
+            });
+        }
 
         if ($request->filled('sku')) {
             $sku = $request->sku;
@@ -523,14 +580,15 @@ class WMSReportController extends Controller
 
         $qualities = Quality::where('name', '!=', $availableQualityName)->orderBy('name')->get();
 
-        return view('wms.reports.non-available-inventory', compact('nonAvailableItems', 'qualities'));
+        return view('wms.reports.non-available-inventory', compact('nonAvailableItems', 'qualities', 'warehouses', 'warehouseId'));
     }
 
     public function exportNonAvailableReport(Request $request)
     {
         $fileName = 'reporte_inventario_no_disponible_' . date('Y-m-d') . '.csv';
+        $warehouseId = $request->input('warehouse_id');
 
-        $callback = function() use ($request) {
+        $callback = function() use ($request, $warehouseId) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
@@ -548,9 +606,15 @@ class WMSReportController extends Controller
                 ->with([
                     'product:id,sku,name',
                     'quality:id,name',
-                    'pallet.location:id,code',
+                    'pallet.location:id,code,warehouse_id',
                     'pallet.purchaseOrder:id,po_number'
                 ]);
+
+            if ($warehouseId) {
+                $query->whereHas('pallet.location', function ($q) use ($warehouseId) {
+                    $q->where('warehouse_id', $warehouseId);
+                });
+            }
 
             if ($request->filled('sku')) {
                 $sku = $request->sku;
@@ -600,8 +664,11 @@ class WMSReportController extends Controller
     {
         $days = $request->input('days', 90);
         $startDate = Carbon::now()->subDays($days);
+        
+        $warehouseId = $request->input('warehouse_id');
+        $warehouses = Warehouse::orderBy('name')->get();
 
-        $analysisData = $this->getAbcAnalysisData($startDate);
+        $analysisData = $this->getAbcAnalysisData($startDate, $warehouseId);
 
         $matrix = [
             'AX' => $analysisData->where('volume_class', 'A')->where('freq_class', 'X')->count(),
@@ -618,7 +685,9 @@ class WMSReportController extends Controller
         return view('wms.reports.abc-analysis', [
             'analysisData' => $analysisData,
             'matrix' => $matrix,
-            'days' => $days
+            'days' => $days,
+            'warehouses' => $warehouses,
+            'warehouseId' => $warehouseId
         ]);
     }
 
@@ -627,8 +696,10 @@ class WMSReportController extends Controller
         $days = $request->input('days', 90);
         $startDate = Carbon::now()->subDays($days);
         $fileName = 'reporte_abc_xyz_' . date('Y-m-d') . '.csv';
-
-        $analysisData = $this->getAbcAnalysisData($startDate);
+        
+        $warehouseId = $request->input('warehouse_id');
+        
+        $analysisData = $this->getAbcAnalysisData($startDate, $warehouseId);
 
         $callback = function() use ($analysisData) {
             $file = fopen('php://output', 'w');
@@ -667,20 +738,31 @@ class WMSReportController extends Controller
         return new StreamedResponse($callback, 200, $headers);
     }
 
-    private function getAbcAnalysisData(Carbon $startDate)
+    private function getAbcAnalysisData(Carbon $startDate, $warehouseId = null)
     {
-        $volumeData = Product::join('inventory_stocks', 'products.id', '=', 'inventory_stocks.product_id')
+        $volumeQuery = Product::join('inventory_stocks', 'products.id', '=', 'inventory_stocks.product_id')
+            ->join('locations', 'inventory_stocks.location_id', '=', 'locations.id')
             ->select('products.id', 'products.sku', 'products.name', DB::raw('SUM(inventory_stocks.quantity) as total_volume'))
-            ->where('inventory_stocks.quantity', '>', 0)
-            ->groupBy('products.id', 'products.sku', 'products.name')
+            ->where('inventory_stocks.quantity', '>', 0);
+        
+        if ($warehouseId) {
+            $volumeQuery->where('locations.warehouse_id', $warehouseId);
+        }
+
+        $volumeData = $volumeQuery->groupBy('products.id', 'products.sku', 'products.name')
             ->get()
             ->keyBy('id');
 
-        $frequencyData = StockMovement::select('product_id', DB::raw('COUNT(id) as total_frequency'))
+        $frequencyQuery = StockMovement::select('product_id', DB::raw('COUNT(id) as total_frequency'))
             ->where('quantity', '<', 0)
-            ->whereIn('movement_type', ['SALIDA-PICKING', 'AJUSTE-MANUAL', 'SPLIT-OUT']) //
-            ->where('created_at', '>=', $startDate)
-            ->groupBy('product_id')
+            ->whereIn('movement_type', ['SALIDA-PICKING', 'AJUSTE-MANUAL', 'SPLIT-OUT'])
+            ->where('created_at', '>=', $startDate);
+
+        if ($warehouseId) {
+            $frequencyQuery->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+        }
+
+        $frequencyData = $frequencyQuery->groupBy('product_id')
             ->get()
             ->keyBy('product_id');
 
@@ -732,35 +814,40 @@ class WMSReportController extends Controller
         $days = $request->input('days', 90);
         $startDate = Carbon::now()->subDays($days);
         
-        $abcData = $this->getAbcAnalysisData($startDate)->keyBy('id');
+        $warehouseId = $request->input('warehouse_id');
+        $warehouses = Warehouse::orderBy('name')->get();
+        
+        $abcData = $this->getAbcAnalysisData($startDate, $warehouseId)->keyBy('id');
 
-        $locationPickFreq = StockMovement::select('location_id', DB::raw('COUNT(id) as pick_frequency'))
+        $locationPickFreqQuery = StockMovement::select('location_id', DB::raw('COUNT(id) as pick_frequency'))
             ->where('quantity', '<', 0)
             ->where('movement_type', 'SALIDA-PICKING')
             ->where('created_at', '>=', $startDate)
-            ->whereNotNull('location_id')
-            ->groupBy('location_id')
-            ->get()
-            ->keyBy('location_id');
+            ->whereNotNull('location_id');
+        if ($warehouseId) {
+            $locationPickFreqQuery->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+        }
+        $locationPickFreq = $locationPickFreqQuery->groupBy('location_id')->get()->keyBy('location_id');
             
         $maxFreq = $locationPickFreq->max('pick_frequency') ?: 1;
 
-        $stockInLocations = PalletItem::where('quantity', '>', 0)
+        $stockInLocationsQuery = PalletItem::where('quantity', '>', 0)
             ->with([
                 'product:id,sku,name',
                 'quality:id,name',
                 'pallet:id,lpn,location_id,created_at'
             ])
-            ->whereHas('pallet.location', fn($q) => $q->whereIn('type', ['storage', 'picking']))
-            ->get()
-            ->groupBy('pallet.location_id');
+            ->whereHas('pallet.location', fn($q) => $q->whereIn('type', ['storage', 'picking']));
+        if ($warehouseId) {
+            $stockInLocationsQuery->whereHas('pallet.location', fn($q) => $q->where('warehouse_id', $warehouseId));
+        }
+        $stockInLocations = $stockInLocationsQuery->get()->groupBy('pallet.location_id');
 
-        $locations = Location::whereIn('type', ['storage', 'picking'])
-            ->orderBy('aisle')
-            ->orderBy('rack')
-            ->orderBy('shelf')
-            ->orderBy('bin')
-            ->get();
+        $locationsQuery = Location::whereIn('type', ['storage', 'picking']);
+        if ($warehouseId) {
+            $locationsQuery->where('warehouse_id', $warehouseId);
+        }
+        $locations = $locationsQuery->orderBy('aisle')->orderBy('rack')->orderBy('shelf')->orderBy('bin')->get();
 
         $heatmapData = [];
         foreach ($locations as $loc) {
@@ -816,8 +903,9 @@ class WMSReportController extends Controller
 
         return view('wms.reports.slotting-heatmap', [
             'heatmapData' => $groupedHeatmapData,
-            'days' => $days
+            'days' => $days,
+            'warehouses' => $warehouses,
+            'warehouseId' => $warehouseId
         ]);
     }
-
 }

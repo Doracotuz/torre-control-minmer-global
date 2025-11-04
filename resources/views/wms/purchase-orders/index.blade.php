@@ -16,7 +16,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-screen-xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-screen-2xl mx-auto sm:px-6 lg:px-8">
             
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-6 rounded-2xl shadow-lg flex items-center justify-between"><div><span class="text-sm font-light">En Recepción</span><p class="text-3xl font-bold">{{ $kpis['receiving'] }}</p></div><i class="fas fa-truck-loading fa-3x opacity-50"></i></div>
@@ -26,7 +26,18 @@
             </div>
 
             <div class="bg-white p-6 rounded-2xl shadow-lg border mb-8">
-                <form action="{{ route('wms.purchase-orders.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <form action="{{ route('wms.purchase-orders.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div>
+                        <select name="warehouse_id" id="warehouse_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" onchange="this.form.submit()">
+                            <option value="">-- Todos los Almacenes --</option>
+                            
+                            @foreach($warehouses as $warehouse)
+                                <option value="{{ $warehouse->id }}" @if($warehouseId == $warehouse->id) selected @endif>
+                                    {{ $warehouse->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>                      
                     <input type="text" name="search" class="rounded-md border-gray-300 shadow-sm" placeholder="Buscar N° Orden o Contenedor..." value="{{ request('search') }}">
                     <input type="text" name="sku" class="rounded-md border-gray-300 shadow-sm" placeholder="Buscar por SKU..." value="{{ request('sku') }}">
                     <select name="status" class="rounded-md border-gray-300 shadow-sm">
@@ -34,7 +45,7 @@
                         <option value="Pending" @selected(request('status') == 'Pending')>Pendiente</option>
                         <option value="Receiving" @selected(request('status') == 'Receiving')>En Recepción</option>
                         <option value="Completed" @selected(request('status') == 'Completed')>Completada</option>
-                    </select>
+                    </select>                  
                     <div class="flex items-center space-x-2"><button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">Filtrar</button><a href="{{ route('wms.purchase-orders.index') }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300" title="Limpiar filtros"><i class="fas fa-undo"></i></a></div>
                 </form>
             </div>

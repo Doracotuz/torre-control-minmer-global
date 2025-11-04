@@ -5,6 +5,24 @@
 
     <div class="py-12">
         <div class="max-w-screen-2xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+                <form method="GET" action="{{ route('wms.inventory.adjustments.log') }}" class="flex items-end space-x-4">
+                    <div>
+                        <label for="warehouse_id" class="block text-sm font-medium text-gray-700">Filtrar por Almacén</label>
+                        <select name="warehouse_id" id="warehouse_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" onchange="this.form.submit()">
+                            <option value="">Todos los Almacenes</option>
+                            @foreach($warehouses as $warehouse)
+                                <option value="{{ $warehouse->id }}" @selected(request('warehouse_id') == $warehouse->id)>
+                                    {{ $warehouse->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <a href="{{ route('wms.inventory.adjustments.log') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        Limpiar
+                    </a>
+                </form>
+            </div>            
             <div class="bg-white overflow-hidden rounded-2xl shadow-xl border">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">

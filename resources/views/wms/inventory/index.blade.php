@@ -36,6 +36,17 @@
             <div class="bg-white p-6 rounded-2xl shadow-lg border mb-8">
                 <form id="filters-form" action="{{ route('wms.inventory.index') }}" method="GET">
                      <div class="flex flex-wrap gap-4 items-end">
+                        <div class="flex-grow min-w-[150px]">
+                            <label class="text-xs text-gray-500">Almacén</label>
+                            <select name="warehouse_id" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                <option value="">Todos los Almacenes</option>
+                                @foreach($warehouses as $warehouse)
+                                    <option value="{{ $warehouse->id }}" @selected(request('warehouse_id') == $warehouse->id)>
+                                        {{ $warehouse->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>                        
                         <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">LPN</label><input type="text" name="lpn" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('lpn') }}"></div>
                         <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Orden (PO)</label><input type="text" name="po_number" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('po_number') }}"></div>
                         <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">SKU</label><input type="text" name="sku" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('sku') }}"></div>

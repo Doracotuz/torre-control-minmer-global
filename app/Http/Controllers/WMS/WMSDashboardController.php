@@ -11,20 +11,40 @@ use App\Models\WMS\PhysicalCountTask;
 use App\Models\Location;
 use App\Models\WMS\PalletItem;
 use App\Models\WMS\Quality;
+use App\Models\Warehouse;
 use Illuminate\Support\Facades\DB;
 
 class WMSDashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $totalUnits = InventoryStock::sum('quantity');
-        $skusWithStock = InventoryStock::where('quantity', '>', 0)->distinct('product_id')->count();
-        $totalStorageLocations = Location::where('type', 'storage')->count();
-        $occupiedStorageLocations = Location::where('type', 'storage')->has('pallets')->count();
+        $warehouseId = $request->input('warehouse_id');
+        $warehouses = Warehouse::orderBy('name')->get();
+
+        $baseStockQuery = InventoryStock::query();
+        $baseLocationQuery = Location::query();
+        $baseTaskQuery = PhysicalCountTask::query();
+        $basePOQuery = PurchaseOrder::query();
+        $baseSOQuery = SalesOrder::query();
+        $basePalletItemQuery = PalletItem::query();
+
+        if ($warehouseId) {
+            $baseStockQuery->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+            $baseLocationQuery->where('warehouse_id', $warehouseId);
+            $baseTaskQuery->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+            $basePOQuery->where('warehouse_id', $warehouseId);
+            $baseSOQuery->where('warehouse_id', $warehouseId);
+            $basePalletItemQuery->whereHas('pallet.location', fn($q) => $q->where('warehouse_id', $warehouseId));
+        }
+
+        $totalUnits = (clone $baseStockQuery)->sum('quantity');
+        $skusWithStock = (clone $baseStockQuery)->where('quantity', '>', 0)->distinct('product_id')->count();
+        $totalStorageLocations = (clone $baseLocationQuery)->where('type', 'storage')->count();
+        $occupiedStorageLocations = (clone $baseLocationQuery)->where('type', 'storage')->has('pallets')->count();
         $locationUtilization = ($totalStorageLocations > 0) ? ($occupiedStorageLocations / $totalStorageLocations) * 100 : 0;
         
-        $totalTasks = PhysicalCountTask::whereIn('status', ['resolved', 'discrepancy'])->count();
-        $resolvedTasks = PhysicalCountTask::where('status', 'resolved')->count();
+        $totalTasks = (clone $baseTaskQuery)->whereIn('status', ['resolved', 'discrepancy'])->count();
+        $resolvedTasks = (clone $baseTaskQuery)->where('status', 'resolved')->count();
         $inventoryAccuracy = ($totalTasks > 0) ? ($resolvedTasks / $totalTasks) * 100 : 0;
 
         $kpis = [
@@ -34,27 +54,29 @@ class WMSDashboardController extends Controller
             ['label' => 'Precisión de Inv.', 'value' => $inventoryAccuracy, 'format' => 'percent', 'icon' => 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z'],
         ];
 
-        $receivingPOs = PurchaseOrder::where('status', 'Receiving')
-            ->with('latestArrival') //
+        $receivingPOs = (clone $basePOQuery)->where('status', 'Receiving')
+            ->with('latestArrival')
             ->latest('updated_at')
             ->limit(10)
             ->get();
-        $pendingPOs = PurchaseOrder::where('status', 'Pending')
+        
+        $pendingPOs = (clone $basePOQuery)->where('status', 'Pending')
             ->orderBy('expected_date', 'asc')
             ->limit(10)
             ->get();
 
-        $pickingSOs = SalesOrder::where('status', 'Picking')
+        $pickingSOs = (clone $baseSOQuery)->where('status', 'Picking')
             ->with('pickList')
             ->latest('updated_at')
             ->limit(10)
             ->get();
-        $pendingSOs = SalesOrder::where('status', 'Pending')
+        
+        $pendingSOs = (clone $baseSOQuery)->where('status', 'Pending')
             ->orderBy('order_date', 'asc')
             ->limit(10)
             ->get();
 
-        $discrepancyTasks = PhysicalCountTask::where('status', 'discrepancy')
+        $discrepancyTasks = (clone $baseTaskQuery)->where('status', 'discrepancy')
             ->with('product', 'location')
             ->limit(5)
             ->get();
@@ -62,7 +84,7 @@ class WMSDashboardController extends Controller
         $availableQuality = Quality::where('name', 'Disponible')->first();
         $availableQualityId = $availableQuality ? $availableQuality->id : -1;
         
-        $nonAvailableStock = PalletItem::where('quantity', '>', 0)
+        $nonAvailableStock = (clone $basePalletItemQuery)->where('quantity', '>', 0)
             ->where('quality_id', '!=', $availableQualityId)
             ->with('product:id,sku', 'quality:id,name', 'pallet:id,lpn')
             ->limit(5)
@@ -75,7 +97,9 @@ class WMSDashboardController extends Controller
             'pickingSOs',
             'pendingSOs',
             'discrepancyTasks',
-            'nonAvailableStock'
+            'nonAvailableStock',
+            'warehouses',
+            'warehouseId'
         ));
     }
 }

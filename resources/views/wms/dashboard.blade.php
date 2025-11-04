@@ -58,6 +58,26 @@
         }
     }" x-cloak>
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+                <form method="GET" action="{{ route('wms.dashboard') }}" class="flex items-end space-x-4">
+                    <div>
+                        <label for="warehouse_id" class="block text-sm font-medium text-gray-700">Ver Datos del Almacén</label>
+                        <select name="warehouse_id" id="warehouse_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" onchange="this.form.submit()">
+                            <option value="">-- Todos los Almacenes --</option>
+                            
+                            @foreach($warehouses as $warehouse)
+                                <option value="{{ $warehouse->id }}" @if($warehouseId == $warehouse->id) selected @endif>
+                                    {{ $warehouse->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <a href="{{ route('wms.dashboard') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        Limpiar
+                    </a>
+                </form>
+            </div>            
 
             <div class="bg-white rounded-lg shadow-md p-2 mb-6">
                 <nav class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">

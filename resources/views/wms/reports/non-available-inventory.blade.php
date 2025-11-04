@@ -10,7 +10,18 @@
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
 
             <div class="bg-white p-4 rounded-lg shadow-md mb-6">
-                <form method="GET" action="{{ route('wms.reports.non-available-inventory') }}" class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <form method="GET" action="{{ route('wms.reports.non-available-inventory') }}" class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div>
+                        <label for="warehouse_id" class="block text-sm font-medium text-gray-700">Almacén</label>
+                        <select name="warehouse_id" id="warehouse_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <option value="">Todos</option>
+                            @foreach($warehouses as $warehouse)
+                                <option value="{{ $warehouse->id }}" {{ request('warehouse_id') == $warehouse->id ? 'selected' : '' }}>
+                                    {{ $warehouse->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>                    
                     <div>
                         <label for="sku" class="block text-sm font-medium text-gray-700">SKU</label>
                         <input type="text" name="sku" id="sku" value="{{ request('sku') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Buscar SKU...">

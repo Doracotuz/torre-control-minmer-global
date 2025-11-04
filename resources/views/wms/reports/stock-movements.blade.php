@@ -22,7 +22,18 @@
 
             <div class="bg-gradient-to-br from-white to-gray-50 p-6 rounded-2xl shadow-lg border border-gray-200">
                 <form id="filters-form" action="{{ route('wms.reports.stock-movements') }}" method="GET">
-                     <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-4 items-end">
+                     <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-x-6 gap-y-4 items-end">
+                        <div>
+                            <label for="warehouse_id" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Almacén</label>
+                            <select id="warehouse_id" name="warehouse_id" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3 appearance-none bg-white pr-8 bg-no-repeat" style="background-image: url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3E%3Cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3E%3C/svg%3E'); background-position: right 0.5rem center; background-size: 1.5em 1.5em;">
+                                <option value="">Todos</option>
+                                @foreach($warehouses as $warehouse)
+                                    <option value="{{ $warehouse->id }}" @selected(request('warehouse_id') == $warehouse->id)>
+                                        {{ $warehouse->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>                        
                         <div><label for="start_date" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Desde</label><input type="date" id="start_date" name="start_date" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3" value="{{ request('start_date') }}"></div>
                         <div><label for="end_date" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Hasta</label><input type="date" id="end_date" name="end_date" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3" value="{{ request('end_date') }}"></div>
                         <div><label for="sku" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">SKU</label><input type="text" id="sku" name="sku" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3" placeholder="Buscar SKU..." value="{{ request('sku') }}"></div>

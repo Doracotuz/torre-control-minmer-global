@@ -19,17 +19,25 @@ use App\Models\WMS\InventoryAdjustment;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Models\WMS\StockMovement;
+use App\Models\Warehouse;
 
 class WMSInventoryController extends Controller
 {
     public function index(Request $request)
     {
+        $warehouseId = $request->input('warehouse_id');
+        $warehouses = Warehouse::orderBy('name')->get();
+
         $query = \App\Models\WMS\Pallet::query()
             ->with([
                 'purchaseOrder:id,po_number,container_number,operator_name,download_start_time,pedimento_a4,pedimento_g1',
                 'location', 'user:id,name', 'items.product', 'items.quality'
             ])
             ->where('status', 'Finished');
+
+        if ($warehouseId) {
+            $query->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+        }
 
         if ($request->filled('lpn')) { $query->where('lpn', 'like', '%' . $request->lpn . '%'); }
         if ($request->filled('po_number')) { $query->whereHas('purchaseOrder', fn($q) => $q->where('po_number', 'like', '%' . $request->po_number . '%')); }
@@ -54,10 +62,14 @@ class WMSInventoryController extends Controller
         $productIds = $palletItems->pluck('product_id')->unique();
         $qualityIds = $palletItems->pluck('quality_id')->unique();
 
-        $stockData = \App\Models\WMS\InventoryStock::whereIn('location_id', $locationIds)
-            ->whereIn('product_id', $productIds)
-            ->whereIn('quality_id', $qualityIds)
-            ->get();
+        $stockDataQuery = \App\Models\WMS\InventoryStock::whereIn('product_id', $productIds)
+            ->whereIn('quality_id', $qualityIds);
+
+        if ($locationIds->isNotEmpty()) {
+             $stockDataQuery->whereIn('location_id', $locationIds);
+        }
+           
+        $stockData = $stockDataQuery->get();
 
         $stockLedger = [];
         foreach ($stockData as $stock) {
@@ -85,15 +97,26 @@ class WMSInventoryController extends Controller
             });
         }
 
+        $kpiBasePallet = \App\Models\WMS\Pallet::where('status', 'Finished');
+        $kpiBaseStock = \App\Models\WMS\InventoryStock::query();
+        $kpiBaseLocation = \App\Models\Location::where('type', 'Storage');
+
+        if ($warehouseId) {
+            $kpiBasePallet->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+            $kpiBaseStock->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+            $kpiBaseLocation->where('warehouse_id', $warehouseId);
+        }
+
         $kpis = [
-            'total_pallets' => \App\Models\WMS\Pallet::where('status', 'Finished')->count(),
-            'total_units' => \App\Models\WMS\InventoryStock::sum('quantity'),
-            'total_skus' => \App\Models\WMS\InventoryStock::where('quantity', '>', 0)->distinct('product_id')->count(),
-            'available_locations' => \App\Models\Location::where('type', 'Storage')->whereDoesntHave('pallets')->count(),
+            'total_pallets' => (clone $kpiBasePallet)->count(),
+            'total_units' => (clone $kpiBaseStock)->sum('quantity'),
+            'total_skus' => (clone $kpiBaseStock)->where('quantity', '>', 0)->distinct('product_id')->count(),
+            'available_locations' => (clone $kpiBaseLocation)->whereDoesntHave('pallets')->count(),
         ];
+        
         $qualities = \App\Models\WMS\Quality::orderBy('name')->get();
 
-        return view('wms.inventory.index', compact('pallets', 'kpis', 'qualities', 'stockLedger'));
+        return view('wms.inventory.index', compact('pallets', 'kpis', 'qualities', 'stockLedger', 'warehouses', 'warehouseId'));
     }
 
     public function createTransfer()
@@ -153,14 +176,10 @@ class WMSInventoryController extends Controller
             $pallet->save();
 
             foreach ($pallet->items as $item) {
-                
                 $originStock = InventoryStock::where('product_id', $item->product_id)
                     ->where('quality_id', $item->quality_id)
                     ->where('location_id', $originLocation->id)->first();
-                
-                if ($originStock) {
-                    $originStock->decrement('quantity', $item->quantity);
-                }
+                if ($originStock) $originStock->decrement('quantity', $item->quantity);
 
                 StockMovement::create([
                     'user_id' => Auth::id(),
@@ -174,11 +193,7 @@ class WMSInventoryController extends Controller
                 ]);                
 
                 $destinationStock = InventoryStock::firstOrCreate(
-                    [
-                        'product_id' => $item->product_id, 
-                        'quality_id' => $item->quality_id, 
-                        'location_id' => $destinationLocation->id
-                    ],
+                    ['product_id' => $item->product_id, 'quality_id' => $item->quality_id, 'location_id' => $destinationLocation->id],
                     ['quantity' => 0]
                 );
                 $destinationStock->increment('quantity', $item->quantity);
@@ -193,10 +208,11 @@ class WMSInventoryController extends Controller
                     'source_id' => $pallet->id,
                     'source_type' => \App\Models\WMS\Pallet::class,
                 ]);
+
             }
 
             DB::commit();
-            return redirect()->route('wms.inventory.index')->with('success', "La tarima {$pallet->lpn} ha sido transferida exitosamente a la ubicación {$destinationLocation->code}.");
+            return redirect()->route('wms.inventory.transfer.create')->with('success', "La tarima {$pallet->lpn} ha sido transferida exitosamente a la ubicación {$destinationLocation->code}.");
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -207,6 +223,7 @@ class WMSInventoryController extends Controller
     public function exportCsv(Request $request)
     {
         $fileName = 'reporte_inventario_lpn_' . date('Y-m-d') . '.csv';
+        $warehouseId = $request->input('warehouse_id');
 
         $headers = [
             "Content-type"        => "text/csv; charset=UTF-8",
@@ -216,7 +233,7 @@ class WMSInventoryController extends Controller
             "Expires"             => "0"
         ];
 
-        $callback = function() use ($request) {
+        $callback = function() use ($request, $warehouseId) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
@@ -231,10 +248,16 @@ class WMSInventoryController extends Controller
                 'Disponible (Locacion)',
                 'Cantidad_Recibida_Cajas',
             ]);
-            \App\Models\WMS\Pallet::query()
+            
+            $query = \App\Models\WMS\Pallet::query()
                 ->with(['purchaseOrder', 'location', 'user', 'items.product', 'items.quality'])
-                ->where('status', 'Finished')
-                ->when($request->filled('lpn'), fn($q) => $q->where('lpn', 'like', '%' . $request->lpn . '%'))
+                ->where('status', 'Finished');
+
+            if ($warehouseId) {
+                $query->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+            }
+                
+            $query->when($request->filled('lpn'), fn($q) => $q->where('lpn', 'like', '%' . $request->lpn . '%'))
                 
                 ->when($request->filled('po_number'), fn($q) => 
                     $q->whereHas('purchaseOrder', fn($sq) => $sq->where('po_number', 'like', '%' . $request->po_number . '%'))
@@ -313,11 +336,7 @@ class WMSInventoryController extends Controller
             fclose($file);
         };
 
-        return new \Symfony\Component\HttpFoundation\StreamedResponse($callback, 200, [
-            "Content-type" => "text/csv; charset=UTF-8", "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma" => "no-cache", "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
-            "Expires" => "0"
-        ]);
+        return new \Symfony\Component\HttpFoundation\StreamedResponse($callback, 200, $headers);
     }
 
     public function createSplit()
@@ -475,7 +494,6 @@ class WMSInventoryController extends Controller
             if ($stock) {
                 $newStockQuantity = max(0, $stock->quantity + $difference);
                 $stock->update(['quantity' => $newStockQuantity]);
-                // $difference > 0 ? $stock->increment('quantity', $difference) : $stock->decrement('quantity', abs($difference)); // Alternativa
             }
 
             $palletItem->update(['quantity' => $newQuantity]);
@@ -512,7 +530,7 @@ class WMSInventoryController extends Controller
 
             DB::commit();
             
-            return redirect()->route('wMS.inventory.index')->with('success', 'Ajuste de inventario realizado exitosamente.');
+            return redirect()->route('wms.inventory.index')->with('success', 'Ajuste de inventario realizado exitosamente.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -522,17 +540,27 @@ class WMSInventoryController extends Controller
                 ->with('open_adjustment_modal_for_item', $palletItem->id);
         }
     }
-    public function showAdjustmentsLog()
+
+    public function showAdjustmentsLog(Request $request)
     {
-        $adjustments = InventoryAdjustment::with([
+        $warehouseId = $request->input('warehouse_id');
+        $warehouses = Warehouse::orderBy('name')->get();
+
+        $query = InventoryAdjustment::with([
             'user', 
             'palletItem.pallet', 
             'palletItem.product',
             'product',
             'location'
-        ])->latest()->paginate(25);
+        ]);
+
+        if ($warehouseId) {
+            $query->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+        }
+
+        $adjustments = $query->latest()->paginate(25);
             
-        return view('wms.inventory.adjustments.index', compact('adjustments'));
+        return view('wms.inventory.adjustments.index', compact('adjustments', 'warehouses', 'warehouseId'));
     }
 
     public function apiFindLpn(Request $request)
@@ -557,4 +585,4 @@ class WMSInventoryController extends Controller
 
         return response()->json($pallet);
     }
-}    
+}
