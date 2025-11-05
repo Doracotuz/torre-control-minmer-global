@@ -15,7 +15,6 @@
             line-height: 1.4;
         }
 
-        /* Encabezado fijo con marca y fecha */
         header {
             position: fixed;
             top: -50px;
@@ -39,20 +38,19 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #555;
-            font-size: 13px; /* Un poco más pequeño para que quepa la fecha */
+            font-size: 13px;
         }
 
         header .event-details .date {
             font-size: 11px;
             font-weight: 300;
             color: #777;
-            text-transform: none; /* Para que la fecha no esté en mayúsculas */
+            text-transform: none;
             letter-spacing: 0;
-            display: block; /* Esto hace que se ponga en la línea de abajo */
-            margin-top: 4px; /* Un pequeño espacio */
+            display: block;
+            margin-top: 4px;
         }        
 
-        /* Pie de página fijo */
         footer {
             position: fixed; 
             bottom: -40px; 
@@ -68,7 +66,6 @@
             content: "Página " counter(page);
         }
 
-        /* Estilos de la Tabla */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -77,15 +74,12 @@
 
         th, td {
             border: 0;
-            /* Padding reducido para filas más delgadas */
             padding: 9px 8px; 
             text-align: left;
             vertical-align: middle;
-            /* Línea inferior más delgada */
             border-bottom: 1px solid #eaeaea; 
         }
 
-        /* Encabezado de la Tabla */
         thead tr {
             background-color: #ffffff;
         }
@@ -99,19 +93,16 @@
             padding-bottom: 9px;
         }
         
-        /* Cuerpo de la Tabla - Zebra-striping */
         tbody tr:nth-child(even) {
-            background-color: #f9f9f9; /* Gris muy claro para contraste */
+            background-color: #f9f9f9;
         }
         
         tbody tr {
-            /* Se mantiene la línea delgada, ahora complementa el fondo */
             border-bottom: 1px solid #eaeaea; 
         }
 
-        /* Celda "Solicitado" (ahora hereda el padding reducido) */
         .solicitado-cell {
-            height: 20px; /* Altura mínima para escribir */
+            height: 20px;
         }
 
         .text-right { text-align: right; }

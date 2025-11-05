@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div x-data="{ manager: productManager() }" x-init="manager.init(@json($products))">
+    <div x-data="{ manager: productManager() }" x-init='manager.init(@json($products))'>
 
         <x-slot name="header">
             <div class="flex flex-col md:flex-row justify-between items-center">
@@ -8,186 +8,146 @@
                 </h2>
             </div>
         </x-slot>
-        <div class="flex space-x-2">
+        <div class="flex space-x-3">
             <button
                 @click="manager.openUploadModal()"
-                class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-900 transition ease-in-out duration-150">
+                class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50 transition ease-in-out duration-150">
                 <i class="fas fa-file-upload mr-2"></i> Cargar Plantilla
             </button>
-            <button
-                @click="manager.openFormModal(null)"
-                class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 transition ease-in-out duration-150">
+            <!-- <button
+                @click="manager.selectNewProduct()"
+                class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 transition ease-in-out duration-150">
                 <i class="fas fa-plus mr-2"></i> Nuevo Producto
-            </button>
-        </div>
+            </button> -->
+        </div>        
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                <div class="mb-4">
-                    <input type="text" x-model="manager.filter" placeholder="Buscar por SKU o descripción..." class="w-full rounded-md border-gray-300 shadow-sm">
-                </div>
+                    <div class="lg:col-span-2 flex flex-col gap-6">
+                        <div>
+                            <input type="text" x-model="manager.filter" placeholder="Buscar por SKU o descripción..." class="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800">
+                        </div>
 
-                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Foto</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marca / Tipo</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                    <th class="relative px-6 py-3"><span class="sr-only">Acciones</span></th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200" x-show="!manager.loading" x-transition>
-                                <template x-for="product in manager.filteredProducts" :key="product.id">
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <img :src="product.photo_url" :alt="product.description" class="w-12 h-12 rounded-lg object-cover shadow-md">
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="product.sku"></td>
-                                        <td class="px-6 py-4 text-sm text-gray-700" style="max-width: 300px;" x-text="product.description"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <div x-text="product.brand || 'N/A'" class="font-semibold"></div>
-                                            <div x-text="product.type || 'N/A'" class="text-xs"></div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right" x-text="`$${parseFloat(product.price).toFixed(2)}`"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-center">
-                                            <button @click="manager.toggleStatus(product)"
-                                                :class="product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                                                class="px-3 py-1 text-xs font-semibold rounded-full transition-colors">
-                                                <span x-text="product.is_active ? 'Activo' : 'Inactivo'"></span>
-                                            </button>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                            <button @click="manager.openFormModal(product)" class="text-indigo-600 hover:text-indigo-900 transition-colors" title="Editar">
-                                                <i class="fas fa-edit fa-lg"></i>
-                                            </button>
-                                            <button @click="manager.deleteProduct(product)" class="text-red-600 hover:text-red-900 transition-colors" title="Eliminar">
-                                                <i class="fas fa-trash fa-lg"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </template>
+                        <div x-show="manager.loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <template x-for="i in 6">
+                                <div class="bg-white rounded-lg shadow-md h-64 animate-pulse"></div>
+                            </template>
+                        </div>
+                        
+                        <div x-show="!manager.loading && manager.filteredProducts.length === 0" class="text-center text-gray-500 py-20">
+                            <i class="fas fa-search fa-3x mb-4"></i>
+                            <p x-text="manager.filter === '' ? 'No se encontraron productos.' : 'No hay productos que coincidan con tu búsqueda.'"></p>
+                        </div>
 
-                                <tr x-show="manager.filteredProducts.length === 0">
-                                    <td colspan="7" class="px-6 py-12 text-center text-gray-500">
-                                        <i class="fas fa-search fa-2x mb-2"></i>
-                                        <p x-show="manager.filter === ''">No se encontraron productos.</p>
-                                        <p x-show="manager.filter !== ''">No hay productos que coincidan con tu búsqueda.</p>
-                                    </td>
-                                </tr>
-                            </tbody>
-                            <tbody x-show="manager.loading">
-                                <template x-for="i in 3">
-                                    <tr>
-                                        <td class="px-6 py-4"><div class="h-12 w-12 rounded-lg bg-gray-200 animate-pulse"></div></td>
-                                        <td class="px-6 py-4"><div class="h-4 w-20 rounded bg-gray-200 animate-pulse"></div></td>
-                                        <td class="px-6 py-4"><div class="h-4 w-40 rounded bg-gray-200 animate-pulse"></div></td>
-                                        <td class="px-6 py-4"><div class="h-4 w-24 rounded bg-gray-200 animate-pulse"></div></td>
-                                        <td class="px-6 py-4"><div class="h-4 w-16 rounded bg-gray-200 animate-pulse"></div></td>
-                                        <td class="px-6 py-4 text-center"><div class="h-6 w-16 rounded-full bg-gray-200 animate-pulse mx-auto"></div></td>
-                                        <td class="px-6 py-4"><div class="h-4 w-12 rounded bg-gray-200 animate-pulse ml-auto"></div></td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div x-show="manager.isFormModalOpen"
-            @keydown.escape.window="manager.closeFormModal()"
-            class="fixed inset-0 z-50 bg-gray-900 bg-opacity-60 flex items-center justify-center p-4 backdrop-blur-sm"
-            x-transition:enter="ease-out duration-300"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="ease-in duration-200"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
-            style="display: none;">
-
-            <form @submit.prevent="manager.saveProduct()"
-                @click.outside="manager.closeFormModal()"
-                class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] flex flex-col"
-                x-show="manager.isFormModalOpen"
-                x-transition:enter="ease-out duration-300"
-                x-transition:enter-start="opacity-0 scale-90"
-                x-transition:enter-end="opacity-100 scale-100"
-                x-transition:leave="ease-in duration-200"
-                x-transition:leave-start="opacity-100 scale-100"
-                x-transition:leave-end="opacity-0 scale-90">
-
-                <div class="flex justify-between items-center p-5 border-b rounded-t-xl">
-                    <h3 class="text-xl font-semibold text-gray-900" x-text="manager.form.id ? 'Editar Producto' : 'Nuevo Producto'"></h3>
-                    <button type="button" @click="manager.closeFormModal()" class="text-gray-400 hover:text-gray-900">
-                        <i class="fas fa-times fa-lg"></i>
-                    </button>
-                </div>
-
-                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">SKU</label>
-                        <input type="text" x-model="manager.form.sku" :disabled="manager.form.id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm disabled:bg-gray-100" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Precio</label>
-                        <input type="number" step="0.01" min="0" x-model="manager.form.price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Descripción</label>
-                        <input type="text" x-model="manager.form.description" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Marca</label>
-                        <input type="text" x-model="manager.form.brand" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Tipo</label>
-                        <input type="text" x-model="manager.form.type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    </div>
-                    
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Fotografía</label>
-                        <div class="mt-1 flex items-center space-x-4">
-                            <span class="h-20 w-20 rounded-lg overflow-hidden bg-gray-100 shadow-inner">
-                                <img x-show="manager.photoPreview" :src="manager.photoPreview" class="h-full w-full object-cover">
-                                <img x-show="!manager.photoPreview && manager.form.photo_url" :src="manager.form.photo_url" class="h-full w-full object-cover">
-                                <svg x-show="!manager.photoPreview && !manager.form.photo_url" class="h-full w-full text-gray-300" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M19 3H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h12c.55 0 1 .45 1 1v12c0 .55-.45 1-1 1zm-4.5-3.5L15 12l-2.5 3-1.5-1.5L9 16h9z"></path>
-                                </svg>
-                            </span>
-                            <input type="file" @change="manager.previewPhoto($event)" class="hidden" x-ref="photoInput">
-                            <button type="button" @click="$refs.photoInput.click()" class="bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50">
-                                Cambiar Foto
-                            </button>
+                        <div x-show="!manager.loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" x-transition>
+                            <template x-for="product in manager.filteredProducts" :key="product.id">
+                                <div @click="manager.selectProductForEdit(product)"
+                                    class="group bg-white rounded-lg shadow-md cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                                    :class="{ 
+                                        'ring-2 ring-gray-800': manager.form.id === product.id,
+                                        'opacity-60 grayscale hover:grayscale-0': !product.is_active 
+                                    }">
+                                    
+                                    <div class="relative h-40 w-full overflow-hidden rounded-t-lg">
+                                        <img :src="product.photo_url" :alt="product.description" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110">
+                                        <span class="absolute top-2 right-2 px-2 py-0.5 text-xs font-semibold rounded-full"
+                                              :class="product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                                              x-text="product.is_active ? 'Activo' : 'Inactivo'">
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="p-4">
+                                        <p class="text-xs text-gray-400" x-text="product.sku"></p>
+                                        <h4 class="font-semibold text-gray-800" x-text="product.description"></h4>
+                                        <p class="text-lg font-extrabold text-gray-900 mt-2" x-text="`$${parseFloat(product.price).toFixed(2)}`"></p>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
 
-                    <div class="md:col-span-2">
-                        <label class="flex items-center mt-2">
-                            <input type="checkbox" x-model="manager.form.is_active" class="h-5 w-5 rounded border-gray-300 text-blue-600 shadow-sm">
-                            <span class="ml-2 text-sm text-gray-700">Producto Activo</span>
-                        </label>
-                    </div>
-                </div>
+                    <div class="lg:col-span-1">
+                        <div class="sticky top-28">
+                            <form @submit.prevent="manager.saveProduct()"
+                                  class="bg-white rounded-xl shadow-2xl max-h-[85vh] flex flex-col">
 
-                <div class="flex items-center justify-end p-4 bg-gray-50 border-t rounded-b-xl space-x-3">
-                    <button type="button" @click="manager.closeFormModal()" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
-                        Cancelar
-                    </button>
-                    <button type="submit" 
-                        class="inline-flex items-center bg-blue-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700"
-                        :disabled="manager.isSaving">
-                        <i x-show="manager.isSaving" class="fas fa-spinner fa-spin -ml-1 mr-2"></i>
-                        <span x-text="manager.isSaving ? 'Guardando...' : 'Guardar'">Guardar</span>
-                    </button>
-                </div>
-            </form>
+                                <div class="flex justify-between items-center p-5 border-b">
+                                    <h3 class="text-xl font-semibold text-gray-900" x-text="manager.form.id ? 'Editar Producto' : 'Nuevo Producto'"></h3>
+                                    <button type="button" @click="manager.resetForm()" x-show="manager.form.id" class="text-gray-400 hover:text-gray-900" title="Cancelar edición">
+                                        <i class="fas fa-times fa-lg"></i>
+                                    </button>
+                                </div>
+
+                                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">SKU</label>
+                                        <input type="text" x-model="manager.form.sku" :disabled="manager.form.id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm disabled:bg-gray-100" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Precio</label>
+                                        <input type="number" step="0.01" min="0" x-model="manager.form.price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700">Descripción</label>
+                                        <input type="text" x-model="manager.form.description" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Marca</label>
+                                        <input type="text" x-model="manager.form.brand" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Tipo</label>
+                                        <input type="text" x-model="manager.form.type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    </div>
+                                    
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700">Fotografía</label>
+                                        <div class="mt-1 flex items-center space-x-4">
+                                            <span class="h-20 w-20 rounded-lg overflow-hidden bg-gray-100 shadow-inner">
+                                                <img x-show="manager.photoPreview" :src="manager.photoPreview" class="h-full w-full object-cover">
+                                                <img x-show="!manager.photoPreview && manager.form.photo_url" :src="manager.form.photo_url" class="h-full w-full object-cover">
+                                                <svg x-show="!manager.photoPreview && !manager.form.photo_url" class="h-full w-full text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M19 3H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h12c.55 0 1 .45 1 1v12c0 .55-.45 1-1 1zm-4.5-3.5L15 12l-2.5 3-1.5-1.5L9 16h9z"></path>
+                                                </svg>
+                                            </span>
+                                            <input type="file" @change="manager.previewPhoto($event)" class="hidden" x-ref="photoInput">
+                                            <button type="button" @click="$refs.photoInput.click()" class="bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50">
+                                                Cambiar Foto
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="md:col-span-2">
+                                        <label class="flex items-center mt-2">
+                                            <input type="checkbox" x-model="manager.form.is_active" class="h-5 w-5 rounded border-gray-300 text-gray-800 shadow-sm focus:ring-gray-700">
+                                            <span class="ml-2 text-sm text-gray-700">Producto Activo</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between p-4 bg-gray-50 border-t rounded-b-xl space-x-3">
+                                    <button type="button" @click="manager.deleteProduct(manager.form)" 
+                                            x-show="manager.form.id"
+                                            class="inline-flex items-center text-red-600 hover:text-red-800 text-sm font-medium transition-colors">
+                                        <i class="fas fa-trash mr-2"></i>Eliminar
+                                    </button>
+                                    <div class="flex space-x-3">
+                                        <button type="button" @click="manager.resetForm()" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                            Cancelar
+                                        </button>
+                                        <button type="submit" 
+                                            class="inline-flex items-center bg-gray-800 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-gray-700"
+                                            :disabled="manager.isSaving">
+                                            <i x-show="manager.isSaving" class="fas fa-spinner fa-spin -ml-1 mr-2"></i>
+                                            <span x-text="manager.isSaving ? 'Guardando...' : (manager.form.id ? 'Actualizar' : 'Guardar')">Guardar</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div> </div> </div>
         </div>
 
         <div x-show="manager.isUploadModalOpen"
@@ -256,23 +216,20 @@
             return {
                 products: [],
                 filter: '',
-                loading: false,
+                loading: true,
                 isSaving: false,
-                isFormModalOpen: false,
                 photoPreview: null,
                 form: {
                     id: null, sku: '', description: '', type: '', brand: '',
                     price: 0.00, photo: null, photo_url: null, is_active: true,
                 },
-
-                // --- Nuevas variables para el modal de carga ---
                 isUploadModalOpen: false,
                 uploadMessage: '',
                 uploadSuccess: false,
-                // ---------------------------------------------
-
+                
                 init(initialProducts) {
                     this.products = initialProducts;
+                    this.loading = false;
                 },
 
                 get filteredProducts() {
@@ -284,25 +241,20 @@
                     );
                 },
 
-                openFormModal(product = null) {
-                    if (product) {
-                        this.form = { ...product, photo: null };
-                    } else {
-                        this.resetForm();
-                    }
+                selectProductForEdit(product) {
+                    this.form = { ...product, photo: null };
                     this.photoPreview = null;
-                    this.isFormModalOpen = true;
                 },
-                closeFormModal() {
-                    this.isFormModalOpen = false;
+                selectNewProduct() {
                     this.resetForm();
+                    this.$nextTick(() => { this.$refs.skuInput.focus(); });
                 },
+                
                 resetForm() {
                     this.form = { id: null, sku: '', description: '', type: '', brand: '', price: 0.00, photo: null, photo_url: null, is_active: true };
                     this.photoPreview = null;
                 },
 
-                // --- Métodos para el modal de carga ---
                 openUploadModal() {
                     this.isUploadModalOpen = true;
                     this.uploadMessage = '';
@@ -310,7 +262,6 @@
                 },
                 closeUploadModal() {
                     this.isUploadModalOpen = false;
-                    // Si la carga fue exitosa, recargamos la página para ver los cambios
                     if (this.uploadSuccess) {
                         location.reload();
                     }
@@ -320,9 +271,7 @@
                     this.isSaving = true;
                     this.uploadMessage = '';
                     this.uploadSuccess = false;
-
                     const formData = new FormData(event.target);
-                    
                     try {
                         const response = await fetch("{{ route('ff.catalog.import') }}", {
                             method: 'POST',
@@ -332,9 +281,7 @@
                                 'Accept': 'application/json',
                             }
                         });
-
                         const data = await response.json();
-
                         if (!response.ok) {
                             this.uploadSuccess = false;
                             this.uploadMessage = data.message || 'Error al subir los archivos.';
@@ -343,12 +290,9 @@
                             }
                             throw new Error('Error en la subida.');
                         }
-
-                        // ¡Éxito! El controlador terminó todo el trabajo.
                         this.uploadSuccess = true;
                         this.uploadMessage = data.message;
-                        event.target.reset(); // Limpia el formulario
-
+                        event.target.reset();
                     } catch (error) {
                         console.error(error);
                         if (!this.uploadMessage) {
@@ -359,7 +303,6 @@
                         this.isSaving = false;
                     }
                 },
-                // --------------------------------------
 
                 previewPhoto(event) {
                     const file = event.target.files[0];
@@ -372,7 +315,6 @@
                 },
 
                 async saveProduct() {
-                    // ... (El resto de esta función sigue igual que antes) ...
                     if (this.isSaving) return;
                     this.isSaving = true;
                     const formData = new FormData();
@@ -397,7 +339,15 @@
                         });
                         if (!response.ok) {
                             const errorData = await response.json();
-                            alert(`Error: ${errorData.message || 'No se pudo guardar.'}`);
+                            let errorMessage = 'No se pudo guardar:\n';
+                            if (response.status === 422 && errorData.errors) {
+                                for (const field in errorData.errors) {
+                                    errorMessage += `- ${errorData.errors[field].join(', ')}\n`;
+                                }
+                            } else {
+                                errorMessage += errorData.message || 'Error desconocido.';
+                            }
+                            alert(errorMessage);
                             throw new Error('Error al guardar.');
                         }
                         const savedProduct = await response.json();
@@ -407,22 +357,17 @@
                         } else {
                             this.products.unshift(savedProduct);
                         }
-                        this.closeFormModal();
+                        this.resetForm();
                     } catch (error) {
                         console.error(error);
-                        alert('Ocurrió un error. Revisa la consola.');
                     } finally {
                         this.isSaving = false;
                     }
                 },
                 
-                async toggleStatus(product) {
-                    const updatedProduct = { ...product, is_active: !product.is_active };
-                    this.openFormModal(updatedProduct);
-                    await this.saveProduct();
-                },
-
+                
                 async deleteProduct(product) {
+                    if (!product.id) return;
                     if (!confirm(`¿Estás seguro de que deseas eliminar "${product.description}"?`)) return;
                     try {
                         const response = await fetch(`{{ url('ff/catalog') }}/${product.id}`, {
@@ -434,6 +379,9 @@
                         });
                         if (!response.ok) throw new Error('Error al eliminar.');
                         this.products = this.products.filter(p => p.id !== product.id);
+                        if (this.form.id === product.id) {
+                            this.resetForm();
+                        }
                     } catch (error) {
                         console.error(error);
                         alert('No se pudo eliminar el producto.');

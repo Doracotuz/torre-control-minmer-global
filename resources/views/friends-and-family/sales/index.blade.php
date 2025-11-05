@@ -4,15 +4,17 @@
         <div class="sticky top-16 z-10 bg-white shadow-md border-b border-gray-200">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 py-4">
                 <div class="flex flex-col md:flex-row justify-between items-center">
+                    
                     <div class="mb-4 md:mb-0">
                         <h2 class="text-2xl font-bold text-gray-800">Total de Venta:</h2>
-                        <span class="text-3xl font-extrabold text-blue-600" x-text="formatCurrency(totalVenta)"></span>
+                        <span class="text-3xl font-extrabold text-gray-900" x-text="formatCurrency(totalVenta)"></span>
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-4">
+                        
                         <button @click="printProductList()"
                                 :disabled="isSaving || isPrinting"
-                                class="inline-flex items-center justify-center px-6 py-4 bg-blue-500 border border-transparent rounded-lg font-semibold text-lg text-white uppercase tracking-widest hover:bg-blue-600 transition ease-in-out duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+                                class="inline-flex items-center justify-center px-6 py-3 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-gray-700 uppercase tracking-widest hover:bg-gray-50 transition ease-in-out duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
                             <i x-show="isPrinting" class="fas fa-spinner fa-spin -ml-1 mr-3" style="display: none;"></i>
                             <i x-show="!isPrinting" class="fas fa-print -ml-1 mr-3"></i>
                             <span x-text="isPrinting ? 'Generando...' : 'Imprimir Lista'"></span>
@@ -20,7 +22,7 @@
                         
                         <button @click="submitCheckout()"
                                 :disabled="isSaving || isPrinting || localCart.size === 0"
-                                class="inline-flex items-center justify-center px-8 py-4 bg-green-600 border border-transparent rounded-lg font-semibold text-lg text-white uppercase tracking-widest hover:bg-green-700 transition ease-in-out duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+                                class="inline-flex items-center justify-center px-8 py-4 bg-gray-800 border border-transparent rounded-lg font-semibold text-lg text-white uppercase tracking-widest hover:bg-gray-700 transition ease-in-out duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
                             <i x-show="isSaving" class="fas fa-spinner fa-spin -ml-1 mr-3" style="display: none;"></i>
                             <i x-show="!isSaving" class="fas fa-file-pdf -ml-1 mr-3"></i>
                             <span x-text="isSaving ? 'Procesando...' : 'Generar Venta (PDF)'"></span>
@@ -35,7 +37,7 @@
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="mb-4">
-                    <input type="text" x-model="filter" placeholder="Buscar por SKU o descripción..." class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <input type="text" x-model="filter" placeholder="Buscar por SKU o descripción..." class="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800">
                 </div>
 
                 <div class="hidden md:flex bg-gray-50 rounded-lg px-6 py-3 text-xs font-semibold uppercase text-gray-500 tracking-wider mb-3">
@@ -49,8 +51,12 @@
                 <div class="flex flex-col gap-4">
                     <template x-for="(product, index) in filteredProducts" :key="product.id">
                         
-                        <div class="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300"
-                             :class="{ 'opacity-40': getAvailableStock(product) <= 0 && !getProductInCart(product.id) }">
+                        <div x-data="{ isFocused: false }"
+                             class="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300"
+                             :class="{ 
+                                 'opacity-40': getAvailableStock(product) <= 0 && !getProductInCart(product.id),
+                                 'ring-2 ring-gray-800': isFocused 
+                             }">
                             
                             <div class="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:gap-4">
 
@@ -80,10 +86,12 @@
                                 <div class="w-full md:w-1/4 lg:w-[20%]">
                                     <label :for="`qty-${product.id}`" class="md:hidden text-sm font-medium text-gray-700 mb-1">Cantidad:</label>
                                     <input :id="`qty-${product.id}`" type="number" min="0" :max="getAvailableStock(product) + (getProductInCart(product.id) || 0)"
-                                           class="w-full rounded-md border-gray-300 shadow-sm text-lg font-bold md:text-center"
+                                           class="w-full rounded-md border-gray-300 shadow-sm text-lg font-bold text-center focus:ring-gray-800 focus:border-gray-800"
                                            :disabled="getAvailableStock(product) <= 0 && !getProductInCart(product.id)"
                                            :value="getProductInCart(product.id)"
-                                           @input.debounce.500ms="onQuantityChange($event, product)">
+                                           @input.debounce.500ms="onQuantityChange($event, product)"
+                                           @focus="isFocused = true"
+                                           @blur="isFocused = false">
                                     <div x-show="product.error" class="text-xs text-red-500 mt-1" x-text="product.error" x-transition style="display: none;"></div>
                                 </div>
 
@@ -94,6 +102,7 @@
             </div>
         </div>
     </div> 
+    
     <script>
         function salesManager() {
             return {
@@ -116,6 +125,8 @@
                         
                         return {
                             ...p,
+                            // Asegúrate de que tu $product->photo_url exista o ajusta esta línea
+                            photo_url: p.photo_path ? `/storage/${p.photo_path}` : 'https://via.placeholder.com/150',
                             total_stock: p.movements_sum_quantity ? parseInt(p.movements_sum_quantity) : 0,
                             reserved_by_others: p.reserved_by_others ? parseInt(p.reserved_by_others) : 0,
                             cart_items: [],

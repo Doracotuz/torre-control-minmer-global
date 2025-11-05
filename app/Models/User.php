@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Notifications\CustomResetPasswordNotification;
+use App\Models\ffInventoryMovement;
+use App\Models\ffCartItem;
 
 class User extends Authenticatable
 {
@@ -104,6 +106,11 @@ class User extends Authenticatable
     public function cartItems()
     {
         return $this->hasMany(ffCartItem::class);
-    }    
+    }
+    
+    public function movements(): HasMany
+    {
+        return $this->hasMany(ffInventoryMovement::class, 'user_id');
+    }
 
 }

@@ -60,6 +60,7 @@ use App\Http\Controllers\FriendsAndFamily\FfDashboardController;
 use App\Http\Controllers\FriendsAndFamily\FfProductController;
 use App\Http\Controllers\FriendsAndFamily\FfInventoryController;
 use App\Http\Controllers\FriendsAndFamily\FfSalesController;
+use App\Http\Controllers\FriendsAndFamily\FfReportController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -766,6 +767,16 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
     Route::get('/sales/reservations', [FfSalesController::class, 'getReservations'])->name('sales.reservations');
     Route::post('/sales/checkout', [FfSalesController::class, 'checkout'])->name('sales.checkout');    
     Route::post('/friends-and-family/sales/print-list', [FfSalesController::class, 'printList'])->name('sales.printList');
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [FfReportController::class, 'index'])->name('index');
+        Route::get('/transactions', [FfReportController::class, 'transactions'])->name('transactions');
+        Route::post('/transactions/{movement}/reprint', [FfReportController::class, 'reprintReceipt'])->name('reprintReceipt');
+        Route::get('/inventory-analysis', [FfReportController::class, 'inventoryAnalysis'])->name('inventoryAnalysis');
+        Route::get('/stock-availability', [FfReportController::class, 'stockAvailability'])->name('stockAvailability');
+        Route::get('/catalog-analysis', [FfReportController::class, 'catalogAnalysis'])->name('catalogAnalysis');
+        Route::get('/seller-performance', [FfReportController::class, 'sellerPerformance'])->name('sellerPerformance');
+        Route::get('/api/recent-movements', [FfReportController::class, 'apiGetRecentMovements'])->name('api.recentMovements');
+    });    
 });
 
 Route::get('/project-files/{file}/download', [ProjectFileController::class, 'download'])

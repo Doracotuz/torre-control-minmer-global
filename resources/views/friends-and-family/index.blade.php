@@ -7,43 +7,79 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                
-                <!-- 1. Venta (Deshabilitado por ahora) -->
-                <a href="{{ route('ff.sales.index') }}" class="bg-white overflow-hidden shadow-2xl sm:rounded-lg p-6 flex flex-col items-center justify-center text-center transition-all transform hover:scale-105 hover:shadow-blue-200 ring-1 ring-blue-500 hover:ring-blue-600">
-                    <div class="p-4 bg-blue-100 rounded-full mb-4">
-                        <i class="fas fa-cash-register fa-3x text-blue-600"></i>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-6 h-[75vh]">
+
+                <a href="{{ route('ff.sales.index') }}" 
+                   class="group relative md:col-span-2 md:row-span-2 rounded-lg overflow-hidden shadow-lg transition-all duration-500 ease-in-out hover:shadow-2xl hover:-translate-y-2">
+                    
+                    <img src="https://cdnx.jumpseller.com/la-vinateria/image/63870582/Captura_de_pantalla_2025-05-28_a_la_s__3.14.58_p.m..png?1748459725" 
+                         alt="Venta" 
+                         class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110">
+                    
+                    <div class="absolute bottom-0 left-0 right-0 p-5 bg-white/80 backdrop-blur-sm shadow-inner-t">
+                        <h3 class="text-2xl font-semibold text-gray-900">Punto de Venta</h3>
+                        
+                        <div class="overflow-hidden transition-all duration-500 ease-in-out max-h-0 group-hover:max-h-40">
+                            <p class="text-sm text-gray-600 mt-2 font-light">
+                                Iniciar una nueva transacción.
+                            </p>
+                        </div>
                     </div>
-                    <h3 class="text-lg font-semibold text-gray-900">Venta</h3>
-                    <p class="text-sm text-gray-500">Realizar una venta</p>
                 </a>
 
-                <!-- 2. Inventario (Deshabilitado por ahora) -->
-                <a href="{{ route('ff.inventory.index') }}" class="bg-white overflow-hidden shadow-2xl sm:rounded-lg p-6 flex flex-col items-center justify-center text-center transition-all transform hover:scale-105 hover:shadow-blue-200 ring-1 ring-blue-500 hover:ring-blue-600">
-                    <div class="p-4 bg-blue-100 rounded-full mb-4">
-                        <i class="fas fa-boxes fa-3x text-blue-600"></i>
+                <a href="{{ route('ff.inventory.index') }}" 
+                   class="group relative md:col-span-2 rounded-lg overflow-hidden shadow-lg transition-all duration-500 ease-in-out hover:shadow-2xl hover:-translate-y-2">
+                    
+                    <img src="https://bsmedia.business-standard.com/_media/bs/img/article/2025-05/14/full/1747220660-1474.jpg" 
+                         alt="Inventario" 
+                         class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110">
+                    
+                    <div class="absolute bottom-0 left-0 right-0 p-5 bg-white/80 backdrop-blur-sm shadow-inner-t">
+                        <h3 class="text-2xl font-semibold text-gray-900">Inventario</h3>
+                        <div class="overflow-hidden transition-all duration-500 ease-in-out max-h-0 group-hover:max-h-40">
+                            <p class="text-sm text-gray-600 mt-2 font-light">
+                                Gestionar el stock de productos.
+                            </p>
+                        </div>
                     </div>
-                    <h3 class="text-lg font-semibold text-gray-900">Inventario</h3>
-                    <p class="text-sm text-gray-500">Gestionar stock</p>
                 </a>
 
-                <!-- 3. Catálogo (¡Este es el que funciona!) -->
-                <a href="{{ route('ff.catalog.index') }}" class="bg-white overflow-hidden shadow-2xl sm:rounded-lg p-6 flex flex-col items-center justify-center text-center transition-all transform hover:scale-105 hover:shadow-blue-200 ring-1 ring-blue-500 hover:ring-blue-600">
-                    <div class="p-4 bg-blue-100 rounded-full mb-4">
-                        <i class="fas fa-book-open fa-3x text-blue-600"></i>
+                <a href="{{ route('ff.catalog.index') }}" 
+                   class="group relative rounded-lg overflow-hidden shadow-lg transition-all duration-500 ease-in-out hover:shadow-2xl hover:-translate-y-2">
+                    
+                    <img src="https://www.dondeir.com/wp-content/uploads/2024/10/nahual-bebidas-para-dia-de-muertos-con-moet-hennessy.jpg" 
+                         alt="Catálogo" 
+                         class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110">
+                    
+                    <div class="absolute bottom-0 left-0 right-0 p-5 bg-white/80 backdrop-blur-sm shadow-inner-t">
+                        <h3 class="text-2xl font-semibold text-gray-900">Catálogo</h3>
+                        <div class="overflow-hidden transition-all duration-500 ease-in-out max-h-0 group-hover:max-h-40">
+                            <p class="text-sm text-gray-600 mt-2 font-light">
+                                Administrar productos y precios.
+                            </p>
+                        </div>
                     </div>
-                    <h3 class="text-lg font-semibold text-gray-900">Catálogo</h3>
-                    <p class="text-sm text-gray-500">Gestionar productos</p>
                 </a>
 
-                <!-- 4. Reportes (Deshabilitado por ahora) -->
-                <div class="bg-white/70 overflow-hidden shadow-xl sm:rounded-lg p-6 flex flex-col items-center justify-center text-center transition-all transform hover:scale-105 opacity-50 cursor-not-allowed">
-                    <div class="p-4 bg-gray-200 rounded-full mb-4">
-                        <i class="fas fa-chart-line fa-3x text-gray-400"></i>
+                <a href="{{ route('ff.reports.index') }}" 
+                class="group relative rounded-lg overflow-hidden shadow-lg transition-all duration-500 ease-in-out hover:shadow-2xl hover:-translate-y-2">
+                                    
+                    <img src="https://vino-joy.com/wp-content/uploads/2025/05/MOET-HENNESSY-IMAGE.jpg" 
+                        alt="Reportes" 
+                        class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110">
+                    
+                    <div class="absolute bottom-0 left-0 right-0 p-5 bg-white/80 backdrop-blur-sm shadow-inner-t">
+                        <h3 class="text-2xl font-semibold text-gray-900">
+                            Reportes
+                        </h3>
+                        <div class="overflow-hidden transition-all duration-500 ease-in-out max-h-0 group-hover:max-h-40">
+                            <p class="text-sm text-gray-600 mt-2 font-light">
+                                Análisis y métricas del evento.
+                            </p>
+                        </div>
                     </div>
-                    <h3 class="text-lg font-semibold text-gray-500">Reportes</h3>
-                    <p class="text-sm text-gray-400">Próximamente</p>
-                </div>
+                </a>
 
             </div>
         </div>

@@ -423,8 +423,8 @@
             }
         
         // ALPINE.JS PARA MONITOREO
-document.addEventListener('alpine:init', () => {
-    Alpine.data('monitoringManager', () => ({
+        document.addEventListener('alpine:init', () => {
+        Alpine.data('monitoringManager', () => ({
         selectedGuias: JSON.parse(sessionStorage.getItem('selectedGuias')) || [],
 
         isEventModalOpen: false,
