@@ -42,7 +42,13 @@ class WMSPhysicalCountController extends Controller
     {
         $users = User::where('is_client', false)->orderBy('name')->get();
         $warehouses = Warehouse::orderBy('name')->get();
-        return view('wms.physical-counts.create', compact('users', 'warehouses'));
+        $aisles = Location::select('aisle')
+                            ->whereNotNull('aisle')
+                            ->distinct()
+                            ->orderBy('aisle')
+                            ->pluck('aisle');
+
+        return view('wms.physical-counts.create', compact('users', 'warehouses', 'aisles'));
     }
 
     public function store(Request $request)
@@ -53,6 +59,7 @@ class WMSPhysicalCountController extends Controller
             'assigned_user_id' => 'required|exists:users,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'locations_file' => 'required_if:type,dirigido|file|mimes:csv,txt',
+            'aisle' => 'required_if:type,cycle|nullable|string',
         ]);
 
         DB::beginTransaction();
@@ -68,8 +75,8 @@ class WMSPhysicalCountController extends Controller
                 'status' => 'Pending'
             ]);
 
+
             if ($validated['type'] === 'dirigido') {
-                
                 $file = $request->file('locations_file');
                 $csvData = array_map('str_getcsv', file($file->getRealPath()));
                 array_shift($csvData); 
@@ -87,7 +94,7 @@ class WMSPhysicalCountController extends Controller
                 if ($locations->isEmpty()) {
                     throw new \Exception("Ninguna de las ubicaciones especificadas existe en el almacén seleccionado.");
                 }
-
+                
                 foreach ($locations as $location) {
                     foreach ($location->pallets as $pallet) {
                         foreach ($pallet->items as $item) {
@@ -99,7 +106,26 @@ class WMSPhysicalCountController extends Controller
                     }
                 }
 
-            } else {
+            } elseif ($validated['type'] === 'cycle') {
+                $palletsToCount = \App\Models\WMS\Pallet::where('status', 'Finished')
+                                ->whereHas('items')
+                                ->whereHas('location', function($q) use ($warehouseId, $validated) {
+                                    $q->where('warehouse_id', $warehouseId)
+                                      ->where('aisle', $validated['aisle']);
+                                })
+                                ->with('items')
+                                ->get();
+                                
+                foreach ($palletsToCount as $pallet) {
+                    foreach ($pallet->items as $item) {
+                        $session->tasks()->create([
+                            'pallet_id' => $pallet->id, 'location_id' => $pallet->location_id,
+                            'product_id' => $item->product_id, 'expected_quantity' => $item->quantity,
+                        ]);
+                    }
+                }
+
+            } elseif ($validated['type'] === 'full') {
                 $palletsToCount = \App\Models\WMS\Pallet::where('status', 'Finished')
                                 ->whereHas('items')
                                 ->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId))
@@ -117,7 +143,7 @@ class WMSPhysicalCountController extends Controller
             }
             
             if ($session->tasks()->count() === 0) {
-                 throw new \Exception("No se encontraron tareas para generar. Verifique el inventario o las ubicaciones en el almacén seleccionado.");
+                 throw new \Exception("No se encontraron tareas para generar. Verifique el inventario o los filtros seleccionados (almacén, pasillo, etc.).");
             }
 
             DB::commit();
@@ -125,7 +151,7 @@ class WMSPhysicalCountController extends Controller
             
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Error al crear la sesión: ' (e->getMessage()))->withInput();
+            return back()->with('error', 'Error al crear la sesión: ' . $e->getMessage())->withInput();
         }
     }
 
