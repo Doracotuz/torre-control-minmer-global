@@ -56,7 +56,9 @@ use App\Http\Controllers\WMS\WMSReceivingController;
 use App\Http\Controllers\WMS\WMSLpnController;
 use App\Http\Controllers\WMS\WMSQualityController;
 use App\Http\Controllers\WMS\WMSDashboardController;
-
+use App\Http\Controllers\FriendsAndFamily\FfDashboardController;
+use App\Http\Controllers\FriendsAndFamily\FfProductController;
+use App\Http\Controllers\FriendsAndFamily\FfInventoryController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -744,6 +746,20 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::get('reports/abc-analysis/export', [WMSReportController::class, 'exportAbcAnalysis'])->name('reports.abc-analysis.export');  
     Route::get('reports/slotting-heatmap', [WMSReportController::class, 'showSlottingHeatmap'])->name('reports.slotting-heatmap');
     Route::get('/api/search-products', [WMSProductController::class, 'apiSearchProducts'])->name('api.search-products');
+
+});
+
+Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(function () {
+    
+    Route::get('/dashboard', [FfDashboardController::class, 'index'])->name('dashboard.index');
+    Route::resource('catalog', FfProductController::class);
+    Route::get('/catalog/download-template', [FfProductController::class, 'downloadTemplate'])->name('catalog.downloadTemplate');
+    Route::post('/catalog/import', [FfProductController::class, 'import'])->name('catalog.import');
+    Route::get('/inventory', [FfInventoryController::class, 'index'])->name('inventory.index');
+    Route::post('/inventory/move', [FfInventoryController::class, 'storeMovement'])->name('inventory.storeMovement');
+    Route::get('/inventory/log', [FfInventoryController::class, 'logIndex'])->name('inventory.log');
+    Route::get('/inventory/export-csv', [FfInventoryController::class, 'exportCsv'])->name('inventory.exportCsv');
+    Route::get('/inventory/log/export-csv', [FfInventoryController::class, 'exportLogCsv'])->name('inventory.log.exportCsv');    
 
 });
 

@@ -792,7 +792,15 @@ document.addEventListener('alpine:init', () => {
                                         </svg>
                                         <span class="nav-text">{{ __('Customer Service') }}</span>
                                     </x-nav-link>
-                                @endif                        
+                                @endif
+                                @if (Auth::user()->isSuperAdmin() || Auth::user()->area?->name === 'Ventas')
+                                    <x-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="nav-link-custom {{ request()->routeIs('ff.*') ? 'active-link' : '' }}">
+                                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 00-3.741-7.11 9.094 9.094 0 00-7.11-3.741 9.094 9.094 0 00-7.11 3.741 9.094 9.094 0 003.741 7.11 9.094 9.094 0 007.11 3.741 9.094 9.094 0 007.11-3.741zM12 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        <span class="nav-text">{{ __('Friends & Family') }}</span>
+                                    </x-nav-link>
+                                @endif                                                       
                             @endif
 
 
