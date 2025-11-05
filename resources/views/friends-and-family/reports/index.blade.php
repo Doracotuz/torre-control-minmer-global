@@ -253,13 +253,13 @@
             plotOptions: {
                 bar: {
                     horizontal: true,
-                    dataLabels: { position: 'top' },
+                    dataLabels: { position: 'right' },
                     borderRadius: 4,
                 }
             },
             dataLabels: {
                 enabled: true,
-                offsetX: 10,
+                offsetX: -10,
                 style: {
                     fontSize: '12px',
                     colors: ['#fff']
