@@ -101,4 +101,9 @@ class User extends Authenticatable
         return $this->belongsToMany(Area::class, 'user_accessible_areas');
     }
 
+    public function cartItems()
+    {
+        return $this->hasMany(ffCartItem::class);
+    }    
+
 }

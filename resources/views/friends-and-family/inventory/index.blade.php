@@ -155,11 +155,9 @@
                 reason: ''
             },
             
-            // FUNCIÓN INIT MODIFICADA PARA PARSEAR LA CADENA JSON
             init(initialProductsJson) {
                 let productsArray = [];
                 
-                // Intentamos parsear la cadena JSON que inyectamos desde Blade
                 if (typeof initialProductsJson === 'string' && initialProductsJson.length > 0) {
                     try {
                         productsArray = JSON.parse(initialProductsJson);
@@ -167,11 +165,9 @@
                         console.error("Error al parsear el JSON de productos:", e);
                     }
                 } else {
-                    // Manejo de caso vacío/nulo si la inyección no resultó en una cadena
                     productsArray = initialProductsJson || [];
                 }
                 
-                // Línea de seguridad
                 productsArray = Array.isArray(productsArray) ? productsArray : [];
 
                 this.products = productsArray.map(p => ({
@@ -225,7 +221,6 @@
                     : -this.form.quantity_raw;
 
                 try {
-                    // El token CSRF debe estar en una meta etiqueta en el head de tu layout.
                     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                     
                     const response = await fetch("{{ route('ff.inventory.storeMovement') }}", {
@@ -249,12 +244,9 @@
                         throw new Error(data.message);
                     }
 
-                    // Actualizar el inventario en el frontend
                     const productIndex = this.products.findIndex(p => p.id === data.product_id);
                     if (productIndex > -1) {
-                        // Aseguramos que el nuevo total sea un número
                         this.products[productIndex].movements_sum_quantity = parseInt(data.new_total, 10);
-                        // Forzar a Alpine a re-renderizar la lista (necesario después de modificar un array/objeto directamente)
                         this.products = [...this.products];
                     }
                     

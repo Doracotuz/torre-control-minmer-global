@@ -48,6 +48,11 @@ class ffProduct extends Model
     public function movements()
     {
         return $this->hasMany(ffInventoryMovement::class);
+    }
+
+    public function cartItems()
+    {
+        return $this->hasMany(ffCartItem::class, 'ff_product_id');
     }    
 
 }

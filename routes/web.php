@@ -59,6 +59,7 @@ use App\Http\Controllers\WMS\WMSDashboardController;
 use App\Http\Controllers\FriendsAndFamily\FfDashboardController;
 use App\Http\Controllers\FriendsAndFamily\FfProductController;
 use App\Http\Controllers\FriendsAndFamily\FfInventoryController;
+use App\Http\Controllers\FriendsAndFamily\FfSalesController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -759,8 +760,12 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
     Route::post('/inventory/move', [FfInventoryController::class, 'storeMovement'])->name('inventory.storeMovement');
     Route::get('/inventory/log', [FfInventoryController::class, 'logIndex'])->name('inventory.log');
     Route::get('/inventory/export-csv', [FfInventoryController::class, 'exportCsv'])->name('inventory.exportCsv');
-    Route::get('/inventory/log/export-csv', [FfInventoryController::class, 'exportLogCsv'])->name('inventory.log.exportCsv');    
-
+    Route::get('/inventory/log/export-csv', [FfInventoryController::class, 'exportLogCsv'])->name('inventory.log.exportCsv');
+    Route::get('/sales', [FfSalesController::class, 'index'])->name('sales.index');
+    Route::post('/sales/cart/update', [FfSalesController::class, 'updateCartItem'])->name('sales.cart.update');
+    Route::get('/sales/reservations', [FfSalesController::class, 'getReservations'])->name('sales.reservations');
+    Route::post('/sales/checkout', [FfSalesController::class, 'checkout'])->name('sales.checkout');    
+    Route::post('/friends-and-family/sales/print-list', [FfSalesController::class, 'printList'])->name('sales.printList');
 });
 
 Route::get('/project-files/{file}/download', [ProjectFileController::class, 'download'])
