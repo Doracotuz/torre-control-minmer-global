@@ -20,26 +20,54 @@
             top: -50px;
             left: 0px;
             right: 0px;
-            height: 40px;
+            height: 55px;
             font-size: 14px;
             color: #222;
             border-bottom: 1px solid #eaeaea;
             padding-bottom: 10px;
         }
         
-        header .company-name {
-            font-weight: 600;
+        header .logo-container {
             float: left;
+            width: 50%;
+            height: 50px;
+            text-align: left;
+        }
+        
+        header .logo-container img {
+            max-height: 50px; 
+            width: auto;
         }
         
         header .event-details {
             float: right;
+            text-align: right;
+            width: 50%;
             font-weight: 300;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #555;
             font-size: 13px;
+            line-height: 1.2;
         }
+        
+        header .company-name {
+            font-weight: 600;
+            font-size: 14px;
+            display: block; 
+            color: #222;
+            margin-top: 5px; 
+        }
+
+        header .event-details .date {
+            font-size: 11px;
+            font-weight: 300;
+            color: #777;
+            text-transform: none;
+            letter-spacing: 0;
+            display: block;
+            margin-top: 4px;
+        }           
 
         footer {
             position: fixed; 
@@ -117,8 +145,15 @@
 </head>
 <body>
     <header>
-        <div class="company-name">Moët Hennessy de México, S.A. de C.V.</div>
-        <div class="event-details">Friends & Family Event</div>
+        <div class="logo-container">
+            <img src="{{ $logo_url }}" alt="Logo Moët Hennessy">
+            <!-- <span class="company-name">Moët Hennessy de México, S.A. de C.V.</span> -->
+        </div>
+        <div class="event-details">
+            <span>Friends & Family</span>
+            <span class="date">{{ $date }}</span>
+            <div style="font-size: 11px; text-transform: none; color: #777; margin-top: 3px;">Recibo de Venta</div>
+        </div>
     </header>
 
     <footer>

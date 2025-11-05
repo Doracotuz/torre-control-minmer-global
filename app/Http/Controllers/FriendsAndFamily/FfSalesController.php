@@ -9,6 +9,7 @@ use App\Models\ffProduct;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Dompdf\Dompdf;
 
 class FfSalesController extends Controller
@@ -88,76 +89,53 @@ class FfSalesController extends Controller
 
     public function checkout(Request $request)
     {
+        $user = Auth::user();
+
         $request->validate([
-            'client_name'   => 'required|string|max:255', 
-            'surtidor_name' => 'required|string|max:255', 
+            'client_name'   => 'required|string|max:255',
+            'surtidor_name' => 'nullable|string|max:255',
         ]);
 
-        $user = Auth::user();
-        $userId = $user->id;
-
-        $cartItems = ffCartItem::where('user_id', $userId)
-            ->with('product')
-            ->get();
+        $cartItems = ffCartItem::where('user_id', $user->id)->with('product')->get();
 
         if ($cartItems->isEmpty()) {
             return response()->json(['message' => 'El carrito está vacío.'], 400);
         }
 
+        $ventaFolio = $this->getNextFolio();
+        $pdfItems = [];
+        $grandTotal = 0;
+
         DB::beginTransaction();
+
         try {
-
-            $lastMovement = ffInventoryMovement::orderByDesc('folio')->lockForUpdate()->first();
-            $ventaFolio = ($lastMovement ? $lastMovement->folio : 0) + 1;
-
-            $pdfData = [
-                'items' => [],
-                'grandTotal' => 0,
-                'copies' => ['CLIENTE', 'VENDEDOR', 'AUDITOR']
-            ];
-
             foreach ($cartItems as $item) {
                 $product = $item->product;
-
-                $product->lockForUpdate();
+                $quantity = $item->quantity;
+                $price = $product->price ?? 0;
+                $totalPrice = $quantity * $price;
                 
-                $currentStock = ffInventoryMovement::where('ff_product_id', $product->id)->sum('quantity');
-                
-                $reservedByOthers = ffCartItem::where('ff_product_id', $product->id)
-                    ->where('user_id', '!=', $userId)
-                    ->sum('quantity');
-                    
-                $availableStock = $currentStock - $reservedByOthers;
-
-                if ($item->quantity > $availableStock) {
-                    DB::rollBack();
-                    return response()->json([
-                        'message' => 'Stock insuficiente para ' . $product->sku . '. Disponible: ' . $availableStock
-                    ], 400);
-                }
-
                 ffInventoryMovement::create([
                     'ff_product_id' => $product->id,
-                    'user_id' => $userId,
-                    'quantity' => -$item->quantity,
-                    'reason' => 'Venta Friends & Family',
-                    'client_name' => $request->client_name,
+                    'user_id'       => $user->id,
+                    'quantity'      => -$quantity,
+                    'reason'        => 'Venta F&F Folio ' . $ventaFolio,
+                    'client_name'   => $request->client_name,
                     'surtidor_name' => $request->surtidor_name,
-                    'folio' => $ventaFolio,
+                    'folio'         => $ventaFolio,
                 ]);
 
-                $totalItem = $product->price * $item->quantity;
-                $pdfData['items'][] = [
+                $pdfItems[] = [
                     'sku' => $product->sku,
                     'description' => $product->description,
-                    'quantity' => $item->quantity,
-                    'unit_price' => $product->price,
-                    'total_price' => $totalItem,
+                    'quantity' => $quantity,
+                    'unit_price' => $price,
+                    'total_price' => $totalPrice,
                 ];
-                $pdfData['grandTotal'] += $totalItem;
-            }
 
-            ffCartItem::where('user_id', $userId)->delete();
+                $grandTotal += $totalPrice;
+                
+            }
 
             DB::commit();
 
@@ -166,14 +144,27 @@ class FfSalesController extends Controller
             return response()->json(['message' => $e->getMessage()], 500);
         }
         
-        $pdfData['date'] = now()->format('d/m/Y H:i:s');
-        $pdfData['client_name'] = $request->client_name;
-        $pdfData['surtidor_name'] = $request->surtidor_name;
-        $pdfData['vendedor_name'] = $user->name;
-        $pdfData['folio'] = $ventaFolio;
+        $logoUrl = Storage::disk('s3')->url('logoMoetHennessy.PNG');
+
+        $pdfData = [
+            'items' => $pdfItems,
+            'grandTotal' => $grandTotal,
+            'folio' => $ventaFolio,
+            'date' => now()->format('d/m/Y H:i:s'),
+            'client_name' => $request->client_name,
+            'surtidor_name' => $request->surtidor_name,
+            'vendedor_name' => $user->name,
+            'logo_url' => $logoUrl,
+            'copies' => ['Original', 'Copia Cliente', 'Copia Almacén'],
+        ];
 
         $pdfView = view('friends-and-family.sales.pdf', $pdfData);
         $dompdf = new Dompdf();
+        
+        $options = $dompdf->getOptions();
+        $options->set('isRemoteEnabled', true);
+        $dompdf->setOptions($options);
+
         $dompdf->loadHtml($pdfView->render());
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
@@ -195,11 +186,19 @@ class FfSalesController extends Controller
         $pdfData = [
             'products' => $data['products'],
             'numSets'  => $data['numSets'],
-            'date'     => now()->format('d/m/Y')
+            'date'     => now()->format('d/m/Y'),
         ];
+        
+        $pdfData['logo_url'] = Storage::disk('s3')->url('logoMoetHennessy.PNG');
+        
 
         $pdfView = view('friends-and-family.sales.print-pdf', $pdfData);
         $dompdf = new Dompdf();
+        
+        $options = $dompdf->getOptions();
+        $options->set('isRemoteEnabled', true);
+        $dompdf->setOptions($options);
+
         $dompdf->loadHtml($pdfView->render());
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();

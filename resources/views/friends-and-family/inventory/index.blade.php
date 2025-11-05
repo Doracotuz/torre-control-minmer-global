@@ -7,24 +7,76 @@
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-4 md:mb-0">
                     Inventario (Friends & Family)
                 </h2>
-                <div class="flex space-x-2">
+                <div class="flex flex-wrap justify-end space-x-2">
                     <a href="{{ route('ff.inventory.log') }}"
                        class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 transition ease-in-out duration-150">
                        <i class="fas fa-history mr-2"></i> Ver Registro
-                    </a>
-                    <a href="{{ route('ff.inventory.exportCsv') }}"
-                       class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-900 transition ease-in-out duration-150">
-                       <i class="fas fa-file-csv mr-2"></i> Exportar Inventario
                     </a>
                 </div>
             </div>
         </x-slot>
 
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-6">
+            @if (session('success'))
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
+                    <p class="font-bold">Éxito</p>
+                    <p>{{ session('success') }}</p>
+                </div>
+            @endif
+            @if (session('import_errors'))
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+                    <p class="font-bold">{{ session('error_summary', 'Error en la importación') }}</p>
+                    <ul class="list-disc pl-5 mt-2">
+                        @foreach (session('import_errors') as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+        </div>
+
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 
-                <div class="mb-4">
-                    <input type="text" x-model="filter" placeholder="Buscar por SKU o descripción..." class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <div class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div class="md:col-span-2">
+                        <label for="search_filter" class="block text-sm font-medium text-gray-700">Buscar por SKU o Descripción:</label>
+                        <input type="text" id="search_filter" x-model="filter" placeholder="Buscar..." class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label for="brand_filter" class="block text-sm font-medium text-gray-700">Marca:</label>
+                        <select id="brand_filter" x-model="filterBrand" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">-- Todas las Marcas --</option>
+                            @foreach($brands as $brand)
+                                <option value="{{ $brand }}">{{ $brand }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="type_filter" class="block text-sm font-medium text-gray-700">Tipo:</label>
+                        <select id="type_filter" x-model="filterType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">-- Todos los Tipos --</option>
+                            @foreach($types as $type)
+                                <option value="{{ $type }}">{{ $type }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-4 text-right">
+                    <button @click.prevent="exportFilteredCsv()"
+                       class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-900 transition ease-in-out duration-150">
+                       <i class="fas fa-file-csv mr-2"></i> Exportar Inventario
+                    </button>                    
+                    <button @click.prevent="openImportModal()"
+                       class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 transition ease-in-out duration-150">
+                       <i class="fas fa-upload mr-2"></i> Importar CSV
+                    </button>                    
+                    <button @click.prevent="resetFilters()" class="inline-flex items-center px-3 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-600 uppercase tracking-widest hover:bg-gray-300 transition ease-in-out duration-150">
+                        <i class="fas fa-times mr-2"></i> Limpiar Filtros
+                    </button>
                 </div>
 
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
@@ -138,13 +190,80 @@
                 </div>
             </form>
         </div>
+        
+        <div x-show="isImportModalOpen"
+             @keydown.escape.window="closeImportModal()"
+             class="fixed inset-0 z-50 bg-gray-900 bg-opacity-60 flex items-center justify-center p-4 backdrop-blur-sm"
+             x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
+             x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+             style="display: none;">
+
+            <form action="{{ route('ff.inventory.import') }}" method="POST" enctype="multipart/form-data"
+                  @click.outside="closeImportModal()"
+                  class="bg-white rounded-xl shadow-2xl w-full max-w-lg"
+                  x-show="isImportModalOpen"
+                  x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-90"
+                  x-transition:enter-end="opacity-100 scale-100" x-transition:leave="ease-in duration-200"
+                  x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-90">
+                
+                @csrf
+                
+                <div class="flex justify-between items-center p-5 border-b rounded-t-xl bg-blue-100">
+                    <h3 class="text-xl font-semibold text-gray-900">
+                        Importar Movimientos de Inventario
+                    </h3>
+                    <button type="button" @click.prevent="closeImportModal()" class="text-gray-400 hover:text-gray-900"><i class="fas fa-times fa-lg"></i></button>
+                </div>
+                
+                <div class="p-6 space-y-4">
+                    <p class="text-sm text-gray-600">
+                        Sube un archivo CSV con las columnas: <strong>SKU, Quantity, Reason</strong>.
+                        Usa cantidades positivas para añadir stock y negativas para restar.
+                    </p>
+                    
+                    <div>
+                        <label for="movements_file" class="block text-sm font-medium text-gray-700">Selecciona el archivo CSV:</label>
+                        <input type="file" name="movements_file" id="movements_file" class="mt-1 block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-md file:border-0
+                            file:font-semibold file:bg-blue-50 file:text-blue-700
+                            hover:file:bg-blue-100" required>
+                    </div>
+
+                    <div>
+                        <button type="button" 
+                           @click.prevent="downloadFilteredTemplate()"
+                           class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
+                           title="La plantilla se generará con los productos que has filtrado en la vista principal.">
+                           <i class="fas fa-file-csv mr-2"></i> Descargar Plantilla (con productos filtrados)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end p-4 bg-gray-50 border-t rounded-b-xl space-x-3">
+                    <button type="button" @click.prevent="closeImportModal()" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="inline-flex items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                        <i class="fas fa-upload -ml-1 mr-2"></i>
+                        Importar Movimientos
+                    </button>
+                </div>
+            </form>
+        </div>
+
     </div> 
     <script>
     function inventoryManager() {
         return {
             products: [],
             filter: '',
+            filterBrand: '',
+            filterType: '',
             isModalOpen: false,
+            isImportModalOpen: false,
             isSaving: false,
             errorMessage: '',
             form: {
@@ -177,14 +296,27 @@
             },
             
             get filteredProducts() {
-                if (this.filter === '') {
-                    return this.products;
-                }
                 const search = this.filter.toLowerCase();
-                return this.products.filter(p => 
-                    p.sku.toLowerCase().includes(search) || 
-                    p.description.toLowerCase().includes(search)
-                );
+                
+                return this.products.filter(p => {
+                    if (this.filterBrand && p.brand !== this.filterBrand) {
+                        return false;
+                    }
+                    
+                    if (this.filterType && p.type !== this.filterType) {
+                        return false;
+                    }
+                    
+                    if (search) {
+                        const inSku = p.sku.toLowerCase().includes(search);
+                        const inDesc = p.description.toLowerCase().includes(search);
+                        if (!inSku && !inDesc) {
+                            return false;
+                        }
+                    }
+                    
+                    return true; 
+                });
             },
 
             openModal(product, type) {
@@ -199,6 +331,20 @@
             
             closeModal() {
                 this.isModalOpen = false;
+            },
+
+            openImportModal() {
+                this.isImportModalOpen = true;
+            },
+            
+            closeImportModal() {
+                this.isImportModalOpen = false;
+            },
+            
+            resetFilters() {
+                this.filter = '';
+                this.filterBrand = '';
+                this.filterType = '';
             },
 
             async submitMovement() {
@@ -258,6 +404,44 @@
                 } finally {
                     this.isSaving = false;
                 }
+            },
+
+            exportFilteredCsv() {
+                const baseUrl = "{{ route('ff.inventory.exportCsv') }}";
+                const params = new URLSearchParams();
+                
+                if (this.filter) {
+                    params.append('search', this.filter);
+                }
+                if (this.filterBrand) {
+                    params.append('brand', this.filterBrand);
+                }
+                if (this.filterType) {
+                    params.append('type', this.filterType);
+                }
+                
+                const finalUrl = `${baseUrl}?${params.toString()}`;
+                
+                window.location.href = finalUrl;
+            },
+
+            downloadFilteredTemplate() {
+                const baseUrl = "{{ route('ff.inventory.movementsTemplate') }}";
+                const params = new URLSearchParams();
+                
+                if (this.filter) {
+                    params.append('search', this.filter);
+                }
+                if (this.filterBrand) {
+                    params.append('brand', this.filterBrand);
+                }
+                if (this.filterType) {
+                    params.append('type', this.filterType);
+                }
+                
+                const finalUrl = `${baseUrl}?${params.toString()}`;
+                
+                window.location.href = finalUrl;
             }
         }
     }

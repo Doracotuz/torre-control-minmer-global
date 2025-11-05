@@ -26,6 +26,18 @@
             border-bottom: 1px solid #eaeaea;
             padding-bottom: 10px;
         }
+
+        header .logo-container {
+            float: left;
+            width: 50%;
+            height: 50px;
+            text-align: left;
+        }
+        
+        header .logo-container img {
+            max-height: 50px; 
+            width: auto;
+        }        
         
         header .company-name {
             font-weight: 600;
@@ -113,7 +125,10 @@
 </head>
 <body>
     <header>
-        <span class="company-name">Moët Hennessy de México</span>
+        <div class="logo-container">
+            <img src="{{ $logo_url }}" alt="Logo Moët Hennessy">        
+            <!-- <span class="company-name">Moët Hennessy de México</span> -->
+        </div>
         <div class="event-details">
             <span>Friends & Family</span>
             <span class="date">{{ $date }}</span>

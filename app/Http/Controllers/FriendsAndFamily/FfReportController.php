@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Dompdf\Dompdf;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class FfReportController extends Controller
 {
@@ -187,6 +188,8 @@ class FfReportController extends Controller
             'folio' => $firstMovement->folio,
         ];
 
+        $logoUrl = Storage::disk('s3')->url('logoMoetHennessy.PNG');        
+
         foreach ($saleMovements as $item) {
             $product = $item->product;
             $quantity = abs($item->quantity);
@@ -206,8 +209,12 @@ class FfReportController extends Controller
         $pdfData['client_name'] = $firstMovement->client_name;
         $pdfData['surtidor_name'] = $firstMovement->surtidor_name;
         $pdfData['vendedor_name'] = $user->name ?? 'N/A';
+        $pdfData['logo_url'] = $logoUrl;
 
         $dompdf = new Dompdf();
+        $options = $dompdf->getOptions();
+        $options->set('isRemoteEnabled', true);
+        $dompdf->setOptions($options);        
         $pdfView = view('friends-and-family.sales.pdf', $pdfData);
         
         $dompdf->loadHtml($pdfView->render());

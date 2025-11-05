@@ -759,6 +759,8 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
     Route::post('/catalog/import', [FfProductController::class, 'import'])->name('catalog.import');
     Route::get('/inventory', [FfInventoryController::class, 'index'])->name('inventory.index');
     Route::post('/inventory/move', [FfInventoryController::class, 'storeMovement'])->name('inventory.storeMovement');
+    Route::post('/inventory/import', [FfInventoryController::class, 'importMovements'])->name('inventory.import');
+    Route::get('/inventory/movements-template', [FfInventoryController::class, 'downloadMovementTemplate'])->name('inventory.movementsTemplate');    
     Route::get('/inventory/log', [FfInventoryController::class, 'logIndex'])->name('inventory.log');
     Route::get('/inventory/export-csv', [FfInventoryController::class, 'exportCsv'])->name('inventory.exportCsv');
     Route::get('/inventory/log/export-csv', [FfInventoryController::class, 'exportLogCsv'])->name('inventory.log.exportCsv');
