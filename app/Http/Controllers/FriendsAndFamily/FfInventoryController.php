@@ -11,18 +11,22 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FfInventoryController extends Controller
 {
-public function index()
+    public function index()
     {
         $products = ffProduct::withSum('movements', 'quantity')
                         ->orderBy('description')
                         ->get();
+        
+        $products->each(function ($product) {
+            $product->description = str_replace(["\n", "\r", "\t"], ' ', $product->description);
+        });
         
         return view('friends-and-family.inventory.index', compact('products'));
     }
 
     public function storeMovement(Request $request)
     {
-        if (!Auth::user()->isSuperAdmin()) { //
+        if (!Auth::user()->isSuperAdmin()) {
             abort(403, 'Acción no autorizada.');
         }
 

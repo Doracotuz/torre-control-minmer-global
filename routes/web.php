@@ -754,8 +754,8 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
 Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(function () {
     
     Route::get('/dashboard', [FfDashboardController::class, 'index'])->name('dashboard.index');
-    Route::resource('catalog', FfProductController::class);
     Route::get('/catalog/download-template', [FfProductController::class, 'downloadTemplate'])->name('catalog.downloadTemplate');
+    Route::resource('catalog', FfProductController::class);
     Route::post('/catalog/import', [FfProductController::class, 'import'])->name('catalog.import');
     Route::get('/inventory', [FfInventoryController::class, 'index'])->name('inventory.index');
     Route::post('/inventory/move', [FfInventoryController::class, 'storeMovement'])->name('inventory.storeMovement');
@@ -776,6 +776,7 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
         Route::get('/catalog-analysis', [FfReportController::class, 'catalogAnalysis'])->name('catalogAnalysis');
         Route::get('/seller-performance', [FfReportController::class, 'sellerPerformance'])->name('sellerPerformance');
         Route::get('/api/recent-movements', [FfReportController::class, 'apiGetRecentMovements'])->name('api.recentMovements');
+        Route::get('/api/sale-details/{folio}', [FfReportController::class, 'apiGetSaleDetails'])->name('api.saleDetails');
     });    
 });
 

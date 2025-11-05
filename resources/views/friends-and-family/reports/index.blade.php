@@ -33,7 +33,7 @@
                 @php
                     $rendimientoClase = ($valorTotalVendido >= 5000) ? 'bg-green-100 border-green-500 text-green-700' : 
                                         (($valorTotalVendido > 0) ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-gray-100 border-gray-400 text-gray-700');
-                    $mensajeRendimiento = ($valorTotalVendido >= 5000) ? '¡Excelente progreso! Se ha superado la marca de los $5,000 en ventas.' :
+                    $mensajeRendimiento = ($valorTotalVendido >= 1000000) ? '¡Excelente progreso! Se ha superado la marca de los $5,000 en ventas.' :
                                           (($valorTotalVendido > 0) ? 'El evento está activo. Continúa monitoreando las métricas clave.' : 'Comienza tu análisis.');
                 @endphp
                 
@@ -185,7 +185,7 @@
         const dataVentasVendedor = @json($chartVentasVendedor);
         const stockAgotadoCount = {{ $stockAgotadoCount }};
 
-        let chartBar, chartPolar;
+        let chartBar, chartPolar, chartVendedor;
 
         function showModal(title, value, subtitle, metricType) {
             const currentUserId = document.getElementById('user_id').value;
@@ -226,8 +226,8 @@
                         <div class="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition duration-150">
                             <i class="fas fa-${item.icon} text-lg text-indigo-500"></i>
                             <div class="flex-grow">
-                                <p class="text-sm font-medium text-gray-900">${item.detail}</p>
-                                <p class="text-xs text-gray-500">${item.time}</p>
+                                <p class="text-sm font-medium text-gray-900">${item.detail}</p> 
+                                <p class="text-xs text-gray-500">Vendedor: ${item.user} - ${item.time}</p>
                             </div>
                             <span class="text-sm font-semibold text-right text-gray-700">${item.value}</span>
                         </div>
@@ -240,7 +240,10 @@
         }
         
         var optionsTopProductosBar = {
-            series: dataTopProductos.series,
+            series: [{
+                name: 'Unidades Vendidas',
+                data: dataTopProductos.series[0].data.map(Number)
+            }], 
             chart: {
                 type: 'bar',
                 height: 350,
@@ -278,7 +281,7 @@
         };
 
         var optionsTopProductosPolar = {
-            series: dataTopProductos.series[0].data,
+            series: dataTopProductos.series[0].data.map(Number),
             chart: {
                 type: 'polarArea',
                 height: 400,
@@ -286,7 +289,7 @@
             },
             labels: dataTopProductos.categories,
             fill: { opacity: 0.9 },
-            stroke: { width: 1, colors: undefined },
+            stroke: { width: 1 },
             yaxis: { show: false },
             legend: { position: 'bottom' },
             tooltip: {
@@ -297,21 +300,12 @@
         };
 
         var optionsVentasVendedor = {
-            series: dataVentasVendedor.series,
-            chart: { width: 380, type: 'donut' },
+            series: dataVentasVendedor.series.map(Number),
+            chart: {
+                type: 'donut',
+                height: 400
+            },
             labels: dataVentasVendedor.labels,
-            colors: ['#48BB78', '#63B3ED', '#A0AEC0', '#F6AD55', '#D53F8C'],
-            responsive: [{
-                breakpoint: 480,
-                options: {
-                    chart: {
-                        width: 200
-                    },
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }],
             plotOptions: {
                 pie: {
                     donut: {
@@ -320,15 +314,17 @@
                             total: {
                                 show: true,
                                 label: 'Total Unidades',
-                                color: '#1a202c',
-                                fontWeight: 700,
-                                formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b, 0).toLocaleString()
+                                formatter: function (w) {
+                                    return w.globals.seriesTotals.reduce((a, b) => a + b, 0).toLocaleString();
+                                }
                             }
                         }
                     }
                 }
             },
-            legend: { position: 'right', offsetY: 0, height: 230 }
+            legend: { 
+                position: 'right'
+            }
         };
         
         document.addEventListener('DOMContentLoaded', function() {
@@ -338,7 +334,8 @@
             chartPolar = new ApexCharts(document.querySelector("#chart-top-productos-polar"), optionsTopProductosPolar);
             chartPolar.render();
             
-            new ApexCharts(document.querySelector("#chart-ventas-vendedor"), optionsVentasVendedor).render();
+            chartVendedor = new ApexCharts(document.querySelector("#chart-ventas-vendedor"), optionsVentasVendedor);
+            chartVendedor.render();
 
             document.getElementById('toggle-chart-view').addEventListener('change', function() {
                 const barContainer = document.getElementById('chart-top-productos-bar');
@@ -353,6 +350,5 @@
                 }
             });
         });
-
     </script>
 </x-app-layout>

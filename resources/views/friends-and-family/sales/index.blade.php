@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div x-data="salesManager()" x-init='init(@json($products))'>
+    <div x-data="salesManager()" x-init='init(@json($products), {{ $nextFolio }})'>
 
         <div class="sticky top-16 z-10 bg-white shadow-md border-b border-gray-200">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 py-4">
@@ -21,7 +21,7 @@
                         </button>
                         
                         <button @click="submitCheckout()"
-                                :disabled="isSaving || isPrinting || localCart.size === 0"
+                                :disabled="isSaving || isPrinting || localCart.size === 0 || !clientName || !surtidorName"
                                 class="inline-flex items-center justify-center px-8 py-4 bg-gray-800 border border-transparent rounded-lg font-semibold text-lg text-white uppercase tracking-widest hover:bg-gray-700 transition ease-in-out duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
                             <i x-show="isSaving" class="fas fa-spinner fa-spin -ml-1 mr-3" style="display: none;"></i>
                             <i x-show="!isSaving" class="fas fa-file-pdf -ml-1 mr-3"></i>
@@ -30,7 +30,29 @@
                     </div>
 
                 </div>
+                
                 <div x-show="globalError" class="mt-3 text-center text-red-600 font-medium" x-text="globalError" x-transition style="display: none;"></div>
+
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
+                    <div>
+                        <label for="client_name" class="block text-xs font-medium text-gray-500">Nombre del Cliente (*)</label>
+                        <input type="text" id="client_name" x-model="clientName" placeholder="Nombre completo del cliente" class="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800 text-sm">
+                    </div>
+                    
+                    <div>
+                        <label for="surtidor_name" class="block text-xs font-medium text-gray-500">Nombre del Surtidor (*)</label>
+                        <input type="text" id="surtidor_name" x-model="surtidorName" placeholder="Quién preparó el pedido" class="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800 text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500">Folio de Venta (Consecutivo)</label>
+                        <div class="mt-1 block w-full rounded-md border border-gray-300 bg-gray-50 text-gray-800 shadow-sm px-3 py-1.5 text-sm h-[38px] flex items-center">
+                            <span x-text="folioVenta"></span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
         
@@ -113,10 +135,15 @@
                 isPrinting: false,
                 globalError: '',
                 pollingInterval: null,
+                clientName: '',
+                surtidorName: '',
+                folioVenta: null, 
 
-                init(initialProducts) {
+                init(initialProducts, initialFolio) {
                     const productsArray = Array.isArray(initialProducts) ? initialProducts : [];
                     
+                    this.folioVenta = initialFolio;
+
                     this.products = productsArray.map(p => {
                         const myCartItem = p.cart_items.find(item => item.user_id === {{ Auth::id() }});
                         if (myCartItem) {
@@ -125,7 +152,6 @@
                         
                         return {
                             ...p,
-                            // Asegúrate de que tu $product->photo_url exista o ajusta esta línea
                             photo_url: p.photo_path ? `/storage/${p.photo_path}` : 'https://via.placeholder.com/150',
                             total_stock: p.movements_sum_quantity ? parseInt(p.movements_sum_quantity) : 0,
                             reserved_by_others: p.reserved_by_others ? parseInt(p.reserved_by_others) : 0,
@@ -138,7 +164,7 @@
                 },
 
                 get filteredProducts() {
-                    if (this.filter === '') return this.products;
+                    if (this.filter === '') return this.products; 
                     const search = this.filter.toLowerCase();
                     return this.products.filter(p => p.sku.toLowerCase().includes(search) || p.description.toLowerCase().includes(search));
                 },
@@ -171,7 +197,8 @@
                 
                 async onQuantityChange(event, product) {
                     let newQuantity = parseInt(event.target.value);
-                    const maxAvailable = this.getAvailableStock(product) + (this.getProductInCart(product.id) || 0);
+                    const currentCartQty = this.getProductInCart(product.id) || 0;
+                    const maxAvailable = this.getAvailableStock(product) + currentCartQty;
 
                     product.error = '';
 
@@ -184,6 +211,8 @@
                     }
                     
                     event.target.value = newQuantity;
+
+                    if (newQuantity === currentCartQty) return;
 
                     if (newQuantity === 0) {
                         this.localCart.delete(product.id);
@@ -205,11 +234,21 @@
                         const data = await response.json();
                         if (!response.ok) {
                             product.error = data.message;
-                            this.localCart.delete(product.id);
-                            event.target.value = 0;
+                            
+                            const finalQty = data.new_quantity !== undefined ? data.new_quantity : currentCartQty;
+
+                            if (finalQty === 0) {
+                                this.localCart.delete(product.id);
+                            } else {
+                                this.localCart.set(product.id, finalQty);
+                            }
+                            
+                            event.target.value = finalQty;
                         }
                     } catch (e) {
                         product.error = 'Error de conexión al guardar en carrito.';
+                        this.localCart.set(product.id, currentCartQty);
+                        event.target.value = currentCartQty;
                     }
                 },
 
@@ -223,8 +262,10 @@
                             this.products[index].reserved_by_others = newReserved;
                             
                             const myCartQty = this.getProductInCart(product.id);
-                            if (myCartQty > 0 && myCartQty > this.getAvailableStock(product)) {
-                                product.error = `¡Stock reducido! Solo quedan ${this.getAvailableStock(product)}. Ajusta tu cantidad.`;
+                            const maxAvailable = this.getAvailableStock(product) + myCartQty;
+
+                            if (myCartQty > 0 && myCartQty > maxAvailable) {
+                                product.error = `¡Stock reducido! Tu reserva (${myCartQty}) excede el nuevo máximo disponible (${maxAvailable}). Ajusta tu cantidad.`;
                             }
                         });
                     } catch (e) {
@@ -241,13 +282,22 @@
                         this.isSaving = false;
                         return;
                     }
+
+                    if (!this.clientName || !this.surtidorName) {
+                        this.globalError = "Debes ingresar el Nombre del Cliente y del Surtidor.";
+                        this.isSaving = false;
+                        return;
+                    }
                     
-                    const cartArray = Array.from(this.localCart, ([id, qty]) => ({ product_id: id, quantity: qty }));
+                    const postData = {
+                        client_name: this.clientName,
+                        surtidor_name: this.surtidorName
+                    };
 
                     try {
                         const response = await fetch("{{ route('ff.sales.checkout') }}", {
                             method: 'POST',
-                            body: JSON.stringify({ cart: cartArray }),
+                            body: JSON.stringify(postData),
                             headers: {
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                                 'Accept': 'application/json',
@@ -255,12 +305,19 @@
                             }
                         });
 
-                        if (response.headers.get('Content-Type') === 'application/pdf') {
+                        if (response.status === 200 && response.headers.get('Content-Type') === 'application/pdf') {
+                            
+                            const folio = response.headers.get('X-Venta-Folio');
+                            
                             const blob = await response.blob();
                             const url = window.URL.createObjectURL(blob);
                             window.open(url);
+
+                            alert(`¡Venta completada con éxito!\nFolio: ${folio}`);
                             
-                            location.reload(); 
+                            setTimeout(() => {
+                                location.reload(); 
+                            }, 1000); 
 
                         } else {
                             const data = await response.json();
@@ -284,7 +341,7 @@
                         return;
                     }
 
-                    const productsToPrint = this.filteredProducts.map(p => {
+                    const productsToPrint = this.filteredProducts.filter(p => p.is_active).map(p => {
                         return {
                             sku: p.sku,
                             description: p.description,

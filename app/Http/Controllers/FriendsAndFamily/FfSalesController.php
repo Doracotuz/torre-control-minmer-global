@@ -13,6 +13,13 @@ use Dompdf\Dompdf;
 
 class FfSalesController extends Controller
 {
+
+    private function getNextFolio(): int
+    {
+        $lastMovement = ffInventoryMovement::orderByDesc('folio')->first();
+        return ($lastMovement ? $lastMovement->folio : 0) + 1;
+    }
+
     public function index()
     {
         $userId = Auth::id();
@@ -27,8 +34,10 @@ class FfSalesController extends Controller
             }])
             ->orderBy('description')
             ->get();
+
+        $nextFolio = $this->getNextFolio();            
         
-        return view('friends-and-family.sales.index', compact('products'));
+        return view('friends-and-family.sales.index', compact('products', 'nextFolio'));
     }
 
     public function updateCartItem(Request $request)
@@ -79,45 +88,70 @@ class FfSalesController extends Controller
 
     public function checkout(Request $request)
     {
-        $userId = Auth::id();
-        $cartItemsData = $request->validate(['cart' => 'required|array'])['cart'];
-        $userCartItems = ffCartItem::where('user_id', $userId)->with('product')->get();
+        $request->validate([
+            'client_name'   => 'required|string|max:255', 
+            'surtidor_name' => 'required|string|max:255', 
+        ]);
 
-        if ($userCartItems->isEmpty()) {
+        $user = Auth::user();
+        $userId = $user->id;
+
+        $cartItems = ffCartItem::where('user_id', $userId)
+            ->with('product')
+            ->get();
+
+        if ($cartItems->isEmpty()) {
             return response()->json(['message' => 'El carrito está vacío.'], 400);
         }
 
-        $pdfData = [
-            'items' => [],
-            'grandTotal' => 0,
-            'date' => now()->format('d/m/Y H:i A'),
-            'user' => Auth::user()->name,
-        ];
-
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
 
-            foreach ($userCartItems as $item) {
-                $totalStock = $item->product->movements()->sum('quantity');
-                $reservedByOthers = $item->product->cartItems()->where('user_id', '!=', $userId)->sum('quantity');
-                $available = $totalStock - $reservedByOthers;
+            $lastMovement = ffInventoryMovement::orderByDesc('folio')->lockForUpdate()->first();
+            $ventaFolio = ($lastMovement ? $lastMovement->folio : 0) + 1;
 
-                if ($item->quantity > $available) {
-                    throw new \Exception('Stock insuficiente para ' . $item->product->sku . '. Venta cancelada.');
+            $pdfData = [
+                'items' => [],
+                'grandTotal' => 0,
+                'copies' => ['CLIENTE', 'VENDEDOR', 'AUDITOR']
+            ];
+
+            foreach ($cartItems as $item) {
+                $product = $item->product;
+
+                $product->lockForUpdate();
+                
+                $currentStock = ffInventoryMovement::where('ff_product_id', $product->id)->sum('quantity');
+                
+                $reservedByOthers = ffCartItem::where('ff_product_id', $product->id)
+                    ->where('user_id', '!=', $userId)
+                    ->sum('quantity');
+                    
+                $availableStock = $currentStock - $reservedByOthers;
+
+                if ($item->quantity > $availableStock) {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => 'Stock insuficiente para ' . $product->sku . '. Disponible: ' . $availableStock
+                    ], 400);
                 }
 
                 ffInventoryMovement::create([
-                    'ff_product_id' => $item->ff_product_id,
-                    'user_id'       => $userId,
-                    'quantity'      => -$item->quantity,
-                    'reason'        => 'Venta (Vendedor: ' . $pdfData['user'] . ')',
+                    'ff_product_id' => $product->id,
+                    'user_id' => $userId,
+                    'quantity' => -$item->quantity,
+                    'reason' => 'Venta Friends & Family',
+                    'client_name' => $request->client_name,
+                    'surtidor_name' => $request->surtidor_name,
+                    'folio' => $ventaFolio,
                 ]);
-                
-                $totalItem = $item->product->price * $item->quantity;
+
+                $totalItem = $product->price * $item->quantity;
                 $pdfData['items'][] = [
-                    'description' => $item->product->description,
-                    'quantity'    => $item->quantity,
-                    'unit_price'  => $item->product->price,
+                    'sku' => $product->sku,
+                    'description' => $product->description,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $product->price,
                     'total_price' => $totalItem,
                 ];
                 $pdfData['grandTotal'] += $totalItem;
@@ -132,6 +166,12 @@ class FfSalesController extends Controller
             return response()->json(['message' => $e->getMessage()], 500);
         }
         
+        $pdfData['date'] = now()->format('d/m/Y H:i:s');
+        $pdfData['client_name'] = $request->client_name;
+        $pdfData['surtidor_name'] = $request->surtidor_name;
+        $pdfData['vendedor_name'] = $user->name;
+        $pdfData['folio'] = $ventaFolio;
+
         $pdfView = view('friends-and-family.sales.pdf', $pdfData);
         $dompdf = new Dompdf();
         $dompdf->loadHtml($pdfView->render());
@@ -141,7 +181,7 @@ class FfSalesController extends Controller
         return response(
             $dompdf->output(), 
             200, 
-            ['Content-Type' => 'application/pdf']
+            ['Content-Type' => 'application/pdf','X-Venta-Folio' => $ventaFolio]
         );
     }
 

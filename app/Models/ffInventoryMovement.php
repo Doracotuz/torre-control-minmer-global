@@ -14,6 +14,9 @@ class ffInventoryMovement extends Model
         'user_id',
         'quantity',
         'reason',
+        'client_name',
+        'surtidor_name',
+        'folio',
     ];
 
     public function product()

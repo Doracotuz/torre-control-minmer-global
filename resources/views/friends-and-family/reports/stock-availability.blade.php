@@ -95,8 +95,8 @@
                     dataLabels: {
                         total: {
                             enabled: true,
-                            formatter: function (w) {
-                                return w.globals.stackedSeriesTotals[w.globals.series.length - 1][w.dataPointIndex].toLocaleString();
+                            formatter: function (val) {
+                                return val.toLocaleString();
                             },
                             style: {
                                 fontSize: '13px',
@@ -139,6 +139,5 @@
 
         var chartStockVsReserved = new ApexCharts(document.querySelector("#chart-stock-vs-reserved"), optionsStockVsReserved);
         chartStockVsReserved.render();
-
     </script>
 </x-app-layout>

@@ -102,49 +102,125 @@ class FfReportController extends Controller
 
     public function transactions(Request $request)
     {
-        $movements = ffInventoryMovement::where('quantity', '<', 0)
-            ->with('product', 'user')
-            ->orderBy('created_at', 'desc')
-            ->paginate(50); 
-            
-        return view('friends-and-family.reports.transactions', compact('movements'));
+        $vendedores = \App\Models\User::whereHas('movements', function ($query) {
+            $query->where('quantity', '<', 0);
+        })->orderBy('name')->get();
+
+        $userIdFilter = $request->input('vendedor_id');
+        $search = $request->input('search');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        $query = ffInventoryMovement::where('quantity', '<', 0)
+            ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
+            ->select(
+                'ff_inventory_movements.folio',
+                'ff_inventory_movements.user_id',
+                'ff_inventory_movements.client_name',
+                'ff_inventory_movements.surtidor_name',
+                DB::raw('MAX(ff_inventory_movements.created_at) as created_at'),
+                DB::raw('COUNT(ff_inventory_movements.id) as total_items'),
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_units'),
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.price) as total_value')
+            )
+            ->groupBy(
+                'ff_inventory_movements.folio', 
+                'ff_inventory_movements.user_id', 
+                'ff_inventory_movements.client_name', 
+                'ff_inventory_movements.surtidor_name'
+            );
+
+        if ($userIdFilter) {
+            $query->where('ff_inventory_movements.user_id', $userIdFilter);
+        }
+
+        if ($startDate) {
+            $query->whereDate('ff_inventory_movements.created_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('ff_inventory_movements.created_at', '<=', $endDate);
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                if (is_numeric($search)) {
+                    $q->orWhere('ff_inventory_movements.folio', (int)$search);
+                }
+                $q->orWhere('ff_inventory_movements.client_name', 'like', "%{$search}%")
+                  ->orWhere('ff_inventory_movements.surtidor_name', 'like', "%{$search}%");
+            });
+        }
+
+        $sales = $query->orderBy('created_at', 'desc')
+            ->with('user')
+            ->paginate(50)
+            ->withQueryString();
+
+        return view('friends-and-family.reports.transactions', compact(
+            'sales', 
+            'vendedores', 
+            'userIdFilter', 
+            'search', 
+            'startDate', 
+            'endDate'
+        ));
     }
     
     public function reprintReceipt(ffInventoryMovement $movement)
     {
-        if ($movement->quantity >= 0) {
-            abort(404);
-        }
-        
-        $product = ffProduct::find($movement->ff_product_id);
+        $saleMovements = ffInventoryMovement::where('folio', $movement->folio)
+            ->where('quantity', '<', 0)
+            ->with(['product', 'user'])
+            ->get();
 
-        $productPrice = $product ? $product->price : 0;
-        $quantitySold = abs($movement->quantity);
-        $userName = $movement->user ? $movement->user->name : 'N/A';
+        if ($saleMovements->isEmpty()) {
+            abort(404, 'No se encontraron movimientos para reimprimir el recibo.');
+        }
+
+        $firstMovement = $saleMovements->first();
+        $user = $firstMovement->user;
 
         $pdfData = [
-            'items' => [[
-                'description' => $product ? $product->description : 'Producto Eliminado (ID: ' . $movement->ff_product_id . ')',
-                'quantity'    => $quantitySold,
-                'unit_price'  => $productPrice,
-                'total_price' => $productPrice * $quantitySold,
-            ]],
-            'grandTotal' => $productPrice * $quantitySold,
-            'date' => $movement->created_at->format('d/m/Y H:i A'),
-            'user' => $userName,
-            'transaction_id' => $movement->id, 
+            'items' => [],
+            'grandTotal' => 0,
+            'copies' => ['Original', 'Copia Cliente', 'Copia Almacén'],
+            'folio' => $firstMovement->folio,
         ];
+
+        foreach ($saleMovements as $item) {
+            $product = $item->product;
+            $quantity = abs($item->quantity);
+            $totalItem = $product->price * $quantity;
+
+            $pdfData['items'][] = [
+                'sku' => $product->sku,
+                'description' => $product->description,
+                'quantity' => $quantity,
+                'unit_price' => $product->price,
+                'total_price' => $totalItem,
+            ];
+            $pdfData['grandTotal'] += $totalItem;
+        }
         
-        $pdfView = view('friends-and-family.sales.pdf', $pdfData); 
+        $pdfData['date'] = $firstMovement->created_at->format('d/m/Y H:i:s');
+        $pdfData['client_name'] = $firstMovement->client_name;
+        $pdfData['surtidor_name'] = $firstMovement->surtidor_name;
+        $pdfData['vendedor_name'] = $user->name ?? 'N/A';
+
         $dompdf = new Dompdf();
+        $pdfView = view('friends-and-family.sales.pdf', $pdfData);
+        
         $dompdf->loadHtml($pdfView->render());
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
-        
+
         return response(
-            $dompdf->output(), 
-            200, 
-            ['Content-Type' => 'application/pdf']
+            $dompdf->output(),
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'X-Venta-Folio' => $firstMovement->folio,
+            ]
         );
     }
     
@@ -329,33 +405,67 @@ class FfReportController extends Controller
         $limit = $request->input('limit', 10);
 
         $query = ffInventoryMovement::where('quantity', '<', 0)
-            ->with(['product:id,sku,description', 'user:id,name'])
-            ->orderBy('created_at', 'desc')
-            ->limit($limit);
+            ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
+            ->select(
+                'ff_inventory_movements.folio',
+                'ff_inventory_movements.user_id',
+                'ff_inventory_movements.created_at',
+                DB::raw('COUNT(ff_inventory_movements.id) as total_items'),
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_units'),
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.price) as total_value')
+            )
+            ->groupBy('ff_inventory_movements.folio', 'ff_inventory_movements.user_id', 'ff_inventory_movements.created_at');
 
         if ($userId) {
-            $query->where('user_id', $userId);
+            $query->where('ff_inventory_movements.user_id', $userId);
         }
 
-        $movements = $query->get();
-
-        $data = $movements->map(function ($mov) {
-            $productSku = $mov->product->sku ?? 'N/A';
-            $quantity = abs($mov->quantity);
-            $reason = 'Venta';
+        $recentSales = $query->orderBy('ff_inventory_movements.created_at', 'desc')
+                        ->with('user:id,name')
+                        ->limit($limit)
+                        ->get();
+        
+        $data = $recentSales->map(function ($sale) {
+            $firstMovement = ffInventoryMovement::where('folio', $sale->folio)->first();
+            $userName = $sale->user->name ?? 'N/A';
             
-            $price = $mov->product->price ?? 0;
-            $value = $price * $quantity;
-
             return [
-                'time' => $mov->created_at->diffForHumans(),
-                'value' => '$' . number_format($value, 2),
-                'detail' => "$reason: $productSku ({$quantity} u.)",
-                'icon' => 'money-bill',
+                'time' => $sale->created_at->diffForHumans(),
+                'value' => '$' . number_format($sale->total_value, 2),
+                'detail' => "Venta Folio #{$sale->folio}: {$sale->total_units} unids. en {$sale->total_items} ítems.",
+                'icon' => 'receipt',
+                'user' => $userName,
             ];
         });
 
         return response()->json($data);
+    }
+
+    public function apiGetSaleDetails(Request $request, $folio)
+    {
+        $movements = ffInventoryMovement::where('folio', $folio)
+            ->where('quantity', '<', 0)
+            ->with('product:id,sku,description,price')
+            ->get();
+
+        $items = $movements->map(function ($mov) {
+            $product = $mov->product;
+            $quantity = abs($mov->quantity);
+            $price = $product->price ?? 0;
+            
+            return [
+                'sku' => $product->sku ?? 'N/A',
+                'description' => $product->description ?? 'Producto Eliminado',
+                'quantity' => $quantity,
+                'unit_price' => '$' . number_format($price, 2),
+                'total_price' => '$' . number_format($price * $quantity, 2),
+            ];
+        });
+
+        return response()->json([
+            'folio' => $folio,
+            'items' => $items,
+        ]);
     }    
 
 }

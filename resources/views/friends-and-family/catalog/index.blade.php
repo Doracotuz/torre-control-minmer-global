@@ -50,10 +50,10 @@
                                         'opacity-60 grayscale hover:grayscale-0': !product.is_active 
                                     }">
                                     
-                                    <div class="relative h-40 w-full overflow-hidden rounded-t-lg">
-                                        <img :src="product.photo_url" :alt="product.description" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110">
-                                        <span class="absolute top-2 right-2 px-2 py-0.5 text-xs font-semibold rounded-full"
-                                              :class="product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                                    <div class="relative h-64 w-full overflow-hidden rounded-t-lg p-2 bg-white"> 
+                                        <img :src="product.photo_url" :alt="product.description" class="h-full w-full object-contain transition-transform duration-300 group-hover:scale-110" style="object-position: center;"> 
+                                        <span class="absolute top-4 right-4 px-2 py-0.5 text-xs font-semibold rounded-full" 
+                                              :class="product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" 
                                               x-text="product.is_active ? 'Activo' : 'Inactivo'">
                                         </span>
                                     </div>

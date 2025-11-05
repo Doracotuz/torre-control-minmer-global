@@ -48,139 +48,134 @@
             right: 0px;
             height: 30px; 
             font-size: 10px;
-            text-align: center;
-            color: #999999;
-        }
-        
-        footer .page-number:after {
-            content: "Página " counter(page);
-        }
-
-        .page {
-            page-break-after: always;
-        }
-        .page:last-child {
-            page-break-after: never;
-        }
-        
-        .copy-identifier {
-            font-size: 14px;
-            font-weight: 600;
+            text-align: right;
             color: #888;
-            text-transform: uppercase;
+            border-top: 1px solid #eaeaea;
+            padding-top: 5px;
         }
 
-        .sale-info {
-            margin-bottom: 25px;
-            font-size: 11px;
-            line-height: 1.5;
-        }
-
-        table.receipt-table {
+        .products-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            font-size: 10px;
+            margin-bottom: 25px;
         }
 
-        table.receipt-table th, 
-        table.receipt-table td {
-            border: 0;
-            padding: 9px 8px;
+        .products-table th, .products-table td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            vertical-align: top;
+        }
+
+        .products-table th {
+            background-color: #f7f7f7;
             text-align: left;
-            vertical-align: middle;
-            border-bottom: 1px solid #eaeaea; 
-        }
-
-        table.receipt-table th {
-            font-size: 9px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 2px solid #000000;
-            padding-bottom: 9px;
         }
         
-        table.receipt-table tbody tr:nth-child(even) {
-            background-color: #f9f9f9;
+        .products-table tfoot td {
+            font-weight: 700;
+            font-size: 11px;
+            background-color: #f7f7f7;
         }
 
-        table.receipt-table tfoot td {
-            border-top: 2px solid #000;
-            font-weight: bold;
-            font-size: 13px;
-            padding-top: 10px;
+        .text-right {
+            text-align: right;
         }
         
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
+        .page-break {
+            page-break-after: always;
+        }
 
         .signatures {
-            margin-top: 70px;
             width: 100%;
-        }
-        
-        .signature-box {
-            width: 45%;
-            text-align: center;
-            font-size: 11px;
-            color: #333;
-        }
-        
-        .signature-line {
-            border-top: 1px solid #000;
-            padding-top: 8px;
+            border-collapse: collapse;
             margin-top: 50px;
         }
         
+        .signatures td {
+            width: 45%;
+            padding: 0;
+            text-align: center;
+        }
+
+        .signature-box {
+            border-bottom: 1px solid #000;
+            height: 50px;
+            vertical-align: bottom;
+        }
+
+        .signature-line {
+            font-size: 9px;
+            margin-top: 5px;
+            padding-bottom: 2px;
+            font-weight: 600;
+        }
+
     </style>
 </head>
 <body>
     <header>
-        <span class="company-name">Moët Hennessy de México</span>
-        <span class="event-details">Friends & Family</span>
+        <div class="company-name">Moët Hennessy de México, S.A. de C.V.</div>
+        <div class="event-details">Friends & Family Event</div>
     </header>
 
     <footer>
-        <span class="page-number"></span>
+        <p>Este documento no tiene validez fiscal. Recibo generado el {{ $date }}.</p>
     </footer>
 
     <main>
-        
-        @foreach (['CLIENTE', 'VENDEDOR', 'AUDITOR'] as $copy)
-        
-        <div class="page">
-            <div class="container">
+        @foreach ($copies as $copyName)
+        <div>
+            <div class="page-copy" style="margin-top: 50px;">
+                <div class="copy-header" style="text-align: right; margin-bottom: 5px;">
+                    <span class="copy-name" style="font-weight: 700; color: #333;">COPIA PARA: {{ $copyName }}</span>
+                </div>
                 
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                    <tbody>
+                <div style="font-size: 11px; margin-bottom: 15px; border: 1px solid #ccc; padding: 5px;">   
+                    <table style="width: 100%; border-collapse: collapse;">
                         <tr>
-                            <td style="width: 50%; text-align: left; border: 0; padding: 0; vertical-align: bottom;">
-                                <h2 style="font-size: 20px; font-weight: 300; margin: 0;">Recibo de Venta</h2>
+                            <td style="width: 50%; padding: 2px 0;">
+                                <span style="font-weight: 600;">Cliente:</span> {{ $client_name ?? 'N/A' }}
                             </td>
-                            <td style="width: 50%; text-align: right; border: 0; padding: 0; vertical-align: bottom;">
-                                <span class="copy-identifier">{{ $copy }}</span>
+                            <td style="width: 50%; padding: 2px 0;">
+                                <span style="font-weight: 600;">Folio de Venta:</span> {{ $folio ?? 'N/A' }}
                             </td>
                         </tr>
-                    </tbody>
-                </table>
-                
-                <div class="sale-info">
-                    <strong>Fecha:</strong> {{ $date }}<br>
-                    <strong>Vendedor:</strong> {{ $user }}
+                        <tr>
+                            <td style="width: 50%; padding: 2px 0;">
+                                <span style="font-weight: 600;">Vendedor (Cajero):</span> {{ $vendedor_name ?? 'N/A' }}
+                            </td>
+                            <td style="width: 50%; padding: 2px 0;">
+                                <span style="font-weight: 600;">Surtidor (Preparó):</span> {{ $surtidor_name ?? 'N/A' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="width: 50%; padding: 2px 0;">
+                                <span style="font-weight: 600;">Fecha de Emisión:</span> {{ $date }}
+                            </td>
+                            <td style="width: 50%; padding: 2px 0;">
+                                &nbsp;
+                            </td>
+                        </tr>
+                    </table>
                 </div>
-
-                <table class="receipt-table">
+                
+                <table class="products-table">
                     <thead>
                         <tr>
-                            <th style="width: 50%;">Descripción</th>
-                            <th class="text-right" style="width: 15%;">Cantidad</th>
-                            <th class="text-right" style="width: 15%;">Precio Unit.</th>
-                            <th class="text-right" style="width: 20%;">Precio Total</th>
+                            <th style="width: 15%;">SKU</th>
+                            <th style="width: 45%;">Descripción</th>
+                            <th class="text-right" style="width: 15%;">Cant.</th>
+                            <th class="text-right" style="width: 20%;">Precio Unit.</th>
+                            <th class="text-right" style="width: 20%;">Total</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($items as $item)
                         <tr>
+                            <td>{{ $item['sku'] }}</td>
                             <td>{{ $item['description'] }}</td>
                             <td class="text-right">{{ $item['quantity'] }}</td>
                             <td class="text-right">${{ number_format($item['unit_price'], 2) }}</td>
@@ -190,7 +185,7 @@
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="3" class="text-right">GRAN TOTAL:</td>
+                            <td colspan="4" class="text-right">GRAN TOTAL:</td>
                             <td class="text-right">${{ number_format($grandTotal, 2) }}</td>
                         </tr>
                     </tfoot>
@@ -200,12 +195,13 @@
                     <tr>
                         <td class="signature-box">
                             <div class="signature-line">
-                                Firma de Entregado
+                                Firma de Entregado (Surtidor/Vendedor)
                             </div>
                         </td>
-                        <td style="width: 10%;"></td> <td class="signature-box">
+                        <td style="width: 10%;"></td> 
+                        <td class="signature-box">
                             <div class="signature-line">
-                                Firma de Recibido
+                                Firma de Recibido (Cliente)
                             </div>
                         </td>
                     </tr>
@@ -213,6 +209,9 @@
 
             </div>
         </div>
+        @if (!$loop->last)
+            <div class="page-break"></div>
+        @endif
         @endforeach
     </main>
 </body>
