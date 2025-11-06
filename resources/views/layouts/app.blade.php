@@ -611,6 +611,18 @@
                         </div>
 
                         <nav class="flex-1 px-4 py-6 space-y-2">
+
+                            @if(Auth::user()->area?->name === 'Ventas')
+                                
+                                <x-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="nav-link-custom {{ request()->routeIs('ff.*') ? 'active-link' : '' }}">
+                                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 00-3.741-7.11 9.094 9.094 0 00-7.11-3.741 9.094 9.094 0 00-7.11 3.741 9.094 9.094 0 003.741 7.11 9.094 9.094 0 007.11 3.741 9.094 9.094 0 007.11-3.741zM12 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span class="nav-text">{{ __('Friends & Family') }}</span>
+                                </x-nav-link>
+
+                            @else
+
                             @if(!Auth::user()->is_client)
                             <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="nav-link-custom {{ request()->routeIs('dashboard') ? 'active-link' : '' }}">
                                 <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.2099 15.89C20.5737 17.3945 19.5787 18.7202 18.3118 19.7513C17.0449 20.7824 15.5447 21.4874 13.9424 21.8048C12.34 22.1221 10.6843 22.0421 9.12006 21.5718C7.55578 21.1014 6.13054 20.2551 4.96893 19.1067C3.80733 17.9582 2.94473 16.5428 2.45655 14.9839C1.96837 13.4251 1.86948 11.7705 2.16851 10.1646C2.46755 8.55878 3.15541 7.05063 4.17196 5.77203C5.18851 4.49343 6.5028 3.48332 7.99992 2.83M21.9999 12C21.9999 10.6868 21.7413 9.38642 21.2387 8.17317C20.7362 6.95991 19.9996 5.85752 19.071 4.92893C18.1424 4.00035 17.04 3.26375 15.8267 2.7612C14.6135 2.25866 13.3131 2 11.9999 2V12H21.9999Z" /></svg>
@@ -793,7 +805,8 @@
                                         <span class="nav-text">{{ __('Customer Service') }}</span>
                                     </x-nav-link>
                                 @endif
-                                @if (Auth::user()->isSuperAdmin() || Auth::user()->area?->name === 'Ventas')
+                                
+                                @if (Auth::user()->isSuperAdmin())
                                     <x-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="nav-link-custom {{ request()->routeIs('ff.*') ? 'active-link' : '' }}">
                                         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 00-3.741-7.11 9.094 9.094 0 00-7.11-3.741 9.094 9.094 0 00-7.11 3.741 9.094 9.094 0 003.741 7.11 9.094 9.094 0 007.11 3.741 9.094 9.094 0 007.11-3.741zM12 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -816,7 +829,7 @@
                                             <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="nav-link-custom {{ request()->routeIs('admin.dashboard') ? 'active-link' : '' }}">
                                                 <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22l-1.92 3.32c-.12.2-.06.47.12.61l2.03 1.58c-.03.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.03-1.58zm-5.14 2.56c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5z" fill="currentColor"/>
-                                                </svg>
+                                                    </svg>
                                                 <span class="nav-text">{{ __('Panel General') }}</span>
                                             </x-nav-link>
                                             <x-nav-link :href="route('admin.statistics.index')" :active="request()->routeIs('admin.statistics.*')" class="nav-link-custom {{ request()->routeIs('admin.statistics.*') ? 'active-link' : '' }}">
@@ -844,7 +857,7 @@
                                         <div class="pl-4 mt-2 space-y-2">
                                             <x-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="nav-link-custom {{ request()->routeIs('area_admin.dashboard') ? 'active-link' : '' }}">
                                                 <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-1.621-1.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                <span class="nav-text">{{ __('Panel de Área') }}</span>
+                                                <span class="nav-text">{{ __('Panel de Área') }}</span> 
                                             </x-nav-link>
 
                                             <x-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.*')" class="nav-link-custom {{ request()->routeIs('area_admin.users.*') ? 'active-link' : '' }}">
@@ -861,6 +874,8 @@
                                     </div>
                                 </div>
                             @endif
+
+                        @endif
                         </nav>
                     </div>
                 </div>

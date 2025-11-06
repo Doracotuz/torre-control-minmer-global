@@ -138,6 +138,8 @@ class FfSalesController extends Controller
             }
 
             DB::commit();
+            
+            ffCartItem::where('user_id', $user->id)->delete();
 
         } catch (\Exception $e) {
             DB::rollBack();

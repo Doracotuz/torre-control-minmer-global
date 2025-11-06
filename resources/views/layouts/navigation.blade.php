@@ -8,7 +8,6 @@
     $currentManagingAreaName = Auth::user()->area?->name;
 
     if (Auth::user()->is_area_admin) {
-        // Obtener todas las áreas (principal + secundarias)
         $primaryArea = Auth::user()->area;
         if ($primaryArea) {
             $manageableAreas->push($primaryArea);
@@ -32,33 +31,33 @@
         isMobileAreaAdminMenuOpen: {{ request()->routeIs('area_admin.*') ? 'true' : 'false' }},
         
      }"
-x-init="$watch('search', value => {
-    clearTimeout(timeout);
-    suggestions = [];
+    x-init="$watch('search', value => {
+        clearTimeout(timeout);
+        suggestions = [];
 
-    if (value.length > 2) {
-        loading = true;
-        showSuggestions = true;
+        if (value.length > 2) {
+            loading = true;
+            showSuggestions = true;
 
-        timeout = setTimeout(() => {
-            fetch(`{{ route('search.suggestions') }}?query=${value}`)
-                .then(response => response.json())
-                .then(data => {
-                    suggestions = data;
-                })
-                .catch(error => {
-                    console.error('Error en la búsqueda:', error);
-                    showSuggestions = false;
-                })
-                .finally(() => {
-                    loading = false;
-                });
-        }, 300);
-    } else {
-        loading = false;
-        showSuggestions = false;
-    }
-})"
+            timeout = setTimeout(() => {
+                fetch(`{{ route('search.suggestions') }}?query=${value}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        suggestions = data;
+                    })
+                    .catch(error => {
+                        console.error('Error en la búsqueda:', error);
+                        showSuggestions = false;
+                    })
+                    .finally(() => {
+                        loading = false;
+                    });
+            }, 300);
+        } else {
+            loading = false;
+            showSuggestions = false;
+        }
+    })"
      @click.away="showSuggestions = false"
      class="bg-[#2c3856] border-gray-100 relative z-20 sticky top-0">
 
@@ -152,7 +151,6 @@ x-init="$watch('search', value => {
             </div>
 
             <div class="hidden sm:flex sm:items-center sm:ms-6">
-
                 @if (Auth::user()->is_area_admin && $manageableAreas->count() > 1 && request()->routeIs('area_admin.*'))
                     <div class="ms-3 relative">
                         <x-dropdown align="right" width="60"> {{-- Un poco más ancho --}}
@@ -225,163 +223,172 @@ x-init="$watch('search', value => {
          x-transition:leave-start="opacity-100 transform translate-y-0"
          x-transition:leave-end="opacity-0 transform -translate-y-4">
         
-        <div class="pt-2 pb-3 space-y-1">
-            
-            @if(!Auth::user()->is_client)
-                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                    {{ __('Dashboard') }}
+        @if(Auth::user()->area?->name === 'Ventas')
+            <div class="pt-2 pb-3 space-y-1">
+                <x-responsive-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    {{ __('Friends & Family') }}
                 </x-responsive-nav-link>
-            @endif
+            </div>
 
-            @if (Auth::user()->is_client)
-                <x-responsive-nav-link :href="route('tablero.index')" :active="request()->routeIs('tablero.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                    {{ __('Dashboard') }}
-                </x-responsive-nav-link>
-            @endif
+        @else
+            <div class="pt-2 pb-3 space-y-1">
+                
+                @if(!Auth::user()->is_client)
+                    <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        {{ __('Dashboard') }}
+                    </x-responsive-nav-link>
+                @endif
 
-            @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
-                <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                    <span class="nav-text">{{ __('Archivos') }}</span>
-                </x-responsive-nav-link>
-            @else
-                <x-responsive-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                    @if (Auth::user()->is_client)
-                        {{ __('Archivos') }}
-                    @else
-                        {{ __('Gestión de Archivos') }}
-                    @endif
-                </x-responsive-nav-link>
-            @endif
+                @if (Auth::user()->is_client)
+                    <x-responsive-nav-link :href="route('tablero.index')" :active="request()->routeIs('tablero.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        {{ __('Dashboard') }}
+                    </x-responsive-nav-link>
+                @endif
 
-            @if (Auth::user()->is_client)
                 @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
                     <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                        {{ __('Organigrama') }}
-                    </x-responsive-nav-link>
-
-                    <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                        {{ __('Tracking') }}
+                        <span class="nav-text">{{ __('Archivos') }}</span>
                     </x-responsive-nav-link>
                 @else
-                    <x-responsive-nav-link :href="route('client.organigram.interactive')" :active="request()->routeIs('client.organigram.interactive')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                        {{ __('Organigrama') }}
-                    </x-responsive-nav-link>
-
-                    <x-responsive-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700" target="_blank" rel="noopener noreferrer">
-                        {{ __('Tracking') }}
+                    <x-responsive-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        @if (Auth::user()->is_client)
+                            {{ __('Archivos') }}
+                        @else
+                            {{ __('Gestión de Archivos') }}
+                        @endif
                     </x-responsive-nav-link>
                 @endif
-                
-                <x-responsive-nav-link :href="route('rfq.index')" class="text-[#FF9C00] hover:text-orange-400 focus:text-orange-400 font-semibold focus:outline-none focus:bg-gray-700">
-                    {{ __('RFQ Moët Hennessy') }}
-                </x-responsive-nav-link>
 
-                <div class="pt-4 mt-4 border-t border-gray-600/50 space-y-1">
+                @if (Auth::user()->is_client)
                     @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
                         <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                            {{ __('Huella de Carbono') }}
+                            {{ __('Organigrama') }}
                         </x-responsive-nav-link>
+
                         <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                            {{ __('Certificaciones') }}
-                        </x-responsive-nav-link>
-                        <x-responsive-nav-link :href="$whatsappLink" target="_blank" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                            {{ __('Asistencia') }}
+                            {{ __('Tracking') }}
                         </x-responsive-nav-link>
                     @else
-                        <x-responsive-nav-link href="#" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                            {{ __('Huella de Carbono') }}
+                        <x-responsive-nav-link :href="route('client.organigram.interactive')" :active="request()->routeIs('client.organigram.interactive')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Organigrama') }}
                         </x-responsive-nav-link>
-                        <x-responsive-nav-link href="#" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                            {{ __('Certificaciones') }}
-                        </x-responsive-nav-link>
-                        <x-responsive-nav-link :href="$whatsappLink" target="_blank" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                            {{ __('Asistencia') }}
+
+                        <x-responsive-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700" target="_blank" rel="noopener noreferrer">
+                            {{ __('Tracking') }}
                         </x-responsive-nav-link>
                     @endif
-                </div>
-            @endif
-
-            @if (!Auth::user()->is_client)
-                <x-responsive-nav-link :href="route('area_admin.visits.index')" :active="request()->routeIs('area_admin.visits.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                    {{ __('Gestión de Visitas') }}
-                </x-responsive-nav-link>
-
-                @if(in_array(Auth::user()->area?->name, ['Tráfico', 'Tráfico Importaciones', 'Administración']))
-                <x-responsive-nav-link :href="route('rutas.dashboard')" :active="request()->routeIs('rutas.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                    {{ __('Gestión de Rutas') }}
-                </x-responsive-nav-link>
-                @endif
-
-                <x-responsive-nav-link :href="route('tickets.index')" :active="request()->routeIs('tickets.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                    {{ __('Tickets de Soporte') }}
-                </x-responsive-nav-link>
-
-                @can('viewAny', App\Models\Project::class)
-                    <x-responsive-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                        {{ __('Proyectos') }}
-                    </x-responsive-nav-link>  
-                @endcan
-
-                @if (Auth::check() && !Auth::user()->is_client && in_array(Auth::user()->area?->name, ['Administración', 'Almacén']))
-                    <x-responsive-nav-link :href="route('wms.dashboard')" :active="request()->routeIs('wms.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                        {{ __('WMS') }}
+                    
+                    <x-responsive-nav-link :href="route('rfq.index')" class="text-[#FF9C00] hover:text-orange-400 focus:text-orange-400 font-semibold focus:outline-none focus:bg-gray-700">
+                        {{ __('RFQ Moët Hennessy') }}
                     </x-responsive-nav-link>
-                @endif
 
-                @if(Auth::user()->is_area_admin && in_array(Auth::user()->area?->name, ['Recursos Humanos', 'Innovación y Desarrollo']))
-                    <x-responsive-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                        {{ __('Organigrama') }}
-                    </x-responsive-nav-link>
-                @endif
-
-                @if(in_array(Auth::user()->area?->name, ['Customer Service', 'Administración', 'Tráfico']))
-                    <x-responsive-nav-link :href="route('customer-service.index')" :active="request()->routeIs('customer-service.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                        {{ __('Customer Service') }}
-                    </x-responsive-nav-link>
-                @endif
-                @if (Auth::user()->isSuperAdmin() || Auth::user()->area?->name === 'Ventas')
-                    <x-responsive-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                        {{ __('Friends & Family') }}
-                    </x-responsive-nav-link>
-                @endif                
-            @endif
-
-            @if (Auth::user()->isSuperAdmin())
-                <div class="pt-4 pb-3 border-t border-gray-600/50">
-                    <button @click="isMobileSuperAdminMenuOpen = !isMobileSuperAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
-                        <span class="font-semibold">Super Admin</span>
-                        <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileSuperAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-                    </button>
-                    <div x-show="isMobileSuperAdminMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
-                        <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                            {{ __('Panel General') }}
-                        </x-responsive-nav-link>
-                        <x-responsive-nav-link :href="route('admin.statistics.index')" :active="request()->routeIs('admin.statistics.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                            {{ __('Estadísticas') }}
-                        </x-responsive-nav-link>
+                    <div class="pt-4 mt-4 border-t border-gray-600/50 space-y-1">
+                        @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
+                            <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                                {{ __('Huella de Carbono') }}
+                            </x-responsive-nav-link>
+                            <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                                {{ __('Certificaciones') }}
+                            </x-responsive-nav-link>
+                            <x-responsive-nav-link :href="$whatsappLink" target="_blank" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                                {{ __('Asistencia') }}
+                            </x-responsive-nav-link>
+                        @else
+                            <x-responsive-nav-link href="#" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                                {{ __('Huella de Carbono') }}
+                            </x-responsive-nav-link>
+                            <x-responsive-nav-link href="#" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                                {{ __('Certificaciones') }}
+                            </x-responsive-nav-link>
+                            <x-responsive-nav-link :href="$whatsappLink" target="_blank" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                                {{ __('Asistencia') }}
+                            </x-responsive-nav-link>
+                        @endif
                     </div>
-                </div>
-            @elseif (Auth::user()->is_area_admin)
-                <div class="pt-4 pb-3 border-t border-gray-600/50">
-                    <button @click="isMobileAreaAdminMenuOpen = !isMobileAreaAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
-                        <span class="font-semibold">Admin de Área</span>
-                        <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileAreaAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-                    </button>
-                    <div x-show="isMobileAreaAdminMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
-                        <x-responsive-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                            {{ __('Panel de Área') }}
-                        </x-responsive-nav-link>
-                        <x-responsive-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                            {{ __('Gestión de Usuarios') }}
-                        </x-responsive-nav-link>
-                        <x-responsive-nav-link :href="route('area_admin.folder_permissions.index')" :active="request()->routeIs('area_admin.folder_permissions.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                            {{ __('Permisos de Carpetas') }}
-                        </x-responsive-nav-link>
-                    </div>
-                </div>
-            @endif
-        </div>
+                @endif
 
+                @if (!Auth::user()->is_client)
+                    <x-responsive-nav-link :href="route('area_admin.visits.index')" :active="request()->routeIs('area_admin.visits.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        {{ __('Gestión de Visitas') }}
+                    </x-responsive-nav-link>
+
+                    @if(in_array(Auth::user()->area?->name, ['Tráfico', 'Tráfico Importaciones', 'Administración']))
+                    <x-responsive-nav-link :href="route('rutas.dashboard')" :active="request()->routeIs('rutas.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        {{ __('Gestión de Rutas') }}
+                    </x-responsive-nav-link>
+                    @endif
+
+                    <x-responsive-nav-link :href="route('tickets.index')" :active="request()->routeIs('tickets.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        {{ __('Tickets de Soporte') }}
+                    </x-responsive-nav-link>
+
+                    @can('viewAny', App\Models\Project::class)
+                        <x-responsive-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Proyectos') }}
+                        </x-responsive-nav-link>  
+                    @endcan
+
+                    @if (Auth::check() && !Auth::user()->is_client && in_array(Auth::user()->area?->name, ['Administración', 'Almacén']))
+                        <x-responsive-nav-link :href="route('wms.dashboard')" :active="request()->routeIs('wms.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('WMS') }}
+                        </x-responsive-nav-link>
+                    @endif
+
+                    @if(Auth::user()->is_area_admin && in_array(Auth::user()->area?->name, ['Recursos Humanos', 'Innovación y Desarrollo']))
+                        <x-responsive-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Organigrama') }}
+                        </x-responsive-nav-link>
+                    @endif
+
+                    @if(in_array(Auth::user()->area?->name, ['Customer Service', 'Administración', 'Tráfico']))
+                        <x-responsive-nav-link :href="route('customer-service.index')" :active="request()->routeIs('customer-service.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Customer Service') }}
+                        </x-responsive-nav-link>
+                    @endif
+                    
+                    @if (Auth::user()->isSuperAdmin())
+                        <x-responsive-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            {{ __('Friends & Family') }}
+                        </x-responsive-nav-link>
+                    @endif                
+                @endif
+
+                @if (Auth::user()->isSuperAdmin())
+                    <div class="pt-4 pb-3 border-t border-gray-600/50">
+                        <button @click="isMobileSuperAdminMenuOpen = !isMobileSuperAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
+                            <span class="font-semibold">Super Admin</span>
+                            <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileSuperAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                        </button>
+                        <div x-show="isMobileSuperAdminMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
+                            <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                                {{ __('Panel General') }}
+                            </x-responsive-nav-link>
+                            <x-responsive-nav-link :href="route('admin.statistics.index')" :active="request()->routeIs('admin.statistics.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                                {{ __('Estadísticas') }}
+                            </x-responsive-nav-link>
+                        </div>
+                    </div>
+                @elseif (Auth::user()->is_area_admin)
+                    <div class="pt-4 pb-3 border-t border-gray-600/50">
+                        <button @click="isMobileAreaAdminMenuOpen = !isMobileAreaAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
+                            <span class="font-semibold">Admin de Área</span>
+                            <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileAreaAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                        </button>
+                        <div x-show="isMobileAreaAdminMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
+                            <x-responsive-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                                {{ __('Panel de Área') }}
+                            </x-responsive-nav-link>
+                            <x-responsive-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                                {{ __('Gestión de Usuarios') }}
+                            </x-responsive-nav-link>
+                            <x-responsive-nav-link :href="route('area_admin.folder_permissions.index')" :active="request()->routeIs('area_admin.folder_permissions.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                                {{ __('Permisos de Carpetas') }}
+                            </x-responsive-nav-link>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        @endif
         <div class="pt-4 pb-1 border-t border-gray-600/50">
             <div class="px-4">
                 <div class="font-medium text-base text-white">{{ Auth::user()->name }}</div>
