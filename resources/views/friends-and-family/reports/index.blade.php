@@ -76,13 +76,42 @@
                         <p class="text-xs opacity-70 mt-2">Click para ver lista global.</p>
                     </button>
 
-                    <div class="kpi-card group p-6 rounded-2xl shadow-2xl bg-gradient-to-br from-yellow-700 to-yellow-900 text-white overflow-hidden relative">
-                        <i class="fas fa-clock absolute right-4 top-4 text-6xl opacity-10 group-hover:rotate-[-12deg] transition duration-500"></i>
-                        <p class="text-sm font-light uppercase tracking-widest opacity-90">Tiempo Restante</p>
-                        <p class="mt-1 text-3xl font-black tracking-tight transition-all duration-300 ease-in-out">
-                            {{ $daysRemainingFormatted }}
+                    <div x-data="countdownTimer('{{ $startDateIso }}', '{{ $endDateIso }}', '{{ $timerState }}')" 
+                        x-init="startTimer()"
+                        class="kpi-card p-6 rounded-2xl shadow-2xl bg-gradient-to-br from-gray-800 to-gray-900 text-white overflow-hidden relative">
+
+                        <i class="fas fa-hourglass-half absolute right-4 top-4 text-6xl opacity-10 transition-transform duration-500"
+                        :class="{ 'animate-spin': state === 'during' }"></i>
+
+                        <p class="text-sm font-light uppercase tracking-widest opacity-90" x-text="message">
+                            Cargando...
                         </p>
-                        <p class="text-xs opacity-70 mt-2">Días, horas y minutos para el cierre del evento.</p>
+
+                        <div x-show="!isFinished" class="flex items-end space-x-2 mt-2">
+                            <div class="flex flex-col items-center">
+                                <span class="text-4xl font-black tracking-tight" x-text="days.toString().padStart(2, '0')">00</span>
+                                <span class="text-xs font-medium opacity-70">Días</span>
+                            </div>
+                            <span class="text-3xl font-light opacity-50 pb-1">:</span>
+                            <div class="flex flex-col items-center">
+                                <span class="text-4xl font-black tracking-tight" x-text="hours.toString().padStart(2, '0')">00</span>
+                                <span class="text-xs font-medium opacity-70">Hrs</span>
+                            </div>
+                            <span class="text-3xl font-light opacity-50 pb-1">:</span>
+                            <div class="flex flex-col items-center">
+                                <span class="text-4xl font-black tracking-tight" x-text="minutes.toString().padStart(2, '0')">00</span>
+                                <span class="text-xs font-medium opacity-70">Min</span>
+                            </div>
+                            <span class="text-3xl font-light opacity-50 pb-1">:</span>
+                            <div class="flex flex-col items-center">
+                                <span class="text-4xl font-black tracking-tight" x-text="seconds.toString().padStart(2, '0')">00</span>
+                                <span class="text-xs font-medium opacity-70">Seg</span>
+                            </div>
+                        </div>
+
+                        <div x-show="isFinished" class="flex items-center mt-2">
+                            <span class="text-3xl font-black tracking-tight">EVENTO FINALIZADO</span>
+                        </div>
                     </div>
 
                 </div>
@@ -181,6 +210,73 @@
 
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script>
+
+        function countdownTimer(startDate, endDate, initialState) {
+            return {
+                startDate: new Date(startDate),
+                endDate: new Date(endDate),
+                state: initialState,
+                targetDate: null,
+                message: 'Cargando...',
+                isFinished: false,
+                timerInterval: null,
+
+                days: 0,
+                hours: 0,
+                minutes: 0,
+                seconds: 0,
+
+                startTimer() {
+                    this.updateState();
+                    if (!this.isFinished) {
+                        this.updateTime();
+                        this.timerInterval = setInterval(() => {
+                            this.updateTime();
+                        }, 1000);
+                    }
+                },
+
+                updateTime() {
+                    const now = new Date();
+                    let diff = this.targetDate.getTime() - now.getTime();
+
+                    if (diff <= 0) {
+                        diff = 0;
+                        if (this.state === 'before') {
+                            this.state = 'during';
+                            this.updateState();
+                        } 
+                        else if (this.state === 'during') {
+                            this.state = 'after';
+                            this.updateState();
+                            clearInterval(this.timerInterval);
+                        }
+                    }
+
+                    this.days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    this.hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    this.minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    this.seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                },
+
+                updateState() {
+                    if (this.state === 'before') {
+                        this.targetDate = this.startDate;
+                        this.message = 'El evento comienza en:';
+                        this.isFinished = false;
+                    } else if (this.state === 'during') {
+                        this.targetDate = this.endDate;
+                        this.message = 'Tiempo Restante:';
+                        this.isFinished = false;
+                    } else {
+                        this.message = 'Estado del Evento';
+                        this.isFinished = true;
+                        this.days = 0; this.hours = 0; this.minutes = 0; this.seconds = 0;
+                    }
+                }
+            };
+        }
+
         const dataTopProductos = @json($chartTopProductos);
         const dataVentasVendedor = @json($chartVentasVendedor);
         const stockAgotadoCount = {{ $stockAgotadoCount }};

@@ -66,24 +66,22 @@ class FfReportController extends Controller
             ->filter(fn ($p) => ($p->movements_sum_quantity ?? 0) <= 0)
             ->count();
             
-        $durationDays = 2;
-        $firstMovement = ffInventoryMovement::min('created_at');
         
-        $startDate = Carbon::parse('2025-11-14')->startOfDay();
-        $endDate = $startDate->copy()->addDays($durationDays);
-        
-        $diff = now()->diff($endDate);
+        $durationDays = 2; 
+        $startDate = Carbon::parse('2025-11-13')->startOfDay();
+        $endDate = $startDate->copy()->addDays($durationDays); 
+        $now = now();
 
-        $daysRemainingFormatted = '0 Días';
-        if (now()->lessThan($endDate)) {
-            $days = $diff->days;
-            $hours = $diff->h;
-            $minutes = $diff->i;
-            $daysRemainingFormatted = "{$days}d {$hours}h {$minutes}m";
-        } elseif (now()->greaterThan($endDate)) {
-            $daysRemainingFormatted = "FINALIZADO";
+        $timerState = 'after';
+        if ($now->lessThan($startDate)) {
+            $timerState = 'before';
+        } elseif ($now->between($startDate, $endDate)) {
+            $timerState = 'during';
         }
-
+        
+        $startDateIso = $startDate->toIso8601String();
+        $endDateIso = $endDate->toIso8601String();
+        
 
         $vendedores = User::whereHas('movements', function ($query) {
                 $query->where('quantity', '<', 0);
@@ -93,7 +91,9 @@ class FfReportController extends Controller
             'totalUnidadesVendidas',
             'valorTotalVendido',
             'stockAgotadoCount',
-            'daysRemainingFormatted',
+            'timerState',
+            'startDateIso',
+            'endDateIso',
             'vendedores',
             'userIdFilter',
             'chartTopProductos',
