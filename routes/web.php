@@ -85,7 +85,7 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     $user = Auth::user();
 
-    if ($user->area?->name === 'Ventas') {
+    if ($user->area?->name === 'VentasFF') {
         return redirect()->route('ff.dashboard.index');
     }    
 

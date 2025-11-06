@@ -612,7 +612,7 @@
 
                         <nav class="flex-1 px-4 py-6 space-y-2">
 
-                            @if(Auth::user()->area?->name === 'Ventas')
+                            @if(Auth::user()->area?->name === 'VentasFF')
                                 
                                 <x-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="nav-link-custom {{ request()->routeIs('ff.*') ? 'active-link' : '' }}">
                                     <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
