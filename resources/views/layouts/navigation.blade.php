@@ -346,11 +346,11 @@
                         </x-responsive-nav-link>
                     @endif
                     
-                    @if (Auth::user()->isSuperAdmin())
+                    <!-- @if (Auth::user()->isSuperAdmin())
                         <x-responsive-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
                             {{ __('Friends & Family') }}
                         </x-responsive-nav-link>
-                    @endif                
+                    @endif                 -->
                 @endif
 
                 @if (Auth::user()->isSuperAdmin())
