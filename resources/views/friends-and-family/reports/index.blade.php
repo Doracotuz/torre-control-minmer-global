@@ -7,27 +7,61 @@
 
     <div class="py-8">
         <div class="max-w-8xl mx-auto sm:px-6 lg:px-8">
+            <div class="mb-4">
+                @if (session('success'))
+                    <div class="p-4 rounded-lg bg-green-100 border-l-4 border-green-500 text-green-700">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        {{ session('success') }}
+                    </div>
+                @endif
+            
+                @if (session('error'))
+                    <div class="p-4 rounded-lg bg-red-100 border-l-4 border-red-500 text-red-700">
+                        <div class="font-bold mb-2">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            Error al generar el reporte:
+                        </div>
+                        <p class="text-sm">{{ session('error') }}</p>
+                    </div>
+                @endif
+            </div>            
             <div class="space-y-10">
 
                 <div class="bg-white p-6 rounded-2xl shadow-xl border-t-4 border-gray-300">
-                    <form method="GET" action="{{ route('ff.reports.index') }}" class="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
-                        <label for="user_id" class="text-lg font-semibold text-gray-700 whitespace-nowrap">Análisis por Vendedor:</label>
-                        
-                        <select name="user_id" id="user_id" onchange="this.form.submit()" class="form-select block w-full md:w-64 rounded-xl shadow-inner border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition duration-150 ease-in-out">
-                            <option value="">-- Todos los Vendedores --</option>
-                            @foreach ($vendedores as $vendedor)
-                                <option value="{{ $vendedor->id }}" @if ($userIdFilter == $vendedor->id) selected @endif>
-                                    {{ $vendedor->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                        <form method="GET" action="{{ route('ff.reports.index') }}" class="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+                            <label for="user_id" class="text-lg font-semibold text-gray-700 whitespace-nowrap">Análisis por Vendedor:</label>
+                            
+                            <select name="user_id" id="user_id" onchange="this.form.submit()" class="form-select block w-full md:w-64 rounded-xl shadow-inner border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition duration-150 ease-in-out">
+                                <option value="">-- Todos los Vendedores --</option>
+                                @foreach ($vendedores as $vendedor)
+                                    <option value="{{ $vendedor->id }}" @if ($userIdFilter == $vendedor->id) selected @endif>
+                                        {{ $vendedor->name }}
+                                    </option>
+                                @endforeach
+                            </select>
 
-                        @if ($userIdFilter)
-                            <a href="{{ route('ff.reports.index') }}" class="text-sm text-red-600 hover:text-red-800 font-medium transition duration-150 ease-in-out">
-                                <i class="fas fa-times-circle mr-1"></i> Limpiar Filtro
-                            </a>
-                        @endif
-                    </form>
+                            @if ($userIdFilter)
+                                <a href="{{ route('ff.reports.index') }}" class="text-sm text-red-600 hover:text-red-800 font-medium transition duration-150 ease-in-out">
+                                    <i class="fas fa-times-circle mr-1"></i> Limpiar Filtro
+                                </a>
+                            @endif
+                        </form>
+
+                        <div class="md:ml-auto">
+                            <form action="{{ route('ff.reports.generateExecutive') }}" method="POST" target="_blank">
+                                @csrf
+                                {{-- Este input oculto se sincronizará con el filtro --}}
+                                <input type="hidden" name="user_id" id="user_id_for_pdf" value="{{ $userIdFilter }}">
+                                <button type="submit" 
+                                        style="background-color: #2c3856; color: white;" 
+                                        class="w-full md:w-auto px-5 py-3 rounded-xl font-bold shadow-lg text-sm uppercase tracking-wide hover:opacity-90 transition-all duration-150 ease-in-out">
+                                    <i class="fas fa-file-pdf mr-2"></i>
+                                    Generar Reporte Ejecutivo
+                                </button>
+                            </form>
+                        </div>                        
+                    </div>
                 </div>
                 
                 @php

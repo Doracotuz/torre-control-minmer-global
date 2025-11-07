@@ -783,6 +783,7 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
         Route::get('/seller-performance', [FfReportController::class, 'sellerPerformance'])->name('sellerPerformance');
         Route::get('/api/recent-movements', [FfReportController::class, 'apiGetRecentMovements'])->name('api.recentMovements');
         Route::get('/api/sale-details/{folio}', [FfReportController::class, 'apiGetSaleDetails'])->name('api.saleDetails');
+        Route::post('/generate-executive', [FfReportController::class, 'generateExecutiveReport'])->name('generateExecutive');
     });    
 });
 

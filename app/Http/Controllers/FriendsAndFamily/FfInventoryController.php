@@ -150,7 +150,7 @@ class FfInventoryController extends Controller
 
     public function importMovements(Request $request)
     {
-        if (!Auth::user()->isSuperAdmin()) {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()?->is_area_admin) {
             abort(403, 'Acción no autorizada.');
         }
 

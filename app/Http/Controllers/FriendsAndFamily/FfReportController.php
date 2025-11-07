@@ -12,9 +12,19 @@ use Illuminate\Support\Facades\DB;
 use Dompdf\Dompdf;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use App\Jobs\GenerateFfExecutiveReport;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Http;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+
 
 class FfReportController extends Controller
 {
+
+    private $chartBaseUrl = 'https://quickchart.io/apex-charts/render';
+    
     public function index(Request $request)
     {
         $userIdFilter = $request->input('user_id');
@@ -473,6 +483,230 @@ class FfReportController extends Controller
             'folio' => $folio,
             'items' => $items,
         ]);
-    }    
+    }
+
+    public function generateExecutiveReport(Request $request)
+    {
+        $userIdFilter = $request->input('user_id');
+        $data = [];
+
+        try {
+            try {
+                $logoContent = Storage::disk('s3')->get('logoMoetHennessy.PNG');
+                $data['logo_base_64'] = 'data:image/png;base64,' . base64_encode($logoContent);
+            } catch (\Exception $e) {
+                $data['logo_base_64'] = null; 
+            }
+
+            $data = array_merge($data, $this->gatherReportData($userIdFilter));
+            $data['user_filter_name'] = $userIdFilter ? User::find($userIdFilter)->name : 'Todos';
+            $data['report_date'] = Carbon::now()->isoFormat('D MMMM, YYYY H:mm');
+            $data['diagnosis'] = $this->generateDiagnosis($data);
+            $data['final_summary'] = $this->generateFinalSummary($data);
+            $pdf = Pdf::loadView('friends-and-family.reports.executive-pdf', $data);
+            
+            $filterName = $userIdFilter ? User::find($userIdFilter)->name : 'Global';
+            $filename = 'FF_Reporte_Ejecutivo_' . $filterName . '_' . Carbon::now()->format('Ymd_His') . '.pdf';
+            
+            return $pdf->stream($filename);
+
+        } catch (\Exception $e) {
+            return redirect()->route('ff.reports.index', ['user_id' => $userIdFilter])
+                ->with('error', 'Error al generar el PDF: ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
+        }
+    }
+
+    private function generateDiagnosis(array $data): array
+    {
+        $kpis = $data['kpis'];
+        $waffle = $data['waffleChart'];
+        
+        $level = 'success';
+        $message = "El evento F&F opera saludablemente, con ventas activas y un inventario bajo control.";
+
+        if ($kpis['valorTotalVendido'] == 0) {
+            $level = 'warning';
+            $message = "ADVERTENCIA: No se registran ventas para el filtro seleccionado. El reporte está vacío.";
+            return ['level' => $level, 'message' => $message];
+        }
+
+        if ($waffle['percent_agotado'] > 10) {
+            $level = 'danger';
+            $message = "ALERTA CRÍTICA: El inventario está en estado crítico. Más del 10% del catálogo ({$waffle['agotado']} SKUs) está agotado. Se requiere acción inmediata.";
+        } elseif ($waffle['percent_agotado'] > 0 || $waffle['percent_bajo'] > 20) {
+            $level = 'warning';
+            $message = "ADVERTENCIA: El inventario muestra signos de estrés. Hay {$waffle['agotado']} SKUs agotados y {$waffle['bajo']} en alerta. Se recomienda monitoreo cercano.";
+        }
+        
+        $activos = $data['pictogramChart']['activos'];
+        $total = $data['pictogramChart']['total'];
+        if ($activos > 0 && ($activos / $total) < 0.25) {
+             $message .= " Se observa una alta concentración de ventas en muy pocos vendedores ({$activos} de {$total}).";
+        }
+
+        return ['level' => $level, 'message' => $message];
+    }
+
+    private function generateFinalSummary(array $data): string
+    {
+        $trivial = $data['trivial'];
+        $kpis = $data['kpis'];
+        
+        if ($kpis['valorTotalVendido'] == 0) {
+            return "No se pueden generar conclusiones sin datos de ventas.";
+        }
+
+        $summary = "El análisis de datos confirma un evento exitoso, con un ingreso total de $" . number_format($kpis['valorTotalVendido'], 2) . ". ";
+        
+        if ($trivial['productoEstrella']) {
+            $summary .= "El producto estrella (SKU {$trivial['productoEstrella']->sku}) fue un claro motor de volumen, indicando una alta demanda de este ítem. ";
+        }
+        
+        if ($trivial['mejorVendedor']) {
+            $summary .= "Comercialmente, {$trivial['mejorVendedor']->user_name} fue el vendedor clave, generando $" . number_format($trivial['mejorVendedor']->valor_total, 2) . ". ";
+        }
+
+        if ($trivial['ventasPorDia']->count() > 1) {
+            $summary .= "La actividad del evento mostró un claro pico el {$trivial['diaPico']->dia_formateado}, superando las ventas del primer día. ";
+        } else {
+            $summary .= "Toda la actividad se concentró en un solo día: {$trivial['diaPico']->dia_formateado}. ";
+        }
+
+        $summary .= "Operacionalmente, el principal desafío es la gestión de inventario; el análisis de razones de movimiento y las alertas de stock deben ser revisados por el equipo de logística para optimizar las próximas ventanas de venta.";
+        
+        return $summary;
+    }
+
+
+    private function gatherReportData($userIdFilter): array
+    {
+        $data = [];
+        Carbon::setLocale('es');
+
+        $baseQuery = ffInventoryMovement::where('ff_inventory_movements.quantity', '<', 0);
+        if ($userIdFilter) {
+            $baseQuery->where('ff_inventory_movements.user_id', $userIdFilter);
+        }
+
+        $ventasCompletas = (clone $baseQuery)
+            ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
+            ->select(
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.price) as valor'),
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as unidades'),
+                DB::raw('COUNT(DISTINCT ff_inventory_movements.folio) as total_ventas')
+            )
+            ->first();
+        
+        $data['kpis'] = [
+            'valorTotalVendido' => (float) $ventasCompletas->valor,
+            'totalUnidadesVendidas' => (int) $ventasCompletas->unidades,
+            'totalVentas' => (int) $ventasCompletas->total_ventas,
+            'ticketPromedio' => $ventasCompletas->total_ventas > 0 ? $ventasCompletas->valor / $ventasCompletas->total_ventas : 0,
+            'unidadesPorVenta' => $ventasCompletas->total_ventas > 0 ? $ventasCompletas->unidades / $ventasCompletas->total_ventas : 0,
+        ];
+        
+        $data['topProductos'] = (clone $baseQuery)
+            ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
+            ->select('ff_products.sku', 'ff_products.description', DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_vendido'))
+            ->groupBy('ff_products.sku', 'ff_products.description')
+            ->orderByDesc('total_vendido')
+            ->get();
+
+        $data['ventasPorVendedor'] = ffInventoryMovement::where('ff_inventory_movements.quantity', '<', 0)
+            ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
+            ->join('users', 'ff_inventory_movements.user_id', '=', 'users.id')
+            ->select(
+                'users.name as user_name',
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.price) as valor_total'),
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_unidades'),
+                DB::raw('COUNT(DISTINCT ff_inventory_movements.folio) as total_pedidos')
+            )
+            ->groupBy('ff_inventory_movements.user_id', 'users.name')
+            ->orderByDesc('valor_total')
+            ->get();
+
+        $data['movementReasons'] = ffInventoryMovement::select('reason',
+                DB::raw('SUM(CASE WHEN quantity > 0 THEN quantity ELSE 0 END) as entradas'),
+                DB::raw('SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) as salidas'))
+            ->groupBy('reason')->get();
+            
+        $productsCatalog = ffProduct::select('price')->get();
+        $priceRangesRaw = [
+            '0-100' => $productsCatalog->whereBetween('price', [0, 100])->count(),
+            '101-300' => $productsCatalog->whereBetween('price', [101, 300])->count(),
+            '301-500' => $productsCatalog->whereBetween('price', [301, 500])->count(),
+            '501+' => $productsCatalog->where('price', '>', 500)->count(),
+        ];
+        $totalProductos = max(1, array_sum($priceRangesRaw));
+        $data['priceRanges'] = collect($priceRangesRaw)->mapWithKeys(function ($count, $range) use ($totalProductos) {
+            return [$range => ['count' => $count, 'percent' => ($count / $totalProductos) * 100]];
+        });
+
+        $allProducts = ffProduct::withSum('movements', 'quantity')->withSum('cartItems', 'quantity')->get();
+        $totalSKUs = $allProducts->count();
+        $stockAgotado = 0;
+        $stockBajo = 0;
+        $stockSaludable = 0;
+        $lowStockList = [];
+
+        foreach ($allProducts as $product) {
+            $totalStock = (int) ($product->movements_sum_quantity ?? 0);
+            $totalReserved = (int) ($product->cart_items_sum_quantity ?? 0);
+            $available = $totalStock - $totalReserved;
+            
+            if ($available <= 0) {
+                $stockAgotado++;
+            } elseif ($available < 10) {
+                $stockBajo++;
+                $product->available = $available;
+                $product->total_stock = $totalStock;
+                $product->total_reserved = $totalReserved;
+                $lowStockList[] = $product;
+            } else {
+                $stockSaludable++;
+            }
+        }
+
+        $data['waffleChart'] = [
+            'total' => $totalSKUs,
+            'agotado' => $stockAgotado,
+            'bajo' => $stockBajo,
+            'saludable' => $stockSaludable,
+            'percent_agotado' => $totalSKUs > 0 ? round(($stockAgotado / $totalSKUs) * 100) : 0,
+            'percent_bajo' => $totalSKUs > 0 ? round(($stockBajo / $totalSKUs) * 100) : 0,
+            'percent_saludable' => $totalSKUs > 0 ? round(($stockSaludable / $totalSKUs) * 100) : 0,
+        ];
+        $data['lowStockAlerts'] = collect($lowStockList)->sortBy('available');
+        $data['kpis']['stockAgotadoCount'] = $stockAgotado;
+        $data['kpis']['lowStockAlertsCount'] = $stockBajo;
+
+        $vendedoresActivos = $data['ventasPorVendedor']->count();
+        $totalVendedores = User::whereHas('area', fn($q) => $q->where('name', 'VentasFF'))->count();
+        if ($totalVendedores == 0) { $totalVendedores = max($vendedoresActivos, 1); }
+        
+        $data['pictogramChart'] = [
+            'total' => $totalVendedores,
+            'activos' => $vendedoresActivos,
+            'percent_activos' => $totalVendedores > 0 ? round(($vendedoresActivos / $totalVendedores) * 100) : 0,
+        ];
+
+        $ventasPorDia = (clone $baseQuery)
+            ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
+            ->select(DB::raw('DATE(ff_inventory_movements.created_at) as dia'), 
+                     DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.price) as total_dia'))
+            ->groupBy('dia')->orderBy('dia', 'asc')->get();
+        
+        $diaPico = $ventasPorDia->sortByDesc('total_dia')->first();
+        if($diaPico) { $diaPico->dia_formateado = Carbon::parse($diaPico->dia)->isoFormat('dddd D \d\e MMMM'); }
+
+        $data['trivial'] = [
+            'mejorVendedor' => $data['ventasPorVendedor']->first(),
+            'productoEstrella' => $data['topProductos']->first(),
+            'diaPico' => $diaPico,
+            'ventasPorDia' => $ventasPorDia,
+        ];
+        
+        return $data;
+    }
 
 }
