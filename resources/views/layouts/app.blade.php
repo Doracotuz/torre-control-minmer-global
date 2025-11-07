@@ -25,7 +25,7 @@
                 --text-sidebar-logo: #ffffff;
                 --text-nav: #ffffff;
                 --accent: #BECEF5;
-                --accent-text: #1F222B;
+                --accent-text: #b2c1fcff;
                 --accent-hover: rgba(255, 255, 255, 0.05);
                 --highlight: #ff9c00;
             }
