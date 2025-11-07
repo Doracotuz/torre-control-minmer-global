@@ -207,13 +207,16 @@ class FolderController extends Controller
             'user_id' => $user->id,
         ]);
 
+        $areaName = Area::find($targetAreaId)->name ?? 'N/A';
+        $parentName = $parentFolder->name ?? 'Raíz';
+
         ActivityLog::create([
             'user_id' => $user->id,
             'action' => 'Creó una carpeta',
             'action_key' => 'created_folder',
             'item_type' => 'folder',
             'item_id' => $newFolder->id,
-            'details' => ['name' => $newFolder->name, 'parent_id' => $newFolder->parent_id, 'area_id' => $newFolder->area_id],
+            'details' => ['Nombre' => $newFolder->name, 'Área' => $areaName, 'Carpeta Padre' => $parentName],
         ]);
 
         $redirectPath = $request->parent_id ? route('folders.index', $request->parent_id) : route('folders.index');
@@ -272,7 +275,8 @@ class FolderController extends Controller
                 })->ignore($folder->id),
             ],
         ]);
-
+        
+        $oldName = $folder->name;
         $folder->update([
             'name' => $request->name,
         ]);
@@ -285,7 +289,7 @@ class FolderController extends Controller
             'action_key' => 'updated_folder',
             'item_type' => 'folder',
             'item_id' => $folder->id,
-            'details' => ['old_name' => $folder->getOriginal('name'), 'new_name' => $folder->name],
+            'details' => ['Nombre Anterior' => $oldName, 'Nombre Nuevo' => $folder->name],
         ]);        
 
         return redirect($redirectPath)->with('success', 'Carpeta actualizada exitosamente.');
@@ -314,7 +318,7 @@ class FolderController extends Controller
             'action_key' => 'deleted_folder',
             'item_type' => 'folder',
             'item_id' => $folder->id,
-            'details' => ['name' => $folder->name],
+            'details' => ['Nombre' => $folder->name, 'Área' => $folder->area->name ?? 'N/A'],
         ]);
 
         $folder->delete();
@@ -404,7 +408,7 @@ class FolderController extends Controller
                 'action_key' => 'created_link',
                 'item_type' => 'file_link',
                 'item_id' => $fileLink->id,
-                'details' => ['name' => $fileLink->name, 'folder_id' => $folder->id],
+                'details' => ['Nombre' => $fileLink->name, 'Carpeta' => $folder->name, 'URL' => $fileLink->url],
             ]);
 
             return response()->json(['message' => 'Enlace añadido exitosamente.'], 200);
@@ -463,7 +467,7 @@ class FolderController extends Controller
                 'action_key' => $actionKey,
                 'item_type' => 'folder',
                 'item_id' => $folder->id,
-                'details' => ['count' => $uploadedCount, 'folder_name' => $folder->name],
+                'details' => ['Archivos Subidos' => $uploadedCount, 'Carpeta' => $folder->name],
             ]);
 
             $message = "Se subieron {$uploadedCount} archivo(s) exitosamente.";
@@ -596,7 +600,7 @@ class FolderController extends Controller
                 'action_key' => $actionKey,
                 'item_type' => 'folder',
                 'item_id' => $request->folder_id,
-                'details' => ['count' => $uploadedCount, 'target_folder_id' => $request->folder_id],
+                'details' => ['Archivos Subidos' => $uploadedCount, 'Carpeta Destino' => $targetFolder->name ?? 'Raíz'],
             ]);
 
             return response()->json(['success' => true, 'message' => "Se subieron {$uploadedCount} archivo(s) exitosamente."]);
@@ -635,8 +639,8 @@ class FolderController extends Controller
                         'action_key' => 'deleted_folder_bulk',
                         'item_type' => 'folder',
                         'item_id' => $folder->id,
-                        'details' => ['name' => $folder->name],
-                    ]);                    
+                        'details' => ['Nombre' => $folder->name, 'Área' => $folder->area->name ?? 'N/A'],
+                    ]);
                     $folder->delete();
                     $deletedCount++;
                 } catch (\Exception $e) {
@@ -662,8 +666,8 @@ class FolderController extends Controller
                         'action_key' => 'deleted_file_link_bulk',
                         'item_type' => 'file_link',
                         'item_id' => $fileLink->id,
-                        'details' => ['name' => $fileLink->name],
-                    ]);                    
+                        'details' => ['Nombre' => $fileLink->name, 'Carpeta' => $fileLink->folder->name ?? 'N/A'],
+                    ]);
                     if ($fileLink->type === 'file' && Storage::disk('s3')->exists($fileLink->path)) {
                         Storage::disk('s3')->delete($fileLink->path);
                     }
@@ -815,7 +819,6 @@ class FolderController extends Controller
                 $errors[] = "Ya existe una carpeta con el mismo nombre ('{$folderToMove->name}') en la carpeta de destino.";
                 continue;
             }
-
             try {
                 ActivityLog::create([
                     'user_id' => $user->id,
@@ -823,7 +826,7 @@ class FolderController extends Controller
                     'action_key' => 'moved_folder_bulk',
                     'item_type' => 'folder',
                     'item_id' => $folderToMove->id,
-                    'details' => ['name' => $folderToMove->name, 'target_folder_id' => $targetFolderId],
+                    'details' => ['Nombre' => $folderToMove->name, 'Destino' => $targetFolder->name ?? 'Raíz'],
                 ]);                
                 $folderToMove->parent_id = $targetFolderId;
                 $folderToMove->save();
@@ -862,7 +865,6 @@ class FolderController extends Controller
                 $errors[] = "Ya existe un archivo o enlace con el mismo nombre ('{$fileLinkToMove->name}') en la carpeta de destino.";
                 continue;
             }
-
             try {
                 ActivityLog::create([
                     'user_id' => $user->id,
@@ -870,7 +872,7 @@ class FolderController extends Controller
                     'action_key' => 'moved_file_link_bulk',
                     'item_type' => 'file_link',
                     'item_id' => $fileLinkToMove->id,
-                    'details' => ['name' => $fileLinkToMove->name, 'target_folder_id' => $targetFolderId],
+                    'details' => ['Nombre' => $fileLinkToMove->name, 'Destino' => $targetFolder->name ?? 'Raíz'],
                 ]);                
                 $fileLinkToMove->folder_id = $targetFolderId;
                 $fileLinkToMove->save();
@@ -976,26 +978,52 @@ class FolderController extends Controller
                 $uploadedCount++;
             }
 
-            $directoryName = 'N/A';
-            if (!empty($paths)) {
-                $firstPathParts = explode('/', $paths[0]);
-                $directoryName = $firstPathParts[0];
-            }
-
             if ($uploadedCount > 0) {
-                ActivityLog::create([
-                    'user_id' => $user->id,
-                    'action' => 'Subió un directorio',
-                    'action_key' => 'uploaded_directory',
-                    'item_type' => 'folder',
-                    'item_id' => $baseFolder ? $baseFolder->id : null,
-                    'details' => [
-                        'directory_name' => $directoryName, 
-                        'file_count' => $uploadedCount, 
-                        'area_id' => $baseFolderAreaId,
-                        'target_folder_id' => $baseFolder ? $baseFolder->id : null
-                    ],
-                ]);
+                $directoryName = 'N/A';
+                if (!empty($paths)) {
+                    $firstPathParts = explode('/', $paths[0]);
+                    $directoryName = $firstPathParts[0];
+                }
+
+                $targetFolderId = $baseFolder ? $baseFolder->id : null;
+                $areaName = Area::find($baseFolderAreaId)->name ?? 'N/A';
+                $targetFolderName = $baseFolder ? $baseFolder->name : 'Raíz'; 
+
+                $dirCheck = '"Directorio":' . json_encode($directoryName);
+                $areaCheck = '"Área":' . json_encode($areaName);
+                $folderCheck = '"Carpeta Destino":' . json_encode($targetFolderName);
+
+                $recentLog = ActivityLog::where('user_id', $user->id)
+                    ->where('action_key', 'uploaded_directory')
+                    ->where('created_at', '>=', now()->subSeconds(30))
+                    ->where('details', 'LIKE', '%' . $dirCheck . '%')
+                    ->where('details', 'LIKE', '%' . $areaCheck . '%')
+                    ->where('details', 'LIKE', '%' . $folderCheck . '%')
+                    ->first();
+
+                if ($recentLog) {
+                    $details = json_decode($recentLog->details, true);
+                    $details['Archivos Subidos'] = ($details['Archivos Subidos'] ?? 1) + $uploadedCount;
+                    $recentLog->details = json_encode($details);
+                    $recentLog->touch(); 
+                    $recentLog->save();
+                } else {
+                    $detailsArray = [
+                        'Directorio' => $directoryName, 
+                        'Archivos Subidos' => $uploadedCount, 
+                        'Área' => $areaName,
+                        'Carpeta Destino' => $targetFolderName
+                    ];
+                    
+                    ActivityLog::create([
+                        'user_id' => $user->id,
+                        'action' => 'Subió un directorio',
+                        'action_key' => 'uploaded_directory',
+                        'item_type' => 'folder',
+                        'item_id' => $targetFolderId,
+                        'details' => json_encode($detailsArray),
+                    ]);
+                }
             }
 
             return response()->json(['success' => true, 'message' => "Se subieron {$uploadedCount} archivos exitosamente."]);
@@ -1007,9 +1035,9 @@ class FolderController extends Controller
     }
 
     /**
-     * @param  \App\Models\Folder|null
+     * @param  \App\Models\Folder|null  $baseFolder
      * @param  string  $filePath
-     * @param  \App\Models\User
+     * @param  \App\Models\User  $user
      * @return \App\Models\Folder|null
      */
     private function findOrCreateNestedFolder(?Folder $baseFolder, string $filePath, $user, $baseAreaId): ?Folder
