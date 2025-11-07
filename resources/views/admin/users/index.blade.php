@@ -6,7 +6,7 @@
     </x-slot>
 
     <div x-data="{ openDeleteModal: false, userToDelete: null, transferMode: false, newOwnerId: '' }">
-        <div class="py-12 bg-[#E8ECF7]">
+        <div class="py-12">
             <div class="max-w-8xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 p-6 md:p-8">
 

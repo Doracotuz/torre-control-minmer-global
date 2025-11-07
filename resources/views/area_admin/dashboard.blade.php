@@ -52,7 +52,7 @@
         </div>
     </x-slot>
 
-    <div class="py-12 bg-[#E8ECF7] min-h-screen" x-data="areaDashboardData()">
+    <div class="py-12 min-h-screen" x-data="areaDashboardData()">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
             <div class="mb-8 px-4 sm:px-0">

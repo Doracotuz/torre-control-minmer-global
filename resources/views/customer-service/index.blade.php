@@ -64,7 +64,7 @@
         }
     </style>
 
-    <div class="bg-aether min-h-screen">
+    <div class="bg-aether min-h-screen rounded-2xl">
         <x-slot name="header">
             <div x-data="{
                 greeting: 'Buenas Noches',

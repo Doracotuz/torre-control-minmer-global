@@ -29,7 +29,7 @@
     </script>
 
 
-    <div class="py-6 sm:py-12 bg-[#E8ECF7]" 
+    <div class="py-6 sm:py-12" 
         x-data="fileManager(
             {{ $currentFolder ? $currentFolder->id : 'null' }},
             {{ json_encode($manageableAreas) }}

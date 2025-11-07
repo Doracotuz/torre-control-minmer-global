@@ -50,7 +50,7 @@
         </h2>
     </x-slot>
 
-    <div class="py-12 bg-[#E8ECF7]" style="font-family: 'Montserrat', sans-serif;">
+    <div class="py-12" style="font-family: 'Montserrat', sans-serif;">
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
             <div x-data="{ 
                     selectedMembers: [], 

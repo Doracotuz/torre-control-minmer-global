@@ -22,7 +22,7 @@
         </div>
     </x-slot>
 
-    <div class="py-12 bg-gray-50" x-data="projectDashboard">
+    <div class="py-12" x-data="projectDashboard">
         
         <script type="application/json" id="dashboard-data">
             @json($dashboardData)
