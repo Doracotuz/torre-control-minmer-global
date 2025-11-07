@@ -194,7 +194,12 @@ class StatisticsController extends Controller
         $creationDeletion = ActivityLog::select('action', DB::raw('count(*) as total'))
             ->whereDate('created_at', '>=', $startDate)
             ->whereDate('created_at', '<=', $endDate)
-            ->whereIn('action', ['Creó una carpeta', 'Subió un archivo', 'Eliminó una carpeta', 'Eliminó un archivo/enlace', 'Eliminación masiva de carpeta', 'Eliminación masiva de archivo/enlace'])
+            ->whereIn('action', [
+                'Creó una carpeta', 'Creó un enlace',
+                'Subió un archivo', 'Subió múltiples archivos', 'Subió un directorio',
+                'Eliminó una carpeta', 'Eliminó un archivo/enlace', 
+                'Eliminación masiva de carpeta', 'Eliminación masiva de archivo/enlace'
+            ])
             ->groupBy('action')
             ->get()
             ->groupBy(function ($item) {
@@ -349,8 +354,10 @@ class StatisticsController extends Controller
             ->whereDate('created_at', '>=', $startDate)
             ->whereDate('created_at', '<=', $endDate)
             ->whereIn('action_key', [
-                'created_folder', 'uploaded_file', 'uploaded_file_in_directory',
-                'deleted_folder', 'deleted_file_link', 'deleted_folder_bulk', 'deleted_file_link_bulk'
+                'created_folder', 'created_link',
+                'uploaded_file', 'uploaded_multiple_files', 'uploaded_directory',
+                'deleted_folder', 'deleted_file_link', 
+                'deleted_folder_bulk', 'deleted_file_link_bulk'
             ])
             ->groupBy('action_key')
             ->get()

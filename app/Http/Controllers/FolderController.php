@@ -390,13 +390,23 @@ class FolderController extends Controller
         $request->validate($validationRules);
 
         if ($request->type === 'link') {
-            FileLink::create([
+            $fileLink = FileLink::create([
                 'name' => $request->name,
                 'type' => 'link',
                 'url' => $request->url,
                 'folder_id' => $folder->id,
                 'user_id' => Auth::id(),
             ]);
+
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'Creó un enlace',
+                'action_key' => 'created_link',
+                'item_type' => 'file_link',
+                'item_id' => $fileLink->id,
+                'details' => ['name' => $fileLink->name, 'folder_id' => $folder->id],
+            ]);
+
             return response()->json(['message' => 'Enlace añadido exitosamente.'], 200);
         }
 
@@ -424,22 +434,13 @@ class FolderController extends Controller
                     try {
                         $path = $file->store('files', 's3');
 
-                        $fileLink = FileLink::create([
+                        FileLink::create([
                             'name' => $fileNameToStore,
                             'type' => 'file',
                             'path' => $path,
                             'folder_id' => $folder->id,
                             'user_id' => Auth::id(),
                         ]); //
-
-                        ActivityLog::create([
-                            'user_id' => Auth::id(),
-                            'action' => 'Subió un archivo',
-                            'action_key' => 'uploaded_file',
-                            'item_type' => 'file_link',
-                            'item_id' => $fileLink->id,
-                            'details' => ['name' => $fileLink->name, 'folder_id' => $folder->id],
-                        ]);
                         
                         $uploadedCount++;
                     } catch (\Exception $e) {
@@ -453,6 +454,18 @@ class FolderController extends Controller
         }
 
         if ($uploadedCount > 0) {
+            $action = $uploadedCount > 1 ? 'Subió múltiples archivos' : 'Subió un archivo';
+            $actionKey = $uploadedCount > 1 ? 'uploaded_multiple_files' : 'uploaded_file';
+            
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => $action,
+                'action_key' => $actionKey,
+                'item_type' => 'folder',
+                'item_id' => $folder->id,
+                'details' => ['count' => $uploadedCount, 'folder_name' => $folder->name],
+            ]);
+
             $message = "Se subieron {$uploadedCount} archivo(s) exitosamente.";
             if (!empty($errors)) {
                 $message .= ' Advertencias: ' . implode(', ', $errors);
@@ -559,21 +572,12 @@ class FolderController extends Controller
             try {
                 $path = $file->store('files', 's3');
 
-                $fileLink = FileLink::create([
+                FileLink::create([
                     'name' => $fileNameToStore,
                     'type' => 'file',
                     'path' => $path,
                     'folder_id' => $request->folder_id,
                     'user_id' => Auth::id(),
-                ]);
-
-                ActivityLog::create([
-                    'user_id' => Auth::id(),
-                    'action' => 'Subió un archivo',
-                    'action_key' => 'uploaded_file',
-                    'item_type' => 'file_link',
-                    'item_id' => $fileLink->id,
-                    'details' => ['name' => $fileLink->name],
                 ]);
 
                 $uploadedCount++;
@@ -583,6 +587,18 @@ class FolderController extends Controller
         }
 
         if ($uploadedCount > 0) {
+            $action = $uploadedCount > 1 ? 'Subió múltiples archivos' : 'Subió un archivo';
+            $actionKey = $uploadedCount > 1 ? 'uploaded_multiple_files' : 'uploaded_file';
+            
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => $action,
+                'action_key' => $actionKey,
+                'item_type' => 'folder',
+                'item_id' => $request->folder_id,
+                'details' => ['count' => $uploadedCount, 'target_folder_id' => $request->folder_id],
+            ]);
+
             return response()->json(['success' => true, 'message' => "Se subieron {$uploadedCount} archivo(s) exitosamente."]);
         } else {
             return response()->json(['success' => false, 'message' => 'No se pudo subir ningún archivo.' . (!empty($errors) ? ' Errores: ' . implode(', ', $errors) : '')], 500);
@@ -949,7 +965,7 @@ class FolderController extends Controller
                 $originalFileName = $file->getClientOriginalName();
                 $s3Path = $file->store('files', 's3');
 
-                $fileLink = FileLink::create([
+                FileLink::create([
                     'name'      => $originalFileName,
                     'type'      => 'file',
                     'path'      => $s3Path,
@@ -957,15 +973,29 @@ class FolderController extends Controller
                     'user_id'   => $user->id,
                 ]);
 
+                $uploadedCount++;
+            }
+
+            $directoryName = 'N/A';
+            if (!empty($paths)) {
+                $firstPathParts = explode('/', $paths[0]);
+                $directoryName = $firstPathParts[0];
+            }
+
+            if ($uploadedCount > 0) {
                 ActivityLog::create([
                     'user_id' => $user->id,
-                    'action' => 'Subió un archivo (en carpeta)',
-                    'action_key' => 'uploaded_file_in_directory',
-                    'item_type' => 'file_link',
-                    'item_id' => $fileLink->id,
-                    'details' => ['name' => $fileLink->name, 'path' => $relativePath],
+                    'action' => 'Subió un directorio',
+                    'action_key' => 'uploaded_directory',
+                    'item_type' => 'folder',
+                    'item_id' => $baseFolder ? $baseFolder->id : null,
+                    'details' => [
+                        'directory_name' => $directoryName, 
+                        'file_count' => $uploadedCount, 
+                        'area_id' => $baseFolderAreaId,
+                        'target_folder_id' => $baseFolder ? $baseFolder->id : null
+                    ],
                 ]);
-                $uploadedCount++;
             }
 
             return response()->json(['success' => true, 'message' => "Se subieron {$uploadedCount} archivos exitosamente."]);
@@ -977,10 +1007,10 @@ class FolderController extends Controller
     }
 
     /**
-     * @param  \App\Models\Folder|null  $baseFolder La carpeta raíz donde inicia la creación.
-     * @param  string  $filePath La ruta relativa del archivo.
-     * @param  \App\Models\User  $user El usuario que realiza la acción.
-     * @return \App\Models\Folder|null La carpeta final donde se debe guardar el archivo.
+     * @param  \App\Models\Folder|null
+     * @param  string  $filePath
+     * @param  \App\Models\User
+     * @return \App\Models\Folder|null
      */
     private function findOrCreateNestedFolder(?Folder $baseFolder, string $filePath, $user, $baseAreaId): ?Folder
     {
