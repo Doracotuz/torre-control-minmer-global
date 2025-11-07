@@ -15,18 +15,47 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
          
         <style>
-
-            body {
-                zoom: 90%;
+            :root {
+                --bg-sidebar: #2c3856;
+                --bg-nav: #2c3856;
+                --bg-nav-mobile: #344266;
+                --bg-content: #E8ECF7;
+                --bg-base: #f3f4f6;
+                --text-sidebar: #e5e7eb;
+                --text-sidebar-logo: #ffffff;
+                --text-nav: #ffffff;
+                --accent: #BECEF5;
+                --accent-text: #1F222B;
+                --accent-hover: rgba(255, 255, 255, 0.05);
+                --highlight: #ff9c00;
             }
-            a.nav-link-custom:visited {
-                color: #e5e7eb;
+
+            body.theme-gold {
+                --bg-sidebar: rgba(0, 0, 0, 1);
+                --bg-nav: rgba(0, 0, 0, 1);
+                --bg-nav-mobile: rgba(0, 0, 0, 1);
+                --bg-content: hsl(223, 10%, 90%);
+                --bg-base: hsl(223, 10%, 95%);
+                --text-sidebar: hsla(0, 0%, 100%, 1.00);
+                --text-sidebar-logo: hsla(0, 0%, 100%, 1.00);
+                --text-nav: hsla(0, 0%, 100%, 1.00);
+                --accent: rgb(235, 205, 134);
+                --accent-text: hsla(0, 0%, 100%, 1.00);
+                --accent-hover: rgba(235, 205, 134, 0.80);
+                --highlight: rgb(189, 159, 87);
             }
 
+            .sidebar-bg { background-color: var(--bg-sidebar); }
+            .base-bg { background-color: var(--bg-base); }
+            .content-bg { background-color: var(--bg-content); }
 
-            a.nav-link-custom.active-link:visited {
-                color: #1F222B;
+            .logo-container .logo-text, .logo-container .logo-subtitle {
+                color: var(--text-sidebar-logo);
             }
+            body.theme-gold .logo-container:hover {
+                background-color: rgba(0, 0, 0, 0.05);
+            }
+
             .nav-link-custom {
                 position: relative;
                 display: flex;
@@ -34,9 +63,10 @@
                 padding: 12px 16px;
                 border-radius: 5px;
                 font-weight: 500;
-                color: #e5e7eb;
+                color: var(--text-sidebar);
                 transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
             }
+            a.nav-link-custom:visited { color: var(--text-sidebar); }
 
             .nav-link-custom::before {
                 content: '';
@@ -46,29 +76,29 @@
                 transform: translateY(-50%);
                 height: 0;
                 width: 4px;
-                background-color: #BECEF5;
+                background-color: var(--accent);
                 border-radius: 2px;
                 transition: height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             }
 
             .nav-link-custom:hover:not(.active-link) {
-                background-color: rgba(255, 255, 255, 0.05);
-                color: #ffffff;
+                background-color: var(--accent-hover);
+                color: var(--text-sidebar-logo);
             }
             .nav-link-custom:hover:not(.active-link)::before {
                 height: 60%;
             }
 
             .nav-link-custom.active-link {
-                background-color: #BECEF5;
-                color: #ffffff;
+                background-color: var(--accent-hover);
+                color: var(--accent-text);
                 font-weight: 600;
-                color: #1F222B;
             }
+            a.nav-link-custom.active-link:visited { color: var(--accent-text); }
+            
             .nav-link-custom.active-link::before {
                 height: 100%;
             }
-
 
             .nav-link-custom .nav-icon {
                 flex-shrink: 0;
@@ -81,7 +111,53 @@
             .nav-link-custom:hover .nav-text {
                 transform: translateX(4px);
             }
+            
+            .nav-bg { background-color: var(--bg-nav); }
+            .mobile-menu-bg { background-color: var(--bg-nav-mobile); }
+            
+            .nav-toggle-btn { color: var(--text-nav); }
+            .nav-toggle-btn:hover { background-color: rgba(255, 255, 255, 0.1); }
+            body.theme-gold .nav-toggle-btn:hover { background-color: rgba(0, 0, 0, 0.1); }
+            
+            .nav-area-name span { color: var(--text-nav); }
+            .nav-user-btn { color: var(--text-nav); }
+            .nav-user-btn:hover { color: #e5e7eb; }
+            body.theme-gold .nav-user-btn:hover { color: var(--accent); }
+            
+            .search-bar:focus {
+                border-color: var(--highlight) !important;
+                --tw-ring-color: var(--highlight) !important;
+            }
+            .search-bar-icon:hover { color: var(--highlight); }
+            
+            .mobile-menu-link { 
+                display: block;
+                padding-left: 1rem;
+                padding-right: 1rem;
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
+                font-size: 1rem;
+                line-height: 1.5rem;
+                font-weight: 500;
+                color: var(--text-nav); 
+                transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out;
+            }
+            .mobile-menu-link:hover, .mobile-menu-link:focus {
+                background-color: rgba(255, 255, 255, 0.1);
+                color: var(--highlight);
+                outline: none;
+            }
+            body.theme-gold .mobile-menu-link:hover, body.theme-gold .mobile-menu-link:focus {
+                background-color: rgba(0, 0, 0, 0.1);
+            }
+            .mobile-menu-divider { border-color: rgba(255, 255, 255, 0.3); }
+            body.theme-gold .mobile-menu-divider { border-color: rgba(0, 0, 0, 0.2); }
+            .mobile-menu-user-email { color: #d1d5db; }
+            body.theme-gold .mobile-menu-user-email { color: var(--accent) }
 
+            body {
+                zoom: 90%;
+            }            
 
             .logo-container {
                 transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s ease;
@@ -216,7 +292,7 @@
             position: relative;
             }
         </style>
-            <script>
+        <script>
         let map, directionsService, directionsRenderer, autocomplete;
         let paradas = [];
         let indexMap, monitoreoMap, activeRenderers = {};
@@ -579,7 +655,14 @@
             toggleSidebar() {
                 this.isSidebarOpen = !this.isSidebarOpen;
                 localStorage.setItem('isSidebarOpen', this.isSidebarOpen);
-            },        
+            },
+
+            theme: localStorage.getItem('theme') ?? 'default',
+            toggleTheme() {
+                this.theme = (this.theme === 'default') ? 'gold' : 'default';
+                localStorage.setItem('theme', this.theme);
+            },
+            
             isSuperAdminMenuOpen: {{ request()->routeIs('admin.*') ? 'true' : 'false' }},
             isAreaAdminMenuOpen: {{ request()->routeIs('area_admin.*') ? 'true' : 'false' }},
             isAccessDeniedModalOpen: false,
@@ -596,15 +679,16 @@
                 }
             }
         }"
+        :class="{ 'theme-gold': theme === 'gold' }" 
     >
-        <div class="min-h-screen bg-gray-100 flex">
-            <div class="bg-[#2c3856] text-white flex-col min-h-screen shadow-2xl relative z-10 hidden lg:flex sticky-sidebar transition-all duration-300 ease-in-out"
+        <div class="min-h-screen base-bg flex">
+            <div class="sidebar-bg text-white flex-col min-h-screen shadow-2xl relative z-10 hidden lg:flex sticky-sidebar transition-all duration-300 ease-in-out"
                 :class="isSidebarOpen ? 'w-64' : 'w-0'"
             >
                 <div class="overflow-hidden transition-opacity duration-200" :class="isSidebarOpen ? 'opacity-100' : 'opacity-0'">
                     <div class="p-6 text-center">
                             <div class="logo-container py-4">
-                                <img src="{{ Storage::disk('s3')->url('escudoMinmer.png') }}" alt="Minmer Global Logo" class="h-20 mx-auto mb-3">
+                                <img src="{{ Storage::disk('s3')->url('escudoMinmerGlobal.png') }}" alt="Minmer Global Logo" class="h-20 mx-auto mb-3">
                                 <span class="text-xl font-extrabold text-white tracking-wide logo-text">CONTROL TOWER</span>
                                 <span class="text-xs text-gray-300 mt-1 block logo-subtitle">MINMER GLOBAL</span>
                             </div>
@@ -879,16 +963,16 @@
                         </nav>
                     </div>
                 </div>
-            <div class="flex-1 flex flex-col bg-gray-100 w-full lg:w-auto">
+            <div class="flex-1 flex flex-col content-bg w-full lg:w-auto">
                 @include('layouts.navigation', ['currentFolder' => $currentFolder ?? null])
                 @if (isset($header))
-                <div class="bg-[#2C3856]">
-                    <header class="bg-[#E8ECF7] rounded-tl-3xl">
+                <div class="nav-bg">
+                    <header class="content-bg rounded-tl-3xl">
                         <div class="w-[95%] py-6 pl-6 pr-4 sm:pl-8 lg:pl-10">{{ $header }}</div>
                     </header>
                 </div>
                 @endif
-                <main class="bg-[#E8ECF7] flex-1 p-8">
+                <main class="content-bg flex-1 p-8">
                     @if (isset($slot))
                         {{ $slot }}
                     @else

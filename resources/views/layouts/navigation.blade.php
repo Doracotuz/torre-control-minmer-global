@@ -59,12 +59,12 @@
         }
     })"
      @click.away="showSuggestions = false"
-     class="bg-[#2c3856] border-gray-100 relative z-20 sticky top-0">
+     class="nav-bg border-gray-100 relative z-20 sticky top-0">
 
     <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16 items-center">
             <div class="flex items-center space-x-2 sm:space-x-4">
-                <button @click="toggleSidebar()" class="p-2 rounded-md text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50 hidden lg:block">
+                <button @click="toggleSidebar()" class="p-2 rounded-md nav-toggle-btn focus:outline-none focus:ring-2 focus:ring-white/50 hidden lg:block">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
                 </button>                
                 <div class="flex items-center text-white text-sm font-medium">
@@ -103,7 +103,7 @@
                             {!! $areaIconSvg !!}
                         @endif
 
-                        <span class="text-white text-base sm:text-lg font-semibold" style="font-family: 'Raleway', sans-serif;">{{ $areaName }}</span>
+                        <span class="nav-area-name text-base sm:text-lg font-semibold" style="font-family: 'Raleway', sans-serif;">{{ $areaName }}</span>
                     @endif
                 </div>
             </div>
@@ -113,10 +113,10 @@
                     <input type="text" name="search" placeholder="Buscar documentos..."
                         x-model="search"
                         x-on:focus="if (suggestions.length > 0) showSuggestions = true"
-                           class="w-full pl-8 pr-2 py-1.5 sm:pl-10 sm:pr-4 sm:py-2 rounded-md border-2 border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] transition-all duration-300 ease-in-out shadow-sm
+                           class="search-bar w-full pl-8 pr-2 py-1.5 sm:pl-10 sm:pr-4 sm:py-2 rounded-md border-2 border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] transition-all duration-300 ease-in-out shadow-sm
                                   hover:border-[#2c3856] focus:shadow-lg text-sm sm:text-base"
                            value="{{ request('search') }}">
-                    <button type="submit" class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#2c3856] sm:left-3">
+                    <button type="submit" class="search-bar-icon absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#2c3856] sm:left-3">
                         <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </button>
                 </form>
@@ -151,9 +151,19 @@
             </div>
 
             <div class="hidden sm:flex sm:items-center sm:ms-6">
+                <button @click="toggleTheme()"
+                        class="p-2 rounded-md focus:outline-none transition-colors duration-150 nav-toggle-btn"
+                        aria-label="Toggle theme">
+                    <svg x-show="theme === 'default'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <svg x-show="theme === 'gold'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                </button>
                 @if (Auth::user()->is_area_admin && $manageableAreas->count() > 1 && request()->routeIs('area_admin.*'))
                     <div class="ms-3 relative">
-                        <x-dropdown align="right" width="60"> {{-- Un poco más ancho --}}
+                        <x-dropdown align="right" width="60">
                             <x-slot name="trigger">
                                 <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-[#ff9c00] hover:bg-orange-500 focus:outline-none transition ease-in-out duration-150">
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m-1 4h1m6-4h1m-1 4h1m-1-8h1m-1 4h1"></path></svg>
@@ -181,7 +191,7 @@
                 @endif
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white hover:text-gray-200 focus:outline-none transition ease-in-out duration-150">
+                        <button class="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 border border-transparent text-sm leading-4 font-medium rounded-md nav-user-btn focus:outline-none transition ease-in-out duration-150">
                             @if (Auth::user()->profile_photo_path)
                                 <img class="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover mr-2 object-center" src="{{ Storage::disk('s3')->url(Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()->name }}">
                             @else
@@ -214,7 +224,7 @@
     </div>
 
     <div :class="{'block': open, 'hidden': ! open}" 
-         class="hidden sm:hidden bg-[#344266] transition-all duration-300 ease-in-out shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto"
+         class="hidden sm:hidden mobile-menu-bg transition-all duration-300 ease-in-out shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto"
          x-show="open"
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 transform -translate-y-4"
@@ -225,7 +235,7 @@
         
         @if(Auth::user()->area?->name === 'VentasFF')
             <div class="pt-2 pb-3 space-y-1">
-                <x-responsive-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                <x-responsive-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="mobile-menu-link">
                     {{ __('Friends & Family') }}
                 </x-responsive-nav-link>
             </div>
@@ -234,23 +244,23 @@
             <div class="pt-2 pb-3 space-y-1">
                 
                 @if(!Auth::user()->is_client)
-                    <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="mobile-menu-link">
                         {{ __('Dashboard') }}
                     </x-responsive-nav-link>
                 @endif
 
                 @if (Auth::user()->is_client)
-                    <x-responsive-nav-link :href="route('tablero.index')" :active="request()->routeIs('tablero.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    <x-responsive-nav-link :href="route('tablero.index')" :active="request()->routeIs('tablero.index')" class="mobile-menu-link">
                         {{ __('Dashboard') }}
                     </x-responsive-nav-link>
                 @endif
 
                 @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
-                    <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="mobile-menu-link">
                         <span class="nav-text">{{ __('Archivos') }}</span>
                     </x-responsive-nav-link>
                 @else
-                    <x-responsive-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    <x-responsive-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="mobile-menu-link">
                         @if (Auth::user()->is_client)
                             {{ __('Archivos') }}
                         @else
@@ -261,19 +271,19 @@
 
                 @if (Auth::user()->is_client)
                     @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
-                        <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="mobile-menu-link">
                             {{ __('Organigrama') }}
                         </x-responsive-nav-link>
 
-                        <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="mobile-menu-link">
                             {{ __('Tracking') }}
                         </x-responsive-nav-link>
                     @else
-                        <x-responsive-nav-link :href="route('client.organigram.interactive')" :active="request()->routeIs('client.organigram.interactive')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        <x-responsive-nav-link :href="route('client.organigram.interactive')" :active="request()->routeIs('client.organigram.interactive')" class="mobile-menu-link">
                             {{ __('Organigrama') }}
                         </x-responsive-nav-link>
 
-                        <x-responsive-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700" target="_blank" rel="noopener noreferrer">
+                        <x-responsive-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="mobile-menu-link" target="_blank" rel="noopener noreferrer">
                             {{ __('Tracking') }}
                         </x-responsive-nav-link>
                     @endif
@@ -282,25 +292,25 @@
                         {{ __('RFQ Moët Hennessy') }}
                     </x-responsive-nav-link>
 
-                    <div class="pt-4 mt-4 border-t border-gray-600/50 space-y-1">
+                    <div class="pt-4 mt-4 mobile-menu-divider space-y-1">
                         @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
-                            <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="mobile-menu-link">
                                 {{ __('Huella de Carbono') }}
                             </x-responsive-nav-link>
-                            <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="mobile-menu-link">
                                 {{ __('Certificaciones') }}
                             </x-responsive-nav-link>
-                            <x-responsive-nav-link :href="$whatsappLink" target="_blank" @click.prevent="checkAccess($event)" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            <x-responsive-nav-link :href="$whatsappLink" target="_blank" @click.prevent="checkAccess($event)" class="mobile-menu-link">
                                 {{ __('Asistencia') }}
                             </x-responsive-nav-link>
                         @else
-                            <x-responsive-nav-link href="#" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            <x-responsive-nav-link href="#" class="mobile-menu-link">
                                 {{ __('Huella de Carbono') }}
                             </x-responsive-nav-link>
-                            <x-responsive-nav-link href="#" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            <x-responsive-nav-link href="#" class="mobile-menu-link">
                                 {{ __('Certificaciones') }}
                             </x-responsive-nav-link>
-                            <x-responsive-nav-link :href="$whatsappLink" target="_blank" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            <x-responsive-nav-link :href="$whatsappLink" target="_blank" class="mobile-menu-link">
                                 {{ __('Asistencia') }}
                             </x-responsive-nav-link>
                         @endif
@@ -308,80 +318,75 @@
                 @endif
 
                 @if (!Auth::user()->is_client)
-                    <x-responsive-nav-link :href="route('area_admin.visits.index')" :active="request()->routeIs('area_admin.visits.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    <x-responsive-nav-link :href="route('area_admin.visits.index')" :active="request()->routeIs('area_admin.visits.*')" class="mobile-menu-link">
                         {{ __('Gestión de Visitas') }}
                     </x-responsive-nav-link>
 
                     @if(in_array(Auth::user()->area?->name, ['Tráfico', 'Tráfico Importaciones', 'Administración']))
-                    <x-responsive-nav-link :href="route('rutas.dashboard')" :active="request()->routeIs('rutas.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    <x-responsive-nav-link :href="route('rutas.dashboard')" :active="request()->routeIs('rutas.*')" class="mobile-menu-link">
                         {{ __('Gestión de Rutas') }}
                     </x-responsive-nav-link>
                     @endif
 
-                    <x-responsive-nav-link :href="route('tickets.index')" :active="request()->routeIs('tickets.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                    <x-responsive-nav-link :href="route('tickets.index')" :active="request()->routeIs('tickets.*')" class="mobile-menu-link">
                         {{ __('Tickets de Soporte') }}
                     </x-responsive-nav-link>
 
                     @can('viewAny', App\Models\Project::class)
-                        <x-responsive-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        <x-responsive-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')" class="mobile-menu-link">
                             {{ __('Proyectos') }}
                         </x-responsive-nav-link>  
                     @endcan
 
                     @if (Auth::check() && !Auth::user()->is_client && in_array(Auth::user()->area?->name, ['Administración', 'Almacén']))
-                        <x-responsive-nav-link :href="route('wms.dashboard')" :active="request()->routeIs('wms.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        <x-responsive-nav-link :href="route('wms.dashboard')" :active="request()->routeIs('wms.*')" class="mobile-menu-link">
                             {{ __('WMS') }}
                         </x-responsive-nav-link>
                     @endif
 
                     @if(Auth::user()->is_area_admin && in_array(Auth::user()->area?->name, ['Recursos Humanos', 'Innovación y Desarrollo']))
-                        <x-responsive-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        <x-responsive-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.*')" class="mobile-menu-link">
                             {{ __('Organigrama') }}
                         </x-responsive-nav-link>
                     @endif
 
                     @if(in_array(Auth::user()->area?->name, ['Customer Service', 'Administración', 'Tráfico']))
-                        <x-responsive-nav-link :href="route('customer-service.index')" :active="request()->routeIs('customer-service.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                        <x-responsive-nav-link :href="route('customer-service.index')" :active="request()->routeIs('customer-service.*')" class="mobile-menu-link">
                             {{ __('Customer Service') }}
                         </x-responsive-nav-link>
                     @endif
                     
-                    <!-- @if (Auth::user()->isSuperAdmin())
-                        <x-responsive-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
-                            {{ __('Friends & Family') }}
-                        </x-responsive-nav-link>
-                    @endif                 -->
                 @endif
 
                 @if (Auth::user()->isSuperAdmin())
-                    <div class="pt-4 pb-3 border-t border-gray-600/50">
+                    <div class="pt-4 pb-3 mobile-menu-divider">
                         <button @click="isMobileSuperAdminMenuOpen = !isMobileSuperAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
                             <span class="font-semibold">Super Admin</span>
                             <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileSuperAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                         </button>
                         <div x-show="isMobileSuperAdminMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
-                            <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="mobile-menu-link">
                                 {{ __('Panel General') }}
                             </x-responsive-nav-link>
-                            <x-responsive-nav-link :href="route('admin.statistics.index')" :active="request()->routeIs('admin.statistics.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            <x-responsive-nav-link :href="route('admin.statistics.index')" :active="request()->routeIs('admin.statistics.*')" class="mobile-menu-link">
                                 {{ __('Estadísticas') }}
                             </x-responsive-nav-link>
                         </div>
                     </div>
                 @elseif (Auth::user()->is_area_admin)
-                    <div class="pt-4 pb-3 border-t border-gray-600/50">
+                    <div class="pt-4 pb-3 mobile-menu-divider">
                         <button @click="isMobileAreaAdminMenuOpen = !isMobileAreaAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
                             <span class="font-semibold">Admin de Área</span>
                             <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileAreaAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                         </button>
                         <div x-show="isMobileAreaAdminMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
-                            <x-responsive-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            <x-responsive-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="mobile-menu-link">
                                 {{ __('Panel de Área') }}
                             </x-responsive-nav-link>
-                            <x-responsive-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            <x-responsive-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.*')" class="mobile-menu-link">
                                 {{ __('Gestión de Usuarios') }}
                             </x-responsive-nav-link>
-                            <x-responsive-nav-link :href="route('area_admin.folder_permissions.index')" :active="request()->routeIs('area_admin.folder_permissions.*')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                            <x-responsive-nav-link :href="route('area_admin.folder_permissions.index')" :active="request()->routeIs('area_admin.folder_permissions.*')" class="mobile-menu-link">
                                 {{ __('Permisos de Carpetas') }}
                             </x-responsive-nav-link>
                         </div>
@@ -389,14 +394,29 @@
                 @endif
             </div>
         @endif
-        <div class="pt-4 pb-1 border-t border-gray-600/50">
+
+        <div class="pt-4 pb-3 mobile-menu-divider">
+            <button @click="toggleTheme()" class="mobile-menu-link flex items-center w-full text-left">
+                <svg x-show="theme === 'default'" class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <svg x-show="theme === 'gold'" class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+
+                <span x-show="theme === 'default'">Cambiar a Tema Dorado</span>
+                <span x-show="theme === 'gold'">Cambiar a Tema Azul</span>
+            </button>
+        </div>
+
+        <div class="pt-4 pb-1 mobile-menu-divider">
             <div class="px-4">
                 <div class="font-medium text-base text-white">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-gray-300">{{ Auth::user()->email }}</div>
+                <div class="font-medium text-sm mobile-menu-user-email">{{ Auth::user()->email }}</div>
             </div>
 
             <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                <x-responsive-nav-link :href="route('profile.edit')" class="mobile-menu-link">
                     {{ __('Perfil') }}
                 </x-responsive-nav-link>
 
@@ -404,7 +424,7 @@
                     @csrf
                     <x-responsive-nav-link :href="route('logout')"
                             onclick="event.preventDefault();
-                                        this.closest('form').submit();" class="text-white hover:bg-gray-700 hover:text-[#ff9c00] focus:text-[#ff9c00] focus:outline-none focus:bg-gray-700">
+                                        this.closest('form').submit();" class="mobile-menu-link">
                         {{ __('Cerrar Sesión') }}
                     </x-responsive-nav-link>
                 </form>
