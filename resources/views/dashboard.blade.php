@@ -43,7 +43,7 @@
         }
     </style>
 
-    <div class="py-12 gradient-background min-h-screen rounded-2xl">
+    <div class="py-12 gradient-background min-h-screen">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             <div class="mb-8 px-4 sm:px-0 animate-fade-in-up" style="animation-delay: 0.1s;">
