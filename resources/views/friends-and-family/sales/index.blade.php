@@ -6,6 +6,44 @@
     </x-slot>
     <div x-data="salesManager()" x-init='init(@json($products), {{ $nextFolio }})'>
 
+        <div x-show="flashMessage"
+             x-transition:enter="transform ease-out duration-300 transition"
+             x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+             x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed top-24 right-6 w-full max-w-sm p-4 rounded-lg shadow-lg z-50 border-l-4"
+             :class="{
+                 'bg-green-100 border-green-500 text-green-700': flashType === 'success',
+                 'bg-red-100 border-red-500 text-red-700': flashType === 'danger',
+                 'bg-blue-100 border-blue-500 text-blue-700': flashType === 'info'
+             }"
+             style="display: none;">
+            <div class="flex">
+                <div class="py-1">
+                    <svg x-show="flashType === 'danger'" class="h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
+                    </svg>
+                    <svg x-show="flashType === 'success'" class="h-6 w-6 text-green-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="font-bold" x-text="flashMessage"></p>
+                </div>
+                <button @click="flashMessage = ''" class="ml-auto -mx-1.5 -my-1.5 p-1.5 rounded-lg inline-flex h-8 w-8" :class="{
+                         'hover:bg-green-200': flashType === 'success',
+                         'hover:bg-red-200': flashType === 'danger',
+                         'hover:bg-blue-200': flashType === 'info'
+                     }">
+                    <span class="sr-only">Cerrar</span>
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 py-12">
             <div class="flex flex-col lg:flex-row gap-8">
 
@@ -77,7 +115,7 @@
 
 
                 <div class="lg:w-1/3">
-                    <div class="sticky top-20"> <div class="bg-white shadow-lg rounded-lg border border-gray-200 p-6 space-y-6">
+                     <div class="sticky top-20"> <div class="bg-white shadow-lg rounded-lg border border-gray-200 p-6 space-y-6">
 
                             <div class="border-b pb-4">
                                 <h2 class="text-2xl font-bold text-gray-800">Total de Venta:</h2>
@@ -92,12 +130,6 @@
                                 <div>
                                     <label for="surtidor_name" class="block text-xs font-medium text-gray-500">Nombre del Surtidor (*)</label>
                                     <input type="text" id="surtidor_name" x-model="surtidorName" placeholder="Quién preparó el pedido" class="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800 text-sm py-1.5">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-500">Folio de Venta</label>
-                                    <div class="mt-1 block w-full rounded-md border border-gray-300 bg-gray-100 text-gray-800 shadow-sm px-3 py-1.5 text-sm h-[38px] flex items-center">
-                                        <span x-text="folioVenta"></span>
-                                    </div>
                                 </div>
                             </div>
 
@@ -152,6 +184,10 @@
                 clientName: '',
                 surtidorName: '',
                 folioVenta: null, 
+                
+                flashMessage: '',
+                flashType: 'info',
+                flashTimeout: null,
 
                 init(initialProducts, initialFolio) {
                     const productsArray = Array.isArray(initialProducts) ? initialProducts : [];
@@ -176,6 +212,15 @@
                     });
                     
                     this.pollingInterval = setInterval(() => this.pollReservations(), 10000);
+                },
+
+                showFlashMessage(message, type = 'info', duration = 6000) {
+                    clearTimeout(this.flashTimeout);
+                    this.flashMessage = message;
+                    this.flashType = type;
+                    this.flashTimeout = setTimeout(() => {
+                        this.flashMessage = '';
+                    }, duration);
                 },
 
                 get filteredProducts() {
@@ -220,6 +265,7 @@
                     if (isNaN(newQuantity) || newQuantity < 0) {
                         newQuantity = 0;
                     }
+                    
                     if (newQuantity > maxAvailable) {
                         newQuantity = maxAvailable;
                         product.error = `No puedes exceder el stock disponible (${maxAvailable}).`;
@@ -273,14 +319,24 @@
                         const reservations = await response.json();
                         
                         this.products.forEach((product, index) => {
+                            const myCartQty = this.getProductInCart(product.id) || 0;
+                            
+                            const oldRealAvailable = product.total_stock - product.reserved_by_others - myCartQty;
+
                             const newReserved = reservations[product.id] ? parseInt(reservations[product.id]) : 0;
                             this.products[index].reserved_by_others = newReserved;
                             
-                            const myCartQty = this.getProductInCart(product.id);
-                            const maxAvailable = this.getAvailableStock(product) + myCartQty;
+                            const newRealAvailable = product.total_stock - newReserved - myCartQty;
 
-                            if (myCartQty > 0 && myCartQty > maxAvailable) {
-                                product.error = `¡Stock reducido! Tu reserva (${myCartQty}) excede el nuevo máximo disponible (${maxAvailable}). Ajusta tu cantidad.`;
+                            if (newRealAvailable <= 0 && oldRealAvailable > 0) {
+                                this.showFlashMessage(`¡Stock Agotado! ${product.sku} se agotó por otra venta.`, 'danger');
+                            }
+
+
+                            const myCartQtyCheck = this.getProductInCart(product.id);
+                            const maxAvailable = this.getAvailableStock(product) + (myCartQtyCheck || 0);
+                            if (myCartQtyCheck > 0 && myCartQtyCheck > maxAvailable) {
+                                product.error = `¡Stock reducido! Tu reserva (${myCartQtyCheck}) excede el nuevo máximo disponible (${maxAvailable}). Ajusta tu cantidad.`;
                             }
                         });
                     } catch (e) {
@@ -328,19 +384,21 @@
                             const url = window.URL.createObjectURL(blob);
                             window.open(url);
 
-                            alert(`¡Venta completada con éxito!\nFolio: ${folio}`);
+                            this.showFlashMessage(`¡Venta ${folio} completada! Recargando...`, 'success', 3000);
                             
                             setTimeout(() => {
                                 location.reload(); 
-                            }, 1000); 
+                            }, 3000); 
 
                         } else {
                             const data = await response.json();
                             this.globalError = data.message || "Error al procesar la venta.";
+                            this.showFlashMessage(this.globalError, 'danger');
                         }
 
                     } catch (e) {
                         this.globalError = 'Error de conexión. Intenta de nuevo.';
+                        this.showFlashMessage(this.globalError, 'danger');
                     } finally {
                         this.isSaving = false;
                     }
@@ -389,10 +447,12 @@
                         } else {
                             const data = await response.json();
                             this.globalError = data.message || "Error al generar el PDF.";
+                            this.showFlashMessage(this.globalError, 'danger');
                         }
 
                     } catch (e) {
                         this.globalError = 'Error de conexión. Intenta de nuevo.';
+                        this.showFlashMessage(this.globalError, 'danger');
                     } finally {
                         this.isPrinting = false;
                     }
