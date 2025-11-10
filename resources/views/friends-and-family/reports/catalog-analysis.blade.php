@@ -1,8 +1,15 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Reportes: Análisis de Precios y Catálogo') }}
-        </h2>
+        <div class="flex flex-col md:flex-row justify-between items-center"> 
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ __('Reportes: Análisis de Precios y Catálogo') }}
+            </h2>
+            <a href="{{ route('ff.reports.index') }}"
+            class="inline-flex items-center px-6 py-2 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest bg-[#2c3856] hover:bg-[#ff9c00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff9c00] shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 ease-in-out">
+                <i class="fas fa-tachometer-alt mr-2"></i>
+                Volver a "Reportes"
+            </a>
+        </div>    
     </x-slot>
 
     <div class="py-12">

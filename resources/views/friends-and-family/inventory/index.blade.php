@@ -8,9 +8,15 @@
                     Inventario (Friends & Family)
                 </h2>
                 <div class="flex flex-wrap justify-end space-x-2">
+
+                    <a href="{{ route('ff.dashboard.index') }}"
+                    class="inline-flex items-center px-6 py-2 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest bg-[#2c3856] hover:bg-[#ff9c00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff9c00] shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 ease-in-out">
+                        <i class="fas fa-tachometer-alt mr-2"></i>
+                        Volver a "Friends & Family"
+                    </a>
                     <a href="{{ route('ff.inventory.log') }}"
-                       class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 transition ease-in-out duration-150">
-                       <i class="fas fa-history mr-2"></i> Ver Registro
+                    class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 transition ease-in-out duration-150">
+                        <i class="fas fa-history mr-2"></i> Ver Registro
                     </a>
                 </div>
             </div>
