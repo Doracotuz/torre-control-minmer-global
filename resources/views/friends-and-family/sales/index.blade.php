@@ -113,9 +113,9 @@
                                 
                                 <div class="grid grid-cols-2 gap-3">
                                     <a href="{{ route('ff.dashboard.index') }}"
-                                       class="w-full inline-flex items-center justify-center px-6 py-2 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest bg-[#2c3856] hover:bg-[#1e273a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2c3856] shadow-md hover:shadow-lg transition-all duration-300 ease-in-out">
+                                       class="w-full inline-flex items-center justify-center px-6 py-2 border border-transparent rounded-lg font-semibold text-xs text-center text-white uppercase tracking-widest bg-[#2c3856] hover:bg-[#1e273a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2c3856] shadow-md hover:shadow-lg transition-all duration-300 ease-in-out">
                                         <i class="fas fa-tachometer-alt -ml-1 mr-2"></i>
-                                        Dashboard
+                                        Volver al inicio
                                     </a>
                                     
                                     <button @click="printProductList()"
