@@ -198,10 +198,10 @@
             }
 
             .sticky-sidebar {
-                position: sticky;
+                position: fixed;
                 top: 0;
-                min-height: 125vh;
-                align-self: flex-start;
+                left: 0;
+                height: 120vh;
             }
 
 
@@ -963,7 +963,9 @@
                         </nav>
                     </div>
                 </div>
-            <div class="flex-1 flex flex-col content-bg w-full lg:w-auto">
+            <div class="flex-1 flex flex-col content-bg w-full lg:w-auto transition-all duration-300 ease-in-out"
+                :class="isSidebarOpen ? 'lg:ml-64' : 'lg:ml-0'"
+            >
                 @include('layouts.navigation', ['currentFolder' => $currentFolder ?? null])
                 @if (isset($header))
                 <div class="nav-bg">
