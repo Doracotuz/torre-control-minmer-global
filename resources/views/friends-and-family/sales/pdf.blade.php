@@ -180,10 +180,10 @@
                         </tr>
                         <tr>
                             <td style="width: 50%; padding: 2px 0;">
-                                <span style="font-weight: 600;">Vendedor (Cajero):</span> {{ $vendedor_name ?? 'N/A' }}
+                                <span style="font-weight: 600;">Vendedor (Caja):</span> {{ $vendedor_name ?? 'N/A' }}
                             </td>
                             <td style="width: 50%; padding: 2px 0;">
-                                <span style="font-weight: 600;">Surtidor (Preparó):</span> {{ $surtidor_name ?? 'N/A' }}
+                                <span style="font-weight: 600;">Surtidor :</span> {{ $surtidor_name ?? 'N/A' }}
                             </td>
                         </tr>
                         <tr>

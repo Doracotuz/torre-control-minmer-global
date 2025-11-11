@@ -532,7 +532,7 @@ class FfReportController extends Controller
 
         if ($waffle['percent_agotado'] > 10) {
             $level = 'danger';
-            $message = "ALERTA CRÍTICA: El inventario está en estado crítico. Más del 10% del catálogo ({$waffle['agotado']} SKUs) está agotado. Se requiere acción inmediata.";
+            $message = "ALERTA CRÍTICA: El inventario está en estado crítico. Más del 10% del catálogo ({$waffle['agotado']} SKUs) está agotado.";
         } elseif ($waffle['percent_agotado'] > 0 || $waffle['percent_bajo'] > 20) {
             $level = 'warning';
             $message = "ADVERTENCIA: El inventario muestra signos de estrés. Hay {$waffle['agotado']} SKUs agotados y {$waffle['bajo']} en alerta. Se recomienda monitoreo cercano.";
@@ -572,7 +572,7 @@ class FfReportController extends Controller
             $summary .= "Toda la actividad se concentró en un solo día: {$trivial['diaPico']->dia_formateado}. ";
         }
 
-        $summary .= "Operacionalmente, el principal desafío es la gestión de inventario; el análisis de razones de movimiento y las alertas de stock deben ser revisados por el equipo de logística para optimizar las próximas ventanas de venta.";
+        $summary .= "Operacionalmente, el principal desafío es la gestión de inventario y el auditaje de la mercancía, este proceso va a ser revisados por el equipo de logística para optimizar los próximos eventos de venta.";
         
         return $summary;
     }

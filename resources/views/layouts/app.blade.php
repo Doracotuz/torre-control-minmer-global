@@ -155,9 +155,9 @@
             .mobile-menu-user-email { color: #d1d5db; }
             body.theme-gold .mobile-menu-user-email { color: var(--accent) }
 
-            body {
+            /* body {
                 zoom: 90%;
-            }            
+            }             */
 
             .logo-container {
                 transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s ease;
@@ -201,7 +201,7 @@
                 position: fixed;
                 top: 0;
                 left: 0;
-                height: 120vh;
+                height: 100vh;
             }
 
 

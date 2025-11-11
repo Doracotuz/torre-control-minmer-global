@@ -129,7 +129,7 @@
         <table><tr>
             <td style="width: 50%;">@if(isset($logo_base_64)) <img src="{{ $logo_base_64 }}" alt="Logo" class="logo"> @endif</td>
             <td style="width: 50%;" class="doc-info">
-                <h1 class="doc-title">Reporte Ejecutivo</h1>
+                <h1 class="doc-title">Reporte de ventas</h1>
                 <p class="doc-subtitle">Evento "Friends & Family"</p>
                 <p class="doc-subtitle">Generado: {{ $report_date }}</p>
                 <p class="doc-subtitle" style="font-weight: bold;">Filtro: {{ $user_filter_name }}</p>
@@ -268,7 +268,7 @@
         
         <h2 class="section-title">Apéndice A: Análisis de Ventas</h2>
 
-        <div class="subsection-title">Desglose por Vendedor (Completo)</div>
+        <div class="subsection-title">Desglose por Vendedor</div>
         <table class="styled-table">
             <thead>
                 <tr>
@@ -350,7 +350,7 @@
             </tbody>
         </table>
         
-        <h2 class="section-title">Diagnóstico Final</h2>
+        <h2 class="section-title">Resumen Final</h2>
         <div class="diag-box success">
             <strong>Resumen Inteligente:</strong> {{ $final_summary }}
         </div>
