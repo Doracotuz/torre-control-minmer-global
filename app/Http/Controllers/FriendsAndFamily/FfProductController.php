@@ -30,7 +30,8 @@ class FfProductController extends Controller
             'type' => 'nullable|string|max:255',
             'brand' => 'nullable|string|max:255',
             'price' => 'required|numeric|min:0',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', 
+            'regular_price' => 'nullable|numeric|min:0|gte:price',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         $data = $validated;
@@ -54,6 +55,7 @@ class FfProductController extends Controller
             'type' => 'nullable|string|max:255',
             'brand' => 'nullable|string|max:255',
             'price' => 'required|numeric|min:0',
+            'regular_price' => 'nullable|numeric|min:0|gte:price',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'is_active' => 'required|boolean',
         ]);
@@ -99,7 +101,8 @@ class FfProductController extends Controller
                 'Descripción', 
                 'Tipo', 
                 'Marca', 
-                'Precio', 
+                'Precio Venta',
+                'Precio Regular',
                 'Nombre Archivo Foto (Opcional)'
             ];
             fputcsv($file, $columns);
@@ -114,6 +117,7 @@ class FfProductController extends Controller
                         $product->type,
                         $product->brand,
                         $product->price,
+                        $product->regular_price,
                         ''
                     ]);
                 }
@@ -171,10 +175,11 @@ class FfProductController extends Controller
                     'type'        => mb_convert_encoding(trim($row[2] ?? ''), 'UTF-8', 'ISO-8859-1'),
                     'brand'       => mb_convert_encoding(trim($row[3] ?? ''), 'UTF-8', 'ISO-8859-1'),
                     'price'       => (float)($row[4] ?? 0.00),
+                    'regular_price' => !empty($row[5]) ? (float)$row[5] : null,
                     'is_active'   => true,
                 ];
 
-                $photoFilename = trim($row[5] ?? '');
+                $photoFilename = trim($row[6] ?? '');
                 if (!empty($photoFilename) && $tempZipDir) {
                     $foundPath = $this->findFileRecursively($tempZipDir, $photoFilename);
                     if ($foundPath) {

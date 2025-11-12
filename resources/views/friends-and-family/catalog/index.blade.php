@@ -102,8 +102,13 @@
                                         <input type="text" x-model="manager.form.sku" :disabled="manager.form.id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm disabled:bg-gray-100" required>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700">Precio</label>
-                                        <input type="number" step="0.01" min="0" x-model="manager.form.price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                                        <label class="block text-sm font-medium text-gray-700">Precio Venta</label>
+                                        <input type="number" step="0.01" min="0" x-model="manager.form.price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Precio Regular</label>
+                                        <input type="number" step="0.01" min="0" x-model="manager.form.regular_price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800" placeholder="Opcional">
+                                        <p class="text-xs text-gray-500 mt-1">Si se llena, aparecerá tachado.</p>
                                     </div>
                                     <div class="md:col-span-2">
                                         <label class="block text-sm font-medium text-gray-700">Descripción</label>
@@ -310,7 +315,7 @@
                 photoPreview: null,
                 form: {
                     id: null, sku: '', description: '', type: '', brand: '',
-                    price: 0.00, photo: null, photo_url: null, is_active: true,
+                    price: 0.00, regular_price: null, photo: null, photo_url: null, is_active: true,
                 },
                 isUploadModalOpen: false,
                 uploadMessage: '',
@@ -342,7 +347,7 @@
                 },
                 
                 resetForm() {
-                    this.form = { id: null, sku: '', description: '', type: '', brand: '', price: 0.00, photo: null, photo_url: null, is_active: true };
+                    this.form = { id: null, sku: '', description: '', type: '', brand: '', price: 0.00, regular_price: null, photo: null, photo_url: null, is_active: true };
                     this.photoPreview = null;
                 },
 

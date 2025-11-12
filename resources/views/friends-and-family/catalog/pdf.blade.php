@@ -193,7 +193,7 @@
     <div class="header">
         <img src="{{ $logo_url }}" class="logo-corner">
         <div class="header-content">
-            <h1>Colección Friends & Family</h1>
+            <h1>Venta Friends & Family</h1>
         </div>
     </div>
 
@@ -228,7 +228,14 @@
                                 </div>
 
                                 <div class="price-block">
+                                    @if($product->regular_price && $product->regular_price > $product->price)
+                                        <span style="color: #353071ff; font-size: 12px; margin-right: 5px;">Precio regular: </span>
+                                        <span style="text-decoration: line-through; color: #9ca3af; font-size: 12px; margin-right: 5px;">
+                                            ${{ number_format($product->regular_price, 2) }}
+                                        </span>
+                                    @endif
                                     <span class="price-amount">
+                                        <span style="color: #32437bff; font-size: 15px; margin-right: 5px;">Precio Venta: </span>
                                         <span class="currency">$</span>{{ number_format($product->price, 2) }}
                                     </span>
                                 </div>

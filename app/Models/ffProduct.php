@@ -16,6 +16,7 @@ class ffProduct extends Model
         'type',
         'brand',
         'price',
+        'regular_price',
         'photo_path',
         'is_active',
     ];
@@ -23,6 +24,7 @@ class ffProduct extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'price' => 'decimal:2',
+        'regular_price' => 'decimal:2',
     ];
 
     protected $appends = ['photo_url'];
