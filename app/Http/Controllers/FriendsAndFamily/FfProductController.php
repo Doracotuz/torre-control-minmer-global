@@ -125,8 +125,10 @@ class FfProductController extends Controller
 
         $tempZipDir = storage_path('app/temp/' . uniqid('zip_'));
         if (!mkdir($tempZipDir, 0777, true)) {
-            return response()->json(['message' => 'Error: No se pudo crear el directorio temporal para las imágenes.'], 500);
+            return response()->json(['message' => 'Error de sistema: No se pudo crear directorio temporal.'], 500);
         }
+
+        $missingPhotos = [];
 
         try {
             $zip = new ZipArchive;
@@ -146,28 +148,31 @@ class FfProductController extends Controller
             DB::beginTransaction();
 
             while (($row = fgetcsv($handle)) !== FALSE) {
-                $sku = trim($row[0]);
+                $sku = mb_convert_encoding(trim($row[0] ?? ''), 'UTF-8', 'ISO-8859-1');
                 if (empty($sku)) continue;
 
                 $productData = [
-                    'description' => $row[1] ?? '',
-                    'type'        => $row[2] ?? null,
-                    'brand'       => $row[3] ?? null,
+                    'description' => mb_convert_encoding(trim($row[1] ?? ''), 'UTF-8', 'ISO-8859-1'),
+                    'type'        => mb_convert_encoding(trim($row[2] ?? ''), 'UTF-8', 'ISO-8859-1'),
+                    'brand'       => mb_convert_encoding(trim($row[3] ?? ''), 'UTF-8', 'ISO-8859-1'),
                     'price'       => (float)($row[4] ?? 0.00),
                     'is_active'   => true,
                 ];
 
-                $photoFilename = $row[5] ?? null;
+                $photoFilename = trim($row[5] ?? '');
+                
                 if (!empty($photoFilename)) {
-                    $localImagePath = $tempZipDir . '/' . $photoFilename;
-                    
-                    if (file_exists($localImagePath)) {
+                    $foundPath = $this->findFileRecursively($tempZipDir, $photoFilename);
+
+                    if ($foundPath) {
                         $s3Path = Storage::disk('s3')->putFileAs(
                             'ff_catalog_photos',
-                            $localImagePath,
-                            $sku . '.' . pathinfo($localImagePath, PATHINFO_EXTENSION)
+                            $foundPath,
+                            $sku . '.' . pathinfo($foundPath, PATHINFO_EXTENSION)
                         );
                         $productData['photo_path'] = $s3Path;
+                    } else {
+                        $missingPhotos[] = "SKU: $sku (Archivo buscado: '$photoFilename')";
                     }
                 }
 
@@ -183,16 +188,32 @@ class FfProductController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error en la importación síncrona de FF: ' . $e->getMessage());
+            Log::error('Error importación FF: ' . $e->getMessage());
             $this->cleanupTempDir($tempZipDir);
-            return response()->json(['message' => 'Error en la importación: ' . $e->getMessage()], 500);
+            return response()->json(['message' => 'Error crítico: ' . $e->getMessage()], 500);
         }
 
         $this->cleanupTempDir($tempZipDir);
 
-        return response()->json([
-            'message' => "¡Éxito! Se importaron o actualizaron $importCount productos."
-        ], 200);
+        $message = "¡Éxito! Se procesaron $importCount productos.";
+        if (count($missingPhotos) > 0) {
+            $message .= " Pero NO se encontraron las fotos para: " . implode(', ', $missingPhotos);
+        }
+
+        return response()->json(['message' => $message], 200);
+    }
+
+    private function findFileRecursively($rootDir, $fileName)
+    {
+        $directory = new \RecursiveDirectoryIterator($rootDir);
+        $iterator = new \RecursiveIteratorIterator($directory);
+
+        foreach ($iterator as $info) {
+            if ($info->isFile() && $info->getFilename() === $fileName) {
+                return $info->getPathname();
+            }
+        }
+        return null;
     }
 
     private function cleanupTempDir(string $tempZipDir): void
