@@ -83,70 +83,83 @@ class FfProductController extends Controller
 
     public function downloadTemplate()
     {
+        $products = ffProduct::orderBy('sku')->get();
+
         $headers = [
             'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="plantilla_productos_ff.csv"',
+            'Content-Disposition' => 'attachment; filename="plantilla_edicion_ff_'.date('Y-m-d').'.csv"',
         ];
 
-        $callback = function() {
+        $callback = function() use ($products) {
             $file = fopen('php://output', 'w');
+            fputs($file, "\xEF\xBB\xBF");
+            
             $columns = [
-                'SKU', 
-                'Description', 
-                'Type', 
-                'Brand', 
-                'Price', 
-                'Photo_Filename (Ej: foto1.jpg)'
+                'SKU (No cambiar)', 
+                'Descripción', 
+                'Tipo', 
+                'Marca', 
+                'Precio', 
+                'Nombre Archivo Foto (Opcional)'
             ];
             fputcsv($file, $columns);
-            $example = [
-                'SKU-001', 
-                'Taza Mágica Minmer', 
-                'Taza', 
-                'Minmer', 
-                '150.00',
-                'taza_minmer.jpg'
-            ];
-            fputcsv($file, $example);
+
+            if ($products->isEmpty()) {
+                fputcsv($file, ['SKU-EJEMPLO', 'Descripción Ejemplo', 'Tipo', 'Marca', '100.00', 'foto.jpg']);
+            } else {
+                foreach ($products as $product) {
+                    fputcsv($file, [
+                        $product->sku,
+                        $product->description,
+                        $product->type,
+                        $product->brand,
+                        $product->price,
+                        ''
+                    ]);
+                }
+            }
             fclose($file);
         };
 
         return new StreamedResponse($callback, 200, $headers);
     }
 
-
     public function import(Request $request)
     {
         $request->validate([
             'product_file' => 'required|file|mimes:csv,txt',
-            'image_zip'    => 'required|file|mimes:zip',
+            'image_zip'    => 'nullable|file|mimes:zip',
         ]);
 
         $csvPath = $request->file('product_file')->getPathname();
-        $zipPath = $request->file('image_zip')->getPathname();
-
-        $tempZipDir = storage_path('app/temp/' . uniqid('zip_'));
-        if (!mkdir($tempZipDir, 0777, true)) {
-            return response()->json(['message' => 'Error de sistema: No se pudo crear directorio temporal.'], 500);
+        $tempZipDir = null;
+        
+        if ($request->hasFile('image_zip')) {
+            $zipPath = $request->file('image_zip')->getPathname();
+            $tempZipDir = storage_path('app/temp/' . uniqid('zip_'));
+            if (!mkdir($tempZipDir, 0777, true)) {
+                return response()->json(['message' => 'Error: No se pudo crear directorio temporal.'], 500);
+            }
+            
+            $zip = new \ZipArchive;
+            if ($zip->open($zipPath) === TRUE) {
+                $zip->extractTo($tempZipDir);
+                $zip->close();
+            } else {
+                return response()->json(['message' => 'Error: El archivo ZIP es inválido.'], 422);
+            }
         }
 
         $missingPhotos = [];
+        $importCount = 0;
 
         try {
-            $zip = new ZipArchive;
-            if ($zip->open($zipPath) !== TRUE) {
-                throw new \Exception('No se pudo abrir el archivo ZIP.');
-            }
-            $zip->extractTo($tempZipDir);
-            $zip->close();
-
             if (($handle = fopen($csvPath, 'r')) === FALSE) {
                 throw new \Exception('No se pudo abrir el archivo CSV.');
             }
 
             fgetcsv($handle);
 
-            $importCount = 0;
             DB::beginTransaction();
 
             while (($row = fgetcsv($handle)) !== FALSE) {
@@ -162,10 +175,8 @@ class FfProductController extends Controller
                 ];
 
                 $photoFilename = trim($row[5] ?? '');
-                
-                if (!empty($photoFilename)) {
+                if (!empty($photoFilename) && $tempZipDir) {
                     $foundPath = $this->findFileRecursively($tempZipDir, $photoFilename);
-
                     if ($foundPath) {
                         $s3Path = Storage::disk('s3')->putFileAs(
                             'ff_catalog_photos',
@@ -174,14 +185,11 @@ class FfProductController extends Controller
                         );
                         $productData['photo_path'] = $s3Path;
                     } else {
-                        $missingPhotos[] = "SKU: $sku (Archivo buscado: '$photoFilename')";
+                        $missingPhotos[] = "$sku ($photoFilename)";
                     }
                 }
 
-                ffProduct::updateOrCreate(
-                    ['sku' => $sku],
-                    $productData
-                );
+                ffProduct::updateOrCreate(['sku' => $sku], $productData);
                 $importCount++;
             }
             
@@ -190,16 +198,15 @@ class FfProductController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error importación FF: ' . $e->getMessage());
-            $this->cleanupTempDir($tempZipDir);
-            return response()->json(['message' => 'Error crítico: ' . $e->getMessage()], 500);
+            if ($tempZipDir) $this->cleanupTempDir($tempZipDir);
+            return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
         }
 
-        $this->cleanupTempDir($tempZipDir);
+        if ($tempZipDir) $this->cleanupTempDir($tempZipDir);
 
-        $message = "¡Éxito! Se procesaron $importCount productos.";
+        $message = "¡Éxito! Se actualizaron/crearon $importCount productos.";
         if (count($missingPhotos) > 0) {
-            $message .= " Pero NO se encontraron las fotos para: " . implode(', ', $missingPhotos);
+            $message .= " (Nota: No se encontraron fotos para: " . implode(', ', $missingPhotos) . ")";
         }
 
         return response()->json(['message' => $message], 200);

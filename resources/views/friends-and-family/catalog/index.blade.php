@@ -188,26 +188,36 @@
                         style="display: none;">
                     </div>
 
-                    <div>
-                        <label class="text-sm font-medium text-gray-700">Paso 1: Descargar la plantilla</label>
-                        <a href="{{ route('ff.catalog.downloadTemplate') }}"
-                        class="mt-1 w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                        <i class="fas fa-file-csv mr-2 text-green-600"></i>
-                        Descargar plantilla_productos_ff.csv
-                        </a>
-                        <p class="mt-1 text-xs text-gray-500">Llena esta plantilla con tus productos. Asegúrate de que los nombres de las fotos coincidan con las imágenes del ZIP.</p>
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <h4 class="text-sm font-bold text-blue-800 mb-2"><i class="fas fa-info-circle mr-1"></i> ¿Cómo editar masivamente?</h4>
+                        <ol class="list-decimal list-inside text-xs text-blue-700 space-y-1">
+                            <li>Descarga la plantilla (ahora incluye tus productos actuales).</li>
+                            <li>Edita precios, nombres o añade nuevos productos en Excel.</li>
+                            <li>Sube el archivo CSV editado aquí.</li>
+                            <li><strong>El ZIP de imágenes es opcional</strong> (solo si subes fotos nuevas).</li>
+                        </ol>
                     </div>
 
                     <div>
-                        <label class="text-sm font-medium text-gray-700">Paso 2: Subir archivo de plantilla (.csv)</label>
+                        <label class="text-sm font-medium text-gray-700">Paso 1: Descargar Catalogo Actual</label>
+                        <a href="{{ route('ff.catalog.downloadTemplate') }}"
+                        class="mt-1 w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-download mr-2 text-blue-600"></i>
+                            Descargar plantilla.csv
+                        </a>
+                    </div>
+
+                    <div class="border-t pt-4">
+                        <label class="text-sm font-medium text-gray-700">Paso 2: Archivo CSV Editado <span class="text-red-500">*</span></label>
                         <input type="file" name="product_file" accept=".csv" required 
                             class="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 file:py-2 file:px-4 file:border-0 file:mr-4 file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300">
                     </div>
 
                     <div>
-                        <label class="text-sm font-medium text-gray-700">Paso 3: Subir ZIP con imágenes (.zip)</label>
-                        <input type="file" name="image_zip" accept=".zip" required
+                        <label class="text-sm font-medium text-gray-700">Paso 3: Imágenes Nuevas (Opcional)</label>
+                        <input type="file" name="image_zip" accept=".zip"
                             class="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 file:py-2 file:px-4 file:border-0 file:mr-4 file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300">
+                        <p class="text-xs text-gray-500 mt-1">Sube un .zip solo si agregaste nombres de archivo en la columna "Foto" del CSV.</p>
                     </div>
                 </div>
 
