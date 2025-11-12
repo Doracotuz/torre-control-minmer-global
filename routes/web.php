@@ -758,6 +758,8 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
 Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(function () {
     
     Route::get('/dashboard', [FfDashboardController::class, 'index'])->name('dashboard.index');
+    Route::get('/catalog/export-csv', [FfProductController::class, 'exportCsv'])->name('catalog.exportCsv');
+    Route::get('/catalog/export-pdf', [FfProductController::class, 'exportPdf'])->name('catalog.exportPdf');        
     Route::get('/catalog/download-template', [FfProductController::class, 'downloadTemplate'])->name('catalog.downloadTemplate');
     Route::resource('catalog', FfProductController::class);
     Route::post('/catalog/import', [FfProductController::class, 'import'])->name('catalog.import');
@@ -784,6 +786,7 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
         Route::get('/api/recent-movements', [FfReportController::class, 'apiGetRecentMovements'])->name('api.recentMovements');
         Route::get('/api/sale-details/{folio}', [FfReportController::class, 'apiGetSaleDetails'])->name('api.saleDetails');
         Route::post('/generate-executive', [FfReportController::class, 'generateExecutiveReport'])->name('generateExecutive');
+    
     });    
 });
 

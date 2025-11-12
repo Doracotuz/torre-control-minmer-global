@@ -24,6 +24,17 @@
                 class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 transition ease-in-out duration-150">
                 <i class="fas fa-plus mr-2"></i> Nuevo Producto
             </button> -->
+            <a href="{{ route('ff.catalog.exportCsv') }}" target="_blank"
+            class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50 transition ease-in-out duration-150 shadow-sm">
+                <i class="fas fa-file-csv mr-2 text-green-600"></i> Exportar CSV
+            </a>
+
+            <button 
+            @click="manager.openPdfModal()"
+            type="button"
+            class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
+                <i class="fas fa-file-pdf mr-2 text-red-400"></i> Catálogo PDF
+            </button>         
         </div>        
 
         <div class="py-12">
@@ -214,6 +225,69 @@
             </form>
         </div>
 
+        <div x-show="manager.isPdfModalOpen"
+            @keydown.escape.window="manager.isPdfModalOpen = false"
+            class="fixed inset-0 z-50 bg-gray-900 bg-opacity-60 flex items-center justify-center p-4 backdrop-blur-sm"
+            x-transition style="display: none;">
+            
+            <div @click.outside="manager.isPdfModalOpen = false"
+                class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all">
+                
+                <div class="bg-gray-800 p-4 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-white flex items-center">
+                        <i class="fas fa-percentage mr-2 text-yellow-500"></i> Ajuste de Precios
+                    </h3>
+                    <button @click="manager.isPdfModalOpen = false" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <p class="text-gray-600 text-sm mb-4">
+                        Ingresa el porcentaje que deseas aumentar al precio original para este catálogo PDF.
+                    </p>
+
+                    <div class="relative">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Porcentaje de aumento (%)</label>
+                        <div class="relative rounded-md shadow-sm">
+                            <input type="number" 
+                                x-model="manager.pdfPercentage" 
+                                x-ref="percentageInput"
+                                @keydown.enter="manager.generatePdf()"
+                                min="0" 
+                                class="block w-full pr-12 border-gray-300 rounded-md focus:ring-gray-800 focus:border-gray-800 pl-4 py-3 text-lg" 
+                                placeholder="Ej: 15">
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">%</span>
+                            </div>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">
+                            * Si ingresas <strong>0</strong>, se descargarán los precios originales.
+                        </p>
+                    </div>
+                    
+                    <div x-show="manager.pdfPercentage > 0" class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <p class="text-xs text-blue-800">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Ejemplo: Un producto de $100 costará 
+                            <strong x-text="'$' + (100 * (1 + (manager.pdfPercentage/100))).toFixed(2)"></strong>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end p-4 bg-gray-50 border-t space-x-3">
+                    <button @click="manager.isPdfModalOpen = false" 
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
+                        Cancelar
+                    </button>
+                    <button @click="manager.generatePdf()" 
+                        class="px-4 py-2 bg-gray-800 border border-transparent rounded-md text-sm font-medium text-white hover:bg-gray-700 shadow-md transition-colors flex items-center">
+                        <i class="fas fa-download mr-2"></i> Descargar PDF
+                    </button>
+                </div>
+            </div>
+        </div>        
+
     </div>
 
     <script>
@@ -231,6 +305,8 @@
                 isUploadModalOpen: false,
                 uploadMessage: '',
                 uploadSuccess: false,
+                isPdfModalOpen: false,
+                pdfPercentage: 0,
                 
                 init(initialProducts) {
                     this.products = initialProducts;
@@ -318,6 +394,18 @@
                         reader.readAsDataURL(file);
                     }
                 },
+
+                openPdfModal() {
+                    this.pdfPercentage = 0;
+                    this.isPdfModalOpen = true;
+                    this.$nextTick(() => this.$refs.percentageInput.focus());
+                },
+
+                generatePdf() {
+                    const url = "{{ route('ff.catalog.exportPdf') }}?percentage=" + this.pdfPercentage;
+                    window.open(url, '_blank');
+                    this.isPdfModalOpen = false;
+                },                
 
                 async saveProduct() {
                     if (this.isSaving) return;

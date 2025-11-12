@@ -11,6 +11,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use ZipArchive;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\View;
 
 class FfProductController extends Controller
 {
@@ -234,4 +236,73 @@ class FfProductController extends Controller
             Log::error('Error al limpiar directorio temporal de importación: ' . $e->getMessage());
         }
     }
+
+    public function exportCsv()
+    {
+        $products = ffProduct::orderBy('brand')->orderBy('description')->get();
+        $filename = 'catalogo_productos_ff_' . date('Y-m-d') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ];
+
+        $callback = function() use ($products) {
+            $file = fopen('php://output', 'w');
+            fputs($file, "\xEF\xBB\xBF"); 
+            fputcsv($file, ['SKU', 'Descripción', 'Marca', 'Tipo', 'Precio', 'Estado', 'URL Imagen']);
+
+            foreach ($products as $product) {
+                fputcsv($file, [
+                    $product->sku,
+                    $product->description,
+                    $product->brand,
+                    $product->type,
+                    $product->price,
+                    $product->is_active ? 'Activo' : 'Inactivo',
+                    $product->photo_url
+                ]);
+            }
+            fclose($file);
+        };
+
+        return new StreamedResponse($callback, 200, $headers);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        ini_set('max_execution_time', 300);
+        ini_set('memory_limit', '512M');
+
+        $percentage = $request->input('percentage', 0);
+
+        $products = ffProduct::orderBy('brand')
+                    ->orderBy('description')
+                    ->get();
+
+        if ($percentage > 0) {
+            foreach ($products as $product) {
+                $increase = $product->price * ($percentage / 100);
+                $product->price += $increase;
+            }
+        }
+        
+        $logoUrl = Storage::disk('s3')->url('logoMoetHennessy-2.PNG');
+
+        $data = [
+            'products' => $products,
+            'date' => now()->format('d/m/Y'),
+            'logo_url' => $logoUrl,
+            'percentage_text' => $percentage > 0 ? " (Precios +{$percentage}%)" : ""
+        ];
+
+        $pdf = Pdf::loadView('friends-and-family.catalog.pdf', $data);
+        
+        $pdf->setPaper('A4', 'portrait');
+        $pdf->setOption('isRemoteEnabled', true);
+        $pdf->setOption('dpi', 150);
+        
+        return $pdf->stream('Catalogo_FF_'.now()->format('Ymd').'.pdf');
+    }
+
 }
