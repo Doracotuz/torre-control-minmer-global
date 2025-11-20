@@ -296,7 +296,7 @@ class StatisticsController extends Controller
                 }
                 
                 fputcsv($file, [
-                    $activity->created_at->format('d M Y H:i'),
+                    $activity->created_at->format('d/m/Y H:i'),
                     $activity->user->name ?? 'N/A',
                     $activity->user->email ?? 'N/A',
                     $activity->user->area->name ?? 'N/A',
