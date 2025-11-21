@@ -233,7 +233,7 @@
          x-transition:leave-start="opacity-100 transform translate-y-0"
          x-transition:leave-end="opacity-0 transform -translate-y-4">
         
-        @if(Auth::user()->area?->name === 'VentasFF')
+        @if(Auth::user()->area?->name === 'Consrocio Monter')
             <div class="pt-2 pb-3 space-y-1">
                 <x-responsive-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="mobile-menu-link">
                     {{ __('Friends & Family') }}

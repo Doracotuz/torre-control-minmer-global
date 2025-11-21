@@ -696,13 +696,29 @@
 
                         <nav class="flex-1 px-4 py-6 space-y-2">
 
-                            @if(Auth::user()->area?->name === 'VentasFF')
+                            @if(Auth::user()->area?->name === 'Consorcio Monter')
+
+                                <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="nav-link-custom {{ request()->routeIs('dashboard') ? 'active-link' : '' }}">
+                                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.2099 15.89C20.5737 17.3945 19.5787 18.7202 18.3118 19.7513C17.0449 20.7824 15.5447 21.4874 13.9424 21.8048C12.34 22.1221 10.6843 22.0421 9.12006 21.5718C7.55578 21.1014 6.13054 20.2551 4.96893 19.1067C3.80733 17.9582 2.94473 16.5428 2.45655 14.9839C1.96837 13.4251 1.86948 11.7705 2.16851 10.1646C2.46755 8.55878 3.15541 7.05063 4.17196 5.77203C5.18851 4.49343 6.5028 3.48332 7.99992 2.83M21.9999 12C21.9999 10.6868 21.7413 9.38642 21.2387 8.17317C20.7362 6.95991 19.9996 5.85752 19.071 4.92893C18.1424 4.00035 17.04 3.26375 15.8267 2.7612C14.6135 2.25866 13.3131 2 11.9999 2V12H21.9999Z" /></svg>
+                                    <span class="nav-text">{{ __('Dashboard ') }}</span>
+                                </x-nav-link>                            
+
+                                <x-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="nav-link-custom {{ request()->routeIs('folders.index') ? 'active-link' : '' }}">
+                                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8V21H3V8M10 12H14M1 3H23V8H1V3Z" /></svg>
+                                    <span class="nav-text">
+                                        @if (Auth::user()->is_client)
+                                            {{ __('Archivos') }}
+                                        @else
+                                            {{ __('Gestión de Archivos') }}
+                                        @endif
+                                    </span>
+                                </x-nav-link>                            
                                 
                                 <x-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="nav-link-custom {{ request()->routeIs('ff.*') ? 'active-link' : '' }}">
                                     <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 00-3.741-7.11 9.094 9.094 0 00-7.11-3.741 9.094 9.094 0 00-7.11 3.741 9.094 9.094 0 003.741 7.11 9.094 9.094 0 007.11 3.741 9.094 9.094 0 007.11-3.741zM12 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
-                                    <span class="nav-text">{{ __('Friends & Family') }}</span>
+                                    <span class="nav-text">{{ __('Pedidos') }}</span>
                                 </x-nav-link>
 
                             @else

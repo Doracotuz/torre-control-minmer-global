@@ -85,9 +85,9 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     $user = Auth::user();
 
-    if ($user->area?->name === 'VentasFF') {
-        return redirect()->route('ff.dashboard.index');
-    }    
+    // if ($user->area?->name === 'Consorcio Monter') {
+    //     return redirect()->route('ff.dashboard.index');
+    // }    
 
     if ($user->isClient()) {
         return redirect()->route('tablero.index');

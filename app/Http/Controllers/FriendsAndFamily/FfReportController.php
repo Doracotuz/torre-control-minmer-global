@@ -681,7 +681,7 @@ class FfReportController extends Controller
         $data['kpis']['lowStockAlertsCount'] = $stockBajo;
 
         $vendedoresActivos = $data['ventasPorVendedor']->count();
-        $totalVendedores = User::whereHas('area', fn($q) => $q->where('name', 'VentasFF'))->count();
+        $totalVendedores = User::whereHas('area', fn($q) => $q->where('name', 'Consorcio Monter'))->count();
         if ($totalVendedores == 0) { $totalVendedores = max($vendedoresActivos, 1); }
         
         $data['pictogramChart'] = [
