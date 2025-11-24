@@ -144,7 +144,7 @@ class MaintenanceController extends Controller
     public function update(Request $request, Maintenance $maintenance)
     {
         $data = $request->validate([
-            'end_date' => 'required|date',
+            'end_date' => 'nullable|date', 
             'actions_taken' => 'required|string',
             'parts_used' => 'nullable|string',
             'cost' => 'nullable|numeric|min:0',
@@ -155,33 +155,38 @@ class MaintenanceController extends Controller
 
         DB::transaction(function () use ($data, $maintenance, $request) { 
             
-            $eventTime = now();
-            $endDate = \Carbon\Carbon::parse($data['end_date'])
-                        ->setTime($eventTime->hour, $eventTime->minute, $eventTime->second);
-            
-            $data['end_date'] = $endDate;
+            if (!empty($data['end_date'])) {
+                $eventTime = now();
+                $data['end_date'] = \Carbon\Carbon::parse($data['end_date'])
+                            ->setTime($eventTime->hour, $eventTime->minute, $eventTime->second);
+            } else {
+                $data['end_date'] = null;
+            }
 
             for ($i = 1; $i <= 3; $i++) {
                 $fileInputName = "photo_{$i}";
                 $dbColumnName = "photo_{$i}_path";
                 $removeInputName = "remove_photo_{$i}";
+
                 if ($request->input($removeInputName) === 'true') {
                     if ($maintenance->{$dbColumnName}) {
                         Storage::disk('s3')->delete($maintenance->{$dbColumnName});
                     }
                     $data[$dbColumnName] = null;
                 }
+
                 if ($request->hasFile($fileInputName)) {
                     if ($maintenance->{$dbColumnName} && !isset($data[$dbColumnName])) {
                         Storage::disk('s3')->delete($maintenance->{$dbColumnName});
                     }
-                    
                     $data[$dbColumnName] = $request->file($fileInputName)->store('maintenances/photos', 's3');
                 }
             }
 
             $maintenance->update($data);
-            if ($maintenance->asset->status !== 'En Almacén') {
+
+            if (!empty($data['end_date']) && $maintenance->asset->status !== 'En Almacén') {
+                
                 $asset = $maintenance->asset;
                 $asset->status = 'En Almacén';
                 $asset->save();
@@ -190,7 +195,7 @@ class MaintenanceController extends Controller
                     'user_id' => Auth::id(),
                     'action_type' => 'Mantenimiento Completado',
                     'notes' => "Se completó el mantenimiento. El activo vuelve a Almacén.",
-                    'event_date' => $endDate,
+                    'event_date' => $data['end_date'],
                     'loggable_id' => $maintenance->id,
                     'loggable_type' => \App\Models\Maintenance::class,
                 ]);

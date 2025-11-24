@@ -48,7 +48,12 @@
             <div class="space-y-6">
                 <div>
                     <label for="end_date" class="form-label">Fecha de Finalización</label>
-                    <input type="date" id="end_date" name="end_date" value="{{ old('end_date', $maintenance->end_date ? $maintenance->end_date->format('Y-m-d') : date('Y-m-d')) }}" class="form-input w-full" required>
+                    <input type="date" 
+                        id="end_date" 
+                        name="end_date" 
+                        value="{{ old('end_date', $maintenance->end_date ? $maintenance->end_date->format('Y-m-d') : '') }}" 
+                        class="form-input w-full">
+                    <p class="text-xs text-gray-500 mt-1">Dejar vacío si el mantenimiento continúa en proceso.</p>
                 </div>
                 <div>
                     <label for="actions_taken" class="form-label">Acciones Realizadas</label>
@@ -115,7 +120,13 @@
             @endif
             
             <div class="mt-8 pt-6 border-t flex justify-end">
-                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                <button type="submit" class="btn btn-primary">
+                    @if($maintenance->end_date)
+                        Actualizar Datos
+                    @else
+                        <i class="fas fa-check-circle mr-2"></i> Finalizar y Liberar Activo
+                    @endif
+                </button>
             </div>
         </form>
     </div>
