@@ -1,146 +1,295 @@
 @extends('layouts.app')
 
 @section('content')
+
 <style>
     :root {
-        --color-primary: #2c3856;
-        --color-accent: #ff9c00;
-        --color-text-primary: #2b2b2b;
-        --color-text-secondary: #666666;
-        --color-surface: #ffffff;
-        --color-background: #f3f4f6;
-        --color-border: #d1d5db;
+        --primary: #2c3856;
+        --primary-light: #3d4d75;
+        --accent: #ff9c00;
+        --bg-color: #f3f4f6;
     }
-    body { 
-        background-color: var(--color-background); 
+    [x-cloak] { display: none !important; }
+
+    .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
     }
-    .form-label { font-weight: 600; color: var(--color-text-primary); margin-bottom: 0.5rem; display: block; }
-    .form-input, .form-select, .form-textarea { 
-        border-radius: 0.5rem; 
-        border: 1px solid var(--color-border); 
-        transition: all 150ms ease-in-out; 
-        width: 100%; 
-        padding: 0.75rem 1rem; 
+
+    .form-floating-icon {
+        position: absolute;
+        top: 50%;
+        left: 1rem;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        pointer-events: none;
     }
-    .form-input:focus, .form-select:focus, .form-textarea:focus { 
-        --tw-ring-color: var(--color-primary); 
-        border-color: var(--color-primary); 
-        box-shadow: 0 0 0 2px var(--tw-ring-color); 
+    
+    .modern-input {
+        padding-left: 2.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+        background-color: #f9fafb;
     }
-    .btn { padding: 0.65rem 1.25rem; border-radius: 0.5rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; transition: all 200ms ease-in-out; border: 1px solid transparent; }
-    .btn:hover { transform: translateY(-2px); }
-    .btn-primary { background-color: var(--color-primary); color: white; }
-    .btn-primary:hover { background-color: #212a41; }
-    .btn-secondary { background-color: var(--color-surface); color: var(--color-text-secondary); border-color: var(--color-border); }
-    .btn-secondary:hover { background-color: #f9fafb; }
+    .modern-input:focus {
+        background-color: #fff;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(44, 56, 86, 0.1);
+    }
 </style>
-<div class="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="mb-8">
-        <a href="{{ route('asset-management.maintenances.index') }}" class="text-sm text-gray-500 hover:text-gray-800">&larr; Volver al Dashboard de Mantenimientos</a>
-        <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight mt-2">Completar Mantenimiento</h1>
+
+<div class="min-h-screen bg-[#f3f4f6] pb-20">
+    
+    <div class="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] pt-10 pb-32 px-4 sm:px-6 lg:px-8 shadow-xl rounded-b-[3rem] relative overflow-hidden">
+        <div class="absolute right-0 top-0 h-full w-1/2 bg-white/5 skew-x-12 transform origin-top-right"></div>
+        <div class="absolute left-10 bottom-10 text-[10rem] text-white/5 font-bold leading-none select-none">
+            #{{ $maintenance->id }}
+        </div>
+
+        <div class="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end">
+            <div class="text-white">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-white/10">
+                        {{ $maintenance->type }}
+                    </span>
+                    @if($maintenance->end_date)
+                        <span class="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
+                            Cerrado
+                        </span>
+                    @else
+                        <span class="bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg animate-pulse">
+                            En Proceso
+                        </span>
+                    @endif
+                </div>
+                <h1 class="text-4xl md:text-5xl font-black tracking-tight">Mantenimiento</h1>
+                <p class="mt-2 text-blue-100 text-lg flex items-center">
+                    <i class="fas fa-cube mr-2 opacity-70"></i> {{ $maintenance->asset->model->name }} 
+                    <span class="mx-2 opacity-50">|</span> 
+                    <span class="font-mono opacity-90">{{ $maintenance->asset->asset_tag }}</span>
+                </p>
+            </div>
+            <div class="mt-6 md:mt-0">
+                <a href="{{ route('asset-management.maintenances.index') }}" class="group flex items-center px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl backdrop-blur-md transition-all border border-white/10">
+                    <i class="fas fa-arrow-left mr-2 group-hover:-translate-x-1 transition-transform"></i>
+                    Volver al Tablero
+                </a>
+            </div>
+        </div>
     </div>
 
-    <div class="bg-white p-8 rounded-xl shadow-lg mt-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-20">
         <form action="{{ route('asset-management.maintenances.update', $maintenance) }}" 
-            method="POST" 
-            enctype="multipart/form-data"
-            x-data="{ 
-                endDate: '{{ old('end_date', $maintenance->end_date ? $maintenance->end_date->format('Y-m-d') : '') }}' 
-            }">
-            
+              method="POST" 
+              enctype="multipart/form-data"
+              x-data="{ 
+                  endDate: '{{ old('end_date', $maintenance->end_date ? $maintenance->end_date->format('Y-m-d') : '') }}' 
+              }">
             @csrf
             @method('PUT')
-            
-            <div class="space-y-6">
-                <div>
-                    <label for="end_date" class="form-label">Fecha de Finalización</label>
-                    <input type="date" 
-                        id="end_date" 
-                        name="end_date" 
-                        x-model="endDate" 
-                        class="form-input w-full">
-                    <p class="text-xs text-gray-500 mt-1">Dejar vacío si el mantenimiento continúa en proceso.</p>
-                </div>
-                <div>
-                    <label for="actions_taken" class="form-label">Acciones Realizadas</label>
-                    <textarea id="actions_taken" name="actions_taken" rows="4" class="form-textarea w-full" required>{{ old('actions_taken', $maintenance->actions_taken) }}</textarea>
-                </div>
-                <div>
-                    <label for="parts_used" class="form-label">Insumos o Partes Utilizadas (Opcional)</label>
-                    <textarea id="parts_used" name="parts_used" rows="3" class="form-textarea w-full">{{ old('parts_used', $maintenance->parts_used) }}</textarea>
-                </div>
-                <div>
-                    <label for="cost" class="form-label">Costo Total (Opcional)</label>
-                    <input type="number" id="cost" name="cost" step="0.01" value="{{ old('cost', $maintenance->cost) }}" class="form-input w-full">
-                </div>
 
-                <div class="border-t border-gray-200 pt-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Evidencia Fotográfica (Opcional)</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        @for ($i = 1; $i <= 3; $i++)
-                            @php
-                                $photoPath = "photo_{$i}_path";
-                                $currentPhoto = $maintenance->$photoPath;
-                                $photoUrl = $currentPhoto ? Storage::disk('s3')->url($currentPhoto) : null;
-                            @endphp
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <div class="lg:col-span-2 space-y-6">
+                    
+                    <div class="glass-card rounded-2xl p-6 md:p-8 bg-white">
+                        <h3 class="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4 mb-6 flex items-center">
+                            <i class="fas fa-clipboard-list text-[var(--primary)] mr-2 bg-blue-50 p-2 rounded-lg"></i>
+                            Reporte Técnico
+                        </h3>
 
-                            <div x-data="{ 
-                                    hasPhoto: {{ $currentPhoto ? 'true' : 'false' }}, 
-                                    markedForDeletion: false 
-                                }" 
-                                class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                
-                                <label class="form-label mb-2">Foto {{ $i }}</label>
-
-                                <input type="hidden" name="remove_photo_{{ $i }}" x-model="markedForDeletion">
-
-                                <div x-show="hasPhoto && !markedForDeletion" class="mb-3 relative">
-                                    <img src="{{ $photoUrl }}" alt="Foto {{ $i }}" class="w-full h-32 object-cover rounded-lg border">
-                                    <button type="button" 
-                                            @click="markedForDeletion = true"
-                                            class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 focus:outline-none"
-                                            title="Eliminar foto">
-                                        <i class="fas fa-times text-xs px-1"></i>
-                                    </button>
+                        <div class="space-y-6">
+                            <div class="bg-blue-50/50 p-5 rounded-xl border border-blue-100 transition-all"
+                                 :class="endDate ? 'ring-2 ring-green-400 bg-green-50/30' : ''">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Finalización / Cierre</label>
+                                <div class="relative">
+                                    <i class="fas fa-calendar-check form-floating-icon z-10"></i>
+                                    <input type="date" 
+                                           name="end_date" 
+                                           x-model="endDate"
+                                           class="modern-input w-full py-3 form-input cursor-pointer">
                                 </div>
-
-                                <div x-show="!hasPhoto || markedForDeletion">
-                                    <input type="file" 
-                                        name="photo_{{ $i }}" 
-                                        accept="image/*"
-                                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors">
-                                    <p x-show="markedForDeletion" class="text-xs text-red-500 mt-2 font-semibold">
-                                        * La foto anterior será eliminada al guardar.
-                                    </p>
+                                <div class="mt-2 flex items-start gap-2 text-xs transition-all"
+                                     :class="endDate ? 'text-green-600 font-semibold' : 'text-gray-500'">
+                                    <i class="fas mt-0.5" :class="endDate ? 'fa-check-circle' : 'fa-info-circle'"></i>
+                                    <span x-text="endDate ? 'Al guardar, el ticket se cerrará y el activo volverá a almacén.' : 'Dejar vacío para guardar avances sin cerrar el ticket.'"></span>
                                 </div>
                             </div>
-                        @endfor
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Acciones Realizadas <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <i class="fas fa-tools form-floating-icon top-6"></i>
+                                    <textarea name="actions_taken" rows="4" required
+                                              class="modern-input w-full py-3 form-textarea"
+                                              placeholder="Describa detalladamente la reparación o mantenimiento...">{{ old('actions_taken', $maintenance->actions_taken) }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Insumos / Partes</label>
+                                    <div class="relative">
+                                        <i class="fas fa-microchip form-floating-icon top-6"></i>
+                                        <textarea name="parts_used" rows="3"
+                                                  class="modern-input w-full py-3 form-textarea"
+                                                  placeholder="Ej: Batería, SSD...">{{ old('parts_used', $maintenance->parts_used) }}</textarea>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Costo Total</label>
+                                    <div class="relative">
+                                        <i class="fas fa-dollar-sign form-floating-icon"></i>
+                                        <input type="number" name="cost" step="0.01" 
+                                               value="{{ old('cost', $maintenance->cost) }}"
+                                               class="modern-input w-full py-3 form-input text-lg font-mono" placeholder="0.00">
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-1 pl-2">Moneda Nacional (MXN)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-6 md:p-8 bg-white">
+                        <h3 class="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4 mb-6 flex items-center">
+                            <i class="fas fa-camera text-[var(--accent)] mr-2 bg-orange-50 p-2 rounded-lg"></i>
+                            Evidencia Fotográfica
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            @for ($i = 1; $i <= 3; $i++)
+                                @php
+                                    $photoPath = "photo_{$i}_path";
+                                    $currentPhoto = $maintenance->$photoPath;
+                                    $photoUrl = $currentPhoto ? Storage::disk('s3')->url($currentPhoto) : null;
+                                @endphp
+
+                                <div x-data="{ 
+                                        hasPhoto: {{ $currentPhoto ? 'true' : 'false' }}, 
+                                        markedForDeletion: false,
+                                        previewUrl: '{{ $photoUrl }}'
+                                     }" 
+                                     class="relative group">
+                                    
+                                    <input type="hidden" name="remove_photo_{{ $i }}" x-model="markedForDeletion">
+                                    
+                                    <div x-show="hasPhoto && !markedForDeletion" class="relative h-40 rounded-xl overflow-hidden border border-gray-200 shadow-sm group-hover:shadow-md transition-all">
+                                        <img :src="previewUrl" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                                        
+                                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button type="button" @click="markedForDeletion = true" 
+                                                    class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transform hover:scale-110 transition-all shadow-lg" title="Eliminar Foto">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                        <div class="absolute top-2 left-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm">
+                                            Foto {{ $i }}
+                                        </div>
+                                    </div>
+
+                                    <div x-show="!hasPhoto || markedForDeletion" 
+                                         class="h-40 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-gray-50 hover:bg-white hover:border-[var(--primary)] transition-all cursor-pointer group-hover:shadow-md relative">
+                                        
+                                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-300 mb-2 group-hover:text-[var(--primary)] transition-colors"></i>
+                                        <span class="text-xs font-semibold text-gray-500 group-hover:text-[var(--primary)]">Subir Foto {{ $i }}</span>
+                                        
+                                        <input type="file" name="photo_{{ $i }}" accept="image/*"
+                                               class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                               @change="hasPhoto = true; markedForDeletion = false; /* En JS real aquí haríamos preview local */">
+                                    </div>
+                                    
+                                    <p x-show="markedForDeletion" class="text-[10px] text-red-500 mt-1 text-center font-bold animate-pulse">
+                                        <i class="fas fa-times-circle"></i> Se eliminará al guardar
+                                    </p>
+                                </div>
+                            @endfor
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            @if ($maintenance->substitute_asset_id)
-                <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-                    <strong>Atención:</strong> Al completar este mantenimiento, se registrará automáticamente la devolución del activo sustituto ({{ $maintenance->substituteAsset->asset_tag }}) que fue prestado.
+                <div class="space-y-6">
+                    
+                    <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-[var(--primary)]">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Sobre el Activo</h4>
+                        
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="h-16 w-16 rounded-xl bg-gray-100 flex items-center justify-center text-3xl text-[var(--primary)]">
+                                @if($maintenance->asset->model->category->name == 'Laptop') <i class="fas fa-laptop"></i>
+                                @elseif($maintenance->asset->model->category->name == 'Celular') <i class="fas fa-mobile-alt"></i>
+                                @else <i class="fas fa-box"></i> @endif
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-800 leading-tight">{{ $maintenance->asset->model->name }}</div>
+                                <div class="text-xs text-gray-500 mt-1">{{ $maintenance->asset->model->manufacturer->name }}</div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between border-b border-gray-100 pb-2">
+                                <span class="text-gray-500">Serie:</span>
+                                <span class="font-mono font-medium text-gray-800">{{ $maintenance->asset->serial_number }}</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-100 pb-2">
+                                <span class="text-gray-500">Ubicación:</span>
+                                <span class="font-medium text-gray-800">{{ $maintenance->asset->site->name }}</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-100 pb-2">
+                                <span class="text-gray-500">Diagnóstico Inicial:</span>
+                            </div>
+                            <p class="text-gray-600 bg-gray-50 p-3 rounded-lg text-xs italic">
+                                "{{ $maintenance->diagnosis }}"
+                            </p>
+                        </div>
+                    </div>
+
+                    @if ($maintenance->substitute_asset_id)
+                        <div class="bg-amber-50 rounded-2xl p-5 border border-amber-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 text-amber-100 text-6xl opacity-50">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <div class="relative z-10">
+                                <h4 class="text-amber-800 font-bold text-sm flex items-center mb-2">
+                                    <i class="fas fa-exclamation-triangle mr-2"></i> Activo Sustituto
+                                </h4>
+                                <p class="text-xs text-amber-700 mb-3 leading-relaxed">
+                                    El equipo <strong>{{ $maintenance->substituteAsset->asset_tag }}</strong> está prestado temporalmente.
+                                </p>
+                                <div class="text-[10px] bg-white/50 p-2 rounded border border-amber-200 text-amber-900 font-semibold text-center">
+                                    Se devolverá automáticamente al finalizar.
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    <div class="sticky top-6">
+                        <button type="submit" 
+                                class="w-full py-4 rounded-xl font-bold text-white shadow-lg shadow-blue-900/20 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex items-center justify-center group"
+                                :class="endDate ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-[var(--primary)] hover:bg-[var(--primary-light)]'">
+                            
+                            <template x-if="endDate">
+                                <span class="flex items-center">
+                                    <i class="fas fa-check-circle text-xl mr-3 animate-bounce"></i>
+                                    <span>FINALIZAR TICKET</span>
+                                </span>
+                            </template>
+                            
+                            <template x-if="!endDate">
+                                <span class="flex items-center">
+                                    <i class="fas fa-save text-xl mr-3 group-hover:rotate-12 transition-transform"></i>
+                                    <span>GUARDAR AVANCES</span>
+                                </span>
+                            </template>
+                        </button>
+                        <p class="text-center text-xs text-gray-400 mt-3">
+                            Todos los cambios quedan registrados en el historial.
+                        </p>
+                    </div>
+
                 </div>
-            @endif
-            
-            <div class="mt-8 pt-6 border-t flex justify-end">
-                <button type="submit" class="btn btn-primary transition-all duration-300">
-                    {{-- Caso 1: Hay fecha seleccionada (Ya sea de la BD o escrita ahorita) --}}
-                    <template x-if="endDate">
-                        <span>
-                            <i class="fas fa-check-circle mr-2"></i> Finalizar y Liberar Activo
-                        </span>
-                    </template>
-
-                    {{-- Caso 2: El campo de fecha está vacío --}}
-                    <template x-if="!endDate">
-                        <span>
-                            <i class="fas fa-save mr-2"></i> Guardar Cambios (Sigue en Taller)
-                        </span>
-                    </template>
-                </button>
             </div>
         </form>
     </div>
