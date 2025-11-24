@@ -41,7 +41,13 @@
     </div>
 
     <div class="bg-white p-8 rounded-xl shadow-lg mt-8">
-        <form action="{{ route('asset-management.maintenances.update', $maintenance) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('asset-management.maintenances.update', $maintenance) }}" 
+            method="POST" 
+            enctype="multipart/form-data"
+            x-data="{ 
+                endDate: '{{ old('end_date', $maintenance->end_date ? $maintenance->end_date->format('Y-m-d') : '') }}' 
+            }">
+            
             @csrf
             @method('PUT')
             
@@ -51,7 +57,7 @@
                     <input type="date" 
                         id="end_date" 
                         name="end_date" 
-                        value="{{ old('end_date', $maintenance->end_date ? $maintenance->end_date->format('Y-m-d') : '') }}" 
+                        x-model="endDate" 
                         class="form-input w-full">
                     <p class="text-xs text-gray-500 mt-1">Dejar vacío si el mantenimiento continúa en proceso.</p>
                 </div>
@@ -120,12 +126,20 @@
             @endif
             
             <div class="mt-8 pt-6 border-t flex justify-end">
-                <button type="submit" class="btn btn-primary">
-                    @if($maintenance->end_date)
-                        Actualizar Datos
-                    @else
-                        <i class="fas fa-check-circle mr-2"></i> Finalizar y Liberar Activo
-                    @endif
+                <button type="submit" class="btn btn-primary transition-all duration-300">
+                    {{-- Caso 1: Hay fecha seleccionada (Ya sea de la BD o escrita ahorita) --}}
+                    <template x-if="endDate">
+                        <span>
+                            <i class="fas fa-check-circle mr-2"></i> Finalizar y Liberar Activo
+                        </span>
+                    </template>
+
+                    {{-- Caso 2: El campo de fecha está vacío --}}
+                    <template x-if="!endDate">
+                        <span>
+                            <i class="fas fa-save mr-2"></i> Guardar Cambios (Sigue en Taller)
+                        </span>
+                    </template>
                 </button>
             </div>
         </form>
