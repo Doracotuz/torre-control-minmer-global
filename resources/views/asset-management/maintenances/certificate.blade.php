@@ -171,6 +171,30 @@
             <p style="font-size: 10px;">{{ $maintenance->parts_used }}</p>
         </div>
         @endif
+
+        @if(count($evidencePhotos) > 0)
+        <div style="margin-top: 20px;">
+            <h3 style="color: var(--color-primary); border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; margin-bottom: 15px;">
+                Evidencia Fotográfica
+            </h3>
+            
+            <table style="width: 100%; border: none;">
+                <tr>
+                    @foreach($evidencePhotos as $photoBase64)
+                        <td style="width: 33%; padding: 5px; border: none; text-align: center; vertical-align: top;">
+                            <div style="border: 1px solid #ccc; padding: 3px; background: #fff;">
+                                {{-- Ajustamos max-height para que no ocupen toda la hoja --}}
+                                <img src="{{ $photoBase64 }}" style="width: 100%; max-height: 150px; object-fit: contain;">
+                            </div>
+                        </td>
+                    @endforeach
+                    @for($i = count($evidencePhotos); $i < 3; $i++)
+                        <td style="width: 33%; border: none;"></td>
+                    @endfor
+                </tr>
+            </table>
+        </div>
+        @endif
         
         <div class="signatures">
             <p class="text-justify">

@@ -18,7 +18,13 @@ class MaintenanceController extends Controller
             ->latest('start_date')
             ->paginate(15);
 
-        return view('asset-management.maintenances.index', compact('maintenances'));
+        $stats = [
+            'active' => Maintenance::whereNull('end_date')->count(),
+            'completed_month' => Maintenance::whereNotNull('end_date')->whereMonth('end_date', now()->month)->count(),
+            'avg_cost' => Maintenance::whereNotNull('cost')->avg('cost') ?? 0,
+        ];            
+
+        return view('asset-management.maintenances.index', compact('maintenances', 'stats'));
     }
 
     public function create(HardwareAsset $asset)
@@ -201,22 +207,35 @@ class MaintenanceController extends Controller
     {
         $maintenance->load(['asset.model.category', 'asset.model.manufacturer', 'asset.site']);
 
-        $logoPath = 'LogoAzul.png';
+        $logoPath = 'LogoAzul.png'; 
         $logoBase64 = null;
         if (\Illuminate\Support\Facades\Storage::disk('s3')->exists($logoPath)) {
             $logoContent = \Illuminate\Support\Facades\Storage::disk('s3')->get($logoPath);
             $logoBase64 = 'data:image/png;base64,' . base64_encode($logoContent);
         }
         
+        $evidencePhotos = [];
+        for ($i = 1; $i <= 3; $i++) {
+            $colName = "photo_{$i}_path";
+            $path = $maintenance->$colName;
+
+            if ($path && \Illuminate\Support\Facades\Storage::disk('s3')->exists($path)) {
+                $fileContent = \Illuminate\Support\Facades\Storage::disk('s3')->get($path);
+                $mimeType = \Illuminate\Support\Facades\Storage::disk('s3')->mimeType($path);
+                $evidencePhotos[] = 'data:' . $mimeType . ';base64,' . base64_encode($fileContent);
+            }
+        }
+
         $data = [
             'maintenance' => $maintenance,
             'logoBase64' => $logoBase64,
+            'evidencePhotos' => $evidencePhotos,
         ];
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('asset-management.maintenances.certificate', $data);
         $fileName = 'Certificado-Mantenimiento-' . $maintenance->asset->asset_tag . '.pdf';
 
         return $pdf->stream($fileName);
-    }    
+    }
 
 }
