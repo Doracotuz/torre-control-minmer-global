@@ -8,15 +8,36 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use League\Csv\Writer;
 
 class MaintenanceController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
-        $maintenances = Maintenance::with(['asset.model', 'substituteAsset.model'])
-            ->latest('start_date')
-            ->paginate(15);
+        $query = Maintenance::with(['asset.model.category', 'substituteAsset.model'])
+            ->latest('start_date');
+
+        if ($request->filled('search')) {
+            $term = $request->search;
+            $query->whereHas('asset', function($q) use ($term) {
+                $q->where('asset_tag', 'like', "%$term%")
+                ->orWhere('serial_number', 'like', "%$term%")
+                ->orWhereHas('model', fn($mq) => $mq->where('name', 'like', "%$term%"));
+            })->orWhere('supplier', 'like', "%$term%");
+        }
+
+        if ($request->get('status') === 'active') {
+            $query->whereNull('end_date');
+        } elseif ($request->get('status') === 'completed') {
+            $query->whereNotNull('end_date');
+        }
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        $maintenances = $query->paginate(15)->withQueryString();
 
         $stats = [
             'active' => Maintenance::whereNull('end_date')->count(),
@@ -237,5 +258,33 @@ class MaintenanceController extends Controller
 
         return $pdf->stream($fileName);
     }
+
+    public function exportCsv()
+    {
+        $maintenances = Maintenance::with(['asset.model', 'asset.site'])->latest('start_date')->get();
+
+        $csv = Writer::createFromString('');
+        $csv->setOutputBOM(Writer::BOM_UTF8);
+        $csv->insertOne(['ID', 'Activo', 'Serie', 'Tipo', 'Diagnóstico', 'Proveedor', 'Inicio', 'Fin', 'Costo']);
+
+        foreach ($maintenances as $m) {
+            $csv->insertOne([
+                $m->id,
+                $m->asset->asset_tag ?? 'N/A',
+                $m->asset->serial_number ?? 'N/A',
+                $m->type,
+                $m->diagnosis,
+                $m->supplier ?? 'Interno',
+                $m->start_date->format('Y-m-d'),
+                $m->end_date ? $m->end_date->format('Y-m-d') : 'En Proceso',
+                $m->cost ?? 0,
+            ]);
+        }
+
+        return response((string) $csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="reporte_mantenimientos_' . date('Y-m-d') . '.csv"',
+        ]);
+    }    
 
 }

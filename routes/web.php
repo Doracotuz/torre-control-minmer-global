@@ -198,7 +198,7 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth', 'high.privilege'])->prefix('asset-management')->name('asset-management.')->group(function () {
     Route::get('/', [App\Http\Controllers\AssetManagement\AssetController::class, 'index'])->name('dashboard');
-
+    Route::get('maintenances/export', [App\Http\Controllers\AssetManagement\MaintenanceController::class, 'exportCsv'])->name('maintenances.export');
     Route::resource('assets', App\Http\Controllers\AssetManagement\AssetController::class);
     Route::get('assets-export-csv', [App\Http\Controllers\AssetManagement\AssetController::class, 'exportCsv'])->name('assets.export-csv');
     Route::get('assets-filter', [App\Http\Controllers\AssetManagement\AssetController::class, 'filter'])->name('assets.filter');    

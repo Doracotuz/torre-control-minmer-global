@@ -36,7 +36,7 @@
     }
 </style>
 
-<div class="min-h-screen bg-[#f3f4f6] pb-20" x-data="{ search: '' }">
+<div class="min-h-screen bg-[#f3f4f6] pb-20" x-data="{ search: '', showFilters: false }">
     
     <div class="bg-[var(--primary)] pt-12 pb-24 px-4 sm:px-6 lg:px-8 rounded-b-[3rem] shadow-2xl relative overflow-hidden">
         <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
@@ -122,14 +122,59 @@
                 <input type="text" placeholder="Buscar por activo, serie o proveedor..." class="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-[var(--primary)] shadow-inner transition-all" x-model="search">
             </div>
             <div class="flex gap-2">
-                <button class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-semibold transition-colors">
+                <button @click="showFilters = !showFilters" 
+                        :class="{'bg-gray-200 text-gray-800': showFilters, 'bg-gray-100 text-gray-600': !showFilters}"
+                        class="px-4 py-2 hover:bg-gray-200 rounded-lg text-sm font-semibold transition-colors">
                     <i class="fas fa-filter mr-2"></i> Filtros
                 </button>
-                <button class="px-4 py-2 text-white bg-[var(--primary)] hover:bg-[var(--primary-light)] rounded-lg text-sm font-semibold shadow-lg hover:shadow-xl transition-all">
+                <a href="{{ route('asset-management.maintenances.export') }}" 
+                class="px-4 py-2 text-white bg-[var(--primary)] hover:bg-[var(--primary-light)] rounded-lg text-sm font-semibold shadow-lg hover:shadow-xl transition-all flex items-center">
                     <i class="fas fa-file-download mr-2"></i> Exportar
-                </button>
+                </a>
             </div>
         </div>
+        <div x-show="showFilters" x-cloak 
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 -translate-y-2"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-6">
+            
+            <form action="{{ route('asset-management.maintenances.index') }}" method="GET">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {{-- Filtro Estado --}}
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Estado</label>
+                        <select name="status" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[var(--primary)]">
+                            <option value="">Todos</option>
+                            <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>En Taller (Activos)</option>
+                            <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completados</option>
+                        </select>
+                    </div>
+
+                    {{-- Filtro Tipo --}}
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo</label>
+                        <select name="type" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[var(--primary)]">
+                            <option value="">Todos</option>
+                            <option value="Preventivo" {{ request('type') == 'Preventivo' ? 'selected' : '' }}>Preventivo</option>
+                            <option value="Reparación" {{ request('type') == 'Reparación' ? 'selected' : '' }}>Reparación</option>
+                        </select>
+                    </div>
+
+                    {{-- Botones de Acción --}}
+                    <div class="md:col-span-2 flex items-end gap-2">
+                        <button type="submit" class="bg-[var(--primary)] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[var(--primary-light)] w-full">
+                            Aplicar Filtros
+                        </button>
+                        @if(request()->hasAny(['status', 'type', 'search']))
+                            <a href="{{ route('asset-management.maintenances.index') }}" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200">
+                                Limpiar
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            </form>
+        </div>        
 
         <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
             <div class="overflow-x-auto">
@@ -143,13 +188,13 @@
                             <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse ($maintenances as $maintenance)
-                            <tr class="group hover:bg-blue-50/50 transition-colors duration-200 cursor-pointer" 
-                                x-data="{ expanded: false }"
-                                :class="{'bg-blue-50/30': expanded}">
+                    
+                    @forelse ($maintenances as $maintenance)
+                        <tbody x-data="{ expanded: false }" class="border-b border-gray-100 last:border-0 group hover:bg-blue-50/30 transition-colors duration-200">
+                            
+                            <tr class="cursor-pointer" :class="{'bg-blue-50/50': expanded}" @click="expanded = !expanded">
                                 
-                                <td class="px-6 py-4" @click="expanded = !expanded">
+                                <td class="px-6 py-4">
                                     <div class="flex items-center">
                                         <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-gray-100 flex items-center justify-center text-[var(--primary)] shadow-sm">
                                             @if($maintenance->asset->model->category->name == 'Laptop')
@@ -169,7 +214,7 @@
                                     </div>
                                 </td>
 
-                                <td class="px-6 py-4" @click="expanded = !expanded">
+                                <td class="px-6 py-4">
                                     <div class="flex flex-col gap-2">
                                         <div>
                                             @if($maintenance->end_date)
@@ -189,12 +234,11 @@
                                     </div>
                                 </td>
 
-                                <td class="px-6 py-4 w-64" @click="expanded = !expanded">
+                                <td class="px-6 py-4 w-64">
                                     @php
                                         $start = \Carbon\Carbon::parse($maintenance->start_date);
                                         $end = $maintenance->end_date ? \Carbon\Carbon::parse($maintenance->end_date) : now();
-                                        $days = $start->diffInDays($end);
-                                        // Calcular porcentaje visual (tope 30 días para la barra)
+                                        $days = (int) $start->diffInDays($end);
                                         $percent = min(($days / 30) * 100, 100);
                                         $colorClass = $days > 15 ? 'bg-red-500' : ($days > 7 ? 'bg-yellow-500' : 'bg-blue-500');
                                     @endphp
@@ -216,7 +260,7 @@
                                     </div>
                                 </td>
 
-                                <td class="px-6 py-4" @click="expanded = !expanded">
+                                <td class="px-6 py-4">
                                     @if($maintenance->cost)
                                         <span class="text-sm font-bold text-gray-900">$ {{ number_format($maintenance->cost, 2) }}</span>
                                     @else
@@ -306,7 +350,9 @@
                                     </div>
                                 </td>
                             </tr>
-                        @empty
+                        </tbody>
+                    @empty
+                        <tbody>
                             <tr>
                                 <td colspan="5" class="px-6 py-12 text-center">
                                     <div class="flex flex-col items-center justify-center">
@@ -318,8 +364,8 @@
                                     </div>
                                 </td>
                             </tr>
-                        @endforelse
-                    </tbody>
+                        </tbody>
+                    @endforelse
                 </table>
             </div>
             
