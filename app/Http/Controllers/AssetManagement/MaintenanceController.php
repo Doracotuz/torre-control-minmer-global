@@ -7,6 +7,7 @@ use App\Models\Maintenance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class MaintenanceController extends Controller
 {
@@ -22,12 +23,10 @@ class MaintenanceController extends Controller
 
     public function create(HardwareAsset $asset)
     {
-        // Solo se pueden enviar activos que no estén ya en reparación o de baja
         if (in_array($asset->status, ['En Reparación', 'De Baja'])) {
             return back()->with('error', 'Este activo no puede ser enviado a mantenimiento.');
         }
 
-        // Obtenemos activos disponibles para ser usados como sustitutos
         $substituteAssets = HardwareAsset::where('status', 'En Almacén')->get();
 
         return view('asset-management.maintenances.create', compact('asset', 'substituteAssets'));
@@ -51,23 +50,21 @@ class MaintenanceController extends Controller
             $asset->status = $newStatus;
             $asset->save();
 
-            // --- INICIO DE MODIFICACIÓN ---
             $eventTime = now();
             $startDate = \Carbon\Carbon::parse($data['start_date'])
                             ->setTime($eventTime->hour, $eventTime->minute, $eventTime->second);
-            // --- FIN DE MODIFICACIÓN ---
 
             $asset->logs()->create([
                 'user_id' => Auth::id(),
                 'action_type' => $newStatus,
                 'notes' => 'Enviado a ' . strtolower($newStatus) . ' por: ' . $data['diagnosis'],
-                'event_date' => $startDate, // <-- Usar fecha/hora completa
+                'event_date' => $startDate,
                 'loggable_id' => $maintenance->id,
                 'loggable_type' => \App\Models\Maintenance::class,
             ]);
 
             if ($originalUserAssignments->isNotEmpty()) {
-                $returnDate = now(); // La devolución forzada SÍ es 'ahora'
+                $returnDate = now();
                 foreach ($originalUserAssignments as $assignment) {
                     $assignment->actual_return_date = $returnDate;
                     $assignment->save();
@@ -77,11 +74,10 @@ class MaintenanceController extends Controller
                         'notes' => 'Devuelto por ' . $assignment->member->name . ' para ser enviado a mantenimiento.',
                         'loggable_id' => $assignment->id,
                         'loggable_type' => \App\Models\Assignment::class,
-                        'event_date' => $returnDate, // <-- ACTUALIZADO
+                        'event_date' => $returnDate,
                     ]);
                 }
 
-                // C. Si se eligió un sustituto, lo prestamos al *primer* usuario de la lista.
                 if (!empty($data['substitute_asset_id'])) {
                     $firstUserAssignment = $originalUserAssignments->first();
                     $substitute = HardwareAsset::find($data['substitute_asset_id']);
@@ -102,11 +98,10 @@ class MaintenanceController extends Controller
                         'notes' => 'Prestado como sustituto a ' . $firstUserAssignment->member->name,
                         'loggable_id' => $loan->id,
                         'loggable_type' => \App\Models\Assignment::class,
-                        'event_date' => $loanDate, // <-- ACTUALIZADO
+                        'event_date' => $loanDate,
                     ]);
                 }
             }
-            // --- FIN DE MODIFICACIÓN ---
         });
 
         return redirect()->route('asset-management.assets.show', $asset)
@@ -122,13 +117,16 @@ class MaintenanceController extends Controller
     public function update(Request $request, Maintenance $maintenance)
     {
         $data = $request->validate([
-            'end_date' => 'required|date|after_or_equal:start_date',
+            'end_date' => 'required|date',
             'actions_taken' => 'required|string',
             'parts_used' => 'nullable|string',
             'cost' => 'nullable|numeric|min:0',
+            'photo_1' => 'nullable|image|max:10048',
+            'photo_2' => 'nullable|image|max:10048',
+            'photo_3' => 'nullable|image|max:10048',
         ]);
 
-        DB::transaction(function () use ($data, $maintenance) { 
+        DB::transaction(function () use ($data, $maintenance, $request) { 
             
             $eventTime = now();
             $endDate = \Carbon\Carbon::parse($data['end_date'])
@@ -136,61 +134,74 @@ class MaintenanceController extends Controller
             
             $data['end_date'] = $endDate;
 
+            for ($i = 1; $i <= 3; $i++) {
+                $fileInputName = "photo_{$i}";
+                $dbColumnName = "photo_{$i}_path";
+                $removeInputName = "remove_photo_{$i}";
+                if ($request->input($removeInputName) === 'true') {
+                    if ($maintenance->{$dbColumnName}) {
+                        Storage::disk('s3')->delete($maintenance->{$dbColumnName});
+                    }
+                    $data[$dbColumnName] = null;
+                }
+                if ($request->hasFile($fileInputName)) {
+                    if ($maintenance->{$dbColumnName} && !isset($data[$dbColumnName])) {
+                        Storage::disk('s3')->delete($maintenance->{$dbColumnName});
+                    }
+                    
+                    $data[$dbColumnName] = $request->file($fileInputName)->store('maintenances/photos', 's3');
+                }
+            }
+
             $maintenance->update($data);
+            if ($maintenance->asset->status !== 'En Almacén') {
+                $asset = $maintenance->asset;
+                $asset->status = 'En Almacén';
+                $asset->save();
 
-            $asset = $maintenance->asset;
-            $asset->status = 'En Almacén';
-            $asset->save();
+                $asset->logs()->create([
+                    'user_id' => Auth::id(),
+                    'action_type' => 'Mantenimiento Completado',
+                    'notes' => "Se completó el mantenimiento. El activo vuelve a Almacén.",
+                    'event_date' => $endDate,
+                    'loggable_id' => $maintenance->id,
+                    'loggable_type' => \App\Models\Maintenance::class,
+                ]);
 
-            $asset->logs()->create([
-                'user_id' => Auth::id(),
-                'action_type' => 'Mantenimiento Completado',
-                'notes' => "Se completó el mantenimiento. El activo vuelve a Almacén.",
-                'event_date' => $endDate,
-                'loggable_id' => $maintenance->id,
-                'loggable_type' => \App\Models\Maintenance::class,
-            ]);
+                if ($maintenance->substitute_asset_id) {
+                    $substitute = $maintenance->substituteAsset;
+                    $loan = $substitute->currentAssignment;
 
-            // 4. Si había un activo sustituto, registrar su devolución.
-            if ($maintenance->substitute_asset_id) {
-                $substitute = $maintenance->substituteAsset;
-                
-                // Buscamos el préstamo activo del sustituto.
-                $loan = $substitute->currentAssignment;
+                    if ($loan) {
+                        $returnDate = now(); 
+                        $loan->actual_return_date = $returnDate;
+                        $loan->save();
 
-                if ($loan) {
-                    $returnDate = now(); // Usar una variable para consistencia
+                        $substitute->status = 'En Almacén';
+                        $substitute->save();
 
-                    // Finalizamos el préstamo.
-                    $loan->actual_return_date = $returnDate;
-                    $loan->save();
-
-                    // Actualizamos el estatus del sustituto.
-                    $substitute->status = 'En Almacén';
-                    $substitute->save();
-
-                    // Registramos la devolución en la línea de vida del sustituto.
-                    $substitute->logs()->create([
-                        'user_id' => Auth::id(),
-                        'action_type' => 'Devolución',
-                        'notes' => 'Devuelto por ' . $loan->member->name . '. Fin de préstamo sustituto.',
-                        'loggable_id' => $loan->id,
-                        'loggable_type' => \App\Models\Assignment::class,
-                        'event_date' => $returnDate, // <-- ACTUALIZADO
-                    ]);
+                        $substitute->logs()->create([
+                            'user_id' => Auth::id(),
+                            'action_type' => 'Devolución',
+                            'notes' => 'Devuelto por ' . $loan->member->name . '. Fin de préstamo sustituto.',
+                            'loggable_id' => $loan->id,
+                            'loggable_type' => \App\Models\Assignment::class,
+                            'event_date' => $returnDate, 
+                        ]);
+                    }
                 }
             }
         });
 
         return redirect()->route('asset-management.maintenances.index')
-            ->with('success', 'Mantenimiento completado. Ambos activos están ahora en Almacén.');
+            ->with('success', 'Mantenimiento actualizado exitosamente.');
     }
 
     public function generatePdf(Maintenance $maintenance)
     {
         $maintenance->load(['asset.model.category', 'asset.model.manufacturer', 'asset.site']);
 
-        $logoPath = 'LogoAzul.png'; // Asegúrate que esta es la ruta en tu disco s3
+        $logoPath = 'LogoAzul.png';
         $logoBase64 = null;
         if (\Illuminate\Support\Facades\Storage::disk('s3')->exists($logoPath)) {
             $logoContent = \Illuminate\Support\Facades\Storage::disk('s3')->get($logoPath);

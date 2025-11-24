@@ -6,7 +6,8 @@ class Maintenance extends Model
 {
     protected $fillable = [
         'hardware_asset_id', 'type', 'supplier', 'start_date', 'end_date',
-        'diagnosis', 'actions_taken', 'parts_used', 'cost', 'substitute_asset_id'
+        'diagnosis', 'actions_taken', 'parts_used', 'cost', 'substitute_asset_id',
+        'photo_1_path', 'photo_2_path', 'photo_3_path'
     ];
 
     protected $casts = ['start_date' => 'date', 'end_date' => 'date'];

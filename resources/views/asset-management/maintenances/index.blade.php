@@ -75,11 +75,25 @@
                             <td class="p-4 text-gray-600">{{ $maintenance->start_date->format('d/m/Y') }}</td>
                             <td class="p-4 text-gray-600">{{ $maintenance->end_date ? $maintenance->end_date->format('d/m/Y') : '---' }}</td>
                             <td class="p-4">
-                                <div class="flex items-center justify-end space-x-4">
+                                <div class="flex items-center justify-end space-x-3">
+                                    <a href="{{ route('asset-management.maintenances.edit', $maintenance) }}" 
+                                    class="text-blue-600 hover:text-blue-900" 
+                                    title="Editar / Subir Fotos">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+
                                     @if($maintenance->end_date)
-                                        <a href="{{ route('asset-management.maintenances.pdf', $maintenance) }}" target="_blank" class="text-gray-500 hover:text-red-600" title="Ver Certificado PDF"><i class="fas fa-file-pdf"></i></a>
+                                        <a href="{{ route('asset-management.maintenances.pdf', $maintenance) }}" 
+                                        target="_blank" 
+                                        class="text-gray-500 hover:text-red-600" 
+                                        title="Ver Certificado PDF">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
                                     @else
-                                        <a href="{{ route('asset-management.maintenances.edit', $maintenance) }}" class="btn btn-sm btn-primary py-1 px-3 text-xs">Completar</a>
+                                        <a href="{{ route('asset-management.maintenances.edit', $maintenance) }}" 
+                                        class="ml-2 btn btn-sm btn-primary py-1 px-3 text-xs">
+                                        Completar
+                                        </a>
                                     @endif
                                 </div>
                             </td>

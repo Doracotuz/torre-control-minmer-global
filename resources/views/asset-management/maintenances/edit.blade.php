@@ -41,36 +41,81 @@
     </div>
 
     <div class="bg-white p-8 rounded-xl shadow-lg mt-8">
-        <form action="{{ route('asset-management.maintenances.update', $maintenance) }}" method="POST">
+        <form action="{{ route('asset-management.maintenances.update', $maintenance) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
+            
             <div class="space-y-6">
                 <div>
                     <label for="end_date" class="form-label">Fecha de Finalización</label>
-                    <input type="date" id="end_date" name="end_date" value="{{ date('Y-m-d') }}" class="form-input w-full" required>
+                    <input type="date" id="end_date" name="end_date" value="{{ old('end_date', $maintenance->end_date ? $maintenance->end_date->format('Y-m-d') : date('Y-m-d')) }}" class="form-input w-full" required>
                 </div>
                 <div>
                     <label for="actions_taken" class="form-label">Acciones Realizadas</label>
-                    <textarea id="actions_taken" name="actions_taken" rows="4" class="form-textarea w-full" required placeholder="Describe el trabajo que se realizó..."></textarea>
+                    <textarea id="actions_taken" name="actions_taken" rows="4" class="form-textarea w-full" required>{{ old('actions_taken', $maintenance->actions_taken) }}</textarea>
                 </div>
                 <div>
                     <label for="parts_used" class="form-label">Insumos o Partes Utilizadas (Opcional)</label>
-                    <textarea id="parts_used" name="parts_used" rows="3" class="form-textarea w-full" placeholder="Ej: 1x Batería nueva, 1x 8GB RAM..."></textarea>
+                    <textarea id="parts_used" name="parts_used" rows="3" class="form-textarea w-full">{{ old('parts_used', $maintenance->parts_used) }}</textarea>
                 </div>
                 <div>
                     <label for="cost" class="form-label">Costo Total (Opcional)</label>
-                    <input type="number" id="cost" name="cost" step="0.01" class="form-input w-full" placeholder="0.00">
+                    <input type="number" id="cost" name="cost" step="0.01" value="{{ old('cost', $maintenance->cost) }}" class="form-input w-full">
+                </div>
+
+                <div class="border-t border-gray-200 pt-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Evidencia Fotográfica (Opcional)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        @for ($i = 1; $i <= 3; $i++)
+                            @php
+                                $photoPath = "photo_{$i}_path";
+                                $currentPhoto = $maintenance->$photoPath;
+                                $photoUrl = $currentPhoto ? Storage::disk('s3')->url($currentPhoto) : null;
+                            @endphp
+
+                            <div x-data="{ 
+                                    hasPhoto: {{ $currentPhoto ? 'true' : 'false' }}, 
+                                    markedForDeletion: false 
+                                }" 
+                                class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                
+                                <label class="form-label mb-2">Foto {{ $i }}</label>
+
+                                <input type="hidden" name="remove_photo_{{ $i }}" x-model="markedForDeletion">
+
+                                <div x-show="hasPhoto && !markedForDeletion" class="mb-3 relative">
+                                    <img src="{{ $photoUrl }}" alt="Foto {{ $i }}" class="w-full h-32 object-cover rounded-lg border">
+                                    <button type="button" 
+                                            @click="markedForDeletion = true"
+                                            class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 focus:outline-none"
+                                            title="Eliminar foto">
+                                        <i class="fas fa-times text-xs px-1"></i>
+                                    </button>
+                                </div>
+
+                                <div x-show="!hasPhoto || markedForDeletion">
+                                    <input type="file" 
+                                        name="photo_{{ $i }}" 
+                                        accept="image/*"
+                                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors">
+                                    <p x-show="markedForDeletion" class="text-xs text-red-500 mt-2 font-semibold">
+                                        * La foto anterior será eliminada al guardar.
+                                    </p>
+                                </div>
+                            </div>
+                        @endfor
+                    </div>
                 </div>
             </div>
 
             @if ($maintenance->substitute_asset_id)
-            <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-                <strong>Atención:</strong> Al completar este mantenimiento, se registrará automáticamente la devolución del activo sustituto ({{ $maintenance->substituteAsset->asset_tag }}) que fue prestado a {{ $maintenance->asset->currentAssignment->member->name ?? 'usuario asignado' }}.
-            </div>
+                <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                    <strong>Atención:</strong> Al completar este mantenimiento, se registrará automáticamente la devolución del activo sustituto ({{ $maintenance->substituteAsset->asset_tag }}) que fue prestado.
+                </div>
             @endif
             
             <div class="mt-8 pt-6 border-t flex justify-end">
-                <button type="submit" class="btn btn-primary">Completar y Liberar Activo</button>
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
             </div>
         </form>
     </div>
