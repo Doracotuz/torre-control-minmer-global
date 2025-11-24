@@ -13,18 +13,25 @@ class ffProduct extends Model
     protected $fillable = [
         'sku',
         'description',
-        'type',
+        'unit_price',
         'brand',
-        'price',
-        'regular_price',
+        'type',
+        'pieces_per_box',
+        'length',
+        'width',
+        'height',
+        'upc',
         'photo_path',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'price' => 'decimal:2',
-        'regular_price' => 'decimal:2',
+        'unit_price' => 'decimal:2',
+        'length' => 'decimal:2',
+        'width' => 'decimal:2',
+        'height' => 'decimal:2',
+        'pieces_per_box' => 'integer',
     ];
 
     protected $appends = ['photo_url'];
@@ -56,5 +63,4 @@ class ffProduct extends Model
     {
         return $this->hasMany(ffCartItem::class, 'ff_product_id');
     }    
-
 }

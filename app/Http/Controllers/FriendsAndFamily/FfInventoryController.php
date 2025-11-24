@@ -40,7 +40,7 @@ class FfInventoryController extends Controller
 
     public function storeMovement(Request $request)
     {
-        if (!Auth::user()->isSuperAdmin()) {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->is_area_admin) {
             abort(403, 'Acción no autorizada.');
         }
 
@@ -105,14 +105,16 @@ class FfInventoryController extends Controller
 
         $callback = function() use ($products) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['SKU', 'Descripcion', 'Marca', 'Tipo', 'Precio', 'Cantidad Actual']);
+            fputcsv($file, ['SKU', 'UPC', 'Descripcion', 'Marca', 'Tipo', 'Precio Unitario', 'Pzas/Caja', 'Cantidad Actual']);
             foreach ($products as $product) {
                 fputcsv($file, [
                     $product->sku,
+                    $product->upc,
                     $product->description,
                     $product->brand,
                     $product->type,
-                    $product->price,
+                    $product->unit_price,
+                    $product->pieces_per_box,
                     $product->movements_sum_quantity ?? 0,
                 ]);
             }
@@ -136,7 +138,7 @@ class FfInventoryController extends Controller
             foreach ($movements as $mov) {
                 fputcsv($file, [
                     $mov->created_at->format('Y-m-d H:i:s'),
-                    $mov->user ? $mov->user->name : 'N/A', //
+                    $mov->user ? $mov->user->name : 'N/A',
                     $mov->product ? $mov->product->sku : 'N/A',
                     $mov->product ? $mov->product->description : 'N/A',
                     $mov->quantity,
@@ -293,5 +295,4 @@ class FfInventoryController extends Controller
         };
         return new StreamedResponse($callback, 200, $headers);
     }  
-
 }

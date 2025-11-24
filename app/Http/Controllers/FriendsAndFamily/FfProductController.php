@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use ZipArchive;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\View;
 
 class FfProductController extends Controller
 {
@@ -27,10 +26,14 @@ class FfProductController extends Controller
         $validated = $request->validate([
             'sku' => 'required|string|max:255|unique:ff_products,sku',
             'description' => 'required|string|max:500',
-            'type' => 'nullable|string|max:255',
+            'unit_price' => 'required|numeric|min:0',
             'brand' => 'nullable|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'regular_price' => 'nullable|numeric|min:0|gte:price',
+            'type' => 'nullable|string|max:255',
+            'pieces_per_box' => 'nullable|integer|min:0',
+            'length' => 'nullable|numeric|min:0',
+            'width' => 'nullable|numeric|min:0',
+            'height' => 'nullable|numeric|min:0',
+            'upc' => 'nullable|string|max:255',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
@@ -52,10 +55,14 @@ class FfProductController extends Controller
         $validated = $request->validate([
             'sku' => ['required', 'string', 'max:255', Rule::unique('ff_products')->ignore($catalog->id)],
             'description' => 'required|string|max:500',
-            'type' => 'nullable|string|max:255',
+            'unit_price' => 'required|numeric|min:0',
             'brand' => 'nullable|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'regular_price' => 'nullable|numeric|min:0|gte:price',
+            'type' => 'nullable|string|max:255',
+            'pieces_per_box' => 'nullable|integer|min:0',
+            'length' => 'nullable|numeric|min:0',
+            'width' => 'nullable|numeric|min:0',
+            'height' => 'nullable|numeric|min:0',
+            'upc' => 'nullable|string|max:255',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'is_active' => 'required|boolean',
         ]);
@@ -89,7 +96,7 @@ class FfProductController extends Controller
 
         $headers = [
             'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="plantilla_edicion_ff_'.date('Y-m-d').'.csv"',
+            'Content-Disposition' => 'attachment; filename="plantilla_gestion_catalogo_'.date('Y-m-d').'.csv"',
         ];
 
         $callback = function() use ($products) {
@@ -99,25 +106,33 @@ class FfProductController extends Controller
             $columns = [
                 'SKU (No cambiar)', 
                 'Descripción', 
-                'Tipo', 
+                'Precio Unitario',
                 'Marca', 
-                'Precio Venta',
-                'Precio Regular',
+                'Tipo', 
+                'Piezas por Caja',
+                'Largo',
+                'Ancho',
+                'Alto',
+                'UPC',
                 'Nombre Archivo Foto (Opcional)'
             ];
             fputcsv($file, $columns);
 
             if ($products->isEmpty()) {
-                fputcsv($file, ['SKU-EJEMPLO', 'Descripción Ejemplo', 'Tipo', 'Marca', '100.00', 'foto.jpg']);
+                fputcsv($file, ['SKU-EJ', 'Descripción Ejemplo', '100.00', 'Marca X', 'Tipo Y', '12', '10.5', '5.2', '3.0', '123456789', 'foto.jpg']);
             } else {
                 foreach ($products as $product) {
                     fputcsv($file, [
                         $product->sku,
                         $product->description,
-                        $product->type,
+                        $product->unit_price,
                         $product->brand,
-                        $product->price,
-                        $product->regular_price,
+                        $product->type,
+                        $product->pieces_per_box,
+                        $product->length,
+                        $product->width,
+                        $product->height,
+                        $product->upc,
                         ''
                     ]);
                 }
@@ -171,15 +186,19 @@ class FfProductController extends Controller
                 if (empty($sku)) continue;
 
                 $productData = [
-                    'description' => mb_convert_encoding(trim($row[1] ?? ''), 'UTF-8', 'ISO-8859-1'),
-                    'type'        => mb_convert_encoding(trim($row[2] ?? ''), 'UTF-8', 'ISO-8859-1'),
-                    'brand'       => mb_convert_encoding(trim($row[3] ?? ''), 'UTF-8', 'ISO-8859-1'),
-                    'price'       => (float)($row[4] ?? 0.00),
-                    'regular_price' => !empty($row[5]) ? (float)$row[5] : null,
-                    'is_active'   => true,
+                    'description'    => mb_convert_encoding(trim($row[1] ?? ''), 'UTF-8', 'ISO-8859-1'),
+                    'unit_price'     => (float)($row[2] ?? 0.00),
+                    'brand'          => mb_convert_encoding(trim($row[3] ?? ''), 'UTF-8', 'ISO-8859-1'),
+                    'type'           => mb_convert_encoding(trim($row[4] ?? ''), 'UTF-8', 'ISO-8859-1'),
+                    'pieces_per_box' => !empty($row[5]) ? (int)$row[5] : null,
+                    'length'         => !empty($row[6]) ? (float)$row[6] : null,
+                    'width'          => !empty($row[7]) ? (float)$row[7] : null,
+                    'height'         => !empty($row[8]) ? (float)$row[8] : null,
+                    'upc'            => mb_convert_encoding(trim($row[9] ?? ''), 'UTF-8', 'ISO-8859-1'),
+                    'is_active'      => true,
                 ];
 
-                $photoFilename = trim($row[6] ?? '');
+                $photoFilename = trim($row[10] ?? '');
                 if (!empty($photoFilename) && $tempZipDir) {
                     $foundPath = $this->findFileRecursively($tempZipDir, $photoFilename);
                     if ($foundPath) {
@@ -252,7 +271,7 @@ class FfProductController extends Controller
     public function exportCsv()
     {
         $products = ffProduct::orderBy('brand')->orderBy('description')->get();
-        $filename = 'catalogo_productos_ff_' . date('Y-m-d') . '.csv';
+        $filename = 'catalogo_completo_ff_' . date('Y-m-d') . '.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
@@ -262,15 +281,20 @@ class FfProductController extends Controller
         $callback = function() use ($products) {
             $file = fopen('php://output', 'w');
             fputs($file, "\xEF\xBB\xBF"); 
-            fputcsv($file, ['SKU', 'Descripción', 'Marca', 'Tipo', 'Precio', 'Estado', 'URL Imagen']);
+            fputcsv($file, ['SKU', 'Descripción', 'Precio Unitario', 'Marca', 'Tipo', 'Pzas/Caja', 'Largo', 'Ancho', 'Alto', 'UPC', 'Estado', 'URL Imagen']);
 
             foreach ($products as $product) {
                 fputcsv($file, [
                     $product->sku,
                     $product->description,
+                    $product->unit_price,
                     $product->brand,
                     $product->type,
-                    $product->price,
+                    $product->pieces_per_box,
+                    $product->length,
+                    $product->width,
+                    $product->height,
+                    $product->upc,
                     $product->is_active ? 'Activo' : 'Inactivo',
                     $product->photo_url
                 ]);
@@ -294,12 +318,12 @@ class FfProductController extends Controller
 
         if ($percentage > 0) {
             foreach ($products as $product) {
-                $increase = $product->price * ($percentage / 100);
-                $product->price += $increase;
+                $increase = $product->unit_price * ($percentage / 100);
+                $product->unit_price += $increase;
             }
         }
         
-        $logoUrl = Storage::disk('s3')->url('logoMoetHennessy-2.PNG');
+        $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter-2.PNG');
 
         $data = [
             'products' => $products,
@@ -316,5 +340,4 @@ class FfProductController extends Controller
         
         return $pdf->stream('Catalogo_FF_'.now()->format('Ymd').'.pdf');
     }
-
 }

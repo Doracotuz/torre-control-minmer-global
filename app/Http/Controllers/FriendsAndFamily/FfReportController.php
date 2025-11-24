@@ -5,26 +5,16 @@ namespace App\Http\Controllers\FriendsAndFamily;
 use App\Http\Controllers\Controller;
 use App\Models\ffProduct;
 use App\Models\ffInventoryMovement;
-use App\Models\ffCartItem;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Dompdf\Dompdf;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
-use App\Jobs\GenerateFfExecutiveReport;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Http;
 use Barryvdh\DomPDF\Facade\Pdf;
-
-
 
 class FfReportController extends Controller
 {
-
-    private $chartBaseUrl = 'https://quickchart.io/apex-charts/render';
-    
     public function index(Request $request)
     {
         $userIdFilter = $request->input('user_id');
@@ -38,7 +28,7 @@ class FfReportController extends Controller
         $ventasCompletas = (clone $baseQuery)
             ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
             ->select(
-                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.price) as valor_total_vendido'),
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as valor_total_vendido'),
                 DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_unidades_vendidas')
             )
             ->first();
@@ -76,7 +66,6 @@ class FfReportController extends Controller
             ->filter(fn ($p) => ($p->movements_sum_quantity ?? 0) <= 0)
             ->count();
             
-        
         $durationDays = 2; 
         $startDate = Carbon::parse('2025-11-13')->startOfDay();
         $endDate = $startDate->copy()->addDays($durationDays); 
@@ -92,7 +81,6 @@ class FfReportController extends Controller
         $startDateIso = $startDate->toIso8601String();
         $endDateIso = $endDate->toIso8601String();
         
-
         $vendedores = User::whereHas('movements', function ($query) {
                 $query->where('quantity', '<', 0);
             })->orderBy('name')->get(['id', 'name']);
@@ -132,7 +120,7 @@ class FfReportController extends Controller
                 DB::raw('MAX(ff_inventory_movements.created_at) as created_at'),
                 DB::raw('COUNT(ff_inventory_movements.id) as total_items'),
                 DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_units'),
-                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.price) as total_value')
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as total_value')
             )
             ->groupBy(
                 'ff_inventory_movements.folio', 
@@ -191,40 +179,49 @@ class FfReportController extends Controller
         $firstMovement = $saleMovements->first();
         $user = $firstMovement->user;
 
+        $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');        
+
         $pdfData = [
             'items' => [],
             'grandTotal' => 0,
-            'copies' => ['Original', 'Copia Cliente', 'Copia Almacén'],
+            'copies' => ['Original'],
             'folio' => $firstMovement->folio,
+            'date' => $firstMovement->created_at->format('d/m/Y'),
+            
+            'client_name' => $firstMovement->client_name,
+            'company_name' => $firstMovement->company_name,
+            'client_phone' => $firstMovement->client_phone,
+            'address' => $firstMovement->address,
+            'locality' => $firstMovement->locality,
+            'delivery_date' => $firstMovement->delivery_date ? $firstMovement->delivery_date->format('d/m/Y H:i') : 'N/A',
+            'observations' => $firstMovement->observations,
+            
+            'surtidor_name' => $firstMovement->surtidor_name,
+            'vendedor_name' => $user->name ?? 'N/A',
+            'logo_url' => $logoUrl,
         ];
-
-        $logoUrl = Storage::disk('s3')->url('logoMoetHennessy.PNG');        
 
         foreach ($saleMovements as $item) {
             $product = $item->product;
             $quantity = abs($item->quantity);
-            $totalItem = $product->price * $quantity;
+            $price = $product->unit_price ?? 0;
+            $totalItem = $price * $quantity;
 
             $pdfData['items'][] = [
                 'sku' => $product->sku,
                 'description' => $product->description,
                 'quantity' => $quantity,
-                'unit_price' => $product->price,
+                'unit_price' => $price,
                 'total_price' => $totalItem,
             ];
             $pdfData['grandTotal'] += $totalItem;
         }
-        
-        $pdfData['date'] = $firstMovement->created_at->format('d/m/Y H:i:s');
-        $pdfData['client_name'] = $firstMovement->client_name;
-        $pdfData['surtidor_name'] = $firstMovement->surtidor_name;
-        $pdfData['vendedor_name'] = $user->name ?? 'N/A';
-        $pdfData['logo_url'] = $logoUrl;
 
         $dompdf = new Dompdf();
         $options = $dompdf->getOptions();
         $options->set('isRemoteEnabled', true);
         $dompdf->setOptions($options);        
+        
         $pdfView = view('friends-and-family.sales.pdf', $pdfData);
         
         $dompdf->loadHtml($pdfView->render());
@@ -264,10 +261,10 @@ class FfReportController extends Controller
             ->join('ff_inventory_movements', 'ff_products.id', '=', 'ff_inventory_movements.ff_product_id')
             ->select(
                 'ff_products.sku',
-                'ff_products.price',
+                'ff_products.unit_price',
                 DB::raw('SUM(CASE WHEN ff_inventory_movements.quantity < 0 THEN ABS(ff_inventory_movements.quantity) ELSE 0 END) as total_vendido')
             )
-            ->groupBy('ff_products.id', 'ff_products.sku', 'ff_products.price')
+            ->groupBy('ff_products.id', 'ff_products.sku', 'ff_products.unit_price')
             ->having('total_vendido', '>', 0)
             ->get();
             
@@ -276,7 +273,7 @@ class FfReportController extends Controller
                 'name' => 'Rotación',
                 'data' => $rotationProducts->map(function($p) {
                     return [
-                        'x' => (float) $p->price,
+                        'x' => (float) $p->unit_price,
                         'y' => (int) $p->total_stock,
                         'z' => (int) $p->total_vendido,
                         'label' => $p->sku,
@@ -327,7 +324,6 @@ class FfReportController extends Controller
         
         $lowStockAlerts = $data->filter(fn ($p) => $p['available'] > 0 && $p['available'] < 10);
 
-
         return view('friends-and-family.reports.stock-availability', compact(
             'data',
             'chartStockVsReserved',
@@ -337,13 +333,13 @@ class FfReportController extends Controller
 
     public function catalogAnalysis()
     {
-        $products = ffProduct::select('price', 'brand', 'type', 'is_active')->get();
+        $products = ffProduct::select('unit_price', 'brand', 'type', 'is_active')->get();
         
         $priceRanges = [
-            '0-100' => $products->whereBetween('price', [0, 100])->count(),
-            '101-300' => $products->whereBetween('price', [101, 300])->count(),
-            '301-500' => $products->whereBetween('price', [301, 500])->count(),
-            '501+' => $products->where('price', '>', 500)->count(),
+            '0-100' => $products->whereBetween('unit_price', [0, 100])->count(),
+            '101-300' => $products->whereBetween('unit_price', [101, 300])->count(),
+            '301-500' => $products->whereBetween('unit_price', [301, 500])->count(),
+            '501+' => $products->where('unit_price', '>', 500)->count(),
         ];
         
         $chartPriceDistribution = [
@@ -366,7 +362,6 @@ class FfReportController extends Controller
             'labels' => $brandDistribution->keys()->toArray(),
         ];
 
-
         return view('friends-and-family.reports.catalog-analysis', compact(
             'chartPriceDistribution',
             'chartActiveInactive',
@@ -386,7 +381,7 @@ class FfReportController extends Controller
                 ->select(
                     DB::raw('COUNT(ff_inventory_movements.id) as total_pedidos'),
                     DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_unidades'),
-                    DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.price) as valor_total'),
+                    DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as valor_total'),
                     DB::raw('COUNT(DISTINCT ff_inventory_movements.ff_product_id) as skus_unicos')
                 )
                 ->first();
@@ -409,7 +404,6 @@ class FfReportController extends Controller
             'labels' => $sellerPerformanceData->pluck('name')->toArray(),
         ];
 
-
         return view('friends-and-family.reports.seller-performance', compact(
             'sellerPerformanceData',
             'chartValorVendedor'
@@ -429,7 +423,7 @@ class FfReportController extends Controller
                 'ff_inventory_movements.created_at',
                 DB::raw('COUNT(ff_inventory_movements.id) as total_items'),
                 DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_units'),
-                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.price) as total_value')
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as total_value')
             )
             ->groupBy('ff_inventory_movements.folio', 'ff_inventory_movements.user_id', 'ff_inventory_movements.created_at');
 
@@ -443,7 +437,6 @@ class FfReportController extends Controller
                         ->get();
         
         $data = $recentSales->map(function ($sale) {
-            $firstMovement = ffInventoryMovement::where('folio', $sale->folio)->first();
             $userName = $sale->user->name ?? 'N/A';
             
             return [
@@ -462,13 +455,13 @@ class FfReportController extends Controller
     {
         $movements = ffInventoryMovement::where('folio', $folio)
             ->where('quantity', '<', 0)
-            ->with('product:id,sku,description,price')
+            ->with('product:id,sku,description,unit_price')
             ->get();
 
         $items = $movements->map(function ($mov) {
             $product = $mov->product;
             $quantity = abs($mov->quantity);
-            $price = $product->price ?? 0;
+            $price = $product->unit_price ?? 0;
             
             return [
                 'sku' => $product->sku ?? 'N/A',
@@ -492,7 +485,7 @@ class FfReportController extends Controller
 
         try {
             try {
-                $logoContent = Storage::disk('s3')->get('logoMoetHennessy.PNG');
+                $logoContent = Storage::disk('s3')->get('logoConsorcioMonter.png');
                 $data['logo_base_64'] = 'data:image/png;base64,' . base64_encode($logoContent);
             } catch (\Exception $e) {
                 $data['logo_base_64'] = null; 
@@ -512,7 +505,7 @@ class FfReportController extends Controller
 
         } catch (\Exception $e) {
             return redirect()->route('ff.reports.index', ['user_id' => $userIdFilter])
-                ->with('error', 'Error al generar el PDF: ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
+                ->with('error', 'Error al generar el PDF: ' . $e->getMessage());
         }
     }
 
@@ -572,11 +565,10 @@ class FfReportController extends Controller
             $summary .= "Toda la actividad se concentró en un solo día: {$trivial['diaPico']->dia_formateado}. ";
         }
 
-        $summary .= "Operacionalmente, el principal desafío es la gestión de inventario y el auditaje de la mercancía, este proceso va a ser revisados por el equipo de logística para optimizar los próximos eventos de venta.";
+        $summary .= "Operacionalmente, el principal desafío es la gestión de inventario y el auditaje de la mercancía.";
         
         return $summary;
     }
-
 
     private function gatherReportData($userIdFilter): array
     {
@@ -591,7 +583,7 @@ class FfReportController extends Controller
         $ventasCompletas = (clone $baseQuery)
             ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
             ->select(
-                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.price) as valor'),
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as valor'),
                 DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as unidades'),
                 DB::raw('COUNT(DISTINCT ff_inventory_movements.folio) as total_ventas')
             )
@@ -617,7 +609,7 @@ class FfReportController extends Controller
             ->join('users', 'ff_inventory_movements.user_id', '=', 'users.id')
             ->select(
                 'users.name as user_name',
-                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.price) as valor_total'),
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as valor_total'),
                 DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_unidades'),
                 DB::raw('COUNT(DISTINCT ff_inventory_movements.folio) as total_pedidos')
             )
@@ -630,12 +622,12 @@ class FfReportController extends Controller
                 DB::raw('SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) as salidas'))
             ->groupBy('reason')->get();
             
-        $productsCatalog = ffProduct::select('price')->get();
+        $productsCatalog = ffProduct::select('unit_price')->get();
         $priceRangesRaw = [
-            '0-100' => $productsCatalog->whereBetween('price', [0, 100])->count(),
-            '101-300' => $productsCatalog->whereBetween('price', [101, 300])->count(),
-            '301-500' => $productsCatalog->whereBetween('price', [301, 500])->count(),
-            '501+' => $productsCatalog->where('price', '>', 500)->count(),
+            '0-100' => $productsCatalog->whereBetween('unit_price', [0, 100])->count(),
+            '101-300' => $productsCatalog->whereBetween('unit_price', [101, 300])->count(),
+            '301-500' => $productsCatalog->whereBetween('unit_price', [301, 500])->count(),
+            '501+' => $productsCatalog->where('unit_price', '>', 500)->count(),
         ];
         $totalProductos = max(1, array_sum($priceRangesRaw));
         $data['priceRanges'] = collect($priceRangesRaw)->mapWithKeys(function ($count, $range) use ($totalProductos) {
@@ -693,7 +685,7 @@ class FfReportController extends Controller
         $ventasPorDia = (clone $baseQuery)
             ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
             ->select(DB::raw('DATE(ff_inventory_movements.created_at) as dia'), 
-                     DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.price) as total_dia'))
+                     DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as total_dia'))
             ->groupBy('dia')->orderBy('dia', 'asc')->get();
         
         $diaPico = $ventasPorDia->sortByDesc('total_dia')->first();
@@ -708,5 +700,4 @@ class FfReportController extends Controller
         
         return $data;
     }
-
 }

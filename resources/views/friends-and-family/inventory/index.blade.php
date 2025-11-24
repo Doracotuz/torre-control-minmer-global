@@ -93,7 +93,7 @@
                         </div>
                         <input type="text" x-model="filter" 
                                class="block w-full pl-11 pr-4 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all duration-200 placeholder-gray-400 font-[Montserrat] text-sm" 
-                               placeholder="Buscar por SKU o descripción...">
+                               placeholder="Buscar por SKU, descripción o UPC...">
                     </div>
 
                     <div class="flex flex-wrap gap-3 w-full lg:w-auto justify-end items-center">
@@ -140,7 +140,7 @@
                             <tr class="bg-[#F9FAFB] border-b border-gray-100">
                                 <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider font-[Montserrat]">Producto</th>
                                 <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider font-[Montserrat]">Categoría</th>
-                                <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider text-right font-[Montserrat]">Precio</th>
+                                <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider text-right font-[Montserrat]">Precio Unitario</th>
                                 <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider text-center font-[Montserrat]">Stock</th>
                                 @if(Auth::user()->isSuperAdmin() || Auth::user()->is_area_admin)
                                 <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider text-right font-[Montserrat]">Ajuste Rápido</th>
@@ -158,7 +158,10 @@
                                             </div>
                                             <div class="ml-4">
                                                 <div class="text-sm font-bold text-[#2c3856]" x-text="product.description"></div>
-                                                <div class="text-xs text-gray-400 font-mono mt-1 bg-gray-100 inline-block px-1.5 py-0.5 rounded" x-text="product.sku"></div>
+                                                <div class="flex items-center gap-2 mt-1">
+                                                    <div class="text-xs text-gray-400 font-mono bg-gray-100 inline-block px-1.5 py-0.5 rounded" x-text="product.sku"></div>
+                                                    <div x-show="product.upc" class="text-[10px] text-gray-400 font-mono" x-text="'UPC: ' + product.upc"></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -172,7 +175,7 @@
                                     </td>
 
                                     <td class="px-6 py-4 text-right">
-                                        <div class="text-sm font-bold text-gray-700 font-mono" x-text="formatMoney(product.price)"></div>
+                                        <div class="text-sm font-bold text-gray-700 font-mono" x-text="formatMoney(product.unit_price)"></div>
                                     </td>
 
                                     <td class="px-6 py-4 text-center">
@@ -185,6 +188,7 @@
                                             <i class="fas fa-cube mr-2 text-xs opacity-80"></i>
                                             <span x-text="product.movements_sum_quantity || 0"></span>
                                         </div>
+                                        <div x-show="product.pieces_per_box" class="text-[10px] text-gray-400 mt-1" x-text="product.pieces_per_box + ' pzas/caja'"></div>
                                     </td>
 
                                     @if(Auth::user()->isSuperAdmin() || Auth::user()->is_area_admin)
@@ -403,7 +407,7 @@
                     this.products = productsArray.map(p => ({
                         ...p,
                         movements_sum_quantity: p.movements_sum_quantity ? parseInt(p.movements_sum_quantity, 10) : 0,
-                        price: parseFloat(p.price) || 0
+                        unit_price: parseFloat(p.unit_price) || 0
                     }));
                 },
 
@@ -414,7 +418,8 @@
                         if (this.filterType && p.type !== this.filterType) return false;
                         if (search) {
                             return p.sku.toLowerCase().includes(search) || 
-                                   p.description.toLowerCase().includes(search);
+                                   p.description.toLowerCase().includes(search) ||
+                                   (p.upc && p.upc.toLowerCase().includes(search));
                         }
                         return true;
                     });
@@ -425,7 +430,7 @@
                 },
 
                 get totalValue() {
-                    return this.filteredProducts.reduce((acc, p) => acc + ((p.price || 0) * (Math.max(0, p.movements_sum_quantity))), 0);
+                    return this.filteredProducts.reduce((acc, p) => acc + ((p.unit_price || 0) * (Math.max(0, p.movements_sum_quantity))), 0);
                 },
 
                 formatMoney(amount) {

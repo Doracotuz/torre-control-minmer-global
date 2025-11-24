@@ -4,12 +4,12 @@
         <x-slot name="header">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-4 md:mb-0">
-                    Gestión de Catálogo (Friends & Family)
+                    Gestión de Catálogo - {{ Auth::user()->area ? Auth::user()->area->name : 'N/A' }}
                 </h2>
                 <a href="{{ route('ff.dashboard.index') }}"
                 class="inline-flex items-center px-6 py-2 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest bg-[#2c3856] hover:bg-[#ff9c00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff9c00] shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 ease-in-out">
                     <i class="fas fa-tachometer-alt mr-2"></i>
-                    Volver a "Friends & Family"
+                    Volver a Panel Principal
                 </a>                
             </div>
         </x-slot>
@@ -43,7 +43,7 @@
 
                     <div class="lg:col-span-2 flex flex-col gap-6">
                         <div>
-                            <input type="text" x-model="manager.filter" placeholder="Buscar por SKU o descripción..." class="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800">
+                            <input type="text" x-model="manager.filter" placeholder="Buscar por SKU, descripción, marca o UPC..." class="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800">
                         </div>
 
                         <div x-show="manager.loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -75,9 +75,16 @@
                                     </div>
                                     
                                     <div class="p-4">
-                                        <p class="text-xs text-gray-400" x-text="product.sku"></p>
-                                        <h4 class="font-semibold text-gray-800" x-text="product.description"></h4>
-                                        <p class="text-lg font-extrabold text-gray-900 mt-2" x-text="`$${parseFloat(product.price).toFixed(2)}`"></p>
+                                        <p class="text-xs text-gray-400 font-mono" x-text="product.sku"></p>
+                                        <h4 class="font-semibold text-gray-800 line-clamp-2" x-text="product.description"></h4>
+                                        <div class="flex justify-between items-end mt-2">
+                                            <p class="text-lg font-extrabold text-gray-900" x-text="`$${parseFloat(product.unit_price).toFixed(2)}`"></p>
+                                            <p class="text-xs text-gray-500" x-text="product.brand"></p>
+                                        </div>
+                                        <div class="mt-2 text-xs text-gray-400 flex flex-wrap gap-2">
+                                            <span x-show="product.upc" x-text="'UPC: ' + product.upc"></span>
+                                            <span x-show="product.pieces_per_box" x-text="'Pzas/Caja: ' + product.pieces_per_box"></span>
+                                        </div>
                                     </div>
                                 </div>
                             </template>
@@ -97,22 +104,21 @@
                                 </div>
 
                                 <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto">
-                                    <div>
+                                    <div class="md:col-span-2">
                                         <label class="block text-sm font-medium text-gray-700">SKU</label>
-                                        <input type="text" x-model="manager.form.sku" :disabled="manager.form.id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm disabled:bg-gray-100" required>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Precio Venta</label>
-                                        <input type="number" step="0.01" min="0" x-model="manager.form.price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800" required>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Precio Regular</label>
-                                        <input type="number" step="0.01" min="0" x-model="manager.form.regular_price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800" placeholder="Opcional">
-                                        <p class="text-xs text-gray-500 mt-1">Si se llena, aparecerá tachado.</p>
+                                        <input type="text" x-model="manager.form.sku" :disabled="manager.form.id" x-ref="skuInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm disabled:bg-gray-100" required>
                                     </div>
                                     <div class="md:col-span-2">
                                         <label class="block text-sm font-medium text-gray-700">Descripción</label>
                                         <input type="text" x-model="manager.form.description" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Precio Unitario</label>
+                                        <input type="number" step="0.01" min="0" x-model="manager.form.unit_price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">UPC</label>
+                                        <input type="text" x-model="manager.form.upc" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700">Marca</label>
@@ -121,6 +127,24 @@
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700">Tipo</label>
                                         <input type="text" x-model="manager.form.type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Piezas/Caja</label>
+                                        <input type="number" step="1" min="0" x-model="manager.form.pieces_per_box" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    </div>
+                                    <div class="md:col-span-2 grid grid-cols-3 gap-2">
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700">Largo</label>
+                                            <input type="number" step="0.01" min="0" x-model="manager.form.length" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700">Ancho</label>
+                                            <input type="number" step="0.01" min="0" x-model="manager.form.width" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700">Alto</label>
+                                            <input type="number" step="0.01" min="0" x-model="manager.form.height" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                        </div>
                                     </div>
                                     
                                     <div class="md:col-span-2">
@@ -314,8 +338,20 @@
                 isSaving: false,
                 photoPreview: null,
                 form: {
-                    id: null, sku: '', description: '', type: '', brand: '',
-                    price: 0.00, regular_price: null, photo: null, photo_url: null, is_active: true,
+                    id: null, 
+                    sku: '', 
+                    description: '', 
+                    type: '', 
+                    brand: '',
+                    unit_price: 0.00, 
+                    pieces_per_box: null,
+                    length: null,
+                    width: null,
+                    height: null,
+                    upc: '',
+                    photo: null, 
+                    photo_url: null, 
+                    is_active: true,
                 },
                 isUploadModalOpen: false,
                 uploadMessage: '',
@@ -333,7 +369,9 @@
                     const search = this.filter.toLowerCase();
                     return this.products.filter(p => 
                         p.sku.toLowerCase().includes(search) || 
-                        p.description.toLowerCase().includes(search)
+                        p.description.toLowerCase().includes(search) ||
+                        (p.brand && p.brand.toLowerCase().includes(search)) ||
+                        (p.upc && p.upc.toLowerCase().includes(search))
                     );
                 },
 
@@ -347,7 +385,22 @@
                 },
                 
                 resetForm() {
-                    this.form = { id: null, sku: '', description: '', type: '', brand: '', price: 0.00, regular_price: null, photo: null, photo_url: null, is_active: true };
+                    this.form = { 
+                        id: null, 
+                        sku: '', 
+                        description: '', 
+                        type: '', 
+                        brand: '', 
+                        unit_price: 0.00, 
+                        pieces_per_box: null,
+                        length: null,
+                        width: null,
+                        height: null,
+                        upc: '',
+                        photo: null, 
+                        photo_url: null, 
+                        is_active: true 
+                    };
                     this.photoPreview = null;
                 },
 
@@ -431,6 +484,7 @@
                             let value = this.form[key];
                             if (typeof value === 'boolean') value = value ? 1 : 0;
                             if (key === 'photo' && !value) return;
+                            if (value === null) value = '';
                             formData.append(key, value);
                         }
                     });
@@ -472,7 +526,6 @@
                         this.isSaving = false;
                     }
                 },
-                
                 
                 async deleteProduct(product) {
                     if (!product.id) return;

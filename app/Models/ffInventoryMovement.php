@@ -15,8 +15,18 @@ class ffInventoryMovement extends Model
         'quantity',
         'reason',
         'client_name',
+        'company_name',
+        'client_phone',
+        'address',
+        'locality',
+        'delivery_date',
         'surtidor_name',
+        'observations',
         'folio',
+    ];
+
+    protected $casts = [
+        'delivery_date' => 'datetime',
     ];
 
     public function product()

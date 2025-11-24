@@ -35,7 +35,8 @@
                             @forelse ($movements as $mov)
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $mov->created_at->format('d/m/Y h:i A') }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 font-medium">{{ $mov->user->name ?? 'N/A' }}</td> <td class="px-6 py-4 text-sm text-gray-700">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 font-medium">{{ $mov->user->name ?? 'N/A' }}</td> 
+                                <td class="px-6 py-4 text-sm text-gray-700">
                                     <div class="font-medium">{{ $mov->product->description ?? 'Producto Eliminado' }}</div>
                                     <div class="text-xs text-gray-500">{{ $mov->product->sku ?? 'N/A' }}</div>
                                 </td>

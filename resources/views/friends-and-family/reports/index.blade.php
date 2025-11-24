@@ -58,7 +58,6 @@
                         <div class="md:ml-auto">
                             <form action="{{ route('ff.reports.generateExecutive') }}" method="POST" target="_blank">
                                 @csrf
-                                {{-- Este input oculto se sincronizará con el filtro --}}
                                 <input type="hidden" name="user_id" id="user_id_for_pdf" value="{{ $userIdFilter }}">
                                 <button type="submit" 
                                         style="background-color: #2c3856; color: white;" 

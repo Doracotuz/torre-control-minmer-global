@@ -44,9 +44,10 @@
         }
         .logo-corner {
             position: absolute;
-            top: 30px;
+            top: 5px;
             right: 50px;
             height: 40px;
+            height: 90px;
         }
 
         .container {
@@ -71,17 +72,17 @@
             overflow: hidden;
             border: 1px solid #e5e7eb;
             page-break-inside: avoid;
-            height: 520px; 
+            height: 540px;
             position: relative;
         }
 
         .img-wrapper {
-            height: 320px;
+            height: 300px;
             width: 100%;
             background-color: white;
             border-bottom: 1px solid #f3f4f6;
             text-align: center;
-            line-height: 310px;
+            line-height: 290px;
             overflow: hidden;
             padding: 5px;
         }
@@ -101,7 +102,7 @@
 
         .sku {
             color: #374151;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 900;
             letter-spacing: 1px;
             text-transform: uppercase;
@@ -111,24 +112,24 @@
         }
 
         .title {
-            font-size: 14px;
+            font-size: 13px;
             color: #4b5563;
             font-weight: normal;
-            margin: 0 0 10px 0;
+            margin: 0 0 8px 0;
             line-height: 1.3;
-            height: 38px;
+            height: 35px;
             overflow: hidden;
         }
 
         .badges { 
-            margin-bottom: 15px; 
-            height: 20px; 
+            margin-bottom: 10px; 
+            height: 18px; 
         }
         .badge {
             display: inline-block;
-            padding: 3px 8px;
+            padding: 2px 6px;
             border-radius: 4px;
-            font-size: 8px;
+            font-size: 7px;
             font-weight: bold;
             text-transform: uppercase;
             margin-right: 5px;
@@ -136,9 +137,20 @@
         .badge-brand { background-color: #2c3856; color: white; }
         .badge-type { background-color: #e5e7eb; color: #374151; }
 
+        .specs {
+            font-size: 8px;
+            color: #6b7280;
+            margin-bottom: 10px;
+            line-height: 1.4;
+            border-top: 1px solid #f3f4f6;
+            padding-top: 8px;
+        }
+        .specs strong {
+            color: #374151;
+        }
+
         .price-block {
-            margin-top: 10px;
-            padding-top: 10px;
+            padding-top: 8px;
             border-top: 1px dotted #e5e7eb;
             text-align: right;
             display: block;
@@ -151,11 +163,11 @@
             text-transform: uppercase;
         }
         .price-amount {
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 800;
             color: #2c3856;
         }
-        .currency { font-size: 14px; vertical-align: top; margin-right: 2px; }
+        .currency { font-size: 12px; vertical-align: top; margin-right: 2px; }
 
         .inactive-overlay {
             position: absolute;
@@ -193,7 +205,10 @@
     <div class="header">
         <img src="{{ $logo_url }}" class="logo-corner">
         <div class="header-content">
-            <h1>Venta Friends & Family</h1>
+            <h1>Gestión de Catálogo</h1>
+            @if(isset($percentage_text))
+                <h2>{{ $percentage_text }}</h2>
+            @endif
         </div>
     </div>
 
@@ -205,7 +220,7 @@
                         <div class="card">
                             @if(!$product->is_active)
                                 <div class="inactive-overlay">
-                                    <div class="inactive-text">AGOTADO</div>
+                                    <div class="inactive-text">INACTIVO</div>
                                 </div>
                             @endif
 
@@ -227,16 +242,24 @@
                                     @endif
                                 </div>
 
-                                <div class="price-block">
-                                    @if($product->regular_price && $product->regular_price > $product->price)
-                                        <span style="color: #353071ff; font-size: 12px; margin-right: 5px;">Precio regular: </span>
-                                        <span style="text-decoration: line-through; color: #9ca3af; font-size: 12px; margin-right: 5px;">
-                                            ${{ number_format($product->regular_price, 2) }}
-                                        </span>
+                                <div class="specs">
+                                    @if($product->upc)
+                                        <div><strong>UPC:</strong> {{ $product->upc }}</div>
                                     @endif
+                                    @if($product->pieces_per_box)
+                                        <div><strong>Pzas/Caja:</strong> {{ $product->pieces_per_box }}</div>
+                                    @endif
+                                    @if($product->length || $product->width || $product->height)
+                                        <div>
+                                            <strong>Dimensiones:</strong> 
+                                            {{ $product->length ?? 0 }} x {{ $product->width ?? 0 }} x {{ $product->height ?? 0 }} cm
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <div class="price-block">
                                     <span class="price-amount">
-                                        <span style="color: #32437bff; font-size: 15px; margin-right: 5px;">Precio Venta: </span>
-                                        <span class="currency">$</span>{{ number_format($product->price, 2) }}
+                                        <span class="currency">$</span>{{ number_format($product->unit_price, 2) }}
                                     </span>
                                 </div>
                             </div>
@@ -248,7 +271,7 @@
     </div>
 
     <div class="footer">
-        • Documento confidencial • <span class="page-number"></span>
+        • Documento confidencial • {{ $date }}
     </div>
 </body>
 </html>

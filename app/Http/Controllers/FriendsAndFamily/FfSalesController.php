@@ -11,14 +11,17 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Dompdf\Dompdf;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\NewSaleMail;
+use App\Mail\OrderActionMail;
 
 class FfSalesController extends Controller
 {
-
     private function getNextFolio(): int
     {
         $lastMovement = ffInventoryMovement::orderByDesc('folio')->first();
-        return ($lastMovement ? $lastMovement->folio : 0) + 1;
+        return ($lastMovement ? $lastMovement->folio : 10000) + 1;
     }
 
     public function index()
@@ -87,13 +90,142 @@ class FfSalesController extends Controller
         return response()->json($reservations);
     }
 
+    public function searchOrder(Request $request)
+    {
+        $request->validate(['folio' => 'required|integer']);
+        
+        $movements = ffInventoryMovement::where('folio', $request->folio)
+            ->where('quantity', '<', 0)
+            ->with('product')
+            ->get();
+
+        if ($movements->isEmpty()) {
+            return response()->json(['message' => 'Pedido no encontrado.'], 404);
+        }
+
+        $header = $movements->first();
+
+        $user = Auth::user();
+        ffCartItem::where('user_id', $user->id)->delete();
+
+        $cartItemsData = [];
+
+        foreach($movements as $mov) {
+            ffCartItem::create([
+                'user_id' => $user->id,
+                'ff_product_id' => $mov->ff_product_id,
+                'quantity' => abs($mov->quantity)
+            ]);
+
+            $cartItemsData[] = [
+                'product_id' => $mov->ff_product_id,
+                'quantity' => abs($mov->quantity)
+            ];
+        }
+
+        return response()->json([
+            'client_data' => [
+                'client_name' => $header->client_name,
+                'company_name' => $header->company_name,
+                'client_phone' => $header->client_phone,
+                'address' => $header->address,
+                'locality' => $header->locality,
+                'delivery_date' => $header->delivery_date ? $header->delivery_date->format('Y-m-d\TH:i') : '',
+                'surtidor_name' => $header->surtidor_name,
+                'observations' => $header->observations,
+            ],
+            'cart_items' => $cartItemsData,
+            'message' => 'Pedido cargado para edición.'
+        ]);
+    }
+
+    public function cancelOrder(Request $request)
+    {
+        $request->validate([
+            'folio' => 'required|integer|exists:ff_inventory_movements,folio',
+            'reason' => 'required|string'
+        ]);
+
+        $user = Auth::user();
+        $folio = $request->folio;
+
+        DB::beginTransaction();
+        try {
+            $originalMovements = ffInventoryMovement::where('folio', $folio)
+                ->where('quantity', '<', 0)
+                ->with('product')
+                ->get();
+
+            if ($originalMovements->isEmpty()) {
+                throw new \Exception("El pedido ya fue cancelado o no existe.");
+            }
+
+            $header = $originalMovements->first();
+            $emailRecipients = [];
+            if ($request->filled('email_recipients')) {
+                 $emailRecipients = explode(';', $request->email_recipients);
+            }
+
+            foreach($originalMovements as $mov) {
+                ffInventoryMovement::create([
+                    'ff_product_id' => $mov->ff_product_id,
+                    'user_id' => $user->id,
+                    'quantity' => abs($mov->quantity),
+                    'reason' => 'CANCELACIÓN Venta Folio ' . $folio . ': ' . $request->reason,
+                    'client_name' => $mov->client_name,
+                    'folio' => $folio
+                ]);
+            }
+
+            ffCartItem::where('user_id', $user->id)->delete();
+
+            DB::commit();
+
+            if (!empty($emailRecipients)) {
+                $mailData = [
+                    'folio' => $folio,
+                    'client_name' => $header->client_name,
+                    'company_name' => $header->company_name,
+                    'delivery_date' => $header->delivery_date,
+                    'surtidor_name' => $header->surtidor_name,
+                    'cancel_reason' => $request->reason,
+                    'items' => []
+                ];
+                
+                try {
+                    Mail::to($emailRecipients)->send(new OrderActionMail($mailData, 'cancel'));
+                } catch (\Exception $e) { \Illuminate\Support\Facades\Log::error("Error mail cancel: ".$e->getMessage()); }
+            }
+
+            return response()->json(['message' => 'Pedido cancelado y stock restaurado.']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+
     public function checkout(Request $request)
     {
         $user = Auth::user();
+        $isEditMode = $request->boolean('is_edit_mode');
 
         $request->validate([
+            'folio'         => $isEditMode 
+                                ? 'required|integer|exists:ff_inventory_movements,folio'
+                                : 'required|integer|unique:ff_inventory_movements,folio',
             'client_name'   => 'required|string|max:255',
+            'company_name'  => 'required|string|max:255',
+            'client_phone'  => 'required|string|max:50',
+            'address'       => 'required|string',
+            'locality'      => 'required|string|max:255',
+            'delivery_date' => 'required|date',
             'surtidor_name' => 'nullable|string|max:255',
+            'observations'  => 'nullable|string',
+            'email_recipients' => 'nullable|string',
+        ], [
+            'folio.unique' => 'El folio ya existe.',
+            'folio.exists' => 'El folio a editar no existe.'
         ]);
 
         $cartItems = ffCartItem::where('user_id', $user->id)->with('product')->get();
@@ -102,26 +234,48 @@ class FfSalesController extends Controller
             return response()->json(['message' => 'El carrito está vacío.'], 400);
         }
 
-        $ventaFolio = $this->getNextFolio();
+        $ventaFolio = $request->folio;
         $pdfItems = [];
         $grandTotal = 0;
 
         DB::beginTransaction();
 
         try {
+            if ($isEditMode) {
+                $originalMovements = ffInventoryMovement::where('folio', $ventaFolio)
+                    ->where('quantity', '<', 0)
+                    ->get();
+                
+                foreach($originalMovements as $mov) {
+                    ffInventoryMovement::create([
+                        'ff_product_id' => $mov->ff_product_id,
+                        'user_id' => $user->id,
+                        'quantity' => abs($mov->quantity),
+                        'reason' => 'Ajuste por Edición Folio ' . $ventaFolio,
+                        'folio' => $ventaFolio
+                    ]);
+                }
+            }
+
             foreach ($cartItems as $item) {
                 $product = $item->product;
                 $quantity = $item->quantity;
-                $price = $product->price ?? 0;
+                $price = $product->unit_price ?? 0;
                 $totalPrice = $quantity * $price;
                 
                 ffInventoryMovement::create([
                     'ff_product_id' => $product->id,
                     'user_id'       => $user->id,
                     'quantity'      => -$quantity,
-                    'reason'        => 'Venta F&F Folio ' . $ventaFolio,
+                    'reason'        => ($isEditMode ? 'Edición' : 'Venta') . ' F&F Folio ' . $ventaFolio,
                     'client_name'   => $request->client_name,
+                    'company_name'  => $request->company_name,
+                    'client_phone'  => $request->client_phone,
+                    'address'       => $request->address,
+                    'locality'      => $request->locality,
+                    'delivery_date' => $request->delivery_date,
                     'surtidor_name' => $request->surtidor_name,
+                    'observations'  => $request->observations,
                     'folio'         => $ventaFolio,
                 ]);
 
@@ -134,11 +288,9 @@ class FfSalesController extends Controller
                 ];
 
                 $grandTotal += $totalPrice;
-                
             }
 
             DB::commit();
-            
             ffCartItem::where('user_id', $user->id)->delete();
 
         } catch (\Exception $e) {
@@ -146,36 +298,61 @@ class FfSalesController extends Controller
             return response()->json(['message' => $e->getMessage()], 500);
         }
         
-        $logoUrl = Storage::disk('s3')->url('logoMoetHennessy.PNG');
-
+        $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
         $pdfData = [
             'items' => $pdfItems,
             'grandTotal' => $grandTotal,
             'folio' => $ventaFolio,
-            'date' => now()->format('d/m/Y H:i:s'),
+            'date' => now()->format('d/m/Y'),
             'client_name' => $request->client_name,
+            'company_name' => $request->company_name,
+            'client_phone' => $request->client_phone,
+            'address' => $request->address,
+            'locality' => $request->locality,
+            'delivery_date' => Carbon::parse($request->delivery_date)->format('d/m/Y H:i'),
             'surtidor_name' => $request->surtidor_name,
+            'observations' => $request->observations,
             'vendedor_name' => $user->name,
             'logo_url' => $logoUrl,
-            'copies' => ['Original', 'Copia Cliente', 'Copia Almacén'],
         ];
 
-        $pdfView = view('friends-and-family.sales.pdf', $pdfData);
         $dompdf = new Dompdf();
-        
         $options = $dompdf->getOptions();
         $options->set('isRemoteEnabled', true);
         $dompdf->setOptions($options);
-
+        $pdfView = view('friends-and-family.sales.pdf', $pdfData);
         $dompdf->loadHtml($pdfView->render());
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
+        $pdfContent = $dompdf->output();
+
+        $csvHeader = ['SKU', 'Descripcion', 'Cantidad', 'Precio Unitario', 'Total'];
+        $stream = fopen('php://temp', 'r+');
+        fputcsv($stream, $csvHeader);
+        foreach ($pdfItems as $row) {
+            fputcsv($stream, [$row['sku'], $row['description'], $row['quantity'], $row['unit_price'], $row['total_price']]);
+        }
+        rewind($stream);
+        $csvContent = stream_get_contents($stream);
+        fclose($stream);
+
+        if ($request->filled('email_recipients')) {
+            $recipients = array_map('trim', explode(';', $request->email_recipients));
+            $recipients = array_filter($recipients, fn($email) => filter_var($email, FILTER_VALIDATE_EMAIL));
+            
+            if (!empty($recipients)) {
+                try {
+                    $mailType = $isEditMode ? 'update' : 'new';
+                    $pdfData['items'] = $pdfItems; 
+                    
+                    Mail::to($recipients)->send(new OrderActionMail($pdfData, $mailType, $pdfContent, $csvContent));
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Error enviando correo F&F: " . $e->getMessage());
+                }
+            }
+        }
         
-        return response(
-            $dompdf->output(), 
-            200, 
-            ['Content-Type' => 'application/pdf','X-Venta-Folio' => $ventaFolio]
-        );
+        return response($pdfContent, 200, ['Content-Type' => 'application/pdf', 'X-Venta-Folio' => $ventaFolio]);
     }
 
     public function printList(Request $request)
@@ -191,9 +368,8 @@ class FfSalesController extends Controller
             'date'     => now()->format('d/m/Y'),
         ];
         
-        $pdfData['logo_url'] = Storage::disk('s3')->url('logoMoetHennessy.PNG');
+        $pdfData['logo_url'] = Storage::disk('s3')->url('logoConsorcioMonter.png');
         
-
         $pdfView = view('friends-and-family.sales.print-pdf', $pdfData);
         $dompdf = new Dompdf();
         
@@ -211,5 +387,4 @@ class FfSalesController extends Controller
             ['Content-Type' => 'application/pdf']
         );
     }
-
 }
