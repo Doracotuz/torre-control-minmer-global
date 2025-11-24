@@ -59,7 +59,7 @@
         }
     })"
      @click.away="showSuggestions = false"
-     class="nav-bg border-gray-100 relative z-20 sticky top-0">
+     class="nav-bg border-gray-100 relative z-20 sticky top-0 z-50">
 
     <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16 items-center">
