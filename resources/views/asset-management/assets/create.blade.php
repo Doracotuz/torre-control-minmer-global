@@ -3,271 +3,275 @@
 @section('content')
 <style>
     :root {
-        --color-primary: #2c3856;
-        --color-accent: #ff9c00;
-        --color-text-primary: #2b2b2b;
-        --color-text-secondary: #666666;
-        --color-surface: #ffffff;
-        --color-background: #f3f4f6;
-        --color-primary-dark: #212a41;
-        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        --primary: #2c3856;
+        --primary-light: #3d4d75;
+        --accent: #ff9c00;
+        --bg-color: #f3f4f6;
     }
-    body { background-color: var(--color-background); }
-    .form-input, .form-select, .form-textarea {
-        border-radius: 0.5rem; border-color: #d1d5db; transition: all 150ms ease-in-out;
-    }
-    .form-input:focus, .form-select:focus, .form-textarea:focus {
-        --tw-ring-color: var(--color-primary); border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--tw-ring-color);
-    }
-    label.form-label { font-weight: 600; color: var(--color-text-primary); margin-bottom: 0.5rem; display: block; }
-    .btn {
-        padding: 0.65rem 1.25rem; border-radius: 0.5rem; font-weight: 600; display: inline-flex;
-        align-items: center; justify-content: center; box-shadow: var(--shadow-sm);
-        transition: all 200ms ease-in-out; transform: translateY(0);
-    }
-    .btn:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-    .btn-primary { background-color: var(--color-primary); color: white; }
-    .btn-primary:hover { background-color: var(--color-primary-dark); }
-    .btn-secondary { background-color: var(--color-surface); color: var(--color-text-secondary); border: 1px solid #d1d5db; }
-    .btn-secondary:hover { background-color: #f9fafb; }
+    [x-cloak] { display: none !important; }
 
-    .photo-uploader {
-        border: 2px dashed #d1d5db;
-        border-radius: 0.75rem;
-        padding: 1rem;
-        text-align: center;
-        cursor: pointer;
-        transition: border-color 200ms ease, background-color 200ms ease;
+    .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
     }
-    .photo-uploader:hover {
-        border-color: var(--color-primary);
-        background-color: #f9fafb;
-    }
-    .photo-uploader.has-preview {
-        border-style: solid;
-        padding: 0;
-        position: relative;
-    }
-    .photo-preview {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 0.75rem;
-    }
-    .remove-photo-btn {
+    
+    .form-floating-icon {
         position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
-        background-color: rgba(0,0,0,0.6);
-        color: white;
-        border-radius: 9999px;
-        width: 1.5rem;
-        height: 1.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: transform 150ms ease;
+        top: 50%;
+        left: 1rem;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        pointer-events: none;
+        z-index: 10;
     }
-    .remove-photo-btn:hover {
-        transform: scale(1.1);
+    
+    .modern-input, .modern-select, .modern-textarea {
+        padding-left: 2.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+        background-color: #f9fafb;
+        width: 100%;
     }
+    .modern-input:focus, .modern-select:focus, .modern-textarea:focus {
+        background-color: #fff;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(44, 56, 86, 0.1);
+        outline: none;
+    }
+    .modern-textarea { padding-top: 1rem; padding-left: 1rem; }
+    .form-floating-icon.top-icon { top: 1.5rem; }
 </style>
 
-@if ($errors->any())<div class="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert"><ul class="list-disc list-inside">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
-
-<div class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="mb-8">
-        <a href="{{ url()->previous() }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-2 inline-block">
-            <i class="fas fa-arrow-left mr-2"></i> Volver al Dashboard
-        </a>
-        <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight">Registrar Nuevo Activo</h1>
-        <p class="text-[var(--color-text-secondary)] mt-1">Completa los detalles del nuevo hardware para añadirlo al inventario.</p>
-    </div>
+<div class="min-h-screen bg-[#f3f4f6] pb-20">
     
-    <form action="{{ route('asset-management.assets.store') }}" method="POST" enctype="multipart/form-data">
-        @csrf
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <div class="lg:col-span-2 bg-white p-8 rounded-xl shadow-lg space-y-8">
-                <fieldset>
-                    <legend class="text-xl font-bold text-[var(--color-primary)] border-b border-gray-200 pb-2 mb-6 w-full">Información Principal</legend>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="asset_tag" class="form-label">Etiqueta de Activo</label>
-                            <input type="text" id="asset_tag" name="asset_tag" class="form-input w-full" value="{{ old('asset_tag') }}" required>
-                        </div>
-                        <div>
-                            <label for="serial_number" class="form-label">Número de Serie</label>
-                            <input type="text" id="serial_number" name="serial_number" class="form-input w-full" value="{{ old('serial_number') }}" required>
-                        </div>
-                    </div>
-                </fieldset>
+    <div class="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] pt-10 pb-32 px-4 sm:px-6 lg:px-8 shadow-xl rounded-b-[3rem] relative overflow-hidden">
+        <div class="absolute right-0 top-0 h-full w-1/2 bg-white/5 skew-x-12 transform origin-top-right"></div>
+        <div class="absolute left-10 bottom-10 text-[8rem] text-white/5 font-bold leading-none select-none">
+            NUEVO
+        </div>
 
-                <fieldset>
-                    <legend class="text-xl font-bold text-[var(--color-primary)] border-b border-gray-200 pb-2 mb-6 w-full">Clasificación y Modelo</legend>
-                    <div x-data="{ models: {{ $groupedModels->toJson() }}, categories: {{ $groupedModels->keys()->toJson() }}, selectedCategory: '{{ old('category') }}', filteredModels: [] }"
-                         x-init="filteredModels = models[selectedCategory] || []" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="category" class="form-label">Categoría</label>
-                            <select id="category" x-model="selectedCategory" @change="filteredModels = models[selectedCategory] || []" class="form-select w-full" required>
-                                <option value="">-- Selecciona una categoría --</option>
-                                <template x-for="category in categories" :key="category">
-                                    <option :value="category" x-text="category"></option>
-                                </template>
-                            </select>
-                        </div>
-                        <div x-show="selectedCategory" x-transition>
-                            <label for="hardware_model_id" class="form-label">Modelo</label>
-                            <select id="hardware_model_id" name="hardware_model_id" class="form-select w-full" required>
-                                <option value="">-- Selecciona un modelo --</option>
-                                <template x-for="model in filteredModels" :key="model.id">
-                                    <option :value="model.id" x-text="model.name" :selected="model.id == {{ old('hardware_model_id', 'null') }}"></option>
-                                </template>
-                            </select>
-                        </div>
-                        
-                        <div x-show="selectedCategory === 'Laptop' || selectedCategory === 'Desktop' || selectedCategory === 'Ipad' || selectedCategory === 'Impresora' || selectedCategory === 'Celular' || selectedCategory === 'Pantalla' || selectedCategory === 'Monitor' || selectedCategory === 'Escáner'" x-transition class="md:col-span-2 space-y-6">
-                            <h3 class="font-semibold text-lg text-gray-700 mt-4">Especificaciones Técnicas</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div><label for="cpu" class="form-label">Procesador</label><input type="text" name="cpu" id="cpu" class="form-input w-full" value="{{ old('cpu') }}"></div>
-                                <div><label for="ram" class="form-label">RAM (e.g., 16GB)</label><input type="text" name="ram" id="ram" class="form-input w-full" value="{{ old('ram') }}"></div>
-                                <div><label for="storage" class="form-label">Almacenamiento (e.g., 512GB SSD)</label><input type="text" name="storage" id="storage" class="form-input w-full" value="{{ old('storage') }}"></div>
-                                <div><label for="mac_address" class="form-label">MAC Address</label><input type="text" name="mac_address" id="mac_address" class="form-input w-full" value="{{ old('mac_address') }}"></div>
-                            </div>
-                        </div>
-
-                        <div x-show="selectedCategory === 'Celular'" x-transition class="md:col-span-2 space-y-6">
-                             <h3 class="font-semibold text-lg text-gray-700 mt-4">Detalles de Telefonía</h3>
-                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label for="phone_plan_type" class="form-label">Tipo de Plan</label>
-                                    <select name="phone_plan_type" id="phone_plan_type" class="form-select w-full"><option value="">-- Selecciona --</option><option value="Prepago">Prepago</option><option value="Plan">Plan</option></select>
-                                </div>
-                                <div><label for="phone_number" class="form-label">Número Telefónico</label><input type="text" name="phone_number" id="phone_number" class="form-input w-full" value="{{ old('phone_number') }}"></div>
-                            </div>
-                        </div>
-                    </div>
-                </fieldset>
-
-                <fieldset>
-                    <legend class="text-xl font-bold text-[var(--color-primary)] border-b border-gray-200 pb-2 mb-6 w-full">Fotografías del Activo (Opcional)</legend>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        <div x-data="{ photoName: null, photoPreview: null }">
-                            <input name="photo_1" type="file" x-ref="photo1" class="hidden" @change="
-                                photoName = $event.target.files[0].name;
-                                const reader = new FileReader();
-                                reader.onload = (e) => { photoPreview = e.target.result };
-                                reader.readAsDataURL($event.target.files[0]);
-                            ">
-                            <label @click="$refs.photo1.click()" class="photo-uploader aspect-square flex flex-col items-center justify-center" :class="{'has-preview': photoPreview}">
-                                <template x-if="photoPreview">
-                                    <div>
-                                        <img :src="photoPreview" class="photo-preview">
-                                        <button @click.prevent="photoName = null; photoPreview = null; $refs.photo1.value = null" class="remove-photo-btn">&times;</button>
-                                    </div>
-                                </template>
-                                <template x-if="!photoPreview">
-                                    <div class="text-gray-500">
-                                        <i class="fas fa-camera text-3xl"></i>
-                                        <p class="text-xs font-semibold mt-2">Foto Principal</p>
-                                    </div>
-                                </template>
-                            </label>
-                        </div>
-                        <div x-data="{ photoName: null, photoPreview: null }">
-                            <input name="photo_2" type="file" x-ref="photo2" class="hidden" @change="
-                                photoName = $event.target.files[0].name;
-                                const reader = new FileReader();
-                                reader.onload = (e) => { photoPreview = e.target.result };
-                                reader.readAsDataURL($event.target.files[0]);
-                            ">
-                            <label @click="$refs.photo2.click()" class="photo-uploader aspect-square flex flex-col items-center justify-center" :class="{'has-preview': photoPreview}">
-                                <template x-if="photoPreview">
-                                    <div>
-                                        <img :src="photoPreview" class="photo-preview">
-                                        <button @click.prevent="photoName = null; photoPreview = null; $refs.photo2.value = null" class="remove-photo-btn">&times;</button>
-                                    </div>
-                                </template>
-                                <template x-if="!photoPreview">
-                                    <div class="text-gray-500">
-                                        <i class="fas fa-camera text-3xl"></i>
-                                        <p class="text-xs font-semibold mt-2">Foto 2</p>
-                                    </div>
-                                </template>
-                            </label>
-                        </div>
-                        <div x-data="{ photoName: null, photoPreview: null }">
-                            <input name="photo_3" type="file" x-ref="photo3" class="hidden" @change="
-                                photoName = $event.target.files[0].name;
-                                const reader = new FileReader();
-                                reader.onload = (e) => { photoPreview = e.target.result };
-                                reader.readAsDataURL($event.target.files[0]);
-                            ">
-                            <label @click="$refs.photo3.click()" class="photo-uploader aspect-square flex flex-col items-center justify-center" :class="{'has-preview': photoPreview}">
-                                <template x-if="photoPreview">
-                                    <div>
-                                        <img :src="photoPreview" class="photo-preview">
-                                        <button @click.prevent="photoName = null; photoPreview = null; $refs.photo3.value = null" class="remove-photo-btn">&times;</button>
-                                    </div>
-                                </template>
-                                <template x-if="!photoPreview">
-                                    <div class="text-gray-500">
-                                        <i class="fas fa-camera text-3xl"></i>
-                                        <p class="text-xs font-semibold mt-2">Foto 3</p>
-                                    </div>
-                                </template>
-                            </label>
-                        </div>
-                    </div>
-                </fieldset>
+        <div class="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row justify-between items-end">
+            <div class="text-white">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="bg-green-500/20 text-green-100 border border-green-400/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+                        Alta de Inventario
+                    </span>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-black tracking-tight">Registrar Activo</h1>
+                <p class="mt-2 text-blue-100 text-lg">Ingresa los detalles técnicos y administrativos del nuevo equipo.</p>
             </div>
+            <div class="mt-6 md:mt-0">
+                <a href="{{ route('asset-management.dashboard') }}" class="group flex items-center px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl backdrop-blur-md transition-all border border-white/10">
+                    <i class="fas fa-arrow-left mr-2 group-hover:-translate-x-1 transition-transform"></i>
+                    Volver al Tablero
+                </a>
+            </div>
+        </div>
+    </div>
 
-            <div class="lg:col-span-1 bg-white p-8 rounded-xl shadow-lg space-y-8 h-fit">
-                <fieldset>
-                    <legend class="text-xl font-bold text-[var(--color-primary)] border-b border-gray-200 pb-2 mb-6 w-full">Estatus y Ubicación</legend>
-                    <div class="space-y-6">
-                        <div>
-                            <label for="status" class="form-label">Estatus</label>
-                            <select id="status" name="status" class="form-select w-full" required>
-                                <option value="En Almacén" selected>En Almacén</option><option value="Asignado">Asignado</option><option value="En Reparación">En Reparación</option><option value="Prestado">Prestado</option><option value="De Baja">De Baja</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="site_id" class="form-label">Sitio / Ubicación</label>
-                            <select id="site_id" name="site_id" class="form-select w-full" required>
-                                @foreach($sites as $site)<option value="{{ $site->id }}" @selected(old('site_id') == $site->id)>{{ $site->name }}</option>@endforeach
-                            </select>
-                        </div>
-                    </div>
-                </fieldset>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-0">
+        <form action="{{ route('asset-management.assets.store') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
-                <fieldset>
-                    <legend class="text-xl font-bold text-[var(--color-primary)] border-b border-gray-200 pb-2 mb-6 w-full">Información de Compra</legend>
-                    <div class="space-y-6">
-                        <div>
-                            <label for="purchase_date" class="form-label">Fecha de Compra</label>
-                            <input type="date" id="purchase_date" name="purchase_date" class="form-input w-full" value="{{ old('purchase_date') }}">
+                <div class="lg:col-span-2 space-y-6">
+                    
+                    <div class="glass-card rounded-2xl p-6 md:p-8 bg-white">
+                        <h3 class="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4 mb-6 flex items-center">
+                            <i class="fas fa-fingerprint text-[var(--primary)] mr-2 bg-blue-50 p-2 rounded-lg"></i>
+                            Identificación
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Etiqueta de Activo <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <i class="fas fa-tag form-floating-icon"></i>
+                                    <input type="text" name="asset_tag" class="modern-input py-3" value="{{ old('asset_tag') }}" placeholder="Ej: ACT-2025-001" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Número de Serie <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <i class="fas fa-barcode form-floating-icon"></i>
+                                    <input type="text" name="serial_number" class="modern-input py-3" value="{{ old('serial_number') }}" placeholder="Ej: XJ9-12345" required>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label for="warranty_end_date" class="form-label">Fin de Garantía</label>
-                            <input type="date" id="warranty_end_date" name="warranty_end_date" class="form-input w-full" value="{{ old('warranty_end_date') }}">
+
+                        <div x-data="{ models: {{ $groupedModels->toJson() }}, categories: {{ $groupedModels->keys()->toJson() }}, selectedCategory: '{{ old('category') }}', filteredModels: [] }"
+                             x-init="filteredModels = models[selectedCategory] || []">
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Categoría <span class="text-red-500">*</span></label>
+                                    <div class="relative">
+                                        <i class="fas fa-layer-group form-floating-icon"></i>
+                                        <select x-model="selectedCategory" @change="filteredModels = models[selectedCategory] || []" class="modern-select py-3 appearance-none" required>
+                                            <option value="">Selecciona...</option>
+                                            <template x-for="category in categories" :key="category">
+                                                <option :value="category" x-text="category"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div x-show="selectedCategory" x-transition>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Modelo <span class="text-red-500">*</span></label>
+                                    <div class="relative">
+                                        <i class="fas fa-box-open form-floating-icon"></i>
+                                        <select name="hardware_model_id" class="modern-select py-3 appearance-none" required>
+                                            <option value="">Selecciona...</option>
+                                            <template x-for="model in filteredModels" :key="model.id">
+                                                <option :value="model.id" x-text="model.name" :selected="model.id == {{ old('hardware_model_id', 'null') }}"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div x-show="['Laptop', 'Desktop', 'Celular', 'Ipad', 'Monitor'].includes(selectedCategory)" x-transition class="bg-gray-50 rounded-xl p-5 border border-gray-100 mt-6">
+                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Especificaciones Técnicas</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-xs font-semibold text-gray-600">Procesador</label>
+                                        <input type="text" name="cpu" class="modern-input py-2 text-sm" placeholder="Ej: Intel i7" value="{{ old('cpu') }}">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold text-gray-600">RAM</label>
+                                        <input type="text" name="ram" class="modern-input py-2 text-sm" placeholder="Ej: 16GB" value="{{ old('ram') }}">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold text-gray-600">Almacenamiento</label>
+                                        <input type="text" name="storage" class="modern-input py-2 text-sm" placeholder="Ej: 512GB SSD" value="{{ old('storage') }}">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold text-gray-600">MAC Address</label>
+                                        <input type="text" name="mac_address" class="modern-input py-2 text-sm" placeholder="00:00:00:00:00:00" value="{{ old('mac_address') }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                             <div x-show="selectedCategory === 'Celular'" x-transition class="bg-blue-50 rounded-xl p-5 border border-blue-100 mt-4">
+                                <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-4">Datos de Línea</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-xs font-semibold text-gray-600">Número</label>
+                                        <input type="text" name="phone_number" class="modern-input py-2 text-sm" placeholder="55 1234 5678" value="{{ old('phone_number') }}">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold text-gray-600">Plan</label>
+                                        <select name="phone_plan_type" class="modern-select py-2 text-sm">
+                                            <option value="">Selecciona...</option>
+                                            <option value="Plan">Plan Empresarial</option>
+                                            <option value="Prepago">Prepago</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </fieldset>
 
-                <div>
-                    <label for="notes" class="form-label">Notas Adicionales</label>
-                    <textarea id="notes" name="notes" rows="5" class="form-textarea w-full">{{ old('notes') }}</textarea>
+                    <div class="glass-card rounded-2xl p-6 md:p-8 bg-white">
+                        <h3 class="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4 mb-6 flex items-center">
+                            <i class="fas fa-camera text-[var(--accent)] mr-2 bg-orange-50 p-2 rounded-lg"></i>
+                            Evidencia Fotográfica
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                            @foreach([1, 2, 3] as $i)
+                                <div x-data="{ photoName: null, photoPreview: null }" class="group relative">
+                                    <input name="photo_{{ $i }}" type="file" x-ref="photo{{ $i }}" class="hidden" @change="
+                                        photoName = $event.target.files[0].name;
+                                        const reader = new FileReader();
+                                        reader.onload = (e) => { photoPreview = e.target.result };
+                                        reader.readAsDataURL($event.target.files[0]);
+                                    ">
+                                    
+                                    <div @click="$refs.photo{{ $i }}.click()" 
+                                         class="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[var(--primary)] hover:bg-blue-50 transition-all overflow-hidden relative"
+                                         :class="{'border-solid border-[var(--primary)]': photoPreview}">
+                                        
+                                        <template x-if="!photoPreview">
+                                            <div class="text-center p-4">
+                                                <i class="fas fa-cloud-upload-alt text-3xl text-gray-300 group-hover:text-[var(--primary)] transition-colors"></i>
+                                                <p class="text-xs font-bold text-gray-500 mt-2">Foto {{ $i }}</p>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="photoPreview">
+                                            <img :src="photoPreview" class="w-full h-full object-cover">
+                                        </template>
+
+                                        <template x-if="photoPreview">
+                                            <button @click.stop.prevent="photoName = null; photoPreview = null; $refs.photo{{ $i }}.value = null" 
+                                                    class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-lg hover:scale-110 transition-transform">
+                                                &times;
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-[var(--primary)] sticky top-6">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Detalles Administrativos</h4>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Estatus Inicial</label>
+                                <div class="relative">
+                                    <i class="fas fa-info-circle form-floating-icon"></i>
+                                    <select name="status" class="modern-select py-3" required>
+                                        <option value="En Almacén" selected>En Almacén</option>
+                                        <option value="Asignado">Asignado</option>
+                                        <option value="En Reparación">En Reparación</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Ubicación / Sitio</label>
+                                <div class="relative">
+                                    <i class="fas fa-map-marker-alt form-floating-icon"></i>
+                                    <select name="site_id" class="modern-select py-3" required>
+                                        @foreach($sites as $site)
+                                            <option value="{{ $site->id }}" @selected(old('site_id') == $site->id)>{{ $site->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="border-t border-gray-100 pt-4 my-4"></div>
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Fecha Compra</label>
+                                <input type="date" name="purchase_date" class="modern-input py-2 pl-4" value="{{ old('purchase_date') }}">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Fin Garantía</label>
+                                <input type="date" name="warranty_end_date" class="modern-input py-2 pl-4" value="{{ old('warranty_end_date') }}">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Notas</label>
+                                <textarea name="notes" rows="4" class="modern-textarea w-full rounded-lg border-gray-300 text-sm" placeholder="Detalles adicionales...">{{ old('notes') }}</textarea>
+                            </div>
+
+                            <button type="submit" class="w-full bg-[var(--primary)] hover:bg-[var(--primary-light)] text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 transition-all transform hover:-translate-y-1 mt-4">
+                                <i class="fas fa-save mr-2"></i> Guardar Activo
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <div class="mt-8 pt-6 border-t border-gray-200 flex justify-end items-center space-x-4">
-            <a href="{{ route('asset-management.dashboard') }}" class="btn btn-secondary">Cancelar</a>
-            <button type="submit" class="btn btn-primary">Guardar Activo</button>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 @endsection

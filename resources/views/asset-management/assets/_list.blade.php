@@ -1,104 +1,100 @@
-<div class="table-container border rounded-lg overflow-hidden">
-    <div class="responsive-table-header hidden md:grid md:grid-cols-7 gap-4 bg-[#2c3856] p-4 font-bold text-xs text-[#ffffff] uppercase tracking-wider">
-        <div class="col-span-1">Etiqueta</div>
-        <div class="col-span-1">Categoría</div>
-        <div class="col-span-1">Modelo</div>
-        <div class="col-span-1">Estatus</div>
-        <div class="col-span-1">Asignado a</div>
-        <div class="col-span-1">Ubicación</div>
-        <div class="col-span-1 text-right">Acciones</div>
-    </div>
-
-    <div classD="divide-y md:divide-y-0">
-        @forelse ($assets as $asset)
-            <div class="hidden md:grid md:grid-cols-7 gap-4 p-4 items-center hover:bg-gray-50 transition-colors">
-                <div><a href="{{ route('asset-management.assets.show', $asset) }}" class="font-mono text-[var(--color-primary)] hover:underline font-semibold">{{ $asset->asset_tag }}</a></div>
-                <div class="text-gray-600">{{ $asset->model->category->name ?? 'N/A' }}</div>
-                <div class="font-semibold text-gray-800">{{ $asset->model->name ?? 'N/A' }}</div>
-                <div><span class="status-badge status-{{ Str::kebab($asset->status) }}">{{ $asset->status }}</span></div>
-                <div class="text-gray-600 text-sm">
-                    @php
-                        $assignments = $asset->currentAssignments;
-                        $count = $assignments->count();
-                        $names = $assignments->pluck('member.name');
-                    @endphp
-
-                    @if($count > 0)
-                        @if($count > 2)
-                            {{ $names->take(2)->implode(', ') }}
-                            <a href="{{ route('asset-management.assets.show', $asset) }}" class="text-blue-500 hover:underline whitespace-nowrap">
-                                (+{{ $count - 2 }} más)
-                            </a>
-                        @else
-                            {{ $names->implode(', ') }}
-                        @endif
-                    @else
-                        ---
-                    @endif
-                </div>
-                <div class="text-gray-600">{{ $asset->site->name ?? 'N/A' }}</div>
-                <div class="flex items-center justify-end space-x-4">
-                    <a href="{{ route('asset-management.assets.show', $asset) }}" title="Ver Detalles"><i class="fas fa-eye"></i></a>
-                    <a href="{{ route('asset-management.assets.edit', $asset) }}" title="Editar Activo"><i class="fas fa-pencil-alt"></i></a>
-                </div>
-            </div>
-
-            <div class="asset-card md:hidden">
-                <div class="asset-card-row">
-                    <span class="asset-card-label">Etiqueta</span>
-                    <span class="asset-card-value"><a href="{{ route('asset-management.assets.show', $asset) }}" class="font-mono text-[var(--color-primary)] hover:underline font-semibold">{{ $asset->asset_tag }}</a></span>
-                </div>
-                <div class="asset-card-row">
-                    <span class="asset-card-label">Estatus</span>
-                    <span class="asset-card-value"><span class="status-badge status-{{ Str::kebab($asset->status) }}">{{ $asset->status }}</span></span>
-                </div>
-                <div class="asset-card-row">
-                    <span class="asset-card-label">Modelo</span>
-                    <span class="asset-card-value font-semibold">{{ $asset->model->name ?? 'N/A' }}</span>
-                </div>
-                <div class="asset-card-row">
-                    <span class="asset-card-label">Asignado a</span>
-                    <span class="asset-card-value text-sm">
-                        @php
-                            $assignments = $asset->currentAssignments;
-                            $count = $assignments->count();
-                            $names = $assignments->pluck('member.name');
-                        @endphp
-
-                        @if($count > 0)
-                            @if($count > 2)
-                                {{ $names->take(2)->implode(', ') }}
-                                <a href="{{ route('asset-management.assets.show', $asset) }}" class="text-blue-500 hover:underline whitespace-nowrap">
-                                    (+{{ $count - 2 }} más)
-                                </a>
-                            @else
-                                {{ $names->implode(', ') }}
+<div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="bg-gray-50 border-b border-gray-100">
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Activo</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Categoría & Modelo</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estatus</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Ubicación / Asignación</th>
+                    <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            @forelse ($assets as $asset)
+                <tbody x-data="{ expanded: false }" class="border-b border-gray-100 last:border-0 group hover:bg-blue-50/30 transition-colors duration-200">
+                    <tr class="cursor-pointer" :class="{'bg-blue-50/50': expanded}" @click="expanded = !expanded">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-gray-100 flex items-center justify-center text-[var(--primary)] shadow-sm font-bold text-xs">
+                                    {{ substr($asset->asset_tag, -3) }}
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-bold text-[var(--primary)] font-mono">{{ $asset->asset_tag }}</div>
+                                    <div class="text-xs text-gray-500">{{ $asset->serial_number }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ $asset->model->name ?? 'N/A' }}</div>
+                            <div class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded inline-block mt-1">
+                                {{ $asset->model->category->name ?? 'N/A' }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {{ $asset->status == 'En Almacén' ? 'bg-green-100 text-green-800 border-green-200' : 
+                                  ($asset->status == 'Asignado' ? 'bg-blue-100 text-blue-800 border-blue-200' : 
+                                  ($asset->status == 'En Reparación' ? 'bg-orange-100 text-orange-800 border-orange-200' : 'bg-gray-100 text-gray-800')) }}">
+                                <span class="w-2 h-2 mr-1.5 rounded-full {{ $asset->status == 'En Almacén' ? 'bg-green-500' : ($asset->status == 'Asignado' ? 'bg-blue-500' : 'bg-orange-500') }}"></span>
+                                {{ $asset->status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900 font-medium"><i class="fas fa-map-marker-alt text-gray-400 mr-1"></i> {{ $asset->site->name ?? 'N/A' }}</div>
+                            @if($asset->currentAssignments->count() > 0)
+                                <div class="text-xs text-blue-600 mt-1 font-semibold">
+                                    <i class="fas fa-user mr-1"></i> {{ $asset->currentAssignments->first()->member->name }}
+                                    @if($asset->currentAssignments->count() > 1) (+{{ $asset->currentAssignments->count() - 1 }}) @endif
+                                </div>
                             @endif
-                        @else
-                            ---
-                        @endif
-                    </span>
-                </div>
-                <div class="asset-card-row">
-                    <span class="asset-card-label">Ubicación</span>
-                    <span class="asset-card-value">{{ $asset->site->name ?? 'N/A' }}</span>
-                </div>
-                <div class="flex items-center justify-end space-x-6 pt-4">
-                    <a href="{{ route('asset-management.assets.show', $asset) }}" class="btn btn-secondary py-2 px-4 text-sm">Ver Detalles</a>
-                    <a href="{{ route('asset-management.assets.edit', $asset) }}" class="btn btn-primary py-2 px-4 text-sm">Editar</a>
-                </div>
-            </div>
-        @empty
-            <div class="text-center p-12 col-span-full">
-                <i class="fas fa-box-open text-4xl text-gray-300 mb-4"></i>
-                <p class="text-gray-500">No se encontraron activos que coincidan con los filtros.</p>
-            </div>
-        @endforelse
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end space-x-2">
+                                <a href="{{ route('asset-management.assets.show', $asset) }}" class="p-2 text-gray-500 hover:text-[var(--primary)] hover:bg-gray-100 rounded-lg transition-all" title="Ver Detalles">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ route('asset-management.assets.edit', $asset) }}" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Editar">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </a>
+                                <button @click.stop="expanded = !expanded" class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                                    <i class="fas fa-chevron-down transform transition-transform duration-200" :class="{'rotate-180': expanded}"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr x-show="expanded" x-cloak x-transition class="bg-gray-50/50 border-b border-gray-100">
+                        <td colspan="5" class="px-6 py-4">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                <div class="p-3 bg-white rounded border border-gray-200">
+                                    <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Specs</h4>
+                                    <p><strong>CPU:</strong> {{ $asset->cpu ?? '-' }}</p>
+                                    <p><strong>RAM:</strong> {{ $asset->ram ?? '-' }}</p>
+                                    <p><strong>Storage:</strong> {{ $asset->storage ?? '-' }}</p>
+                                </div>
+                                <div class="p-3 bg-white rounded border border-gray-200">
+                                    <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Garantía & Compra</h4>
+                                    <p><strong>Comprado:</strong> {{ $asset->purchase_date ? date('d/m/Y', strtotime($asset->purchase_date)) : '-' }}</p>
+                                    <p><strong>Fin Garantía:</strong> {{ $asset->warranty_end_date ? date('d/m/Y', strtotime($asset->warranty_end_date)) : '-' }}</p>
+                                </div>
+                                <div class="p-3 bg-white rounded border border-gray-200">
+                                    <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Notas</h4>
+                                    <p class="text-gray-600 italic">{{ $asset->notes ?? 'Sin notas adicionales.' }}</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            @empty
+                <tbody>
+                    <tr><td colspan="5" class="p-8 text-center text-gray-500">No se encontraron activos.</td></tr>
+                </tbody>
+            @endforelse
+        </table>
     </div>
+    
+    @if ($assets->hasPages())
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+            {!! $assets->links() !!}
+        </div>
+    @endif
 </div>
-
-@if ($assets->hasPages())
-    <div class="p-4 bg-gray-50 border-t mt-4 rounded-b-lg">
-        {!! $assets->links() !!}
-    </div>
-@endif

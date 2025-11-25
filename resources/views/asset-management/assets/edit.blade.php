@@ -3,216 +3,179 @@
 @section('content')
 <style>
     :root {
-        --color-primary: #2c3856;
-        --color-accent: #ff9c00;
-        --color-text-primary: #2b2b2b;
-        --color-text-secondary: #666666;
-        --color-surface: #ffffff;
-        
-        --color-primary-dark: #212a41;
-        --color-background: #f3f4f6;
-        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        --primary: #2c3856;
+        --primary-light: #3d4d75;
+        --accent: #ff9c00;
+        --bg-color: #f3f4f6;
     }
+    [x-cloak] { display: none !important; }
 
-    body {
-        background-color: var(--color-background);
+    .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
     }
-
-    .form-input, .form-select, .form-textarea {
-        border-radius: 0.5rem;
-        border-color: #d1d5db;
-        transition: all 150ms ease-in-out;
+    .form-floating-icon {
+        position: absolute; top: 50%; left: 1rem; transform: translateY(-50%); color: #9ca3af; pointer-events: none; z-index: 10;
     }
-    .form-input:focus, .form-select:focus, .form-textarea:focus {
-        --tw-ring-color: var(--color-primary);
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 2px var(--tw-ring-color);
+    .modern-input, .modern-select {
+        padding-left: 2.75rem; border: 1px solid #e5e7eb; border-radius: 0.75rem; transition: all 0.3s ease; background-color: #f9fafb; width: 100%;
     }
-    label.form-label {
-        font-weight: 600;
-        color: var(--color-text-primary);
-        margin-bottom: 0.5rem;
-        display: block;
+    .modern-input:focus, .modern-select:focus {
+        background-color: #fff; border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(44, 56, 86, 0.1);
     }
-    
-    .btn {
-        padding: 0.65rem 1.25rem;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: var(--shadow-sm);
-        transition: all 200ms ease-in-out;
-        transform: translateY(0);
-    }
-    .btn:hover {
-        box-shadow: var(--shadow-md);
-        transform: translateY(-2px);
-    }
-    .btn-primary {
-        background-color: var(--color-primary);
-        color: white;
-    }
-    .btn-primary:hover {
-        background-color: var(--color-primary-dark);
-    }
-    .btn-secondary {
-        background-color: var(--color-surface);
-        color: var(--color-text-secondary);
-        border: 1px solid #d1d5db;
-    }
-    .btn-secondary:hover {
-        background-color: #f9fafb;
-    }
-
-    .status-badge { 
-        padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; 
-        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
-    }
-    .status-asignado { background-color: #3B82F6; color: white; }
-    .status-en-almacen { background-color: #10B981; color: white; }
-    .status-en-reparacion { background-color: var(--color-accent); color: white; }
-    .status-prestado { background-color: #8B5CF6; color: white; }
-    .status-de-baja { background-color: var(--color-text-secondary); color: white; }
 </style>
-<div class="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="mb-8">
-        <a href="{{ route('asset-management.assets.show', $asset) }}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-2 inline-block">
-            <i class="fas fa-arrow-left mr-2"></i> Volver a Detalles
-        </a>
-        <h1 class="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight">Editar Activo</h1>
-        <p class="font-mono text-[var(--color-primary)] mt-1">{{ $asset->asset_tag }}</p>
-    </div>
+
+<div class="min-h-screen bg-[#f3f4f6] pb-20">
     
-    <div class="bg-white p-8 rounded-xl shadow-lg mt-8">
+    <div class="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] pt-10 pb-32 px-4 sm:px-6 lg:px-8 shadow-xl rounded-b-[3rem] relative overflow-hidden">
+        <div class="absolute right-0 top-0 h-full w-1/2 bg-white/5 skew-x-12 transform origin-top-right"></div>
+        <div class="absolute left-10 bottom-10 text-[6rem] md:text-[8rem] text-white/5 font-bold leading-none select-none whitespace-nowrap">
+            {{ $asset->asset_tag }}
+        </div>
+
+        <div class="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row justify-between items-end">
+            <div class="text-white">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="bg-blue-500/20 text-blue-100 border border-blue-400/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+                        Edición
+                    </span>
+                    <span class="bg-white/10 px-3 py-1 rounded-full text-xs font-mono border border-white/20">
+                        ID: {{ $asset->id }}
+                    </span>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-black tracking-tight">Editar Activo</h1>
+                <p class="mt-2 text-blue-100 text-lg flex items-center">
+                    <i class="fas fa-box mr-2 opacity-70"></i> {{ $asset->model->name }}
+                </p>
+            </div>
+            <div class="mt-6 md:mt-0 flex gap-3">
+                 <a href="{{ route('asset-management.assets.show', $asset) }}" class="px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl backdrop-blur-md transition-all border border-white/10 font-medium">
+                    <i class="fas fa-eye mr-2"></i> Ver Detalles
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-0">
         <form action="{{ route('asset-management.assets.update', $asset) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
-                {{-- Columna Izquierda --}}
-                <div class="space-y-6">
-                    <div>
-                        <label for="asset_tag" class="form-label">Etiqueta de Activo</label>
-                        <input type="text" id="asset_tag" name="asset_tag" class="form-input w-full" value="{{ old('asset_tag', $asset->asset_tag) }}" required>
-                    </div>
-                    <div>
-                        <label for="serial_number" class="form-label">Número de Serie</label>
-                        <input type="text" id="serial_number" name="serial_number" class="form-input w-full" value="{{ old('serial_number', $asset->serial_number) }}" required>
-                    </div>
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="glass-card rounded-2xl p-6 md:p-8 bg-white">
+                        <h3 class="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4 mb-6 flex items-center">
+                            <i class="fas fa-pen-nib text-[var(--primary)] mr-2 bg-blue-50 p-2 rounded-lg"></i>
+                            Datos Principales
+                        </h3>
 
-                    <div x-data="{ models: {{ $groupedModels->toJson() }}, categories: {{ $groupedModels->keys()->toJson() }}, selectedCategory: '{{ old('category', $currentCategoryName) }}', filteredModels: [] }"
-                         x-init="filteredModels = models[selectedCategory] || []" class="space-y-6">
-                        <div>
-                            <label for="category" class="form-label">Categoría</label>
-                            <select id="category" x-model="selectedCategory" @change="filteredModels = models[selectedCategory] || []" class="form-select w-full">
-                                <option value="">-- Selecciona una categoría --</option>
-                                <template x-for="category in categories" :key="category">
-                                    <option :value="category" x-text="category" :selected="category === selectedCategory"></option>
-                                </template>
-                            </select>
-                        </div>
-                        <div x-show="selectedCategory" x-transition>
-                            <label for="hardware_model_id" class="form-label">Modelo</label>
-                            <select id="hardware_model_id" name="hardware_model_id" class="form-select w-full" required>
-                                <option value="">-- Selecciona un modelo --</option>
-                                <template x-for="model in filteredModels" :key="model.id"><option :value="model.id" x-text="model.name" :selected="model.id == {{ old('hardware_model_id', $asset->hardware_model_id) }}"></option></template>
-                            </select>
-                        </div>
-
-                       <div x-show="selectedCategory === 'Laptop' || selectedCategory === 'Desktop' || selectedCategory === 'Ipad' || selectedCategory === 'Impresora' || selectedCategory === 'Celular' || selectedCategory === 'Pantalla' || selectedCategory === 'Monitor' || selectedCategory === 'Escáner'" x-transition class="md:col-span-2 space-y-6">
-                            <h3 class="font-bold text-lg text-[var(--color-text-primary)]">Especificaciones Técnicas</h3>
-                            <div><label for="cpu" class="form-label">Procesador</label><input type="text" name="cpu" id="cpu" class="form-input w-full" value="{{ old('cpu', $asset->cpu) }}"></div>
-                            <div><label for="ram" class="form-label">RAM (e.g., 16GB)</label><input type="text" name="ram" id="ram" class="form-input w-full" value="{{ old('ram', $asset->ram) }}"></div>
-                            <div><label for="storage" class="form-label">Almacenamiento (e.g., 512GB SSD)</label><input type="text" name="storage" id="storage" class="form-input w-full" value="{{ old('storage', $asset->storage) }}"></div>
-                            <div><label for="mac_address" class="form-label">MAC Address</label><input type="text" name="mac_address" id="mac_address" class="form-input w-full" value="{{ old('mac_address', $asset->mac_address) }}"></div>
-                        </div>
-
-                        <div x-show="selectedCategory === 'Celular'" x-transition class="space-y-6 border-t border-gray-200 pt-6 mt-6">
-                             <h3 class="font-bold text-lg text-[var(--color-text-primary)]">Detalles de Telefonía</h3>
-                             <div>
-                                <label for="phone_plan_type" class="form-label">Tipo de Plan</label>
-                                <select name="phone_plan_type" id="phone_plan_type" class="form-select w-full"><option value="">-- Selecciona --</option><option value="Prepago" @selected(old('phone_plan_type', $asset->phone_plan_type) == 'Prepago')>Prepago</option><option value="Plan" @selected(old('phone_plan_type', $asset->phone_plan_type) == 'Plan')>Plan</option></select>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Etiqueta de Activo</label>
+                                <div class="relative"><i class="fas fa-tag form-floating-icon"></i><input type="text" name="asset_tag" class="modern-input py-3" value="{{ old('asset_tag', $asset->asset_tag) }}" required></div>
                             </div>
-                            <div><label for="phone_number" class="form-label">Número Telefónico</label><input type="text" name="phone_number" id="phone_number" class="form-input w-full" value="{{ old('phone_number', $asset->phone_number) }}"></div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Número de Serie</label>
+                                <div class="relative"><i class="fas fa-barcode form-floating-icon"></i><input type="text" name="serial_number" class="modern-input py-3" value="{{ old('serial_number', $asset->serial_number) }}" required></div>
+                            </div>
+                        </div>
+
+                         <div x-data="{ models: {{ $groupedModels->toJson() }}, categories: {{ $groupedModels->keys()->toJson() }}, selectedCategory: '{{ old('category', $currentCategoryName) }}', filteredModels: [] }"
+                             x-init="filteredModels = models[selectedCategory] || []">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Categoría</label>
+                                    <div class="relative"><i class="fas fa-layer-group form-floating-icon"></i><select x-model="selectedCategory" @change="filteredModels = models[selectedCategory] || []" class="modern-select py-3 appearance-none"><option value="">--</option><template x-for="category in categories" :key="category"><option :value="category" x-text="category" :selected="category === selectedCategory"></option></template></select></div>
+                                </div>
+                                <div x-show="selectedCategory" x-transition>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Modelo</label>
+                                    <div class="relative"><i class="fas fa-box-open form-floating-icon"></i><select name="hardware_model_id" class="modern-select py-3 appearance-none"><template x-for="model in filteredModels" :key="model.id"><option :value="model.id" x-text="model.name" :selected="model.id == {{ old('hardware_model_id', $asset->hardware_model_id) }}"></option></template></select></div>
+                                </div>
+                            </div>
+                            
+                            <div x-show="['Laptop', 'Desktop', 'Celular', 'Ipad', 'Monitor'].includes(selectedCategory)" x-transition class="bg-gray-50 rounded-xl p-5 border border-gray-100 mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label class="text-xs font-bold text-gray-500">Procesador</label><input type="text" name="cpu" class="modern-input py-2 text-sm" value="{{ old('cpu', $asset->cpu) }}"></div>
+                                <div><label class="text-xs font-bold text-gray-500">RAM</label><input type="text" name="ram" class="modern-input py-2 text-sm" value="{{ old('ram', $asset->ram) }}"></div>
+                                <div><label class="text-xs font-bold text-gray-500">Storage</label><input type="text" name="storage" class="modern-input py-2 text-sm" value="{{ old('storage', $asset->storage) }}"></div>
+                                <div><label class="text-xs font-bold text-gray-500">MAC Address</label><input type="text" name="mac_address" class="modern-input py-2 text-sm" value="{{ old('mac_address', $asset->mac_address) }}"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-6 md:p-8 bg-white">
+                        <h3 class="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4 mb-6 flex items-center">
+                            <i class="fas fa-images text-[var(--accent)] mr-2 bg-orange-50 p-2 rounded-lg"></i>
+                            Galería
+                        </h3>
+                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                            @foreach([1, 2, 3] as $i)
+                                @php
+                                    $photoPath = $asset->{"photo_{$i}_path"};
+                                    $photoUrl = $photoPath ? Storage::disk('s3')->url($photoPath) : null;
+                                @endphp
+                                <div x-data="{ hasPhoto: {{ $photoPath ? 'true' : 'false' }}, markedForDeletion: false, previewUrl: '{{ $photoUrl }}' }" class="relative group">
+                                    <input type="hidden" name="remove_photo_{{ $i }}" x-model="markedForDeletion">
+                                    <input name="photo_{{ $i }}" type="file" x-ref="photo{{ $i }}" class="hidden" @change="
+                                        const reader = new FileReader();
+                                        reader.onload = (e) => { previewUrl = e.target.result; hasPhoto = true; markedForDeletion = false; };
+                                        reader.readAsDataURL($event.target.files[0]);
+                                    ">
+                                    
+                                    <div @click="$refs.photo{{ $i }}.click()" class="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[var(--primary)] overflow-hidden relative" :class="{'border-solid border-[var(--primary)]': hasPhoto && !markedForDeletion}">
+                                        <template x-if="hasPhoto && !markedForDeletion">
+                                            <img :src="previewUrl" class="w-full h-full object-cover">
+                                        </template>
+                                        <template x-if="!hasPhoto || markedForDeletion">
+                                            <div class="text-center p-4 text-gray-400"><i class="fas fa-camera text-2xl"></i><p class="text-xs mt-2">Foto {{ $i }}</p></div>
+                                        </template>
+                                        
+                                        <template x-if="hasPhoto && !markedForDeletion">
+                                            <button @click.stop.prevent="markedForDeletion = true" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow hover:scale-110">&times;</button>
+                                        </template>
+                                    </div>
+                                    <p x-show="markedForDeletion" class="text-xs text-red-500 text-center mt-1 font-bold">Se eliminará</p>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                 </div>
 
                 <div class="space-y-6">
-                    <div>
-                        <label for="site_id" class="form-label">Sitio / Ubicación</label>
-                        <select id="site_id" name="site_id" class="form-select w-full" required>
-                            @foreach($sites as $site)<option value="{{ $site->id }}" @selected(old('site_id', $asset->site_id) == $site->id)>{{ $site->name }}</option>@endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label for="status" class="form-label">Estatus</label>
-                        <select id="status" name="status" class="form-select w-full" required>
-                            <option value="En Almacén" @selected(old('status', $asset->status) == 'En Almacén')>En Almacén</option><option value="Asignado" @selected(old('status', $asset->status) == 'Asignado')>Asignado</option><option value="En Reparación" @selected(old('status', $asset->status) == 'En Reparación')>En Reparación</option><option value="Prestado" @selected(old('status', $asset->status) == 'Prestado')>Prestado</option><option value="De Baja" @selected(old('status', $asset->status) == 'De Baja')>De Baja</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="purchase_date" class="form-label">Fecha de Compra</label>
-                        <input type="date" id="purchase_date" name="purchase_date" class="form-input w-full" value="{{ old('purchase_date', $asset->purchase_date) }}">
-                    </div>
-                    <div>
-                        <label for="warranty_end_date" class="form-label">Fin de Garantía</label>
-                        <input type="date" id="warranty_end_date" name="warranty_end_date" class="form-input w-full" value="{{ old('warranty_end_date', $asset->warranty_end_date) }}">
-                    </div>
-                    <div>
-                        <label for="notes" class="form-label">Notas Adicionales</label>
-                        <textarea id="notes" name="notes" rows="5" class="form-textarea w-full">{{ old('notes', $asset->notes) }}</textarea>
-                    </div>                  
-                </div>
-            </div>
-            <div class="mt-8 pt-6 border-t">
-                <label class="form-label">Fotografías del Activo (Opcional)</label>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    @foreach([1, 2, 3] as $i)
-                    <div x-data="{
-                        photoPreview: '{{ $asset->{"photo_{$i}_path"} ? Storage::disk('s3')->url($asset->{"photo_{$i}_path"}) : '' }}',
-                        removePhoto: false
-                    }">
-                        <div class="aspect-w-1 aspect-h-1 bg-gray-100 rounded-lg flex items-center justify-center relative border-2 border-dashed">
-                            <template x-if="photoPreview">
-                                <img :src="photoPreview" class="w-full h-full object-cover rounded-lg">
-                            </template>
-                            <template x-if="!photoPreview">
-                                <div class="text-center text-gray-400 p-4">
-                                    <i class="fas fa-camera text-3xl"></i>
-                                    <p class="text-xs mt-2">Click para seleccionar Foto {{ $i }}</p>
+                    <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-[var(--primary)] sticky top-6">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Estado y Control</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Estatus Actual</label>
+                                <div class="relative"><i class="fas fa-info-circle form-floating-icon"></i>
+                                    <select name="status" class="modern-select py-3">
+                                        @foreach(['En Almacén', 'Asignado', 'En Reparación', 'Prestado', 'De Baja'] as $st)
+                                            <option value="{{ $st }}" @selected(old('status', $asset->status) == $st)>{{ $st }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
-                            </template>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Ubicación</label>
+                                <div class="relative"><i class="fas fa-map-marker-alt form-floating-icon"></i>
+                                    <select name="site_id" class="modern-select py-3">
+                                        @foreach($sites as $site)<option value="{{ $site->id }}" @selected(old('site_id', $asset->site_id) == $site->id)>{{ $site->name }}</option>@endforeach
+                                    </select>
+                                </div>
+                            </div>
                             
-                            <input id="photo_{{ $i }}" name="photo_{{ $i }}" type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                   @change="
-                                        const reader = new FileReader();
-                                        reader.onload = (e) => { photoPreview = e.target.result; };
-                                        reader.readAsDataURL($event.target.files[0]);
-                                        removePhoto = false;
-                                   ">
+                            <div class="border-t border-gray-100 pt-4 my-4"></div>
+                            
+                            <div><label class="block text-sm font-bold text-gray-700 mb-1">Notas</label><textarea name="notes" rows="4" class="w-full rounded-lg border-gray-300 text-sm bg-gray-50">{{ old('notes', $asset->notes) }}</textarea></div>
 
-                            <template x-if="photoPreview && !removePhoto">
-                                <button type="button" @click.prevent="photoPreview = null; removePhoto = true; document.getElementById('photo_{{ $i }}').value = ''"
-                                        class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-transform hover:scale-110"
-                                        title="Eliminar foto">
-                                    &times;
-                                </button>
-                            </template>
+                            <button type="submit" class="w-full bg-[var(--primary)] hover:bg-[var(--primary-light)] text-white font-bold py-4 rounded-xl shadow-lg transition-all transform hover:-translate-y-1 mt-4 flex items-center justify-center">
+                                <i class="fas fa-sync-alt mr-2"></i> Actualizar Activo
+                            </button>
                         </div>
-                        <input type="hidden" name="remove_photo_{{ $i }}" x-model="removePhoto">
                     </div>
-                    @endforeach
                 </div>
-            </div>            
-            
-            <div class="mt-8 pt-6 border-t border-gray-200 flex justify-end items-center space-x-4">
-                <a href="{{ route('asset-management.assets.show', $asset) }}" class="btn btn-secondary">Cancelar</a>
-                <button type="submit" class="btn btn-primary">Actualizar Activo</button>
             </div>
         </form>
     </div>
