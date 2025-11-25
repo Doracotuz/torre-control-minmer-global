@@ -229,6 +229,7 @@ Route::middleware(['auth', 'high.privilege'])->prefix('asset-management')->name(
     Route::get('maintenances/{maintenance}/edit', [App\Http\Controllers\AssetManagement\MaintenanceController::class, 'edit'])->name('maintenances.edit');
     Route::put('maintenances/{maintenance}', [App\Http\Controllers\AssetManagement\MaintenanceController::class, 'update'])->name('maintenances.update');
     Route::get('maintenances/{maintenance}/pdf', [App\Http\Controllers\AssetManagement\MaintenanceController::class, 'generatePdf'])->name('maintenances.pdf');
+    Route::delete('maintenances/{maintenance}', [App\Http\Controllers\AssetManagement\MaintenanceController::class, 'destroy'])->name('maintenances.destroy');    
     Route::post('assignments/{assignment}/upload-return-receipt', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'uploadReturnReceipt'])->name('assignments.uploadReturnReceipt');
     Route::get('assignments/{assignment}/edit', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'edit'])->name('assignments.edit');
     Route::put('assignments/{assignment}', [App\Http\Controllers\AssetManagement\AssignmentController::class, 'update'])->name('assignments.update');

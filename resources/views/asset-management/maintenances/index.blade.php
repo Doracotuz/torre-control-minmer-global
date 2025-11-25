@@ -141,7 +141,6 @@
             
             <form action="{{ route('asset-management.maintenances.index') }}" method="GET">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    {{-- Filtro Estado --}}
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Estado</label>
                         <select name="status" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[var(--primary)]">
@@ -151,7 +150,6 @@
                         </select>
                     </div>
 
-                    {{-- Filtro Tipo --}}
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo</label>
                         <select name="type" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[var(--primary)]">
@@ -161,7 +159,6 @@
                         </select>
                     </div>
 
-                    {{-- Botones de Acción --}}
                     <div class="md:col-span-2 flex items-end gap-2">
                         <button type="submit" class="bg-[var(--primary)] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[var(--primary-light)] w-full">
                             Aplicar Filtros
@@ -270,25 +267,42 @@
 
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex items-center justify-end space-x-2">
-                                        {{-- Botón de "Toggle" Detalle (Visible solo en mobile o como helper) --}}
+                                        
                                         <button @click.stop="expanded = !expanded" class="p-2 text-gray-400 hover:text-[var(--primary)] transition-colors rounded-full hover:bg-gray-100" title="Ver Detalles">
                                             <i class="fas fa-chevron-down transform transition-transform duration-200" :class="{'rotate-180': expanded}"></i>
                                         </button>
 
                                         <a href="{{ route('asset-management.maintenances.edit', $maintenance) }}" 
-                                           class="p-2 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all" 
-                                           title="Editar / Subir Fotos">
+                                        class="p-2 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all" 
+                                        title="Editar / Subir Fotos">
                                             <i class="fas fa-edit"></i>
                                         </a>
 
                                         @if($maintenance->end_date)
                                             <a href="{{ route('asset-management.maintenances.pdf', $maintenance) }}" 
-                                               target="_blank" 
-                                               class="p-2 text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-all" 
-                                               title="Certificado PDF">
+                                            target="_blank" 
+                                            class="p-2 text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-all" 
+                                            title="Certificado PDF">
                                                 <i class="fas fa-file-pdf"></i>
                                             </a>
                                         @endif
+
+                                        @if(Auth::user()->is_area_admin && Auth::user()->area?->name === 'Administración')
+                                            <form action="{{ route('asset-management.maintenances.destroy', $maintenance) }}" 
+                                                method="POST" 
+                                                class="inline-block ml-2"
+                                                @click.stop {{-- Evita que se expanda la fila al hacer click --}}
+                                                onsubmit="return confirm('¿ESTÁS SEGURO?\n\nSe eliminará el registro y todas las fotos asociadas de S3.\nEsta acción no se puede deshacer.');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" 
+                                                        class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" 
+                                                        title="Eliminar Registro (Solo Admin)">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+
                                     </div>
                                 </td>
                             </tr>

@@ -290,6 +290,39 @@ class MaintenanceController extends Controller
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="reporte_mantenimientos_' . date('Y-m-d') . '.csv"',
         ]);
+    }
+
+    public function destroy(Maintenance $maintenance)
+    {
+        $user = Auth::user();
+        if (!($user->is_area_admin && $user->area?->name === 'Administración')) {
+            abort(403, 'Acceso denegado. Solo el Administrador puede eliminar registros.');
+        }
+
+        DB::transaction(function () use ($maintenance) {
+            if (!$maintenance->end_date && in_array($maintenance->asset->status, ['En Reparación', 'En Mantenimiento'])) {
+                $maintenance->asset->update(['status' => 'En Almacén']);
+                
+                $maintenance->asset->logs()->create([
+                    'user_id' => Auth::id(),
+                    'action_type' => 'Cambio de Estatus',
+                    'notes' => 'El activo volvió a almacén porque se eliminó su registro de mantenimiento.',
+                    'event_date' => now(),
+                ]);
+            }
+
+            for ($i = 1; $i <= 3; $i++) {
+                $path = $maintenance->{"photo_{$i}_path"};
+                if ($path && Storage::disk('s3')->exists($path)) {
+                    Storage::disk('s3')->delete($path);
+                }
+            }
+
+            $maintenance->delete();
+        });
+
+        return redirect()->route('asset-management.maintenances.index')
+            ->with('success', 'Mantenimiento eliminado y archivos borrados correctamente.');
     }    
 
 }
