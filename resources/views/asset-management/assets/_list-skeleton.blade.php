@@ -1,56 +1,43 @@
-<div class="bg-white rounded-2xl shadow-xl border border-gray-100 animate-pulse w-full flex flex-col">
-    <div class="overflow-x-auto w-full rounded-2xl">
-        <table class="w-full min-w-full">
-            <thead>
-                <tr class="bg-gray-50 border-b border-gray-100 text-left">
-                    <th class="px-6 py-4"><div class="h-3 w-20 bg-gray-200 rounded"></div></th>
-                    <th class="px-6 py-4"><div class="h-3 w-32 bg-gray-200 rounded"></div></th>
-                    <th class="px-6 py-4"><div class="h-3 w-16 bg-gray-200 rounded"></div></th>
-                    <th class="px-6 py-4"><div class="h-3 w-24 bg-gray-200 rounded"></div></th>
-                    <th class="px-6 py-4 text-right"><div class="h-3 w-12 bg-gray-200 rounded ml-auto"></div></th>
-                </tr>
-            </thead>
-            <tbody>
-                @for ($i = 0; $i < 5; $i++)
-                    <tr class="border-b border-gray-100 last:border-0">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-gray-200"></div>
-                                <div class="ml-4 space-y-2">
-                                    <div class="h-3 w-24 bg-gray-200 rounded"></div>
-                                    <div class="h-2 w-16 bg-gray-200 rounded"></div>
-                                </div>
-                            </div>
-                        </td>
+<div class="table-container border rounded-lg overflow-hidden">
+    <div class="responsive-table-header hidden md:grid md:grid-cols-7 gap-4 bg-[#2c3856] p-4 font-bold text-xs text-[#ffffff] uppercase tracking-wider">
+        <div class="col-span-1">Etiqueta</div>
+        <div class="col-span-1">Categoría</div>
+        <div class="col-span-1">Modelo</div>
+        <div class="col-span-1">Estatus</div>
+        <div class="col-span-1">Asignado a</div>
+        <div class="col-span-1">Ubicación</div>
+        <div class="col-span-1 text-right">Acciones</div>
+    </div>
 
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="space-y-2">
-                                <div class="h-3 w-28 bg-gray-200 rounded"></div>
-                                <div class="h-4 w-20 bg-gray-200 rounded-full"></div>
-                            </div>
-                        </td>
-
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="h-5 w-24 bg-gray-200 rounded-full"></div>
-                        </td>
-
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="space-y-2">
-                                <div class="h-3 w-28 bg-gray-200 rounded"></div>
-                                <div class="h-2 w-20 bg-gray-200 rounded"></div>
-                            </div>
-                        </td>
-
-                        <td class="px-6 py-4 whitespace-nowrap text-right">
-                            <div class="flex items-center justify-end space-x-2">
-                                <div class="h-8 w-8 bg-gray-200 rounded-lg"></div>
-                                <div class="h-8 w-8 bg-gray-200 rounded-lg"></div>
-                                <div class="h-8 w-8 bg-gray-200 rounded-full"></div>
-                            </div>
-                        </td>
-                    </tr>
-                @endfor
-            </tbody>
-        </table>
+    <div class="divide-y md:divide-y-0">
+        @for ($i = 0; $i < 5; $i++) {{-- Muestra 5 filas fantasma --}}
+            <div class="hidden md:grid md:grid-cols-7 gap-4 p-4 items-center">
+                <div><div class="skeleton-bar skeleton-shimmer w-3/4"></div></div>
+                <div><div class="skeleton-bar skeleton-shimmer w-5/6"></div></div>
+                <div><div class="skeleton-bar skeleton-shimmer w-full"></div></div>
+                <div><div class="skeleton-bar skeleton-shimmer w-1/2"></div></div>
+                <div><div class="skeleton-bar skeleton-shimmer w-4/5"></div></div>
+                <div><div class="skeleton-bar skeleton-shimmer w-3/4"></div></div>
+                <div class="flex items-center justify-end space-x-4">
+                    <div class="skeleton-bar skeleton-shimmer w-6 h-6 rounded-full"></div>
+                    <div class="skeleton-bar skeleton-shimmer w-6 h-6 rounded-full"></div>
+                </div>
+            </div>
+            
+            <div class="asset-card md:hidden">
+                <div class="asset-card-row">
+                    <span class="asset-card-label"><div class="skeleton-bar skeleton-shimmer w-1/4"></div></span>
+                    <span class="asset-card-value"><div class="skeleton-bar skeleton-shimmer w-1/2"></div></span>
+                </div>
+                <div class="asset-card-row">
+                    <span class="asset-card-label"><div class="skeleton-bar skeleton-shimmer w-1/4"></div></span>
+                    <span class="asset-card-value"><div class="skeleton-bar skeleton-shimmer w-1/3"></div></span>
+                </div>
+                <div class="flex items-center justify-end space-x-6 pt-4">
+                    <div class="skeleton-bar skeleton-shimmer w-1/3 h-8"></div>
+                    <div class="skeleton-bar skeleton-shimmer w-1/3 h-8"></div>
+                </div>
+            </div>
+        @endfor
     </div>
 </div>
