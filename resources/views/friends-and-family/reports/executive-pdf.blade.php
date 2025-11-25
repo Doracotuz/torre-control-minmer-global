@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Reporte de evento Friends & Family</title>
+    <title>Reporte de ventas y analisis de inventario</title>
     <style>
         @page { margin: 1.5cm; }
         :root {
@@ -113,7 +113,7 @@
     <footer id="footer">
         <div class="footer-line"></div>
         <table><tr>
-            <td>Reporte "Friends & Family" | Documento Informativo</td>
+            <td>Reporte de Ventas | Documento Informativo</td>
             <td style="text-align: right;" class="page-number"></td>
         </tr></table>
         <script type="text/php">
@@ -130,7 +130,7 @@
             <td style="width: 50%;">@if(isset($logo_base_64)) <img src="{{ $logo_base_64 }}" alt="Logo" class="logo"> @endif</td>
             <td style="width: 50%;" class="doc-info">
                 <h1 class="doc-title">Reporte de ventas</h1>
-                <p class="doc-subtitle">Evento "Friends & Family"</p>
+                <p class="doc-subtitle">Desglose de información</p>
                 <p class="doc-subtitle">Generado: {{ $report_date }}</p>
                 <p class="doc-subtitle" style="font-weight: bold;">Filtro: {{ $user_filter_name }}</p>
             </td>

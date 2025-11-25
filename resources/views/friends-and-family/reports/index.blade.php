@@ -2,12 +2,12 @@
     <x-slot name="header">
         <div class="flex flex-col md:flex-row justify-between items-center">
             <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
-                {{ __('Centro de análisis - "Friends & Family"') }}
+                {{ __('Centro de análisis') }}
             </h2>
             <a href="{{ route('ff.dashboard.index') }}"
             class="inline-flex items-center px-6 py-2 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest bg-[#2c3856] hover:bg-[#ff9c00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff9c00] shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 ease-in-out">
                 <i class="fas fa-tachometer-alt mr-2"></i>
-                Volver a "Friends & Family"
+                Volver a Panel Principal
             </a>
         </div>               
     </x-slot>
@@ -87,7 +87,7 @@
                 </div>
 
                 <h3 class="text-xl font-extrabold text-gray-700 pt-4 border-b pb-2">Métricas Clave del Evento</h3>
-                <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
 
                     <button onclick="showModal('Valor Total Vendido', '{{ '$' . number_format($valorTotalVendido, 2) }}', 'Últimas 10 Ventas registradas en el sistema.', 'sales')" class="kpi-card group p-6 rounded-2xl shadow-2xl bg-gradient-to-br from-indigo-700 to-indigo-900 text-white overflow-hidden relative cursor-pointer hover:shadow-4xl transform hover:-translate-y-0.5 transition duration-300">
                         <i class="fas fa-dollar-sign absolute right-4 top-4 text-6xl opacity-10 group-hover:rotate-12 transition duration-500"></i>
@@ -116,7 +116,7 @@
                         <p class="text-xs opacity-70 mt-2">Click para ver lista global.</p>
                     </button>
 
-                    <div x-data="countdownTimer('{{ $startDateIso }}', '{{ $endDateIso }}', '{{ $timerState }}')" 
+                    <!-- <div x-data="countdownTimer('{{ $startDateIso }}', '{{ $endDateIso }}', '{{ $timerState }}')" 
                         x-init="startTimer()"
                         class="kpi-card p-6 rounded-2xl shadow-2xl bg-gradient-to-br from-gray-800 to-gray-900 text-white overflow-hidden relative">
 
@@ -152,7 +152,7 @@
                         <div x-show="isFinished" class="flex items-center mt-2">
                             <span class="text-3xl font-black tracking-tight">EVENTO FINALIZADO</span>
                         </div>
-                    </div>
+                    </div> -->
 
                 </div>
 
