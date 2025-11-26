@@ -764,6 +764,7 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
     Route::get('/catalog/download-template', [FfProductController::class, 'downloadTemplate'])->name('catalog.downloadTemplate');
     Route::resource('catalog', FfProductController::class);
     Route::post('/catalog/import', [FfProductController::class, 'import'])->name('catalog.import');
+    Route::post('catalog/{product}/technical-sheet', [FfProductController::class, 'generateTechnicalSheet'])->name('catalog.technicalSheet');
     Route::get('/inventory', [FfInventoryController::class, 'index'])->name('inventory.index');
     Route::post('/inventory/move', [FfInventoryController::class, 'storeMovement'])->name('inventory.storeMovement');
     Route::post('/inventory/import', [FfInventoryController::class, 'importMovements'])->name('inventory.import');

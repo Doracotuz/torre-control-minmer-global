@@ -1,357 +1,607 @@
 <x-app-layout>
-    <div x-data="{ manager: productManager() }" x-init='manager.init(@json($products))'>
+    <x-slot name="header"></x-slot>
+    <div x-data='productManager(@json($products))' class="min-h-screen bg-gray-50 relative">
+        
+        <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
+            <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-8">
+                <div>
+                    <h2 class="text-3xl font-bold text-[#2c3856] tracking-tight flex items-center gap-3">
+                        <span class="bg-[#2c3856] text-white p-2 rounded-xl shadow-md"><i class="fas fa-boxes"></i></span>
+                        Catálogo de productos
+                    </h2>
+                    <p class="text-gray-500 mt-1 text-sm font-medium ml-1">
+                        Gestión de inventario para: <span class="font-bold text-[#2c3856]">{{ Auth::user()->area ? Auth::user()->area->name : 'N/A' }}</span>
+                    </p>
+                </div>
+                
+                <div class="flex gap-3">
+                    <a href="{{ route('ff.dashboard.index') }}" 
+                       class="inline-flex items-center px-5 py-2.5 rounded-xl bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-50 transition-all font-medium">
+                        <i class="fas fa-arrow-left mr-2 text-gray-400"></i>
+                        <span>Panel</span>
+                    </a>
+                    
+                    <button @click="openUploadModal()" 
+                        class="inline-flex items-center px-5 py-2.5 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-200 hover:bg-emerald-700 transition-all hover:-translate-y-0.5">
+                        <i class="fas fa-cloud-upload-alt mr-2"></i> Importar
+                    </button>
 
-        <x-slot name="header">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-4 md:mb-0">
-                    Gestión de Catálogo - {{ Auth::user()->area ? Auth::user()->area->name : 'N/A' }}
-                </h2>
-                <a href="{{ route('ff.dashboard.index') }}"
-                class="inline-flex items-center px-6 py-2 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest bg-[#2c3856] hover:bg-[#ff9c00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff9c00] shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 ease-in-out">
-                    <i class="fas fa-tachometer-alt mr-2"></i>
-                    Volver a Panel Principal
-                </a>                
+                    <button @click="selectNewProduct()" 
+                        class="inline-flex items-center px-5 py-2.5 rounded-xl bg-[#ff9c00] text-white shadow-md shadow-orange-200 hover:bg-[#e68a00] transition-all hover:-translate-y-0.5 font-bold">
+                        <i class="fas fa-plus mr-2"></i> Nuevo
+                    </button>
+                </div>
             </div>
-        </x-slot>
-        <div class="flex space-x-3">     
-            <button
-                @click="manager.openUploadModal()"
-                class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50 transition ease-in-out duration-150">
-                <i class="fas fa-file-upload mr-2"></i> Cargar Plantilla
-            </button>
-            <!-- <button
-                @click="manager.selectNewProduct()"
-                class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 transition ease-in-out duration-150">
-                <i class="fas fa-plus mr-2"></i> Nuevo Producto
-            </button> -->
-            <a href="{{ route('ff.catalog.exportCsv') }}" target="_blank"
-            class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50 transition ease-in-out duration-150 shadow-sm">
-                <i class="fas fa-file-csv mr-2 text-green-600"></i> Exportar CSV
-            </a>
 
-            <button 
-            @click="manager.openPdfModal()"
-            type="button"
-            class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
-                <i class="fas fa-file-pdf mr-2 text-red-400"></i> Catálogo PDF
-            </button>         
-        </div>        
-
-        <div class="py-12">
-            <div class="max-w-8xl mx-auto sm:px-6 lg:px-8">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                    <div class="lg:col-span-2 flex flex-col gap-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <template x-for="(stat, index) in stats" :key="index">
+                    <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm flex items-center gap-4 transition-transform hover:scale-[1.02]">
+                        <div :class="`p-3 rounded-xl ${stat.color} text-white shadow-md`">
+                            <i :class="stat.icon"></i>
+                        </div>
                         <div>
-                            <input type="text" x-model="manager.filter" placeholder="Buscar por SKU, descripción, marca o UPC..." class="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800">
-                        </div>
-
-                        <div x-show="manager.loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <template x-for="i in 6">
-                                <div class="bg-white rounded-lg shadow-md h-64 animate-pulse"></div>
-                            </template>
-                        </div>
-                        
-                        <div x-show="!manager.loading && manager.filteredProducts.length === 0" class="text-center text-gray-500 py-20">
-                            <i class="fas fa-search fa-3x mb-4"></i>
-                            <p x-text="manager.filter === '' ? 'No se encontraron productos.' : 'No hay productos que coincidan con tu búsqueda.'"></p>
-                        </div>
-
-                        <div x-show="!manager.loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" x-transition>
-                            <template x-for="product in manager.filteredProducts" :key="product.id">
-                                <div @click="manager.selectProductForEdit(product)"
-                                    class="group bg-white rounded-lg shadow-md cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-                                    :class="{ 
-                                        'ring-2 ring-gray-800': manager.form.id === product.id,
-                                        'opacity-60 grayscale hover:grayscale-0': !product.is_active 
-                                    }">
-                                    
-                                    <div class="relative h-64 w-full overflow-hidden rounded-t-lg p-2 bg-white"> 
-                                        <img :src="product.photo_url" :alt="product.description" class="h-full w-full object-contain transition-transform duration-300 group-hover:scale-110" style="object-position: center;"> 
-                                        <span class="absolute top-4 right-4 px-2 py-0.5 text-xs font-semibold rounded-full" 
-                                              :class="product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" 
-                                              x-text="product.is_active ? 'Activo' : 'Inactivo'">
-                                        </span>
-                                    </div>
-                                    
-                                    <div class="p-4">
-                                        <p class="text-xs text-gray-400 font-mono" x-text="product.sku"></p>
-                                        <h4 class="font-semibold text-gray-800 line-clamp-2" x-text="product.description"></h4>
-                                        <div class="flex justify-between items-end mt-2">
-                                            <p class="text-lg font-extrabold text-gray-900" x-text="`$${parseFloat(product.unit_price).toFixed(2)}`"></p>
-                                            <p class="text-xs text-gray-500" x-text="product.brand"></p>
-                                        </div>
-                                        <div class="mt-2 text-xs text-gray-400 flex flex-wrap gap-2">
-                                            <span x-show="product.upc" x-text="'UPC: ' + product.upc"></span>
-                                            <span x-show="product.pieces_per_box" x-text="'Pzas/Caja: ' + product.pieces_per_box"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
+                            <p class="text-xs text-gray-500 font-bold uppercase tracking-wider" x-text="stat.label"></p>
+                            <p class="text-2xl font-bold text-gray-800" x-text="stat.value"></p>
                         </div>
                     </div>
+                </template>
+            </div>
 
-                    <div class="lg:col-span-1">
-                        <div class="sticky top-28">
-                            <form @submit.prevent="manager.saveProduct()"
-                                  class="bg-white rounded-xl shadow-2xl max-h-[85vh] flex flex-col">
+            <div class="sticky top-4 z-30 bg-white/90 backdrop-blur-md border border-gray-200 shadow-lg shadow-gray-200/50 rounded-2xl p-3 mb-8 transition-all">
+                <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    
+                    <div class="relative w-full md:w-96 group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400 group-focus-within:text-[#2c3856]"></i>
+                        </div>
+                        <input type="text" x-model="filters.search" @input="currentPage = 1"
+                            class="block w-full pl-10 pr-3 py-2.5 border-gray-200 bg-gray-50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:bg-white focus:border-transparent transition-all" 
+                            placeholder="Buscar SKU, nombre, UPC...">
+                    </div>
 
-                                <div class="flex justify-between items-center p-5 border-b">
-                                    <h3 class="text-xl font-semibold text-gray-900" x-text="manager.form.id ? 'Editar Producto' : 'Nuevo Producto'"></h3>
-                                    <button type="button" @click="manager.resetForm()" x-show="manager.form.id" class="text-gray-400 hover:text-gray-900" title="Cancelar edición">
-                                        <i class="fas fa-times fa-lg"></i>
-                                    </button>
+                    <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+                        <button @click="showFilters = !showFilters" 
+                                :class="{'bg-[#2c3856] text-white': showFilters, 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50': !showFilters}"
+                                class="px-4 py-2.5 rounded-xl text-sm font-bold transition-colors whitespace-nowrap flex items-center gap-2 shadow-sm">
+                            <i class="fas fa-filter"></i> Filtros
+                            <span x-show="activeFilterCount > 0" class="flex h-5 w-5 items-center justify-center rounded-full bg-[#ff9c00] text-[10px] text-white" x-text="activeFilterCount"></span>
+                        </button>
+                        
+                        <div class="h-8 w-px bg-gray-300 mx-2"></div>
+
+                        <button @click="openPdfModal()" class="px-4 py-2.5 rounded-xl bg-white text-gray-700 border border-gray-200 hover:text-red-600 hover:border-red-200 transition-colors text-sm font-bold whitespace-nowrap shadow-sm">
+                            <i class="fas fa-file-pdf mr-2 text-red-500"></i> PDF
+                        </button>
+                        <a href="{{ route('ff.catalog.exportCsv') }}" target="_blank" class="px-4 py-2.5 rounded-xl bg-white text-gray-700 border border-gray-200 hover:text-green-600 hover:border-green-200 transition-colors text-sm font-bold whitespace-nowrap shadow-sm">
+                            <i class="fas fa-file-csv mr-2 text-green-500"></i> CSV
+                        </a>
+                    </div>
+                </div>
+
+                <div x-show="showFilters" class="mt-4 pt-4 border-t border-gray-100">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Marca</label>
+                            <select x-model="filters.brand" @change="currentPage = 1" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
+                                <option value="">Todas las marcas</option>
+                                <template x-for="brand in uniqueBrands">
+                                    <option :value="brand" x-text="brand"></option>
+                                </template>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Tipo</label>
+                            <select x-model="filters.type" @change="currentPage = 1" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
+                                <option value="">Todos los tipos</option>
+                                <template x-for="type in uniqueTypes">
+                                    <option :value="type" x-text="type"></option>
+                                </template>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Estado</label>
+                            <div class="flex gap-2">
+                                <button @click="filters.status = 'all'; currentPage = 1" :class="filters.status === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Todos</button>
+                                <button @click="filters.status = 'active'; currentPage = 1" :class="filters.status === 'active' ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Activos</button>
+                                <button @click="filters.status = 'inactive'; currentPage = 1" :class="filters.status === 'inactive' ? 'bg-red-500 text-white' : 'bg-red-50 text-red-700'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Inactivos</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-end">
+                            <button @click="resetFilters()" class="w-full py-2.5 text-sm text-[#2c3856] font-bold hover:bg-blue-50 rounded-lg transition-colors">
+                                <i class="fas fa-times mr-1"></i> Limpiar Filtros
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+            <div x-show="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <template x-for="i in 8">
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 h-80 animate-pulse flex flex-col gap-4">
+                        <div class="h-48 bg-gray-200 rounded-xl w-full"></div>
+                        <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                        <div class="mt-auto h-8 bg-gray-200 rounded w-full"></div>
+                    </div>
+                </template>
+            </div>
+
+            <div x-show="!loading && filteredProducts.length === 0" class="flex flex-col items-center justify-center py-20 text-center" style="display: none;">
+                <div class="bg-white p-6 rounded-full shadow-lg mb-6">
+                    <i class="fas fa-search text-4xl text-gray-300"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900">No se encontraron productos</h3>
+                <p class="text-gray-500 mt-2">Intenta ajustar los filtros o tu búsqueda.</p>
+                <button @click="resetFilters()" class="mt-6 text-[#ff9c00] font-bold hover:underline">Limpiar todo</button>
+            </div>
+
+            <div x-show="!loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <template x-for="product in paginatedProducts" :key="product.id">
+                    <div class="group relative bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer">
+                        
+                        <div class="absolute top-3 right-3 z-10">
+                            <span :class="product.is_active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'"
+                                  class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md border shadow-sm">
+                                <span x-text="product.is_active ? 'Activo' : 'Inactivo'"></span>
+                            </span>
+                        </div>
+
+                        <div class="h-56 w-full p-6 bg-white flex items-center justify-center relative border-b border-gray-100">
+                            <img :src="product.photo_url" class="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105">
+                            
+                            <button @click.stop="openDetailModal(product)" class="absolute top-0 left-0 bg-white/90 backdrop-blur text-[#2c3856] p-2 rounded-br-xl shadow-sm hover:bg-[#2c3856] hover:text-white transition-colors border-r border-b border-gray-100 z-20" title="Ver Detalle">
+                                <i class="fas fa-eye"></i>
+                            </button>
+
+                            <div class="absolute inset-0 bg-[#2c3856]/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]" @click="editProduct(product)">
+                                <span class="bg-white text-[#2c3856] px-5 py-2 rounded-full font-bold text-sm shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all">
+                                    <i class="fas fa-pen mr-2"></i> Editar
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="p-5" @click="editProduct(product)">
+                            <div class="flex justify-between items-start mb-2">
+                                <p class="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded border border-gray-200" x-text="product.sku"></p>
+                                <p class="text-xs font-bold text-[#2c3856] uppercase tracking-wider" x-text="product.brand || 'Genérico'"></p>
+                            </div>
+                            
+                            <h4 class="font-bold text-gray-900 leading-snug line-clamp-2 h-10 mb-3 text-sm" x-text="product.description"></h4>
+                            
+                            <div class="flex items-end justify-between border-t border-gray-100 pt-3 mt-auto">
+                                <div>
+                                    <p class="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Precio Unitario</p>
+                                    <p class="text-lg font-extrabold text-[#2c3856]" x-text="formatMoney(product.unit_price)"></p>
                                 </div>
+                                <div class="text-right">
+                                    <p class="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Presentación</p>
+                                    <p class="text-sm font-semibold text-gray-600" x-text="(product.pieces_per_box || 0) + ' pzas/caja'"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
 
-                                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto">
-                                    <div class="md:col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">SKU</label>
-                                        <input type="text" x-model="manager.form.sku" :disabled="manager.form.id" x-ref="skuInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm disabled:bg-gray-100" required>
-                                    </div>
-                                    <div class="md:col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">Descripción</label>
-                                        <input type="text" x-model="manager.form.description" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Precio Unitario</label>
-                                        <input type="number" step="0.01" min="0" x-model="manager.form.unit_price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800" required>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">UPC</label>
-                                        <input type="text" x-model="manager.form.upc" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Marca</label>
-                                        <input type="text" x-model="manager.form.brand" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Tipo</label>
-                                        <input type="text" x-model="manager.form.type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Piezas/Caja</label>
-                                        <input type="number" step="1" min="0" x-model="manager.form.pieces_per_box" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                                    </div>
-                                    <div class="md:col-span-2 grid grid-cols-3 gap-2">
-                                        <div>
-                                            <label class="block text-xs font-medium text-gray-700">Largo</label>
-                                            <input type="number" step="0.01" min="0" x-model="manager.form.length" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-medium text-gray-700">Ancho</label>
-                                            <input type="number" step="0.01" min="0" x-model="manager.form.width" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-medium text-gray-700">Alto</label>
-                                            <input type="number" step="0.01" min="0" x-model="manager.form.height" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+            <div x-show="!loading && filteredProducts.length > 0" class="mt-8 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-gray-200 pt-6">
+                
+                <div class="text-sm text-gray-500">
+                    Mostrando <span class="font-bold text-gray-900" x-text="((currentPage - 1) * itemsPerPage) + 1"></span> a 
+                    <span class="font-bold text-gray-900" x-text="Math.min(currentPage * itemsPerPage, filteredProducts.length)"></span> de 
+                    <span class="font-bold text-gray-900" x-text="filteredProducts.length"></span> resultados
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button @click="changePage(currentPage - 1)" 
+                            :disabled="currentPage === 1"
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        <i class="fas fa-chevron-left mr-1"></i> Anterior
+                    </button>
+                    
+                    <div class="hidden md:flex gap-1">
+                        <template x-for="page in totalPages" :key="page">
+                            <button x-show="page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)"
+                                    @click="changePage(page)"
+                                    x-text="page"
+                                    :class="currentPage === page ? 'bg-[#2c3856] text-white border-[#2c3856]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg border text-sm font-bold transition-colors">
+                            </button>
+                        </template>
+                    </div>
+
+                    <button @click="changePage(currentPage + 1)" 
+                            :disabled="currentPage === totalPages"
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        Siguiente <i class="fas fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="relative z-50" aria-labelledby="slide-over-title" role="dialog" aria-modal="true" x-show="isEditorOpen" style="display: none;">
+            <div x-show="isEditorOpen" 
+                 x-transition:enter="ease-in-out duration-500" 
+                 x-transition:enter-start="opacity-0" 
+                 x-transition:enter-end="opacity-100" 
+                 x-transition:leave="ease-in-out duration-500" 
+                 x-transition:leave-start="opacity-100" 
+                 x-transition:leave-end="opacity-0" 
+                 class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" 
+                 @click="closeEditor()"></div>
+          
+            <div class="fixed inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute inset-0 overflow-hidden">
+                    <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+                        <div x-show="isEditorOpen"
+                             x-transition:enter="transform transition ease-in-out duration-500 sm:duration-700"
+                             x-transition:enter-start="translate-x-full"
+                             x-transition:enter-end="translate-x-0"
+                             x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700"
+                             x-transition:leave-start="translate-x-0"
+                             x-transition:leave-end="translate-x-full"
+                             class="pointer-events-auto w-screen max-w-md">
+                             
+                            <form @submit.prevent="saveProduct()" class="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-2xl">
+                                <div class="flex min-h-0 flex-1 flex-col overflow-y-scroll py-6">
+                                    <div class="px-4 sm:px-6">
+                                        <div class="flex items-start justify-between">
+                                            <h2 class="text-xl font-bold text-[#2c3856]" x-text="form.id ? 'Editar Producto' : 'Crear Nuevo'"></h2>
+                                            <div class="ml-3 flex h-7 items-center">
+                                                <button type="button" @click="closeEditor()" class="rounded-full bg-gray-100 text-gray-400 hover:text-gray-500 focus:outline-none p-1">
+                                                    <i class="fas fa-times fa-lg"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                     
-                                    <div class="md:col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">Fotografía</label>
-                                        <div class="mt-1 flex items-center space-x-4">
-                                            <span class="h-20 w-20 rounded-lg overflow-hidden bg-gray-100 shadow-inner">
-                                                <img x-show="manager.photoPreview" :src="manager.photoPreview" class="h-full w-full object-cover">
-                                                <img x-show="!manager.photoPreview && manager.form.photo_url" :src="manager.form.photo_url" class="h-full w-full object-cover">
-                                                <svg x-show="!manager.photoPreview && !manager.form.photo_url" class="h-full w-full text-gray-300" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M19 3H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h12c.55 0 1 .45 1 1v12c0 .55-.45 1-1 1zm-4.5-3.5L15 12l-2.5 3-1.5-1.5L9 16h9z"></path>
-                                                </svg>
-                                            </span>
-                                            <input type="file" @change="manager.previewPhoto($event)" class="hidden" x-ref="photoInput">
-                                            <button type="button" @click="$refs.photoInput.click()" class="bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50">
-                                                Cambiar Foto
-                                            </button>
+                                    <div class="relative mt-6 flex-1 px-4 sm:px-6 space-y-6">
+                                        <div class="flex justify-center mb-6">
+                                            <div class="relative group cursor-pointer" @click="$refs.photoInput.click()">
+                                                <div class="w-48 h-48 rounded-xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-300 group-hover:border-[#2c3856] transition-colors flex items-center justify-center relative">
+                                                    <img x-show="photoPreview" :src="photoPreview" class="w-full h-full object-contain">
+                                                    <img x-show="!photoPreview && form.photo_url" :src="form.photo_url" class="w-full h-full object-contain">
+                                                    
+                                                    <div x-show="!photoPreview && !form.photo_url" class="text-center p-4">
+                                                        <i class="fas fa-camera text-gray-400 text-3xl mb-2"></i>
+                                                        <p class="text-xs text-gray-500 font-medium">Subir Imagen</p>
+                                                    </div>
+                                                    
+                                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <i class="fas fa-pencil-alt text-white text-2xl"></i>
+                                                    </div>
+                                                </div>
+                                                <input type="file" @change="previewPhoto($event)" class="hidden" x-ref="photoInput" accept="image/*">
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 gap-y-6 gap-x-4">
+                                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                                <span class="text-sm font-bold text-gray-900">Estado del Producto</span>
+                                                <button type="button" 
+                                                    class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none" 
+                                                    :class="form.is_active ? 'bg-green-500' : 'bg-gray-300'"
+                                                    @click="form.is_active = !form.is_active">
+                                                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" :class="form.is_active ? 'translate-x-5' : 'translate-x-0'"></span>
+                                                </button>
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-sm font-bold text-gray-700">SKU</label>
+                                                <input type="text" x-model="form.sku" :disabled="form.id" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#2c3856] focus:ring-[#2c3856] disabled:bg-gray-100 disabled:text-gray-500 font-mono text-sm">
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-sm font-bold text-gray-700">Descripción</label>
+                                                <textarea x-model="form.description" rows="3" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#2c3856] focus:ring-[#2c3856] text-sm"></textarea>
+                                            </div>
+
+                                            <div class="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label class="block text-sm font-bold text-gray-700">Precio Unitario</label>
+                                                    <div class="relative mt-1 rounded-md shadow-sm">
+                                                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                                            <span class="text-gray-500 sm:text-sm">$</span>
+                                                        </div>
+                                                        <input type="number" step="0.01" x-model="form.unit_price" class="block w-full rounded-lg border-gray-300 pl-7 focus:border-[#2c3856] focus:ring-[#2c3856] text-sm font-bold">
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-bold text-gray-700">Marca</label>
+                                                    <input type="text" x-model="form.brand" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#2c3856] focus:ring-[#2c3856] text-sm">
+                                                </div>
+                                            </div>
+
+                                            <div class="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label class="block text-sm font-bold text-gray-700">UPC</label>
+                                                    <input type="text" x-model="form.upc" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#2c3856] focus:ring-[#2c3856] text-sm">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-bold text-gray-700">Tipo</label>
+                                                    <input type="text" x-model="form.type" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#2c3856] focus:ring-[#2c3856] text-sm">
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                                <h4 class="text-xs font-bold text-[#2c3856] uppercase tracking-wide mb-3">Datos Logísticos</h4>
+                                                <div class="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label class="block text-xs font-bold text-gray-600">Pzas/Caja</label>
+                                                        <input type="number" x-model="form.pieces_per_box" class="mt-1 block w-full rounded-md border-blue-200 shadow-sm focus:border-[#2c3856] focus:ring-[#2c3856] text-sm">
+                                                    </div>
+                                                    <div class="col-span-2 grid grid-cols-3 gap-2">
+                                                        <div>
+                                                            <label class="block text-[10px] font-bold text-gray-500">Largo</label>
+                                                            <input type="number" step="0.01" x-model="form.length" class="block w-full rounded-md border-blue-200 shadow-sm text-xs">
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-[10px] font-bold text-gray-500">Ancho</label>
+                                                            <input type="number" step="0.01" x-model="form.width" class="block w-full rounded-md border-blue-200 shadow-sm text-xs">
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-[10px] font-bold text-gray-500">Alto</label>
+                                                            <input type="number" step="0.01" x-model="form.height" class="block w-full rounded-md border-blue-200 shadow-sm text-xs">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <div class="md:col-span-2">
-                                        <label class="flex items-center mt-2">
-                                            <input type="checkbox" x-model="manager.form.is_active" class="h-5 w-5 rounded border-gray-300 text-gray-800 shadow-sm focus:ring-gray-700">
-                                            <span class="ml-2 text-sm text-gray-700">Producto Activo</span>
-                                        </label>
-                                    </div>
                                 </div>
-
-                                <div class="flex items-center justify-between p-4 bg-gray-50 border-t rounded-b-xl space-x-3">
-                                    <button type="button" @click="manager.deleteProduct(manager.form)" 
-                                            x-show="manager.form.id"
-                                            class="inline-flex items-center text-red-600 hover:text-red-800 text-sm font-medium transition-colors">
-                                        <i class="fas fa-trash mr-2"></i>Eliminar
+                                <div class="flex flex-shrink-0 justify-between px-4 py-4 bg-gray-50 border-t border-gray-200">
+                                    <button type="button" @click="deleteProduct(form)" x-show="form.id" class="rounded-lg bg-white py-2 px-4 text-sm font-bold text-red-600 shadow-sm border border-red-200 hover:bg-red-50">
+                                        Eliminar
                                     </button>
-                                    <div class="flex space-x-3">
-                                        <button type="button" @click="manager.resetForm()" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                            Cancelar
-                                        </button>
+                                    <div class="flex gap-3 ml-auto">
+                                        <button type="button" @click="closeEditor()" class="rounded-lg bg-white py-2 px-4 text-sm font-bold text-gray-700 shadow-sm border border-gray-300 hover:bg-gray-50">Cancelar</button>
                                         <button type="submit" 
-                                            class="inline-flex items-center bg-gray-800 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-gray-700"
-                                            :disabled="manager.isSaving">
-                                            <i x-show="manager.isSaving" class="fas fa-spinner fa-spin -ml-1 mr-2"></i>
-                                            <span x-text="manager.isSaving ? 'Guardando...' : (manager.form.id ? 'Actualizar' : 'Guardar')">Guardar</span>
+                                            :disabled="isSaving"
+                                            class="inline-flex justify-center rounded-lg bg-[#2c3856] py-2 px-6 text-sm font-bold text-white shadow-md hover:bg-[#1a233a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2c3856] disabled:opacity-50">
+                                            <span x-show="isSaving"><i class="fas fa-spinner fa-spin mr-2"></i></span>
+                                            <span x-text="isSaving ? 'Guardando...' : 'Guardar'"></span>
                                         </button>
                                     </div>
                                 </div>
                             </form>
                         </div>
-                    </div> </div> </div>
-        </div>
-
-        <div x-show="manager.isUploadModalOpen"
-            @keydown.escape.window="manager.closeUploadModal()"
-            class="fixed inset-0 z-50 bg-gray-900 bg-opacity-60 flex items-center justify-center p-4 backdrop-blur-sm"
-            x-transition style="display: none;">
-            
-            <form @submit.prevent="manager.submitImport($event)"
-                @click.outside="manager.closeUploadModal()"
-                class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
-                
-                <div class="flex justify-between items-center p-5 border-b">
-                    <h3 class="text-xl font-semibold text-gray-900">Cargar por Plantilla</h3>
-                    <button type="button" @click="manager.closeUploadModal()" class="text-gray-400 hover:text-gray-900"><i class="fas fa-times fa-lg"></i></button>
-                </div>
-
-                <div class="p-6 space-y-6">
-                    <div x-show="manager.uploadMessage"
-                        :class="manager.uploadSuccess ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700'"
-                        class="border p-4 rounded-md text-sm"
-                        x-text="manager.uploadMessage"
-                        style="display: none;">
                     </div>
-
-                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                        <h4 class="text-sm font-bold text-blue-800 mb-2"><i class="fas fa-info-circle mr-1"></i> ¿Cómo editar masivamente?</h4>
-                        <ol class="list-decimal list-inside text-xs text-blue-700 space-y-1">
-                            <li>Descarga la plantilla (ahora incluye tus productos actuales).</li>
-                            <li>Edita precios, nombres o añade nuevos productos en Excel.</li>
-                            <li>Sube el archivo CSV editado aquí.</li>
-                            <li><strong>El ZIP de imágenes es opcional</strong> (solo si subes fotos nuevas).</li>
-                        </ol>
-                    </div>
-
-                    <div>
-                        <label class="text-sm font-medium text-gray-700">Paso 1: Descargar Catalogo Actual</label>
-                        <a href="{{ route('ff.catalog.downloadTemplate') }}"
-                        class="mt-1 w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                            <i class="fas fa-download mr-2 text-blue-600"></i>
-                            Descargar plantilla.csv
-                        </a>
-                    </div>
-
-                    <div class="border-t pt-4">
-                        <label class="text-sm font-medium text-gray-700">Paso 2: Archivo CSV Editado <span class="text-red-500">*</span></label>
-                        <input type="file" name="product_file" accept=".csv" required 
-                            class="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 file:py-2 file:px-4 file:border-0 file:mr-4 file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300">
-                    </div>
-
-                    <div>
-                        <label class="text-sm font-medium text-gray-700">Paso 3: Imágenes Nuevas (Opcional)</label>
-                        <input type="file" name="image_zip" accept=".zip"
-                            class="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 file:py-2 file:px-4 file:border-0 file:mr-4 file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300">
-                        <p class="text-xs text-gray-500 mt-1">Sube un .zip solo si agregaste nombres de archivo en la columna "Foto" del CSV.</p>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-end p-4 bg-gray-50 border-t rounded-b-xl space-x-3">
-                    <button type="button" @click="manager.closeUploadModal()" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
-                        Cerrar
-                    </button>
-                    <button type="submit" 
-                        class="inline-flex items-center bg-green-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-green-700"
-                        :disabled="manager.isSaving">
-                        <i x-show="manager.isSaving" class="fas fa-spinner fa-spin -ml-1 mr-2" style="display: none;"></i>
-                        <span x-text="manager.isSaving ? 'Importando...' : 'Iniciar Importación'"></span>
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <div x-show="manager.isPdfModalOpen"
-            @keydown.escape.window="manager.isPdfModalOpen = false"
-            class="fixed inset-0 z-50 bg-gray-900 bg-opacity-60 flex items-center justify-center p-4 backdrop-blur-sm"
-            x-transition style="display: none;">
-            
-            <div @click.outside="manager.isPdfModalOpen = false"
-                class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all">
-                
-                <div class="bg-gray-800 p-4 flex justify-between items-center">
-                    <h3 class="text-lg font-semibold text-white flex items-center">
-                        <i class="fas fa-percentage mr-2 text-yellow-500"></i> Ajuste de Precios
-                    </h3>
-                    <button @click="manager.isPdfModalOpen = false" class="text-gray-400 hover:text-white transition-colors">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-
-                <div class="p-6">
-                    <p class="text-gray-600 text-sm mb-4">
-                        Ingresa el porcentaje que deseas aumentar al precio original para este catálogo PDF.
-                    </p>
-
-                    <div class="relative">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Porcentaje de aumento (%)</label>
-                        <div class="relative rounded-md shadow-sm">
-                            <input type="number" 
-                                x-model="manager.pdfPercentage" 
-                                x-ref="percentageInput"
-                                @keydown.enter="manager.generatePdf()"
-                                min="0" 
-                                class="block w-full pr-12 border-gray-300 rounded-md focus:ring-gray-800 focus:border-gray-800 pl-4 py-3 text-lg" 
-                                placeholder="Ej: 15">
-                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                <span class="text-gray-500 sm:text-sm">%</span>
-                            </div>
-                        </div>
-                        <p class="mt-2 text-xs text-gray-500">
-                            * Si ingresas <strong>0</strong>, se descargarán los precios originales.
-                        </p>
-                    </div>
-                    
-                    <div x-show="manager.pdfPercentage > 0" class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                        <p class="text-xs text-blue-800">
-                            <i class="fas fa-info-circle mr-1"></i>
-                            Ejemplo: Un producto de $100 costará 
-                            <strong x-text="'$' + (100 * (1 + (manager.pdfPercentage/100))).toFixed(2)"></strong>
-                        </p>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-end p-4 bg-gray-50 border-t space-x-3">
-                    <button @click="manager.isPdfModalOpen = false" 
-                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
-                        Cancelar
-                    </button>
-                    <button @click="manager.generatePdf()" 
-                        class="px-4 py-2 bg-gray-800 border border-transparent rounded-md text-sm font-medium text-white hover:bg-gray-700 shadow-md transition-colors flex items-center">
-                        <i class="fas fa-download mr-2"></i> Descargar PDF
-                    </button>
                 </div>
             </div>
-        </div>        
+        </div>
+        
+        <div x-show="isDetailModalOpen" style="display: none;" class="fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm transition-opacity" @click="isDetailModalOpen = false"></div>
+                <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full p-0">
+                    <div class="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50">
+                        <h3 class="text-lg font-bold text-[#2c3856]">Detalle del Producto</h3>
+                        <button @click="isDetailModalOpen = false" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                            <i class="fas fa-times fa-lg"></i>
+                        </button>
+                    </div>
+                    <div class="p-8 flex flex-col md:flex-row gap-8">
+                        <div class="w-full md:w-1/2 flex items-center justify-center bg-gray-50 rounded-xl border border-gray-100 p-6">
+                            <img :src="detailProduct.photo_url" class="max-h-[400px] w-auto object-contain drop-shadow-lg">
+                        </div>
+                        <div class="w-full md:w-1/2 flex flex-col justify-between">
+                            <div class="space-y-6">
+                                <div>
+                                    <span class="inline-block px-3 py-1 bg-gray-200 text-gray-700 text-sm font-mono font-bold rounded-lg mb-2" x-text="detailProduct.sku"></span>
+                                    <h2 class="text-3xl font-extrabold text-gray-900 leading-tight" x-text="detailProduct.description"></h2>
+                                    <p class="text-emerald-600 font-bold text-lg mt-2" x-text="detailProduct.brand"></p>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                        <p class="text-xs text-gray-500 font-bold uppercase">Precio Unitario</p>
+                                        <p class="text-2xl font-bold text-[#2c3856]" x-text="formatMoney(detailProduct.unit_price)"></p>
+                                    </div>
+                                    <div class="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                                        <p class="text-xs text-gray-500 font-bold uppercase">Presentación</p>
+                                        <p class="text-xl font-bold text-orange-800" x-text="(detailProduct.pieces_per_box || 0) + ' pzas/caja'"></p>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-3 pt-4 border-t border-gray-100 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500 font-medium">UPC:</span>
+                                        <span class="font-bold text-gray-900" x-text="detailProduct.upc || 'N/A'"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500 font-medium">Tipo:</span>
+                                        <span class="font-bold text-gray-900" x-text="detailProduct.type || 'N/A'"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500 font-medium">Dimensiones:</span>
+                                        <span class="font-bold text-gray-900" x-text="`${detailProduct.length || 0} x ${detailProduct.width || 0} x ${detailProduct.height || 0} cm`"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-8 flex gap-3">
+                                <button @click="openSheetModal(detailProduct)" class="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200">
+                                    <i class="fas fa-file-invoice mr-2"></i> Ficha Técnica
+                                </button>
+                                <button @click="closeDetailAndEdit(detailProduct)" class="flex-1 py-3 bg-white text-[#2c3856] border border-gray-300 rounded-xl font-bold hover:bg-gray-50 transition-colors">
+                                    Editar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div x-show="isSheetModalOpen" style="display: none;" class="fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity" @click="isSheetModalOpen = false"></div>
+                <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full">
+                    <form :action="`{{ url('ff/catalog') }}/${sheetProduct.id}/technical-sheet`" method="POST" target="_blank" class="flex flex-col h-full">
+                        @csrf
+                        <div class="px-6 py-4 bg-[#2c3856] flex justify-between items-center">
+                            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fas fa-file-invoice"></i> Generar Ficha Técnica
+                            </h3>
+                            <button type="button" @click="isSheetModalOpen = false" class="text-white/70 hover:text-white">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="p-6 space-y-4">
+                            <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 mb-4">
+                                <p class="text-xs text-blue-800 font-medium">Completa los datos adicionales para generar el PDF.</p>
+                                <p class="font-bold text-[#2c3856] text-sm mt-1 truncate" x-text="sheetProduct.description"></p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Vol. Alcohol (Ej: 40 %)</label>
+                                <input type="text" name="alcohol_vol" class="w-full rounded-lg border-gray-300 focus:ring-[#2c3856] focus:border-[#2c3856] text-sm">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">Cajas por Cama</label>
+                                    <input type="number" name="boxes_per_layer" class="w-full rounded-lg border-gray-300 focus:ring-[#2c3856] focus:border-[#2c3856] text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">Camas por Tarima</label>
+                                    <input type="number" name="layers_per_pallet" class="w-full rounded-lg border-gray-300 focus:ring-[#2c3856] focus:border-[#2c3856] text-sm">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Peso Caja Master (Ej: 11.8 kg)</label>
+                                <input type="text" name="master_box_weight" class="w-full rounded-lg border-gray-300 focus:ring-[#2c3856] focus:border-[#2c3856] text-sm">
+                            </div>
+                        </div>
+
+                        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                            <button type="button" @click="isSheetModalOpen = false" class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg font-bold hover:bg-gray-50">Cancelar</button>
+                            <button type="submit" @click="setTimeout(() => isSheetModalOpen = false, 1000)" class="px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 shadow-md">Generar PDF</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="isUploadModalOpen" style="display: none;" 
+            class="fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity" @click="closeUploadModal()"></div>
+                <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                     <form @submit.prevent="submitImport($event)" class="p-6">
+                        <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                            <h3 class="text-xl font-bold text-[#2c3856] flex items-center">
+                                <i class="fas fa-file-excel mr-3 text-emerald-600"></i> Importación Masiva
+                            </h3>
+                            <button type="button" @click="closeUploadModal()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-6">
+                            <h4 class="text-sm font-bold text-[#2c3856] mb-2 flex items-center">
+                                <i class="fas fa-info-circle mr-2 text-blue-600"></i> ¿Cómo editar masivamente?
+                            </h4>
+                            <ol class="list-decimal list-inside text-xs text-blue-800 space-y-1 font-medium ml-1">
+                                <li>Descarga la plantilla (incluye productos actuales).</li>
+                                <li>Edita precios, nombres o añade productos nuevos en Excel.</li>
+                                <li>Sube el archivo CSV editado en el <strong>Paso 2</strong>.</li>
+                                <li>El archivo ZIP es opcional (solo si subes fotos nuevas).</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="space-y-6">
+                             <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Paso 1: Descargar Catálogo Actual</label>
+                                <a href="{{ route('ff.catalog.downloadTemplate') }}" class="w-full flex items-center justify-center p-3 border border-gray-300 rounded-xl hover:border-[#2c3856] hover:bg-gray-50 transition-colors group cursor-pointer text-sm font-bold text-gray-600 shadow-sm bg-white">
+                                    <i class="fas fa-download mr-2 text-blue-600 group-hover:scale-110 transition-transform"></i> Descargar plantilla.csv
+                                </a>
+                             </div>
+                             
+                             <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Paso 2: Subir CSV Editado <span class="text-red-500">*</span></label>
+                                <input type="file" name="product_file" accept=".csv" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-[#2c3856] file:text-white hover:file:bg-[#1f2840] bg-gray-50 rounded-lg border border-gray-200 cursor-pointer"/>
+                             </div>
+                             
+                             <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Paso 3: Imágenes Nuevas (Opcional)</label>
+                                <p class="text-xs text-gray-500 mb-2">Solo sube un .zip si agregaste nombres de archivo en la columna "Foto" del CSV.</p>
+                                <input type="file" name="image_zip" accept=".zip" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-orange-500 file:text-white hover:file:bg-orange-600 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer"/>
+                             </div>
+
+                             <div x-show="uploadMessage" :class="uploadSuccess ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'" class="p-4 rounded-xl text-sm border font-medium">
+                                <p x-text="uploadMessage"></p>
+                             </div>
+                        </div>
+
+                        <div class="mt-8 flex gap-3 border-t border-gray-100 pt-4">
+                             <button type="button" @click="closeUploadModal()" class="flex-1 py-2.5 px-4 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition-colors">Cancelar</button>
+                             <button type="submit" :disabled="isSaving" class="flex-1 py-2.5 px-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-colors">
+                                <span x-text="isSaving ? 'Procesando...' : 'Iniciar Importación'"></span>
+                             </button>
+                        </div>
+                     </form>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="isPdfModalOpen" style="display: none;" class="fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity" @click="isPdfModalOpen = false"></div>
+                <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-full p-6">
+                    <div class="text-center">
+                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                            <i class="fas fa-file-pdf text-red-600 text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900">Generar Catálogo PDF</h3>
+                        <p class="text-sm text-gray-500 mt-2">Ingresa un porcentaje si deseas aumentar los precios en el documento.</p>
+                        
+                        <div class="mt-6">
+                            <label class="block text-sm font-bold text-gray-700 text-left mb-2">Aumento (%)</label>
+                            <input type="number" x-model="pdfPercentage" class="block w-full rounded-xl border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 text-center text-xl font-bold py-3" placeholder="0">
+                        </div>
+
+                        <div class="mt-6 flex gap-3">
+                            <button @click="isPdfModalOpen = false" class="flex-1 py-2.5 bg-gray-100 rounded-xl text-gray-700 font-bold hover:bg-gray-200">Cancelar</button>
+                            <button @click="generatePdf()" class="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-lg">Descargar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     </div>
 
     <script>
-        function productManager() {
+        function productManager(initialProducts) {
             return {
-                products: [],
-                filter: '',
-                loading: true,
+                products: initialProducts || [],
+                loading: true, 
+                
+                currentPage: 1,
+                itemsPerPage: 12,
+
+                isEditorOpen: false, 
+                showFilters: false,
+                filters: {
+                    search: '',
+                    brand: '',
+                    type: '',
+                    status: 'all',
+                },
                 isSaving: false,
                 photoPreview: null,
                 form: {
-                    id: null, 
-                    sku: '', 
-                    description: '', 
-                    type: '', 
-                    brand: '',
-                    unit_price: 0.00, 
-                    pieces_per_box: null,
-                    length: null,
-                    width: null,
-                    height: null,
-                    upc: '',
-                    photo: null, 
-                    photo_url: null, 
-                    is_active: true,
+                    id: null, sku: '', description: '', type: '', brand: '',
+                    unit_price: 0.00, pieces_per_box: null, length: null,
+                    width: null, height: null, upc: '', photo: null, 
+                    photo_url: null, is_active: true,
                 },
                 isUploadModalOpen: false,
                 uploadMessage: '',
@@ -359,98 +609,131 @@
                 isPdfModalOpen: false,
                 pdfPercentage: 0,
                 
-                init(initialProducts) {
-                    this.products = initialProducts;
-                    this.loading = false;
+                isDetailModalOpen: false,
+                detailProduct: {},
+                isSheetModalOpen: false,
+                sheetProduct: {},
+
+                init() {
+                    setTimeout(() => { this.loading = false; }, 300);
                 },
 
                 get filteredProducts() {
-                    if (this.filter === '') return this.products;
-                    const search = this.filter.toLowerCase();
-                    return this.products.filter(p => 
-                        p.sku.toLowerCase().includes(search) || 
-                        p.description.toLowerCase().includes(search) ||
-                        (p.brand && p.brand.toLowerCase().includes(search)) ||
-                        (p.upc && p.upc.toLowerCase().includes(search))
-                    );
+                    if (!this.products) return []; 
+                    
+                    let result = this.products;
+                    const search = this.filters.search.toLowerCase();
+
+                    if (search) {
+                        result = result.filter(p => 
+                            (p.sku && p.sku.toLowerCase().includes(search)) || 
+                            (p.description && p.description.toLowerCase().includes(search)) ||
+                            (p.brand && p.brand.toLowerCase().includes(search)) ||
+                            (p.upc && p.upc.toLowerCase().includes(search))
+                        );
+                    }
+
+                    if (this.filters.brand) {
+                        result = result.filter(p => p.brand === this.filters.brand);
+                    }
+                    if (this.filters.type) {
+                        result = result.filter(p => p.type === this.filters.type);
+                    }
+                    if (this.filters.status !== 'all') {
+                        const isActive = this.filters.status === 'active';
+                        result = result.filter(p => Boolean(p.is_active) === isActive);
+                    }
+
+                    return result;
                 },
 
-                selectProductForEdit(product) {
-                    this.form = { ...product, photo: null };
-                    this.photoPreview = null;
+                get paginatedProducts() {
+                    const start = (this.currentPage - 1) * this.itemsPerPage;
+                    const end = start + this.itemsPerPage;
+                    return this.filteredProducts.slice(start, end);
                 },
+
+                get totalPages() {
+                    return Math.ceil(this.filteredProducts.length / this.itemsPerPage);
+                },
+
+                changePage(page) {
+                    if (page >= 1 && page <= this.totalPages) {
+                        this.currentPage = page;
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                },
+
+                get uniqueBrands() {
+                    if (!this.products) return [];
+                    const brands = this.products.map(p => p.brand).filter(b => b);
+                    return [...new Set(brands)].sort();
+                },
+
+                get uniqueTypes() {
+                    if (!this.products) return [];
+                    const types = this.products.map(p => p.type).filter(t => t);
+                    return [...new Set(types)].sort();
+                },
+
+                get activeFilterCount() {
+                    let count = 0;
+                    if(this.filters.brand) count++;
+                    if(this.filters.type) count++;
+                    if(this.filters.status !== 'all') count++;
+                    return count;
+                },
+
+                get stats() {
+                    if (!this.products) return [];
+                    const total = this.products.length;
+                    const active = this.products.filter(p => p.is_active).length;
+                    const totalValue = this.products.reduce((acc, p) => acc + parseFloat(p.unit_price || 0), 0);
+                    
+                    return [
+                        { label: 'Total Productos', value: total, icon: 'fas fa-cubes', color: 'bg-blue-500' },
+                        { label: 'Activos', value: active, icon: 'fas fa-check-circle', color: 'bg-green-500' },
+                        { label: 'Valor Catálogo', value: this.formatMoney(totalValue), icon: 'fas fa-dollar-sign', color: 'bg-[#ff9c00]' },
+                        { label: 'Tipos', value: this.uniqueTypes.length, icon: 'fas fa-tags', color: 'bg-purple-600' }
+                    ];
+                },
+
+                formatMoney(amount) {
+                    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+                },
+
+                resetFilters() {
+                    this.filters.brand = '';
+                    this.filters.type = '';
+                    this.filters.status = 'all';
+                    this.filters.search = '';
+                    this.currentPage = 1;
+                },
+
                 selectNewProduct() {
                     this.resetForm();
-                    this.$nextTick(() => { this.$refs.skuInput.focus(); });
-                },
-                
-                resetForm() {
-                    this.form = { 
-                        id: null, 
-                        sku: '', 
-                        description: '', 
-                        type: '', 
-                        brand: '', 
-                        unit_price: 0.00, 
-                        pieces_per_box: null,
-                        length: null,
-                        width: null,
-                        height: null,
-                        upc: '',
-                        photo: null, 
-                        photo_url: null, 
-                        is_active: true 
-                    };
-                    this.photoPreview = null;
+                    this.isEditorOpen = true;
                 },
 
-                openUploadModal() {
-                    this.isUploadModalOpen = true;
-                    this.uploadMessage = '';
-                    this.uploadSuccess = false;
+                editProduct(product) {
+                    this.form = { ...product, photo: null };
+                    this.photoPreview = null;
+                    this.isEditorOpen = true;
                 },
-                closeUploadModal() {
-                    this.isUploadModalOpen = false;
-                    if (this.uploadSuccess) {
-                        location.reload();
-                    }
+
+                closeEditor() {
+                    this.isEditorOpen = false;
+                    setTimeout(() => this.resetForm(), 300);
                 },
-                async submitImport(event) {
-                    if (this.isSaving) return;
-                    this.isSaving = true;
-                    this.uploadMessage = '';
-                    this.uploadSuccess = false;
-                    const formData = new FormData(event.target);
-                    try {
-                        const response = await fetch("{{ route('ff.catalog.import') }}", {
-                            method: 'POST',
-                            body: formData,
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                                'Accept': 'application/json',
-                            }
-                        });
-                        const data = await response.json();
-                        if (!response.ok) {
-                            this.uploadSuccess = false;
-                            this.uploadMessage = data.message || 'Error al subir los archivos.';
-                            if(data.errors) {
-                                this.uploadMessage += ' ' + Object.values(data.errors).join(' ');
-                            }
-                            throw new Error('Error en la subida.');
-                        }
-                        this.uploadSuccess = true;
-                        this.uploadMessage = data.message;
-                        event.target.reset();
-                    } catch (error) {
-                        console.error(error);
-                        if (!this.uploadMessage) {
-                            this.uploadSuccess = false;
-                            this.uploadMessage = 'Ocurrió un error inesperado.';
-                        }
-                    } finally {
-                        this.isSaving = false;
-                    }
+
+                resetForm() {
+                    this.form = { 
+                        id: null, sku: '', description: '', type: '', brand: '', 
+                        unit_price: 0.00, pieces_per_box: null, length: null,
+                        width: null, height: null, upc: '', photo: null, 
+                        photo_url: null, is_active: true 
+                    };
+                    this.photoPreview = null;
                 },
 
                 previewPhoto(event) {
@@ -463,21 +746,10 @@
                     }
                 },
 
-                openPdfModal() {
-                    this.pdfPercentage = 0;
-                    this.isPdfModalOpen = true;
-                    this.$nextTick(() => this.$refs.percentageInput.focus());
-                },
-
-                generatePdf() {
-                    const url = "{{ route('ff.catalog.exportPdf') }}?percentage=" + this.pdfPercentage;
-                    window.open(url, '_blank');
-                    this.isPdfModalOpen = false;
-                },                
-
                 async saveProduct() {
                     if (this.isSaving) return;
                     this.isSaving = true;
+                    
                     const formData = new FormData();
                     Object.keys(this.form).forEach(key => {
                         if (key !== 'photo_url') {
@@ -488,9 +760,12 @@
                             formData.append(key, value);
                         }
                     });
+                    
                     const isUpdate = !!this.form.id;
                     if (isUpdate) formData.append('_method', 'PUT');
+                    
                     const url = isUpdate ? `{{ url('ff/catalog') }}/${this.form.id}` : `{{ route('ff.catalog.store') }}`;
+
                     try {
                         const response = await fetch(url, {
                             method: 'POST', body: formData,
@@ -499,37 +774,34 @@
                                 'Accept': 'application/json',
                             },
                         });
+
                         if (!response.ok) {
                             const errorData = await response.json();
-                            let errorMessage = 'No se pudo guardar:\n';
-                            if (response.status === 422 && errorData.errors) {
-                                for (const field in errorData.errors) {
-                                    errorMessage += `- ${errorData.errors[field].join(', ')}\n`;
-                                }
-                            } else {
-                                errorMessage += errorData.message || 'Error desconocido.';
-                            }
-                            alert(errorMessage);
-                            throw new Error('Error al guardar.');
+                            alert('Error: ' + (errorData.message || 'Verifica los datos'));
+                            throw new Error('Error en validación');
                         }
+
                         const savedProduct = await response.json();
+                        
                         if (isUpdate) {
                             const index = this.products.findIndex(p => p.id === savedProduct.id);
                             if (index > -1) this.products.splice(index, 1, savedProduct);
                         } else {
                             this.products.unshift(savedProduct);
                         }
-                        this.resetForm();
+                        
+                        this.closeEditor();
+
                     } catch (error) {
                         console.error(error);
                     } finally {
                         this.isSaving = false;
                     }
                 },
-                
+
                 async deleteProduct(product) {
-                    if (!product.id) return;
-                    if (!confirm(`¿Estás seguro de que deseas eliminar "${product.description}"?`)) return;
+                    if (!confirm(`¿Eliminar definitivamente "${product.description}"?`)) return;
+                    
                     try {
                         const response = await fetch(`{{ url('ff/catalog') }}/${product.id}`, {
                             method: 'DELETE',
@@ -538,16 +810,59 @@
                                 'Accept': 'application/json',
                             },
                         });
-                        if (!response.ok) throw new Error('Error al eliminar.');
+                        
+                        if (!response.ok) throw new Error('Error al eliminar');
+                        
                         this.products = this.products.filter(p => p.id !== product.id);
-                        if (this.form.id === product.id) {
-                            this.resetForm();
-                        }
+                        this.closeEditor();
+                        
                     } catch (error) {
-                        console.error(error);
-                        alert('No se pudo eliminar el producto.');
+                        alert('No se pudo eliminar.');
                     }
                 },
+
+                openUploadModal() { this.isUploadModalOpen = true; this.uploadMessage = ''; },
+                closeUploadModal() { this.isUploadModalOpen = false; if(this.uploadSuccess) location.reload(); },
+                
+                async submitImport(event) {
+                    this.isSaving = true;
+                    this.uploadMessage = '';
+                    const formData = new FormData(event.target);
+                    try {
+                        const response = await fetch("{{ route('ff.catalog.import') }}", {
+                            method: 'POST', body: formData,
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json'}
+                        });
+                        const data = await response.json();
+                        this.uploadSuccess = response.ok;
+                        this.uploadMessage = data.message || (data.errors ? Object.values(data.errors).join(' ') : 'Error');
+                        if(this.uploadSuccess) event.target.reset();
+                    } catch (e) { this.uploadMessage = 'Error de conexión'; }
+                    finally { this.isSaving = false; }
+                },
+
+                openPdfModal() { this.pdfPercentage = 0; this.isPdfModalOpen = true; },
+                generatePdf() {
+                    window.open("{{ route('ff.catalog.exportPdf') }}?percentage=" + this.pdfPercentage, '_blank');
+                    this.isPdfModalOpen = false;
+                },
+
+                openDetailModal(product) {
+                    this.detailProduct = product;
+                    this.isDetailModalOpen = true;
+                },
+
+                openSheetModal(product) {
+                    this.sheetProduct = product;
+                    this.isSheetModalOpen = true;
+                },
+                
+                closeDetailAndEdit(product) {
+                    this.isDetailModalOpen = false;
+                    setTimeout(() => {
+                        this.editProduct(product);
+                    }, 300);
+                }
             }
         }
     </script>

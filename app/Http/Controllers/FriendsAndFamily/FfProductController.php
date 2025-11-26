@@ -323,7 +323,7 @@ class FfProductController extends Controller
             }
         }
         
-        $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter-2.PNG');
+        $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
 
         $data = [
             'products' => $products,
@@ -339,5 +339,32 @@ class FfProductController extends Controller
         $pdf->setOption('dpi', 150);
         
         return $pdf->stream('Catalogo_FF_'.now()->format('Ymd').'.pdf');
+    }
+
+    public function generateTechnicalSheet(Request $request, ffProduct $product)
+    {
+        $request->validate([
+            'alcohol_vol' => 'nullable|string',
+            'boxes_per_layer' => 'nullable|string',
+            'layers_per_pallet' => 'nullable|string',
+            'master_box_weight' => 'nullable|string',
+        ]);
+
+        $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
+        
+        $data = [
+            'product' => $product,
+            'extra' => $request->all(),
+            'logo_url' => $logoUrl,
+        ];
+
+        $pdf = Pdf::loadView('friends-and-family.catalog.technical-sheet', $data);
+        
+        $pdf->setPaper('A5', 'portrait'); 
+        
+        $pdf->setOption('isRemoteEnabled', true);
+        $pdf->setOption('dpi', 150);
+        
+        return $pdf->stream('Ficha_Tecnica_'.$product->sku.'.pdf');
     }
 }

@@ -2,276 +2,275 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Catálogo Exclusivo</title>
+    <title>Catálogo de productos</title>
     <style>
-        @page { 
-            margin: 0px; 
+        @page {
+            margin: 0cm;
             font-family: 'Helvetica', 'Arial', sans-serif;
         }
-        * {
-            box-sizing: border-box;
-        }
+
         body {
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa;
-            color: #333;
+            margin-top: 3cm;
+            margin-bottom: 2cm;
+            margin-left: 1cm;
+            margin-right: 1cm;
+            background-color: #ffffff;
+            color: #111;
         }
-        
-        .header {
+
+        header {
+            position: fixed;
+            top: 0cm;
+            left: 0cm;
+            right: 0cm;
+            height: 2cm;
             background-color: #2c3856;
             color: white;
-            padding: 30px 50px;
-            margin-bottom: 20px;
-            position: relative;
-        }
-        .header-content {
-            border-left: 5px solid #ff9c00;
-            padding-left: 20px;
-        }
-        .header h1 { 
-            margin: 0; 
-            font-size: 24px; 
-            text-transform: uppercase; 
-            letter-spacing: 2px; 
-        }
-        .header h2 {
-            margin: 5px 0 0 0;
-            font-size: 12px;
-            font-weight: normal;
-            color: #d1d5db;
-            text-transform: uppercase;
-        }
-        .logo-corner {
-            position: absolute;
-            top: 5px;
-            right: 50px;
-            height: 40px;
-            height: 90px;
+            padding: 0.5cm 1cm;
+            border-bottom: 6px solid #ff9c00;
         }
 
-        .container {
-            padding: 0 40px;
+        .header-table { width: 100%; }
+        .header-title h1 { font-size: 28px; text-transform: uppercase; margin: 0; }
+        .header-title h2 { font-size: 12px; color: #ff9c00; margin-top: 5px; text-transform: uppercase; }
+        .header-logo img { height: 1.8cm; background: white; padding: 5px; border-radius: 4px; }
+
+        footer {
+            position: fixed;
+            bottom: 0cm;
+            left: 0cm;
+            right: 0cm;
+            height: 1cm;
+            background-color: #f3f4f6;
+            text-align: center;
+            line-height: 1cm;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #ddd;
+        }
+
+        .products-table {
             width: 100%;
+            border-collapse: separate;
+            border-spacing: 20px 30px;
         }
-        .row {
-            width: 100%;
-            clear: both;
-            margin-bottom: 15px;
-        }
-        .col {
-            float: left;
-            width: 45%; 
-        }
-        .col:nth-child(even) {
-            margin-left: 4%; 
-        }
-        .card {
-            background-color: white;
+
+        .product-card {
+            background-color: #fff;
+            border: 1px solid #d1d5db;
             border-radius: 8px;
             overflow: hidden;
-            border: 1px solid #e5e7eb;
-            page-break-inside: avoid;
-            height: 540px;
+            height: 425px;
+            width: 100%;
             position: relative;
         }
 
-        .img-wrapper {
-            height: 300px;
+        .img-container {
+            height: 220px;
             width: 100%;
-            background-color: white;
-            border-bottom: 1px solid #f3f4f6;
             text-align: center;
-            line-height: 290px;
-            overflow: hidden;
-            padding: 5px;
+            background-color: white;
+            border-bottom: 1px solid #eee;
+            padding: 10px;
+            line-height: 200px; 
         }
 
-        .img-wrapper img {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
+        .img-container img {
+            max-height: 200px;
+            max-width: 90%;
             vertical-align: middle;
-            margin: 0 auto;
+            display: inline-block;
         }
 
         .card-body {
-            padding: 15px 20px;
+            padding: 15px 15px 90px 15px;
+            position: relative;
+        }
+
+        .brand-row {
+            margin-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .brand {
+            font-size: 15px;
+            color: #6b7280;
+            font-weight: bold;
+            text-transform: uppercase;
         }
 
         .sku {
+            font-size: 15px;
             color: #374151;
-            font-size: 14px;
-            font-weight: 900;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            display: block;
-            margin-bottom: 5px;
-            font-family: 'Courier New', monospace;
+            float: right;
+            font-weight: bold;
+            font-family: monospace;
         }
 
         .title {
-            font-size: 13px;
-            color: #4b5563;
-            font-weight: normal;
-            margin: 0 0 8px 0;
+            font-size: 15px;
+            font-weight: bold;
+            color: #000;
             line-height: 1.3;
-            height: 35px;
+            margin-top: 5px;
+            margin-bottom: 1px;
+            height: 20px;
             overflow: hidden;
         }
 
-        .badges { 
-            margin-bottom: 10px; 
-            height: 18px; 
+        .specs {
+            font-size: 12px;
+            color: #333;
+            line-height: 1.6;
         }
-        .badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 7px;
+
+        .spec-label {
             font-weight: bold;
-            text-transform: uppercase;
+            color: #555;
             margin-right: 5px;
         }
-        .badge-brand { background-color: #2c3856; color: white; }
-        .badge-type { background-color: #e5e7eb; color: #374151; }
 
-        .specs {
-            font-size: 8px;
-            color: #6b7280;
-            margin-bottom: 10px;
-            line-height: 1.4;
-            border-top: 1px solid #f3f4f6;
-            padding-top: 8px;
-        }
-        .specs strong {
-            color: #374151;
-        }
-
-        .price-block {
-            padding-top: 8px;
-            border-top: 1px dotted #e5e7eb;
-            text-align: right;
-            display: block;
-        }
-        
-        .price-label {
-            display: block;
-            font-size: 8px;
-            color: #9ca3af;
-            text-transform: uppercase;
-        }
-        .price-amount {
-            font-size: 22px;
-            font-weight: 800;
-            color: #2c3856;
-        }
-        .currency { font-size: 12px; vertical-align: top; margin-right: 2px; }
-
-        .inactive-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255, 255, 255, 0.85);
-            z-index: 20;
-        }
-        .inactive-text {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-15deg);
-            background: #ef4444;
-            color: white;
-            padding: 10px 30px;
+        .spec-label-1 {
             font-weight: bold;
-            font-size: 16px;
-            border: 2px solid white;
+            color: #ff9c00;
+            margin-right: 5px;
+        }        
+
+        .price-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f1f5f9;
+            padding: 10px 15px;
+            text-align: right;
+            border-top: 2px solid #e5e7eb;
+            height: 40px;
+            box-sizing: border-box;
         }
 
-        .footer {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            text-align: center;
-            padding: 10px;
-            font-size: 8px;
-            color: #9ca3af;
-            border-top: 1px solid #e5e7eb;
-            background: #f8f9fa;
+        .price-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #64748b;
+            display: block;
+            margin-bottom: 2px;
+            margin-right: 20px;
         }
+
+        .price {
+            font-size: 26px;
+            font-weight: 900;
+            color: #2c3856;
+            display: block;
+            margin-right: 25px;
+        }
+
+        .badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            z-index: 10;
+        }
+        .bg-green { background-color: #10b981; }
+        .bg-red { background-color: #ef4444; }
+
     </style>
 </head>
 <body>
-    <div class="header">
-        <img src="{{ $logo_url }}" class="logo-corner">
-        <div class="header-content">
-            <h1>Gestión de Catálogo</h1>
-            @if(isset($percentage_text))
-                <h2>{{ $percentage_text }}</h2>
-            @endif
-        </div>
-    </div>
 
-    <div class="container">
+    <header>
+        <table class="header-table">
+            <tr>
+                <td class="header-title">
+                    <h1>Catálogo de productos</h1>
+                    <h2>Colección Exclusiva {{ Auth::user()->area ? ' - ' . Auth::user()->area->name : '' }}</h2>
+                </td>
+                <td class="header-logo" align="right">
+                    <img src="{{ $logo_url }}" alt="Logo">
+                </td>
+            </tr>
+        </table>
+    </header>
+
+    <footer>
+        Minmer Global Control Tower • {{ $date }} • Página <span class="page-number"></span>
+    </footer>
+
+    <table class="products-table">
         @foreach($products->chunk(2) as $row)
-            <div class="row">
+            <tr>
                 @foreach($row as $product)
-                    <div class="col">
-                        <div class="card">
-                            @if(!$product->is_active)
-                                <div class="inactive-overlay">
-                                    <div class="inactive-text">INACTIVO</div>
-                                </div>
+                    <td width="50%" valign="top">
+                        <div class="product-card">
+                            
+                            @if($product->is_active)
+                                <span class="badge bg-green">DISPONIBLE</span>
+                            @else
+                                <span class="badge bg-red">AGOTADO / INACTIVO</span>
                             @endif
 
-                            <div class="img-wrapper">
-                                <img src="{{ $product->photo_url }}" alt="{{ $product->sku }}">
+                            <div class="img-container">
+                                <img src="{{ $product->photo_url }}" alt="Prod">
                             </div>
-                            
+
                             <div class="card-body">
-                                <span class="sku">{{ $product->sku }}</span>
-                                
-                                <div class="title">{{ $product->description }}</div>
-                                
-                                <div class="badges">
-                                    @if($product->brand)
-                                        <span class="badge badge-brand">{{ $product->brand }}</span>
-                                    @endif
-                                    @if($product->type)
-                                        <span class="badge badge-type">{{ $product->type }}</span>
-                                    @endif
+                                <div class="brand-row">
+                                    <span class="brand">{{ Str::limit($product->brand ?? 'S/M', 15) }}</span>
+                                    <span class="sku">{{ $product->sku }}</span>
+                                </div>
+
+                                <div class="title">
+                                    {{ Str::limit($product->description, 55) }}
                                 </div>
 
                                 <div class="specs">
-                                    @if($product->upc)
-                                        <div><strong>UPC:</strong> {{ $product->upc }}</div>
-                                    @endif
                                     @if($product->pieces_per_box)
-                                        <div><strong>Pzas/Caja:</strong> {{ $product->pieces_per_box }}</div>
+                                        <div><span class="spec-label">CAJA:</span> {{ $product->pieces_per_box }} Pzas</div>
                                     @endif
-                                    @if($product->length || $product->width || $product->height)
-                                        <div>
-                                            <strong>Dimensiones:</strong> 
-                                            {{ $product->length ?? 0 }} x {{ $product->width ?? 0 }} x {{ $product->height ?? 0 }} cm
+                                    
+                                    @if($product->upc)
+                                        <div style="margin-top: 4px;"><span class="spec-label">UPC:</span> {{ $product->upc }}
+                                        @if($product->length)
+                                                <span class="spec-label-1"> MEDIDAS:</span> 
+                                                {{ floatval($product->length) }}x{{ floatval($product->width) }}x{{ floatval($product->height) }}
+                                        @endif                                        
                                         </div>
                                     @endif
                                 </div>
-
-                                <div class="price-block">
-                                    <span class="price-amount">
-                                        <span class="currency">$</span>{{ number_format($product->unit_price, 2) }}
-                                    </span>
-                                </div>
                             </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @endforeach
-    </div>
 
-    <div class="footer">
-        • Documento confidencial • {{ $date }}
-    </div>
+                            <div class="price-container">
+                                <span class="price-label">Precio Unitario</span>
+                                <span class="price">${{ number_format($product->unit_price, 2) }}</span>
+                            </div>
+
+                        </div>
+                    </td>
+                    
+                    @if($loop->count == 1 && $loop->parent->count == 1) 
+                         <td width="50%"></td>
+                    @endif
+                @endforeach
+            </tr>
+        @endforeach
+    </table>
+
+    <script type="text/php">
+        if (isset($pdf)) {
+            $text = "Pág. {PAGE_NUM} / {PAGE_COUNT}";
+            $size = 9;
+            $font = $fontMetrics->getFont("Helvetica");
+            $width = $fontMetrics->get_text_width($text, $font, $size);
+            $pdf->page_text(520, 800, $text, $font, $size, array(0.4,0.4,0.4));
+        }
+    </script>
+
 </body>
 </html>
