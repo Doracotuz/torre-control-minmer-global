@@ -4,304 +4,299 @@
     <meta charset="UTF-8">
     <title>Ficha Técnica - {{ $product->sku }}</title>
     <style>
-        @page { margin: 0; }
-        body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            background-color: #00683f;
+        @page {
             margin: 0;
             padding: 0;
+        }
+        body {
+            /* Fondo verde principal */
+            background-color: #00683f;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px; /* Un poco de padding para que se vea el fondo verde */
             color: #333;
-        }
-
-        .card {
-            background-color: #ffffff;
-            margin: 20px;
-            height: 94%; 
-            border-radius: 25px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
-        }
-
-        .header-block {
-            background-color: #f4f4f4;
-            border-bottom: 2px solid #8fc742;
-            padding: 25px 0;
             text-align: center;
         }
-        
-        .header-title {
-            font-weight: 900;
-            font-size: 24px;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            color: #00683f;
-            margin: 0;
-        }
-        
-        .header-sku {
-            color: #666;
-            font-size: 10px;
-            letter-spacing: 1px;
-            margin-top: 5px;
-            font-weight: bold;
-        }
 
-        .content-wrapper {
+        /* El contenedor blanco que simula la forma */
+        .main-card {
+            background-color: #ffffff;
+            /* Bordes muy redondeados para aproximar la forma de la imagen de manera segura para DomPDF */
+            border-radius: 60px;
             width: 100%;
-            height: 75%;
-            display: table;
-        }
-        
-        .content-cell {
-            display: table-cell;
-            vertical-align: middle;
-            padding: 0 20px;
+            height: 95%; /* Altura casi completa */
+            box-sizing: border-box;
+            padding: 30px;
+            position: relative;
         }
 
+        /* Título principal */
+        h1.main-title {
+            font-weight: normal;
+            font-size: 32px;
+            margin-top: 10px;
+            margin-bottom: 50px;
+            color: #000;
+        }
+
+        /* Estructura de layout principal de 3 columnas */
         .layout-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
         }
-
-        .col-side { width: 30%; vertical-align: middle; }
-        .col-center { width: 40%; vertical-align: middle; text-align: center; }
-
-        .item-row {
-            margin-bottom: 35px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #f0f0f0;
+        .col-side {
+            width: 28%;
+            vertical-align: middle;
         }
-        .item-row:last-child { border-bottom: none; }
-
-        .label {
-            display: block;
-            font-size: 10px;
-            font-weight: 900;
-            text-transform: uppercase;
-            color: #00683f;
-            margin-bottom: 4px;
-        }
-        
-        .value {
-            display: block;
-            font-size: 12px;
-            color: #333;
-            font-weight: bold;
-            line-height: 1.3;
-        }
-
-        .icon-container {
-            width: 32px;
-            height: 32px;
-            background: #f9f9f9;
-            border-radius: 50%;
+        .col-center {
+            width: 44%;
+            vertical-align: middle;
             text-align: center;
-            line-height: 40px;
-            margin-bottom: 5px;
-            display: inline-block;
-        }
-        
-        .data-cell-icon { width: 40px; vertical-align: top; }
-        .data-cell-text { vertical-align: top; }
-        
-        .align-right { text-align: right; }
-        .align-left { text-align: left; }
-
-        .icon-svg {
-            width: 20px;
-            height: 20px;
-            fill: none;
-            stroke: #8fc742;
-            stroke-width: 2;
+            padding: 0 10px;
         }
 
-        .product-image {
-            max-width: 100%;
-            max-height: 500px;
-            object-fit: contain;
-            filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.15));
-        }
-
-        .no-image {
+        /* Estilos para los items individuales (filas de datos) */
+        .item-table {
             width: 100%;
-            height: 300px;
-            background: #f8f8f8;
-            border: 2px dashed #ddd;
-            border-radius: 20px;
-            line-height: 300px;
-            color: #aaa;
+            border-collapse: collapse;
+            margin-bottom: 35px; /* Espacio entre items */
+        }
+        .icon-cell {
+            width: 50px;
+            vertical-align: middle;
+        }
+        .text-cell {
+            vertical-align: middle;
+        }
+
+        /* Alineación específica para columna izquierda */
+        .left-col-text {
+            text-align: right;
+            padding-right: 15px;
+        }
+        .left-col-icon img {
+            float: left;
+        }
+
+        /* Alineación específica para columna derecha */
+        .right-col-text {
+            text-align: left;
+            padding-left: 15px;
+        }
+        .right-col-icon img {
+            float: right;
+        }
+
+        /* Tipografía de etiquetas y valores */
+        .label {
             font-weight: bold;
             font-size: 14px;
+            color: #000;
+            margin-bottom: 5px;
+        }
+        .value {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.2;
         }
 
+        /* Estilos de iconos SVG */
+        .icon-svg {
+            width: 45px;
+            height: auto;
+            /* El color verde de los iconos debe venir definido dentro del propio SVG en S3
+               Si los SVGs son negros, se necesitaría un filtro CSS, pero DomPDF tiene soporte limitado para filtros.
+               Asumo que los SVGs en S3 ya tienen el color #8fc742 o similar. */
+        }
+
+        /* Sección central de producto */
+        .product-image {
+            max-width: 100%;
+            max-height: 450px;
+            object-fit: contain;
+            /* Sombra suave para levantar la botella */
+            filter: drop-shadow(0px 5px 10px rgba(0,0,0,0.2));
+        }
+        .product-brand {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00683f;
+            margin-top: 20px;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+        .product-type {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Footer */
         .footer {
             position: absolute;
-            bottom: 25px;
-            width: 100%;
+            bottom: 30px;
+            left: 0;
+            right: 0;
             text-align: center;
-            border-top: 1px solid #eee;
-            padding-top: 15px;
         }
         .logo-img {
-            height: 60px;
+            height: 70px;
             width: auto;
         }
-
     </style>
 </head>
 <body>
+    {{-- Helper function para generar URLs de S3 rápidamente --}}
+    @php
+        function s3Icon($filename) {
+            return Illuminate\Support\Facades\Storage::disk('s3')->url('IconosFichaTecnica/' . $filename);
+        }
+    @endphp
 
-    <div class="card">
+    <div class="main-card">
         
-        <div class="header-block">
-            <h1 class="header-title">FICHA TÉCNICA</h1>
-            <div class="header-sku">REF: {{ $product->sku }}</div>
-        </div>
+        <h1 class="main-title">Ficha técnica</h1>
 
-        <div class="content-wrapper">
-            <div class="content-cell">
-                
-                <table class="layout-table">
-                    <tr>
-                        <td class="col-side">
-                            
-                            <div class="item-row">
-                                <table width="100%"><tr>
-                                    <td class="data-cell-icon align-left">
-                                        <div class="icon-container">
-                                            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-                                        </div>
-                                    </td>
-                                    <td class="data-cell-text align-right">
-                                        <span class="label">DESCRIPCIÓN</span>
-                                        <span class="value">{{ Str::limit($product->description, 60) }}</span>
-                                    </td>
-                                </tr></table>
-                            </div>
+        <table class="layout-table">
+            <tr>
+                <td class="col-side">
+                    
+                    <table class="item-table">
+                        <tr>
+                            <td class="icon-cell left-col-icon">
+                                <img src="{{ s3Icon('SKU.svg') }}" class="icon-svg" alt="SKU">
+                            </td>
+                            <td class="text-cell left-col-text">
+                                <div class="label">SKU</div>
+                                <div class="value">{{ $product->sku }}</div>
+                            </td>
+                        </tr>
+                    </table>
 
-                            <div class="item-row">
-                                <table width="100%"><tr>
-                                    <td class="data-cell-icon align-left">
-                                        <div class="icon-container">
-                                            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 2l9 19H3l9-19zm0 3.8L5.6 19h12.8L12 5.8z"/></svg>
-                                        </div>
-                                    </td>
-                                    <td class="data-cell-text align-right">
-                                        <span class="label">MARCA</span>
-                                        <span class="value">{{ $product->brand ?? 'Genérico' }}</span>
-                                    </td>
-                                </tr></table>
-                            </div>
+                    <table class="item-table">
+                        <tr>
+                            <td class="icon-cell left-col-icon">
+                                <img src="{{ s3Icon('Descripción.svg') }}" class="icon-svg" style="width: 35px;" alt="Descripción">
+                            </td>
+                            <td class="text-cell left-col-text">
+                                <div class="label">Descripción</div>
+                                <div class="value" style="font-size: 14px;">{{ Str::limit($product->description, 80) }}</div>
+                            </td>
+                        </tr>
+                    </table>
 
-                            <div class="item-row">
-                                <table width="100%"><tr>
-                                    <td class="data-cell-icon align-left">
-                                        <div class="icon-container">
-                                            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M3 5h2v14H3zm4 0h1v14H7zm3 0h3v14h-3zm5 0h2v14h-2zm4 0h1v14h-1z"/></svg>
-                                        </div>
-                                    </td>
-                                    <td class="data-cell-text align-right">
-                                        <span class="label">UPC CAJA</span>
-                                        <span class="value">{{ $product->upc ?? 'No Aplica' }}</span>
-                                    </td>
-                                </tr></table>
-                            </div>
+                    <table class="item-table">
+                        <tr>
+                            <td class="icon-cell left-col-icon">
+                                <img src="{{ s3Icon('UPC Caja.svg') }}" class="icon-svg" alt="UPC Caja">
+                            </td>
+                            <td class="text-cell left-col-text">
+                                <div class="label">UPC Caja</div>
+                                <div class="value">{{ $product->upc ?? 'No Aplica' }}</div>
+                            </td>
+                        </tr>
+                    </table>
 
-                            <div class="item-row">
-                                <table width="100%"><tr>
-                                    <td class="data-cell-icon align-left">
-                                        <div class="icon-container">
-                                            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z"/></svg>
-                                        </div>
-                                    </td>
-                                    <td class="data-cell-text align-right">
-                                        <span class="label">VOL. ALCOHOL</span>
-                                        <span class="value">{{ $extra['alcohol_vol'] ?? 'N/A' }}</span>
-                                    </td>
-                                </tr></table>
-                            </div>
+                    <table class="item-table">
+                        <tr>
+                            <td class="icon-cell left-col-icon">
+                                <img src="{{ s3Icon('UPC Botella.svg') }}" class="icon-svg" style="width: 25px; margin-left:10px;" alt="UPC Botella">
+                            </td>
+                            <td class="text-cell left-col-text">
+                                <div class="label">UPC Botella</div>
+                                {{-- NOTA: El campo 'upc_bottle' no existe en tu controlador actualmente. Se usa un placeholder. --}}
+                                <div class="value">{{ $extra['upc_bottle'] ?? 'No Aplica' }}</div>
+                            </td>
+                        </tr>
+                    </table>
 
-                        </td>
+                     <table class="item-table">
+                        <tr>
+                            <td class="icon-cell left-col-icon">
+                                <img src="{{ s3Icon('Graduación Alcoholica.svg') }}" class="icon-svg" alt="Graduación Alcohólica">
+                            </td>
+                            <td class="text-cell left-col-text">
+                                <div class="label">Graduación Alcohólica</div>
+                                <div class="value">{{ $extra['alcohol_vol'] ?? 'N/A' }}</div>
+                            </td>
+                        </tr>
+                    </table>
 
-                        <td class="col-center">
-                            @if($product->photo_path)
-                                <img src="{{ $product->photo_url }}" class="product-image">
-                            @else
-                                <div class="no-image">SIN IMAGEN</div>
-                            @endif
-                            
-                            <div style="margin-top: 20px;">
-                                <span style="background:#eee; padding:5px 15px; border-radius:15px; font-size:10px; color:#888; font-weight:bold;">
-                                    {{ $product->type ?? 'PRODUCTO' }}
-                                </span>
-                            </div>
-                        </td>
+                </td>
 
-                        <td class="col-side">
-                            
-                            <div class="item-row">
-                                <table width="100%"><tr>
-                                    <td class="data-cell-text align-left">
-                                        <span class="label">CANTIDAD / CAJA</span>
-                                        <span class="value">{{ $product->pieces_per_box ?? '1' }} Pzas</span>
-                                    </td>
-                                    <td class="data-cell-icon align-right">
-                                        <div class="icon-container">
-                                            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.16.12-.36.18-.57.18-.21 0-.41-.06-.57-.18l-7.9-4.44A.991.991 0 0 1 3 16.5V7.5c0-.38.21-.71.53-.88l7.9-4.44c.16-.12.36-.18.57-.18.21 0 .41.06.57.18l7.9 4.44c.32.17.53.5.53.88v9zM12 4.15L6.04 7.5 12 10.85l5.96-3.35L12 4.15z"/></svg>
-                                        </div>
-                                    </td>
-                                </tr></table>
-                            </div>
+                <td class="col-center">
+                    @if($product->photo_path)
+                        <img src="{{ $product->photo_url }}" class="product-image" alt="Producto">
+                    @else
+                        <div style="height: 400px; display:flex; align-items:center; justify-content:center; background:#f0f0f0; border-radius:20px; color:#999; font-weight:bold;">
+                            SIN IMAGEN
+                        </div>
+                    @endif
 
-                            <div class="item-row">
-                                <table width="100%"><tr>
-                                    <td class="data-cell-text align-left">
-                                        <span class="label">PESO CAJA MASTER</span>
-                                        <span class="value">{{ $extra['master_box_weight'] ?? 'N/A' }}</span>
-                                    </td>
-                                    <td class="data-cell-icon align-right">
-                                        <div class="icon-container">
-                                            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
-                                        </div>
-                                    </td>
-                                </tr></table>
-                            </div>
+                    <div class="product-brand">
+                        {{ $product->brand ?? 'MARCA NO DEFINIDA' }}
+                    </div>
+                    <div class="product-type">
+                        {{ $product->type ?? 'TIPO NO DEFINIDO' }}
+                    </div>
+                </td>
 
-                            <div class="item-row">
-                                <table width="100%"><tr>
-                                    <td class="data-cell-text align-left">
-                                        <span class="label">CAJAS POR CAMA</span>
-                                        <span class="value">{{ $extra['boxes_per_layer'] ?? 'N/A' }}</span>
-                                    </td>
-                                    <td class="data-cell-icon align-right">
-                                        <div class="icon-container">
-                                            <svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                                        </div>
-                                    </td>
-                                </tr></table>
-                            </div>
+                <td class="col-side">
+                    
+                    <table class="item-table">
+                        <tr>
+                            <td class="text-cell right-col-text">
+                                <div class="label">Cantidad por caja</div>
+                                <div class="value">{{ $product->pieces_per_box ?? '1' }}</div>
+                            </td>
+                            <td class="icon-cell right-col-icon">
+                                <img src="{{ s3Icon('Cantidad Caja.svg') }}" class="icon-svg" alt="Cantidad por caja">
+                            </td>
+                        </tr>
+                    </table>
 
-                            <div class="item-row">
-                                <table width="100%"><tr>
-                                    <td class="data-cell-text align-left">
-                                        <span class="label">CAMAS POR PALLET</span>
-                                        <span class="value">{{ $extra['layers_per_pallet'] ?? 'N/A' }}</span>
-                                    </td>
-                                    <td class="data-cell-icon align-right">
-                                        <div class="icon-container">
-                                            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M2 17h20v2H2zm2-10h16v8H4zm0-5h16v3H4z"/></svg>
-                                        </div>
-                                    </td>
-                                </tr></table>
-                            </div>
+                     <table class="item-table">
+                        <tr>
+                            <td class="text-cell right-col-text">
+                                <div class="label">Peso de caja Master</div>
+                                <div class="value">{{ $extra['master_box_weight'] ?? 'N/A' }}</div>
+                            </td>
+                            <td class="icon-cell right-col-icon">
+                                <img src="{{ s3Icon('Peso caja master.svg') }}" class="icon-svg" alt="Peso caja Master">
+                            </td>
+                        </tr>
+                    </table>
 
-                        </td>
-                    </tr>
-                </table>
+                    <table class="item-table">
+                        <tr>
+                            <td class="text-cell right-col-text">
+                                <div class="label">Cajas por Cama</div>
+                                <div class="value">{{ $extra['boxes_per_layer'] ?? 'N/A' }}</div>
+                            </td>
+                            <td class="icon-cell right-col-icon">
+                                <img src="{{ s3Icon('Cajas por cama.svg') }}" class="icon-svg" alt="Cajas por Cama">
+                            </td>
+                        </tr>
+                    </table>
 
-            </div>
-        </div>
+                     <table class="item-table">
+                        <tr>
+                            <td class="text-cell right-col-text">
+                                <div class="label">Camas por pallet</div>
+                                <div class="value">{{ $extra['layers_per_pallet'] ?? 'N/A' }}</div>
+                            </td>
+                            <td class="icon-cell right-col-icon">
+                                <img src="{{ s3Icon('Camas por tarima.svg') }}" class="icon-svg" alt="Camas por pallet">
+                            </td>
+                        </tr>
+                    </table>
+
+                </td>
+            </tr>
+        </table>
 
         <div class="footer">
             <img src="{{ $logo_url }}" class="logo-img" alt="Consorcio Monter">
