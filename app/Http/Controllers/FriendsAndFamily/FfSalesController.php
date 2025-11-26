@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\NewSaleMail;
 use App\Mail\OrderActionMail;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FfSalesController extends Controller
 {
@@ -387,4 +388,126 @@ class FfSalesController extends Controller
             ['Content-Type' => 'application/pdf']
         );
     }
+
+    public function downloadTemplate(Request $request)
+    {
+        $query = ffProduct::where('is_active', true);
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('sku', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('brand')) {
+            $query->where('brand', $request->input('brand'));
+        }
+        if ($request->filled('type')) {
+            $query->where('type', $request->input('type'));
+        }
+
+        $products = $query->orderBy('description')->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="plantilla_pedido_'.date('Y-m-d').'.csv"',
+        ];
+
+        $callback = function() use ($products) {
+            $file = fopen('php://output', 'w');
+            fputs($file, "\xEF\xBB\xBF");
+            
+            fputcsv($file, ['SKU', 'CANTIDAD', 'DESCRIPCION (Solo referencia)', 'STOCK DISPONIBLE']);
+
+            foreach ($products as $product) {
+                $reserved = $product->cartItems()->where('user_id', '!=', Auth::id())->sum('quantity');
+                $totalStock = $product->movements()->sum('quantity');
+                $available = max(0, $totalStock - $reserved);
+
+                if ($available > 0) {
+                    fputcsv($file, [
+                        $product->sku,
+                        '',
+                        $product->description,
+                        $available
+                    ]);
+                }
+            }
+            fclose($file);
+        };
+
+        return new StreamedResponse($callback, 200, $headers);
+    }
+
+    public function importOrder(Request $request)
+    {
+        $request->validate([
+            'order_csv' => 'required|file|mimes:csv,txt'
+        ]);
+
+        $userId = Auth::id();
+        $path = $request->file('order_csv')->getRealPath();
+        $handle = fopen($path, 'r');
+        
+        fgetcsv($handle); 
+
+        ffCartItem::where('user_id', $userId)->delete();
+
+        $importedCount = 0;
+        $errors = [];
+
+        DB::beginTransaction();
+        try {
+            while (($row = fgetcsv($handle)) !== FALSE) {
+                $sku = trim($row[0] ?? '');
+                $qty = intval(trim($row[1] ?? 0));
+
+                if ($qty <= 0 || empty($sku)) continue;
+
+                $product = ffProduct::where('sku', $sku)->first();
+
+                if ($product) {
+                    $reservedOthers = $product->cartItems()->where('user_id', '!=', $userId)->sum('quantity');
+                    $totalStock = $product->movements()->sum('quantity');
+                    $available = $totalStock - $reservedOthers;
+
+                    if ($qty > $available) {
+                        $qty = $available;
+                        $errors[] = "SKU $sku: Ajustado a $available (Stock máx).";
+                    }
+
+                    if ($qty > 0) {
+                        ffCartItem::create([
+                            'user_id' => $userId,
+                            'ff_product_id' => $product->id,
+                            'quantity' => $qty
+                        ]);
+                        $importedCount++;
+                    }
+                }
+            }
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Error al procesar archivo: ' . $e->getMessage()], 500);
+        } finally {
+            fclose($handle);
+        }
+
+        $newCartItems = ffCartItem::where('user_id', $userId)
+            ->get()
+            ->map(fn($item) => ['id' => $item->ff_product_id, 'qty' => $item->quantity]);
+
+        $msg = "Se importaron $importedCount productos.";
+        if (count($errors) > 0) {
+            $msg .= " Nota: Algunos items se ajustaron por falta de stock.";
+        }
+
+        return response()->json([
+            'message' => $msg,
+            'cart_items' => $newCartItems
+        ]);
+    }
+
 }

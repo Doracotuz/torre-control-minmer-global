@@ -778,7 +778,9 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
     Route::post('/sales/checkout', [FfSalesController::class, 'checkout'])->name('sales.checkout');    
     Route::post('/friends-and-family/sales/print-list', [FfSalesController::class, 'printList'])->name('sales.printList');
     Route::get('/sales/search-order', [FfSalesController::class, 'searchOrder'])->name('sales.searchOrder');
-    Route::post('/sales/cancel-order', [FfSalesController::class, 'cancelOrder'])->name('sales.cancelOrder');    
+    Route::post('/sales/cancel-order', [FfSalesController::class, 'cancelOrder'])->name('sales.cancelOrder');
+    Route::get('/sales/template', [FfSalesController::class, 'downloadTemplate'])->name('sales.downloadTemplate');
+    Route::post('/sales/import', [FfSalesController::class, 'importOrder'])->name('sales.importOrder');    
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [FfReportController::class, 'index'])->name('index');
         Route::get('/transactions', [FfReportController::class, 'transactions'])->name('transactions');

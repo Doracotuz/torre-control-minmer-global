@@ -6,7 +6,7 @@
             <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-8">
                 <div>
                     <h2 class="text-3xl font-bold text-[#2c3856] tracking-tight flex items-center gap-3">
-                        <span class="bg-[#2c3856] text-white p-2 rounded-xl shadow-md"><i class="fas fa-boxes"></i></span>
+                        <span class="bg-white text-[#2c3856] border border-gray-200 p-2 rounded-xl shadow-sm"><i class="fas fa-boxes"></i></span>
                         Catálogo de productos
                     </h2>
                     <p class="text-gray-500 mt-1 text-sm font-medium ml-1">
@@ -18,25 +18,25 @@
                     <a href="{{ route('ff.dashboard.index') }}" 
                        class="inline-flex items-center px-5 py-2.5 rounded-xl bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-50 transition-all font-medium">
                         <i class="fas fa-arrow-left mr-2 text-gray-400"></i>
-                        <span>Panel</span>
+                        <span>Regresar al Panel Principal</span>
                     </a>
                     
                     <button @click="openUploadModal()" 
-                        class="inline-flex items-center px-5 py-2.5 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-200 hover:bg-emerald-700 transition-all hover:-translate-y-0.5">
-                        <i class="fas fa-cloud-upload-alt mr-2"></i> Importar
+                        class="inline-flex items-center px-5 py-2.5 rounded-xl bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-50 transition-all font-medium">
+                        <i class="fas fa-cloud-upload-alt mr-2 text-gray-500"></i> Importar
                     </button>
 
                     <button @click="selectNewProduct()" 
-                        class="inline-flex items-center px-5 py-2.5 rounded-xl bg-[#ff9c00] text-white shadow-md shadow-orange-200 hover:bg-[#e68a00] transition-all hover:-translate-y-0.5 font-bold">
+                        class="inline-flex items-center px-5 py-2.5 rounded-xl bg-[#2c3856] text-white shadow-md hover:bg-[#1a233a] transition-all hover:-translate-y-0.5 font-bold">
                         <i class="fas fa-plus mr-2"></i> Nuevo
                     </button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
                 <template x-for="(stat, index) in stats" :key="index">
-                    <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm flex items-center gap-4 transition-transform hover:scale-[1.02]">
-                        <div :class="`p-3 rounded-xl ${stat.color} text-white shadow-md`">
+                    <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm flex items-center gap-4 transition-transform hover:scale-[1.01]">
+                        <div :class="`p-3 rounded-xl ${stat.color} shadow-sm`">
                             <i :class="stat.icon"></i>
                         </div>
                         <div>
@@ -61,19 +61,19 @@
 
                     <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
                         <button @click="showFilters = !showFilters" 
-                                :class="{'bg-[#2c3856] text-white': showFilters, 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50': !showFilters}"
+                                :class="{'bg-gray-100 text-gray-900': showFilters, 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50': !showFilters}"
                                 class="px-4 py-2.5 rounded-xl text-sm font-bold transition-colors whitespace-nowrap flex items-center gap-2 shadow-sm">
                             <i class="fas fa-filter"></i> Filtros
-                            <span x-show="activeFilterCount > 0" class="flex h-5 w-5 items-center justify-center rounded-full bg-[#ff9c00] text-[10px] text-white" x-text="activeFilterCount"></span>
+                            <span x-show="activeFilterCount > 0" class="flex h-5 w-5 items-center justify-center rounded-full bg-[#2c3856] text-[10px] text-white" x-text="activeFilterCount"></span>
                         </button>
                         
                         <div class="h-8 w-px bg-gray-300 mx-2"></div>
 
-                        <button @click="openPdfModal()" class="px-4 py-2.5 rounded-xl bg-white text-gray-700 border border-gray-200 hover:text-red-600 hover:border-red-200 transition-colors text-sm font-bold whitespace-nowrap shadow-sm">
-                            <i class="fas fa-file-pdf mr-2 text-red-500"></i> PDF
+                        <button @click="openPdfModal()" class="px-4 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold whitespace-nowrap shadow-sm">
+                            <i class="fas fa-file-pdf mr-2 text-gray-400"></i> PDF
                         </button>
-                        <a href="{{ route('ff.catalog.exportCsv') }}" target="_blank" class="px-4 py-2.5 rounded-xl bg-white text-gray-700 border border-gray-200 hover:text-green-600 hover:border-green-200 transition-colors text-sm font-bold whitespace-nowrap shadow-sm">
-                            <i class="fas fa-file-csv mr-2 text-green-500"></i> CSV
+                        <a href="{{ route('ff.catalog.exportCsv') }}" target="_blank" class="px-4 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold whitespace-nowrap shadow-sm">
+                            <i class="fas fa-file-csv mr-2 text-gray-400"></i> CSV
                         </a>
                     </div>
                 </div>
@@ -103,14 +103,14 @@
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Estado</label>
                             <div class="flex gap-2">
-                                <button @click="filters.status = 'all'; currentPage = 1" :class="filters.status === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Todos</button>
-                                <button @click="filters.status = 'active'; currentPage = 1" :class="filters.status === 'active' ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Activos</button>
-                                <button @click="filters.status = 'inactive'; currentPage = 1" :class="filters.status === 'inactive' ? 'bg-red-500 text-white' : 'bg-red-50 text-red-700'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Inactivos</button>
+                                <button @click="filters.status = 'all'; currentPage = 1" :class="filters.status === 'all' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Todos</button>
+                                <button @click="filters.status = 'active'; currentPage = 1" :class="filters.status === 'active' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Activos</button>
+                                <button @click="filters.status = 'inactive'; currentPage = 1" :class="filters.status === 'inactive' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Inactivos</button>
                             </div>
                         </div>
 
                         <div class="flex items-end">
-                            <button @click="resetFilters()" class="w-full py-2.5 text-sm text-[#2c3856] font-bold hover:bg-blue-50 rounded-lg transition-colors">
+                            <button @click="resetFilters()" class="w-full py-2.5 text-sm text-gray-500 font-bold hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-colors">
                                 <i class="fas fa-times mr-1"></i> Limpiar Filtros
                             </button>
                         </div>
@@ -137,7 +137,7 @@
                 </div>
                 <h3 class="text-xl font-bold text-gray-900">No se encontraron productos</h3>
                 <p class="text-gray-500 mt-2">Intenta ajustar los filtros o tu búsqueda.</p>
-                <button @click="resetFilters()" class="mt-6 text-[#ff9c00] font-bold hover:underline">Limpiar todo</button>
+                <button @click="resetFilters()" class="mt-6 text-[#2c3856] font-bold hover:underline">Limpiar todo</button>
             </div>
 
             <div x-show="!loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -145,7 +145,7 @@
                     <div class="group relative bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer">
                         
                         <div class="absolute top-3 right-3 z-10">
-                            <span :class="product.is_active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'"
+                            <span :class="product.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-100 text-gray-500 border-gray-200'"
                                   class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md border shadow-sm">
                                 <span x-text="product.is_active ? 'Activo' : 'Inactivo'"></span>
                             </span>
@@ -154,7 +154,7 @@
                         <div class="h-56 w-full p-6 bg-white flex items-center justify-center relative border-b border-gray-100">
                             <img :src="product.photo_url" class="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105">
                             
-                            <button @click.stop="openDetailModal(product)" class="absolute top-0 left-0 bg-white/90 backdrop-blur text-[#2c3856] p-2 rounded-br-xl shadow-sm hover:bg-[#2c3856] hover:text-white transition-colors border-r border-b border-gray-100 z-20" title="Ver Detalle">
+                            <button @click.stop="openDetailModal(product)" class="absolute top-0 left-0 bg-white/90 backdrop-blur text-gray-500 p-2 rounded-br-xl shadow-sm hover:bg-[#2c3856] hover:text-white transition-colors border-r border-b border-gray-100 z-20" title="Ver Detalle">
                                 <i class="fas fa-eye"></i>
                             </button>
 
@@ -281,10 +281,10 @@
 
                                         <div class="grid grid-cols-1 gap-y-6 gap-x-4">
                                             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                                <span class="text-sm font-bold text-gray-900">Estado del Producto</span>
+                                                <span class="text-sm font-bold text-gray-900">Activado / Desactivado</span>
                                                 <button type="button" 
                                                     class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none" 
-                                                    :class="form.is_active ? 'bg-green-500' : 'bg-gray-300'"
+                                                    :class="form.is_active ? 'bg-[#2c3856]' : 'bg-gray-300'"
                                                     @click="form.is_active = !form.is_active">
                                                     <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" :class="form.is_active ? 'translate-x-5' : 'translate-x-0'"></span>
                                                 </button>
@@ -353,11 +353,12 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="flex flex-shrink-0 justify-between px-4 py-4 bg-gray-50 border-t border-gray-200">
+                                <div class="flex flex-shrink-0 justify-start gap-3 px-4 py-4 bg-gray-50 border-t border-gray-200">
                                     <button type="button" @click="deleteProduct(form)" x-show="form.id" class="rounded-lg bg-white py-2 px-4 text-sm font-bold text-red-600 shadow-sm border border-red-200 hover:bg-red-50">
                                         Eliminar
                                     </button>
-                                    <div class="flex gap-3 ml-auto">
+                                    
+                                    <div class="flex gap-3">
                                         <button type="button" @click="closeEditor()" class="rounded-lg bg-white py-2 px-4 text-sm font-bold text-gray-700 shadow-sm border border-gray-300 hover:bg-gray-50">Cancelar</button>
                                         <button type="submit" 
                                             :disabled="isSaving"
@@ -393,7 +394,7 @@
                                 <div>
                                     <span class="inline-block px-3 py-1 bg-gray-200 text-gray-700 text-sm font-mono font-bold rounded-lg mb-2" x-text="detailProduct.sku"></span>
                                     <h2 class="text-3xl font-extrabold text-gray-900 leading-tight" x-text="detailProduct.description"></h2>
-                                    <p class="text-emerald-600 font-bold text-lg mt-2" x-text="detailProduct.brand"></p>
+                                    <p class="text-gray-500 font-bold text-lg mt-2" x-text="detailProduct.brand"></p>
                                 </div>
                                 
                                 <div class="grid grid-cols-2 gap-4">
@@ -401,9 +402,9 @@
                                         <p class="text-xs text-gray-500 font-bold uppercase">Precio Unitario</p>
                                         <p class="text-2xl font-bold text-[#2c3856]" x-text="formatMoney(detailProduct.unit_price)"></p>
                                     </div>
-                                    <div class="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
                                         <p class="text-xs text-gray-500 font-bold uppercase">Presentación</p>
-                                        <p class="text-xl font-bold text-orange-800" x-text="(detailProduct.pieces_per_box || 0) + ' pzas/caja'"></p>
+                                        <p class="text-xl font-bold text-gray-700" x-text="(detailProduct.pieces_per_box || 0) + ' pzas/caja'"></p>
                                     </div>
                                 </div>
 
@@ -424,7 +425,7 @@
                             </div>
 
                             <div class="mt-8 flex gap-3">
-                                <button @click="openSheetModal(detailProduct)" class="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200">
+                                <button @click="openSheetModal(detailProduct)" class="flex-1 py-3 bg-[#2c3856] text-white rounded-xl font-bold hover:bg-[#1a233a] transition-colors shadow-lg">
                                     <i class="fas fa-file-invoice mr-2"></i> Ficha Técnica
                                 </button>
                                 <button @click="closeDetailAndEdit(detailProduct)" class="flex-1 py-3 bg-white text-[#2c3856] border border-gray-300 rounded-xl font-bold hover:bg-gray-50 transition-colors">
@@ -482,7 +483,7 @@
 
                         <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                             <button type="button" @click="isSheetModalOpen = false" class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg font-bold hover:bg-gray-50">Cancelar</button>
-                            <button type="submit" @click="setTimeout(() => isSheetModalOpen = false, 1000)" class="px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 shadow-md">Generar PDF</button>
+                            <button type="submit" @click="setTimeout(() => isSheetModalOpen = false, 1000)" class="px-4 py-2 bg-[#2c3856] text-white rounded-lg font-bold hover:bg-[#1a233a] shadow-md">Generar PDF</button>
                         </div>
                     </form>
                 </div>
@@ -497,7 +498,7 @@
                      <form @submit.prevent="submitImport($event)" class="p-6">
                         <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
                             <h3 class="text-xl font-bold text-[#2c3856] flex items-center">
-                                <i class="fas fa-file-excel mr-3 text-emerald-600"></i> Importación Masiva
+                                <i class="fas fa-file-excel mr-3 text-[#2c3856]"></i> Importación Masiva
                             </h3>
                             <button type="button" @click="closeUploadModal()" class="text-gray-400 hover:text-gray-600">
                                 <i class="fas fa-times"></i>
@@ -526,13 +527,13 @@
                              
                              <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Paso 2: Subir CSV Editado <span class="text-red-500">*</span></label>
-                                <input type="file" name="product_file" accept=".csv" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-[#2c3856] file:text-white hover:file:bg-[#1f2840] bg-gray-50 rounded-lg border border-gray-200 cursor-pointer"/>
+                                <input type="file" name="product_file" accept=".csv" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-[#2c3856] file:text-white hover:file:bg-[#1a233a] bg-gray-50 rounded-lg border border-gray-200 cursor-pointer"/>
                              </div>
                              
                              <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Paso 3: Imágenes Nuevas (Opcional)</label>
                                 <p class="text-xs text-gray-500 mb-2">Solo sube un .zip si agregaste nombres de archivo en la columna "Foto" del CSV.</p>
-                                <input type="file" name="image_zip" accept=".zip" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-orange-500 file:text-white hover:file:bg-orange-600 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer"/>
+                                <input type="file" name="image_zip" accept=".zip" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-gray-600 file:text-white hover:file:bg-gray-700 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer"/>
                              </div>
 
                              <div x-show="uploadMessage" :class="uploadSuccess ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'" class="p-4 rounded-xl text-sm border font-medium">
@@ -542,7 +543,7 @@
 
                         <div class="mt-8 flex gap-3 border-t border-gray-100 pt-4">
                              <button type="button" @click="closeUploadModal()" class="flex-1 py-2.5 px-4 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition-colors">Cancelar</button>
-                             <button type="submit" :disabled="isSaving" class="flex-1 py-2.5 px-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-colors">
+                             <button type="submit" :disabled="isSaving" class="flex-1 py-2.5 px-4 bg-[#2c3856] text-white rounded-xl font-bold hover:bg-[#1a233a] shadow-lg transition-colors">
                                 <span x-text="isSaving ? 'Procesando...' : 'Iniciar Importación'"></span>
                              </button>
                         </div>
@@ -556,20 +557,20 @@
                 <div class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity" @click="isPdfModalOpen = false"></div>
                 <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-full p-6">
                     <div class="text-center">
-                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                            <i class="fas fa-file-pdf text-red-600 text-2xl"></i>
+                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-50 mb-4">
+                            <i class="fas fa-file-pdf text-[#2c3856] text-2xl"></i>
                         </div>
                         <h3 class="text-lg font-bold text-gray-900">Generar Catálogo PDF</h3>
                         <p class="text-sm text-gray-500 mt-2">Ingresa un porcentaje si deseas aumentar los precios en el documento.</p>
                         
                         <div class="mt-6">
                             <label class="block text-sm font-bold text-gray-700 text-left mb-2">Aumento (%)</label>
-                            <input type="number" x-model="pdfPercentage" class="block w-full rounded-xl border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 text-center text-xl font-bold py-3" placeholder="0">
+                            <input type="number" x-model="pdfPercentage" class="block w-full rounded-xl border-gray-300 shadow-sm focus:border-[#2c3856] focus:ring-[#2c3856] text-center text-xl font-bold py-3" placeholder="0">
                         </div>
 
                         <div class="mt-6 flex gap-3">
-                            <button @click="isPdfModalOpen = false" class="flex-1 py-2.5 bg-gray-100 rounded-xl text-gray-700 font-bold hover:bg-gray-200">Cancelar</button>
-                            <button @click="generatePdf()" class="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-lg">Descargar</button>
+                            <button @click="isPdfModalOpen = false" class="flex-1 py-2.5 bg-white border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50">Cancelar</button>
+                            <button @click="generatePdf()" class="flex-1 py-2.5 bg-[#2c3856] text-white rounded-xl font-bold hover:bg-[#1a233a] shadow-lg">Descargar</button>
                         </div>
                     </div>
                 </div>
@@ -688,13 +689,11 @@
                     if (!this.products) return [];
                     const total = this.products.length;
                     const active = this.products.filter(p => p.is_active).length;
-                    const totalValue = this.products.reduce((acc, p) => acc + parseFloat(p.unit_price || 0), 0);
                     
                     return [
-                        { label: 'Total Productos', value: total, icon: 'fas fa-cubes', color: 'bg-blue-500' },
-                        { label: 'Activos', value: active, icon: 'fas fa-check-circle', color: 'bg-green-500' },
-                        { label: 'Valor Catálogo', value: this.formatMoney(totalValue), icon: 'fas fa-dollar-sign', color: 'bg-[#ff9c00]' },
-                        { label: 'Tipos', value: this.uniqueTypes.length, icon: 'fas fa-tags', color: 'bg-purple-600' }
+                        { label: 'Total Productos', value: total, icon: 'fas fa-cubes', color: 'bg-blue-50 text-blue-600' },
+                        { label: 'Activos', value: active, icon: 'fas fa-check-circle', color: 'bg-emerald-50 text-emerald-600' },
+                        { label: 'Tipos', value: this.uniqueTypes.length, icon: 'fas fa-tags', color: 'bg-indigo-50 text-indigo-600' }
                     ];
                 },
 

@@ -147,7 +147,7 @@ class FfProductController extends Controller
     {
         $request->validate([
             'product_file' => 'required|file|mimes:csv,txt',
-            'image_zip'    => 'nullable|file|mimes:zip',
+            'image_zip'    => 'nullable|file|mimetypes:application/zip,application/x-zip-compressed,application/x-zip,application/octet-stream,multipart/x-zip',
         ]);
 
         $csvPath = $request->file('product_file')->getPathname();

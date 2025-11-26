@@ -161,24 +161,26 @@
 
         <div class="max-w-7xl mx-auto relative z-10">
             
-            <header class="flex justify-between items-end mb-12 border-b border-gray-300/50 pb-6 animate-entry" style="animation-delay: 0s;">
+            <header class="flex justify-between items-end mb-12 border-b border-gray-200 pb-6 animate-entry" style="animation-delay: 0s;">
                 <div>
-                    <div class="flex items-center space-x-3 mb-2">
-                        <div class="h-1 w-10 bg-[#ff9c00] rounded-full"></div>
-                        <span class="text-xs font-bold tracking-[0.3em] text-[#2c3856] uppercase">Control Tower</span>
+                    <div class="mb-2">
+                        <span class="text-[10px] font-semibold tracking-[0.4em] text-gray-400 uppercase">Control Tower</span>
                     </div>
-                    <h1 class="text-4xl md:text-6xl font-brand font-black text-[#2c3856] leading-tight">
-                        HOLA, <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#2c3856] to-[#ff9c00]">{{ strtoupper(Auth::user()->name) }}</span>
+                    
+                    <h1 class="text-3xl md:text-5xl font-brand leading-tight">
+                        <span class="font-light text-gray-400">Hola,</span> 
+                        <span class="font-bold text-[#2c3856]">{{ Auth::user()->name }}</span>
                     </h1>
                 </div>
+                
                 <div class="hidden md:block text-right">
                     <div class="text-3xl font-brand font-bold text-[#2c3856]">{{ now()->format('d M, Y') }}</div>
                     <div class="flex items-center justify-end gap-2 mt-1">
-                        <span class="relative flex h-3 w-3">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        <span class="text-sm font-bold text-gray-500 tracking-wider">SISTEMA ONLINE</span>
+                        <span class="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Sistema Online</span>
                     </div>
                 </div>
             </header>
