@@ -2,7 +2,6 @@
     <x-slot name="header"></x-slot>
     <style>
         [x-cloak] { display: none !important; }
-        /* Scroll elegante y sutil */
         .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 4px; }
@@ -17,7 +16,6 @@
             background-color: #ffffff; border-color: #2c3856; 
             outline: none; box-shadow: 0 0 0 1px #2c3856; 
         }
-        /* Ocultar flechas de input number */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
@@ -87,7 +85,7 @@
                                 </div>
 
                                 <div class="flex gap-2">
-                                    <button @click="downloadTemplate()" class="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-[#2c3856] transition-colors" title="Descargar Plantilla CSV (con filtros actuales)">
+                                    <button @click="downloadTemplate()" class="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-[#2c3856] transition-colors" title="Descargar Plantilla CSV">
                                         <i class="fas fa-file-download"></i>
                                     </button>
                                     <button @click="$refs.csvImportInput.click()" class="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-[#2c3856] transition-colors" title="Importar Pedido desde CSV">
@@ -247,6 +245,45 @@
                                 <input type="text" x-model="form.surtidor_name" placeholder="Nombre Surtidor" class="form-input-sm">
                                 <input type="text" x-model="form.email_recipients" placeholder="Notificar a: email1; email2;" class="form-input-sm">
                                 <textarea x-model="form.observations" rows="2" placeholder="Observaciones (Salen en PDF)" class="form-input-sm resize-none"></textarea>
+                                
+                                <div class="space-y-2 mt-4 pt-4 border-t border-gray-100">
+                                    <div class="flex items-center justify-between text-[#2c3856] font-bold text-[11px] uppercase tracking-wider pb-1">
+                                        <span><i class="fas fa-paperclip mr-2 opacity-50"></i> Documentos PDF (Max 5)</span>
+                                        <span class="text-[9px] text-gray-400" x-text="(currentDocs.length + newFiles.length) + '/5'"></span>
+                                    </div>
+                                    
+                                    <input type="file" x-ref="fileInput" accept="application/pdf" multiple class="hidden" @change="handleFileSelect($event)">
+                                    
+                                    <button @click="$refs.fileInput.click()" 
+                                            x-show="(currentDocs.length + newFiles.length) < 5"
+                                            class="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 text-xs font-bold hover:border-[#2c3856] hover:text-[#2c3856] transition-colors flex items-center justify-center gap-2">
+                                        <i class="fas fa-plus"></i> Adjuntar PDF
+                                    </button>
+
+                                    <div class="space-y-1.5 mt-2">
+                                        <template x-for="doc in currentDocs" :key="doc.id">
+                                            <div class="flex items-center justify-between bg-blue-50 px-2 py-1.5 rounded border border-blue-100">
+                                                <div class="flex items-center overflow-hidden gap-2 cursor-pointer" @click="openPdfModal(doc.url)">
+                                                    <i class="fas fa-file-pdf text-red-500"></i>
+                                                    <span class="text-[10px] font-medium text-gray-600 truncate" x-text="doc.name"></span>
+                                                </div>
+                                                <i class="fas fa-check text-green-500 text-[10px]"></i>
+                                            </div>
+                                        </template>
+
+                                        <template x-for="(file, index) in newFiles" :key="index">
+                                            <div class="flex items-center justify-between bg-gray-50 px-2 py-1.5 rounded border border-gray-200">
+                                                <div class="flex items-center overflow-hidden gap-2">
+                                                    <i class="fas fa-file-pdf text-gray-400"></i>
+                                                    <span class="text-[10px] font-medium text-gray-600 truncate" x-text="file.name"></span>
+                                                </div>
+                                                <button @click="removeNewFile(index)" class="text-gray-400 hover:text-red-500">
+                                                    <i class="fas fa-times text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
                             </div>
 
                             <div x-show="globalError" x-transition class="p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-xs text-center font-medium">
@@ -312,6 +349,29 @@
             </div>
         </div>
 
+        <div x-show="pdfModalOpen" x-cloak class="fixed inset-0 z-[80] overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 transition-opacity bg-gray-900/80 backdrop-blur-sm" @click="closePdfModal()"></div>
+
+                <div class="inline-block w-full max-w-4xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl h-[85vh] flex flex-col">
+                    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+                        <h3 class="text-sm font-bold text-gray-800"><i class="fas fa-file-pdf text-red-600 mr-2"></i> Visualizador de Documento</h3>
+                        <div class="flex gap-2">
+                            <a :href="pdfModalUrl" download class="px-3 py-1 text-xs font-bold text-[#2c3856] bg-white border border-gray-200 rounded hover:bg-gray-100">
+                                <i class="fas fa-download mr-1"></i> Descargar
+                            </a>
+                            <button @click="closePdfModal()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex-1 bg-gray-200 relative">
+                        <iframe :src="pdfModalUrl" class="w-full h-full absolute inset-0" frameborder="0"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
     
     <script>
@@ -344,6 +404,11 @@
                 flashMessage: '',
                 flashType: 'info',
                 flashTimeout: null,
+
+                newFiles: [],
+                currentDocs: [],
+                pdfModalOpen: false,
+                pdfModalUrl: '',
 
                 init(initialProducts, initialFolio) {
                     const productsArray = Array.isArray(initialProducts) ? initialProducts : [];
@@ -462,9 +527,11 @@
 
                 async onQuantityChange(newQuantity, product) {
                     const currentCartQty = this.getProductInCart(product.id) || 0;
+                    
                     const maxAvailable = this.getAvailableStock(product) + currentCartQty;
 
                     if (newQuantity < 0) newQuantity = 0;
+                    
                     if (newQuantity > maxAvailable) {
                         newQuantity = maxAvailable;
                         this.showFlashMessage('Stock insuficiente', 'danger');
@@ -476,7 +543,11 @@
                     try {
                         const response = await fetch("{{ route('ff.sales.cart.update') }}", {
                             method: 'POST',
-                            body: JSON.stringify({ product_id: product.id, quantity: newQuantity }),
+                            body: JSON.stringify({ 
+                                product_id: product.id, 
+                                quantity: newQuantity,
+                                folio: this.editMode ? this.form.folio : null 
+                            }),
                             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json', 'Content-Type': 'application/json' }
                         });
                         const data = await response.json();
@@ -564,6 +635,9 @@
                         this.localCart.clear();
                         if (data.cart_items) data.cart_items.forEach(item => this.localCart.set(item.product_id, item.quantity));
                         
+                        this.currentDocs = data.documents || [];
+                        this.newFiles = [];
+
                         this.editMode = true;
                         this.searchModalOpen = false;
                         this.showFlashMessage('Pedido cargado. Puede editar.', 'success');
@@ -589,15 +663,68 @@
                     } catch(e) { alert("Error al cancelar."); } finally { this.isSaving = false; }
                 },
 
+                handleFileSelect(event) {
+                    const files = Array.from(event.target.files);
+                    const total = this.currentDocs.length + this.newFiles.length + files.length;
+                    
+                    if (total > 5) {
+                        this.showFlashMessage('Máximo 5 documentos permitidos.', 'danger');
+                        return;
+                    }
+
+                    files.forEach(file => {
+                        if (file.type !== 'application/pdf') {
+                            this.showFlashMessage('Solo se permiten archivos PDF.', 'danger');
+                            return;
+                        }
+                        if (file.size > 10 * 1024 * 1024) {
+                            this.showFlashMessage('El archivo ' + file.name + ' excede 10MB.', 'danger');
+                            return;
+                        }
+                        this.newFiles.push(file);
+                    });
+                    event.target.value = '';
+                },
+
+                removeNewFile(index) {
+                    this.newFiles.splice(index, 1);
+                },
+
+                openPdfModal(url) {
+                    this.pdfModalUrl = url;
+                    this.pdfModalOpen = true;
+                },
+
+                closePdfModal() {
+                    this.pdfModalOpen = false;
+                    this.pdfModalUrl = '';
+                },
+
                 async submitCheckout() {
                     this.isSaving = true;
                     this.globalError = '';
                     if (this.form.email_recipients) localStorage.setItem('ff_email_recipients', this.form.email_recipients);
 
+                    const formData = new FormData();
+                    
+                    Object.keys(this.form).forEach(key => {
+                        formData.append(key, this.form[key] || '');
+                    });
+                    
+                    formData.append('is_edit_mode', this.editMode);
+                    
+                    this.newFiles.forEach((file, index) => {
+                        formData.append('documents[]', file);
+                    });
+
                     try {
                         const response = await fetch("{{ route('ff.sales.checkout') }}", {
-                            method: 'POST', body: JSON.stringify({ ...this.form, is_edit_mode: this.editMode }),
-                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json', 'Content-Type': 'application/json' }
+                            method: 'POST', 
+                            body: formData,
+                            headers: { 
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 
+                                'Accept': 'application/json' 
+                            }
                         });
 
                         if (response.status === 200 && response.headers.get('Content-Type') === 'application/pdf') {
@@ -610,7 +737,11 @@
                             this.globalError = data.message || (data.errors ? Object.values(data.errors).flat().join(' ') : "Error");
                             this.showFlashMessage(this.globalError, 'danger');
                         }
-                    } catch (e) { this.globalError = 'Error de conexión.'; this.showFlashMessage(this.globalError, 'danger'); } finally { this.isSaving = false; }
+                    } catch (e) { 
+                        console.error(e);
+                        this.globalError = 'Error de conexión.'; 
+                        this.showFlashMessage(this.globalError, 'danger'); 
+                    } finally { this.isSaving = false; }
                 },
 
                 async printProductList() {

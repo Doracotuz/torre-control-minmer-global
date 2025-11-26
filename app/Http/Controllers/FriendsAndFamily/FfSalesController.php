@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\NewSaleMail;
 use App\Mail\OrderActionMail;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Models\FfOrderDocument;
+use Illuminate\Http\UploadedFile;
 
 class FfSalesController extends Controller
 {
@@ -50,11 +52,13 @@ class FfSalesController extends Controller
         $request->validate([
             'product_id' => 'required|exists:ff_products,id',
             'quantity' => 'required|integer|min:0',
+            'folio' => 'nullable|integer'
         ]);
 
         $productId = $request->product_id;
         $quantity = $request->quantity;
         $userId = Auth::id();
+        $editingFolio = $request->folio;
 
         if ($quantity <= 0) {
             ffCartItem::where('user_id', $userId)->where('ff_product_id', $productId)->delete();
@@ -62,13 +66,21 @@ class FfSalesController extends Controller
         }
 
         $product = ffProduct::find($productId);
-        $totalStock = $product->movements()->sum('quantity');
+        
+        $query = $product->movements();
+        
+        if ($editingFolio) {
+            $query->where('folio', '!=', $editingFolio);
+        }
+        
+        $totalStock = $query->sum('quantity'); 
+
         $reservedByOthers = $product->cartItems()->where('user_id', '!=', $userId)->sum('quantity');
         $available = $totalStock - $reservedByOthers;
 
         if ($quantity > $available) {
             return response()->json([
-                'message' => 'Stock insuficiente. Solo quedan ' . $available . ' disponibles.'
+                'message' => 'Stock insuficiente. Solo quedan ' . $available . ' disponibles (incluyendo lo de este pedido).'
             ], 422);
         }
 
@@ -96,8 +108,8 @@ class FfSalesController extends Controller
         $request->validate(['folio' => 'required|integer']);
         
         $movements = ffInventoryMovement::where('folio', $request->folio)
-            ->where('quantity', '<', 0)
             ->with('product')
+            ->orderBy('created_at', 'desc') 
             ->get();
 
         if ($movements->isEmpty()) {
@@ -105,23 +117,49 @@ class FfSalesController extends Controller
         }
 
         $header = $movements->first();
-
         $user = Auth::user();
+
         ffCartItem::where('user_id', $user->id)->delete();
 
         $cartItemsData = [];
 
-        foreach($movements as $mov) {
-            ffCartItem::create([
-                'user_id' => $user->id,
-                'ff_product_id' => $mov->ff_product_id,
-                'quantity' => abs($mov->quantity)
-            ]);
+        $groupedProducts = $movements->groupBy('ff_product_id');
 
-            $cartItemsData[] = [
-                'product_id' => $mov->ff_product_id,
-                'quantity' => abs($mov->quantity)
-            ];
+        foreach($groupedProducts as $productId => $productMovements) {
+            $netQuantity = $productMovements->sum('quantity');
+
+            if ($netQuantity < 0) {
+                $finalQty = abs($netQuantity);
+                
+                ffCartItem::create([
+                    'user_id' => $user->id,
+                    'ff_product_id' => $productId,
+                    'quantity' => $finalQty
+                ]);
+
+                $cartItemsData[] = [
+                    'product_id' => $productId,
+                    'quantity' => $finalQty
+                ];
+            }
+        }
+
+        $documents = [];
+        try {
+            if (class_exists(\App\Models\FfOrderDocument::class)) {
+                $documents = \App\Models\FfOrderDocument::where('folio', $request->folio)
+                    ->get()
+                    ->map(function($doc) {
+                        return [
+                            'id' => $doc->id,
+                            'name' => $doc->filename,
+                            'url' => $doc->url, 
+                            'is_existing' => true
+                        ];
+                    });
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Error cargando documentos: " . $e->getMessage());
         }
 
         return response()->json([
@@ -134,8 +172,10 @@ class FfSalesController extends Controller
                 'delivery_date' => $header->delivery_date ? $header->delivery_date->format('Y-m-d\TH:i') : '',
                 'surtidor_name' => $header->surtidor_name,
                 'observations' => $header->observations,
+                'folio' => $header->folio,
             ],
             'cart_items' => $cartItemsData,
+            'documents' => $documents,
             'message' => 'Pedido cargado para edición.'
         ]);
     }
@@ -209,7 +249,8 @@ class FfSalesController extends Controller
     public function checkout(Request $request)
     {
         $user = Auth::user();
-        $isEditMode = $request->boolean('is_edit_mode');
+        
+        $isEditMode = filter_var($request->input('is_edit_mode'), FILTER_VALIDATE_BOOLEAN);
 
         $request->validate([
             'folio'         => $isEditMode 
@@ -224,9 +265,14 @@ class FfSalesController extends Controller
             'surtidor_name' => 'nullable|string|max:255',
             'observations'  => 'nullable|string',
             'email_recipients' => 'nullable|string',
+            'documents'     => 'array|max:5',
+            'documents.*'   => 'file|mimes:pdf|max:10240',
         ], [
             'folio.unique' => 'El folio ya existe.',
-            'folio.exists' => 'El folio a editar no existe.'
+            'folio.exists' => 'El folio a editar no existe.',
+            'documents.max' => 'Máximo 5 documentos permitidos.',
+            'documents.*.mimes' => 'Solo se permiten archivos PDF.',
+            'documents.*.max' => 'Cada archivo debe pesar menos de 10MB.'
         ]);
 
         $cartItems = ffCartItem::where('user_id', $user->id)->with('product')->get();
@@ -291,12 +337,28 @@ class FfSalesController extends Controller
                 $grandTotal += $totalPrice;
             }
 
+            if ($request->hasFile('documents')) {
+                foreach ($request->file('documents') as $file) {
+                    $path = $file->storeAs(
+                        "ff_order_documents/{$ventaFolio}", 
+                        $file->getClientOriginalName(), 
+                        's3'
+                    );
+                    
+                    FfOrderDocument::create([
+                        'folio' => $ventaFolio,
+                        'filename' => $file->getClientOriginalName(),
+                        'path' => $path
+                    ]);
+                }
+            }
+
             DB::commit();
             ffCartItem::where('user_id', $user->id)->delete();
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
         }
         
         $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
@@ -327,9 +389,8 @@ class FfSalesController extends Controller
         $dompdf->render();
         $pdfContent = $dompdf->output();
 
-        $csvHeader = ['SKU', 'Descripcion', 'Cantidad', 'Precio Unitario', 'Total'];
         $stream = fopen('php://temp', 'r+');
-        fputcsv($stream, $csvHeader);
+        fputcsv($stream, ['SKU', 'Descripcion', 'Cantidad', 'Precio Unitario', 'Total']);
         foreach ($pdfItems as $row) {
             fputcsv($stream, [$row['sku'], $row['description'], $row['quantity'], $row['unit_price'], $row['total_price']]);
         }
@@ -344,9 +405,21 @@ class FfSalesController extends Controller
             if (!empty($recipients)) {
                 try {
                     $mailType = $isEditMode ? 'update' : 'new';
-                    $pdfData['items'] = $pdfItems; 
                     
-                    Mail::to($recipients)->send(new OrderActionMail($pdfData, $mailType, $pdfContent, $csvContent));
+                    $allDocs = FfOrderDocument::where('folio', $ventaFolio)->get()->map(function($doc) {
+                        return [
+                            'path' => $doc->path,
+                            'name' => $doc->filename
+                        ];
+                    })->toArray();
+
+                    Mail::to($recipients)->send(new OrderActionMail(
+                        $pdfData, 
+                        $mailType, 
+                        $pdfContent, 
+                        $csvContent,
+                        $allDocs
+                    ));
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Error enviando correo F&F: " . $e->getMessage());
                 }

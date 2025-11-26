@@ -132,7 +132,10 @@
                 <h1 class="doc-title">Reporte de ventas</h1>
                 <p class="doc-subtitle">Desglose de información</p>
                 <p class="doc-subtitle">Generado: {{ $report_date }}</p>
-                <p class="doc-subtitle" style="font-weight: bold;">Filtro: {{ $user_filter_name }}</p>
+                <p class="doc-subtitle" style="font-weight: bold; color: var(--color-accent);">
+                    Periodo: {{ $date_range ?? 'Histórico' }}
+                </p>
+                <p class="doc-subtitle" style="font-weight: bold;">Filtro Usuario: {{ $user_filter_name }}</p>
             </td>
         </tr></table>
     </header>
@@ -354,21 +357,21 @@
         <div class="diag-box success">
             <strong>Resumen Inteligente:</strong> {{ $final_summary }}
         </div>
+        
         <div class="diag-box warning">
-            <strong>Datos clave del Evento:</strong>
+            <strong>Hitos Operativos del Periodo:</strong>
             <ul style="margin: 5px 0 0 20px; padding: 0;">
                 @if($trivial['mejorVendedor'])
-                    <li><strong>Mejor Vendedor:</strong> {{ $trivial['mejorVendedor']->user_name }} (${{ number_format($trivial['mejorVendedor']->valor_total, 2) }})</li>
+                    <li><strong>Mayor Rendimiento (Ventas):</strong> {{ $trivial['mejorVendedor']->user_name }} (${{ number_format($trivial['mejorVendedor']->valor_total, 2) }})</li>
                 @endif
                 @if($trivial['productoEstrella'])
-                    <li><strong>Producto Estrella:</strong> {{ $trivial['productoEstrella']->sku }} ({{ number_format($trivial['productoEstrella']->total_vendido) }} unids.)</li>
+                    <li><strong>Producto de Mayor Rotación:</strong> {{ $trivial['productoEstrella']->sku }} ({{ number_format($trivial['productoEstrella']->total_vendido) }} unids.)</li>
                 @endif
                 @if($trivial['diaPico'])
-                    <li><strong>Día Pico de Ventas:</strong> {{ $trivial['diaPico']->dia_formateado }} (${{ number_format($trivial['diaPico']->total_dia, 2) }})</li>
+                    <li><strong>Día de Mayor Actividad:</strong> {{ $trivial['diaPico']->dia_formateado }} (${{ number_format($trivial['diaPico']->total_dia, 2) }})</li>
                 @endif
             </ul>
         </div>
-
     </main>
 </body>
 </html>

@@ -481,6 +481,9 @@ class FfReportController extends Controller
     public function generateExecutiveReport(Request $request)
     {
         $userIdFilter = $request->input('user_id');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        
         $data = [];
 
         try {
@@ -491,20 +494,31 @@ class FfReportController extends Controller
                 $data['logo_base_64'] = null; 
             }
 
-            $data = array_merge($data, $this->gatherReportData($userIdFilter));
+            $data = array_merge($data, $this->gatherReportData($userIdFilter, $startDate, $endDate));
+            
             $data['user_filter_name'] = $userIdFilter ? User::find($userIdFilter)->name : 'Todos';
+            
+            if ($startDate && $endDate) {
+                $start = Carbon::parse($startDate)->isoFormat('D MMM YYYY');
+                $end = Carbon::parse($endDate)->isoFormat('D MMM YYYY');
+                $data['date_range'] = "$start - $end";
+            } else {
+                $data['date_range'] = "Histórico Completo";
+            }
+
             $data['report_date'] = Carbon::now()->isoFormat('D MMMM, YYYY H:mm');
             $data['diagnosis'] = $this->generateDiagnosis($data);
             $data['final_summary'] = $this->generateFinalSummary($data);
+            
             $pdf = Pdf::loadView('friends-and-family.reports.executive-pdf', $data);
             
             $filterName = $userIdFilter ? User::find($userIdFilter)->name : 'Global';
-            $filename = 'FF_Reporte_Ejecutivo_' . $filterName . '_' . Carbon::now()->format('Ymd_His') . '.pdf';
+            $filename = 'FF_Reporte_' . $filterName . '_' . Carbon::now()->format('Ymd_His') . '.pdf';
             
             return $pdf->stream($filename);
 
         } catch (\Exception $e) {
-            return redirect()->route('ff.reports.index', ['user_id' => $userIdFilter])
+            return redirect()->back()
                 ->with('error', 'Error al generar el PDF: ' . $e->getMessage());
         }
     }
@@ -515,26 +529,26 @@ class FfReportController extends Controller
         $waffle = $data['waffleChart'];
         
         $level = 'success';
-        $message = "El evento F&F opera saludablemente, con ventas activas y un inventario bajo control.";
+        $message = "La operación comercial fluye de manera estable, con ventas activas y rotación de inventario constante.";
 
         if ($kpis['valorTotalVendido'] == 0) {
             $level = 'warning';
-            $message = "ADVERTENCIA: No se registran ventas para el filtro seleccionado. El reporte está vacío.";
+            $message = "ADVERTENCIA: No se registran transacciones en el periodo seleccionado. El reporte no contiene datos de flujo.";
             return ['level' => $level, 'message' => $message];
         }
 
         if ($waffle['percent_agotado'] > 10) {
             $level = 'danger';
-            $message = "ALERTA CRÍTICA: El inventario está en estado crítico. Más del 10% del catálogo ({$waffle['agotado']} SKUs) está agotado.";
+            $message = "ALERTA DE STOCK: El inventario requiere reabastecimiento urgente. Más del 10% del catálogo ({$waffle['agotado']} SKUs) se encuentra agotado.";
         } elseif ($waffle['percent_agotado'] > 0 || $waffle['percent_bajo'] > 20) {
             $level = 'warning';
-            $message = "ADVERTENCIA: El inventario muestra signos de estrés. Hay {$waffle['agotado']} SKUs agotados y {$waffle['bajo']} en alerta. Se recomienda monitoreo cercano.";
+            $message = "ATENCIÓN REQUERIDA: El inventario muestra signos de presión. Hay {$waffle['agotado']} SKUs agotados y {$waffle['bajo']} en nivel crítico de reorden.";
         }
         
         $activos = $data['pictogramChart']['activos'];
         $total = $data['pictogramChart']['total'];
         if ($activos > 0 && ($activos / $total) < 0.25) {
-             $message .= " Se observa una alta concentración de ventas en muy pocos vendedores ({$activos} de {$total}).";
+             $message .= " Se detecta una baja participación de la fuerza de ventas ({$activos} de {$total} usuarios activos en el periodo).";
         }
 
         return ['level' => $level, 'message' => $message];
@@ -546,38 +560,46 @@ class FfReportController extends Controller
         $kpis = $data['kpis'];
         
         if ($kpis['valorTotalVendido'] == 0) {
-            return "No se pueden generar conclusiones sin datos de ventas.";
+            return "No hay suficientes datos transaccionales para generar conclusiones operativas en este periodo.";
         }
 
-        $summary = "El análisis de datos confirma un evento exitoso, con un ingreso total de $" . number_format($kpis['valorTotalVendido'], 2) . ". ";
+        $summary = "El periodo analizado cierra con un ingreso bruto acumulado de $" . number_format($kpis['valorTotalVendido'], 2) . ". ";
         
         if ($trivial['productoEstrella']) {
-            $summary .= "El producto estrella (SKU {$trivial['productoEstrella']->sku}) fue un claro motor de volumen, indicando una alta demanda de este ítem. ";
+            $summary .= "La demanda se ha polarizado hacia el SKU {$trivial['productoEstrella']->sku}, que lidera el volumen de salida. ";
         }
         
         if ($trivial['mejorVendedor']) {
-            $summary .= "Comercialmente, {$trivial['mejorVendedor']->user_name} fue el vendedor clave, generando $" . number_format($trivial['mejorVendedor']->valor_total, 2) . ". ";
+            $summary .= "En el rendimiento individual, {$trivial['mejorVendedor']->user_name} destaca como el operador comercial más efectivo con una facturación de $" . number_format($trivial['mejorVendedor']->valor_total, 2) . ". ";
         }
 
         if ($trivial['ventasPorDia']->count() > 1) {
-            $summary .= "La actividad del evento mostró un claro pico el {$trivial['diaPico']->dia_formateado}, superando las ventas del primer día. ";
-        } else {
-            $summary .= "Toda la actividad se concentró en un solo día: {$trivial['diaPico']->dia_formateado}. ";
+            $summary .= "El flujo de transacciones alcanzó su punto máximo el {$trivial['diaPico']->dia_formateado}, marcando la tendencia alta del periodo. ";
+        } elseif ($trivial['diaPico']) {
+            $summary .= "La operatividad se concentró puntualmente el día {$trivial['diaPico']->dia_formateado}. ";
         }
 
-        $summary .= "Operacionalmente, el principal desafío es la gestión de inventario y el auditaje de la mercancía.";
+        $summary .= "Se recomienda revisar los niveles de stock crítico para asegurar la continuidad operativa.";
         
         return $summary;
     }
 
-    private function gatherReportData($userIdFilter): array
+    private function gatherReportData($userIdFilter, $startDate = null, $endDate = null): array
     {
         $data = [];
         Carbon::setLocale('es');
 
         $baseQuery = ffInventoryMovement::where('ff_inventory_movements.quantity', '<', 0);
+        
         if ($userIdFilter) {
             $baseQuery->where('ff_inventory_movements.user_id', $userIdFilter);
+        }
+
+        if ($startDate && $endDate) {
+            $baseQuery->whereBetween('ff_inventory_movements.created_at', [
+                Carbon::parse($startDate)->startOfDay(), 
+                Carbon::parse($endDate)->endOfDay()
+            ]);
         }
 
         $ventasCompletas = (clone $baseQuery)
@@ -604,10 +626,22 @@ class FfReportController extends Controller
             ->orderByDesc('total_vendido')
             ->get();
 
-        $data['ventasPorVendedor'] = ffInventoryMovement::where('ff_inventory_movements.quantity', '<', 0)
+        $ventasPorVendedorQuery = ffInventoryMovement::where('ff_inventory_movements.quantity', '<', 0)
             ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
-            ->join('users', 'ff_inventory_movements.user_id', '=', 'users.id')
-            ->select(
+            ->join('users', 'ff_inventory_movements.user_id', '=', 'users.id');
+
+        if ($userIdFilter) {
+            $ventasPorVendedorQuery->where('ff_inventory_movements.user_id', $userIdFilter);
+        }
+        
+        if ($startDate && $endDate) {
+            $ventasPorVendedorQuery->whereBetween('ff_inventory_movements.created_at', [
+                Carbon::parse($startDate)->startOfDay(), 
+                Carbon::parse($endDate)->endOfDay()
+            ]);
+        }
+
+        $data['ventasPorVendedor'] = $ventasPorVendedorQuery->select(
                 'users.name as user_name',
                 DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as valor_total'),
                 DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_unidades'),
@@ -617,11 +651,6 @@ class FfReportController extends Controller
             ->orderByDesc('valor_total')
             ->get();
 
-        $data['movementReasons'] = ffInventoryMovement::select('reason',
-                DB::raw('SUM(CASE WHEN quantity > 0 THEN quantity ELSE 0 END) as entradas'),
-                DB::raw('SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) as salidas'))
-            ->groupBy('reason')->get();
-            
         $productsCatalog = ffProduct::select('unit_price')->get();
         $priceRangesRaw = [
             '0-100' => $productsCatalog->whereBetween('unit_price', [0, 100])->count(),
@@ -685,7 +714,7 @@ class FfReportController extends Controller
         $ventasPorDia = (clone $baseQuery)
             ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
             ->select(DB::raw('DATE(ff_inventory_movements.created_at) as dia'), 
-                     DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as total_dia'))
+                    DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as total_dia'))
             ->groupBy('dia')->orderBy('dia', 'asc')->get();
         
         $diaPico = $ventasPorDia->sortByDesc('total_dia')->first();

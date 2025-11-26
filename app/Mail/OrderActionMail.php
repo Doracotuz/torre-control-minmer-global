@@ -17,19 +17,21 @@ class OrderActionMail extends Mailable
     public $type;
     protected $pdfContent;
     protected $csvContent;
+    protected $externalDocs;
 
-    public function __construct($data, $type, $pdfContent = null, $csvContent = null)
+    public function __construct($data, $type, $pdfContent = null, $csvContent = null, $externalDocs = [])
     {
         $this->data = $data;
         $this->type = $type;
         $this->pdfContent = $pdfContent;
         $this->csvContent = $csvContent;
+        $this->externalDocs = $externalDocs;
     }
 
     public function envelope(): Envelope
     {
         $prefix = match($this->type) {
-            'new' => 'Nueva Venta',
+            'new' => 'Nueva Pedido',
             'update' => 'Actualización de Pedido',
             'cancel' => 'CANCELACIÓN de Pedido',
         };
@@ -58,6 +60,12 @@ class OrderActionMail extends Mailable
         if ($this->csvContent) {
             $attachments[] = Attachment::fromData(fn () => $this->csvContent, 'Detalle_' . $this->data['folio'] . '.csv')
                 ->withMime('text/csv');
+        }
+
+        foreach ($this->externalDocs as $doc) {
+            $attachments[] = Attachment::fromStorageDisk('s3', $doc['path'])
+                ->as($doc['name'])
+                ->withMime('application/pdf');
         }
 
         return $attachments;
