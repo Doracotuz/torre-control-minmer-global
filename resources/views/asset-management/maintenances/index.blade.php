@@ -278,14 +278,12 @@
                                             <i class="fas fa-edit"></i>
                                         </a>
 
-                                        @if($maintenance->end_date)
-                                            <a href="{{ route('asset-management.maintenances.pdf', $maintenance) }}" 
-                                            target="_blank" 
-                                            class="p-2 text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-all" 
-                                            title="Certificado PDF">
-                                                <i class="fas fa-file-pdf"></i>
-                                            </a>
-                                        @endif
+                                        <a href="{{ route('asset-management.maintenances.pdf', $maintenance) }}" 
+                                        target="_blank" 
+                                        class="p-2 text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-all" 
+                                        title="Certificado PDF">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
 
                                         @if(Auth::user()->is_area_admin && Auth::user()->area?->name === 'Administración')
                                             <form action="{{ route('asset-management.maintenances.destroy', $maintenance) }}" 
