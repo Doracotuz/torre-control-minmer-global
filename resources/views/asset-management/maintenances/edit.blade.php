@@ -54,7 +54,7 @@
     }
 </style>
 
-<div class="min-h-screen bg-[#f3f4f6] pb-20">
+<div class="min-h-screen bg-[#f3f4f6] pb-20 relative">
     
     <div class="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] pt-10 pb-32 px-4 sm:px-6 lg:px-8 shadow-xl rounded-b-[3rem] relative overflow-hidden">
         <div class="absolute right-0 top-0 h-full w-1/2 bg-white/5 skew-x-12 transform origin-top-right"></div>
@@ -96,20 +96,6 @@
         </div>
     </div>
 
-    @if(!$canEdit)
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 mb-6 relative z-30">
-            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-lg flex items-center justify-between">
-                <div class="flex items-center">
-                    <i class="fas fa-lock text-red-500 text-xl mr-4"></i>
-                    <div>
-                        <p class="text-red-700 font-bold">Registro Bloqueado</p>
-                        <p class="text-red-600 text-sm">Este mantenimiento ha finalizado. Solo el Super Administrador puede hacer cambios.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
-
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-20">
         <form action="{{ route('asset-management.maintenances.update', $maintenance) }}" 
               method="POST" 
@@ -132,6 +118,7 @@
                         </h3>
 
                         <div class="space-y-6">
+                            {{-- Input de Fecha --}}
                             <div class="bg-blue-50/50 p-5 rounded-xl border border-blue-100 transition-all"
                                  :class="endDate ? 'ring-2 ring-green-400 bg-green-50/30' : ''">
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Finalización / Cierre</label>
@@ -343,5 +330,16 @@
             </fieldset>
         </form>
     </div>
+    
+    @if(!$canEdit)
+        <div class="fixed bottom-5 right-5 z-50 max-w-md bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-2xl flex items-center animate-bounce-in">
+            <i class="fas fa-lock text-red-500 text-xl mr-4"></i>
+            <div>
+                 <p class="text-red-700 font-bold">Registro Bloqueado</p>
+                 <p class="text-red-600 text-sm">Este mantenimiento ha finalizado. Solo el Super Administrador puede hacer cambios.</p>
+            </div>
+        </div>
+    @endif
+
 </div>
 @endsection
