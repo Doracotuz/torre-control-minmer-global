@@ -145,6 +145,7 @@ class MaintenanceController extends Controller
     {
         $data = $request->validate([
             'end_date' => 'nullable|date', 
+            'final_asset_status' => 'nullable|in:En Almacén,De Baja',
             'actions_taken' => 'required|string',
             'parts_used' => 'nullable|string',
             'cost' => 'nullable|numeric|min:0',
@@ -185,20 +186,28 @@ class MaintenanceController extends Controller
 
             $maintenance->update($data);
 
-            if (!empty($data['end_date']) && $maintenance->asset->status !== 'En Almacén') {
+            if (!empty($data['end_date'])) {
                 
                 $asset = $maintenance->asset;
-                $asset->status = 'En Almacén';
-                $asset->save();
+                $targetStatus = $request->input('final_asset_status', 'En Almacén');
 
-                $asset->logs()->create([
-                    'user_id' => Auth::id(),
-                    'action_type' => 'Mantenimiento Completado',
-                    'notes' => "Se completó el mantenimiento. El activo vuelve a Almacén.",
-                    'event_date' => $data['end_date'],
-                    'loggable_id' => $maintenance->id,
-                    'loggable_type' => \App\Models\Maintenance::class,
-                ]);
+                if ($asset->status !== $targetStatus) {
+                    $asset->status = $targetStatus;
+                    $asset->save();
+
+                    $logNote = $targetStatus === 'De Baja'
+                        ? "Mantenimiento concluido. El equipo fue dictaminado como irreparable / dañado."
+                        : "Se completó el mantenimiento. El activo vuelve a Almacén reparado.";
+
+                    $asset->logs()->create([
+                        'user_id' => Auth::id(),
+                        'action_type' => $targetStatus === 'De Baja' ? 'Baja por Mantenimiento' : 'Mantenimiento Completado',
+                        'notes' => $logNote,
+                        'event_date' => $data['end_date'],
+                        'loggable_id' => $maintenance->id,
+                        'loggable_type' => \App\Models\Maintenance::class,
+                    ]);
+                }
 
                 if ($maintenance->substitute_asset_id) {
                     $substitute = $maintenance->substituteAsset;
@@ -215,7 +224,7 @@ class MaintenanceController extends Controller
                         $substitute->logs()->create([
                             'user_id' => Auth::id(),
                             'action_type' => 'Devolución',
-                            'notes' => 'Devuelto por ' . $loan->member->name . '. Fin de préstamo sustituto.',
+                            'notes' => 'Devuelto por cierre de ticket principal. Fin de préstamo sustituto.',
                             'loggable_id' => $loan->id,
                             'loggable_type' => \App\Models\Assignment::class,
                             'event_date' => $returnDate, 
@@ -226,7 +235,7 @@ class MaintenanceController extends Controller
         });
 
         return redirect()->route('asset-management.maintenances.index')
-            ->with('success', 'Mantenimiento actualizado exitosamente.');
+            ->with('success', 'Mantenimiento actualizado y estatus del activo definido.');
     }
 
     public function generatePdf(Maintenance $maintenance)

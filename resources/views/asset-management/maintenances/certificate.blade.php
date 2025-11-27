@@ -150,6 +150,16 @@
                 <td>Del <strong>{{ Carbon::parse($maintenance->start_date)->isoFormat('LL') }}</strong> al <strong>{{ Carbon::parse($maintenance->end_date)->isoFormat('LL') }}</strong></td>
             </tr>
             <tr>
+                <th>Dictamen / Estatus Final</th>
+                <td style="{{ $maintenance->asset->status === 'De Baja' ? 'color: #dc2626; font-weight: bold;' : 'color: #059669; font-weight: bold;' }}">
+                    @if($maintenance->asset->status === 'De Baja')
+                        IRREPARABLE / EQUIPO DADO DE BAJA
+                    @else
+                        REPARADO / FUNCIONAL (EN ALMACÉN)
+                    @endif
+                </td>
+            </tr>
+            <tr>
                 <th>Costo Total del Servicio</th>
                 <td>$ {{ number_format($maintenance->cost, 2) }} MXN</td>
             </tr>

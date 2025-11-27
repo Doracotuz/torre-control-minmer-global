@@ -83,11 +83,12 @@
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-20">
         <form action="{{ route('asset-management.maintenances.update', $maintenance) }}" 
-              method="POST" 
-              enctype="multipart/form-data"
-              x-data="{ 
-                  endDate: '{{ old('end_date', $maintenance->end_date ? $maintenance->end_date->format('Y-m-d') : '') }}' 
-              }">
+            method="POST" 
+            enctype="multipart/form-data"
+            x-data="{ 
+                endDate: '{{ old('end_date', $maintenance->end_date ? $maintenance->end_date->format('Y-m-d') : '') }}',
+                finalStatus: 'En Almacén' 
+            }">
             @csrf
             @method('PUT')
 
@@ -118,6 +119,23 @@
                                     <span x-text="endDate ? 'Al guardar, el ticket se cerrará y el activo volverá a almacén.' : 'Dejar vacío para guardar avances sin cerrar el ticket.'"></span>
                                 </div>
                             </div>
+
+                            <div x-show="endDate" x-transition class="mt-4 bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Conclusión del Servicio <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <i class="fas fa-gavel form-floating-icon z-10"></i>
+                                    <select name="final_asset_status" 
+                                            x-model="finalStatus"
+                                            class="modern-input w-full py-3 form-select cursor-pointer">
+                                        <option value="En Almacén">Equipo Reparado (Enviar a Almacén)</option>
+                                        <option value="De Baja">Equipo Irreparable (Dar de Baja)</option>
+                                    </select>
+                                </div>
+                                <p class="text-xs mt-2" :class="finalStatus === 'De Baja' ? 'text-red-600 font-bold' : 'text-gray-500'">
+                                    <i class="fas" :class="finalStatus === 'De Baja' ? 'fa-exclamation-triangle' : 'fa-info-circle'"></i>
+                                    <span x-text="finalStatus === 'De Baja' ? 'ADVERTENCIA: El activo cambiará a estatus De Baja.' : 'El activo quedará disponible para nueva asignación.'"></span>
+                                </p>
+                            </div>                            
 
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Acciones Realizadas <span class="text-red-500">*</span></label>

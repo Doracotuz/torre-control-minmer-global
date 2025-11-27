@@ -1,173 +1,305 @@
 @extends('layouts.guest-rutas')
 
 @section('content')
-    <h2 class="text-2xl font-bold text-center text-[#2c3856] mb-2">Seguimiento de Entregas</h2>
-    <p class="text-center text-gray-600 text-sm mb-6">Ingresa uno o más números de factura, separados por comas.</p>
+<style>
+    @keyframes pulse-ring {
+        0% { transform: scale(0.33); opacity: 1; }
+        80%, 100% { opacity: 0; }
+    }
+    @keyframes pulse-dot {
+        0% { transform: scale(0.8); }
+        50% { transform: scale(1); }
+        100% { transform: scale(0.8); }
+    }
+    .animate-ring::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0;
+        display: block;
+        width: 100%; height: 100%;
+        background-color: rgba(255, 156, 0, 0.6);
+        border-radius: 50%;
+        animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+    .pattern-grid {
+        background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+        background-size: 24px 24px;
+    }
+</style>
 
-    <form method="GET" action="{{ route('tracking.index') }}">
-        <div class="flex gap-2">
-            <input id="facturas" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#ff9c00] focus:ring-[#ff9c00]" type="text" name="facturas" value="{{ $searchQuery ?? '' }}" required placeholder="Ej: 50046649, 50046650" />
-            <button type="submit" class="inline-flex items-center px-6 py-2 bg-[#ff9c00] text-white rounded-md font-semibold text-xs uppercase tracking-widest hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff9c00] transition">
-                Buscar
-            </button>
+<div class="min-h-screen bg-slate-50 pattern-grid pb-20">
+    
+    <div class="relative bg-[#2c3856] pb-24 overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+        
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+            <div class="text-center relative z-10">
+                <span class="inline-block py-1 px-3 rounded-full bg-white/10 border border-white/20 text-blue-200 text-xs font-mono tracking-widest uppercase mb-4 backdrop-blur-sm">
+                    Sistema de Rastreo en Linea
+                </span>
+                <h2 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-2">
+                    Centro de <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-orange-400">Control</span>
+                </h2>
+                <p class="text-blue-200/80 text-sm md:text-base max-w-xl mx-auto font-light">
+                    Monitoreo en tiempo real de la cadena de suministro y distribución.
+                </p>
+            </div>
+
+            <div class="mt-10 max-w-2xl mx-auto">
+                <form method="GET" action="{{ route('tracking.index') }}" class="relative group">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-[#ff9c00] to-orange-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                    <div class="relative flex items-center bg-white rounded-xl shadow-2xl p-2">
+                        <div class="pl-4 text-gray-400">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        </div>
+                        <input 
+                            id="facturas" 
+                            class="block w-full border-none focus:ring-0 text-gray-800 placeholder-gray-400 text-lg py-3 px-4 bg-transparent font-medium" 
+                            type="text" 
+                            name="facturas" 
+                            value="{{ $searchQuery ?? '' }}" 
+                            required 
+                            placeholder="Ingrese ID de Factura u Orden..." 
+                        />
+                        <button type="submit" class="bg-[#2c3856] text-white px-8 py-3 rounded-lg font-bold text-sm hover:bg-[#1e2742] transition-all shadow-lg transform active:scale-95 flex items-center gap-2">
+                            BUSCAR
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </form>
+    </div>
 
-    @if($searchQuery)
-        <div class="mt-8">
-
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-20">
+        
+        @if($searchQuery)
             @if(!empty($notFoundNumbers))
-                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg shadow">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M8.257 3.099c.636-1.026 2.073-1.026 2.709 0l5.428 8.752c.621 1.002-.12 2.273-1.355 2.273H4.184c-1.235 0-1.976-1.271-1.355-2.273l5.428-8.752zM10 12a1 1 0 110-2 1 1 0 010 2zm-1-4a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm text-yellow-700">
-                                No se encontraron registros para la(s) siguiente(s) factura(s):
-                                <span class="font-bold">{{ implode(', ', $notFoundNumbers) }}</span>
-                            </p>
-                        </div>
+                <div class="mb-8 bg-white/90 backdrop-blur border-l-4 border-red-500 p-6 rounded-r-xl shadow-lg flex items-start gap-4 transform transition-all hover:scale-[1.01]">
+                    <div class="p-2 bg-red-100 rounded-full text-red-600">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-red-900 font-bold text-lg">Búsqueda sin resultados</h3>
+                        <p class="text-red-700 mt-1">No localizamos registros para: <span class="font-mono bg-red-50 px-2 py-0.5 rounded border border-red-100 text-red-800">{{ implode(', ', $notFoundNumbers) }}</span></p>
                     </div>
                 </div>
             @endif
 
+            <div class="space-y-12">
             @forelse ($results as $item)
-                @if($item->source === 'factura')
-                    @php $factura = $item;
-                    <div class="bg-white border rounded-lg p-4 mb-4 shadow-md">
-                        <div class="flex flex-col sm:flex-row justify-between items-start border-b pb-3 mb-3 gap-2">
-                            <div>
-                                <p class="text-xs text-gray-500">Factura en Ruta</p>
-                                <p class="font-bold text-lg text-gray-800">{{ $factura->numero_factura }}</p>
-                            </div>
-                            <div class="flex items-center space-x-3 flex-shrink-0">
-                                @php
-                                    $order = $factura->csPlanning?->order;
-                                    $editor = $order?->updater;
-                                    $clientContact = $order?->client_contact ?? $order?->customer_name;
-                                    $editorPhoneNumber = $editor?->phone_number;
-                                @endphp
+                @php
+                    $isFactura = $item->source === 'factura';
+                    $data = $isFactura ? $item : $item;
+                    $id = $isFactura ? $item->numero_factura : $item->invoice_number;
+                    
+                    // Cálculo de estado avanzado
+                    $progress = 10;
+                    $statusText = 'Procesando';
+                    $stepIndex = 1;
+                    
+                    if ($isFactura) {
+                        if ($data->estatus_entrega == 'Entregada') {
+                            $progress = 100; $statusText = 'Entregado'; $stepIndex = 4;
+                        } elseif (!$data->eventos->isEmpty()) {
+                            $progress = 66; $statusText = 'En Ruta'; $stepIndex = 3;
+                        } elseif ($data->csPlanning) {
+                            $progress = 33; $statusText = 'Preparación'; $stepIndex = 2;
+                        }
+                    }
+                @endphp
 
-                                @if($editorPhoneNumber)
-                                    @php
-                                        $hour = now()->hour;
-                                        $greeting = ($hour >= 5 && $hour < 12) ? 'buen día' : (($hour >= 12 && $hour < 20) ? 'buena tarde' : 'buena noche');
-                                        $editorFirstName = explode(' ', $editor->name)[0];
-                                        $message = "Hola, {$greeting} {$editorFirstName}.\n\nMe gustaría obtener más detalles sobre la entrega de la factura *{$factura->numero_factura}* con destino a *{$clientContact}*.";
-                                        $whatsAppNumber = "521" . $editorPhoneNumber;
-                                        $whatsAppLink = "https://wa.me/{$whatsAppNumber}?text=" . urlencode($message);
-                                    @endphp
-                                    <a href="{{ $whatsAppLink }}" target="_blank" class="inline-flex items-center px-3 py-1.3 bg-[rgb(44,56,86)] text-white rounded-full font-semibold text-xs uppercase tracking-widest hover:bg-[#ff9c00] transition-all duration-300 transform hover:scale-105 shadow-md" title="Enviar WhatsApp a {{ $editor->name }}">
-                                        <!-- <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886-.001 2.269.655 4.506 1.908 6.385l-1.292 4.72zm7.572-6.911c-.533-.266-3.143-1.552-3.64-1.725-.496-.173-.855-.265-1.214.265-.36.53-.137 1.251-.138 1.251-.36.53-.137 1.251-.138 1.251l-.149.174c-.379.444-.799.524-1.214.379-.414-.143-1.745-.636-3.328-2.049a11.583 11.583 0 0 1-2.3-2.828c-.266-.495-.034-.764.231-1.021.233-.232.496-.615.744-.913.249-.298.33-.495.496-.855.165-.36.083-.66-.034-.912-.117-.252-1.213-2.909-1.662-3.996-.448-1.087-.905-1.008-1.213-1.008h-.494c-.359 0-.912.117-1.385.579-.47.462-1.798 1.76-1.798 4.298s1.839 4.99 2.083 5.349c.243.359 3.593 5.493 8.718 7.669 1.144.495 2.062.793 2.76.995.894.243 1.706.215 2.333-.034.707-.282 2.196-1.12 2.502-2.208.307-1.087.307-2.008.216-2.208-.092-.2-.358-.321-.737-.533z"/></svg> -->
-                                        <span>Contacto CS</span>
-                                    </a>
-                                @endif
-                                
-                                <span class="px-2 inline-flex text-sm leading-5 font-semibold rounded-full 
-                                    @if($factura->estatus_entrega == 'Pendiente') bg-yellow-100 text-yellow-800
-                                    @elseif($factura->estatus_entrega == 'Entregada') bg-green-100 text-green-800
-                                    @else bg-red-100 text-red-800
-                                    @endif">
-                                    @if($factura->estatus_entrega == 'Pendiente')
-                                        Asignada
-                                    @else
-                                        {{ $factura->estatus_entrega }}
+                <div class="glass-panel rounded-2xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.07)] overflow-hidden ring-1 ring-slate-900/5 transition-all duration-300">
+                    
+                    <div class="bg-white border-b border-gray-100 p-6 md:p-8">
+                        <div class="flex flex-col md:flex-row justify-between md:items-center gap-6 mb-8">
+                            <div>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-widest py-1 px-2 rounded border border-slate-200">
+                                        {{ $isFactura ? 'FACTURA COMERCIAL' : 'ORDEN DE VENTA' }}
+                                    </span>
+                                    @if($isFactura && $data->estatus_entrega == 'Entregada')
+                                        <span class="bg-green-50 text-green-700 text-[10px] font-bold uppercase tracking-widest py-1 px-2 rounded border border-green-100 flex items-center gap-1">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Completado
+                                        </span>
                                     @endif
-                                </span>
+                                </div>
+                                <h3 class="text-4xl font-black text-slate-800 font-mono tracking-tighter">{{ $id }}</h3>
+                                <p class="text-slate-500 text-sm mt-1">Cliente: <span class="font-semibold text-slate-700">{{ $isFactura ? ($data->csPlanning->order->customer_name ?? 'N/A') : $data->customer_name }}</span></p>
                             </div>
+
+                            @php
+                                $editor = $isFactura ? ($data->csPlanning->order->updater ?? null) : $data->updater;
+                                $phone = $editor?->phone_number;
+                            @endphp
+                            @if($phone)
+                                <a href="https://wa.me/521{{$phone}}" target="_blank" class="group relative inline-flex items-center justify-center px-6 py-3 font-bold text-white transition-all duration-200 bg-[#ff9c00] font-pj rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 hover:bg-orange-600 active:scale-95 shadow-lg shadow-orange-500/30">
+                                    <span class="absolute top-0 right-0 w-3 h-3 -mt-1 -mr-1 rounded-full bg-green-400 animate-ping"></span>
+                                    <span class="absolute top-0 right-0 w-3 h-3 -mt-1 -mr-1 rounded-full bg-green-500 border-2 border-white"></span>
+                                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.008-.57-.008-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                                    <span>CONTACTAR EJECUTIVO</span>
+                                </a>
+                            @endif
                         </div>
 
-                        <h4 class="text-sm font-bold text-gray-600 mb-3">Historial de Entrega:</h4>
-                        @if($factura->eventos->isEmpty())
-                            <p class="text-sm text-gray-500">Aún no hay eventos de entrega para esta factura.</p>
-                        @else
-                            @foreach($factura->eventos as $evento)
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start mb-4">
-                                    <div>
-                                        <p class="text-sm font-semibold {{ $evento->subtipo == 'Factura Entregada' ? 'text-green-700' : 'text-red-700' }}">
-                                            {{ $evento->subtipo }}
-                                        </p>
-                                        <p class="text-xs text-gray-500">{{ $evento->fecha_evento->format('d/m/Y h:i A') }}</p>
-                                        @if(!empty($evento->url_evidencia))
-                                            <div class="mt-2">
-                                                <p class="text-xs font-semibold text-gray-500">Evidencias:</p>
-                                                <div class="flex flex-wrap gap-2 mt-1">
-                                                    @foreach($evento->url_evidencia as $url)
-                                                        <a href="{{ $url }}" target="_blank" class="block border p-1 rounded-md hover:shadow-lg hover:border-blue-500 transition-all duration-300">
-                                                            <img src="{{ $url }}" alt="Evidencia de entrega {{ $loop->iteration }}" class="h-20 w-20 object-cover rounded-sm">
-                                                        </a>
-                                                    @endforeach
-                                                </div>
+                        <div class="relative mt-8 mx-2">
+                            <div class="absolute top-1/2 left-0 w-full h-1.5 bg-slate-100 rounded-full -translate-y-1/2 overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-blue-500 via-[#ff9c00] to-orange-500 transition-all duration-1000 ease-out rounded-full shadow-[0_0_15px_rgba(255,156,0,0.5)]" style="width: {{ $progress }}%"></div>
+                            </div>
+                            
+                            <div class="relative z-10 flex justify-between w-full">
+                                @foreach(['Orden Recibida', 'Planificación', 'En Ruta', 'Entregado'] as $index => $label)
+                                    @php $isActive = $stepIndex > $index; $isCurrent = $stepIndex == $index + 1; @endphp
+                                    <div class="flex flex-col items-center group cursor-default">
+                                        <div class="relative">
+                                            <div class="w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 z-20 relative {{ $isActive || $isCurrent ? 'bg-white border-[#ff9c00] shadow-lg' : 'bg-slate-50 border-slate-200' }}">
+                                                @if($index == 3 && $isActive) 
+                                                    <span class="text-green-500 font-bold">✓</span>
+                                                @elseif($isActive || $isCurrent)
+                                                    <span class="block w-3 h-3 bg-[#ff9c00] rounded-full {{ $isCurrent ? 'animate-pulse' : '' }}"></span>
+                                                @else
+                                                    <span class="block w-2 h-2 bg-slate-300 rounded-full"></span>
+                                                @endif
                                             </div>
-                                        @endif
+                                            @if($isCurrent)
+                                                <div class="absolute inset-0 animate-ring rounded-full z-10"></div>
+                                            @endif
+                                        </div>
+                                        <div class="mt-3 text-center transition-all duration-300 {{ $isActive || $isCurrent ? 'opacity-100 transform translate-y-0' : 'opacity-50 transform translate-y-1' }}">
+                                            <p class="text-xs font-bold uppercase tracking-wider {{ $isActive || $isCurrent ? 'text-slate-800' : 'text-slate-400' }}">{{ $label }}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <a href="https://www.google.com/maps/search/?api=1&query={{$evento->latitud}},{{$evento->longitud}}" target="_blank">
-                                            <img 
-                                                src="https://maps.googleapis.com/maps/api/staticmap?center={{$evento->latitud}},{{$evento->longitud}}&zoom=16&size=600x300&markers=color:red%7C{{$evento->latitud}},{{$evento->longitud}}&key={{ $googleMapsApiKey }}" 
-                                                alt="Mapa de entrega" 
-                                                class="w-full h-auto rounded-md border shadow-lg cursor-pointer hover:opacity-90 transition-opacity">
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50/50 p-6 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        
+                        <div class="lg:col-span-7">
+                            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                Bitácora de Actividad
+                            </h4>
+
+                            @if($isFactura && !$data->eventos->isEmpty())
+                                <div class="relative pl-4 border-l-2 border-slate-200 space-y-8">
+                                    @foreach($data->eventos as $evento)
+                                        <div class="relative group">
+                                            <div class="absolute -left-[23px] top-1 w-4 h-4 rounded-full border-2 border-white shadow-sm transition-colors duration-300 {{ $loop->first ? 'bg-[#ff9c00]' : 'bg-slate-300 group-hover:bg-blue-400' }}"></div>
+                                            
+                                            <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
+                                                <div class="absolute top-0 left-0 w-1 h-full {{ $evento->subtipo == 'Factura Entregada' ? 'bg-green-500' : 'bg-blue-500' }}"></div>
+                                                
+                                                <div class="flex justify-between items-start">
+                                                    <div>
+                                                        <h5 class="font-bold text-slate-800 text-base">{{ $evento->subtipo }}</h5>
+                                                        <p class="text-xs font-mono text-slate-500 mt-1">{{ $evento->fecha_evento->isoFormat('dddd D, MMMM YYYY - h:mm A') }}</p>
+                                                    </div>
+                                                    @if($evento->subtipo == 'Factura Entregada')
+                                                        <div class="bg-green-100 text-green-700 p-1.5 rounded-lg">
+                                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                        </div>
+                                                    @endif
+                                                </div>
+
+                                                @if(!empty($evento->url_evidencia))
+                                                    <div class="mt-4 flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                                                        @foreach($evento->url_evidencia as $url)
+                                                            <a href="{{ $url }}" target="_blank" class="block w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-slate-200 relative group/img">
+                                                                <img src="{{ $url }}" class="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110" alt="Evidencia">
+                                                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                                                    <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                                </div>
+                                                            </a>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="flex flex-col items-center justify-center p-8 bg-white border border-dashed border-slate-300 rounded-xl">
+                                    <div class="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                                        <svg class="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                    </div>
+                                    <p class="text-slate-500 text-sm font-medium">Esperando sincronización de ruta...</p>
+                                    <p class="text-slate-400 text-xs mt-1">Los eventos aparecerán aquí cuando la unidad inicie viaje.</p>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="lg:col-span-5 space-y-6">
+                            
+                            @if($isFactura && !$data->eventos->isEmpty())
+                                @php $lastEvent = $data->eventos->first(); @endphp
+                                <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                                    <div class="relative rounded-xl overflow-hidden group">
+                                        <img 
+                                            src="https://maps.googleapis.com/maps/api/staticmap?center={{$lastEvent->latitud}},{{$lastEvent->longitud}}&zoom=14&size=600x400&maptype=roadmap&markers=color:orange%7C{{$lastEvent->latitud}},{{$lastEvent->longitud}}&key={{ $googleMapsApiKey }}&style=feature:poi|visibility:off" 
+                                            alt="Mapa" 
+                                            class="w-full h-64 object-cover filter saturate-150"
+                                        >
+                                        <a href="https://www.google.com/maps/search/?api=1&query={{$lastEvent->latitud}},{{$lastEvent->longitud}}" target="_blank" class="absolute inset-0 bg-[#2c3856]/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center backdrop-blur-sm cursor-pointer">
+                                            <span class="text-white font-bold text-lg mb-2">Ver en Google Maps</span>
+                                            <div class="px-4 py-2 bg-white/20 rounded-full text-white text-xs border border-white/30">Click para abrir</div>
                                         </a>
+                                        <div class="absolute bottom-3 left-3 bg-white/90 backdrop-blur px-3 py-1 rounded-md shadow text-xs font-bold text-slate-700">
+                                            Última ubicación conocida
+                                        </div>
                                     </div>
                                 </div>
-                            @endforeach
-                        @endif
-                    </div>
-                
-                @elseif($item->source === 'order')
-                    @php $order = $item;
-                    <div class="bg-white border-l-4 border-[#ff9c00] rounded-r-lg p-4 mb-4 shadow-md">
-                        <div class="flex flex-col sm:flex-row justify-between items-start pb-3 mb-3 border-b gap-2">
-                            <div>
-                                <p class="text-xs text-gray-500">Orden de Venta</p>
-                                <p class="font-bold text-lg text-gray-800">{{ $order->invoice_number }}</p>
-                            </div>
-                            <div class="flex items-center space-x-3 flex-shrink-0">
-                                @php
-                                    $editor = $order->updater;
-                                    $clientContact = $order->client_contact ?? $order->customer_name;
-                                    $editorPhoneNumber = $editor?->phone_number;
-                                @endphp
+                            @endif
 
-                                @if($editorPhoneNumber)
-                                    @php
-                                        $hour = now()->hour;
-                                        $greeting = ($hour >= 5 && $hour < 12) ? 'buen día' : (($hour >= 12 && $hour < 20) ? 'buena tarde' : 'buena noche');
-                                        $editorFirstName = explode(' ', $editor->name)[0];
-                                        $message = "Hola, {$greeting} {$editorFirstName}.\n\nMe gustaría obtener más detalles sobre el estado de la orden con factura {$order->invoice_number} para el cliente {$clientContact}.";
-                                        $whatsAppNumber = "521" . $editorPhoneNumber;
-                                        $whatsAppLink = "https://wa.me/{$whatsAppNumber}?text=" . urlencode($message);
-                                    @endphp
-                                    <a href="{{ $whatsAppLink }}" target="_blank" class="inline-flex items-center px-3 py-1.3 bg-[rgb(44,56,86)] text-white rounded-full font-semibold text-xs uppercase tracking-widest hover:bg-[#ff9c00] transition-all duration-300 transform hover:scale-105 shadow-md" title="Enviar WhatsApp a {{ $editor->name }}">
-                                        <!-- <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886-.001 2.269.655 4.506 1.908 6.385l-1.292 4.72zm7.572-6.911c-.533-.266-3.143-1.552-3.64-1.725-.496-.173-.855-.265-1.214.265-.36.53-.137 1.251-.138 1.251-.36.53-.137 1.251-.138 1.251l-.149.174c-.379.444-.799.524-1.214.379-.414-.143-1.745-.636-3.328-2.049a11.583 11.583 0 0 1-2.3-2.828c-.266-.495-.034-.764.231-1.021.233-.232.496-.615.744-.913.249-.298.33-.495.496-.855.165-.36.083-.66-.034-.912-.117-.252-1.213-2.909-1.662-3.996-.448-1.087-.905-1.008-1.213-1.008h-.494c-.359 0-.912.117-1.385.579-.47.462-1.798 1.76-1.798 4.298s1.839 4.99 2.083 5.349c.243.359 3.593 5.493 8.718 7.669 1.144.495 2.062.793 2.76.995.894.243 1.706.215 2.333-.034.707-.282 2.196-1.12 2.502-2.208.307-1.087.307-2.008.216-2.208-.092-.2-.358-.321-.737-.533z"/></svg> -->
-                                        <span>Contacto CS</span>
-                                    </a>
-                                @endif
-                                <span class="px-2 inline-flex text-sm leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                    Procesando
-                                </span>
+                            <div class="bg-[#2c3856] rounded-2xl p-6 text-white relative overflow-hidden">
+                                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-[#ff9c00] rounded-full opacity-20 blur-2xl"></div>
+                                
+                                <h4 class="text-xs font-bold text-blue-200 uppercase tracking-widest mb-4">Detalles del Pedido</h4>
+                                <ul class="space-y-4 text-sm">
+                                    <li class="flex justify-between border-b border-white/10 pb-2">
+                                        <span class="text-blue-200">Fecha Creación:</span>
+                                        <span class="font-mono">{{ $isFactura ? ($data->csPlanning->order->creation_date ?? '-') : \Carbon\Carbon::parse($data->creation_date)->format('d/m/Y') }}</span>
+                                    </li>
+                                    <li class="flex justify-between border-b border-white/10 pb-2">
+                                        <span class="text-blue-200">Tipo de Servicio:</span>
+                                        <span class="font-semibold">{{ $isFactura ? 'Entrega Local' : 'Orden Venta' }}</span>
+                                    </li>
+                                    <li class="flex justify-between">
+                                        <span class="text-blue-200">Estatus Interno:</span>
+                                        <span class="px-2 py-0.5 rounded bg-white/10 text-[#ff9c00] font-bold text-xs">{{ $statusText }}</span>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
-                        <div class="text-sm text-gray-600">
-                            <p><strong>Cliente:</strong> {{ $order->customer_name }}</p>
-                            <p><strong>Fecha de Creación:</strong> {{ \Carbon\Carbon::parse($order->creation_date)->format('d/m/Y') }}</p>
-                            <p class="mt-3 pt-3 border-t text-gray-500 italic">Esta orden está siendo procesada y aún no ha sido asignada a una ruta. Los detalles de seguimiento aparecerán una vez que se genere la guía de entrega.</p>
+
+                    </div>
+                    
+                    <div class="bg-slate-50 px-8 py-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
+                        <span>ID Ref: {{ $data->id }}</span>
+                        <div class="flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            Sistema Operativo
                         </div>
                     </div>
-                @endif
 
+                </div>
             @empty
-                <div class="text-center mt-8 bg-white p-8 rounded-lg shadow-md">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900">Sin resultados</h3>
-                    <p class="mt-1 text-sm text-gray-500">No se encontraron facturas ni órdenes de venta con los números proporcionados.</p>
+                <div class="text-center py-20">
+                    <div class="inline-block p-6 rounded-full bg-white shadow-xl mb-6 ring-1 ring-slate-100">
+                        <svg class="w-16 h-16 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-700">Listo para rastrear</h3>
+                    <p class="text-slate-500 max-w-md mx-auto mt-2">Ingrese el número de factura para visualizar la telemetría en tiempo real y el estado logístico.</p>
                 </div>
             @endforelse
-        </div>
-    @endif
+            </div>
+        @endif
+    </div>
+</div>
 @endsection
