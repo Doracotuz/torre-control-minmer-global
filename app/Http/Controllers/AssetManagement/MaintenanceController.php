@@ -151,6 +151,7 @@ class MaintenanceController extends Controller
                 return back()->with('error', 'Este mantenimiento ya fue finalizado. Solo un Super Administrador puede modificarlo.');
             }
         }
+
         $data = $request->validate([
             'end_date' => 'nullable|date', 
             'final_asset_status' => 'nullable|in:En Almacén,De Baja',
@@ -194,9 +195,9 @@ class MaintenanceController extends Controller
 
             $maintenance->update($data);
 
+            $asset = $maintenance->asset;
+
             if (!empty($data['end_date'])) {
-                
-                $asset = $maintenance->asset;
                 $targetStatus = $request->input('final_asset_status', 'En Almacén');
 
                 if ($asset->status !== $targetStatus) {
@@ -239,11 +240,28 @@ class MaintenanceController extends Controller
                         ]);
                     }
                 }
+
+            } else {
+                $targetStatus = $maintenance->type === 'Reparación' ? 'En Reparación' : 'En Mantenimiento';
+
+                if ($asset->status !== $targetStatus) {
+                    $asset->status = $targetStatus;
+                    $asset->save();
+
+                    $asset->logs()->create([
+                        'user_id' => Auth::id(),
+                        'action_type' => 'Reapertura / En Proceso',
+                        'notes' => "Ticket en proceso (o reabierto). El activo regresa a estatus: $targetStatus.",
+                        'event_date' => now(),
+                        'loggable_id' => $maintenance->id,
+                        'loggable_type' => \App\Models\Maintenance::class,
+                    ]);
+                }
             }
         });
 
         return redirect()->route('asset-management.maintenances.index')
-            ->with('success', 'Mantenimiento actualizado y estatus del activo definido.');
+            ->with('success', 'Mantenimiento actualizado exitosamente.');
     }
 
     public function generatePdf(Maintenance $maintenance)
