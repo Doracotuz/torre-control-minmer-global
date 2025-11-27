@@ -2,6 +2,13 @@
 
 @section('content')
 
+@php
+    $user = Auth::user();
+    $isSuperAdmin = $user && $user->is_area_admin && $user->area?->name === 'Administración';
+    $isClosed = !is_null($maintenance->end_date);
+    $canEdit = !$isClosed || $isSuperAdmin;
+@endphp
+
 <style>
     :root {
         --primary: #2c3856;
@@ -39,6 +46,12 @@
         border-color: var(--primary);
         box-shadow: 0 0 0 4px rgba(44, 56, 86, 0.1);
     }
+
+    fieldset:disabled {
+        opacity: 0.7;
+        pointer-events: none;
+        filter: grayscale(0.5);
+    }
 </style>
 
 <div class="min-h-screen bg-[#f3f4f6] pb-20">
@@ -72,27 +85,43 @@
                     <span class="font-mono opacity-90">{{ $maintenance->asset->asset_tag }}</span>
                 </p>
             </div>
-            <div class="mt-6 md:mt-0">
-                <a href="{{ route('asset-management.maintenances.index') }}" class="group flex items-center px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl backdrop-blur-md transition-all border border-white/10">
-                    <i class="fas fa-arrow-left mr-2 group-hover:-translate-x-1 transition-transform"></i>
-                    Volver al Tablero
+            <div class="mt-6 md:mt-0 flex gap-3">
+                <a href="{{ route('asset-management.maintenances.index') }}" class="px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl backdrop-blur-md transition-all border border-white/10">
+                    <i class="fas fa-arrow-left mr-2"></i> Volver
+                </a>
+                <a href="{{ route('asset-management.maintenances.pdf', $maintenance) }}" target="_blank" class="px-5 py-3 bg-red-500/80 hover:bg-red-500 text-white rounded-xl backdrop-blur-md transition-all border border-white/10 shadow-lg">
+                    <i class="fas fa-file-pdf mr-2"></i> PDF
                 </a>
             </div>
         </div>
     </div>
 
+    @if(!$canEdit)
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 mb-6 relative z-30">
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-lg flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-lock text-red-500 text-xl mr-4"></i>
+                    <div>
+                        <p class="text-red-700 font-bold">Registro Bloqueado</p>
+                        <p class="text-red-600 text-sm">Este mantenimiento ha finalizado. Solo el Super Administrador puede hacer cambios.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-20">
         <form action="{{ route('asset-management.maintenances.update', $maintenance) }}" 
-            method="POST" 
-            enctype="multipart/form-data"
-            x-data="{ 
-                endDate: '{{ old('end_date', $maintenance->end_date ? $maintenance->end_date->format('Y-m-d') : '') }}',
-                finalStatus: 'En Almacén' 
-            }">
+              method="POST" 
+              enctype="multipart/form-data"
+              x-data="{ 
+                  endDate: '{{ old('end_date', $maintenance->end_date ? $maintenance->end_date->format('Y-m-d') : '') }}',
+                  finalStatus: '{{ $maintenance->asset->status === 'De Baja' ? 'De Baja' : 'En Almacén' }}'
+              }">
             @csrf
             @method('PUT')
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <fieldset {{ !$canEdit ? 'disabled' : '' }} class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
                 <div class="lg:col-span-2 space-y-6">
                     
@@ -113,29 +142,30 @@
                                            x-model="endDate"
                                            class="modern-input w-full py-3 form-input cursor-pointer">
                                 </div>
-                                <div class="mt-2 flex items-start gap-2 text-xs transition-all"
-                                     :class="endDate ? 'text-green-600 font-semibold' : 'text-gray-500'">
-                                    <i class="fas mt-0.5" :class="endDate ? 'fa-check-circle' : 'fa-info-circle'"></i>
-                                    <span x-text="endDate ? 'Al guardar, el ticket se cerrará y el activo volverá a almacén.' : 'Dejar vacío para guardar avances sin cerrar el ticket.'"></span>
-                                </div>
                             </div>
 
-                            <div x-show="endDate" x-transition class="mt-4 bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                            <div x-show="endDate" x-transition 
+                                 class="bg-orange-50/50 p-4 rounded-xl border border-orange-100">
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Conclusión del Servicio <span class="text-red-500">*</span></label>
                                 <div class="relative">
                                     <i class="fas fa-gavel form-floating-icon z-10"></i>
                                     <select name="final_asset_status" 
                                             x-model="finalStatus"
+                                            @change="if(finalStatus === 'process') { endDate = ''; finalStatus = 'En Almacén'; }"
                                             class="modern-input w-full py-3 form-select cursor-pointer">
                                         <option value="En Almacén">Equipo Reparado (Enviar a Almacén)</option>
                                         <option value="De Baja">Equipo Irreparable (Dar de Baja)</option>
+                                        <option disabled>──────────────────────────</option>
+                                        <option value="process" class="text-blue-600 font-bold">
+                                            &#8634; Regresar a "En Proceso"
+                                        </option>
                                     </select>
                                 </div>
                                 <p class="text-xs mt-2" :class="finalStatus === 'De Baja' ? 'text-red-600 font-bold' : 'text-gray-500'">
                                     <i class="fas" :class="finalStatus === 'De Baja' ? 'fa-exclamation-triangle' : 'fa-info-circle'"></i>
                                     <span x-text="finalStatus === 'De Baja' ? 'ADVERTENCIA: El activo cambiará a estatus De Baja.' : 'El activo quedará disponible para nueva asignación.'"></span>
                                 </p>
-                            </div>                            
+                            </div>
 
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Acciones Realizadas <span class="text-red-500">*</span></label>
@@ -217,7 +247,7 @@
                                         
                                         <input type="file" name="photo_{{ $i }}" accept="image/*"
                                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                               @change="hasPhoto = true; markedForDeletion = false; /* En JS real aquí haríamos preview local */">
+                                               @change="hasPhoto = true; markedForDeletion = false;">
                                     </div>
                                     
                                     <p x-show="markedForDeletion" class="text-[10px] text-red-500 mt-1 text-center font-bold animate-pulse">
@@ -283,32 +313,34 @@
                         </div>
                     @endif
 
-                    <div class="sticky top-6">
-                        <button type="submit" 
-                                class="w-full py-4 rounded-xl font-bold text-white shadow-lg shadow-blue-900/20 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex items-center justify-center group"
-                                :class="endDate ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-[var(--primary)] hover:bg-[var(--primary-light)]'">
-                            
-                            <template x-if="endDate">
-                                <span class="flex items-center">
-                                    <i class="fas fa-check-circle text-xl mr-3 animate-bounce"></i>
-                                    <span>FINALIZAR TICKET</span>
-                                </span>
-                            </template>
-                            
-                            <template x-if="!endDate">
-                                <span class="flex items-center">
-                                    <i class="fas fa-save text-xl mr-3 group-hover:rotate-12 transition-transform"></i>
-                                    <span>GUARDAR AVANCES</span>
-                                </span>
-                            </template>
-                        </button>
-                        <p class="text-center text-xs text-gray-400 mt-3">
-                            Todos los cambios quedan registrados en el historial.
-                        </p>
-                    </div>
+                    @if($canEdit)
+                        <div class="sticky top-6">
+                            <button type="submit" 
+                                    class="w-full py-4 rounded-xl font-bold text-white shadow-lg shadow-blue-900/20 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex items-center justify-center group"
+                                    :class="endDate ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-[var(--primary)] hover:bg-[var(--primary-light)]'">
+                                
+                                <template x-if="endDate">
+                                    <span class="flex items-center">
+                                        <i class="fas fa-check-circle text-xl mr-3 animate-bounce"></i>
+                                        <span>FINALIZAR TICKET</span>
+                                    </span>
+                                </template>
+                                
+                                <template x-if="!endDate">
+                                    <span class="flex items-center">
+                                        <i class="fas fa-save text-xl mr-3 group-hover:rotate-12 transition-transform"></i>
+                                        <span>GUARDAR AVANCES</span>
+                                    </span>
+                                </template>
+                            </button>
+                            <p class="text-center text-xs text-gray-400 mt-3">
+                                Todos los cambios quedan registrados en el historial.
+                            </p>
+                        </div>
+                    @endif
 
                 </div>
-            </div>
+            </fieldset>
         </form>
     </div>
 </div>
