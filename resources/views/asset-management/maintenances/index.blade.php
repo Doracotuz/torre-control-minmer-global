@@ -1,390 +1,347 @@
 @extends('layouts.app')
 
 @section('content')
+
+@php
+    $user = Auth::user();
+    $isSuperAdmin = $user && $user->is_area_admin && $user->area?->name === 'Administración';
+    $isClosed = !is_null($maintenance->end_date);
+    $canEdit = !$isClosed || $isSuperAdmin;
+@endphp
+
 <style>
     :root {
         --primary: #2c3856;
         --primary-light: #3d4d75;
         --accent: #ff9c00;
-        --success: #10b981;
-        --danger: #ef4444;
         --bg-color: #f3f4f6;
     }
     [x-cloak] { display: none !important; }
-    
-    .glass-panel {
+
+    .glass-card {
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-floating-icon {
+        position: absolute;
+        top: 50%;
+        left: 1rem;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        pointer-events: none;
     }
     
-    .status-pulse::before {
-        content: '';
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background-color: currentColor;
-        margin-right: 6px;
-        animation: pulse 2s infinite;
+    .modern-input {
+        padding-left: 2.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+        background-color: #f9fafb;
     }
-    
-    @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(var(--color-rgb), 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(var(--color-rgb), 0); }
-        100% { box-shadow: 0 0 0 0 rgba(var(--color-rgb), 0); }
+    .modern-input:focus {
+        background-color: #fff;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(44, 56, 86, 0.1);
+    }
+
+    fieldset:disabled {
+        opacity: 0.7;
+        pointer-events: none;
+        filter: grayscale(0.5);
     }
 </style>
 
-<div class="min-h-screen bg-[#f3f4f6] pb-20" x-data="{ search: '', showFilters: false }">
+<div class="min-h-screen bg-[#f3f4f6] pb-20">
     
-    <div class="bg-[var(--primary)] pt-12 pb-24 px-4 sm:px-6 lg:px-8 rounded-b-[3rem] shadow-2xl relative overflow-hidden">
-        <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-                <defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="1"/></pattern></defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
-            </svg>
+    <div class="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] pt-10 pb-32 px-4 sm:px-6 lg:px-8 shadow-xl rounded-b-[3rem] relative overflow-hidden">
+        <div class="absolute right-0 top-0 h-full w-1/2 bg-white/5 skew-x-12 transform origin-top-right"></div>
+        <div class="absolute left-10 bottom-10 text-[10rem] text-white/5 font-bold leading-none select-none">
+            #{{ $maintenance->id }}
         </div>
 
-        <div class="max-w-7xl mx-auto relative z-10">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 text-white">
-                <div>
-                    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Centro de Mantenimiento</h1>
-                    <p class="mt-2 text-blue-200 text-sm md:text-base">Gestión avanzada del ciclo de vida y reparaciones de activos.</p>
+        <div class="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end">
+            <div class="text-white">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-white/10">
+                        {{ $maintenance->type }}
+                    </span>
+                    @if($maintenance->end_date)
+                        <span class="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
+                            Cerrado
+                        </span>
+                    @else
+                        <span class="bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg animate-pulse">
+                            En Proceso
+                        </span>
+                    @endif
                 </div>
-                <div class="mt-4 md:mt-0 flex gap-3">
-                    <a href="{{ route('asset-management.dashboard') }}" class="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg text-sm font-medium transition-all">
-                        <i class="fas fa-arrow-left mr-2"></i> Dashboard
-                    </a>
-                </div>
+                <h1 class="text-4xl md:text-5xl font-black tracking-tight">Mantenimiento</h1>
+                <p class="mt-2 text-blue-100 text-lg flex items-center">
+                    <i class="fas fa-cube mr-2 opacity-70"></i> {{ $maintenance->asset->model->name }} 
+                    <span class="mx-2 opacity-50">|</span> 
+                    <span class="font-mono opacity-90">{{ $maintenance->asset->asset_tag }}</span>
+                </p>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/10 hover:transform hover:-translate-y-1 transition-all duration-300">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-blue-200 text-xs font-bold uppercase tracking-wider">Activos en Taller</p>
-                            <h3 class="text-3xl font-bold text-white mt-1">
-                                {{ $stats['active'] ?? $maintenances->whereNull('end_date')->count() }}
-                            </h3>
-                        </div>
-                        <div class="p-3 bg-orange-500/20 rounded-xl">
-                            <i class="fas fa-tools text-orange-400 text-xl"></i>
-                        </div>
-                    </div>
-                    <div class="mt-4 text-xs text-blue-200">
-                        <span class="text-orange-400 font-bold"><i class="fas fa-exclamation-circle"></i> Requieren atención</span>
-                    </div>
-                </div>
-
-                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/10 hover:transform hover:-translate-y-1 transition-all duration-300">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-blue-200 text-xs font-bold uppercase tracking-wider">Completados (Mes)</p>
-                            <h3 class="text-3xl font-bold text-white mt-1">
-                                {{ $stats['completed_month'] ?? 'N/A' }}
-                            </h3>
-                        </div>
-                        <div class="p-3 bg-green-500/20 rounded-xl">
-                            <i class="fas fa-check-circle text-green-400 text-xl"></i>
-                        </div>
-                    </div>
-                    <div class="mt-4 text-xs text-blue-200">
-                        Mantenimiento eficiente
-                    </div>
-                </div>
-
-                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/10 hover:transform hover:-translate-y-1 transition-all duration-300">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-blue-200 text-xs font-bold uppercase tracking-wider">Costo Promedio</p>
-                            <h3 class="text-3xl font-bold text-white mt-1">
-                                ${{ number_format($stats['avg_cost'] ?? 0, 2) }}
-                            </h3>
-                        </div>
-                        <div class="p-3 bg-blue-500/20 rounded-xl">
-                            <i class="fas fa-dollar-sign text-blue-400 text-xl"></i>
-                        </div>
-                    </div>
-                    <div class="mt-4 text-xs text-blue-200">
-                        MXN por reparación
-                    </div>
-                </div>
+            <div class="mt-6 md:mt-0 flex gap-3">
+                <a href="{{ route('asset-management.maintenances.index') }}" class="px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl backdrop-blur-md transition-all border border-white/10">
+                    <i class="fas fa-arrow-left mr-2"></i> Volver
+                </a>
+                <a href="{{ route('asset-management.maintenances.pdf', $maintenance) }}" target="_blank" class="px-5 py-3 bg-red-500/80 hover:bg-red-500 text-white rounded-xl backdrop-blur-md transition-all border border-white/10 shadow-lg">
+                    <i class="fas fa-file-pdf mr-2"></i> PDF
+                </a>
             </div>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-20">
-        
-        <div class="glass-panel rounded-2xl p-4 mb-6 shadow-lg flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="relative w-full md:w-96">
-                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                <input type="text" placeholder="Buscar por activo, serie o proveedor..." class="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-[var(--primary)] shadow-inner transition-all" x-model="search">
-            </div>
-            <div class="flex gap-2">
-                <button @click="showFilters = !showFilters" 
-                        :class="{'bg-gray-200 text-gray-800': showFilters, 'bg-gray-100 text-gray-600': !showFilters}"
-                        class="px-4 py-2 hover:bg-gray-200 rounded-lg text-sm font-semibold transition-colors">
-                    <i class="fas fa-filter mr-2"></i> Filtros
-                </button>
-                <a href="{{ route('asset-management.maintenances.export') }}" 
-                class="px-4 py-2 text-white bg-[var(--primary)] hover:bg-[var(--primary-light)] rounded-lg text-sm font-semibold shadow-lg hover:shadow-xl transition-all flex items-center">
-                    <i class="fas fa-file-download mr-2"></i> Exportar
-                </a>
-            </div>
-        </div>
-        <div x-show="showFilters" x-cloak 
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 -translate-y-2"
-            x-transition:enter-end="opacity-100 translate-y-0"
-            class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-6">
-            
-            <form action="{{ route('asset-management.maintenances.index') }}" method="GET">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    @if(!$canEdit)
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 mb-6 relative z-30">
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-lg flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-lock text-red-500 text-xl mr-4"></i>
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Estado</label>
-                        <select name="status" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[var(--primary)]">
-                            <option value="">Todos</option>
-                            <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>En Taller (Activos)</option>
-                            <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completados</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo</label>
-                        <select name="type" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[var(--primary)]">
-                            <option value="">Todos</option>
-                            <option value="Preventivo" {{ request('type') == 'Preventivo' ? 'selected' : '' }}>Preventivo</option>
-                            <option value="Reparación" {{ request('type') == 'Reparación' ? 'selected' : '' }}>Reparación</option>
-                        </select>
-                    </div>
-
-                    <div class="md:col-span-2 flex items-end gap-2">
-                        <button type="submit" class="bg-[var(--primary)] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[var(--primary-light)] w-full">
-                            Aplicar Filtros
-                        </button>
-                        @if(request()->hasAny(['status', 'type', 'search']))
-                            <a href="{{ route('asset-management.maintenances.index') }}" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200">
-                                Limpiar
-                            </a>
-                        @endif
+                        <p class="text-red-700 font-bold">Registro Bloqueado</p>
+                        <p class="text-red-600 text-sm">Este mantenimiento ha finalizado. Solo el Super Administrador puede hacer cambios.</p>
                     </div>
                 </div>
-            </form>
-        </div>        
-
-        <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="bg-gray-50 border-b border-gray-100">
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Activo</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado & Tipo</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tiempo Transcurrido</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Costo</th>
-                            <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
-                        </tr>
-                    </thead>
-                    
-                    @forelse ($maintenances as $maintenance)
-                        <tbody x-data="{ expanded: false }" class="border-b border-gray-100 last:border-0 group hover:bg-blue-50/30 transition-colors duration-200">
-                            
-                            <tr class="cursor-pointer" :class="{'bg-blue-50/50': expanded}" @click="expanded = !expanded">
-                                
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center">
-                                        <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-gray-100 flex items-center justify-center text-[var(--primary)] shadow-sm">
-                                            @if($maintenance->asset->model->category->name == 'Laptop')
-                                                <i class="fas fa-laptop"></i>
-                                            @elseif($maintenance->asset->model->category->name == 'Celular')
-                                                <i class="fas fa-mobile-alt"></i>
-                                            @else
-                                                <i class="fas fa-box"></i>
-                                            @endif
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-bold text-gray-900">{{ $maintenance->asset->model->name }}</div>
-                                            <div class="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-0.5 rounded inline-block mt-1">
-                                                {{ $maintenance->asset->asset_tag }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-col gap-2">
-                                        <div>
-                                            @if($maintenance->end_date)
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-                                                    <i class="fas fa-check mr-1.5"></i> Completado
-                                                </span>
-                                            @else
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200 status-pulse" style="--color-rgb: 234, 179, 8">
-                                                    En Taller
-                                                </span>
-                                            @endif
-                                        </div>
-                                        <div class="text-xs text-gray-500 flex items-center">
-                                            <i class="fas {{ $maintenance->type == 'Preventivo' ? 'fa-shield-alt text-blue-400' : 'fa-tools text-orange-400' }} mr-1.5"></i>
-                                            {{ $maintenance->type }}
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <td class="px-6 py-4 w-64">
-                                    @php
-                                        $start = \Carbon\Carbon::parse($maintenance->start_date);
-                                        $end = $maintenance->end_date ? \Carbon\Carbon::parse($maintenance->end_date) : now();
-                                        $days = (int) $start->diffInDays($end);
-                                        $percent = min(($days / 30) * 100, 100);
-                                        $colorClass = $days > 15 ? 'bg-red-500' : ($days > 7 ? 'bg-yellow-500' : 'bg-blue-500');
-                                    @endphp
-                                    <div class="w-full">
-                                        <div class="flex justify-between text-xs mb-1">
-                                            <span class="font-semibold text-gray-700">
-                                                {{ $start->format('d M') }}
-                                            </span>
-                                            <span class="font-bold {{ $days > 15 ? 'text-red-500' : 'text-gray-600' }}">
-                                                {{ $days }} días
-                                            </span>
-                                        </div>
-                                        <div class="overflow-hidden h-2 mb-0 text-xs flex rounded-full bg-gray-200">
-                                            <div style="width:{{ $percent }}%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center {{ $colorClass }} transition-all duration-500"></div>
-                                        </div>
-                                        @if(!$maintenance->end_date && $days > 15)
-                                            <p class="text-[10px] text-red-500 mt-1 font-semibold"><i class="fas fa-clock"></i> Retraso considerable</p>
-                                        @endif
-                                    </div>
-                                </td>
-
-                                <td class="px-6 py-4">
-                                    @if($maintenance->cost)
-                                        <span class="text-sm font-bold text-gray-900">$ {{ number_format($maintenance->cost, 2) }}</span>
-                                    @else
-                                        <span class="text-xs text-gray-400 italic">--</span>
-                                    @endif
-                                </td>
-
-                                <td class="px-6 py-4 text-right">
-                                    <div class="flex items-center justify-end space-x-2">
-                                        
-                                        <button @click.stop="expanded = !expanded" class="p-2 text-gray-400 hover:text-[var(--primary)] transition-colors rounded-full hover:bg-gray-100" title="Ver Detalles">
-                                            <i class="fas fa-chevron-down transform transition-transform duration-200" :class="{'rotate-180': expanded}"></i>
-                                        </button>
-
-                                        <a href="{{ route('asset-management.maintenances.edit', $maintenance) }}" 
-                                        class="p-2 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all" 
-                                        title="Editar / Subir Fotos">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-
-                                        <a href="{{ route('asset-management.maintenances.pdf', $maintenance) }}" 
-                                        target="_blank" 
-                                        class="p-2 text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-all" 
-                                        title="Certificado PDF">
-                                            <i class="fas fa-file-pdf"></i>
-                                        </a>
-
-                                        @if(Auth::user()->is_area_admin && Auth::user()->area?->name === 'Administración')
-                                            <form action="{{ route('asset-management.maintenances.destroy', $maintenance) }}" 
-                                                method="POST" 
-                                                class="inline-block ml-2"
-                                                @click.stop {{-- Evita que se expanda la fila al hacer click --}}
-                                                onsubmit="return confirm('¿ESTÁS SEGURO?\n\nSe eliminará el registro y todas las fotos asociadas de S3.\nEsta acción no se puede deshacer.');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" 
-                                                        class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" 
-                                                        title="Eliminar Registro (Solo Admin)">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            </form>
-                                        @endif
-
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <tr x-show="expanded" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" class="bg-gray-50/50">
-                                <td colspan="5" class="px-6 py-0">
-                                    <div class="p-6 border-l-4 border-[var(--primary)] ml-2 my-2 bg-white rounded-r-lg shadow-inner">
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                            <div class="col-span-2">
-                                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Diagnóstico / Motivo</h4>
-                                                <p class="text-sm text-gray-700 leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                                    {{ $maintenance->diagnosis }}
-                                                </p>
-                                                
-                                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mt-4 mb-2">Acciones Realizadas</h4>
-                                                <p class="text-sm text-gray-600">
-                                                    {{ $maintenance->actions_taken ?? 'No registrado aún...' }}
-                                                </p>
-                                            </div>
-
-                                            <div>
-                                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Detalles Técnicos</h4>
-                                                <ul class="text-sm space-y-2 mb-4">
-                                                    <li class="flex justify-between border-b border-gray-100 pb-1">
-                                                        <span class="text-gray-500">Proveedor:</span>
-                                                        <span class="font-medium text-gray-900">{{ $maintenance->supplier ?? 'Interno' }}</span>
-                                                    </li>
-                                                    @if($maintenance->substitute_asset_id)
-                                                    <li class="flex justify-between border-b border-gray-100 pb-1">
-                                                        <span class="text-gray-500">Equipo Sustituto:</span>
-                                                        <a href="{{ route('asset-management.assets.show', $maintenance->substituteAsset) }}" class="text-blue-600 hover:underline">
-                                                            {{ $maintenance->substituteAsset->asset_tag }}
-                                                        </a>
-                                                    </li>
-                                                    @endif
-                                                    <li class="flex justify-between border-b border-gray-100 pb-1">
-                                                        <span class="text-gray-500">Inicio:</span>
-                                                        <span class="font-medium text-gray-900">{{ \Carbon\Carbon::parse($maintenance->start_date)->format('d/m/Y') }}</span>
-                                                    </li>
-                                                </ul>
-
-                                                @php
-                                                    $photoCount = ($maintenance->photo_1_path ? 1 : 0) + ($maintenance->photo_2_path ? 1 : 0) + ($maintenance->photo_3_path ? 1 : 0);
-                                                @endphp
-                                                @if($photoCount > 0)
-                                                    <div class="flex items-center gap-2 mt-2">
-                                                        <span class="text-xs font-semibold text-gray-500">Evidencias:</span>
-                                                        <div class="flex -space-x-2">
-                                                            @for($i=1; $i<=$photoCount; $i++)
-                                                                <div class="w-6 h-6 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-[8px] text-gray-600">
-                                                                    <i class="fas fa-camera"></i>
-                                                                </div>
-                                                            @endfor
-                                                        </div>
-                                                    </div>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    @empty
-                        <tbody>
-                            <tr>
-                                <td colspan="5" class="px-6 py-12 text-center">
-                                    <div class="flex flex-col items-center justify-center">
-                                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                            <i class="fas fa-clipboard-check text-gray-400 text-2xl"></i>
-                                        </div>
-                                        <h3 class="text-lg font-medium text-gray-900">Sin mantenimientos registrados</h3>
-                                        <p class="text-gray-500 mt-1">No se encontraron registros que coincidan con tu búsqueda.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    @endforelse
-                </table>
-            </div>
-            
-            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                {!! $maintenances->links() !!}
             </div>
         </div>
+    @endif
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-20">
+        <form action="{{ route('asset-management.maintenances.update', $maintenance) }}" 
+              method="POST" 
+              enctype="multipart/form-data"
+              x-data="{ 
+                  endDate: '{{ old('end_date', $maintenance->end_date ? $maintenance->end_date->format('Y-m-d') : '') }}',
+                  finalStatus: '{{ $maintenance->asset->status === 'De Baja' ? 'De Baja' : 'En Almacén' }}'
+              }">
+            @csrf
+            @method('PUT')
+
+            <fieldset {{ !$canEdit ? 'disabled' : '' }} class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <div class="lg:col-span-2 space-y-6">
+                    
+                    <div class="glass-card rounded-2xl p-6 md:p-8 bg-white">
+                        <h3 class="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4 mb-6 flex items-center">
+                            <i class="fas fa-clipboard-list text-[var(--primary)] mr-2 bg-blue-50 p-2 rounded-lg"></i>
+                            Reporte Técnico
+                        </h3>
+
+                        <div class="space-y-6">
+                            <div class="bg-blue-50/50 p-5 rounded-xl border border-blue-100 transition-all"
+                                 :class="endDate ? 'ring-2 ring-green-400 bg-green-50/30' : ''">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Finalización / Cierre</label>
+                                <div class="relative">
+                                    <i class="fas fa-calendar-check form-floating-icon z-10"></i>
+                                    <input type="date" 
+                                           name="end_date" 
+                                           x-model="endDate"
+                                           class="modern-input w-full py-3 form-input cursor-pointer">
+                                </div>
+                            </div>
+
+                            <div x-show="endDate" x-transition 
+                                 class="bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Conclusión del Servicio <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <i class="fas fa-gavel form-floating-icon z-10"></i>
+                                    <select name="final_asset_status" 
+                                            x-model="finalStatus"
+                                            @change="if(finalStatus === 'process') { endDate = ''; finalStatus = 'En Almacén'; }"
+                                            class="modern-input w-full py-3 form-select cursor-pointer">
+                                        <option value="En Almacén">Equipo Reparado (Enviar a Almacén)</option>
+                                        <option value="De Baja">Equipo Irreparable (Dar de Baja)</option>
+                                        <option disabled>──────────────────────────</option>
+                                        <option value="process" class="text-blue-600 font-bold">
+                                            &#8634; Regresar a "En Proceso"
+                                        </option>
+                                    </select>
+                                </div>
+                                <p class="text-xs mt-2" :class="finalStatus === 'De Baja' ? 'text-red-600 font-bold' : 'text-gray-500'">
+                                    <i class="fas" :class="finalStatus === 'De Baja' ? 'fa-exclamation-triangle' : 'fa-info-circle'"></i>
+                                    <span x-text="finalStatus === 'De Baja' ? 'ADVERTENCIA: El activo cambiará a estatus De Baja.' : 'El activo quedará disponible para nueva asignación.'"></span>
+                                </p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Acciones Realizadas <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <i class="fas fa-tools form-floating-icon top-6"></i>
+                                    <textarea name="actions_taken" rows="4" required
+                                              class="modern-input w-full py-3 form-textarea"
+                                              placeholder="Describa detalladamente la reparación o mantenimiento...">{{ old('actions_taken', $maintenance->actions_taken) }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Insumos / Partes</label>
+                                    <div class="relative">
+                                        <i class="fas fa-microchip form-floating-icon top-6"></i>
+                                        <textarea name="parts_used" rows="3"
+                                                  class="modern-input w-full py-3 form-textarea"
+                                                  placeholder="Ej: Batería, SSD...">{{ old('parts_used', $maintenance->parts_used) }}</textarea>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Costo Total</label>
+                                    <div class="relative">
+                                        <i class="fas fa-dollar-sign form-floating-icon"></i>
+                                        <input type="number" name="cost" step="0.01" 
+                                               value="{{ old('cost', $maintenance->cost) }}"
+                                               class="modern-input w-full py-3 form-input text-lg font-mono" placeholder="0.00">
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-1 pl-2">Moneda Nacional (MXN)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-6 md:p-8 bg-white">
+                        <h3 class="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4 mb-6 flex items-center">
+                            <i class="fas fa-camera text-[var(--accent)] mr-2 bg-orange-50 p-2 rounded-lg"></i>
+                            Evidencia Fotográfica
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            @for ($i = 1; $i <= 3; $i++)
+                                @php
+                                    $photoPath = "photo_{$i}_path";
+                                    $currentPhoto = $maintenance->$photoPath;
+                                    $photoUrl = $currentPhoto ? Storage::disk('s3')->url($currentPhoto) : null;
+                                @endphp
+
+                                <div x-data="{ 
+                                        hasPhoto: {{ $currentPhoto ? 'true' : 'false' }}, 
+                                        markedForDeletion: false,
+                                        previewUrl: '{{ $photoUrl }}'
+                                     }" 
+                                     class="relative group">
+                                    
+                                    <input type="hidden" name="remove_photo_{{ $i }}" x-model="markedForDeletion">
+                                    
+                                    <div x-show="hasPhoto && !markedForDeletion" class="relative h-40 rounded-xl overflow-hidden border border-gray-200 shadow-sm group-hover:shadow-md transition-all">
+                                        <img :src="previewUrl" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                                        
+                                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button type="button" @click="markedForDeletion = true" 
+                                                    class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transform hover:scale-110 transition-all shadow-lg" title="Eliminar Foto">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                        <div class="absolute top-2 left-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm">
+                                            Foto {{ $i }}
+                                        </div>
+                                    </div>
+
+                                    <div x-show="!hasPhoto || markedForDeletion" 
+                                         class="h-40 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-gray-50 hover:bg-white hover:border-[var(--primary)] transition-all cursor-pointer group-hover:shadow-md relative">
+                                        
+                                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-300 mb-2 group-hover:text-[var(--primary)] transition-colors"></i>
+                                        <span class="text-xs font-semibold text-gray-500 group-hover:text-[var(--primary)]">Subir Foto {{ $i }}</span>
+                                        
+                                        <input type="file" name="photo_{{ $i }}" accept="image/*"
+                                               class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                               @change="hasPhoto = true; markedForDeletion = false;">
+                                    </div>
+                                    
+                                    <p x-show="markedForDeletion" class="text-[10px] text-red-500 mt-1 text-center font-bold animate-pulse">
+                                        <i class="fas fa-times-circle"></i> Se eliminará al guardar
+                                    </p>
+                                </div>
+                            @endfor
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    
+                    <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-[var(--primary)]">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Sobre el Activo</h4>
+                        
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="h-16 w-16 rounded-xl bg-gray-100 flex items-center justify-center text-3xl text-[var(--primary)]">
+                                @if($maintenance->asset->model->category->name == 'Laptop') <i class="fas fa-laptop"></i>
+                                @elseif($maintenance->asset->model->category->name == 'Celular') <i class="fas fa-mobile-alt"></i>
+                                @else <i class="fas fa-box"></i> @endif
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-800 leading-tight">{{ $maintenance->asset->model->name }}</div>
+                                <div class="text-xs text-gray-500 mt-1">{{ $maintenance->asset->model->manufacturer->name }}</div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between border-b border-gray-100 pb-2">
+                                <span class="text-gray-500">Serie:</span>
+                                <span class="font-mono font-medium text-gray-800">{{ $maintenance->asset->serial_number }}</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-100 pb-2">
+                                <span class="text-gray-500">Ubicación:</span>
+                                <span class="font-medium text-gray-800">{{ $maintenance->asset->site->name }}</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-100 pb-2">
+                                <span class="text-gray-500">Diagnóstico Inicial:</span>
+                            </div>
+                            <p class="text-gray-600 bg-gray-50 p-3 rounded-lg text-xs italic">
+                                "{{ $maintenance->diagnosis }}"
+                            </p>
+                        </div>
+                    </div>
+
+                    @if ($maintenance->substitute_asset_id)
+                        <div class="bg-amber-50 rounded-2xl p-5 border border-amber-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 text-amber-100 text-6xl opacity-50">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <div class="relative z-10">
+                                <h4 class="text-amber-800 font-bold text-sm flex items-center mb-2">
+                                    <i class="fas fa-exclamation-triangle mr-2"></i> Activo Sustituto
+                                </h4>
+                                <p class="text-xs text-amber-700 mb-3 leading-relaxed">
+                                    El equipo <strong>{{ $maintenance->substituteAsset->asset_tag }}</strong> está prestado temporalmente.
+                                </p>
+                                <div class="text-[10px] bg-white/50 p-2 rounded border border-amber-200 text-amber-900 font-semibold text-center">
+                                    Se devolverá automáticamente al finalizar.
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($canEdit)
+                        <div class="sticky top-6">
+                            <button type="submit" 
+                                    class="w-full py-4 rounded-xl font-bold text-white shadow-lg shadow-blue-900/20 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex items-center justify-center group"
+                                    :class="endDate ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-[var(--primary)] hover:bg-[var(--primary-light)]'">
+                                
+                                <template x-if="endDate">
+                                    <span class="flex items-center">
+                                        <i class="fas fa-check-circle text-xl mr-3 animate-bounce"></i>
+                                        <span>FINALIZAR TICKET</span>
+                                    </span>
+                                </template>
+                                
+                                <template x-if="!endDate">
+                                    <span class="flex items-center">
+                                        <i class="fas fa-save text-xl mr-3 group-hover:rotate-12 transition-transform"></i>
+                                        <span>GUARDAR AVANCES</span>
+                                    </span>
+                                </template>
+                            </button>
+                            <p class="text-center text-xs text-gray-400 mt-3">
+                                Todos los cambios quedan registrados en el historial.
+                            </p>
+                        </div>
+                    @endif
+
+                </div>
+            </fieldset>
+        </form>
     </div>
 </div>
 @endsection

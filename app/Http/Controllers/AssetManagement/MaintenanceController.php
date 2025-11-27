@@ -143,6 +143,14 @@ class MaintenanceController extends Controller
 
     public function update(Request $request, Maintenance $maintenance)
     {
+        if ($maintenance->end_date) {
+            $user = Auth::user();
+            $isSuperAdmin = $user && $user->is_area_admin && $user->area?->name === 'Administración';
+
+            if (!$isSuperAdmin) {
+                return back()->with('error', 'Este mantenimiento ya fue finalizado. Solo un Super Administrador puede modificarlo.');
+            }
+        }
         $data = $request->validate([
             'end_date' => 'nullable|date', 
             'final_asset_status' => 'nullable|in:En Almacén,De Baja',

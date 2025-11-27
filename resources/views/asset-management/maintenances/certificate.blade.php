@@ -161,7 +161,6 @@
                             </div>
                         </td>
                     @endforeach
-                    {{-- Rellenar celdas vacías para mantener estructura --}}
                     @for($i = count($evidencePhotos); $i < 3; $i++) <td style="width: 33%; border: none;"></td> @endfor
                 </tr>
             </table>
