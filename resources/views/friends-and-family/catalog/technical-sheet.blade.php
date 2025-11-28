@@ -5,235 +5,283 @@
     <title>Ficha Técnica - {{ $product->sku }}</title>
     <style>
         @page { margin: 0px; padding: 0px; }
+        
         body {
-            background-color: #00683f;
             font-family: 'Helvetica', 'Arial', sans-serif;
             margin: 0;
-            padding: 30px;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: #2d3748;
+        }
+
+        .main-container {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+        }
+
+        .sidebar {
+            width: 30%;
+            background-color: #00683f;
+            color: #ffffff;
+            vertical-align: top;
+            padding: 40px 30px;
+            height: 100vh;
+        }
+
+        .content {
+            width: 70%;
+            vertical-align: top;
+            padding: 40px;
+            background-color: #ffffff;
+        }
+
+        .logo-box {
+            background-color: #ffffff;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .logo-img {
+            width: 100%;
+            max-width: 180px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 5px;
+            margin-top: 30px;
         }
         
-        .main-card {
-            background-color: #ffffff;
-            border-radius: 40px;
-            width: 100%;
-            height: 980px;
-            position: relative;
+        .sidebar-value-large {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 5px;
         }
 
-        .header-title {
+        .sidebar-value {
+            font-size: 16px;
+            font-weight: 500;
+            color: #ffffff;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 10px;
+        }
+
+        .product-brand {
+            font-size: 50px;
+            font-weight: 900;
+            color: #1a202c;
+            line-height: 0.9;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .product-sku {
+            font-size: 20px;
+            color: #00683f;
+            font-weight: bold;
+            margin-bottom: 30px;
+            display: inline-block;
+            background: #e6fffa;
+            padding: 5px 15px;
+            border-radius: 50px;
+        }
+
+        .image-stage {
+            width: 100%;
+            height: 450px;
             text-align: center;
-            font-size: 28px;
-            padding-top: 40px;
             margin-bottom: 40px;
-            color: #000;
-            font-weight: normal;
+        }
+        
+        .main-bottle {
+            height: 100%;
+            max-height: 450px;
+            object-fit: contain;
+            filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.15));
         }
 
-        .layout-table {
+        .metrics-grid {
             width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
+            border-collapse: separate;
+            border-spacing: 15px;
         }
 
-        .col-left { width: 32%; vertical-align: top; padding-left: 30px; }
-        .col-center { width: 36%; vertical-align: top; text-align: center; padding-top: 20px; }
-        .col-right { width: 32%; vertical-align: top; padding-right: 30px; }
-
-        .item-table { width: 100%; margin-bottom: 25px; border-collapse: collapse; }
-
-        .label { font-weight: bold; font-size: 11px; color: #000; margin-bottom: 3px; display: block; }
-        .value { font-size: 11px; color: #555; display: block; }
-
-        .icon-container {
-            width: 40px;
-            height: 40px;
-            display: block;
+        .metric-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
         }
-        .icon-container svg,
-        .icon-container svg path, 
-        .icon-container svg rect, 
-        .icon-container svg circle, 
-        .icon-container svg polygon {
-            fill: #00683f !important;
-            width: 100% !important;
-            height: auto !important;
+
+        .metric-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #718096;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
-        .icon-container.narrow { width: 25px; margin-left: 8px; }
 
+        .metric-number {
+            font-size: 24px;
+            font-weight: 800;
+            color: #2d3748;
+        }
 
-        .cell-icon-left { width: 50px; vertical-align: middle; text-align: left; }
-        .cell-text-left { vertical-align: middle; text-align: left; padding-left: 10px; }
-        .cell-text-right { vertical-align: middle; text-align: right; padding-right: 10px; }
-        .cell-icon-right { width: 50px; vertical-align: middle; text-align: right; }
+        .metric-sub {
+            font-size: 11px;
+            color: #00683f;
+            margin-top: 3px;
+        }
 
-        .bottle-img { max-width: 100%; max-height: 500px; object-fit: contain; }
-        .brand-name { font-size: 22px; font-weight: bold; color: #00683f; margin-top: 15px; text-transform: uppercase; }
-        .product-type { font-size: 14px; color: #666; margin-top: 5px; text-transform: uppercase; }
+        .progress-bg {
+            background: #e2e8f0;
+            height: 6px;
+            width: 100%;
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: #f77b33ff;
+            height: 100%;
+        }
 
-        .footer { position: absolute; bottom: 30px; width: 100%; text-align: center; }
-        .logo-footer { width: 120px; height: auto; }
+        .tech-footer {
+            margin-top: 40px;
+            border-top: 2px solid #edf2f7;
+            padding-top: 20px;
+            font-size: 10px;
+            color: #a0aec0;
+            text-align: right;
+        }
 
     </style>
 </head>
 <body>
     @php
-        function getInlineSvg($filename) {
+        $largo = floatval($product->length);
+        $ancho = floatval($product->width);
+        $alto  = floatval($product->height);
+        
+        $volumen_cm3 = $largo * $ancho * $alto;
+        $volumen_m3  = $volumen_cm3 / 1000000;
+        
+        $cajas_por_cama = intval($extra['boxes_per_layer'] ?? 0);
+        $camas_por_pallet = intval($extra['layers_per_pallet'] ?? 0);
+        $total_cajas_pallet = $cajas_por_cama * $camas_por_pallet;
+        
+        $piezas_por_caja = intval($product->pieces_per_box);
+        $total_unidades_pallet = $total_cajas_pallet * $piezas_por_caja;
+
+        function getIconUrl($filename) {
             try {
-                $content = Illuminate\Support\Facades\Storage::disk('s3')->get('IconosFichaTecnica/' . $filename);
-                return $content;
-            } catch (\Exception $e) {
-                return '';
-            }
+                $cleanName = str_replace('.svg', '', $filename);
+                if (!str_ends_with($cleanName, '.png')) $cleanName .= '.png';
+                return Illuminate\Support\Facades\Storage::disk('s3')->url('IconosFichaTecnica/' . $cleanName);
+            } catch (\Exception $e) { return ''; }
         }
     @endphp
 
-    <div class="main-card">
-        
-        <h1 class="header-title">Ficha técnica</h1>
+    <table class="main-container">
+        <tr>
+            <td class="sidebar">
+                
+                <div class="logo-box">
+                    <img src="{{ $logo_url }}" class="logo-img" alt="Logo">
+                </div>
 
-        <table class="layout-table">
-            <tr>
-                <td class="col-left">
-                    
-                    <table class="item-table">
-                        <tr>
-                            <td class="cell-icon-left">
-                                <div class="icon-container">
-                                    {!! getInlineSvg('SKU.svg') !!}
-                                </div>
-                            </td>
-                            <td class="cell-text-left">
-                                <span class="label">SKU</span>
-                                <span class="value">{{ $product->sku }}</span>
-                            </td>
-                        </tr>
-                    </table>
+                <div class="sidebar-title">Clasificación</div>
+                <div class="sidebar-value-large">{{ $product->type ?? 'General' }}</div>
+                
+                <div class="sidebar-title" style="margin-top: 40px;">Especificaciones Base</div>
+                
+                <div class="sidebar-title">SKU ID</div>
+                <div class="sidebar-value">{{ $product->sku }}</div>
 
-                    <table class="item-table">
-                        <tr>
-                            <td class="cell-icon-left">
-                                <div class="icon-container">
-                                    {!! getInlineSvg('Descripción.svg') !!}
-                                </div>
-                            </td>
-                            <td class="cell-text-left">
-                                <span class="label">Descripción</span>
-                                <span class="value">{{ Str::limit($product->description, 50) }}</span>
-                            </td>
-                        </tr>
-                    </table>
+                <div class="sidebar-title">Código UPC</div>
+                <div class="sidebar-value">{{ $product->upc ?? 'No Asignado' }}</div>
 
-                    <table class="item-table">
-                        <tr>
-                            <td class="cell-icon-left">
-                                <div class="icon-container">
-                                    {!! getInlineSvg('UPC Caja.svg') !!}
-                                </div>
-                            </td>
-                            <td class="cell-text-left">
-                                <span class="label">UPC Caja</span>
-                                <span class="value">{{ $product->upc ?? 'No Aplica' }}</span>
-                            </td>
-                        </tr>
-                    </table>
+                <div class="sidebar-title">Alcohol Vol.</div>
+                <div class="sidebar-value" style="border:none; padding-bottom:0;">
+                    {{ $extra['alcohol_vol'] ?? 'N/A' }}
+                    <div class="progress-bg">
+                        <div class="progress-fill" style="width: {{ floatval($extra['alcohol_vol'] ?? 40) }}%;"></div>
+                    </div>
+                </div>
 
-                    <table class="item-table">
-                        <tr>
-                            <td class="cell-icon-left">
-                                <div class="icon-container">
-                                    {!! getInlineSvg('Graduación Alcoholica.svg') !!}
-                                </div>
-                            </td>
-                            <td class="cell-text-left">
-                                <span class="label">Graduación Alcohólica</span>
-                                <span class="value">{{ $extra['alcohol_vol'] ?? 'N/A' }}</span>
-                            </td>
-                        </tr>
-                    </table>
+                <div style="margin-top: auto; padding-top: 100px;">
+                    <div class="sidebar-title">Dimensión Unitaria</div>
+                    <div style="font-size: 11px; color: #fff;">
+                        Largo: {{ $product->length }}cm <br>
+                        Ancho: {{ $product->width }}cm <br>
+                        Alto: {{ $product->height }}cm
+                    </div>
+                </div>
+            </td>
 
-                </td>
+            <td class="content">
+                
+                <div class="product-sku">FICHA TÉCNICA #{{ $product->id }}</div>
+                <h1 class="product-brand">{{ $product->brand ?? 'PRODUCTO' }}</h1>
+                <p style="color: #718096; margin-bottom: 30px; line-height: 1.5;">
+                    {{ $product->description }}
+                </p>
 
-                <td class="col-center">
+                <div class="image-stage">
                     @if($product->photo_path)
-                        {{-- La imagen del producto sigue siendo un <img> normal --}}
-                        <img src="{{ $product->photo_url }}" class="bottle-img">
-                    @else
-                        <div style="height:300px; line-height:300px; background:#f0f0f0; color:#aaa; border-radius:20px;">
-                            Sin Imagen
-                        </div>
+                        <img src="{{ $product->photo_url }}" class="main-bottle">
                     @endif
+                </div>
 
-                    <div class="brand-name">{{ $product->brand ?? 'MARCA' }}</div>
-                    <div class="product-type">{{ $product->type ?? 'Producto' }}</div>
-                </td>
+                <table class="metrics-grid">
+                    <tr>
+                        <td class="metric-card">
+                            <div class="metric-label">Configuración Caja</div>
+                            <div class="metric-number">{{ $product->pieces_per_box }} <span style="font-size:12px;">Pzas</span></div>
+                            <div class="metric-sub">Peso Master: {{ $extra['master_box_weight'] ?? '-' }}</div>
+                        </td>
 
-                <td class="col-right">
-                    
-                    <table class="item-table">
-                        <tr>
-                            <td class="cell-text-right">
-                                <span class="label">Cantidad por caja</span>
-                                <span class="value">{{ $product->pieces_per_box ?? '1' }}</span>
-                            </td>
-                            <td class="cell-icon-right">
-                                <div class="icon-container">
-                                    {!! getInlineSvg('Cantidad Caja.svg') !!}
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
+                        <td class="metric-card">
+                            <div class="metric-label">Volumetría</div>
+                            <div class="metric-number">{{ number_format($volumen_cm3, 0) }} <span style="font-size:12px;">cm³</span></div>
+                            <div class="metric-sub">Aprox. {{ number_format($volumen_m3, 4) }} m³</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="metric-card">
+                            <div class="metric-label">Eficiencia Pallet</div>
+                            <div class="metric-number">{{ $total_cajas_pallet }} <span style="font-size:12px;">Cajas Totales</span></div>
+                            <div class="metric-sub">
+                                {{ $cajas_por_cama }} Cajas x {{ $camas_por_pallet }} Camas
+                            </div>
+                        </td>
 
-                    <table class="item-table">
-                        <tr>
-                            <td class="cell-text-right">
-                                <span class="label">Peso de caja Master</span>
-                                <span class="value">{{ $extra['master_box_weight'] ?? 'N/A' }}</span>
-                            </td>
-                            <td class="cell-icon-right">
-                                <div class="icon-container">
-                                    {!! getInlineSvg('Peso caja master.svg') !!}
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
+                        <td class="metric-card" style="background-color: #f0fff4; border-color: #c6f6d5;">
+                            <div class="metric-label" style="color: #276749;">Total Unidades / Pallet</div>
+                            <div class="metric-number" style="color: #22543d;">{{ number_format($total_unidades_pallet) }}</div>
+                            <div class="metric-sub" style="color: #2f855a;">Botellas por tarima</div>
+                        </td>
+                    </tr>
+                </table>
 
-                    <table class="item-table">
-                        <tr>
-                            <td class="cell-text-right">
-                                <span class="label">Cajas por Cama</span>
-                                <span class="value">{{ $extra['boxes_per_layer'] ?? 'N/A' }}</span>
-                            </td>
-                            <td class="cell-icon-right">
-                                <div class="icon-container">
-                                    {!! getInlineSvg('Cajas por cama.svg') !!}
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
-
-                    <table class="item-table">
-                        <tr>
-                            <td class="cell-text-right">
-                                <span class="label">Camas por pallet</span>
-                                <span class="value">{{ $extra['layers_per_pallet'] ?? 'N/A' }}</span>
-                            </td>
-                            <td class="cell-icon-right">
-                                <div class="icon-container">
-                                    {!! getInlineSvg('Camas por tarima.svg') !!}
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
-
-                </td>
-            </tr>
-        </table>
-
-        <div class="footer">
-            {{-- El logo del footer sigue siendo una imagen normal --}}
-            <img src="{{ $logo_url }}" class="logo-footer">
-        </div>
-
-    </div>
+                <div class="tech-footer">
+                    Cálculos generados automáticamente por el sistema Control Tower de Minmer Global | {{ date('Y-m-d H:i') }}
+                </div>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
