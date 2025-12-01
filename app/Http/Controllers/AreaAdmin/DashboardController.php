@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class DashboardController extends Controller
 {
@@ -42,9 +43,12 @@ class DashboardController extends Controller
         $user = Auth::user();
         $isAreaAdmin = $user->is_area_admin;
 
+        $corporateAreas = ['Consorcio Monter', 'Empresa1', 'Empresa2', 'Empresa3'];
+
         $areaScopeIds = collect();
         $areaName = "";
         $teamMembers = collect();
+        
         $kpiQuery = FileLink::query();
         $activityQuery = ActivityLog::query();
 
@@ -53,15 +57,11 @@ class DashboardController extends Controller
         
         if ($isAreaAdmin) {
             $areaScopeIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
-            $areaNames = Area::whereIn('id', $areaScopeIds)->orderBy('name')->pluck('name');
-            $areaName = $areaNames->implode(', ');
-
-            $teamMembers = \App\Models\OrganigramMember::whereIn('area_id', $areaScopeIds)
-                ->with('position:id,name')
-                ->select('id', 'name', 'position_id', 'profile_photo_path', 'email')
-                ->orderBy('name')
-                ->get();
+            $areaNamesCollection = Area::whereIn('id', $areaScopeIds)->get();
+            $areaName = $areaNamesCollection->pluck('name')->implode(', ');
             
+            $isCorporateContext = $areaNamesCollection->whereIn('name', $corporateAreas)->isNotEmpty();
+
             $kpiQuery->whereHas('folder', function($q) use ($areaScopeIds) {
                 $q->whereIn('area_id', $areaScopeIds);
             });
@@ -70,22 +70,17 @@ class DashboardController extends Controller
             });
             
             $folderCount = Folder::whereIn('area_id', $areaScopeIds)->count();
-            $userCount = $teamMembers->count();
 
         } else {
             $areaName = $user->area->name ?? 'Mi Área';
+            $areaScopeIds = [$user->area_id];
 
-            $teamMembers = \App\Models\OrganigramMember::where('area_id', $user->area_id)
-                ->with('position:id,name')
-                ->select('id', 'name', 'position_id', 'profile_photo_path', 'email')
-                ->orderBy('name')
-                ->get();
-            
+            $isCorporateContext = in_array($areaName, $corporateAreas);
+
             $kpiQuery->where('user_id', $user->id);
             $activityQuery->where('user_id', $user->id); 
             
             $folderCount = Folder::where('user_id', $user->id)->count();
-            $userCount = null;
 
             $myProfile = OrganigramMember::where('user_id', $user->id)
                 ->with('position:id,name')
@@ -97,9 +92,51 @@ class DashboardController extends Controller
                 ->latest('updated_at')
                 ->take(5)
                 ->get();
-            
         }
 
+        
+        if ($isCorporateContext) {
+            $rawMembers = User::whereIn('area_id', $areaScopeIds)
+                ->select('id', 'name', 'position', 'profile_photo_path', 'email')
+                ->orderBy('name')
+                ->get();
+
+            $teamMembers = $rawMembers->map(function ($member) {
+                $photoUrl = null;
+                if ($member->profile_photo_path) {
+                    $photoUrl = Storage::disk('s3')->url($member->profile_photo_path);
+                }
+
+                return [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                    'position' => (object)['name' => $member->position ?? 'Sin puesto'],
+                    'email' => $member->email,
+                    'profile_photo_path_url' => $photoUrl
+                ];
+            });
+
+        } else {
+            $rawMembers = \App\Models\OrganigramMember::whereIn('area_id', $areaScopeIds)
+                ->with('position:id,name')
+                ->select('id', 'name', 'position_id', 'profile_photo_path', 'email')
+                ->orderBy('name')
+                ->get();
+
+            $teamMembers = $rawMembers->map(function ($member) {
+                return [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                    'position' => $member->position,
+                    'email' => $member->email,
+                    'profile_photo_path_url' => $member->profile_photo_path 
+                        ? asset('storage/' . $member->profile_photo_path)
+                        : null
+                ];
+            });
+        }
+
+        $userCount = $isAreaAdmin ? $teamMembers->count() : null;
         $fileCount = (clone $kpiQuery)->where('type', 'file')->count();
         $linkCount = (clone $kpiQuery)->where('type', 'link')->count();
         
