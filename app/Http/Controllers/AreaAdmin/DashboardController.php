@@ -86,6 +86,12 @@ class DashboardController extends Controller
                 ->with('position:id,name')
                 ->select('id', 'name', 'position_id', 'profile_photo_path', 'user_id')
                 ->first();
+                
+            if ($myProfile) {
+                $myProfile->profile_photo_path_url = $myProfile->profile_photo_path 
+                    ? Storage::disk('s3')->url($myProfile->profile_photo_path) 
+                    : null;
+            }
 
             $recentFiles = FileLink::where('user_id', $user->id)
                 ->with('folder:id,name')
@@ -94,7 +100,6 @@ class DashboardController extends Controller
                 ->get();
         }
 
-        
         if ($isCorporateContext) {
             $rawMembers = User::whereIn('area_id', $areaScopeIds)
                 ->select('id', 'name', 'position', 'profile_photo_path', 'email')
@@ -102,22 +107,19 @@ class DashboardController extends Controller
                 ->get();
 
             $teamMembers = $rawMembers->map(function ($member) {
-                $photoUrl = null;
-                if ($member->profile_photo_path) {
-                    $photoUrl = Storage::disk('s3')->url($member->profile_photo_path);
-                }
-
                 return [
                     'id' => $member->id,
                     'name' => $member->name,
                     'position' => (object)['name' => $member->position ?? 'Sin puesto'],
                     'email' => $member->email,
-                    'profile_photo_path_url' => $photoUrl
+                    'profile_photo_path_url' => $member->profile_photo_path 
+                        ? Storage::disk('s3')->url($member->profile_photo_path)
+                        : null
                 ];
             });
 
         } else {
-            $rawMembers = \App\Models\OrganigramMember::whereIn('area_id', $areaScopeIds)
+            $rawMembers = OrganigramMember::whereIn('area_id', $areaScopeIds)
                 ->with('position:id,name')
                 ->select('id', 'name', 'position_id', 'profile_photo_path', 'email')
                 ->orderBy('name')
@@ -130,13 +132,14 @@ class DashboardController extends Controller
                     'position' => $member->position,
                     'email' => $member->email,
                     'profile_photo_path_url' => $member->profile_photo_path 
-                        ? asset('storage/' . $member->profile_photo_path)
+                        ? Storage::disk('s3')->url($member->profile_photo_path)
                         : null
                 ];
             });
         }
 
         $userCount = $isAreaAdmin ? $teamMembers->count() : null;
+        
         $fileCount = (clone $kpiQuery)->where('type', 'file')->count();
         $linkCount = (clone $kpiQuery)->where('type', 'link')->count();
         
@@ -153,7 +156,7 @@ class DashboardController extends Controller
                 WHEN action LIKE "%Editó%" OR action LIKE "%Actualizó%" THEN "Ediciones"
                 WHEN action LIKE "%Descargó%" THEN "Descargas"
                 ELSE "Otros"
-              END as action_type'), DB::raw('count(*) as total'))
+            END as action_type'), DB::raw('count(*) as total'))
             ->whereDate('created_at', '>=', now()->subDays(30))
             ->groupBy('action_type')
             ->orderByDesc('total')
