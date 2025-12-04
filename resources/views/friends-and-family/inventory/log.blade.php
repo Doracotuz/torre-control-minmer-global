@@ -116,8 +116,16 @@
                                     
                                     <td class="px-6 py-4">
                                         <div class="flex items-center gap-4">
-                                            <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:text-[#2c3856] transition-colors">
-                                                <i class="fas fa-box"></i>
+                                            <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-gray-50 border border-gray-200 overflow-hidden flex items-center justify-center">
+                                                <template x-if="mov.product && mov.product.photo_url">
+                                                    <img :src="mov.product.photo_url" :alt="mov.product.sku" class="h-full w-full object-contain bg-white">
+                                                </template>
+                                                
+                                                <template x-if="!mov.product || !mov.product.photo_url">
+                                                    <div class="text-gray-400 group-hover:text-[#2c3856] transition-colors">
+                                                        <i class="fas fa-box"></i>
+                                                    </div>
+                                                </template>
                                             </div>
                                             <div>
                                                 <div class="text-sm font-bold text-[#2c3856]" x-text="mov.product ? mov.product.description : 'Producto Eliminado'"></div>
