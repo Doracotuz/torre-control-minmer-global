@@ -6,9 +6,18 @@
         .animate-slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(20px); }
         @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
         .floating-card { background: white; border-radius: 24px; box-shadow: 0 10px 40px -10px rgba(44, 56, 86, 0.08); border: 1px solid rgba(255, 255, 255, 0.5); }
-        .table-row-modern { transition: all 0.2s ease; border-bottom: 1px solid #f3f4f6; }
+        .table-row-modern {
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f3f4f6;
+        }
         .table-row-modern:last-child { border-bottom: none; }
-        .table-row-modern:hover { background-color: #f8fafc; transform: scale(1.005); box-shadow: 0 4px 12px rgba(0,0,0,0.03); z-index: 10; position: relative; border-radius: 12px; }
+
+        .table-row-modern:hover {
+            background-color: #f8fafc;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            z-index: 10;
+            position: relative;
+        }
         .input-modern { background-color: #f9fafb; border: 2px solid transparent; transition: all 0.3s ease; }
         .input-modern:focus { background-color: white; border-color: #ff9c00; box-shadow: 0 0 0 4px rgba(255, 156, 0, 0.1); }
         .btn-animated { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -102,6 +111,10 @@
                                                class="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all text-xs font-bold flex items-center gap-2 mr-2 border border-indigo-100 hover:border-indigo-600">
                                                 <i class="fas fa-store-alt"></i> Sucursales
                                             </a>
+                                            <a :href="'/ff/admin/clients/' + item.id + '/conditions'" 
+                                            class="px-3 py-1.5 rounded-lg bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white transition-all text-xs font-bold flex items-center gap-2 mr-2 border border-teal-100 hover:border-teal-600">
+                                                <i class="fas fa-clipboard-check"></i> Condiciones
+                                            </a>                                            
                                         @endif
 
                                         <button @click="openEdit(item.id, item.name)" class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center shadow-sm" title="Editar"><i class="fas fa-pencil-alt text-sm"></i></button>

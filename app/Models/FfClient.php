@@ -13,4 +13,9 @@ class FfClient extends Model
     {
         return $this->hasMany(FfClientBranch::class, 'ff_client_id');
     }
+
+    public function deliveryConditions()
+    {
+        return $this->hasOne(FfClientDeliveryCondition::class, 'ff_client_id');
+    }
 }

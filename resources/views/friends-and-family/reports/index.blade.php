@@ -1,5 +1,6 @@
 <x-app-layout>
-    <div class="min-h-screen bg-gray-50/50">
+    <x-slot name="header"></x-slot>
+    <div class="min-h-screen">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             
             <div class="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">

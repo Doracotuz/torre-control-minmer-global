@@ -126,5 +126,123 @@ class FfAdministrationController extends Controller
         $branch->delete();
         return redirect()->back()->with('success', 'Sucursal eliminada correctamente.');
     }
+
+    public function conditionsEdit(FfClient $client)
+    {
+        $conditions = $client->deliveryConditions ?? new \App\Models\FfClientDeliveryCondition();
+        
+        return view('friends-and-family.admin.client-conditions', compact('client', 'conditions'));
+    }
+
+    public function conditionsUpdate(Request $request, FfClient $client)
+    {
+        $booleans = [
+            'revision_upc', 'distribucion_tienda', 're_etiquetado', 'colocacion_sensor', 
+            'preparado_especial', 'tipo_unidad_aceptada', 'equipo_seguridad', 'registro_patronal', 
+            'entrega_otros_pedidos', 'insumos_herramientas', 'maniobra', 'identificaciones', 
+            'etiqueta_fragil', 'tarima_chep', 'granel', 'tarima_estandar',
+            'doc_factura', 'doc_do', 'doc_carta_maniobra', 'doc_carta_poder', 'doc_orden_compra', 
+            'doc_carta_confianza', 'doc_confirmacion_cita', 'doc_carta_caja_cerrada', 
+            'doc_confirmacion_facturas', 'doc_caratula_entrega', 'doc_pase_vehicular',
+            'evid_folio_recibo', 'evid_factura_sellada', 'evid_sello_tarima', 'evid_etiqueta_recibo', 
+            'evid_acuse_oc', 'evid_hoja_rechazo', 'evid_anotacion_rechazo', 'evid_contrarrecibo', 
+            'evid_formato_reparto'
+        ];
+
+        $sanitizedData = [];
+        foreach ($booleans as $field) {
+            $sanitizedData[$field] = $request->has($field);
+        }
+
+        $conditions = $client->deliveryConditions()->firstOrNew(['ff_client_id' => $client->id]);
+
+        $imageFields = [
+            'prep_img_1', 'prep_img_2', 'prep_img_3',
+            'doc_img_1', 'doc_img_2', 'doc_img_3',
+            'evid_img_1', 'evid_img_2', 'evid_img_3'
+        ];
+
+        foreach ($imageFields as $imgField) {
+            if ($request->hasFile($imgField)) {
+                if ($conditions->$imgField) {
+                    \Illuminate\Support\Facades\Storage::disk('s3')->delete($conditions->$imgField);
+                }
+                
+                $path = $request->file($imgField)->store("ff_conditions/{$client->id}", 's3');
+                $sanitizedData[$imgField] = $path;
+            }
+        }
+
+        $client->deliveryConditions()->updateOrCreate(
+            ['ff_client_id' => $client->id],
+            $sanitizedData
+        );
+
+        return redirect()->back()->with('success', 'Condiciones de entrega actualizadas.');
+    }
+
+    public function exportConditionsPdf(\App\Models\FfClient $client)
+    {
+        $conditions = $client->deliveryConditions;
+        
+        if (!$conditions) {
+            return redirect()->back()->with('error', 'El cliente no tiene condiciones configuradas.');
+        }
+
+        $logoUrl = \Illuminate\Support\Facades\Storage::disk('s3')->url('LogoAzulm.PNG');
+
+        $prepFields = [
+            'Revisión de UPC vs Factura' => 'revision_upc',
+            'Distribución por Tienda' => 'distribucion_tienda',
+            'Re-etiquetado' => 're_etiquetado',
+            'Colocación de Sensor' => 'colocacion_sensor',
+            'Preparado Especial' => 'preparado_especial',
+            'Tipo de Unidad Aceptada' => 'tipo_unidad_aceptada',
+            'Equipo de Seguridad' => 'equipo_seguridad',
+            'Registro Patronal (SUA)' => 'registro_patronal',
+            'Entrega con Otros Pedidos' => 'entrega_otros_pedidos',
+            'Insumos y Herramientas' => 'insumos_herramientas',
+            'Maniobra' => 'maniobra',
+            'Identificaciones para Acceso' => 'identificaciones',
+            'Etiqueta de Frágil' => 'etiqueta_fragil',
+            'Tarima CHEP' => 'tarima_chep',
+            'Granel' => 'granel',
+            'Tarima Estándar' => 'tarima_estandar',
+        ];
+
+        $docFields = [
+            'Factura' => 'doc_factura',
+            'DO' => 'doc_do',
+            'Carta Maniobra' => 'doc_carta_maniobra',
+            'Carta Poder' => 'doc_carta_poder',
+            'Orden de Compra' => 'doc_orden_compra',
+            'Carta Confianza' => 'doc_carta_confianza',
+            'Confirmación de Cita' => 'doc_confirmacion_cita',
+            'Carta Caja Cerrada' => 'doc_carta_caja_cerrada',
+            'Confirmación de Facturas' => 'doc_confirmacion_facturas',
+            'Carátula de Entrega' => 'doc_caratula_entrega',
+            'Pase Vehicular' => 'doc_pase_vehicular',
+        ];
+
+        $evidFields = [
+            'Folio de Recibo' => 'evid_folio_recibo',
+            'Factura Sellada o Firmada' => 'evid_factura_sellada',
+            'Sello Tarima CHEP' => 'evid_sello_tarima',
+            'Etiqueta de Recibo' => 'evid_etiqueta_recibo',
+            'Acuse de Orden de Compra' => 'evid_acuse_oc',
+            'Hoja de Rechazo' => 'evid_hoja_rechazo',
+            'Anotación de Rechazo' => 'evid_anotacion_rechazo',
+            'Contrarrecibo de Equipo' => 'evid_contrarrecibo',
+            'Formato de Reparto' => 'evid_formato_reparto',
+        ];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('friends-and-family.admin.conditions-pdf', compact('client', 'conditions', 'logoUrl', 'prepFields', 'docFields', 'evidFields'));
+        
+        $pdf->setPaper('A4', 'portrait');
+        $pdf->setOption('isRemoteEnabled', true);
+        $pdf->setOption('dpi', 150);
+
+        return $pdf->stream('Condiciones_Entrega_' . \Illuminate\Support\Str::slug($client->name) . '.pdf');
+    }    
     
 }

@@ -803,7 +803,10 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
         Route::get('/clients/{client}/branches', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'branchesIndex'])->name('clients.branches.index');
         Route::post('/clients/{client}/branches', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'branchesStore'])->name('clients.branches.store');
         Route::put('/branches/{branch}', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'branchesUpdate'])->name('clients.branches.update');
-        Route::delete('/branches/{branch}', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'branchesDestroy'])->name('clients.branches.destroy');        
+        Route::delete('/branches/{branch}', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'branchesDestroy'])->name('clients.branches.destroy');
+        Route::get('/clients/{client}/conditions', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'conditionsEdit'])->name('clients.conditions.edit');
+        Route::put('/clients/{client}/conditions', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'conditionsUpdate'])->name('clients.conditions.update');
+        Route::get('/clients/{client}/conditions/pdf', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'exportConditionsPdf'])->name('clients.conditions.pdf');
     });      
 });
 
