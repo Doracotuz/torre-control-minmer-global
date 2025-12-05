@@ -35,13 +35,14 @@ class ffProduct extends Model
     ];
 
     protected $appends = ['photo_url'];
+    
+    protected $with = ['channels'];
 
     public function getPhotoUrlAttribute()
     {
         if ($this->photo_path) {
             return Storage::disk('s3')->url($this->photo_path);
         }
-        
         return 'https://placehold.co/100x100/e0e0e0/909090?text=' . $this->sku;
     }
 
@@ -62,5 +63,10 @@ class ffProduct extends Model
     public function cartItems()
     {
         return $this->hasMany(ffCartItem::class, 'ff_product_id');
-    }    
+    }
+    
+    public function channels()
+    {
+        return $this->belongsToMany(FfSalesChannel::class, 'ff_product_sales_channel', 'ff_product_id', 'ff_sales_channel_id');
+    }
 }

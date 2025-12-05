@@ -4,6 +4,7 @@ namespace App\Http\Controllers\FriendsAndFamily;
 
 use App\Http\Controllers\Controller;
 use App\Models\ffProduct;
+use App\Models\FfSalesChannel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -18,7 +19,8 @@ class FfProductController extends Controller
     public function index()
     {
         $products = ffProduct::orderBy('description')->get();
-        return view('friends-and-family.catalog.index', compact('products'));
+        $channels = FfSalesChannel::where('is_active', true)->orderBy('name')->get();        
+        return view('friends-and-family.catalog.index', compact('products', 'channels'));
     }
 
     public function store(Request $request)
@@ -34,6 +36,8 @@ class FfProductController extends Controller
             'width' => 'nullable|numeric|min:0',
             'height' => 'nullable|numeric|min:0',
             'upc' => 'nullable|string|max:255',
+            'channels' => 'nullable|array',
+            'channels.*' => 'exists:ff_sales_channels,id',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
@@ -46,6 +50,12 @@ class FfProductController extends Controller
         }
 
         $product = ffProduct::create($data);
+        
+        if (!empty($request->channels)) {
+            $product->channels()->sync($request->channels);
+        }
+        
+        $product->load('channels');
 
         return response()->json($product->fresh(), 201); 
     }
@@ -63,6 +73,8 @@ class FfProductController extends Controller
             'width' => 'nullable|numeric|min:0',
             'height' => 'nullable|numeric|min:0',
             'upc' => 'nullable|string|max:255',
+            'channels' => 'nullable|array',
+            'channels.*' => 'exists:ff_sales_channels,id',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'is_active' => 'required|boolean',
         ]);
@@ -80,6 +92,12 @@ class FfProductController extends Controller
 
         $catalog->update($data);
 
+        if (isset($request->channels)) {
+            $catalog->channels()->sync($request->channels);
+        }
+        
+        $catalog->load('channels');
+
         return response()->json($catalog->fresh());
     }
 
@@ -92,7 +110,7 @@ class FfProductController extends Controller
 
     public function downloadTemplate()
     {
-        $products = ffProduct::orderBy('sku')->get();
+        $products = ffProduct::orderBy('sku')->with('channels')->get();
 
         $headers = [
             'Content-Type'        => 'text/csv',
@@ -103,39 +121,29 @@ class FfProductController extends Controller
             $file = fopen('php://output', 'w');
             fputs($file, "\xEF\xBB\xBF");
             
-            $columns = [
-                'SKU (No cambiar)', 
-                'Descripción', 
-                'Precio Unitario',
-                'Marca', 
-                'Tipo', 
-                'Piezas por Caja',
-                'Largo',
-                'Ancho',
-                'Alto',
-                'UPC',
-                'Nombre Archivo Foto (Opcional)'
-            ];
-            fputcsv($file, $columns);
+            fputcsv($file, [
+                'SKU (No cambiar)', 'Descripción', 'Precio Unitario', 'Marca', 'Tipo', 
+                'Piezas por Caja', 'Largo', 'Ancho', 'Alto', 'UPC', 
+                'Nombre Archivo Foto', 'Canales de Venta (Separar con |)'
+            ]);
 
-            if ($products->isEmpty()) {
-                fputcsv($file, ['SKU-EJ', 'Descripción Ejemplo', '100.00', 'Marca X', 'Tipo Y', '12', '10.5', '5.2', '3.0', '123456789', 'foto.jpg']);
-            } else {
-                foreach ($products as $product) {
-                    fputcsv($file, [
-                        $product->sku,
-                        $product->description,
-                        $product->unit_price,
-                        $product->brand,
-                        $product->type,
-                        $product->pieces_per_box,
-                        $product->length,
-                        $product->width,
-                        $product->height,
-                        $product->upc,
-                        ''
-                    ]);
-                }
+            foreach ($products as $product) {
+                $channelsStr = $product->channels->pluck('name')->implode('|');
+                
+                fputcsv($file, [
+                    $product->sku,
+                    $product->description,
+                    $product->unit_price,
+                    $product->brand,
+                    $product->type,
+                    $product->pieces_per_box,
+                    $product->length,
+                    $product->width,
+                    $product->height,
+                    $product->upc,
+                    '',
+                    $channelsStr
+                ]);
             }
             fclose($file);
         };
@@ -185,6 +193,23 @@ class FfProductController extends Controller
                 $sku = mb_convert_encoding(trim($row[0] ?? ''), 'UTF-8', 'ISO-8859-1');
                 if (empty($sku)) continue;
 
+                $channelsStr = mb_convert_encoding(trim($row[11] ?? ''), 'UTF-8', 'ISO-8859-1');
+                $channelIds = [];
+                
+                if (!empty($channelsStr)) {
+                    $channelNames = preg_split('/[,|]/', $channelsStr); 
+                    foreach($channelNames as $name) {
+                        $name = trim($name);
+                        if(empty($name)) continue;
+                        
+                        $channel = FfSalesChannel::firstOrCreate(
+                            ['name' => $name],
+                            ['is_active' => true]
+                        );
+                        $channelIds[] = $channel->id;
+                    }
+                }
+
                 $productData = [
                     'description'    => mb_convert_encoding(trim($row[1] ?? ''), 'UTF-8', 'ISO-8859-1'),
                     'unit_price'     => (float)($row[2] ?? 0.00),
@@ -213,7 +238,12 @@ class FfProductController extends Controller
                     }
                 }
 
-                ffProduct::updateOrCreate(['sku' => $sku], $productData);
+                $product = ffProduct::updateOrCreate(['sku' => $sku], $productData);
+                
+                if (!empty($channelIds)) {
+                    $product->channels()->sync($channelIds);
+                }
+
                 $importCount++;
             }
             
@@ -270,7 +300,7 @@ class FfProductController extends Controller
 
     public function exportCsv()
     {
-        $products = ffProduct::orderBy('brand')->orderBy('description')->get();
+        $products = ffProduct::with('channels')->orderBy('brand')->orderBy('description')->get();
         $filename = 'catalogo_completo_ff_' . date('Y-m-d') . '.csv';
 
         $headers = [
@@ -281,9 +311,11 @@ class FfProductController extends Controller
         $callback = function() use ($products) {
             $file = fopen('php://output', 'w');
             fputs($file, "\xEF\xBB\xBF"); 
-            fputcsv($file, ['SKU', 'Descripción', 'Precio Unitario', 'Marca', 'Tipo', 'Pzas/Caja', 'Largo', 'Ancho', 'Alto', 'UPC', 'Estado', 'URL Imagen']);
+            fputcsv($file, ['SKU', 'Descripción', 'Precio Unitario', 'Marca', 'Tipo', 'Pzas/Caja', 'Largo', 'Ancho', 'Alto', 'UPC', 'Canales', 'Estado', 'URL Imagen']);
 
             foreach ($products as $product) {
+                $channelsStr = $product->channels->pluck('name')->implode(', ');
+                
                 fputcsv($file, [
                     $product->sku,
                     $product->description,
@@ -295,6 +327,7 @@ class FfProductController extends Controller
                     $product->width,
                     $product->height,
                     $product->upc,
+                    $channelsStr,
                     $product->is_active ? 'Activo' : 'Inactivo',
                     $product->photo_url
                 ]);

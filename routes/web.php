@@ -793,7 +793,18 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
         Route::get('/api/sale-details/{folio}', [FfReportController::class, 'apiGetSaleDetails'])->name('api.saleDetails');
         Route::post('/generate-executive', [FfReportController::class, 'generateExecutiveReport'])->name('generateExecutive');
     
-    });    
+    });
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'index'])->name('index');
+        Route::get('/catalog/{type}', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'show'])->name('show');
+        Route::post('/catalog/{type}', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'store'])->name('store');
+        Route::put('/catalog/{type}/{id}', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'update'])->name('update');
+        Route::delete('/catalog/{type}/{id}', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'destroy'])->name('destroy');
+        Route::get('/clients/{client}/branches', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'branchesIndex'])->name('clients.branches.index');
+        Route::post('/clients/{client}/branches', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'branchesStore'])->name('clients.branches.store');
+        Route::put('/branches/{branch}', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'branchesUpdate'])->name('clients.branches.update');
+        Route::delete('/branches/{branch}', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'branchesDestroy'])->name('clients.branches.destroy');        
+    });      
 });
 
 Route::get('/project-files/{file}/download', [ProjectFileController::class, 'download'])

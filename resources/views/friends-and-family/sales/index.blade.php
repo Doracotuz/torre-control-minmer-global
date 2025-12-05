@@ -20,7 +20,7 @@
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 
-    <div x-data="salesManager()" x-init='init(@json($products), {{ $nextFolio }})' class="bg-gray-50 font-sans text-gray-800 min-h-screen pb-12">
+    <div x-data="salesManager()" x-init='init(@json($products), {{ $nextFolio }})' class="bg-[#E8ECF7] font-sans text-gray-800 min-h-screen pb-12">
         
         <div x-show="flashMessage" x-cloak 
              x-transition:enter="transform ease-out duration-300"
@@ -43,7 +43,7 @@
             <span class="font-medium text-sm" x-text="flashMessage"></span>
         </div>
 
-        <div class="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="bg-[#E8ECF7] max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
             
             <div class="flex flex-col lg:flex-row gap-6 items-start">
                 

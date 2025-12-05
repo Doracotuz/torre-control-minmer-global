@@ -297,7 +297,7 @@
                     </div>
                 </a>
 
-                <a href="#" 
+                <a href="{{ route('ff.admin.index') }}" 
                    class="op-card group animate-entry"
                    :class="layout === 'original' ? 'col-span-12 md:col-span-12 lg:col-span-4 row-span-1' : 'col-span-1 h-[500px]'"
                    style="animation-delay: 0.5s;">
