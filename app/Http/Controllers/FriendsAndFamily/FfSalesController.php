@@ -38,13 +38,13 @@ class FfSalesController extends Controller
         $editFolio = $request->input('edit_folio');
 
         $products = ffProduct::where('is_active', true)
+            ->with(['channels', 'cartItems' => function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            }])
             ->withSum('movements', 'quantity')
             ->withSum(['cartItems as reserved_by_others' => function ($query) use ($userId) {
                 $query->where('user_id', '!=', $userId);
             }], 'quantity')
-            ->with(['cartItems' => function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            }])
             ->orderBy('description')
             ->get();
 
@@ -69,30 +69,10 @@ class FfSalesController extends Controller
         $productId = $request->product_id;
         $quantity = $request->quantity;
         $userId = Auth::id();
-        $editingFolio = $request->folio;
 
         if ($quantity <= 0) {
             ffCartItem::where('user_id', $userId)->where('ff_product_id', $productId)->delete();
             return response()->json(['message' => 'Producto liberado']);
-        }
-
-        $product = ffProduct::find($productId);
-        
-        $query = $product->movements();
-        
-        if ($editingFolio) {
-            $query->where('folio', '!=', $editingFolio);
-        }
-        
-        $totalStock = $query->sum('quantity'); 
-
-        $reservedByOthers = $product->cartItems()->where('user_id', '!=', $userId)->sum('quantity');
-        $available = $totalStock - $reservedByOthers;
-
-        if ($quantity > $available) {
-            return response()->json([
-                'message' => 'Stock insuficiente. Solo quedan ' . $available . ' disponibles (incluyendo lo de este pedido).'
-            ], 422);
         }
 
         ffCartItem::updateOrCreate(
@@ -100,7 +80,7 @@ class FfSalesController extends Controller
             ['quantity' => $quantity]
         );
 
-        return response()->json(['message' => 'Producto comprometido']);
+        return response()->json(['message' => 'Producto agregado al pedido']);
     }
 
     public function getReservations()
@@ -284,6 +264,7 @@ class FfSalesController extends Controller
     public function checkout(Request $request)
     {
         $user = Auth::user();
+        
         $isEditMode = filter_var($request->input('is_edit_mode'), FILTER_VALIDATE_BOOLEAN);
 
         $request->validate([
@@ -325,6 +306,7 @@ class FfSalesController extends Controller
         
         $pdfItems = [];
         $grandTotal = 0;
+        $orderHasBackorder = false;
 
         DB::beginTransaction();
 
@@ -355,7 +337,9 @@ class FfSalesController extends Controller
                         'ff_sales_channel_id' => $mov->ff_sales_channel_id,
                         'ff_transport_line_id' => $mov->ff_transport_line_id,
                         'ff_payment_condition_id' => $mov->ff_payment_condition_id,
-                        'status' => 'approved', 
+                        'status' => 'approved',
+                        'is_backorder' => false,
+                        'backorder_fulfilled' => true
                     ]);
                 }
             }
@@ -390,6 +374,13 @@ class FfSalesController extends Controller
 
                 $totalLine = $quantity * $finalPrice;
                 
+                $currentStock = $product->movements()->sum('quantity');
+                $isBackorder = ($currentStock - $quantity) < 0;
+                
+                if ($isBackorder) {
+                    $orderHasBackorder = true;
+                }
+
                 ffInventoryMovement::create([
                     'ff_product_id' => $product->id,
                     'user_id' => $user->id,
@@ -411,6 +402,8 @@ class FfSalesController extends Controller
                     'evidence_path_2' => $finalEvidencePaths[2],
                     'evidence_path_3' => $finalEvidencePaths[3],
                     'notification_emails' => $request->email_recipients,
+                    'is_backorder' => $isBackorder,
+                    'backorder_fulfilled' => !$isBackorder,
                     'ff_client_id' => $request->ff_client_id,
                     'ff_client_branch_id' => $request->ff_client_branch_id,
                     'ff_sales_channel_id' => $request->ff_sales_channel_id,
@@ -427,6 +420,7 @@ class FfSalesController extends Controller
                     'discount_amount' => $discountAmount,
                     'unit_price' => $finalPrice,
                     'total_price' => $totalLine,
+                    'is_backorder' => $isBackorder,
                 ];
 
                 $grandTotal += $totalLine;
@@ -503,6 +497,7 @@ class FfSalesController extends Controller
                     'grandTotal' => $grandTotal,
                     'items' => $pdfItems,
                     'logo_url' => $logoUrl,
+                    'has_backorder' => $orderHasBackorder,
                 ];
                 
                 foreach($admins as $admin) {

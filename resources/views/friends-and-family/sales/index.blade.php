@@ -66,6 +66,19 @@
                             
                             <div class="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
 
+                                <div class="relative min-w-[200px]">
+                                    <div x-show="!form.ff_sales_channel_id" class="absolute -top-2 -right-2 w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
+                                    <select x-model="form.ff_sales_channel_id" 
+                                            @change="onChannelChangeConfirm()"
+                                            class="w-full border-2 text-xs rounded-lg py-2.5 px-3 font-bold transition-colors focus:ring-0"
+                                            :class="form.ff_sales_channel_id ? 'bg-white border-gray-200 text-[#2c3856]' : 'bg-orange-50 border-orange-400 text-orange-800 animate-pulse'">
+                                        <option value="">Selecciona Canal (Requerido)</option>
+                                        <template x-for="ch in catalogs.channels" :key="ch.id">
+                                            <option :value="ch.id" x-text="ch.name"></option>
+                                        </template>
+                                    </select>
+                                </div>
+
                                 <div class="flex bg-gray-100 p-1 rounded-lg self-start sm:self-auto flex-shrink-0">
                                     <button @click="setViewMode('grid')" 
                                         :class="viewMode === 'grid' ? 'bg-white text-[#2c3856] shadow-sm' : 'text-gray-400 hover:text-gray-600'"
@@ -117,184 +130,204 @@
                         </div>
                     </div>
 
-                    <template x-if="viewMode === 'grid'">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-                            <template x-for="product in filteredProducts" :key="product.id">
-                                <div class="group bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_20px_rgb(0,0,0,0.08)] transition-all duration-300 border border-gray-100 relative flex flex-col h-full hover:-translate-y-1"
-                                    :class="{ 'ring-2 ring-[#2c3856] ring-offset-2': getProductInCart(product.id) > 0 }">
-                                    
-                                    <div class="absolute top-3 right-3 z-10 flex flex-col gap-1 items-end">
-                                        <span x-show="getProductInCart(product.id) > 0" class="px-2 py-0.5 bg-[#2c3856] text-white text-[10px] font-bold rounded shadow-sm">En carrito</span>
-                                        <span x-show="getAvailableStock(product) < 10 && getAvailableStock(product) > 0" class="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded border border-amber-200">Poco Stock</span>
-                                    </div>
-
-                                    <div x-show="getAvailableStock(product) <= 0 && !getProductInCart(product.id)" class="absolute inset-0 bg-white/60 z-20 backdrop-blur-[1px] flex items-center justify-center rounded-2xl transition-opacity">
-                                        <div class="bg-gray-100 text-gray-500 px-4 py-2 rounded-lg font-bold text-xs border border-gray-200 shadow-sm flex items-center uppercase tracking-wide">
-                                            <i class="fas fa-ban mr-2"></i> Agotado
-                                        </div>
-                                    </div>
-
-                                    <div class="w-full aspect-square rounded-xl bg-gray-50 mb-4 overflow-hidden border border-gray-100 flex items-center justify-center relative">
-                                        <img :src="product.photo_url" class="max-w-full max-h-full object-contain p-4 transition-transform duration-500 group-hover:scale-110 mix-blend-multiply" loading="lazy">
-                                    </div>
-
-                                    <div class="flex-1 flex flex-col">
-                                        <div class="flex justify-between items-start mb-2">
-                                            <span class="text-[10px] font-mono font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200" x-text="product.sku"></span>
-                                            <span class="text-[10px] font-bold text-[#2c3856] uppercase tracking-wide truncate max-w-[100px]" x-text="product.brand"></span>
-                                        </div>
-                                        
-                                        <h3 class="text-sm font-bold text-gray-800 leading-snug line-clamp-2 mb-4 h-10" x-text="product.description" :title="product.description"></h3>
-                                        
-                                        <div class="mt-auto pt-3 border-t border-gray-50">
-                                            <div class="flex justify-between items-end mb-3">
-                                                <div>
-                                                    <p class="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Precio</p>
-                                                    
-                                                    <div x-show="form.order_type === 'normal' && (productDiscounts[product.id] > 0)">
-                                                        <span class="text-xs text-gray-400 line-through" x-text="formatCurrency(product.unit_price)"></span>
-                                                        <div class="text-lg font-extrabold text-emerald-600" x-text="formatCurrency(calculateItemPrice(product))"></div>
-                                                    </div>
-
-                                                    <div x-show="form.order_type === 'normal' && (!productDiscounts[product.id] || productDiscounts[product.id] == 0)">
-                                                        <div class="text-lg font-extrabold text-[#2c3856]" x-text="formatCurrency(product.unit_price)"></div>
-                                                    </div>
-
-                                                    <div x-show="form.order_type !== 'normal'">
-                                                        <div class="text-lg font-extrabold text-blue-600">$0.00</div>
-                                                        <span class="text-[9px] font-bold text-blue-500 uppercase block mt-1" x-text="form.order_type"></span>
-                                                    </div>
-
-                                                </div>
-                                                <div class="text-right">
-                                                    <p class="text-[10px] uppercase font-bold text-gray-400 mb-0.5">Disp.</p>
-                                                    <div class="text-sm font-bold" :class="getAvailableStock(product) > 0 ? 'text-emerald-600' : 'text-red-500'" x-text="getAvailableStock(product)"></div>
-                                                </div>
-                                            </div>
-
-                                            <div class="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200 shadow-inner">
-                                                <button @click="updateQuantity(product, -1)" 
-                                                    class="w-8 h-8 flex items-center justify-center rounded-md bg-white text-gray-500 shadow-sm border border-gray-100 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95 disabled:opacity-50" 
-                                                    :disabled="!getProductInCart(product.id)">
-                                                    <i class="fas fa-minus text-xs"></i>
-                                                </button>
-                                                
-                                                <input type="number" 
-                                                    class="flex-1 w-full bg-transparent border-none text-center font-bold text-gray-800 focus:ring-0 p-0 text-sm" 
-                                                    :value="getProductInCart(product.id) || 0" 
-                                                    @change="validateInput($event, product)"
-                                                    @focus="$event.target.select()">
-                                                    
-                                                <button @click="updateQuantity(product, 1)" 
-                                                    class="w-8 h-8 flex items-center justify-center rounded-md bg-[#2c3856] text-white shadow-md hover:bg-[#1e273d] hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" 
-                                                    :disabled="getAvailableStock(product) <= 0">
-                                                    <i class="fas fa-plus text-xs"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
+                    <div x-show="!form.ff_sales_channel_id" class="flex flex-col items-center justify-center py-32 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 text-center">
+                        <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-6 animate-bounce">
+                            <i class="fas fa-store text-4xl text-orange-500"></i>
                         </div>
-                    </template>
+                        <h3 class="text-xl font-bold text-[#2c3856] mb-2">Selecciona un Canal de Venta</h3>
+                        <p class="text-gray-500 max-w-md mx-auto text-sm">
+                            Para garantizar la disponibilidad y precios correctos, por favor indica primero a qué canal pertenece este pedido.
+                        </p>
+                    </div>
 
-                    <template x-if="viewMode === 'list'">
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left border-collapse">
-                                    <thead class="bg-gray-50 text-gray-500 text-[10px] uppercase font-bold tracking-wider">
-                                        <tr>
-                                            <th class="p-4 w-16">Foto</th>
-                                            <th class="p-4">Descripción / SKU</th>
-                                            <th class="p-4 w-32 text-center">Marca</th>
-                                            <th class="p-4 w-32 text-right">Precio</th>
-                                            <th class="p-4 w-24 text-center">Stock</th>
-                                            <th class="p-4 w-40 text-center">Cantidad</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-gray-100">
-                                        <template x-for="product in filteredProducts" :key="product.id">
-                                            <tr class="hover:bg-gray-50 transition-colors group" 
-                                                :class="getProductInCart(product.id) > 0 ? 'bg-blue-50/30' : ''">
+                    <template x-if="form.ff_sales_channel_id">
+                        <div>
+                            <template x-if="viewMode === 'grid'">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                                    <template x-for="product in filteredProducts" :key="product.id">
+                                        <div class="group bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_20px_rgb(0,0,0,0.08)] transition-all duration-300 border border-gray-100 relative flex flex-col h-full hover:-translate-y-1"
+                                            :class="{ 'ring-2 ring-[#2c3856] ring-offset-2': getProductInCart(product.id) > 0 }">
+                                            
+                                            <div class="absolute top-3 right-3 z-10 flex flex-col gap-1 items-end">
+                                                <span x-show="getProductInCart(product.id) > 0" class="px-2 py-0.5 bg-[#2c3856] text-white text-[10px] font-bold rounded shadow-sm">En carrito</span>
+                                                <span x-show="getAvailableStock(product) < 10 && getAvailableStock(product) > 0" class="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded border border-amber-200">Poco Stock</span>
+                                            </div>
+
+                                            <div x-show="getProductInCart(product.id) > 0 && (getProductInCart(product.id) > getAvailableStock(product))" 
+                                                class="absolute top-3 left-3 z-10">
+                                                <span x-text="'SOBREVENTA (' + (getProductInCart(product.id) - (getAvailableStock(product) > 0 ? getAvailableStock(product) : 0)) + ')'" 
+                                                    class="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold rounded border border-purple-200 shadow-sm">
+                                                </span>
+                                            </div>
+
+                                            <div class="w-full aspect-square rounded-xl bg-gray-50 mb-4 overflow-hidden border border-gray-100 flex items-center justify-center relative">
+                                                <img :src="product.photo_url" class="max-w-full max-h-full object-contain p-4 transition-transform duration-500 group-hover:scale-110 mix-blend-multiply" loading="lazy">
+                                            </div>
+
+                                            <div class="flex-1 flex flex-col">
+                                                <div class="flex justify-between items-start mb-2">
+                                                    <span class="text-[10px] font-mono font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200" x-text="product.sku"></span>
+                                                    <span class="text-[10px] font-bold text-[#2c3856] uppercase tracking-wide truncate max-w-[100px]" x-text="product.brand"></span>
+                                                </div>
                                                 
-                                                <td class="p-3">
-                                                    <div class="w-12 h-12 bg-white rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden">
-                                                        <img :src="product.photo_url" class="max-w-full max-h-full object-contain mix-blend-multiply">
-                                                    </div>
-                                                </td>
+                                                <h3 class="text-sm font-bold text-gray-800 leading-snug line-clamp-2 mb-4 h-10" x-text="product.description" :title="product.description"></h3>
+                                                
+                                                <div class="mt-auto pt-3 border-t border-gray-50">
+                                                    <div class="flex justify-between items-end mb-3">
+                                                        <div>
+                                                            <p class="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Precio</p>
+                                                            
+                                                            <div x-show="form.order_type === 'normal' && (productDiscounts[product.id] > 0)">
+                                                                <span class="text-xs text-gray-400 line-through" x-text="formatCurrency(product.unit_price)"></span>
+                                                                <div class="text-lg font-extrabold text-emerald-600" x-text="formatCurrency(calculateItemPrice(product))"></div>
+                                                            </div>
 
-                                                <td class="p-3">
-                                                    <div class="flex flex-col">
-                                                        <div class="flex items-center gap-2 mb-1">
-                                                            <span class="text-[9px] font-mono font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200" x-text="product.sku"></span>
-                                                            <span x-show="getAvailableStock(product) <= 0" class="text-[9px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded border border-red-100">AGOTADO</span>
-                                                            <span x-show="getAvailableStock(product) < 10 && getAvailableStock(product) > 0" class="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">POCO STOCK</span>
+                                                            <div x-show="form.order_type === 'normal' && (!productDiscounts[product.id] || productDiscounts[product.id] == 0)">
+                                                                <div class="text-lg font-extrabold text-[#2c3856]" x-text="formatCurrency(product.unit_price)"></div>
+                                                            </div>
+
+                                                            <div x-show="form.order_type !== 'normal'">
+                                                                <div class="text-lg font-extrabold text-blue-600">$0.00</div>
+                                                                <span class="text-[9px] font-bold text-blue-500 uppercase block mt-1" x-text="form.order_type"></span>
+                                                            </div>
+
                                                         </div>
-                                                        <span class="text-sm font-bold text-gray-800 line-clamp-2" x-text="product.description"></span>
-                                                    </div>
-                                                </td>
-
-                                                <td class="p-3 text-center">
-                                                    <span class="text-[10px] font-bold text-gray-500 uppercase" x-text="product.brand"></span>
-                                                </td>
-
-                                                <td class="p-3 text-right">
-                                                    <div x-show="form.order_type === 'normal' && (productDiscounts[product.id] > 0)">
-                                                        <span class="text-[10px] text-gray-400 line-through" x-text="formatCurrency(product.unit_price)"></span>
-                                                        <div class="font-extrabold text-emerald-600" x-text="formatCurrency(calculateItemPrice(product))"></div>
+                                                        <div class="text-right">
+                                                            <p class="text-[10px] uppercase font-bold text-gray-400 mb-0.5">Disp.</p>
+                                                            <div class="text-sm font-bold" :class="getAvailableStock(product) > 0 ? 'text-emerald-600' : 'text-red-500'" x-text="getAvailableStock(product)"></div>
+                                                        </div>
                                                     </div>
 
-                                                    <div x-show="form.order_type === 'normal' && (!productDiscounts[product.id] || productDiscounts[product.id] == 0)">
-                                                        <div class="font-extrabold text-[#2c3856]" x-text="formatCurrency(product.unit_price)"></div>
-                                                    </div>
-                                                    
-                                                    <div x-show="form.order_type !== 'normal'">
-                                                        <div class="font-extrabold text-blue-600">$0.00</div>
-                                                        <span class="text-[9px] font-bold text-blue-500 uppercase" x-text="form.order_type"></span>
-                                                    </div>
-                                                </td>
-
-                                                <td class="p-3 text-center">
-                                                    <span class="font-bold text-xs" :class="getAvailableStock(product) > 0 ? 'text-emerald-600' : 'text-red-500'" x-text="getAvailableStock(product)"></span>
-                                                </td>
-
-                                                <td class="p-3">
-                                                    <div class="flex items-center bg-white rounded-lg border border-gray-200 shadow-sm w-32 mx-auto">
+                                                    <div class="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200 shadow-inner">
                                                         <button @click="updateQuantity(product, -1)" 
-                                                            class="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-l-lg disabled:opacity-30" 
+                                                            class="w-8 h-8 flex items-center justify-center rounded-md bg-white text-gray-500 shadow-sm border border-gray-100 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95 disabled:opacity-50" 
                                                             :disabled="!getProductInCart(product.id)">
-                                                            <i class="fas fa-minus text-[10px]"></i>
+                                                            <i class="fas fa-minus text-xs"></i>
                                                         </button>
                                                         
                                                         <input type="number" 
-                                                            class="flex-1 w-full bg-transparent border-none text-center font-bold text-gray-800 focus:ring-0 p-0 text-sm h-8" 
+                                                            class="flex-1 w-full bg-transparent border-none text-center font-bold text-gray-800 focus:ring-0 p-0 text-sm" 
                                                             :value="getProductInCart(product.id) || 0" 
+                                                            min="0"
                                                             @change="validateInput($event, product)"
+                                                            @keyup.enter="validateInput($event, product)"
                                                             @focus="$event.target.select()">
                                                             
                                                         <button @click="updateQuantity(product, 1)" 
-                                                            class="w-8 h-8 flex items-center justify-center bg-[#2c3856] text-white hover:bg-[#1e273d] transition-colors rounded-r-lg disabled:opacity-50 disabled:cursor-not-allowed" 
-                                                            :disabled="getAvailableStock(product) <= 0">
-                                                            <i class="fas fa-plus text-[10px]"></i>
+                                                            class="w-8 h-8 flex items-center justify-center rounded-md bg-[#2c3856] text-white shadow-md hover:bg-[#1e273d] hover:shadow-lg transition-all active:scale-95">
+                                                            <i class="fas fa-plus text-xs"></i>
                                                         </button>
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        </template>
-                                    </tbody>
-                                </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <template x-if="viewMode === 'list'">
+                                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                                    <div class="overflow-x-auto">
+                                        <table class="w-full text-left border-collapse">
+                                            <thead class="bg-gray-50 text-gray-500 text-[10px] uppercase font-bold tracking-wider">
+                                                <tr>
+                                                    <th class="p-4 w-16">Foto</th>
+                                                    <th class="p-4">Descripción / SKU</th>
+                                                    <th class="p-4 w-32 text-center">Marca</th>
+                                                    <th class="p-4 w-32 text-right">Precio</th>
+                                                    <th class="p-4 w-24 text-center">Stock</th>
+                                                    <th class="p-4 w-40 text-center">Cantidad</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-gray-100">
+                                                <template x-for="product in filteredProducts" :key="product.id">
+                                                    <tr class="hover:bg-gray-50 transition-colors group" 
+                                                        :class="getProductInCart(product.id) > 0 ? 'bg-blue-50/30' : ''">
+                                                        
+                                                        <td class="p-3">
+                                                            <div class="w-12 h-12 bg-white rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden">
+                                                                <img :src="product.photo_url" class="max-w-full max-h-full object-contain mix-blend-multiply">
+                                                            </div>
+                                                        </td>
+
+                                                        <td class="p-3">
+                                                            <div class="flex flex-col">
+                                                                <div class="flex items-center gap-2 mb-1">
+                                                                    <span class="text-[9px] font-mono font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200" x-text="product.sku"></span>
+                                                                    <span x-show="getProductInCart(product.id) > 0 && (getProductInCart(product.id) > getAvailableStock(product))" 
+                                                                        x-text="'SOBREVENTA (' + (getProductInCart(product.id) - (getAvailableStock(product) > 0 ? getAvailableStock(product) : 0)) + ')'"
+                                                                        class="text-[9px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded border border-purple-200">
+                                                                    </span>
+                                                                    <span x-show="getAvailableStock(product) < 10 && getAvailableStock(product) > 0" class="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">POCO STOCK</span>
+                                                                </div>
+                                                                <span class="text-sm font-bold text-gray-800 line-clamp-2" x-text="product.description"></span>
+                                                            </div>
+                                                        </td>
+
+                                                        <td class="p-3 text-center">
+                                                            <span class="text-[10px] font-bold text-gray-500 uppercase" x-text="product.brand"></span>
+                                                        </td>
+
+                                                        <td class="p-3 text-right">
+                                                            <div x-show="form.order_type === 'normal' && (productDiscounts[product.id] > 0)">
+                                                                <span class="text-[10px] text-gray-400 line-through" x-text="formatCurrency(product.unit_price)"></span>
+                                                                <div class="font-extrabold text-emerald-600" x-text="formatCurrency(calculateItemPrice(product))"></div>
+                                                            </div>
+
+                                                            <div x-show="form.order_type === 'normal' && (!productDiscounts[product.id] || productDiscounts[product.id] == 0)">
+                                                                <div class="font-extrabold text-[#2c3856]" x-text="formatCurrency(product.unit_price)"></div>
+                                                            </div>
+                                                            
+                                                            <div x-show="form.order_type !== 'normal'">
+                                                                <div class="font-extrabold text-blue-600">$0.00</div>
+                                                                <span class="text-[9px] font-bold text-blue-500 uppercase" x-text="form.order_type"></span>
+                                                            </div>
+                                                        </td>
+
+                                                        <td class="p-3 text-center">
+                                                            <span class="font-bold text-xs" :class="getAvailableStock(product) > 0 ? 'text-emerald-600' : 'text-red-500'" x-text="getAvailableStock(product)"></span>
+                                                        </td>
+
+                                                        <td class="p-3">
+                                                            <div class="flex items-center bg-white rounded-lg border border-gray-200 shadow-sm w-32 mx-auto">
+                                                                <button @click="updateQuantity(product, -1)" 
+                                                                    class="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-l-lg disabled:opacity-30" 
+                                                                    :disabled="!getProductInCart(product.id)">
+                                                                    <i class="fas fa-minus text-[10px]"></i>
+                                                                </button>
+                                                                
+                                                                <input type="number" 
+                                                                    class="flex-1 w-full bg-transparent border-none text-center font-bold text-gray-800 focus:ring-0 p-0 text-sm h-8" 
+                                                                    :value="getProductInCart(product.id) || 0" 
+                                                                    min="0"
+                                                                    @change="validateInput($event, product)"
+                                                                    @keyup.enter="validateInput($event, product)"
+                                                                    @focus="$event.target.select()">
+                                                                    
+                                                                <button @click="updateQuantity(product, 1)" 
+                                                                    class="w-8 h-8 flex items-center justify-center bg-[#2c3856] text-white hover:bg-[#1e273d] transition-colors rounded-r-lg">
+                                                                    <i class="fas fa-plus text-[10px]"></i>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <div x-show="filteredProducts.length === 0" class="col-span-full py-20 text-center">
+                                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                                    <i class="fas fa-search text-gray-400 text-xl"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-gray-900">No hay productos</h3>
+                                <p class="text-gray-500 text-sm">Intenta cambiar los filtros de búsqueda.</p>
+                                <button @click="resetFilters()" class="mt-4 text-[#2c3856] text-sm font-bold hover:underline">Limpiar filtros</button>
                             </div>
                         </div>
                     </template>
-
-                     <div x-show="filteredProducts.length === 0" class="col-span-full py-20 text-center">
-                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                            <i class="fas fa-search text-gray-400 text-xl"></i>
-                        </div>
-                        <h3 class="text-lg font-bold text-gray-900">No hay productos</h3>
-                        <p class="text-gray-500 text-sm">Intenta cambiar los filtros de búsqueda.</p>
-                        <button @click="resetFilters()" class="mt-4 text-[#2c3856] text-sm font-bold hover:underline">Limpiar filtros</button>
-                    </div>
                 </div>
 
                 <div class="w-full lg:w-3/12 sticky top-6 self-start h-[calc(100vh-3rem)] flex flex-col z-20">
@@ -434,15 +467,6 @@
 
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label class="text-[9px] font-bold text-gray-400 uppercase">Canal</label>
-                                        <select x-model="form.ff_sales_channel_id" class="form-input-sm">
-                                            <option value="">Seleccione...</option>
-                                            <template x-for="ch in catalogs.channels" :key="ch.id">
-                                                <option :value="ch.id" x-text="ch.name"></option>
-                                            </template>
-                                        </select>
-                                    </div>
-                                    <div>
                                         <label class="text-[9px] font-bold text-gray-400 uppercase">Transporte</label>
                                         <select x-model="form.ff_transport_line_id" class="form-input-sm">
                                             <option value="">Seleccione...</option>
@@ -451,16 +475,15 @@
                                             </template>
                                         </select>
                                     </div>
-                                </div>
-                                
-                                <div>
-                                    <label class="text-[9px] font-bold text-gray-400 uppercase">Condición de Pago</label>
-                                    <select x-model="form.ff_payment_condition_id" class="form-input-sm">
-                                        <option value="">Seleccione...</option>
-                                        <template x-for="pay in catalogs.payments" :key="pay.id">
-                                            <option :value="pay.id" x-text="pay.name"></option>
-                                        </template>
-                                    </select>
+                                    <div>
+                                        <label class="text-[9px] font-bold text-gray-400 uppercase">Condición de Pago</label>
+                                        <select x-model="form.ff_payment_condition_id" class="form-input-sm">
+                                            <option value="">Seleccione...</option>
+                                            <template x-for="pay in catalogs.payments" :key="pay.id">
+                                                <option :value="pay.id" x-text="pay.name"></option>
+                                            </template>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
@@ -693,10 +716,11 @@
                     this.catalogs.channels = channels || [];
                     this.catalogs.transports = transports || [];
                     this.catalogs.payments = payments || [];
+
                     const savedEmails = localStorage.getItem('ff_email_recipients');
                     if (savedEmails) this.form.email_recipients = savedEmails;
 
-                    this.$watch('form.email_recipients', (value) => localStorage.setItem('ff_email_recipients', value));                    
+                    this.$watch('form.email_recipients', (value) => localStorage.setItem('ff_email_recipients', value));
 
                     this.products = productsArray.map((p, index) => {
                         const myCartItem = p.cart_items.find(item => item.user_id === {{ Auth::id() }});
@@ -712,6 +736,7 @@
                             unit_price: parseFloat(p.unit_price) || 0,
                             brand: p.brand || 'Sin Marca',
                             type: p.type || 'General',
+                            allowed_channels: p.channels ? p.channels.map(c => c.id) : [],
                             cart_items: [],
                             error: ''
                         };
@@ -726,6 +751,17 @@
                     }
                     
                     this.pollingInterval = setInterval(() => this.pollReservations(), 10000);
+                },
+
+                onChannelChangeConfirm() {
+                    if (this.localCart.size > 0) {
+                        if (confirm('Al cambiar el canal de venta, se vaciará el carrito actual para validar la disponibilidad de productos. ¿Continuar?')) {
+                            this.localCart.clear();
+                            this.productDiscounts = {};
+                        } else {
+                            // Revertir cambio si es necesario, o dejarlo al usuario
+                        }
+                    }
                 },
 
                 get cartList() {
@@ -754,6 +790,14 @@
                     
                     if (this.filters.type) {
                         result = result.filter(p => p.type === this.filters.type);
+                    }
+
+                    if (this.form.ff_sales_channel_id) {
+                        const selectedChannelId = parseInt(this.form.ff_sales_channel_id);
+                        result = result.filter(p => {
+                            if (p.allowed_channels.length === 0) return true; 
+                            return p.allowed_channels.includes(selectedChannelId);
+                        });
                     }
 
                     return result;
@@ -889,14 +933,6 @@
                     let value = parseInt(event.target.value);
                     if (isNaN(value) || value < 0) value = 0;
                     
-                    const currentCartQty = this.localCart.get(product.id) || 0;
-                    const availableReal = this.getAvailableStock(product) + currentCartQty;
-
-                    if (value > availableReal) {
-                        value = availableReal;
-                        this.showFlashMessage(`Stock máximo disponible: ${availableReal}`, 'danger');
-                    }
-                    
                     event.target.value = value;
                     
                     this.onQuantityChange(value, product);
@@ -909,16 +945,7 @@
                 },
 
                 async onQuantityChange(newQuantity, product) {
-                    const currentCartQty = this.getProductInCart(product.id) || 0;
-                    
-                    const maxAvailable = this.getAvailableStock(product) + currentCartQty;
-
                     if (newQuantity < 0) newQuantity = 0;
-                    
-                    if (newQuantity > maxAvailable) {
-                        newQuantity = maxAvailable;
-                        this.showFlashMessage('Stock insuficiente', 'danger');
-                    }
                     
                     if (newQuantity === 0) { 
                         this.localCart.delete(product.id); 

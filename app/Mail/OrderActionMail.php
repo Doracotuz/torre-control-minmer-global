@@ -40,6 +40,7 @@ class OrderActionMail extends Mailable
             'update' => 'Actualización de Pedido',
             'cancel' => 'CANCELACIÓN de Pedido',
             'admin_alert' => 'ALERTA: Nuevo Pedido por Aprobar',
+            'backorder_filled' => '✅ STOCK DISPONIBLE: Backorder Surtido',
             default => 'Notificación de Pedido'
         };
 

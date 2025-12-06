@@ -38,7 +38,9 @@ class ffInventoryMovement extends Model
         'rejection_reason',
         'approved_by',
         'approved_at',
-        'notification_emails',       
+        'notification_emails',
+        'is_backorder',
+        'backorder_fulfilled',     
     ];
 
     protected $casts = [

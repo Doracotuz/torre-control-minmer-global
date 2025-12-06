@@ -26,7 +26,7 @@
 
         <div class="py-6">
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-white rounded-3xl p-6 shadow-[0_3px_10px_rgb(0,0,0,0.05)] border border-white/50 flex items-center justify-between relative overflow-hidden group hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300">
                     <div class="relative z-10">
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Productos Visibles</p>
@@ -56,7 +56,7 @@
                         <i class="fas fa-cubes fa-xl"></i>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
             @if (session('success'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" 

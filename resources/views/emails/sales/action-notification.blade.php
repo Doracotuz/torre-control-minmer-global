@@ -6,15 +6,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Notificación de Pedido</title>
     <style type="text/css">
-        /* Reset de estilos básicos */
         body { margin: 0; padding: 0; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; background-color: #f4f4f4; }
         table, td { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
         img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
         
-        /* Estilos generales */
         body, #bodyTable { font-family: 'Helvetica', Arial, sans-serif; color: #333333; line-height: 1.6; }
         
-        /* Media Queries para móviles */
         @media screen and (max-width: 600px) {
             .mobile-width { width: 100% !important; max-width: 100% !important; }
             .mobile-padding { padding-left: 15px !important; padding-right: 15px !important; }
@@ -49,6 +46,7 @@
                                         elseif($type == 'update') { $badgeColor = '#ff9c00'; $badgeText = 'ACTUALIZACIÓN'; }
                                         elseif($type == 'cancel') { $badgeColor = '#dc3545'; $badgeText = 'CANCELADO'; }
                                         elseif($type == 'admin_alert') { $badgeColor = '#2c3856'; $badgeText = 'REQUIERE APROBACIÓN'; }
+                                        elseif($type == 'backorder_filled') { $badgeColor = '#7c3aed'; $badgeText = 'BACKORDER SURTIDO'; }
                                     @endphp
                                     
                                     <td align="center" bgcolor="{{ $badgeColor }}" style="border-radius: 50px; padding: 6px 18px;">
@@ -57,7 +55,25 @@
                                 </tr>
                             </table>
 
+                            @if(!empty($data['has_backorder']))
+                                <table border="0" cellpadding="0" cellspacing="0" style="margin-top: 15px; width: 100%;">
+                                    <tr>
+                                        <td align="center" bgcolor="#fff3cd" style="border: 1px solid #ffecb5; border-radius: 6px; padding: 10px;">
+                                            <p style="margin: 0; font-size: 13px; font-weight: bold; color: #856404; font-family: Helvetica, Arial, sans-serif;">
+                                                ⚠️ ATENCIÓN: Este pedido incluye productos sin stock (Backorder).
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            @endif
+
                             <p style="margin: 15px 0 0 0; font-size: 18px; font-weight: bold; color: #333333;">Folio #{{ $data['folio'] }}</p>
+
+                            @if($type == 'backorder_filled')
+                                <p style="margin: 10px 0 0 0; font-size: 14px; color: #7c3aed; font-weight: bold;">
+                                    ¡Buenas noticias! El producto pendiente ya está disponible para entrega.
+                                </p>
+                            @endif
                         </td>
                     </tr>
 
@@ -74,18 +90,33 @@
                                     <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #777777; font-size: 13px; font-weight: bold;">Empresa:</td>
                                     <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #333333; font-size: 13px;">{{ $data['company_name'] }}</td>
                                 </tr>
+                                
+                                @if($type != 'backorder_filled')
                                 <tr>
                                     <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #777777; font-size: 13px; font-weight: bold;">Entrega:</td>
                                     <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #333333; font-size: 13px;">{{ $data['delivery_date'] }}</td>
                                 </tr>
+                                @endif
+
                                 <tr>
                                     <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #777777; font-size: 13px; font-weight: bold;">Surtidor:</td>
                                     <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #333333; font-size: 13px;">{{ $data['surtidor_name'] ?? 'N/A' }}</td>
                                 </tr>
+                                
+                                @if(isset($data['order_type']))
                                 <tr>
                                     <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #777777; font-size: 13px; font-weight: bold;">Tipo:</td>
-                                    <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #333333; font-size: 13px; text-transform: capitalize;">{{ $data['order_type'] ?? 'Normal' }}</td>
+                                    <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #333333; font-size: 13px; text-transform: capitalize;">{{ $data['order_type'] }}</td>
                                 </tr>
+                                @endif
+
+                                @if(isset($data['vendedor_name']) || isset($data['user_name']))
+                                <tr>
+                                    <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #777777; font-size: 13px; font-weight: bold;">Vendedor:</td>
+                                    <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #333333; font-size: 13px;">{{ $data['vendedor_name'] ?? $data['user_name'] }}</td>
+                                </tr>
+                                @endif
+
                                 @if($type == 'cancel')
                                     <tr>
                                         <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #dc3545; font-size: 13px; font-weight: bold;">Motivo Cancelación:</td>
@@ -99,7 +130,9 @@
                     @if($type != 'cancel')
                     <tr>
                         <td style="padding: 20px 30px;" class="mobile-padding">
-                            <h3 style="margin: 0 0 15px 0; color: #333333; font-size: 18px;">Detalle</h3>
+                            <h3 style="margin: 0 0 15px 0; color: #333333; font-size: 18px;">
+                                {{ $type == 'backorder_filled' ? 'Producto Surtido' : 'Detalle del Pedido' }}
+                            </h3>
                             
                             <table border="0" cellpadding="0" cellspacing="0" width="100%">
                                 <thead>
@@ -107,7 +140,7 @@
                                         <th align="left" style="padding: 10px; color: #ffffff; font-size: 11px; font-family: Helvetica, Arial, sans-serif;">SKU</th>
                                         <th align="left" style="padding: 10px; color: #ffffff; font-size: 11px; font-family: Helvetica, Arial, sans-serif;">Descripción</th>
                                         <th align="center" style="padding: 10px; color: #ffffff; font-size: 11px; font-family: Helvetica, Arial, sans-serif;">Cant.</th>
-                                        @if(($data['order_type'] ?? 'normal') === 'normal')
+                                        @if(($data['order_type'] ?? 'normal') === 'normal' && $type != 'backorder_filled')
                                             <th align="right" style="padding: 10px; color: #ffffff; font-size: 11px; font-family: Helvetica, Arial, sans-serif;">P. Lista</th>
                                             <th align="center" style="padding: 10px; color: #ffffff; font-size: 11px; font-family: Helvetica, Arial, sans-serif;">Desc.</th>
                                             <th align="right" style="padding: 10px; color: #ffffff; font-size: 11px; font-family: Helvetica, Arial, sans-serif;">Total</th>
@@ -117,15 +150,29 @@
                                 <tbody>
                                     @foreach($data['items'] as $item)
                                     <tr>
-                                        <td align="left" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px;">{{ $item['sku'] }}</td>
-                                        <td align="left" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px;">{{ $item['description'] }}</td>
-                                        <td align="center" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px; font-weight: bold;">{{ $item['quantity'] }}</td>
+                                        <td align="left" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px; vertical-align: top;">
+                                            {{ $item['sku'] }}
+                                        </td>
+                                        <td align="left" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px; vertical-align: top;">
+                                            {{ $item['description'] }}
+                                            
+                                            @if(!empty($item['is_backorder']))
+                                                <div style="margin-top: 4px;">
+                                                    <span style="background-color: #f3e8ff; color: #6b21a8; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #d8b4fe;">
+                                                        EN BACKORDER
+                                                    </span>
+                                                </div>
+                                            @endif
+                                        </td>
+                                        <td align="center" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px; font-weight: bold; vertical-align: top;">
+                                            {{ $item['quantity'] }}
+                                        </td>
                                         
-                                        @if(($data['order_type'] ?? 'normal') === 'normal')
-                                            <td align="right" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px;">
+                                        @if(($data['order_type'] ?? 'normal') === 'normal' && $type != 'backorder_filled')
+                                            <td align="right" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px; vertical-align: top;">
                                                 ${{ number_format($item['base_price'] ?? $item['unit_price'], 2) }}
                                             </td>
-                                            <td align="center" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px;">
+                                            <td align="center" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px; vertical-align: top;">
                                                 @if(isset($item['discount_percentage']) && $item['discount_percentage'] > 0)
                                                     <span style="color: #e65100; font-weight: bold; display: block;">-{{ $item['discount_percentage'] }}%</span>
                                                     <span style="color: #e65100; font-size: 9px; white-space: nowrap;">(-${{ number_format($item['discount_amount'], 2) }})</span>
@@ -133,7 +180,7 @@
                                                     <span style="color: #cccccc;">-</span>
                                                 @endif
                                             </td>
-                                            <td align="right" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px; font-weight: bold; color: #2c3856;">
+                                            <td align="right" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px; font-weight: bold; color: #2c3856; vertical-align: top;">
                                                 ${{ number_format($item['total_price'], 2) }}
                                             </td>
                                         @endif
@@ -142,7 +189,7 @@
                                 </tbody>
                             </table>
 
-                            @if(($data['order_type'] ?? 'normal') === 'normal')
+                            @if(($data['order_type'] ?? 'normal') === 'normal' && $type != 'backorder_filled')
                                 <table border="0" cellpadding="0" cellspacing="0" width="100%">
                                     <tr>
                                         <td align="right" style="padding-top: 15px; font-size: 18px; font-weight: bold; color: #2c3856;">

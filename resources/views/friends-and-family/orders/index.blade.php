@@ -26,7 +26,7 @@
             <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-6 mb-8">
                 <form method="GET" action="{{ route('ff.orders.index') }}" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                     
-                    <div class="md:col-span-4 relative group">
+                    <div class="md:col-span-3 relative group">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Búsqueda</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -78,6 +78,13 @@
                             <input type="date" name="date_to" value="{{ request('date_to') }}" class="block w-full px-3 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all text-xs font-semibold">
                         </div>
                     </div>
+                    
+                    <div class="md:col-span-1 flex items-center justify-center pb-3">
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="show_backorders" value="1" {{ request('show_backorders') ? 'checked' : '' }} class="rounded border-gray-300 text-[#2c3856] shadow-sm focus:border-[#2c3856] focus:ring focus:ring-[#2c3856] focus:ring-opacity-50">
+                            <span class="ml-2 text-xs font-bold text-gray-500">Solo Backorders</span>
+                        </label>
+                    </div>
 
                     <div class="md:col-span-1">
                         <button type="submit" class="w-full bg-[#2c3856] text-white font-bold py-3 rounded-xl hover:bg-[#1e273d] shadow-md transition-all text-sm">
@@ -115,19 +122,27 @@
                                     </td>
 
                                     <td class="px-6 py-4 text-center">
-                                        @if($order->status == 'pending')
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-600 border border-amber-100">
-                                                <i class="fas fa-clock mr-1.5"></i> Pendiente
-                                            </span>
-                                        @elseif($order->status == 'approved')
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
-                                                <i class="fas fa-check-circle mr-1.5"></i> Aprobado
-                                            </span>
-                                        @elseif($order->status == 'rejected')
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-100">
-                                                <i class="fas fa-times-circle mr-1.5"></i> Rechazado
-                                            </span>
-                                        @endif
+                                        <div class="flex flex-col gap-1 items-center">
+                                            @if($order->status == 'pending')
+                                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-600 border border-amber-100 w-fit">
+                                                    <i class="fas fa-clock mr-1.5"></i> Pendiente
+                                                </span>
+                                            @elseif($order->status == 'approved')
+                                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 w-fit">
+                                                    <i class="fas fa-check-circle mr-1.5"></i> Aprobado
+                                                </span>
+                                            @elseif($order->status == 'rejected')
+                                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-100 w-fit">
+                                                    <i class="fas fa-times-circle mr-1.5"></i> Rechazado
+                                                </span>
+                                            @endif
+
+                                            @if($order->has_active_backorder)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200 mt-1 w-fit animate-pulse">
+                                                    <i class="fas fa-history mr-1"></i> En Backorder
+                                                </span>
+                                            @endif
+                                        </div>
                                     </td>
 
                                     <td class="px-6 py-4">

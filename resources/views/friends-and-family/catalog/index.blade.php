@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
-    <div x-data='productManager(@json($products), @json($channels))' class="min-h-screen bg-gray-50 relative">
+    <div x-data='productManager(@json($products), @json($channels))' class="min-h-screen relative">
         
         <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
             <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-8">
@@ -517,7 +517,7 @@
                 get uniqueBrands() { if (!this.products) return []; const brands = this.products.map(p => p.brand).filter(b => b); return [...new Set(brands)].sort(); },
                 get uniqueTypes() { if (!this.products) return []; const types = this.products.map(p => p.type).filter(t => t); return [...new Set(types)].sort(); },
                 get activeFilterCount() { let count = 0; if(this.filters.brand) count++; if(this.filters.type) count++; if(this.filters.status !== 'all') count++; if(this.filters.channel) count++; return count; },
-                get stats() { if (!this.products) return []; const total = this.products.length; const active = this.products.filter(p => p.is_active).length; return [{ label: 'Total Productos', value: total, icon: 'fas fa-cubes', color: 'bg-blue-50 text-blue-600' }, { label: 'Activos', value: active, icon: 'fas fa-check-circle', color: 'bg-emerald-50 text-emerald-600' }, { label: 'Tipos', value: this.uniqueTypes.length, icon: 'fas fa-tags', color: 'bg-indigo-50 text-indigo-600' }]; },
+                // get stats() { if (!this.products) return []; const total = this.products.length; const active = this.products.filter(p => p.is_active).length; return [{ label: 'Total Productos', value: total, icon: 'fas fa-cubes', color: 'bg-blue-50 text-blue-600' }, { label: 'Activos', value: active, icon: 'fas fa-check-circle', color: 'bg-emerald-50 text-emerald-600' }, { label: 'Tipos', value: this.uniqueTypes.length, icon: 'fas fa-tags', color: 'bg-indigo-50 text-indigo-600' }]; },
                 formatMoney(amount) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount); },
                 resetFilters() { this.filters.brand = ''; this.filters.type = ''; this.filters.status = 'all'; this.filters.search = ''; this.filters.channel = ''; this.currentPage = 1; },
                 selectNewProduct() { this.resetForm(); this.isEditorOpen = true; },

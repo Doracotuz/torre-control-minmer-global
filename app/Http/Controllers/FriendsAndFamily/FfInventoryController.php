@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OrderActionMail;
 
 class FfInventoryController extends Controller
 {
@@ -294,5 +297,65 @@ class FfInventoryController extends Controller
             fclose($file);
         };
         return new StreamedResponse($callback, 200, $headers);
-    }  
+    }
+
+    public function backorders()
+    {
+        $backorders = ffInventoryMovement::where('is_backorder', true)
+            ->where('backorder_fulfilled', false)
+            ->with(['product', 'user']) 
+            ->orderBy('created_at', 'asc') 
+            ->get()
+            ->groupBy('ff_product_id');
+        return view('friends-and-family.inventory.backorders', compact('backorders'));
+    }
+
+    public function fulfillBackorder(Request $request)
+    {
+        $request->validate(['movement_id' => 'required|exists:ff_inventory_movements,id']);
+        
+        $movement = ffInventoryMovement::with(['product', 'user'])->find($request->movement_id);
+        $product = $movement->product;
+        
+        $currentStock = $product->movements()->sum('quantity');
+        $required = abs($movement->quantity);
+
+        if ($currentStock < $required) {
+            return response()->json(['message' => "Stock insuficiente. Tienes $currentStock, necesitas $required."], 422);
+        }
+
+        $movement->update([
+            'backorder_fulfilled' => true,
+            'observations' => $movement->observations . " [SURTIDO EL " . date('d/m/Y') . "]",
+        ]);
+
+        if ($movement->user && $movement->user->email) {
+            try {
+                $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
+                
+                $mailData = [
+                    'folio' => $movement->folio,
+                    'client_name' => $movement->client_name,
+                    'company_name' => $movement->company_name,
+                    'delivery_date' => $movement->delivery_date ? $movement->delivery_date->format('d/m/Y') : 'N/A',
+                    'vendedor_name' => $movement->user->name,
+                    'logo_url' => $logoUrl,
+                    'items' => [
+                        [
+                            'sku' => $product->sku,
+                            'description' => $product->description,
+                            'quantity' => abs($movement->quantity)
+                        ]
+                    ]
+                ];
+
+                Mail::to($movement->user->email)->send(new OrderActionMail($mailData, 'backorder_filled'));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Error enviando email backorder: " . $e->getMessage());
+            }
+        }
+
+        return response()->json(['message' => 'Pedido marcado como surtido y vendedor notificado.']);
+    }
+    
 }

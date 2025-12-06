@@ -36,7 +36,8 @@ class FfOrderController extends Controller
                 'created_at',
                 'user_id',
                 DB::raw('SUM(ABS(quantity)) as total_items'),
-                DB::raw('MAX(id) as id')
+                DB::raw('MAX(id) as id'),
+                DB::raw('MAX(CASE WHEN is_backorder = 1 AND backorder_fulfilled = 0 THEN 1 ELSE 0 END) as has_active_backorder')
             )
             ->groupBy('folio', 'client_name', 'company_name', 'order_type', 'status', 'delivery_date', 'created_at', 'user_id');
 
@@ -58,6 +59,10 @@ class FfOrderController extends Controller
         }
         if ($request->filled('date_to')) {
             $query->whereDate('created_at', '<=', $request->date_to);
+        }
+        
+        if ($request->filled('show_backorders')) {
+            $query->havingRaw('MAX(CASE WHEN is_backorder = 1 AND backorder_fulfilled = 0 THEN 1 ELSE 0 END) = 1');
         }
 
         $orders = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
