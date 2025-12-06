@@ -1,0 +1,500 @@
+<?php
+
+namespace App\Http\Controllers\FriendsAndFamily;
+
+use App\Http\Controllers\Controller;
+use App\Models\ffInventoryMovement;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use App\Mail\OrderActionMail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
+use App\Models\FfOrderDocument;
+use App\Models\FfClient;
+use App\Models\User;
+use Dompdf\Dompdf;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Http\Controllers\FriendsAndFamily\FfAdministrationController;
+
+
+class FfOrderController extends Controller
+{
+    public function index(Request $request)
+    {
+        $query = ffInventoryMovement::query()
+            ->where('quantity', '<', 0)
+            ->select(
+                'folio', 
+                'client_name', 
+                'company_name', 
+                'order_type', 
+                'status', 
+                'delivery_date', 
+                'created_at',
+                'user_id',
+                DB::raw('SUM(ABS(quantity)) as total_items'),
+                DB::raw('MAX(id) as id')
+            )
+            ->groupBy('folio', 'client_name', 'company_name', 'order_type', 'status', 'delivery_date', 'created_at', 'user_id');
+
+        if ($request->filled('folio')) {
+            $query->where('folio', 'like', "%{$request->folio}%");
+        }
+        if ($request->filled('client')) {
+            $query->where('client_name', 'like', "%{$request->client}%")
+                  ->orWhere('company_name', 'like', "%{$request->client}%");
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('type')) {
+            $query->where('order_type', $request->type);
+        }
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $orders = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
+
+        return view('friends-and-family.orders.index', compact('orders'));
+    }
+
+    public function show($folio)
+    {
+        $movements = ffInventoryMovement::where('folio', $folio)
+            ->where('quantity', '<', 0)
+            ->with(['product', 'user', 'approver'])
+            ->get();
+
+        if ($movements->isEmpty()) {
+            return redirect()->route('ff.orders.index')->with('error', 'Pedido no encontrado');
+        }
+
+        $header = $movements->first();
+        
+        $totalItems = $movements->sum(fn($m) => abs($m->quantity));
+        $totalValue = $movements->sum(fn($m) => abs($m->quantity) * ($m->product->unit_price * (1 - ($m->discount_percentage/100))));
+
+        if ($header->order_type !== 'normal') $totalValue = 0;
+
+        return view('friends-and-family.orders.show', compact('header', 'movements', 'totalItems', 'totalValue'));
+    }
+
+    public function approve($folio)
+    {
+        $this->authorizeAdmin();
+
+        ffInventoryMovement::where('folio', $folio)->update([
+            'status' => 'approved',
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+        ]);
+
+        $movements = ffInventoryMovement::where('folio', $folio)
+            ->where('quantity', '<', 0)
+            ->with('product')
+            ->get();
+
+        if ($movements->isNotEmpty()) {
+            $header = $movements->first();
+            
+            if (!empty($header->notification_emails)) {
+                try {
+                    $pdfItems = [];
+                    $grandTotal = 0;
+                    
+                    foreach($movements as $m) {
+                        $basePrice = $m->product->unit_price;
+                        $discountPercent = $m->discount_percentage ?? 0;
+                        $discountAmount = 0;
+                        $finalPrice = 0;
+
+                        if ($m->order_type === 'normal') {
+                            $discountAmount = $basePrice * ($discountPercent / 100);
+                            $finalPrice = $basePrice - $discountAmount;
+                        } else {
+                            $basePrice = 0;
+                            $discountPercent = 0;
+                            $discountAmount = 0;
+                            $finalPrice = 0;
+                        }
+
+                        $totalLine = abs($m->quantity) * $finalPrice;
+                        $grandTotal += $totalLine;
+
+                        $pdfItems[] = [
+                            'sku' => $m->product->sku,
+                            'description' => $m->product->description,
+                            'quantity' => abs($m->quantity),
+                            'base_price' => $basePrice,
+                            'discount_percentage' => $discountPercent,
+                            'discount_amount' => $discountAmount,
+                            'unit_price' => $finalPrice,
+                            'total_price' => $totalLine,
+                        ];
+                    }
+
+                    $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
+                    
+                    $pdfData = [
+                        'items' => $pdfItems,
+                        'grandTotal' => $grandTotal,
+                        'folio' => $folio,
+                        'date' => $header->created_at->format('d/m/Y'),
+                        'client_name' => $header->client_name,
+                        'company_name' => $header->company_name,
+                        'client_phone' => $header->client_phone,
+                        'address' => $header->address,
+                        'locality' => $header->locality,
+                        'delivery_date' => $header->delivery_date ? $header->delivery_date->format('d/m/Y H:i') : '',
+                        'surtidor_name' => $header->surtidor_name,
+                        'observations' => $header->observations,
+                        'vendedor_name' => $header->user->name ?? 'N/A',
+                        'logo_url' => $logoUrl,
+                        'order_type' => $header->order_type,
+                    ];
+
+                    $dompdf = new Dompdf();
+                    $dompdf->set_option('isRemoteEnabled', true);
+                    $pdfView = view('friends-and-family.sales.pdf', $pdfData);
+                    $dompdf->loadHtml($pdfView->render());
+                    $dompdf->setPaper('A4', 'portrait');
+                    $dompdf->render();
+                    $pdfContent = $dompdf->output();
+
+                    $stream = fopen('php://temp', 'r+');
+                    fputcsv($stream, ['SKU', 'Descripcion', 'Cantidad', 'Precio Unitario', 'Total']);
+                    foreach ($pdfItems as $row) {
+                        fputcsv($stream, [$row['sku'], $row['description'], $row['quantity'], $row['unit_price'], $row['total_price']]);
+                    }
+                    rewind($stream);
+                    $csvContent = stream_get_contents($stream);
+                    fclose($stream);
+
+                    $conditionsPdfContent = null;
+                    if ($header->ff_client_id) {
+                        $client = FfClient::with('deliveryConditions')->find($header->ff_client_id);
+                        if ($client && $client->deliveryConditions) {
+                            $condData = [
+                                'client' => $client,
+                                'conditions' => $client->deliveryConditions,
+                                'logoUrl' => Storage::disk('s3')->url('LogoAzulm.PNG'),
+                                'specific_address' => $header->address . ', ' . $header->locality,
+                                'specific_observations' => $header->observations,
+                                'prepFields' => \App\Http\Controllers\FriendsAndFamily\FfAdministrationController::getPrepFieldsStatic(), 
+                                'docFields' => \App\Http\Controllers\FriendsAndFamily\FfAdministrationController::getDocFieldsStatic(),
+                                'evidFields' => \App\Http\Controllers\FriendsAndFamily\FfAdministrationController::getEvidFieldsStatic(),
+                            ];
+                            $pdfCond = Pdf::loadView('friends-and-family.admin.conditions-pdf', $condData);
+                            $pdfCond->setPaper('A4', 'portrait');
+                            $pdfCond->setOption('isRemoteEnabled', true);
+                            $conditionsPdfContent = $pdfCond->output();
+                        }
+                    }
+
+                    $allDocs = FfOrderDocument::where('folio', $folio)->get()->map(function($doc) {
+                        return ['path' => $doc->path, 'name' => $doc->filename];
+                    })->toArray();
+
+                    $recipients = array_filter(array_map('trim', explode(';', $header->notification_emails)));
+                    
+                    if (!empty($recipients)) {
+                        Mail::to($recipients)->send(new OrderActionMail(
+                            $pdfData, 
+                            'new', 
+                            $pdfContent, 
+                            $csvContent, 
+                            $allDocs,
+                            $conditionsPdfContent
+                        ));
+                    }
+
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Error enviando correo de aprobación F&F: " . $e->getMessage());
+                }
+            }
+        }
+
+        return redirect()->back()->with('success', 'Pedido #' . $folio . ' APROBADO y notificaciones enviadas.');
+    }
+
+    public function reject(Request $request, $folio)
+    {
+        $this->authorizeAdmin();
+        $request->validate(['reason' => 'required|string|max:255']);
+
+        DB::beginTransaction();
+        try {
+            ffInventoryMovement::where('folio', $folio)->update([
+                'status' => 'rejected',
+                'rejection_reason' => $request->reason,
+                'approved_by' => Auth::id(),
+                'approved_at' => now(),
+            ]);
+
+            $movements = ffInventoryMovement::where('folio', $folio)->where('quantity', '<', 0)->get();
+            
+            foreach($movements as $mov) {
+                ffInventoryMovement::create([
+                    'ff_product_id' => $mov->ff_product_id,
+                    'user_id' => Auth::id(),
+                    'quantity' => abs($mov->quantity),
+                    'reason' => 'RECHAZO Pedido #' . $folio . ': ' . $request->reason,
+                    'folio' => $folio,
+                    'status' => 'rejected',
+                    'client_name' => $mov->client_name
+                ]);
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Pedido #' . $folio . ' RECHAZADO y stock restaurado.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Error al rechazar: ' . $e->getMessage());
+        }
+    }
+
+    private function authorizeAdmin()
+    {
+        $user = Auth::user();
+        if (!($user->is_area_admin)) {
+            abort(403, 'No tienes permisos para autorizar pedidos.');
+        }
+    }
+
+    public function emailApprove($folio, $adminId)
+    {
+        if (!request()->hasValidSignature()) {
+            return view('friends-and-family.orders.email-response', ['status' => 'error', 'message' => 'Enlace expirado o inválido.']);
+        }
+
+        $header = ffInventoryMovement::where('folio', $folio)->first();
+
+        if (!$header || $header->status !== 'pending') {
+             return view('friends-and-family.orders.email-response', ['status' => 'error', 'message' => 'Este pedido ya fue procesado.']);
+        }
+
+        try {
+            DB::beginTransaction();
+            
+            ffInventoryMovement::where('folio', $folio)->update([
+                'status' => 'approved',
+                'approved_by' => $adminId,
+                'approved_at' => now(),
+            ]);
+            
+            $movements = ffInventoryMovement::where('folio', $folio)
+                ->where('quantity', '<', 0)
+                ->with('product')
+                ->get();
+
+            if ($movements->isNotEmpty() && !empty($header->notification_emails)) {
+                
+                $pdfItems = [];
+                $grandTotal = 0;
+                
+                foreach($movements as $m) {
+                    $basePrice = $m->product->unit_price;
+                    $discountPercent = $m->discount_percentage ?? 0;
+                    $discountAmount = 0;
+                    $finalPrice = 0;
+
+                    if ($m->order_type === 'normal') {
+                        $discountAmount = $basePrice * ($discountPercent / 100);
+                        $finalPrice = $basePrice - $discountAmount;
+                    } else {
+                        $basePrice = 0;
+                        $discountPercent = 0;
+                        $discountAmount = 0;
+                        $finalPrice = 0;
+                    }
+
+                    $totalLine = abs($m->quantity) * $finalPrice;
+                    $grandTotal += $totalLine;
+
+                    $pdfItems[] = [
+                        'sku' => $m->product->sku,
+                        'description' => $m->product->description,
+                        'quantity' => abs($m->quantity),
+                        'base_price' => $basePrice,
+                        'discount_percentage' => $discountPercent,
+                        'discount_amount' => $discountAmount,
+                        'unit_price' => $finalPrice,
+                        'total_price' => $totalLine,
+                    ];
+                }
+
+                $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
+                
+                $pdfData = [
+                    'items' => $pdfItems,
+                    'grandTotal' => $grandTotal,
+                    'folio' => $folio,
+                    'date' => $header->created_at->format('d/m/Y'),
+                    'client_name' => $header->client_name,
+                    'company_name' => $header->company_name,
+                    'client_phone' => $header->client_phone,
+                    'address' => $header->address,
+                    'locality' => $header->locality,
+                    'delivery_date' => $header->delivery_date ? $header->delivery_date->format('d/m/Y H:i') : '',
+                    'surtidor_name' => $header->surtidor_name,
+                    'observations' => $header->observations,
+                    'vendedor_name' => $header->user->name ?? 'N/A',
+                    'logo_url' => $logoUrl,
+                    'order_type' => $header->order_type,
+                ];
+
+                $dompdf = new Dompdf();
+                $dompdf->set_option('isRemoteEnabled', true);
+                $pdfView = view('friends-and-family.sales.pdf', $pdfData);
+                $dompdf->loadHtml($pdfView->render());
+                $dompdf->setPaper('A4', 'portrait');
+                $dompdf->render();
+                $pdfContent = $dompdf->output();
+
+                $stream = fopen('php://temp', 'r+');
+                fputcsv($stream, ['SKU', 'Descripcion', 'Cantidad', 'Precio Unitario', 'Total']);
+                foreach ($pdfItems as $row) {
+                    fputcsv($stream, [$row['sku'], $row['description'], $row['quantity'], $row['unit_price'], $row['total_price']]);
+                }
+                rewind($stream);
+                $csvContent = stream_get_contents($stream);
+                fclose($stream);
+
+                $conditionsPdfContent = null;
+                if ($header->ff_client_id) {
+                    $client = FfClient::with('deliveryConditions')->find($header->ff_client_id);
+                    if ($client && $client->deliveryConditions) {
+                        $condData = [
+                            'client' => $client,
+                            'conditions' => $client->deliveryConditions,
+                            'logoUrl' => Storage::disk('s3')->url('LogoAzulm.PNG'),
+                            'specific_address' => $header->address . ', ' . $header->locality,
+                            'specific_observations' => $header->observations,
+                            'prepFields' => \App\Http\Controllers\FriendsAndFamily\FfAdministrationController::getPrepFieldsStatic(), 
+                            'docFields' => \App\Http\Controllers\FriendsAndFamily\FfAdministrationController::getDocFieldsStatic(),
+                            'evidFields' => \App\Http\Controllers\FriendsAndFamily\FfAdministrationController::getEvidFieldsStatic(),
+                        ];
+                        $pdfCond = Pdf::loadView('friends-and-family.admin.conditions-pdf', $condData);
+                        $pdfCond->setPaper('A4', 'portrait');
+                        $pdfCond->setOption('isRemoteEnabled', true);
+                        $conditionsPdfContent = $pdfCond->output();
+                    }
+                }
+
+                $allDocs = FfOrderDocument::where('folio', $folio)->get()->map(function($doc) {
+                    return ['path' => $doc->path, 'name' => $doc->filename];
+                })->toArray();
+
+                $recipients = array_filter(array_map('trim', explode(';', $header->notification_emails)));
+                
+                if (!empty($recipients)) {
+                    Mail::to($recipients)->send(new OrderActionMail(
+                        $pdfData, 
+                        'new', 
+                        $pdfContent, 
+                        $csvContent, 
+                        $allDocs,
+                        $conditionsPdfContent
+                    ));
+                }
+            }
+
+            DB::commit();
+
+            return view('friends-and-family.orders.email-response', [
+                'status' => 'success',
+                'message' => "El pedido #$folio ha sido APROBADO exitosamente. Se han enviado las notificaciones correspondientes."
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Illuminate\Support\Facades\Log::error("Error aprobación email: " . $e->getMessage());
+            return view('friends-and-family.orders.email-response', [
+                'status' => 'error',
+                'message' => 'Error interno al procesar la aprobación: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function emailRejectForm($folio, $adminId)
+    {
+        if (!request()->hasValidSignature()) {
+            return view('friends-and-family.orders.email-response', [
+                'status' => 'error',
+                'message' => 'El enlace ha expirado o no es válido.'
+            ]);
+        }
+
+        $header = ffInventoryMovement::where('folio', $folio)->where('status', 'pending')->first();
+        
+        if (!$header) {
+            return view('friends-and-family.orders.email-response', [
+                'status' => 'error',
+                'message' => 'Este pedido no está disponible para rechazo (ya fue procesado).'
+            ]);
+        }
+
+        return view('friends-and-family.orders.email-reject-form', compact('folio', 'adminId'));
+    }
+
+    public function emailRejectSubmit(Request $request, $folio, $adminId)
+    {
+        $request->validate(['reason' => 'required|string|max:255']);
+
+        $header = ffInventoryMovement::where('folio', $folio)->where('status', 'pending')->first();
+
+        if (!$header) {
+            return view('friends-and-family.orders.email-response', [
+                'status' => 'error',
+                'message' => 'El pedido ya no está en estatus pendiente.'
+            ]);
+        }
+
+        DB::beginTransaction();
+        try {
+            ffInventoryMovement::where('folio', $folio)->update([
+                'status' => 'rejected',
+                'rejection_reason' => $request->reason,
+                'approved_by' => $adminId,
+                'approved_at' => now(),
+            ]);
+
+            $movements = ffInventoryMovement::where('folio', $folio)->where('quantity', '<', 0)->get();
+            
+            foreach($movements as $mov) {
+                ffInventoryMovement::create([
+                    'ff_product_id' => $mov->ff_product_id,
+                    'user_id' => $mov->user_id, 
+                    'quantity' => abs($mov->quantity),
+                    'reason' => 'RECHAZO (Email) Pedido #' . $folio . ': ' . $request->reason,
+                    'folio' => $folio,
+                    'status' => 'rejected',
+                    'client_name' => $mov->client_name,
+                    'order_type' => $mov->order_type,
+                ]);
+            }
+
+            DB::commit();
+            
+            return view('friends-and-family.orders.email-response', [
+                'status' => 'success',
+                'message' => 'Pedido #' . $folio . ' RECHAZADO correctamente. El stock ha sido restaurado.'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return view('friends-and-family.orders.email-response', [
+                'status' => 'error',
+                'message' => 'Error al rechazar: ' . $e->getMessage()
+            ]);
+        }
+    }
+}

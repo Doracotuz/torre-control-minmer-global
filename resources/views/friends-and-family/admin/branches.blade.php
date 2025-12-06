@@ -8,7 +8,7 @@
         .floating-card { background: white; border-radius: 24px; box-shadow: 0 10px 40px -10px rgba(44, 56, 86, 0.08); border: 1px solid rgba(255, 255, 255, 0.5); }
         .table-row-modern { transition: all 0.2s ease; border-bottom: 1px solid #f3f4f6; }
         .table-row-modern:last-child { border-bottom: none; }
-        .table-row-modern:hover { background-color: #f8fafc; transform: scale(1.005); box-shadow: 0 4px 12px rgba(0,0,0,0.03); z-index: 10; position: relative; border-radius: 12px; }
+        .table-row-modern:hover { background-color: #f8fafc; transform: scale(1.0001); box-shadow: 0 4px 12px rgba(0,0,0,0.03); z-index: 10; position: relative; border-radius: 12px; }
         .input-modern { background-color: #f9fafb; border: 2px solid transparent; transition: all 0.3s ease; }
         .input-modern:focus { background-color: white; border-color: #ff9c00; box-shadow: 0 0 0 4px rgba(255, 156, 0, 0.1); }
         .btn-animated { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }

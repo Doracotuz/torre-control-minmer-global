@@ -61,6 +61,8 @@ use App\Http\Controllers\FriendsAndFamily\FfProductController;
 use App\Http\Controllers\FriendsAndFamily\FfInventoryController;
 use App\Http\Controllers\FriendsAndFamily\FfSalesController;
 use App\Http\Controllers\FriendsAndFamily\FfReportController;
+use App\Http\Controllers\FriendsAndFamily\FfAdministrationController;
+use App\Http\Controllers\FriendsAndFamily\FfOrderController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -461,6 +463,12 @@ Route::prefix('maniobrista')->name('maniobrista.')->group(function () {
     Route::post('/guia/{guia:guia}/{empleado}/evidencias', [ManiobristaController::class, 'storeFacturaEvidencias'])->name('guia.evidencias.store');
 });
 
+Route::prefix('ff/email-actions')->name('ff.email.')->middleware('signed')->group(function () {
+    Route::get('/approve/{folio}/{adminId}', [FfOrderController::class, 'emailApprove'])->name('approve');
+    Route::get('/reject-confirm/{folio}/{adminId}', [FfOrderController::class, 'emailRejectForm'])->name('reject.form');
+    Route::post('/reject-submit/{folio}/{adminId}', [FfOrderController::class, 'emailRejectSubmit'])->name('reject.submit');
+});
+
 // Route::prefix('operador')->name('operador.')->group(function() {
 //     // Página para ingresar el número de guía
 //     Route::get('/', [OperadorController::class, 'index'])->name('index'); //
@@ -780,7 +788,8 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
     Route::get('/sales/search-order', [FfSalesController::class, 'searchOrder'])->name('sales.searchOrder');
     Route::post('/sales/cancel-order', [FfSalesController::class, 'cancelOrder'])->name('sales.cancelOrder');
     Route::get('/sales/template', [FfSalesController::class, 'downloadTemplate'])->name('sales.downloadTemplate');
-    Route::post('/sales/import', [FfSalesController::class, 'importOrder'])->name('sales.importOrder');    
+    Route::post('/sales/import', [FfSalesController::class, 'importOrder'])->name('sales.importOrder');
+    Route::post('/sales/return-loan', [FfSalesController::class, 'returnLoan'])->name('sales.returnLoan');    
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [FfReportController::class, 'index'])->name('index');
         Route::get('/transactions', [FfReportController::class, 'transactions'])->name('transactions');
@@ -807,7 +816,11 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
         Route::get('/clients/{client}/conditions', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'conditionsEdit'])->name('clients.conditions.edit');
         Route::put('/clients/{client}/conditions', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'conditionsUpdate'])->name('clients.conditions.update');
         Route::get('/clients/{client}/conditions/pdf', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'exportConditionsPdf'])->name('clients.conditions.pdf');
-    });      
+    });
+    Route::get('/orders', [FfOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{folio}', [FfOrderController::class, 'show'])->name('orders.show');
+    Route::post('/orders/{folio}/approve', [FfOrderController::class, 'approve'])->name('orders.approve');
+    Route::post('/orders/{folio}/reject', [FfOrderController::class, 'reject'])->name('orders.reject');    
 });
 
 Route::get('/project-files/{file}/download', [ProjectFileController::class, 'download'])

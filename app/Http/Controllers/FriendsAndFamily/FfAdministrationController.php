@@ -243,6 +243,60 @@ class FfAdministrationController extends Controller
         $pdf->setOption('dpi', 150);
 
         return $pdf->stream('Condiciones_Entrega_' . \Illuminate\Support\Str::slug($client->name) . '.pdf');
+    }
+
+    public static function getPrepFieldsStatic()
+    {
+        return [
+            'Revisión de UPC vs Factura' => 'revision_upc',
+            'Distribución por Tienda' => 'distribucion_tienda',
+            'Re-etiquetado' => 're_etiquetado',
+            'Colocación de Sensor' => 'colocacion_sensor',
+            'Preparado Especial' => 'preparado_especial',
+            'Tipo de Unidad Aceptada' => 'tipo_unidad_aceptada',
+            'Equipo de Seguridad' => 'equipo_seguridad',
+            'Registro Patronal (SUA)' => 'registro_patronal',
+            'Entrega con Otros Pedidos' => 'entrega_otros_pedidos',
+            'Insumos y Herramientas' => 'insumos_herramientas',
+            'Maniobra' => 'maniobra',
+            'Identificaciones para Acceso' => 'identificaciones',
+            'Etiqueta de Frágil' => 'etiqueta_fragil',
+            'Tarima CHEP' => 'tarima_chep',
+            'Granel' => 'granel',
+            'Tarima Estándar' => 'tarima_estandar',
+        ];
+    }
+
+    public static function getDocFieldsStatic()
+    {
+        return [
+            'Factura' => 'doc_factura',
+            'DO' => 'doc_do',
+            'Carta Maniobra' => 'doc_carta_maniobra',
+            'Carta Poder' => 'doc_carta_poder',
+            'Orden de Compra' => 'doc_orden_compra',
+            'Carta Confianza' => 'doc_carta_confianza',
+            'Confirmación de Cita' => 'doc_confirmacion_cita',
+            'Carta Caja Cerrada' => 'doc_carta_caja_cerrada',
+            'Confirmación de Facturas' => 'doc_confirmacion_facturas',
+            'Carátula de Entrega' => 'doc_caratula_entrega',
+            'Pase Vehicular' => 'doc_pase_vehicular',
+        ];
+    }
+
+    public static function getEvidFieldsStatic()
+    {
+        return [
+            'Folio de Recibo' => 'evid_folio_recibo',
+            'Factura Sellada o Firmada' => 'evid_factura_sellada',
+            'Sello Tarima CHEP' => 'evid_sello_tarima',
+            'Etiqueta de Recibo' => 'evid_etiqueta_recibo',
+            'Acuse de Orden de Compra' => 'evid_acuse_oc',
+            'Hoja de Rechazo' => 'evid_hoja_rechazo',
+            'Anotación de Rechazo' => 'evid_anotacion_rechazo',
+            'Contrarrecibo de Equipo' => 'evid_contrarrecibo',
+            'Formato de Reparto' => 'evid_formato_reparto',
+        ];
     }    
     
 }

@@ -243,6 +243,23 @@
         <div class="client-card">
             <div class="client-label">Cliente Seleccionado</div>
             <div class="client-name">{{ $client->name }}</div>
+            
+            @if(isset($specific_address) || isset($specific_observations))
+                <div style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                    <table width="100%">
+                        <tr>
+                            <td valign="top" width="60%">
+                                <div class="client-label">Dirección de Entrega (Pedido Actual)</div>
+                                <div style="font-size: 11px; color: #444;">{{ $specific_address ?? 'N/A' }}</div>
+                            </td>
+                            <td valign="top" width="40%">
+                                <div class="client-label">Observaciones Específicas</div>
+                                <div style="font-size: 11px; color: #444; font-style: italic;">{{ $specific_observations ?? 'Ninguna' }}</div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            @endif
         </div>
 
         <div class="content">

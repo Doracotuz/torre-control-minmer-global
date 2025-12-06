@@ -8,6 +8,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\URL;
 
 class OrderActionMail extends Mailable
 {
@@ -18,22 +19,28 @@ class OrderActionMail extends Mailable
     protected $pdfContent;
     protected $csvContent;
     protected $externalDocs;
+    protected $conditionsPdfData;
+    protected $targetAdminId;
 
-    public function __construct($data, $type, $pdfContent = null, $csvContent = null, $externalDocs = [])
+    public function __construct($data, $type, $pdfContent = null, $csvContent = null, $externalDocs = [], $conditionsPdfData = null, $targetAdminId = null)
     {
         $this->data = $data;
         $this->type = $type;
         $this->pdfContent = $pdfContent;
         $this->csvContent = $csvContent;
         $this->externalDocs = $externalDocs;
+        $this->conditionsPdfData = $conditionsPdfData;
+        $this->targetAdminId = $targetAdminId;
     }
 
     public function envelope(): Envelope
     {
         $prefix = match($this->type) {
-            'new' => 'Nueva Pedido',
+            'new' => 'Nuevo Pedido',
             'update' => 'Actualización de Pedido',
             'cancel' => 'CANCELACIÓN de Pedido',
+            'admin_alert' => 'ALERTA: Nuevo Pedido por Aprobar',
+            default => 'Notificación de Pedido'
         };
 
         return new Envelope(
@@ -43,8 +50,31 @@ class OrderActionMail extends Mailable
 
     public function content(): Content
     {
+        $approveUrl = null;
+        $rejectUrl = null;
+
+        if ($this->type === 'admin_alert' && $this->targetAdminId) {
+            $folio = $this->data['folio'];
+            
+            $approveUrl = URL::temporarySignedRoute(
+                'ff.email.approve', 
+                now()->addHours(48), 
+                ['folio' => $folio, 'adminId' => $this->targetAdminId]
+            );
+            
+            $rejectUrl = URL::temporarySignedRoute(
+                'ff.email.reject.form', 
+                now()->addHours(48), 
+                ['folio' => $folio, 'adminId' => $this->targetAdminId]
+            );
+        }
+
         return new Content(
             view: 'emails.sales.action-notification',
+            with: [
+                'approveUrl' => $approveUrl,
+                'rejectUrl' => $rejectUrl,
+            ]
         );
     }
 
@@ -53,19 +83,18 @@ class OrderActionMail extends Mailable
         $attachments = [];
 
         if ($this->pdfContent) {
-            $attachments[] = Attachment::fromData(fn () => $this->pdfContent, 'Remision_' . $this->data['folio'] . '.pdf')
-                ->withMime('application/pdf');
+            $attachments[] = Attachment::fromData(fn () => $this->pdfContent, 'Remision_' . $this->data['folio'] . '.pdf')->withMime('application/pdf');
         }
-
         if ($this->csvContent) {
-            $attachments[] = Attachment::fromData(fn () => $this->csvContent, 'Detalle_' . $this->data['folio'] . '.csv')
-                ->withMime('text/csv');
+            $attachments[] = Attachment::fromData(fn () => $this->csvContent, 'Detalle_' . $this->data['folio'] . '.csv')->withMime('text/csv');
         }
-
+        if ($this->conditionsPdfData) {
+            $attachments[] = Attachment::fromData(fn () => $this->conditionsPdfData, 'Condiciones_Entrega.pdf')->withMime('application/pdf');
+        }
         foreach ($this->externalDocs as $doc) {
-            $attachments[] = Attachment::fromStorageDisk('s3', $doc['path'])
-                ->as($doc['name'])
-                ->withMime('application/pdf');
+            $path = is_array($doc) ? $doc['path'] : $doc->path;
+            $name = is_array($doc) ? $doc['name'] : $doc->filename;
+            $attachments[] = Attachment::fromStorageDisk('s3', $path)->as($name)->withMime('application/pdf');
         }
 
         return $attachments;

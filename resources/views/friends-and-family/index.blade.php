@@ -183,7 +183,7 @@
                     ? 'grid-cols-12 auto-rows-[minmax(240px,auto)]' 
                     : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-5 auto-rows-auto'">
 
-                <a href="{{ route('ff.sales.index') }}" 
+                <a href="{{ route('ff.orders.index') }}" 
                    class="op-card group animate-entry" 
                    :class="layout === 'original' ? 'col-span-12 lg:col-span-8 row-span-2' : 'col-span-1 h-[500px]'"
                    style="animation-delay: 0.1s;">
@@ -202,12 +202,12 @@
                         <div class="stat-badge">
                             <span>Última venta: {{ $lastSale ? $lastSale->created_at->diffForHumans() : 'N/A' }}</span>
                         </div>
-                        <h2 class="font-brand font-bold mb-2 leading-tight" :class="layout === 'original' ? 'text-4xl' : 'text-3xl'">Captura de Pedidos</h2>
+                        <h2 class="font-brand font-bold mb-2 leading-tight" :class="layout === 'original' ? 'text-4xl' : 'text-3xl'">Pedidos</h2>
                         <p class="text-gray-200 text-lg font-light mb-6" :class="layout === 'original' ? 'max-w-xl' : ''">
-                            Gestión operativa de transacciones. Inicia nuevos pedidos y coordina la logística.
+                            Monitor de estatus, aprobaciones y gestión operativa de transacciones.
                         </p>
                         <div class="flex items-center text-[#ff9c00] font-bold tracking-wider text-sm uppercase group-hover:translate-x-2 transition-transform">
-                            Acceder al módulo <span class="ml-2 text-xl">→</span>
+                            Ver Listado <span class="ml-2 text-xl">→</span>
                         </div>
                     </div>
                 </a>
@@ -326,7 +326,7 @@
             <div class="mt-16 text-center opacity-60 animate-entry" style="animation-delay: 0.6s;">
                 <div class="inline-flex items-center space-x-4">
                     <div class="h-px w-12 bg-[#2c3856]"></div>
-                    <p class="text-[10px] font-bold text-[#2c3856] uppercase tracking-[0.3em]">Minmer Global Operations</p>
+                    <p class="text-[10px] font-bold text-[#2c3856] uppercase tracking-[0.3em]">Control Tower - Minmer Global</p>
                     <div class="h-px w-12 bg-[#2c3856]"></div>
                 </div>
             </div>

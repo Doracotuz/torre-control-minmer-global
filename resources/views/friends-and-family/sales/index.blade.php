@@ -20,7 +20,7 @@
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 
-    <div x-data="salesManager()" x-init='init(@json($products), {{ $nextFolio }})' class="bg-[#E8ECF7] font-sans text-gray-800 min-h-screen pb-12">
+    <div x-data="salesManager()" x-init='init(@json($products), {{ $nextFolio }}, @json($clients), @json($channels), @json($transports), @json($payments), {{ $editFolio ?? "null" }})' class="bg-[#E8ECF7] font-sans text-gray-800 min-h-screen pb-12">
         
         <div x-show="flashMessage" x-cloak 
              x-transition:enter="transform ease-out duration-300"
@@ -52,6 +52,9 @@
                     <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 top-4 z-30">
                         <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
                             <div>
+                                <a href="{{ route('ff.orders.index') }}" class="inline-flex items-center text-xs font-bold text-gray-400 hover:text-[#2c3856] mb-2 transition-colors">
+                                    <i class="fas fa-arrow-left mr-1"></i> Volver al Monitoreo
+                                </a>
                                 <h1 class="text-2xl font-bold text-[#2c3856] tracking-tight">Gestión de Pedidos</h1>
                                 <p class="text-xs text-gray-500 mt-1 flex items-center gap-2">
                                     <span x-show="!editMode">Creación de nueva venta</span>
@@ -147,7 +150,21 @@
                                             <div class="flex justify-between items-end mb-3">
                                                 <div>
                                                     <p class="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Precio</p>
-                                                    <div class="text-lg font-extrabold text-[#2c3856]" x-text="formatCurrency(product.unit_price)"></div>
+                                                    
+                                                    <div x-show="form.order_type === 'normal' && (productDiscounts[product.id] > 0)">
+                                                        <span class="text-xs text-gray-400 line-through" x-text="formatCurrency(product.unit_price)"></span>
+                                                        <div class="text-lg font-extrabold text-emerald-600" x-text="formatCurrency(calculateItemPrice(product))"></div>
+                                                    </div>
+
+                                                    <div x-show="form.order_type === 'normal' && (!productDiscounts[product.id] || productDiscounts[product.id] == 0)">
+                                                        <div class="text-lg font-extrabold text-[#2c3856]" x-text="formatCurrency(product.unit_price)"></div>
+                                                    </div>
+
+                                                    <div x-show="form.order_type !== 'normal'">
+                                                        <div class="text-lg font-extrabold text-blue-600">$0.00</div>
+                                                        <span class="text-[9px] font-bold text-blue-500 uppercase block mt-1" x-text="form.order_type"></span>
+                                                    </div>
+
                                                 </div>
                                                 <div class="text-right">
                                                     <p class="text-[10px] uppercase font-bold text-gray-400 mb-0.5">Disp.</p>
@@ -222,7 +239,19 @@
                                                 </td>
 
                                                 <td class="p-3 text-right">
-                                                    <div class="font-extrabold text-[#2c3856]" x-text="formatCurrency(product.unit_price)"></div>
+                                                    <div x-show="form.order_type === 'normal' && (productDiscounts[product.id] > 0)">
+                                                        <span class="text-[10px] text-gray-400 line-through" x-text="formatCurrency(product.unit_price)"></span>
+                                                        <div class="font-extrabold text-emerald-600" x-text="formatCurrency(calculateItemPrice(product))"></div>
+                                                    </div>
+
+                                                    <div x-show="form.order_type === 'normal' && (!productDiscounts[product.id] || productDiscounts[product.id] == 0)">
+                                                        <div class="font-extrabold text-[#2c3856]" x-text="formatCurrency(product.unit_price)"></div>
+                                                    </div>
+                                                    
+                                                    <div x-show="form.order_type !== 'normal'">
+                                                        <div class="font-extrabold text-blue-600">$0.00</div>
+                                                        <span class="text-[9px] font-bold text-blue-500 uppercase" x-text="form.order_type"></span>
+                                                    </div>
                                                 </td>
 
                                                 <td class="p-3 text-center">
@@ -272,10 +301,7 @@
                     <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col h-full relative">
                         
                         <div class="p-5 text-white flex-shrink-0 relative overflow-hidden transition-colors duration-500"
-                             :class="editMode ? 'bg-orange-600' : 'bg-[#2c3856]'">
-                            <div class="absolute top-0 right-0 p-4 opacity-10">
-                                <i class="fas fa-shopping-cart text-6xl"></i>
-                            </div>
+                             :class="getHeaderColor()">
                             <div class="relative z-10">
                                 <div class="flex justify-between items-center mb-2">
                                     <h2 class="text-xs font-bold uppercase tracking-widest opacity-90" x-text="editMode ? 'Modo Edición' : 'Nuevo Pedido'"></h2>
@@ -283,6 +309,29 @@
                                         <i class="fas fa-times mr-1"></i> Cancelar
                                     </button>
                                 </div>
+
+                                <div class="mb-3 space-y-2">
+                                    <select x-model="form.order_type" class="w-full bg-white/20 border-none text-white text-xs font-bold rounded focus:ring-0 cursor-pointer shadow-sm">
+                                        <option value="normal" class="text-gray-800">Pedido Normal (Venta)</option>
+                                        <option value="remision" class="text-gray-800">Remisión ($0.00)</option>
+                                        <option value="prestamo" class="text-gray-800">Préstamo ($0.00)</option>
+                                    </select>
+                                    
+                                    <div x-show="form.order_type === 'normal' && localCart.size > 0">
+                                        <div class="relative">
+                                            <input type="number" 
+                                                x-model="globalDiscount" 
+                                                @change="applyGlobalDiscount()" 
+                                                placeholder="Desc. Global" 
+                                                step="0.01" min="0" max="100"
+                                                class="w-full bg-white/20 border-none text-white text-xs font-bold rounded focus:ring-0 placeholder-white/60 text-right pr-6">
+                                            <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+                                                <span class="text-white/80 text-xs font-bold">%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="flex items-baseline justify-between mt-2">
                                     <span class="text-sm opacity-80 font-medium">Total Estimado</span>
                                     <span class="text-2xl font-black tracking-tight" x-text="formatCurrency(totalVenta)"></span>
@@ -295,6 +344,37 @@
                         </div>
 
                         <div class="flex-1 overflow-y-auto custom-scroll p-5 bg-white space-y-6">
+
+                            <div x-show="localCart.size > 0" class="space-y-2 border-b border-gray-100 pb-4">
+                                <div class="flex items-center text-[#2c3856] font-bold text-[11px] uppercase tracking-wider pb-1">
+                                    <i class="fas fa-list mr-2 opacity-50"></i> Productos en Carrito
+                                </div>
+                                <div class="space-y-2">
+                                    <template x-for="[id, qty] in cartList" :key="id">
+                                        <div class="bg-gray-50 p-2 rounded border border-gray-200 text-xs">
+                                            <div class="flex justify-between mb-1">
+                                                <span class="font-bold truncate w-32" x-text="getProduct(id).sku"></span>
+                                                <span class="font-bold" x-text="qty + ' pzas'"></span>
+                                            </div>
+                                            <div class="text-gray-500 truncate mb-1" x-text="getProduct(id).description"></div>
+                                            
+                                            <div x-show="form.order_type === 'normal'" class="flex items-center justify-between mt-1 pt-1 border-t border-gray-200">
+                                                <span class="text-[10px] text-gray-400">Descuento:</span>
+                                                <div class="relative w-24">
+                                                    <input type="number" 
+                                                        x-model="productDiscounts[id]" 
+                                                        step="0.01" min="0" max="100"
+                                                        placeholder="0"
+                                                        class="text-[10px] py-0 pl-1 pr-4 border-gray-200 rounded bg-white focus:ring-[#2c3856] w-full text-right font-bold text-gray-700">
+                                                    <div class="absolute inset-y-0 right-0 pr-1.5 flex items-center pointer-events-none">
+                                                        <span class="text-[10px] text-gray-400">%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
                             
                             <div class="space-y-3">
                                 <div class="flex items-center text-[#2c3856] font-bold text-[11px] uppercase tracking-wider border-b border-gray-100 pb-1">
@@ -313,17 +393,75 @@
                                 </div>
                             </div>
 
-                            <div class="space-y-2">
+                            <div class="space-y-3">
                                 <div class="flex items-center text-[#2c3856] font-bold text-[11px] uppercase tracking-wider border-b border-gray-100 pb-1">
-                                    <i class="fas fa-user mr-2 opacity-50"></i> Cliente
+                                    <i class="fas fa-user mr-2 opacity-50"></i> Datos del Cliente
                                 </div>
-                                <input type="text" x-model="form.client_name" placeholder="Nombre Cliente" class="form-input-sm">
+
+                                <div class="grid grid-cols-1 gap-2">
+                                    <label class="text-[9px] font-bold text-gray-400 uppercase">Cliente</label>
+                                    <select x-model="form.ff_client_id" @change="onClientChange()" class="form-input-sm">
+                                        <option value="">Seleccione Cliente...</option>
+                                        <template x-for="client in catalogs.clients" :key="client.id">
+                                            <option :value="client.id" x-text="client.name"></option>
+                                        </template>
+                                    </select>
+                                </div>
+
+                                <div class="grid grid-cols-1 gap-2" x-show="availableBranches.length > 0">
+                                    <label class="text-[9px] font-bold text-gray-400 uppercase">Sucursal</label>
+                                    <select x-model="form.ff_client_branch_id" @change="onBranchChange()" class="form-input-sm">
+                                        <option value="">Seleccione Sucursal...</option>
+                                        <template x-for="branch in availableBranches" :key="branch.id">
+                                            <option :value="branch.id" x-text="branch.name"></option>
+                                        </template>
+                                    </select>
+                                </div>
+
+                                <input type="text" x-model="form.client_name" placeholder="Nombre Cliente (Texto)" class="form-input-sm bg-gray-50" readonly>
                                 <input type="text" x-model="form.company_name" placeholder="Empresa / Razón Social" class="form-input-sm">
                                 <div class="grid grid-cols-2 gap-2">
                                     <input type="text" x-model="form.client_phone" placeholder="Teléfono" class="form-input-sm">
                                     <input type="text" x-model="form.locality" placeholder="Localidad / Zona" class="form-input-sm">
                                 </div>
                                 <textarea x-model="form.address" rows="2" placeholder="Dirección Completa" class="form-input-sm resize-none"></textarea>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div class="flex items-center text-[#2c3856] font-bold text-[11px] uppercase tracking-wider border-b border-gray-100 pb-1">
+                                    <i class="fas fa-info-circle mr-2 opacity-50"></i> Detalles Venta
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-[9px] font-bold text-gray-400 uppercase">Canal</label>
+                                        <select x-model="form.ff_sales_channel_id" class="form-input-sm">
+                                            <option value="">Seleccione...</option>
+                                            <template x-for="ch in catalogs.channels" :key="ch.id">
+                                                <option :value="ch.id" x-text="ch.name"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-[9px] font-bold text-gray-400 uppercase">Transporte</label>
+                                        <select x-model="form.ff_transport_line_id" class="form-input-sm">
+                                            <option value="">Seleccione...</option>
+                                            <template x-for="tr in catalogs.transports" :key="tr.id">
+                                                <option :value="tr.id" x-text="tr.name"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="text-[9px] font-bold text-gray-400 uppercase">Condición de Pago</label>
+                                    <select x-model="form.ff_payment_condition_id" class="form-input-sm">
+                                        <option value="">Seleccione...</option>
+                                        <template x-for="pay in catalogs.payments" :key="pay.id">
+                                            <option :value="pay.id" x-text="pay.name"></option>
+                                        </template>
+                                    </select>
+                                </div>
                             </div>
 
                             <div class="space-y-2">
@@ -371,6 +509,39 @@
                                             </div>
                                         </template>
                                     </div>
+                                </div>
+                                
+                                <div class="space-y-2 mt-4 pt-4 border-t border-gray-100">
+                                    <div class="flex items-center text-[#2c3856] font-bold text-[11px] uppercase tracking-wider pb-1">
+                                        <i class="fas fa-camera mr-2 opacity-50"></i> Evidencias de Entrega
+                                    </div>
+                                    
+                                    <template x-for="i in 3">
+                                        <div class="bg-gray-50 p-2 rounded border border-gray-200">
+                                            <label class="text-[9px] font-bold text-gray-500 block mb-1" x-text="'Evidencia ' + i"></label>
+                                            
+                                            <template x-if="getExistingEvidence(i)">
+                                                <div class="flex items-center justify-between mb-2 bg-green-50 px-2 py-1 rounded">
+                                                    <a :href="getExistingEvidence(i)" target="_blank" class="text-[10px] text-green-700 font-bold underline flex items-center gap-1">
+                                                        <i class="fas fa-external-link-alt"></i> Ver Archivo Actual
+                                                    </a>
+                                                    <i class="fas fa-check-circle text-green-500"></i>
+                                                </div>
+                                            </template>
+
+                                            <input type="file" @change="handleEvidenceUpload($event, i)" accept="image/*,.pdf" class="block w-full text-[10px] text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <div x-show="editMode && form.order_type === 'prestamo' && !form.is_loan_returned" class="pt-4">
+                                    <button @click="returnLoan()" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-xs uppercase shadow-md transition-colors flex items-center justify-center">
+                                        <i class="fas fa-undo mr-2"></i> Reportar Devolución
+                                    </button>
+                                </div>
+                                
+                                <div x-show="editMode && form.is_loan_returned" class="p-3 bg-green-100 text-green-800 rounded-lg text-center text-xs font-bold border border-green-200">
+                                    <i class="fas fa-check-double mr-1"></i> Préstamo Devuelto
                                 </div>
                             </div>
 
@@ -466,8 +637,19 @@
         function salesManager() {
             return {
                 products: [],
+                catalogs: {
+                    clients: [],
+                    channels: [],
+                    transports: [],
+                    payments: []
+                },
+                availableBranches: [],
                 viewMode: localStorage.getItem('ff_view_mode') || 'grid',
                 localCart: new Map(),
+                productDiscounts: {},
+                existingEvidences: [],
+                evidenceFiles: {},
+                globalDiscount: '',
                 
                 filters: {
                     search: '',
@@ -487,7 +669,11 @@
                 form: {
                     folio: '', client_name: '', company_name: '', client_phone: '',
                     address: '', locality: '', delivery_date: '', surtidor_name: '',
-                    observations: '', email_recipients: ''
+                    observations: '', email_recipients: '',
+                    ff_client_id: '', ff_client_branch_id: '',
+                    ff_sales_channel_id: '', ff_transport_line_id: '', ff_payment_condition_id: '',
+                    order_type: 'normal',
+                    is_loan_returned: false
                 },
                 
                 flashMessage: '',
@@ -499,9 +685,18 @@
                 pdfModalOpen: false,
                 pdfModalUrl: '',
 
-                init(initialProducts, initialFolio) {
+                init(initialProducts, nextFolio, clients, channels, transports, payments, editFolio = null) {
                     const productsArray = Array.isArray(initialProducts) ? initialProducts : [];
-                    this.form.folio = initialFolio;
+                    this.form.folio = nextFolio;
+                    
+                    this.catalogs.clients = clients || [];
+                    this.catalogs.channels = channels || [];
+                    this.catalogs.transports = transports || [];
+                    this.catalogs.payments = payments || [];
+                    const savedEmails = localStorage.getItem('ff_email_recipients');
+                    if (savedEmails) this.form.email_recipients = savedEmails;
+
+                    this.$watch('form.email_recipients', (value) => localStorage.setItem('ff_email_recipients', value));                    
 
                     this.products = productsArray.map((p, index) => {
                         const myCartItem = p.cart_items.find(item => item.user_id === {{ Auth::id() }});
@@ -522,10 +717,19 @@
                         };
                     });
                     
-                    const savedEmails = localStorage.getItem('ff_email_recipients');
-                    if (savedEmails) this.form.email_recipients = savedEmails;
+                    if (editFolio) {
+                        this.searchFolio = editFolio;
+                        setTimeout(() => {
+                            this.loadOrderToEdit();
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                        }, 100);
+                    }
                     
                     this.pollingInterval = setInterval(() => this.pollReservations(), 10000);
+                },
+
+                get cartList() {
+                    return Array.from(this.localCart.entries());
                 },
 
                 get uniqueBrands() {
@@ -555,11 +759,25 @@
                     return result;
                 },
 
+                getProduct(id) {
+                    return this.products.find(p => p.id === id) || {};
+                },
+
+                calculateItemPrice(product) {
+                    if (this.form.order_type !== 'normal') return 0;
+                    
+                    const discount = parseFloat(this.productDiscounts[product.id] || 0);
+                    const basePrice = parseFloat(product.unit_price);
+                    return basePrice * (1 - (discount / 100));
+                },
+
                 get totalVenta() {
                     let total = 0;
-                    this.localCart.forEach((quantity, productId) => {
-                        const product = this.products.find(p => p.id === productId);
-                        if (product) { total += product.unit_price * quantity; }
+                    this.localCart.forEach((qty, id) => {
+                        const product = this.getProduct(id);
+                        if (product) {
+                            total += this.calculateItemPrice(product) * qty;
+                        }
                     });
                     return total;
                 },
@@ -572,6 +790,77 @@
 
                 get isFormValid() {
                     return this.form.folio && this.form.client_name && this.form.company_name;
+                },
+
+                getHeaderColor() {
+                    if (this.editMode) return 'bg-orange-600';
+                    switch(this.form.order_type) {
+                        case 'remision': return 'bg-teal-600';
+                        case 'prestamo': return 'bg-purple-700';
+                        default: return 'bg-[#2c3856]';
+                    }
+                },
+
+                onClientChange() {
+                    const client = this.catalogs.clients.find(c => c.id == this.form.ff_client_id);
+                    if (client) {
+                        this.form.client_name = client.name;
+                        this.availableBranches = client.branches || [];
+                        this.form.ff_client_branch_id = '';
+                    } else {
+                        this.availableBranches = [];
+                    }
+                },
+
+                onBranchChange() {
+                    const branch = this.availableBranches.find(b => b.id == this.form.ff_client_branch_id);
+                    if (branch) {
+                        this.form.company_name = branch.name;
+                        this.form.address = branch.address;
+                        this.form.client_phone = branch.phone;
+                        this.form.locality = branch.schedule;
+                    }
+                },
+
+                getExistingEvidence(index) {
+                    const found = this.existingEvidences.find(e => e.index === index);
+                    return found ? found.url : null;
+                },
+
+                handleEvidenceUpload(event, index) {
+                    const file = event.target.files[0];
+                    if (file) this.evidenceFiles[index] = file;
+                },
+
+                applyGlobalDiscount() {
+                    const discount = this.globalDiscount;
+                    if (discount === "") return;
+                    
+                    this.localCart.forEach((qty, id) => {
+                        this.productDiscounts[id] = discount;
+                    });
+                    
+                    this.showFlashMessage(`Descuento del ${discount}% aplicado a todos los productos`, 'success');
+                },
+
+                async returnLoan() {
+                    if (!confirm('¿Confirmar que los productos han sido devueltos? Esto reingresará el stock.')) return;
+                    
+                    try {
+                        const response = await fetch("{{ route('ff.sales.returnLoan') }}", {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({ folio: this.form.folio })
+                        });
+                        const data = await response.json();
+                        alert(data.message);
+                        window.location.reload();
+                    } catch (e) {
+                        alert('Error al procesar devolución');
+                    }
                 },
 
                 resetFilters() {
@@ -631,8 +920,16 @@
                         this.showFlashMessage('Stock insuficiente', 'danger');
                     }
                     
-                    if (newQuantity === 0) { this.localCart.delete(product.id); } 
-                    else { this.localCart.set(product.id, newQuantity); }
+                    if (newQuantity === 0) { 
+                        this.localCart.delete(product.id); 
+                        delete this.productDiscounts[product.id];
+                    } 
+                    else { 
+                        this.localCart.set(product.id, newQuantity);
+                        if(this.globalDiscount && !this.productDiscounts[product.id]) {
+                             this.productDiscounts[product.id] = this.globalDiscount;
+                        }
+                    }
 
                     try {
                         const response = await fetch("{{ route('ff.sales.cart.update') }}", {
@@ -685,6 +982,7 @@
                             if(data.cart_items) {
                                 this.localCart.clear();
                                 data.cart_items.forEach(item => this.localCart.set(item.id, item.qty));
+                                if(this.globalDiscount) this.applyGlobalDiscount();
                             }
                             event.target.value = '';
                         } else {
@@ -725,12 +1023,21 @@
                         const data = await response.json();
                         if (!response.ok) throw new Error(data.message);
                         
-                        this.form = { ...this.form, ...data.client_data, folio: this.searchFolio };
+                        this.form = { ...this.form, ...data.client_data };
                         this.localCart.clear();
                         if (data.cart_items) data.cart_items.forEach(item => this.localCart.set(item.product_id, item.quantity));
                         
+                        this.productDiscounts = data.discounts || {};
+                        this.existingEvidences = data.evidences || [];
                         this.currentDocs = data.documents || [];
                         this.newFiles = [];
+                        
+                        if (this.form.ff_client_id) {
+                            const client = this.catalogs.clients.find(c => c.id == this.form.ff_client_id);
+                            if(client) {
+                                this.availableBranches = client.branches || [];
+                            }
+                        }
 
                         this.editMode = true;
                         this.searchModalOpen = false;
@@ -809,6 +1116,14 @@
                     
                     this.newFiles.forEach((file, index) => {
                         formData.append('documents[]', file);
+                    });
+                    
+                    Object.keys(this.productDiscounts).forEach(id => {
+                        formData.append(`discounts[${id}]`, this.productDiscounts[id]);
+                    });
+                    
+                    Object.keys(this.evidenceFiles).forEach(idx => {
+                        formData.append(`evidence_${idx}`, this.evidenceFiles[idx]);
                     });
 
                     try {

@@ -342,10 +342,10 @@
                                 </div>
                                 <div class="flex justify-start gap-3 px-4 py-4 bg-gray-50 border-t border-gray-200">
                                     <button type="button" @click="deleteProduct(form)" x-show="form.id" class="rounded-lg bg-white py-2 px-4 text-sm font-bold text-red-600 shadow-sm border border-red-200 hover:bg-red-50">Eliminar</button>
-                                    <div class="flex gap-3 ml-auto">
+                                    <!-- <div class="flex gap-3 ml-auto"> -->
                                         <button type="button" @click="closeEditor()" class="rounded-lg bg-white py-2 px-4 text-sm font-bold text-gray-700 shadow-sm border border-gray-300 hover:bg-gray-50">Cancelar</button>
                                         <button type="submit" :disabled="isSaving" class="rounded-lg bg-[#2c3856] py-2 px-6 text-sm font-bold text-white shadow-md hover:bg-[#1a233a] disabled:opacity-50"><span x-text="isSaving ? 'Guardando...' : 'Guardar'"></span></button>
-                                    </div>
+                                    <!-- </div> -->
                                 </div>
                             </form>
                         </div>
