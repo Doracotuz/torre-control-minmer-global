@@ -45,9 +45,9 @@
 
         <div class="bg-[#E8ECF7] max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
             
-            <div class="flex flex-col lg:flex-row gap-6 items-start">
+            <div class="flex gap-6 items-start" :class="layoutMode === 'sidebar' ? 'flex-col lg:flex-row' : 'flex-col'">
                 
-                <div class="w-full lg:w-9/12 flex flex-col gap-6">
+                <div class="flex flex-col gap-6" :class="layoutMode === 'sidebar' ? 'w-full lg:w-9/12' : 'w-full order-2'">
                     
                     <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 top-4 z-30">
                         <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
@@ -80,6 +80,12 @@
                                 </div>
 
                                 <div class="flex bg-gray-100 p-1 rounded-lg self-start sm:self-auto flex-shrink-0">
+                                    <button @click="toggleLayout()" 
+                                        :class="layoutMode === 'sidebar' ? 'text-gray-400 hover:text-gray-600' : 'bg-white text-[#2c3856] shadow-sm'"
+                                        class="p-2 rounded-md transition-all duration-200" title="Cambiar Diseño (Panel Superior/Lateral)">
+                                        <i class="fas" :class="layoutMode === 'sidebar' ? 'fa-columns' : 'fa-window-maximize'"></i>
+                                    </button>
+                                    <div class="w-px bg-gray-300 mx-1 my-1"></div>
                                     <button @click="setViewMode('grid')" 
                                         :class="viewMode === 'grid' ? 'bg-white text-[#2c3856] shadow-sm' : 'text-gray-400 hover:text-gray-600'"
                                         class="p-2 rounded-md transition-all duration-200" title="Vista Cuadrícula">
@@ -143,7 +149,11 @@
                     <template x-if="form.ff_sales_channel_id">
                         <div>
                             <template x-if="viewMode === 'grid'">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                                <div class="grid gap-6" 
+                                     :class="layoutMode === 'sidebar' 
+                                        ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4' 
+                                        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'">
+                                    
                                     <template x-for="product in filteredProducts" :key="product.id">
                                         <div class="group bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_20px_rgb(0,0,0,0.08)] transition-all duration-300 border border-gray-100 relative flex flex-col h-full hover:-translate-y-1"
                                             :class="{ 'ring-2 ring-[#2c3856] ring-offset-2': getProductInCart(product.id) > 0 }">
@@ -330,275 +340,299 @@
                     </template>
                 </div>
 
-                <div class="w-full lg:w-3/12 sticky top-6 self-start h-[calc(100vh-3rem)] flex flex-col z-20">
-                    <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col h-full relative">
+                <div class="flex-shrink-0 flex flex-col z-20 transition-all duration-500 ease-in-out"
+                     :class="layoutMode === 'sidebar' ? 'w-full lg:w-3/12 sticky top-6 h-[calc(100vh-3rem)]' : 'w-full order-1 mb-8 relative'">
+                    
+                    <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col transition-all duration-500"
+                         :class="layoutMode === 'sidebar' ? 'h-full' : 'h-auto shadow-2xl ring-1 ring-black/5'">
                         
                         <div class="p-5 text-white flex-shrink-0 relative overflow-hidden transition-colors duration-500"
                              :class="getHeaderColor()">
-                            <div class="relative z-10">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h2 class="text-xs font-bold uppercase tracking-widest opacity-90" x-text="editMode ? 'Modo Edición' : 'Nuevo Pedido'"></h2>
-                                    <button x-show="editMode" @click="cancelEditMode()" class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded text-[10px] font-bold text-white transition-colors backdrop-blur-sm">
-                                        <i class="fas fa-times mr-1"></i> Cancelar
-                                    </button>
-                                </div>
+                            
+                            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                            <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-black/10 rounded-full blur-xl"></div>
 
-                                <div class="mb-3 space-y-2">
-                                    <select x-model="form.order_type" class="w-full bg-white/20 border-none text-white text-xs font-bold rounded focus:ring-0 cursor-pointer shadow-sm">
+                            <div class="relative z-10" :class="layoutMode === 'top' ? 'flex flex-row items-center justify-between gap-8' : ''">
+                                
+                                <div :class="layoutMode === 'top' ? 'w-1/4' : ''">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <h2 class="text-xs font-bold uppercase tracking-widest opacity-90 flex items-center gap-2">
+                                            <i class="fas" :class="editMode ? 'fa-edit' : 'fa-shopping-bag'"></i>
+                                            <span x-text="editMode ? 'Modo Edición' : 'Nuevo Pedido'"></span>
+                                        </h2>
+                                        <button x-show="editMode" @click="cancelEditMode()" class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded text-[10px] font-bold text-white transition-colors backdrop-blur-sm">
+                                            <i class="fas fa-times mr-1"></i> Cancelar
+                                        </button>
+                                    </div>
+                                    <select x-model="form.order_type" class="w-full bg-white/20 border-none text-white text-xs font-bold rounded focus:ring-0 cursor-pointer shadow-sm hover:bg-white/30 transition-colors">
                                         <option value="normal" class="text-gray-800">Pedido Normal (Venta)</option>
                                         <option value="remision" class="text-gray-800">Remisión ($0.00)</option>
                                         <option value="prestamo" class="text-gray-800">Préstamo ($0.00)</option>
                                     </select>
+                                </div>
+
+                                <div :class="layoutMode === 'top' ? 'w-1/4 text-center border-x border-white/20 px-4' : 'mt-4 pb-2 border-b border-white/20'">
+                                    <div class="flex items-baseline" :class="layoutMode === 'top' ? 'justify-center gap-3' : 'justify-between'">
+                                        <span class="text-sm opacity-80 font-medium uppercase tracking-wide">Total</span>
+                                        <span class="text-3xl font-black tracking-tight" x-text="formatCurrency(totalVenta)"></span>
+                                    </div>
+                                </div>
+
+                                <div :class="layoutMode === 'top' ? 'w-1/4 flex flex-col items-end' : 'mt-2'">
+                                    <div class="text-[10px] font-medium opacity-80 flex gap-4 mb-2" :class="layoutMode === 'top' ? 'justify-end' : 'justify-between'">
+                                        <span class="bg-black/20 px-2 py-0.5 rounded"><i class="fas fa-box mr-1"></i> <span x-text="localCart.size"></span> Items</span>
+                                        <span class="bg-black/20 px-2 py-0.5 rounded"><i class="fas fa-layer-group mr-1"></i> <span x-text="totalPiezas"></span> Pzas</span>
+                                    </div>
                                     
-                                    <div x-show="form.order_type === 'normal' && localCart.size > 0">
-                                        <div class="relative">
-                                            <input type="number" 
-                                                x-model="globalDiscount" 
-                                                @change="applyGlobalDiscount()" 
-                                                placeholder="Desc. Global" 
-                                                step="0.01" min="0" max="100"
-                                                class="w-full bg-white/20 border-none text-white text-xs font-bold rounded focus:ring-0 placeholder-white/60 text-right pr-6">
+                                    <div x-show="form.order_type === 'normal' && localCart.size > 0" class="w-full" :class="layoutMode === 'top' ? 'max-w-[150px]' : ''">
+                                        <div class="relative group">
+                                            <input type="number" x-model="globalDiscount" @change="applyGlobalDiscount()" placeholder="Desc. Global" 
+                                                class="w-full bg-white/20 border-none text-white text-xs font-bold rounded focus:ring-0 placeholder-white/60 text-right pr-6 group-hover:bg-white/30 transition-colors">
                                             <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
                                                 <span class="text-white/80 text-xs font-bold">%</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
-                                <div class="flex items-baseline justify-between mt-2">
-                                    <span class="text-sm opacity-80 font-medium">Total Estimado</span>
-                                    <span class="text-2xl font-black tracking-tight" x-text="formatCurrency(totalVenta)"></span>
-                                </div>
-                                <div class="mt-2 text-[10px] font-medium opacity-70 flex justify-between">
-                                    <span x-text="localCart.size + ' Items'"></span>
-                                    <span x-text="totalPiezas + ' Unidades'"></span>
-                                </div>
                             </div>
                         </div>
 
-                        <div class="flex-1 overflow-y-auto custom-scroll p-5 bg-white space-y-6">
+                        <div class="flex-1 overflow-y-auto custom-scroll bg-gray-50/50 p-5">
+                            
+                            <div class="grid gap-6" :class="layoutMode === 'sidebar' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-4'">
+                                
+                                <div class="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col h-full overflow-hidden">
+                                    
+                                    <div class="px-4 py-3 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
+                                        <span class="text-[#2c3856] font-bold text-xs uppercase tracking-wider">
+                                            <i class="fas fa-shopping-cart mr-1 text-[#ff9c00]"></i> Carrito
+                                        </span>
+                                        <span class="text-[10px] font-bold bg-[#2c3856] text-white px-2 py-0.5 rounded-full" x-text="localCart.size"></span>
+                                    </div>
+                                    
+                                    <div x-show="localCart.size === 0" class="flex-1 flex flex-col items-center justify-center text-gray-300 py-8 min-h-[150px]">
+                                        <i class="fas fa-basket-shopping text-3xl mb-2 opacity-50"></i>
+                                        <p class="text-[10px] font-medium">Tu carrito está vacío</p>
+                                    </div>
 
-                            <div x-show="localCart.size > 0" class="space-y-2 border-b border-gray-100 pb-4">
-                                <div class="flex items-center text-[#2c3856] font-bold text-[11px] uppercase tracking-wider pb-1">
-                                    <i class="fas fa-list mr-2 opacity-50"></i> Productos en Carrito
-                                </div>
-                                <div class="space-y-2">
-                                    <template x-for="[id, qty] in cartList" :key="id">
-                                        <div class="bg-gray-50 p-2 rounded border border-gray-200 text-xs">
-                                            <div class="flex justify-between mb-1">
-                                                <span class="font-bold truncate w-32" x-text="getProduct(id).sku"></span>
-                                                <span class="font-bold" x-text="qty + ' pzas'"></span>
-                                            </div>
-                                            <div class="text-gray-500 truncate mb-1" x-text="getProduct(id).description"></div>
-                                            
-                                            <div x-show="form.order_type === 'normal'" class="flex items-center justify-between mt-1 pt-1 border-t border-gray-200">
-                                                <span class="text-[10px] text-gray-400">Descuento:</span>
-                                                <div class="relative w-24">
-                                                    <input type="number" 
-                                                        x-model="productDiscounts[id]" 
-                                                        step="0.01" min="0" max="100"
-                                                        placeholder="0"
-                                                        class="text-[10px] py-0 pl-1 pr-4 border-gray-200 rounded bg-white focus:ring-[#2c3856] w-full text-right font-bold text-gray-700">
-                                                    <div class="absolute inset-y-0 right-0 pr-1.5 flex items-center pointer-events-none">
-                                                        <span class="text-[10px] text-gray-400">%</span>
+                                    <div x-show="localCart.size > 0" class="flex-1 overflow-y-auto custom-scroll p-3 space-y-2 h-0 min-h-[200px]">
+                                        <template x-for="[id, qty] in cartList" :key="id">
+                                            <div class="bg-white p-2 rounded-lg border border-gray-100 shadow-sm relative group hover:border-gray-300 transition-colors">
+                                                
+                                                <button @click="updateQuantity(getProduct(id), -qty)" 
+                                                        class="absolute -top-1.5 -right-1.5 bg-red-50 text-red-500 rounded-full w-5 h-5 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all z-10 hover:bg-red-500 hover:text-white">
+                                                    <i class="fas fa-times text-[9px]"></i>
+                                                </button>
+
+                                                <div class="flex gap-3">
+                                                    <div class="w-10 h-10 bg-gray-50 rounded border border-gray-100 flex-shrink-0 flex items-center justify-center">
+                                                        <img :src="getProduct(id).photo_url" class="max-w-full max-h-full p-0.5 mix-blend-multiply object-contain">
+                                                    </div>
+
+                                                    <div class="flex-1 min-w-0"> <div class="flex justify-between items-start">
+                                                            <span class="text-[10px] font-bold text-[#2c3856] truncate pr-1" x-text="getProduct(id).sku" :title="getProduct(id).sku"></span>
+                                                            <span class="text-[10px] font-bold bg-gray-100 px-1.5 rounded text-gray-600 flex-shrink-0" x-text="qty + ' pz'"></span>
+                                                        </div>
+                                                        <div class="text-[9px] text-gray-500 truncate leading-tight mt-0.5" x-text="getProduct(id).description" :title="getProduct(id).description"></div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div x-show="form.order_type === 'normal'" class="mt-2 pt-1.5 border-t border-gray-50 flex items-center justify-between">
+                                                    <label class="text-[9px] font-bold text-gray-400 uppercase">Dcto. Extra</label>
+                                                    
+                                                    <div class="flex items-center bg-gray-50 rounded border border-gray-200 px-1.5 h-6 w-20 focus-within:ring-1 focus-within:ring-[#ff9c00] focus-within:border-[#ff9c00] transition-all">
+                                                        <input type="number" x-model="productDiscounts[id]" placeholder="0"
+                                                            class="w-full bg-transparent border-none text-[10px] font-bold text-right text-gray-700 p-0 focus:ring-0 h-full"
+                                                            @click="$event.target.select()">
+                                                        <span class="text-[9px] text-gray-400 ml-1">%</span>
                                                     </div>
                                                 </div>
                                             </div>
+                                        </template>
+                                    </div>
+
+                                    <div x-show="localCart.size > 0" class="p-3 bg-gray-50 border-t border-gray-100 flex-shrink-0">
+                                        <div class="flex justify-between items-center text-[10px] font-bold text-gray-500">
+                                            <span>Total Unidades:</span>
+                                            <span class="text-[#2c3856]" x-text="totalPiezas"></span>
                                         </div>
-                                    </template>
-                                </div>
-                            </div>
-                            
-                            <div class="space-y-3">
-                                <div class="flex items-center text-[#2c3856] font-bold text-[11px] uppercase tracking-wider border-b border-gray-100 pb-1">
-                                    <i class="fas fa-file-invoice mr-2 opacity-50"></i> Datos de Remisión
-                                </div>
-                                <div class="grid grid-cols-12 gap-2">
-                                    <div class="col-span-4">
-                                        <label class="text-[9px] font-bold text-gray-400 uppercase ml-1">Folio</label>
-                                        <input type="number" x-model="form.folio" :disabled="editMode"
-                                               class="w-full bg-gray-50 border-gray-200 rounded-lg text-xs font-bold focus:ring-[#2c3856] focus:border-[#2c3856] py-2 disabled:opacity-60 text-center">
-                                    </div>
-                                    <div class="col-span-8">
-                                        <label class="text-[9px] font-bold text-gray-400 uppercase ml-1">Entrega</label>
-                                        <input type="datetime-local" x-model="form.delivery_date" class="w-full bg-gray-50 border-gray-200 rounded-lg text-[10px] focus:ring-[#2c3856] focus:border-[#2c3856] py-2">
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="space-y-3">
-                                <div class="flex items-center text-[#2c3856] font-bold text-[11px] uppercase tracking-wider border-b border-gray-100 pb-1">
-                                    <i class="fas fa-user mr-2 opacity-50"></i> Datos del Cliente
-                                </div>
+                                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
+                                    <div class="flex items-center text-[#2c3856] font-bold text-xs uppercase tracking-wider mb-1 pb-2 border-b border-gray-100">
+                                        <i class="fas fa-file-signature mr-2 text-[#ff9c00]"></i> Datos Generales
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="text-[9px] font-bold text-gray-400 uppercase">Folio</label>
+                                            <input type="number" x-model="form.folio" :disabled="editMode" class="form-input-sm text-center font-bold">
+                                        </div>
+                                        <div>
+                                            <label class="text-[9px] font-bold text-gray-400 uppercase">Fecha Entrega</label>
+                                            <input type="datetime-local" x-model="form.delivery_date" class="form-input-sm text-[10px]">
+                                        </div>
+                                    </div>
 
-                                <div class="grid grid-cols-1 gap-2">
-                                    <label class="text-[9px] font-bold text-gray-400 uppercase">Cliente</label>
-                                    <select x-model="form.ff_client_id" @change="onClientChange()" class="form-input-sm">
-                                        <option value="">Seleccione Cliente...</option>
-                                        <template x-for="client in catalogs.clients" :key="client.id">
-                                            <option :value="client.id" x-text="client.name"></option>
-                                        </template>
-                                    </select>
-                                </div>
-
-                                <div class="grid grid-cols-1 gap-2" x-show="availableBranches.length > 0">
-                                    <label class="text-[9px] font-bold text-gray-400 uppercase">Sucursal</label>
-                                    <select x-model="form.ff_client_branch_id" @change="onBranchChange()" class="form-input-sm">
-                                        <option value="">Seleccione Sucursal...</option>
-                                        <template x-for="branch in availableBranches" :key="branch.id">
-                                            <option :value="branch.id" x-text="branch.name"></option>
-                                        </template>
-                                    </select>
-                                </div>
-
-                                <input type="text" x-model="form.client_name" placeholder="Nombre Cliente (Texto)" class="form-input-sm bg-gray-50" readonly>
-                                <input type="text" x-model="form.company_name" placeholder="Empresa / Razón Social" class="form-input-sm">
-                                <div class="grid grid-cols-2 gap-2">
-                                    <input type="text" x-model="form.client_phone" placeholder="Teléfono" class="form-input-sm">
-                                    <input type="text" x-model="form.locality" placeholder="Localidad / Zona" class="form-input-sm">
-                                </div>
-                                <textarea x-model="form.address" rows="2" placeholder="Dirección Completa" class="form-input-sm resize-none"></textarea>
-                            </div>
-
-                            <div class="space-y-3">
-                                <div class="flex items-center text-[#2c3856] font-bold text-[11px] uppercase tracking-wider border-b border-gray-100 pb-1">
-                                    <i class="fas fa-info-circle mr-2 opacity-50"></i> Detalles Venta
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label class="text-[9px] font-bold text-gray-400 uppercase">Transporte</label>
-                                        <select x-model="form.ff_transport_line_id" class="form-input-sm">
-                                            <option value="">Seleccione...</option>
-                                            <template x-for="tr in catalogs.transports" :key="tr.id">
-                                                <option :value="tr.id" x-text="tr.name"></option>
+                                        <label class="text-[9px] font-bold text-gray-400 uppercase">Cliente</label>
+                                        <select x-model="form.ff_client_id" @change="onClientChange()" class="form-input-sm">
+                                            <option value="">Seleccione Cliente...</option>
+                                            <template x-for="client in catalogs.clients" :key="client.id">
+                                                <option :value="client.id" x-text="client.name"></option>
                                             </template>
                                         </select>
                                     </div>
+
+                                    <div x-show="availableBranches.length > 0">
+                                        <label class="text-[9px] font-bold text-gray-400 uppercase">Sucursal</label>
+                                        <select x-model="form.ff_client_branch_id" @change="onBranchChange()" class="form-input-sm">
+                                            <option value="">Seleccione Sucursal...</option>
+                                            <template x-for="branch in availableBranches" :key="branch.id">
+                                                <option :value="branch.id" x-text="branch.name"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                    
+                                    <input type="text" x-model="form.company_name" placeholder="Razón Social / Empresa" class="form-input-sm">
+                                </div>
+
+                                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
+                                    <div class="flex items-center text-[#2c3856] font-bold text-xs uppercase tracking-wider mb-1 pb-2 border-b border-gray-100">
+                                        <i class="fas fa-truck-loading mr-2 text-[#ff9c00]"></i> Logística
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="text-[9px] font-bold text-gray-400 uppercase">Canal</label>
+                                            <select x-model="form.ff_sales_channel_id" class="form-input-sm bg-gray-50 cursor-not-allowed" disabled>
+                                                <option value="">Canal...</option>
+                                                <template x-for="ch in catalogs.channels" :key="ch.id">
+                                                    <option :value="ch.id" x-text="ch.name"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="text-[9px] font-bold text-gray-400 uppercase">Transporte</label>
+                                            <select x-model="form.ff_transport_line_id" class="form-input-sm">
+                                                <option value="">Seleccione...</option>
+                                                <template x-for="tr in catalogs.transports" :key="tr.id">
+                                                    <option :value="tr.id" x-text="tr.name"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                    </div>
+
                                     <div>
-                                        <label class="text-[9px] font-bold text-gray-400 uppercase">Condición de Pago</label>
+                                        <label class="text-[9px] font-bold text-gray-400 uppercase">Pago</label>
                                         <select x-model="form.ff_payment_condition_id" class="form-input-sm">
-                                            <option value="">Seleccione...</option>
+                                            <option value="">Seleccione Condición...</option>
                                             <template x-for="pay in catalogs.payments" :key="pay.id">
                                                 <option :value="pay.id" x-text="pay.name"></option>
                                             </template>
                                         </select>
                                     </div>
-                                </div>
-                            </div>
 
-                            <div class="space-y-2">
-                                <div class="flex items-center text-[#2c3856] font-bold text-[11px] uppercase tracking-wider border-b border-gray-100 pb-1">
-                                    <i class="fas fa-truck mr-2 opacity-50"></i> Logística
+                                    <input type="text" x-model="form.surtidor_name" placeholder="Nombre Surtidor" class="form-input-sm">
+                                    <input type="text" x-model="form.email_recipients" placeholder="Emails Notificación (Separados por ;)" class="form-input-sm">
                                 </div>
-                                <input type="text" x-model="form.surtidor_name" placeholder="Nombre Surtidor" class="form-input-sm">
-                                <input type="text" x-model="form.email_recipients" placeholder="Notificar a: email1; email2;" class="form-input-sm">
-                                <textarea x-model="form.observations" rows="2" placeholder="Observaciones (Salen en PDF)" class="form-input-sm resize-none"></textarea>
-                                
-                                <div class="space-y-2 mt-4 pt-4 border-t border-gray-100">
-                                    <div class="flex items-center justify-between text-[#2c3856] font-bold text-[11px] uppercase tracking-wider pb-1">
-                                        <span><i class="fas fa-paperclip mr-2 opacity-50"></i> Documentos PDF (Max 5)</span>
-                                        <span class="text-[9px] text-gray-400" x-text="(currentDocs.length + newFiles.length) + '/5'"></span>
-                                    </div>
-                                    
-                                    <input type="file" x-ref="fileInput" accept="application/pdf" multiple class="hidden" @change="handleFileSelect($event)">
-                                    
-                                    <button @click="$refs.fileInput.click()" 
-                                            x-show="(currentDocs.length + newFiles.length) < 5"
-                                            class="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 text-xs font-bold hover:border-[#2c3856] hover:text-[#2c3856] transition-colors flex items-center justify-center gap-2">
-                                        <i class="fas fa-plus"></i> Adjuntar PDF
-                                    </button>
 
-                                    <div class="space-y-1.5 mt-2">
-                                        <template x-for="doc in currentDocs" :key="doc.id">
-                                            <div class="flex items-center justify-between bg-blue-50 px-2 py-1.5 rounded border border-blue-100">
-                                                <div class="flex items-center overflow-hidden gap-2 cursor-pointer" @click="openPdfModal(doc.url)">
-                                                    <i class="fas fa-file-pdf text-red-500"></i>
-                                                    <span class="text-[10px] font-medium text-gray-600 truncate" x-text="doc.name"></span>
-                                                </div>
-                                                <i class="fas fa-check text-green-500 text-[10px]"></i>
+                                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between h-full">
+                                    <div class="space-y-3 overflow-y-auto custom-scroll pr-1 max-h-[400px]"> <div>
+                                            <div class="flex items-center text-[#2c3856] font-bold text-xs uppercase tracking-wider mb-2 pb-1 border-b border-gray-100">
+                                                <i class="fas fa-paperclip mr-2 text-[#ff9c00]"></i> Documentación
                                             </div>
-                                        </template>
-
-                                        <template x-for="(file, index) in newFiles" :key="index">
-                                            <div class="flex items-center justify-between bg-gray-50 px-2 py-1.5 rounded border border-gray-200">
-                                                <div class="flex items-center overflow-hidden gap-2">
-                                                    <i class="fas fa-file-pdf text-gray-400"></i>
-                                                    <span class="text-[10px] font-medium text-gray-600 truncate" x-text="file.name"></span>
-                                                </div>
-                                                <button @click="removeNewFile(index)" class="text-gray-400 hover:text-red-500">
-                                                    <i class="fas fa-times text-xs"></i>
-                                                </button>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </div>
-                                
-                                <div class="space-y-2 mt-4 pt-4 border-t border-gray-100">
-                                    <div class="flex items-center text-[#2c3856] font-bold text-[11px] uppercase tracking-wider pb-1">
-                                        <i class="fas fa-camera mr-2 opacity-50"></i> Evidencias de Entrega
-                                    </div>
-                                    
-                                    <template x-for="i in 3">
-                                        <div class="bg-gray-50 p-2 rounded border border-gray-200">
-                                            <label class="text-[9px] font-bold text-gray-500 block mb-1" x-text="'Evidencia ' + i"></label>
                                             
-                                            <template x-if="getExistingEvidence(i)">
-                                                <div class="flex items-center justify-between mb-2 bg-green-50 px-2 py-1 rounded">
-                                                    <a :href="getExistingEvidence(i)" target="_blank" class="text-[10px] text-green-700 font-bold underline flex items-center gap-1">
-                                                        <i class="fas fa-external-link-alt"></i> Ver Archivo Actual
-                                                    </a>
-                                                    <i class="fas fa-check-circle text-green-500"></i>
-                                                </div>
-                                            </template>
+                                            <textarea x-model="form.observations" rows="2" placeholder="Observaciones Generales" class="form-input-sm resize-none mb-2"></textarea>
 
-                                            <input type="file" @change="handleEvidenceUpload($event, i)" accept="image/*,.pdf" class="block w-full text-[10px] text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                            <input type="file" x-ref="fileInput" accept="application/pdf" multiple class="hidden" @change="handleFileSelect($event)">
+                                            
+                                            <button @click="$refs.fileInput.click()" x-show="(currentDocs.length + newFiles.length) < 5"
+                                                class="w-full py-2 border border-dashed border-gray-300 rounded-lg text-gray-400 text-[10px] font-bold hover:border-[#2c3856] hover:text-[#2c3856] transition-colors flex items-center justify-center gap-2 bg-gray-50 mb-2">
+                                                <i class="fas fa-plus"></i> Adjuntar PDF
+                                            </button>
+
+                                            <div class="space-y-1">
+                                                <template x-for="doc in currentDocs" :key="doc.id">
+                                                    <div class="flex items-center justify-between bg-blue-50 px-2 py-1.5 rounded border border-blue-100 text-[10px]">
+                                                        <div class="flex items-center gap-2 overflow-hidden cursor-pointer" @click="openPdfModal(doc.url)">
+                                                            <i class="fas fa-file-pdf text-red-500"></i>
+                                                            <span class="font-medium text-gray-600 truncate max-w-[120px]" x-text="doc.name"></span>
+                                                        </div>
+                                                        <i class="fas fa-check text-green-500"></i>
+                                                    </div>
+                                                </template>
+                                                <template x-for="(file, index) in newFiles" :key="index">
+                                                    <div class="flex justify-between items-center text-[10px] bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                                                        <span class="truncate max-w-[120px]" x-text="file.name"></span>
+                                                        <i @click="removeNewFile(index)" class="fas fa-times text-red-400 cursor-pointer hover:text-red-600"></i>
+                                                    </div>
+                                                </template>
+                                            </div>
                                         </div>
-                                    </template>
+
+                                        <div class="pt-2">
+                                            <div class="flex items-center text-[#2c3856] font-bold text-xs uppercase tracking-wider mb-2 pb-1 border-b border-gray-100">
+                                                <i class="fas fa-camera mr-2 text-[#ff9c00]"></i> Evidencias
+                                            </div>
+                                            
+                                            <div class="space-y-1.5">
+                                                <template x-for="i in 3">
+                                                    <div class="bg-gray-50 px-2 py-1.5 rounded border border-gray-200 flex items-center justify-between">
+                                                        <span class="text-[9px] font-bold text-gray-400 uppercase" x-text="'Evidencia ' + i"></span>
+                                                        
+                                                        <div class="flex items-center gap-2">
+                                                            <template x-if="getExistingEvidence(i)">
+                                                                <a :href="getExistingEvidence(i)" target="_blank" class="text-[9px] text-white bg-green-500 hover:bg-green-600 px-1.5 py-0.5 rounded transition-colors" title="Ver actual">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                            </template>
+
+                                                            <label class="cursor-pointer group flex items-center">
+                                                                <input type="file" @change="handleEvidenceUpload($event, i)" accept="image/*,.pdf" class="hidden">
+                                                                <div class="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded border transition-all"
+                                                                     :class="evidenceFiles[i] ? 'bg-[#2c3856] text-white border-[#2c3856]' : 'bg-white text-gray-500 border-gray-300 group-hover:border-[#2c3856] group-hover:text-[#2c3856]'">
+                                                                    <i class="fas" :class="evidenceFiles[i] ? 'fa-check' : 'fa-upload'"></i>
+                                                                    <span x-text="evidenceFiles[i] ? 'Listo' : 'Subir'"></span>
+                                                                </div>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+
+                                        <div x-show="editMode && form.order_type === 'prestamo' && !form.is_loan_returned" class="pt-2">
+                                            <button @click="returnLoan()" class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded text-[10px] uppercase shadow-sm transition-colors flex items-center justify-center">
+                                                <i class="fas fa-undo mr-1"></i> Devolución
+                                            </button>
+                                        </div>
+                                        <div x-show="editMode && form.is_loan_returned" class="p-2 bg-green-50 text-green-700 rounded border border-green-200 text-center text-[10px] font-bold">
+                                            <i class="fas fa-check-double mr-1"></i> Devuelto
+                                        </div>
+
+                                    </div>
+
+                                    <div class="mt-3 pt-3 border-t border-gray-100 space-y-2 flex-shrink-0">
+                                        <div x-show="globalError" class="text-[10px] text-red-500 font-bold text-center mb-1 leading-tight" x-text="globalError"></div>
+                                        
+                                        <button @click="submitCheckout()"
+                                                :disabled="isSaving || isPrinting || localCart.size === 0 || !isFormValid"
+                                                class="w-full py-3 rounded-lg text-white font-bold text-xs uppercase tracking-wide shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                                :class="editMode ? 'bg-orange-600 hover:bg-orange-700' : (isFormValid && localCart.size > 0 ? 'bg-[#2c3856] hover:bg-[#1e273d]' : 'bg-gray-400')">
+                                            <span x-show="!isSaving" x-text="editMode ? 'Actualizar Pedido' : 'Generar Venta'"></span>
+                                            <span x-show="isSaving"><i class="fas fa-circle-notch fa-spin"></i></span>
+                                        </button>
+
+                                        <div class="flex gap-2">
+                                            <button x-show="editMode" @click="confirmCancelOrder()" class="flex-1 py-2 bg-white border border-red-200 text-red-600 rounded-lg text-[10px] font-bold uppercase hover:bg-red-50">Cancelar</button>
+                                            <button x-show="!editMode" @click="printProductList()" class="flex-1 py-2 bg-white border border-gray-300 text-gray-500 rounded-lg text-[10px] font-bold uppercase hover:bg-gray-100">Picking</button>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div x-show="editMode && form.order_type === 'prestamo' && !form.is_loan_returned" class="pt-4">
-                                    <button @click="returnLoan()" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-xs uppercase shadow-md transition-colors flex items-center justify-center">
-                                        <i class="fas fa-undo mr-2"></i> Reportar Devolución
-                                    </button>
-                                </div>
-                                
-                                <div x-show="editMode && form.is_loan_returned" class="p-3 bg-green-100 text-green-800 rounded-lg text-center text-xs font-bold border border-green-200">
-                                    <i class="fas fa-check-double mr-1"></i> Préstamo Devuelto
-                                </div>
-                            </div>
-
-                            <div x-show="globalError" x-transition class="p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-xs text-center font-medium">
-                                <i class="fas fa-exclamation-triangle mr-1"></i> <span x-text="globalError"></span>
-                            </div>
-                        </div>
-
-                        <div class="p-4 bg-gray-50 border-t border-gray-200 space-y-2 flex-shrink-0 z-10">
-                            <button @click="submitCheckout()"
-                                    :disabled="isSaving || isPrinting || localCart.size === 0 || !isFormValid"
-                                    class="w-full flex items-center justify-center py-3 px-4 rounded-xl text-white font-bold text-xs uppercase tracking-wider shadow-lg transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
-                                    :class="editMode ? 'bg-orange-600 hover:bg-orange-700' : (isFormValid && localCart.size > 0 ? 'bg-[#2c3856] hover:bg-[#1e273d]' : 'bg-gray-400 cursor-not-allowed')">
-                                
-                                <span x-show="!isSaving" class="flex items-center">
-                                    <span x-text="editMode ? 'Actualizar Pedido' : 'Generar Venta'"></span>
-                                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                                </span>
-                                <span x-show="isSaving"><i class="fas fa-circle-notch fa-spin"></i></span>
-                            </button>
-
-                            <div class="flex gap-2">
-                                <button x-show="editMode" @click="confirmCancelOrder()"
-                                        :disabled="isSaving"
-                                        class="flex-1 py-2 px-3 rounded-lg bg-white text-red-600 border border-gray-200 font-bold text-[10px] uppercase tracking-wide hover:bg-red-50 transition-colors">
-                                    <i class="fas fa-trash-alt mr-1"></i> Cancelar
-                                </button>
-
-                                <button x-show="!editMode" @click="printProductList()"
-                                        :disabled="isSaving || isPrinting"
-                                        class="flex-1 py-2 px-3 rounded-lg bg-white border border-gray-200 text-gray-500 font-bold text-[10px] uppercase tracking-wide hover:bg-gray-100 hover:text-gray-700 transition-colors">
-                                    <i class="fas fa-print mr-1" :class="{'fa-spin': isPrinting}"></i> Picking
-                                </button>
-                            </div>
+                            </div> 
                         </div>
                     </div>
                 </div>
@@ -668,6 +702,7 @@
                 },
                 availableBranches: [],
                 viewMode: localStorage.getItem('ff_view_mode') || 'grid',
+                layoutMode: localStorage.getItem('ff_layout_mode') || 'sidebar',
                 localCart: new Map(),
                 productDiscounts: {},
                 existingEvidences: [],
@@ -751,6 +786,12 @@
                     }
                     
                     this.pollingInterval = setInterval(() => this.pollReservations(), 10000);
+
+                    window.addEventListener('beforeunload', () => {
+                        if (!this.isSaving) {
+                            this.releaseStockOnExit();
+                        }
+                    });
                 },
 
                 onChannelChangeConfirm() {
@@ -759,9 +800,14 @@
                             this.localCart.clear();
                             this.productDiscounts = {};
                         } else {
-                            // Revertir cambio si es necesario, o dejarlo al usuario
+                            // Revertir cambio si es necesario, aqui debo colocar la lógica para revertir el cambio
                         }
                     }
+                },
+
+                toggleLayout() {
+                    this.layoutMode = this.layoutMode === 'sidebar' ? 'top' : 'sidebar';
+                    localStorage.setItem('ff_layout_mode', this.layoutMode);
                 },
 
                 get cartList() {
@@ -814,6 +860,16 @@
                     const basePrice = parseFloat(product.unit_price);
                     return basePrice * (1 - (discount / 100));
                 },
+
+                releaseStockOnExit() {
+                    const url = "{{ route('ff.sales.cart.clear') }}";
+                    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    
+                    const data = new FormData();
+                    data.append('_token', token);
+
+                    navigator.sendBeacon(url, data);
+                },                
 
                 get totalVenta() {
                     let total = 0;

@@ -791,7 +791,8 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
     Route::post('/sales/cancel-order', [FfSalesController::class, 'cancelOrder'])->name('sales.cancelOrder');
     Route::get('/sales/template', [FfSalesController::class, 'downloadTemplate'])->name('sales.downloadTemplate');
     Route::post('/sales/import', [FfSalesController::class, 'importOrder'])->name('sales.importOrder');
-    Route::post('/sales/return-loan', [FfSalesController::class, 'returnLoan'])->name('sales.returnLoan');    
+    Route::post('/sales/return-loan', [FfSalesController::class, 'returnLoan'])->name('sales.returnLoan');
+    Route::post('/sales/cart/clear', [FfSalesController::class, 'clearCart'])->name('sales.cart.clear');
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [FfReportController::class, 'index'])->name('index');
         Route::get('/transactions', [FfReportController::class, 'transactions'])->name('transactions');

@@ -251,7 +251,7 @@
             <div class="mt-16 text-center animate-entry" style="animation-delay: 0.6s;">
                 <div class="inline-flex items-center gap-4 opacity-40">
                     <span class="h-px w-12 bg-[#2c3856]"></span>
-                    <span class="text-[10px] font-mono font-bold text-[#2c3856] uppercase tracking-[0.2em]">System Configuration</span>
+                    <span class="text-[10px] font-mono font-bold text-[#2c3856] uppercase tracking-[0.2em]">Control Tower - Minmer Global</span>
                     <span class="h-px w-12 bg-[#2c3856]"></span>
                 </div>
             </div>

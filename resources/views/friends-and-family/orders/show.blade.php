@@ -1,115 +1,140 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
-    <div class="bg-[#E8ECF7] min-h-screen py-8 font-sans" x-data="{ showRejectModal: false }">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="min-h-screen font-sans pb-12 relative rounded-3xl" 
+         x-data="{ 
+            showRejectModal: false,
+            toastVisible: false,
+            toastMessage: '',
+            copyToClipboard(text) {
+                navigator.clipboard.writeText(text);
+                this.toastMessage = 'Folio copiado al portapapeles';
+                this.toastVisible = true;
+                setTimeout(() => this.toastVisible = false, 3000);
+            }
+         }">
+
+        <div x-show="toastVisible" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="translate-y-2 opacity-0"
+             x-transition:enter-end="translate-y-0 opacity-100"
+             x-transition:leave="transition ease-in duration-300"
+             x-transition:leave-start="translate-y-0 opacity-100"
+             x-transition:leave-end="translate-y-2 opacity-0"
+             class="fixed bottom-6 right-6 z-50 bg-[#2c3856] text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-white/10 backdrop-blur-md">
+            <i class="fas fa-check-circle text-[#ff9c00]"></i>
+            <span class="text-sm font-medium" x-text="toastMessage"></span>
+        </div>
+
+        <div class="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 pt-8">
             
-            <div class="mb-6 flex justify-between items-center">
-                <a href="{{ route('ff.orders.index') }}" class="text-gray-500 hover:text-[#2c3856] font-bold text-sm">
-                    <i class="fas fa-arrow-left mr-1"></i> Volver al listado
-                </a>
-                
-                @if(Auth::user()->is_area_admin && $header->status === 'pending')
-                    <div class="flex gap-3">
-                        <button @click="showRejectModal = true" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow text-sm transition-colors">
-                            <i class="fas fa-times mr-2"></i> Rechazar
-                        </button>
-                        <form action="{{ route('ff.orders.approve', $header->folio) }}" method="POST" onsubmit="return confirm('¿Autorizar este pedido?');">
-                            @csrf
-                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg shadow text-sm transition-colors">
-                                <i class="fas fa-check mr-2"></i> Aprobar Pedido
-                            </button>
-                        </form>
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <div>
+                    <div class="flex items-center gap-3 mb-1">
+                        <a href="{{ route('ff.orders.index') }}" class="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-[#2c3856] hover:border-[#2c3856] flex items-center justify-center transition-all">
+                            <i class="fas fa-arrow-left text-xs"></i>
+                        </a>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Detalle de Operación</span>
                     </div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-4xl font-black text-[#2c3856] tracking-tight">#{{ $header->folio }}</h1>
+                        <button @click="copyToClipboard('{{ $header->folio }}')" class="text-slate-300 hover:text-[#ff9c00] transition-colors" title="Copiar">
+                            <i class="fas fa-copy text-lg"></i>
+                        </button>
+                        
+                        <span class="px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2
+                            {{ $header->status == 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                              ($header->status == 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-100' : 
+                              'bg-amber-50 text-amber-600 border-amber-100') }}">
+                            <span class="w-2 h-2 rounded-full {{ $header->status == 'approved' ? 'bg-emerald-500' : ($header->status == 'rejected' ? 'bg-rose-500' : 'bg-amber-500 animate-pulse') }}"></span>
+                            {{ match($header->status) { 'pending'=>'Revisión', 'approved'=>'Aprobado', 'rejected'=>'Rechazado', default=>'Desconocido' } }}
+                        </span>
+                    </div>
+                </div>
+
+                @if(Auth::user()->is_area_admin && $header->status === 'pending')
+                <div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
+                    <button @click="showRejectModal = true" class="px-5 py-2.5 rounded-xl text-rose-600 font-bold text-sm hover:bg-rose-50 transition-colors">
+                        Rechazar
+                    </button>
+                    <form action="{{ route('ff.orders.approve', $header->folio) }}" method="POST" onsubmit="return confirm('¿Confirmar aprobación?');">
+                        @csrf
+                        <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#2c3856] text-white font-bold text-sm shadow-lg shadow-blue-900/20 hover:bg-[#1e273d] hover:shadow-xl transition-all transform hover:-translate-y-0.5">
+                            Autorizar Pedido
+                        </button>
+                    </form>
+                </div>
                 @endif
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 space-y-6">
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <div class="lg:col-span-8 space-y-6">
+                    
+                    <div class="bg-white rounded-[2rem] p-8 shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-[100px] -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
                         
-                        <div class="absolute top-0 right-0 p-4">
-                            @if($header->status == 'pending')
-                                <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Pendiente de Aprobación</span>
-                            @elseif($header->status == 'approved')
-                                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-                                    <i class="fas fa-check-circle mr-1"></i> Aprobado
-                                </span>
-                            @elseif($header->status == 'rejected')
-                                <span class="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-                                    <i class="fas fa-ban mr-1"></i> Rechazado
-                                </span>
-                            @endif
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                            <div>
+                                <p class="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Cliente Solicitante</p>
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-2xl bg-blue-50 text-[#2c3856] flex items-center justify-center font-bold text-lg">
+                                        {{ substr($header->client_name, 0, 1) }}
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-[#2c3856] leading-tight">{{ $header->client_name }}</h3>
+                                        <p class="text-sm text-slate-500">{{ $header->company_name }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-8">
+                                <div>
+                                    <p class="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Fecha Entrega</p>
+                                    <p class="text-xl font-bold text-[#2c3856] font-mono">
+                                        {{ $header->delivery_date ? $header->delivery_date->format('d M, Y') : 'N/A' }}
+                                    </p>
+                                    <p class="text-xs font-bold text-[#ff9c00]">
+                                        {{ $header->delivery_date ? $header->delivery_date->format('H:i') . ' hrs' : '' }}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Tipo</p>
+                                    <span class="inline-block px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 capitalize">
+                                        {{ $header->order_type }}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
 
-                        <h2 class="text-2xl font-bold text-[#2c3856] mb-1">Pedido #{{ $header->folio }}</h2>
-                        <p class="text-sm text-gray-500 mb-6">Creado el {{ $header->created_at->format('d/m/Y H:i') }} por {{ $header->user->name ?? 'Usuario' }}</p>
-
-                        <div class="grid grid-cols-2 gap-6 text-sm">
-                            <div>
-                                <h3 class="font-bold text-gray-400 text-xs uppercase mb-1">Cliente</h3>
-                                <p class="font-bold text-gray-800">{{ $header->client_name }}</p>
-                                <p class="text-gray-600">{{ $header->company_name }}</p>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-gray-400 text-xs uppercase mb-1">Tipo de Pedido</h3>
-                                <p class="font-bold text-gray-800 capitalize">{{ $header->order_type }}</p>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-gray-400 text-xs uppercase mb-1">Entrega Programada</h3>
-                                <p class="text-gray-800 font-medium">
-                                    {{ $header->delivery_date ? $header->delivery_date->format('d/m/Y') : 'N/A' }}
-                                </p>
-                                <p class="text-gray-500 text-xs mt-0.5">
-                                    Horario: {{ $header->delivery_date ? $header->delivery_date->format('H:i') . ' hrs' : 'N/A' }}
-                                </p>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-gray-400 text-xs uppercase mb-1">Localidad</h3>
-                                <p class="text-gray-600">{{ $header->locality }}</p>
-                            </div>
-                            <div class="col-span-2">
-                                <h3 class="font-bold text-gray-400 text-xs uppercase mb-1">Dirección de Entrega</h3>
-                                <p class="text-gray-600">{{ $header->address }}</p>
-                            </div>
-                            @if($header->observations)
-                            <div class="col-span-2 bg-gray-50 p-3 rounded border border-gray-200">
-                                <h3 class="font-bold text-gray-400 text-xs uppercase mb-1">Observaciones</h3>
-                                <p class="text-gray-600 italic">{{ $header->observations }}</p>
-                            </div>
-                            @endif
+                        @if($header->observations)
+                        <div class="mt-8 pt-6 border-t border-slate-50">
+                            <p class="text-xs font-bold text-slate-400 uppercase mb-2">Notas Operativas</p>
+                            <p class="text-sm text-slate-600 italic bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                "{{ $header->observations }}"
+                            </p>
                         </div>
-
-                        @if($header->status == 'approved' && $header->approver)
-                            <div class="mt-6 pt-4 border-t border-gray-100 text-xs text-emerald-600 font-medium">
-                                <i class="fas fa-user-check mr-1"></i> Autorizado por: {{ $header->approver->name }} el {{ $header->approved_at->format('d/m/Y H:i') }}
-                            </div>
-                        @endif
-
-                        @if($header->status == 'rejected')
-                            <div class="mt-6 p-4 bg-red-50 rounded-lg border border-red-100">
-                                <h4 class="text-red-800 font-bold text-sm mb-1">Motivo de Rechazo:</h4>
-                                <p class="text-red-600 text-sm">{{ $header->rejection_reason }}</p>
-                                <div class="mt-2 text-xs text-red-400">Rechazado por: {{ $header->approver->name ?? 'Admin' }}</div>
-                            </div>
                         @endif
                     </div>
 
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div class="p-4 bg-gray-50 border-b border-gray-100 font-bold text-gray-700 text-sm uppercase">Detalle de Productos</div>
+                    <div class="bg-white rounded-[2rem] shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100 overflow-hidden">
+                        <div class="px-8 py-6 border-b border-slate-50 flex justify-between items-center">
+                            <h3 class="font-bold text-[#2c3856]">Items del Pedido</h3>
+                            <span class="text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-full">{{ $totalItems }} unidades</span>
+                        </div>
+                        
                         <div class="overflow-x-auto">
-                            <table class="w-full text-sm text-left">
-                                <thead class="text-xs text-gray-500 uppercase bg-gray-50/50">
+                            <table class="w-full text-sm">
+                                <thead class="text-xs text-slate-400 font-bold bg-slate-50/50 uppercase tracking-wider text-left">
                                     <tr>
-                                        <th class="px-4 py-3">SKU</th>
-                                        <th class="px-4 py-3">Descripción</th>
-                                        <th class="px-4 py-3 text-center">Cant.</th>
-                                        <th class="px-4 py-3 text-right">P. Lista</th>
-                                        <th class="px-4 py-3 text-center">% Desc.</th>
-                                        <th class="px-4 py-3 text-right">Monto Desc.</th>
-                                        <th class="px-4 py-3 text-right">Subtotal</th>
+                                        <th class="px-8 py-4 rounded-tl-2xl">Producto</th>
+                                        <th class="px-4 py-4 text-center">Cant.</th>
+                                        <th class="px-4 py-4 text-right">P. Unit</th>
+                                        <th class="px-4 py-4 text-center">Desc.</th>
+                                        <th class="px-8 py-4 text-right rounded-tr-2xl">Total</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-100">
+                                <tbody class="divide-y divide-slate-50">
                                     @foreach($movements as $item)
                                         @php 
                                             $basePrice = $item->product->unit_price;
@@ -121,100 +146,168 @@
                                             if ($item->order_type === 'normal') {
                                                 $discountAmount = $basePrice * ($discountPercent / 100);
                                                 $finalPrice = $basePrice - $discountAmount;
-                                            } else {
-                                                $finalPrice = 0;
-                                                // En remisión/préstamo no aplica concepto de descuento visual
-                                                $discountPercent = 0;
-                                                $discountAmount = 0;
-                                                $basePrice = 0;
                                             }
                                         @endphp
-                                        <tr>
-                                            <td class="px-4 py-3 font-mono text-xs">{{ $item->product->sku }}</td>
-                                            <td class="px-4 py-3 text-gray-600">{{ $item->product->description }}</td>
-                                            <td class="px-4 py-3 text-center font-bold">{{ $qty }}</td>
-                                            <td class="px-4 py-3 text-right text-gray-500">${{ number_format($basePrice, 2) }}</td>
-                                            <td class="px-4 py-3 text-center text-orange-600 font-bold">
+                                        <tr class="group hover:bg-slate-50/80 transition-colors">
+                                            <td class="px-8 py-5">
+                                                <div class="flex items-center gap-4">
+                                                    
+                                                    <div class="w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center p-1 shadow-sm relative overflow-hidden group-hover:border-slate-300 transition-colors">
+                                                        @if($item->product->photo_url)
+                                                            <img src="{{ $item->product->photo_url }}" 
+                                                                 class="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110 mix-blend-multiply" 
+                                                                 alt="Producto">
+                                                        @else
+                                                            <i class="fas fa-box text-slate-200 text-lg"></i>
+                                                        @endif
+                                                    </div>
+
+                                                    <div class="flex flex-col">
+                                                        <span class="font-bold text-slate-700 text-base">{{ $item->product->description }}</span>
+                                                        <div class="flex items-center gap-2 mt-1">
+                                                            <span class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{{ $item->product->sku }}</span>
+                                                            @if($item->is_backorder)
+                                                                <span class="text-[9px] font-bold text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">BACKORDER</span>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-4 py-5 text-center">
+                                                <span class="font-bold text-slate-700 text-base">{{ $qty }}</span>
+                                            </td>
+                                            <td class="px-4 py-5 text-right">
+                                                <span class="text-slate-400 font-mono text-xs">${{ number_format($basePrice, 2) }}</span>
+                                            </td>
+                                            <td class="px-4 py-5 text-center">
                                                 @if($discountPercent > 0)
-                                                    {{ number_format($discountPercent, 1) }}%
+                                                    <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg">
+                                                        -{{ number_format($discountPercent, 0) }}%
+                                                    </span>
                                                 @else
-                                                    -
+                                                    <span class="text-slate-200 text-lg">·</span>
                                                 @endif
                                             </td>
-                                            <td class="px-4 py-3 text-right text-orange-600">
-                                                @if($discountAmount > 0)
-                                                    -${{ number_format($discountAmount, 2) }}
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="px-4 py-3 text-right font-bold text-[#2c3856]">
-                                                ${{ number_format($finalPrice * $qty, 2) }}
+                                            <td class="px-8 py-5 text-right">
+                                                <span class="font-bold text-[#2c3856] font-mono text-base">${{ number_format($finalPrice * $qty, 2) }}</span>
                                             </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
-                                <tfoot class="bg-gray-50 font-bold text-gray-800">
-                                    <tr>
-                                        <td colspan="2" class="px-4 py-3 text-right">Totales:</td>
-                                        <td class="px-4 py-3 text-center">{{ $totalItems }}</td>
-                                        <td colspan="3"></td>
-                                        <td class="px-4 py-3 text-right text-lg">${{ number_format($totalValue, 2) }}</td>
-                                    </tr>
-                                </tfoot>
                             </table>
                         </div>
                     </div>
                 </div>
 
-                <div class="space-y-6">
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-gray-800 text-sm mb-3">Acciones</h3>
+                <div class="lg:col-span-4 space-y-6">
+                    
+                    <div class="bg-[#2c3856] rounded-[2rem] p-8 text-white relative overflow-hidden shadow-xl shadow-blue-900/20">
+                        <div class="absolute top-0 right-0 w-48 h-48 bg-[#ff9c00] rounded-full blur-[80px] opacity-20 -mr-16 -mt-16"></div>
                         
-                        <a href="{{ route('ff.sales.index', ['edit_folio' => $header->folio]) }}" 
-                           class="w-full bg-[#2c3856] text-white font-bold py-2 px-4 rounded hover:bg-[#1e273d] transition-colors text-sm mb-2 text-center block shadow-md">
-                            <i class="fas fa-edit mr-2"></i> Editar Pedido
-                        </a>
-                        <p class="text-xs text-gray-400 text-center">Esto abrirá la interfaz de ventas cargando este folio.</p>
+                        <p class="text-blue-200 text-xs font-bold uppercase tracking-widest mb-1">Monto Total</p>
+                        <h2 class="text-4xl font-black tracking-tight mb-6 font-mono">${{ number_format($totalValue, 2) }}</h2>
+                        
+                        <div class="space-y-4 relative z-10">
+                            <div class="flex justify-between text-sm py-3 border-t border-white/10">
+                                <span class="text-blue-200">Subtotal Lista</span>
+                                <span class="font-mono">${{ number_format($totalValue + $movements->sum('discount_amount'), 2) }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm py-3 border-t border-white/10">
+                                <span class="text-blue-200">Descuentos</span>
+                                <span class="font-mono text-[#ff9c00]">-${{ number_format($movements->sum(function($item){ return $item->order_type == 'normal' ? ($item->product->unit_price * ($item->discount_percentage/100) * abs($item->quantity)) : 0; }), 2) }}</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-gray-800 text-sm mb-3">Evidencias y Documentos</h3>
-                        <div class="space-y-2">
+                    <div class="bg-white rounded-[2rem] p-8 shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100">
+                        <h3 class="font-bold text-[#2c3856] mb-4 flex items-center gap-2">
+                            <i class="fas fa-map-marker-alt text-rose-500"></i> Destino
+                        </h3>
+                        <div class="pl-6 border-l-2 border-slate-100 ml-1.5 space-y-4">
+                            <div>
+                                <p class="text-xs text-slate-400 uppercase font-bold mb-1">Localidad</p>
+                                <p class="text-sm font-bold text-slate-700">{{ $header->locality }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400 uppercase font-bold mb-1">Dirección</p>
+                                <p class="text-sm text-slate-600 leading-relaxed">{{ $header->address }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-[2rem] p-8 shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-bold text-[#2c3856]">Evidencias</h3>
+                            <a href="{{ route('ff.sales.index', ['edit_folio' => $header->folio]) }}" class="text-[10px] font-bold text-blue-500 hover:underline uppercase">Editar / Subir</a>
+                        </div>
+
+                        <div class="space-y-3">
+                            @php $hasEvidence = false; @endphp
                             @for($i=1; $i<=3; $i++)
                                 @if($url = $header->getEvidenceUrl($i))
-                                    <a href="{{ $url }}" target="_blank" class="flex items-center p-2 bg-blue-50 rounded hover:bg-blue-100 transition-colors group">
-                                        <i class="fas fa-file-image text-blue-500 mr-2 group-hover:scale-110 transition-transform"></i>
-                                        <span class="text-xs font-bold text-blue-700">Evidencia {{ $i }}</span>
-                                        <i class="fas fa-external-link-alt ml-auto text-xs text-blue-400"></i>
+                                    @php $hasEvidence = true; @endphp
+                                    <a href="{{ $url }}" target="_blank" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-100 transition-all group">
+                                        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-blue-500 shadow-sm group-hover:scale-110 transition-transform">
+                                            <i class="fas fa-image"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="text-xs font-bold text-slate-700 group-hover:text-blue-700">Evidencia {{ $i }}</p>
+                                        </div>
+                                        <i class="fas fa-external-link-alt text-slate-300 text-xs"></i>
                                     </a>
                                 @endif
                             @endfor
-                            @if(!$header->getEvidenceUrl(1) && !$header->getEvidenceUrl(2) && !$header->getEvidenceUrl(3))
-                                <p class="text-xs text-gray-400 italic text-center py-2">No hay evidencias cargadas.</p>
+
+                            @if(!$hasEvidence)
+                                <div class="text-center py-8 border-2 border-dashed border-slate-100 rounded-xl">
+                                    <i class="fas fa-folder-open text-slate-200 text-3xl mb-2"></i>
+                                    <p class="text-xs text-slate-400 font-medium">Sin archivos adjuntos</p>
+                                </div>
                             @endif
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
 
-        <div x-show="showRejectModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm" x-cloak>
-            <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4" @click.away="showRejectModal = false">
-                <h3 class="text-lg font-bold text-red-600 mb-4">Rechazar Pedido #{{ $header->folio }}</h3>
+        <div x-show="showRejectModal" class="fixed inset-0 z-50 flex items-center justify-center bg-[#2c3856]/40 backdrop-blur-sm" x-cloak 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0">
+            
+            <div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 relative" @click.away="showRejectModal = false"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="scale-95 opacity-0 translate-y-4"
+                 x-transition:enter-end="scale-100 opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="scale-100 opacity-100 translate-y-0"
+                 x-transition:leave-end="scale-95 opacity-0 translate-y-4">
+                
+                <div class="text-center mb-6">
+                    <div class="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-xl">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-[#2c3856]">Rechazar Pedido</h3>
+                    <p class="text-sm text-slate-500 mt-1">El stock reservado será liberado.</p>
+                </div>
+
                 <form action="{{ route('ff.orders.reject', $header->folio) }}" method="POST">
                     @csrf
-                    <div class="mb-4">
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Motivo del rechazo <span class="text-red-500">*</span></label>
-                        <textarea name="reason" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-red-500 focus:ring-red-500 text-sm" placeholder="Explique por qué se rechaza..." required></textarea>
-                        <p class="text-xs text-gray-500 mt-1">Al rechazar, el stock reservado será devuelto automáticamente al inventario.</p>
+                    <div class="mb-6">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Razón del rechazo</label>
+                        <textarea name="reason" rows="3" class="w-full bg-slate-50 border-slate-200 rounded-xl focus:border-rose-500 focus:ring-rose-500 text-sm p-4 font-medium resize-none transition-all outline-none" placeholder="Escribe el motivo aquí..." required></textarea>
                     </div>
-                    <div class="flex justify-end gap-3">
-                        <button type="button" @click="showRejectModal = false" class="px-4 py-2 text-gray-700 font-bold text-sm hover:bg-gray-100 rounded-lg">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-red-600 text-white font-bold text-sm hover:bg-red-700 rounded-lg shadow">Confirmar Rechazo</button>
+                    <div class="flex gap-3">
+                        <button type="button" @click="showRejectModal = false" class="flex-1 py-3 text-slate-600 font-bold text-sm bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>
+                        <button type="submit" class="flex-1 py-3 bg-rose-500 text-white font-bold text-sm hover:bg-rose-600 rounded-xl shadow-lg shadow-rose-200 transition-colors">Confirmar</button>
                     </div>
                 </form>
             </div>
         </div>
+
     </div>
 </x-app-layout>

@@ -773,4 +773,15 @@ class FfSalesController extends Controller
         }
     }
 
+    public function clearCart()
+    {
+        try {
+            $userId = Auth::id();
+            ffCartItem::where('user_id', $userId)->delete();
+            return response()->json(['message' => 'Carrito liberado']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error'], 500);
+        }
+    }    
+
 }
