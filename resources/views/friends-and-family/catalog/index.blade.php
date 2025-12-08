@@ -146,14 +146,17 @@
                                 <template x-if="product.channels && product.channels.length > 0">
                                     <div class="flex flex-wrap justify-end gap-1 max-w-[140px]">
                                         <template x-for="channel in product.channels.slice(0, 2)">
-                                            <span class="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md border shadow-sm bg-purple-50 text-purple-700 border-purple-100 truncate max-w-full" x-text="channel.name"></span>
+                                            <span :class="getChannelStyle(channel.name)" class="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md border shadow-sm truncate max-w-full" x-text="channel.name"></span>
                                         </template>
                                         <span x-show="product.channels.length > 2" class="px-2 py-0.5 text-[9px] font-bold bg-gray-100 text-gray-600 rounded-md border" x-text="'+' + (product.channels.length - 2)"></span>
                                     </div>
                                 </template>
                             </div>
                             <div class="h-56 w-full p-6 bg-white flex items-center justify-center relative border-b border-gray-100">
-                                <img :src="product.photo_url" class="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105">
+                                <img :src="product.photo_url" class="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105" :class="{'grayscale opacity-40': !product.is_active}">
+                                <div x-show="!product.is_active" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <span class="bg-gray-800/80 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest backdrop-blur-sm transform -rotate-12">Inactivo</span>
+                                </div>
                                 <button @click.stop="openDetailModal(product)" class="absolute top-0 left-0 bg-white/90 backdrop-blur text-gray-500 p-2 rounded-br-xl shadow-sm hover:bg-[#2c3856] hover:text-white transition-colors border-r border-b border-gray-100 z-20" title="Ver Detalle"><i class="fas fa-eye"></i></button>
                                 <div class="absolute inset-0 bg-[#2c3856]/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]" @click="editProduct(product)">
                                     <span class="bg-white text-[#2c3856] px-5 py-2 rounded-full font-bold text-sm shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all"><i class="fas fa-pen mr-2"></i> Editar</span>
@@ -192,8 +195,8 @@
                                 <template x-for="product in paginatedProducts" :key="product.id">
                                     <tr class="hover:bg-gray-50 transition-colors cursor-pointer group" @click="editProduct(product)">
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="h-12 w-12 rounded-lg border border-gray-200 p-1 bg-white">
-                                                <img :src="product.photo_url" class="h-full w-full object-contain">
+                                            <div class="h-12 w-12 rounded-lg border border-gray-200 p-1 bg-white relative">
+                                                <img :src="product.photo_url" class="h-full w-full object-contain" :class="{'grayscale opacity-40': !product.is_active}">
                                             </div>
                                         </td>
                                         <td class="px-6 py-4">
@@ -212,7 +215,7 @@
                                             <div class="flex flex-wrap gap-1 max-w-[200px]">
                                                 <template x-if="product.channels && product.channels.length > 0">
                                                     <template x-for="channel in product.channels">
-                                                        <span class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-100 text-[10px] font-bold uppercase tracking-wider" x-text="channel.name"></span>
+                                                        <span :class="getChannelStyle(channel.name)" class="px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider" x-text="channel.name"></span>
                                                     </template>
                                                 </template>
                                                 <template x-if="!product.channels || product.channels.length === 0">
@@ -342,10 +345,8 @@
                                 </div>
                                 <div class="flex justify-start gap-3 px-4 py-4 bg-gray-50 border-t border-gray-200">
                                     <button type="button" @click="deleteProduct(form)" x-show="form.id" class="rounded-lg bg-white py-2 px-4 text-sm font-bold text-red-600 shadow-sm border border-red-200 hover:bg-red-50">Eliminar</button>
-                                    <!-- <div class="flex gap-3 ml-auto"> -->
                                         <button type="button" @click="closeEditor()" class="rounded-lg bg-white py-2 px-4 text-sm font-bold text-gray-700 shadow-sm border border-gray-300 hover:bg-gray-50">Cancelar</button>
                                         <button type="submit" :disabled="isSaving" class="rounded-lg bg-[#2c3856] py-2 px-6 text-sm font-bold text-white shadow-md hover:bg-[#1a233a] disabled:opacity-50"><span x-text="isSaving ? 'Guardando...' : 'Guardar'"></span></button>
-                                    <!-- </div> -->
                                 </div>
                             </form>
                         </div>
@@ -517,7 +518,6 @@
                 get uniqueBrands() { if (!this.products) return []; const brands = this.products.map(p => p.brand).filter(b => b); return [...new Set(brands)].sort(); },
                 get uniqueTypes() { if (!this.products) return []; const types = this.products.map(p => p.type).filter(t => t); return [...new Set(types)].sort(); },
                 get activeFilterCount() { let count = 0; if(this.filters.brand) count++; if(this.filters.type) count++; if(this.filters.status !== 'all') count++; if(this.filters.channel) count++; return count; },
-                // get stats() { if (!this.products) return []; const total = this.products.length; const active = this.products.filter(p => p.is_active).length; return [{ label: 'Total Productos', value: total, icon: 'fas fa-cubes', color: 'bg-blue-50 text-blue-600' }, { label: 'Activos', value: active, icon: 'fas fa-check-circle', color: 'bg-emerald-50 text-emerald-600' }, { label: 'Tipos', value: this.uniqueTypes.length, icon: 'fas fa-tags', color: 'bg-indigo-50 text-indigo-600' }]; },
                 formatMoney(amount) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount); },
                 resetFilters() { this.filters.brand = ''; this.filters.type = ''; this.filters.status = 'all'; this.filters.search = ''; this.filters.channel = ''; this.currentPage = 1; },
                 selectNewProduct() { this.resetForm(); this.isEditorOpen = true; },
@@ -556,7 +556,28 @@
                 generatePdf() { window.open("{{ route('ff.catalog.exportPdf') }}?percentage=" + this.pdfPercentage, '_blank'); this.isPdfModalOpen = false; },
                 openDetailModal(product) { this.detailProduct = product; this.isDetailModalOpen = true; },
                 openSheetModal(product) { this.sheetProduct = product; this.isSheetModalOpen = true; },
-                closeDetailAndEdit(product) { this.isDetailModalOpen = false; setTimeout(() => { this.editProduct(product); }, 300); }
+                closeDetailAndEdit(product) { this.isDetailModalOpen = false; setTimeout(() => { this.editProduct(product); }, 300); },
+                getChannelStyle(name) {
+                    if (!name) return 'bg-gray-100 text-gray-600 border-gray-200';
+                    const styles = [
+                        'bg-blue-100 text-blue-700 border-blue-200',
+                        'bg-emerald-100 text-emerald-700 border-emerald-200',
+                        'bg-purple-100 text-purple-700 border-purple-200',
+                        'bg-amber-100 text-amber-700 border-amber-200',
+                        'bg-rose-100 text-rose-700 border-rose-200',
+                        'bg-cyan-100 text-cyan-700 border-cyan-200',
+                        'bg-indigo-100 text-indigo-700 border-indigo-200',
+                        'bg-orange-100 text-orange-700 border-orange-200',
+                        'bg-teal-100 text-teal-700 border-teal-200',
+                        'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200',
+                    ];
+                    let hash = 0;
+                    for (let i = 0; i < name.length; i++) {
+                        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+                    const index = Math.abs(hash) % styles.length;
+                    return styles[index];
+                }
             }
         }
     </script>
