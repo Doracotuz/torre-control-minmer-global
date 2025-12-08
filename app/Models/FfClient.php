@@ -18,4 +18,15 @@ class FfClient extends Model
     {
         return $this->hasOne(FfClientDeliveryCondition::class, 'ff_client_id');
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (FfClient $client) {
+            if ($client->deliveryConditions) {
+                $client->deliveryConditions->delete();
+            }
+            
+            $client->branches()->delete();
+        });
+    }    
 }

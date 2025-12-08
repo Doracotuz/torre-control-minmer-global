@@ -24,6 +24,24 @@ class FfClientDeliveryCondition extends Model
         'evid_formato_reparto' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (FfClientDeliveryCondition $condition) {
+            $imageFields = [
+                'prep_img_1', 'prep_img_2', 'prep_img_3',
+                'doc_img_1', 'doc_img_2', 'doc_img_3',
+                'evid_img_1', 'evid_img_2', 'evid_img_3'
+            ];
+
+            foreach ($imageFields as $field) {
+                if ($condition->$field) {
+                    // Borrar del bucket S3
+                    Storage::disk('s3')->delete($condition->$field);
+                }
+            }
+        });
+    }    
+
     public function getImageUrl($column)
     {
         if ($this->$column) {

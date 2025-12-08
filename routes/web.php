@@ -820,6 +820,7 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
         Route::get('/clients/{client}/conditions', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'conditionsEdit'])->name('clients.conditions.edit');
         Route::put('/clients/{client}/conditions', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'conditionsUpdate'])->name('clients.conditions.update');
         Route::get('/clients/{client}/conditions/pdf', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'exportConditionsPdf'])->name('clients.conditions.pdf');
+        Route::delete('/conditions/{conditionId}/image/{field}', [FfAdministrationController::class, 'deleteConditionImage'])->name('clients.conditions.delete-image');
     });
     Route::get('/orders', [FfOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{folio}', [FfOrderController::class, 'show'])->name('orders.show');

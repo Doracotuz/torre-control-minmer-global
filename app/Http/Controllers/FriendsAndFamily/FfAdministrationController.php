@@ -297,6 +297,32 @@ class FfAdministrationController extends Controller
             'Contrarrecibo de Equipo' => 'evid_contrarrecibo',
             'Formato de Reparto' => 'evid_formato_reparto',
         ];
+    }
+
+    public function deleteConditionImage($conditionId, $field)
+    {
+        $allowedFields = [
+            'prep_img_1', 'prep_img_2', 'prep_img_3',
+            'doc_img_1', 'doc_img_2', 'doc_img_3',
+            'evid_img_1', 'evid_img_2', 'evid_img_3'
+        ];
+
+        if (!in_array($field, $allowedFields)) {
+            abort(403, 'Campo no permitido');
+        }
+
+        $condition = \App\Models\FfClientDeliveryCondition::findOrFail($conditionId);
+
+        if ($condition->$field) {
+            \Illuminate\Support\Facades\Storage::disk('s3')->delete($condition->$field);
+            
+            $condition->$field = null;
+            $condition->save();
+            
+            return redirect()->back()->with('success', 'Imagen eliminada correctamente.');
+        }
+
+        return redirect()->back()->with('error', 'No había imagen para eliminar.');
     }    
     
 }
