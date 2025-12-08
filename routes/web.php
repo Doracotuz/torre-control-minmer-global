@@ -781,7 +781,8 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
     Route::get('/inventory/export-csv', [FfInventoryController::class, 'exportCsv'])->name('inventory.exportCsv');
     Route::get('/inventory/log/export-csv', [FfInventoryController::class, 'exportLogCsv'])->name('inventory.log.exportCsv');
     Route::get('/inventory/backorders', [FfInventoryController::class, 'backorders'])->name('inventory.backorders');
-    Route::post('/inventory/backorders/fulfill', [FfInventoryController::class, 'fulfillBackorder'])->name('inventory.fulfillBackorder');    
+    Route::post('/inventory/backorders/fulfill', [FfInventoryController::class, 'fulfillBackorder'])->name('inventory.fulfillBackorder');
+    Route::get('/inventory/backorder-relations', [FfInventoryController::class, 'backorderRelations'])->name('inventory.backorder_relations');
     Route::get('/sales', [FfSalesController::class, 'index'])->name('sales.index');
     Route::post('/sales/cart/update', [FfSalesController::class, 'updateCartItem'])->name('sales.cart.update');
     Route::get('/sales/reservations', [FfSalesController::class, 'getReservations'])->name('sales.reservations');

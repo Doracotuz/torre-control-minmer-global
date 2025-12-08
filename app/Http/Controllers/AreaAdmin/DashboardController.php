@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use App\Models\ffInventoryMovement;
 
 class DashboardController extends Controller
 {
@@ -73,7 +74,7 @@ class DashboardController extends Controller
 
         } else {
             $areaName = $user->area->name ?? 'Mi Área';
-            $areaScopeIds = [$user->area_id];
+            $areaScopeIds = collect([$user->area_id]);
 
             $isCorporateContext = in_array($areaName, $corporateAreas);
 
@@ -171,6 +172,36 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        $backorderQuery = \App\Models\ffInventoryMovement::where('is_backorder', true)
+            ->where('backorder_fulfilled', false)
+            ->with(['product:id,description,sku,unit_price', 'user:id,name']);
+
+        if ($isAreaAdmin) {
+            $backorderQuery->whereHas('user', function($q) use ($areaScopeIds) {
+                $q->whereIn('area_id', $areaScopeIds);
+            });
+        } else {
+            $backorderQuery->where('user_id', $user->id);
+        }
+
+        $backorderCount = $backorderQuery->count();
+
+        $backorderList = $backorderQuery->orderBy('created_at', 'asc')
+            ->take(5)
+            ->get()
+            ->map(function($mov) {
+                return [
+                    'id' => $mov->id,
+                    'folio' => $mov->folio,
+                    'product' => $mov->product->description ?? 'Producto Eliminado',
+                    'sku' => $mov->product->sku ?? 'N/A',
+                    'quantity' => abs($mov->quantity),
+                    'user' => $mov->user->name ?? 'Usuario',
+                    'date' => $mov->created_at->diffForHumans(),
+                    'client' => $mov->client_name
+                ];
+            });
+
         return response()->json([
             'isAreaAdmin' => $isAreaAdmin,
             'areaName' => $areaName,
@@ -184,6 +215,8 @@ class DashboardController extends Controller
             'fileTypes' => $fileTypes,
             'myProfile' => $myProfile,
             'recentFiles' => $recentFiles,
+            'backorderCount' => $backorderCount,
+            'backorderList' => $backorderList,
         ]);
     }
 }

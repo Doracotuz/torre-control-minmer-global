@@ -357,5 +357,25 @@ class FfInventoryController extends Controller
 
         return response()->json(['message' => 'Pedido marcado como surtido y vendedor notificado.']);
     }
+
+    public function backorderRelations()
+    {
+        $products = \App\Models\ffProduct::whereHas('movements', function($q) {
+            $q->where('is_backorder', true)
+              ->where('backorder_fulfilled', false);
+        })
+        ->with(['movements' => function($q) {
+            $q->where('is_backorder', true)
+              ->where('backorder_fulfilled', false)
+              ->orderBy('created_at', 'asc');
+        }])
+        ->get()
+        ->map(function($product) {
+            $product->total_debt = $product->movements->sum(fn($m) => abs($m->quantity));
+            return $product;
+        });
+
+        return view('friends-and-family.inventory.backorder-relations', compact('products'));
+    }    
     
 }

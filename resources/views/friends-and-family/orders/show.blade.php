@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
-    <div class="min-h-screen font-sans pb-12 relative rounded-3xl" 
+    <div class="bg-[#F8FAFC] min-h-screen font-sans pb-12 relative rounded-3xl" 
          x-data="{ 
             showRejectModal: false,
             toastVisible: false,
@@ -13,6 +13,11 @@
                 setTimeout(() => this.toastVisible = false, 3000);
             }
          }">
+
+        @php
+            $hasBackorder = $movements->contains('is_backorder', true);
+            $backorderCount = $movements->where('is_backorder', true)->sum(fn($m) => abs($m->quantity));
+        @endphp
 
         <div x-show="toastVisible" 
              x-transition:enter="transition ease-out duration-300"
@@ -49,6 +54,12 @@
                             <span class="w-2 h-2 rounded-full {{ $header->status == 'approved' ? 'bg-emerald-500' : ($header->status == 'rejected' ? 'bg-rose-500' : 'bg-amber-500 animate-pulse') }}"></span>
                             {{ match($header->status) { 'pending'=>'Revisión', 'approved'=>'Aprobado', 'rejected'=>'Rechazado', default=>'Desconocido' } }}
                         </span>
+
+                        @if($hasBackorder)
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-2 animate-pulse">
+                                <i class="fas fa-history"></i> Backorder Activo
+                            </span>
+                        @endif
                     </div>
                 </div>
 
@@ -70,7 +81,87 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
                 <div class="lg:col-span-8 space-y-6">
+                    <div class="bg-white rounded-[2rem] p-8 shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100">
+                        <div class="relative">
+                            <div class="absolute top-1/2 left-0 w-full h-1 bg-slate-50 -translate-y-1/2 rounded-full z-0"></div>
+                            
+                            <div class="absolute top-1/2 left-0 h-1 -translate-y-1/2 rounded-full z-0 transition-all duration-1000 ease-out 
+                                {{ $header->status == 'pending' ? 'w-1/2 bg-amber-400' : ($header->status == 'approved' ? 'w-full bg-emerald-400' : ($header->status == 'rejected' ? 'w-full bg-rose-400' : 'w-0')) }}">
+                            </div>
+
+                            <div class="relative z-10 flex justify-between">
+                                
+                                <div class="flex flex-col items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-[#2c3856] text-white flex items-center justify-center shadow-lg shadow-blue-900/20 ring-4 ring-white">
+                                        <i class="fas fa-file-signature text-xs"></i>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-xs font-bold text-[#2c3856] uppercase tracking-wider">Solicitado</p>
+                                        <p class="text-[10px] text-slate-400 font-mono mt-0.5">{{ $header->created_at->format('d/m H:i') }}</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center ring-4 ring-white transition-all
+                                        {{ $header->status == 'pending' ? 'bg-amber-400 text-white shadow-lg shadow-amber-400/30 scale-110' : 'bg-[#2c3856] text-white' }}">
+                                        <i class="fas {{ $header->status == 'pending' ? 'fa-hourglass-half fa-spin-pulse' : 'fa-check' }} text-xs"></i>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-xs font-bold uppercase tracking-wider {{ $header->status == 'pending' ? 'text-amber-500' : 'text-[#2c3856]' }}">
+                                            Revisión
+                                        </p>
+                                        <p class="text-[10px] text-slate-400 mt-0.5">Validación Admin</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col items-center gap-3">
+                                    @if($header->status == 'approved')
+                                        <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 ring-4 ring-white scale-110">
+                                            <i class="fas fa-check-double text-xs"></i>
+                                        </div>
+                                        <div class="text-center">
+                                            <p class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Aprobado</p>
+                                            <p class="text-[10px] text-slate-400 font-mono mt-0.5">{{ $header->approved_at ? $header->approved_at->format('d/m H:i') : 'Hoy' }}</p>
+                                        </div>
+                                    @elseif($header->status == 'rejected')
+                                        <div class="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg shadow-rose-500/30 ring-4 ring-white scale-110">
+                                            <i class="fas fa-times text-xs"></i>
+                                        </div>
+                                        <div class="text-center">
+                                            <p class="text-xs font-bold text-rose-600 uppercase tracking-wider">Rechazado</p>
+                                            <p class="text-[10px] text-slate-400 mt-0.5">Stock devuelto</p>
+                                        </div>
+                                    @else
+                                        <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-300 flex items-center justify-center ring-4 ring-white">
+                                            <i class="fas fa-flag-checkered text-xs"></i>
+                                        </div>
+                                        <div class="text-center">
+                                            <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Resultado</p>
+                                            <p class="text-[10px] text-slate-300 mt-0.5">En espera</p>
+                                        </div>
+                                    @endif
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>                    
                     
+                    @if($hasBackorder)
+                    <div class="bg-purple-50 rounded-2xl p-6 border border-purple-100 flex items-start gap-4 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-purple-200 rounded-full blur-[50px] opacity-20 -mr-10 -mt-10"></div>
+                        <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0 text-lg">
+                            <i class="fas fa-boxes-packing"></i>
+                        </div>
+                        <div class="relative z-10">
+                            <h3 class="text-purple-900 font-bold text-sm uppercase tracking-wide mb-1">Entrega Pendiente (Backorder)</h3>
+                            <p class="text-purple-700 text-sm">
+                                Este pedido contiene <strong class="text-purple-900">{{ $backorderCount }} unidades</strong> sin stock físico al momento de la venta. 
+                                El sistema notificará al vendedor cuando se realice la entrada de almacén correspondiente.
+                            </p>
+                        </div>
+                    </div>
+                    @endif
+
                     <div class="bg-white rounded-[2rem] p-8 shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100 relative overflow-hidden group">
                         <div class="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-[100px] -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
                         
@@ -148,7 +239,8 @@
                                                 $finalPrice = $basePrice - $discountAmount;
                                             }
                                         @endphp
-                                        <tr class="group hover:bg-slate-50/80 transition-colors">
+                                        
+                                        <tr class="group transition-colors {{ $item->is_backorder ? 'bg-purple-50/30 hover:bg-purple-50/60' : 'hover:bg-slate-50/80' }}">
                                             <td class="px-8 py-5">
                                                 <div class="flex items-center gap-4">
                                                     
@@ -166,8 +258,11 @@
                                                         <span class="font-bold text-slate-700 text-base">{{ $item->product->description }}</span>
                                                         <div class="flex items-center gap-2 mt-1">
                                                             <span class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{{ $item->product->sku }}</span>
+                                                            
                                                             @if($item->is_backorder)
-                                                                <span class="text-[9px] font-bold text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">BACKORDER</span>
+                                                                <span class="text-[9px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200 flex items-center gap-1">
+                                                                    <i class="fas fa-history text-[8px]"></i> BACKORDER
+                                                                </span>
                                                             @endif
                                                         </div>
                                                     </div>
@@ -266,6 +361,11 @@
                             @endif
                         </div>
                     </div>
+
+                    <a href="{{ route('ff.sales.index', ['edit_folio' => $header->folio]) }}" 
+                       class="block w-full bg-white border border-slate-200 text-slate-600 font-bold py-4 rounded-xl shadow-sm hover:bg-slate-50 hover:text-[#2c3856] hover:border-[#2c3856] transition-all text-sm text-center">
+                        <i class="fas fa-pencil-alt mr-2"></i> Editar Pedido
+                    </a>
 
                 </div>
             </div>

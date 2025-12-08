@@ -34,21 +34,6 @@
                 }
                 $currentAreaId = session('current_admin_area_id', $user->area_id);
             @endphp
-            
-            <!-- @if($user->is_area_admin && $manageableAreas->count() > 1) {{-- --}}
-                <form method="POST" action="{{ route('area_admin.switch_area') }}" class="mt-4 md:mt-0">
-                    @csrf
-                    <label for="area_id" class="sr-only">Gestionar Área:</label>
-                    <select name="area_id" id="area_id" onchange="this.form.submit()"
-                            class="block w-full md:w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#ff9c00] focus:border-[#ff9c00] sm:text-sm rounded-md shadow-sm">
-                        @foreach($manageableAreas as $area)
-                            <option value="{{ $area->id }}" @selected($area->id == $currentAreaId)>
-                                Gestionar: {{ $area->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </form>
-            @endif -->
         </div>
     </x-slot>
 
@@ -93,6 +78,36 @@
                     </div>
                 </div>
                 <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6 animate-fade-in-up border-l-4 border-purple-500 relative overflow-hidden" style="animation-delay: 0.05s;">
+                        <div class="absolute top-0 right-0 w-20 h-20 bg-purple-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                        <div class="relative z-10">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="text-xl font-bold text-[#2c3856]">Deuda de Stock</h4>
+                                <span class="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full animate-pulse">En espera</span>
+                            </div>
+                            <div class="flex items-end gap-2 mb-4">
+                                <div id="backorder-count-container">
+                                    <div class="skeleton-bar h-10 w-16 rounded"></div>
+                                </div>
+                                <p class="text-sm text-gray-500 mb-1 font-medium">pedidos pendientes</p>
+                            </div>
+                            <div class="space-y-3" id="backorder-list-container">
+                                <div class="flex items-center space-x-3">
+                                    <div class="skeleton-bar rounded w-8 h-8"></div>
+                                    <div class="flex-1 space-y-2">
+                                        <div class="skeleton-bar h-3 w-3/4"></div>
+                                        <div class="skeleton-bar h-2 w-1/2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-gray-100 text-center">
+                                <a href="{{ route('ff.inventory.backorders') }}" class="text-xs font-bold text-purple-600 hover:text-purple-800 hover:underline">
+                                    Ir a Surtido <i class="fas fa-arrow-right ml-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="bg-white rounded-xl shadow-lg p-6 animate-fade-in-up" style="animation-delay: 0.1s;">
                         <h4 class="text-xl font-semibold text-[#2c3856] mb-4" id="kpi-title">Métricas</h4>
                         <div class="grid grid-cols-2 gap-4">
@@ -136,16 +151,14 @@
                             <div><h4 class="text-lg font-semibold text-[#2c3856] group-hover:text-blue-700">Explorar Archivos</h4><p class="text-sm text-gray-600">Ver todas mis carpetas y archivos.</p></div>
                         </a>
                         
-                        <a href="{{ route('profile.edit') }}" {{-- Ruta actualizada --}}
+                        <a href="{{ route('profile.edit') }}" 
                            class="group bg-white rounded-xl shadow-lg p-6 flex items-center space-x-5 transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-1 animate-fade-in-up" style="animation-delay: 0.2s;">
                             <div class="p-4 rounded-full bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 transition-all duration-300 group-hover:from-purple-700 group-hover:to-purple-500 group-hover:text-white">
-                                {{-- Icono actualizado --}}
                                 <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                   <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                                 </svg>
                             </div>
                             <div>
-                                {{-- Textos actualizados --}}
                                 <h4 class="text-lg font-semibold text-[#2c3856] group-hover:text-purple-700">Editar Mi Perfil</h4>
                                 <p class="text-sm text-gray-600">Actualizar mis datos y foto.</p>
                             </div>
@@ -449,6 +462,47 @@
                     }).render();
                 },
 
+                populateBackorders(count, list) {
+                    const countContainer = document.getElementById('backorder-count-container');
+                    const listContainer = document.getElementById('backorder-list-container');
+
+                    if (countContainer) {
+                        countContainer.innerHTML = `<h2 class="text-4xl font-black text-purple-600">${count}</h2>`;
+                    }
+
+                    if (listContainer) {
+                        listContainer.innerHTML = '';
+                        
+                        if (!list || list.length === 0) {
+                            listContainer.innerHTML = `
+                                <div class="text-center py-4 opacity-50">
+                                    <svg class="w-8 h-8 mx-auto text-green-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <p class="text-xs font-bold text-gray-500">Todo surtido</p>
+                                </div>`;
+                            return;
+                        }
+
+                        list.forEach(item => {
+                            listContainer.innerHTML += `
+                                <div class="flex items-start gap-3 p-2 rounded-lg hover:bg-purple-50 transition-colors border border-transparent hover:border-purple-100 group">
+                                    <div class="bg-purple-100 text-purple-600 w-8 h-8 flex items-center justify-center rounded-lg font-bold text-xs flex-shrink-0">
+                                        ${item.quantity}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-xs font-bold text-[#2c3856] truncate" title="${item.product}">
+                                            ${item.product}
+                                        </p>
+                                        <p class="text-[10px] text-gray-500 flex justify-between">
+                                            <span>#${item.folio} - ${item.client}</span>
+                                            <span class="text-purple-400 font-medium">${item.date}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                },
+
                 async init() {
                     try {
                         const response = await fetch('{{ route("area_admin.dashboard.data") }}');
@@ -467,6 +521,7 @@
                             this.populateTeamList(data.teamMembers, 'team-members-list');
                             this.renderActivityChart(data.activityBreakdown, 'activity-breakdown-chart');
                             this.renderFileTypesChart(data.fileTypes, 'file-types-chart');
+                            this.populateBackorders(data.backorderCount, data.backorderList);
                         } else {
                             this.populateKPIs(data);
                             this.populateMyProfile(data.myProfile);
