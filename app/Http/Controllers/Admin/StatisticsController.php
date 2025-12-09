@@ -336,12 +336,11 @@ class StatisticsController extends Controller
             ->whereDate('activity_logs.created_at', '>=', $startDate)
             ->whereDate('activity_logs.created_at', '<=', $endDate)
             ->groupBy('user_type_label')
-            ->pluck('total_actions', 'user_type_label');
+            ->get();
 
-        $foldersByArea = Folder::select('areas.name as x', DB::raw('count(folders.id) as y'))
+        $foldersByArea = Folder::select('areas.name', DB::raw('count(folders.id) as total_folders'))
             ->join('areas', 'folders.area_id', '=', 'areas.id')
             ->groupBy('areas.name')
-            ->orderByDesc('y')
             ->get();
 
         $filesByArea = FileLink::select('areas.name', DB::raw('count(file_links.id) as total_files'))
@@ -386,19 +385,21 @@ class StatisticsController extends Controller
         $totalFolders = Folder::count();
         $totalFileLinks = FileLink::count();
 
-        $usersByArea = User::select('areas.name', DB::raw('count(users.id) as count'))
+        $usersByArea = User::select('areas.name', DB::raw('count(users.id) as total_users'))
             ->join('areas', 'users.area_id', '=', 'areas.id')
             ->groupBy('areas.name')
-            ->orderByDesc('count')
+            ->orderByDesc('total_users')
             ->get();
 
         $fileTypes = FileLink::select(DB::raw('LOWER(SUBSTRING_INDEX(name, ".", -1)) as file_extension'), DB::raw('count(*) as total'))
             ->where('type', 'file')
             ->where('name', 'like', '%.%')
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
             ->groupBy('file_extension')
             ->orderByDesc('total')
             ->limit(5)
-            ->pluck('total', 'file_extension'); 
+            ->get();
 
         $topUsers = ActivityLog::select('users.name', DB::raw('count(*) as total_actions'))
             ->join('users', 'activity_logs.user_id', '=', 'users.id')
@@ -408,6 +409,7 @@ class StatisticsController extends Controller
             ->orderByDesc('total_actions')
             ->limit(5)
             ->get();
+
 
         return response()->json([
             'totalUsers' => $totalUsers,
