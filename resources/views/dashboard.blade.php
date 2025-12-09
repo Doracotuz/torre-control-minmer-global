@@ -391,7 +391,7 @@
                     renderCharts() {
                         const common = {
                             chart: { fontFamily: 'Montserrat, sans-serif', toolbar: { show: false }, background: 'transparent' },
-                            colors: ['#2c3856', '#ff9c00', '#4a5f8a', '#fbbf24', '#94a3b8'],
+                            colors: ['#2c3856', '#ff9c00', '#0ea5e9', '#10b981', '#8b5cf6', '#f59e0b', '#f43f5e', '#6366f1', '#14b8a6'],
                             theme: { mode: 'light' }
                         };
 
@@ -400,8 +400,7 @@
                                 ...common,
                                 series: [{ data: this.data.foldersByArea }],
                                 chart: { type: 'treemap', height: '100%', toolbar: {show:false}, parentHeightOffset: 0 },
-                                colors: ['#2c3856', '#4a5f8a', '#ff9c00'],
-                                plotOptions: { treemap: { distributed: true, enableShades: true } }
+                                plotOptions: { treemap: { distributed: true, enableShades: false } }
                             }).render();
                         }
 
@@ -422,7 +421,7 @@
                                 series: Object.values(this.data.userTypeData),
                                 labels: Object.keys(this.data.userTypeData),
                                 chart: { type: 'radialBar', height: 280 },
-                                colors: ['#2c3856', '#ff9c00', '#666666'],
+                                colors: ['#2c3856', '#ff9c00', '#10b981', '#666666'], 
                                 plotOptions: { radialBar: { dataLabels: { total: { show: true, label: 'TOTAL', color: '#2c3856' } } } }
                             }).render();
                         }
@@ -434,8 +433,8 @@
                                     series: [{ name: 'Usuarios', data: this.data.usersByArea.map(i => i.count) }],
                                     chart: { type: 'bar', height: 350, toolbar: {show:false} },
                                     xaxis: { categories: this.data.usersByArea.map(i => i.name), labels: { style: { fontSize: '10px' } } },
-                                    plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
-                                    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.8, opacityTo: 1, stops: [0, 90, 100] } }
+                                    plotOptions: { bar: { borderRadius: 4, columnWidth: '50%', distributed: true } },
+                                    legend: { show: false }
                                 }).render();
                             }
                         @endif
