@@ -395,8 +395,6 @@ class StatisticsController extends Controller
         $fileTypes = FileLink::select(DB::raw('LOWER(SUBSTRING_INDEX(name, ".", -1)) as file_extension'), DB::raw('count(*) as total'))
             ->where('type', 'file')
             ->where('name', 'like', '%.%')
-            ->whereDate('created_at', '>=', $startDate)
-            ->whereDate('created_at', '<=', $endDate)
             ->groupBy('file_extension')
             ->orderByDesc('total')
             ->limit(5)
