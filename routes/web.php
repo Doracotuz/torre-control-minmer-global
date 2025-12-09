@@ -252,7 +252,8 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/home', function () {
         return view('dashboard');
     })->name('home');    
-    Route::get('/main-dashboard-data', [App\Http\Controllers\DashboardController::class, 'data'])->name('main_dashboard.data');
+    // Route::get('/main-dashboard-data', [App\Http\Controllers\DashboardController::class, 'data'])->name('main_dashboard.data');
+    Route::get('/main-dashboard/data', [App\Http\Controllers\Admin\StatisticsController::class, 'getChartData'])->name('main_dashboard.data');
     Route::resource('ticket-categories', TicketCategoryController::class);
     Route::post('ticket-sub-categories', [TicketCategoryController::class, 'storeSubCategory'])->name('ticket-sub-categories.store');
     Route::put('ticket-sub-categories/{subCategory}', [TicketCategoryController::class, 'updateSubCategory'])->name('ticket-sub-categories.update');
