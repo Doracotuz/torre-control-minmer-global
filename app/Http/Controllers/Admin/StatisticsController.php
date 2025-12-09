@@ -336,12 +336,12 @@ class StatisticsController extends Controller
             ->whereDate('activity_logs.created_at', '>=', $startDate)
             ->whereDate('activity_logs.created_at', '<=', $endDate)
             ->groupBy('user_type_label')
-            ->get();
+            ->pluck('total_actions', 'user_type_label');
 
-        $foldersByArea = Folder::select('areas.name', DB::raw('count(folders.id) as total_folders'))
+        $foldersByArea = Folder::select('areas.name as x', DB::raw('count(folders.id) as y'))
             ->join('areas', 'folders.area_id', '=', 'areas.id')
             ->groupBy('areas.name')
-            ->orderByDesc('total_folders')
+            ->orderByDesc('y')
             ->get();
 
         $filesByArea = FileLink::select('areas.name', DB::raw('count(file_links.id) as total_files'))
@@ -386,10 +386,10 @@ class StatisticsController extends Controller
         $totalFolders = Folder::count();
         $totalFileLinks = FileLink::count();
 
-        $usersByArea = User::select('areas.name', DB::raw('count(users.id) as total_users'))
+        $usersByArea = User::select('areas.name', DB::raw('count(users.id) as count'))
             ->join('areas', 'users.area_id', '=', 'areas.id')
             ->groupBy('areas.name')
-            ->orderByDesc('total_users')
+            ->orderByDesc('count')
             ->get();
 
         $fileTypes = FileLink::select(DB::raw('LOWER(SUBSTRING_INDEX(name, ".", -1)) as file_extension'), DB::raw('count(*) as total'))
@@ -400,7 +400,7 @@ class StatisticsController extends Controller
             ->groupBy('file_extension')
             ->orderByDesc('total')
             ->limit(5)
-            ->get();
+            ->pluck('total', 'file_extension'); 
 
         $topUsers = ActivityLog::select('users.name', DB::raw('count(*) as total_actions'))
             ->join('users', 'activity_logs.user_id', '=', 'users.id')
@@ -410,7 +410,6 @@ class StatisticsController extends Controller
             ->orderByDesc('total_actions')
             ->limit(5)
             ->get();
-
 
         return response()->json([
             'totalUsers' => $totalUsers,
