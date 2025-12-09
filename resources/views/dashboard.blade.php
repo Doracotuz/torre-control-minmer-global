@@ -135,19 +135,20 @@
                 <div class="flex flex-col md:flex-row justify-between items-end mb-10 opacity-0 animate-intro">
                     <div>
                         <div class="flex items-center gap-2 mb-2">
-                            <span class="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-[#2c3856] uppercase tracking-wider">
-                                Dashboard
-                            </span>
                             <div class="flex items-center gap-1.5 px-3 py-1 bg-white border border-gray-200 rounded-full">
                                 <span class="w-2 h-2 rounded-full bg-[#ff9c00] animate-pulse"></span>
                                 <span class="text-xs font-bold text-gray-500">En línea</span>
                             </div>
                         </div>
-                        <h1 class="text-4xl md:text-5xl font-black text-[#2c3856] tracking-tight">
-                            <span x-text="greeting"></span>, <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#2c3856] to-[#ff9c00]">{{ Auth::user()->name }}</span>
+                        <h1 class="text-4xl md:text-5xl tracking-tight mt-1 brand-font">
+                            <span class="font-bold text-slate-400">
+                                <span x-text="greeting"></span>,
+                            </span>
+                            
+                            <span class="font-black text-[#2c3856]">{{ Auth::user()->name }}</span>
                         </h1>
                         <p class="mt-2 text-lg text-gray-500 font-medium">
-                            Bienvenido al ecosistema digital de Minmer Global.
+                            Bienvenido al Control Tower de Minmer Global.
                         </p>
                     </div>
                     <div class="mt-4 md:mt-0 text-right hidden md:block">
