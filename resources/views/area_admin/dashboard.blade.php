@@ -415,9 +415,10 @@
                             ...common,
                             series: this.data.activityBreakdown.map(item => item.total),
                             labels: this.data.activityBreakdown.map(item => item.action_type),
-                            chart: { type: 'donut', height: 280 },
-                            legend: { position: 'bottom', fontSize: '10px' },
-                            plotOptions: { pie: { donut: { size: '60%', labels: { show: true, total: { show: true, label: 'TOTAL', color: '#2c3856' } } } } }
+                            // CAMBIO CLAVE AQUÍ: height 100% para usar el espacio vertical verticalmente
+                            chart: { type: 'donut', height: '100%', parentHeightOffset: 0 },
+                            legend: { position: 'bottom', fontSize: '11px', offsetY: 0 },
+                            plotOptions: { pie: { donut: { size: '65%', labels: { show: true, total: { show: true, label: 'TOTAL', color: '#2c3856' } } } } }
                         }).render();
                     }
                 },
