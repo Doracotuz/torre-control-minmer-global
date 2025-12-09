@@ -397,13 +397,12 @@ class StatisticsController extends Controller
             ->get()
             ->map(function ($file) {
                 $ext = pathinfo($file->path, PATHINFO_EXTENSION);
+                
                 if (empty($ext)) {
                     $ext = pathinfo($file->name, PATHINFO_EXTENSION);
                 }
-                return strtolower($ext);
-            })
-            ->filter(function ($ext) {
-                return !empty($ext);
+                
+                return empty($ext) ? 'otros' : strtolower($ext);
             })
             ->countBy()
             ->sortDesc()
