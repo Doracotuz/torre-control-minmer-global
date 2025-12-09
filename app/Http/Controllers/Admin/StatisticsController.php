@@ -394,16 +394,10 @@ class StatisticsController extends Controller
 
         $fileTypes = DB::table('file_links')
             ->where('type', 'file')
-            ->whereNull('deleted_at')
-            ->select('path', 'name')
-            ->get() 
-            ->map(function ($file) {
-                $ext = pathinfo($file->path, PATHINFO_EXTENSION);
-                
-                if (empty($ext)) {
-                    $ext = pathinfo($file->name, PATHINFO_EXTENSION);
-                }
-                
+            ->whereNotNull('path')
+            ->pluck('path')
+            ->map(function ($filepath) {
+                $ext = pathinfo($filepath, PATHINFO_EXTENSION);
                 return empty($ext) ? 'otros' : strtolower($ext);
             })
             ->countBy()
