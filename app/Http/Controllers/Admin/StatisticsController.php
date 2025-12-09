@@ -392,16 +392,12 @@ class StatisticsController extends Controller
             ->orderByDesc('count')
             ->get();
 
-        $fileTypes = FileLink::where('type', 'file')
-            ->select('path', 'name')
-            ->get()
-            ->map(function ($file) {
-                $ext = pathinfo($file->path, PATHINFO_EXTENSION);
-                
-                if (empty($ext)) {
-                    $ext = pathinfo($file->name, PATHINFO_EXTENSION);
-                }
-                
+        $fileTypes = DB::table('file_links')
+            ->where('type', 'file')
+            ->whereNotNull('name')
+            ->pluck('name')
+            ->map(function ($filename) {
+                $ext = pathinfo($filename, PATHINFO_EXTENSION);
                 return empty($ext) ? 'otros' : strtolower($ext);
             })
             ->countBy()
