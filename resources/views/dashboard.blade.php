@@ -268,12 +268,13 @@
                         </div>
 
                         <div class="lg:col-span-5 flex flex-col gap-6 opacity-0 animate-stagger">
-                            <div class="bento-card p-6 h-full flex flex-col">
-                                <div class="flex justify-between items-center mb-4">
+                            <div class="bento-card p-6 h-full flex flex-col min-h-[450px]"> <div class="flex justify-between items-center mb-4">
                                     <h3 class="text-lg font-bold text-[#2c3856]">Peso de Carpetas por Área</h3>
                                     <span class="text-xs text-gray-400 font-bold uppercase">Treemap</span>
                                 </div>
-                                <div id="chart-folders" class="flex-1 w-full min-h-[300px]"></div>
+                                <div class="flex-1 w-full relative">
+                                    <div id="chart-folders" class="absolute inset-0"></div>
+                                </div>
                             </div>
                         </div>
 

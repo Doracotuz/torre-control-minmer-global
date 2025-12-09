@@ -341,6 +341,7 @@ class StatisticsController extends Controller
         $foldersByArea = Folder::select('areas.name', DB::raw('count(folders.id) as total_folders'))
             ->join('areas', 'folders.area_id', '=', 'areas.id')
             ->groupBy('areas.name')
+            ->orderByDesc('total_folders')
             ->get();
 
         $filesByArea = FileLink::select('areas.name', DB::raw('count(file_links.id) as total_files'))
