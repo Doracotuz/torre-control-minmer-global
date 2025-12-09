@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class StatisticsController extends Controller
 {
@@ -392,18 +393,20 @@ class StatisticsController extends Controller
             ->orderByDesc('count')
             ->get();
 
-        $fileTypes = DB::table('file_links')
-            ->where('type', 'file')
+        $fileTypes = FileLink::where('type', 'file')
             ->whereNotNull('path')
-            ->pluck('path')
-            ->map(function ($filepath) {
-                $ext = pathinfo($filepath, PATHINFO_EXTENSION);
-                return empty($ext) ? 'otros' : strtolower($ext);
+            ->get()
+            ->map(function ($file) {
+                $ext = strtolower(pathinfo($file->path, PATHINFO_EXTENSION));
+                Log::info("Archivo: {$file->path} -> Extensión: {$ext}");
+                return empty($ext) ? 'otros' : $ext;
             })
             ->countBy()
             ->sortDesc()
             ->take(5)
             ->toArray();
+
+        Log::info("Total fileTypes encontrados: " . json_encode($fileTypes));
 
         $topUsers = ActivityLog::select('users.name', DB::raw('count(*) as total_actions'))
             ->join('users', 'activity_logs.user_id', '=', 'users.id')
