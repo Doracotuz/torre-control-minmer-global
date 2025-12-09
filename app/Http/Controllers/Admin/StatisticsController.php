@@ -392,13 +392,18 @@ class StatisticsController extends Controller
             ->orderByDesc('count')
             ->get();
 
-        $fileTypes = FileLink::select(DB::raw('LOWER(SUBSTRING_INDEX(name, ".", -1)) as file_extension'), DB::raw('count(*) as total'))
-            ->where('type', 'file')
-            ->where('name', 'like', '%.%')
-            ->groupBy('file_extension')
-            ->orderByDesc('total')
-            ->limit(5)
-            ->pluck('total', 'file_extension');
+        $fileTypes = FileLink::where('type', 'file')
+            ->pluck('name')
+            ->map(function ($name) {
+                return strtolower(pathinfo($name, PATHINFO_EXTENSION));
+            })
+            ->filter(function ($ext) {
+                return !empty($ext);
+            })
+            ->countBy()
+            ->sortDesc()
+            ->take(5)
+            ->toArray();
 
         $topUsers = ActivityLog::select('users.name', DB::raw('count(*) as total_actions'))
             ->join('users', 'activity_logs.user_id', '=', 'users.id')
