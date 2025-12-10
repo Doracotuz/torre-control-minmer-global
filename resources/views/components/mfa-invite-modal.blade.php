@@ -1,6 +1,6 @@
 @if (session()->pull('mfa_invitation'))
 <div x-data="{ show: false }" 
-     x-init="setTimeout(() => show = true, 3000)" 
+     x-init="setTimeout(() => show = true, 2000)" 
      x-show="show" 
      style="display: none;"
      class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center px-4 py-6 sm:p-0">
