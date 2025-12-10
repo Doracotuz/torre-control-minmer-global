@@ -42,7 +42,7 @@
         </div>
         
         <div class="mt-6 sm:mt-8 sm:flex sm:flex-row-reverse gap-3">
-            <a href="{{ route('profile.edit') }}" 
+            <a href="{{ route('profile.edit') }}#mfa-security" 
                class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3 bg-[#ff9c00] text-base font-bold text-white hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:w-auto sm:text-sm transition-colors">
                 Configurar ahora
             </a>

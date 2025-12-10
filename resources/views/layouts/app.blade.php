@@ -81,6 +81,10 @@
                 transition: height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             }
 
+            html {
+                scroll-behavior: smooth;
+            }            
+
             .nav-link-custom:hover:not(.active-link) {
                 background-color: var(--accent-hover);
                 color: var(--text-sidebar-logo);

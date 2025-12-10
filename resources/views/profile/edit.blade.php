@@ -152,7 +152,7 @@
                 </div>
             </div>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+            <div id="mfa-security" class="p-4 sm:p-8 bg-white shadow sm:rounded-lg scroll-mt-24 transition-all duration-500">
                 <div class="max-w-xl">
                     @include('profile.partials.mfa-form')
                 </div>
