@@ -63,6 +63,7 @@ use App\Http\Controllers\FriendsAndFamily\FfSalesController;
 use App\Http\Controllers\FriendsAndFamily\FfReportController;
 use App\Http\Controllers\FriendsAndFamily\FfAdministrationController;
 use App\Http\Controllers\FriendsAndFamily\FfOrderController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -146,7 +147,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/files/{fileLink}/download', [FileLinkController::class, 'download'])->name('files.download');
     Route::get('/indicadores/{folder}', [IndicadoresController::class, 'show'])->name('indicadores.show')->middleware('auth');
     Route::post('/folders/upload-directory', [FolderController::class, 'uploadDirectory'])->name('folders.uploadDirectory');
-    
+
+    // para MFA
+    Route::post('/mfa/generate', [App\Http\Controllers\MfaController::class, 'generate'])->name('mfa.generate');
+    Route::post('/mfa/enable', [App\Http\Controllers\MfaController::class, 'enable'])->name('mfa.enable');
+    Route::post('/mfa/disable', [App\Http\Controllers\MfaController::class, 'disable'])->name('mfa.disable');
 
 
     // Route::get('/files/{fileLink}/download', function (FileLink $fileLink) {
@@ -469,6 +474,11 @@ Route::prefix('ff/email-actions')->name('ff.email.')->middleware('signed')->grou
     Route::get('/reject-confirm/{folio}/{adminId}', [FfOrderController::class, 'emailRejectForm'])->name('reject.form');
     Route::post('/reject-submit/{folio}/{adminId}', [FfOrderController::class, 'emailRejectSubmit'])->name('reject.submit');
 });
+
+    // Rutas para el 2FA
+    Route::get('two-factor-challenge', [TwoFactorChallengeController::class, 'create'])->name('2fa.challenge');
+    Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store'])->name('2fa.verify');    
+    
 
 // Route::prefix('operador')->name('operador.')->group(function() {
 //     // Página para ingresar el número de guía

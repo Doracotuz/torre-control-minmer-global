@@ -398,7 +398,6 @@ class StatisticsController extends Controller
             ->get()
             ->map(function ($file) {
                 $ext = strtolower(pathinfo($file->path, PATHINFO_EXTENSION));
-                Log::info("Archivo: {$file->path} -> Extensión: {$ext}");
                 return empty($ext) ? 'otros' : $ext;
             })
             ->countBy()
@@ -406,7 +405,7 @@ class StatisticsController extends Controller
             ->take(5)
             ->toArray();
 
-        Log::info("Total fileTypes encontrados: " . json_encode($fileTypes));
+        // Log::info("Total fileTypes encontrados: " . json_encode($fileTypes));
 
         $topUsers = ActivityLog::select('users.name', DB::raw('count(*) as total_actions'))
             ->join('users', 'activity_logs.user_id', '=', 'users.id')

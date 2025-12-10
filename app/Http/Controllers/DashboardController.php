@@ -36,9 +36,9 @@ class DashboardController extends Controller
             WHEN is_area_admin = 1 THEN "Admin de Área"
             WHEN is_client = 1 THEN "Cliente"
             ELSE "Normal"
-            END AS user_type_label'), DB::raw('count(*) as total'))
+            END AS user_type_label'), DB::raw('count(*) as total_actions'))
             ->groupBy('user_type_label')
-            ->pluck('total', 'user_type_label');
+            ->get();
 
         $foldersByArea = Folder::select('areas.name as x', DB::raw('count(folders.id) as y'))
             ->join('areas', 'folders.area_id', '=', 'areas.id')
@@ -53,7 +53,7 @@ class DashboardController extends Controller
             ->groupBy('file_extension')
             ->orderByDesc('total')
             ->limit(5)
-            ->pluck('total', 'file_extension');
+            ->get();
 
         $usersByArea = null;
         if ($user->isSuperAdmin()) {
@@ -68,9 +68,7 @@ class DashboardController extends Controller
             'totalAreas' => $totalAreas,
             'totalFolders' => $totalFolders,
             'totalFileLinks' => $totalFileLinks,
-            
             'recentActivities' => $recentActivities,
-
             'userTypeData' => $userTypeData,
             'foldersByArea' => $foldersByArea,
             'fileTypes' => $fileTypes,

@@ -1031,5 +1031,6 @@
         </div>
         <x-chat-assistant />
         <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+        <x-mfa-invite-modal />
     </body>
 </html>

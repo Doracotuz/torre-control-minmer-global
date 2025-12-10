@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Illuminate\Validation\ValidationException;
+use PragmaRX\Google2FA\Google2FA;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -25,7 +26,7 @@ class AuthenticatedSessionController extends Controller
 
         if (!$user->is_active) {
             Auth::guard('web')->logout();
-            
+
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
@@ -35,6 +36,18 @@ class AuthenticatedSessionController extends Controller
         }
 
         $request->session()->regenerate();
+
+        if (!empty($user->google2fa_secret)) {
+            Auth::guard('web')->logout();
+            
+            $request->session()->put('2fa:user:id', $user->id);
+            
+            return redirect()->route('2fa.challenge');
+        }
+
+        if (empty($user->google2fa_secret)) {
+            $request->session()->put('mfa_invitation', true);
+        }
 
         return redirect()->intended(route('dashboard', absolute: false));
     }
