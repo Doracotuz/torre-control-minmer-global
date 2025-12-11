@@ -164,12 +164,9 @@
                     </div>
                     <div>
                         <h3 class="text-lg font-bold text-green-800">{{ __('Cuenta Protegida') }}</h3>
-                        <p class="text-sm text-green-700">
-                            La autenticación de dos factores está activa.
-                        </p>
+                        <p class="text-sm text-green-700">{{ __('La autenticación de dos factores está activa.') }}</p>
                     </div>
                 </div>
-                
                 <x-danger-button type="button" x-on:click="openDisableModal = true">
                     {{ __('Desactivar') }}
                 </x-danger-button>
@@ -177,40 +174,60 @@
         </template>
     </div>
 
-    <x-modal name="confirm-mfa-deletion" :show="false" focusable x-show="openDisableModal">
-        <div class="p-6">
-            <h2 class="text-lg font-medium text-gray-900">
-                {{ __('¿Seguro que quieres desactivar 2FA?') }}
-            </h2>
+    <div x-show="openDisableModal" 
+         x-transition:enter="ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         style="display: none;"
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="openDisableModal = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            <p class="mt-1 text-sm text-gray-600">
-                {{ __('Al hacer esto, tu cuenta quedará vulnerable si alguien adivina tu contraseña.') }}
-            </p>
-
-            <div class="mt-6">
-                <x-input-label for="password_disable" value="{{ __('Ingresa tu contraseña para confirmar') }}" />
-
-                <x-text-input
-                    id="password_disable"
-                    type="password"
-                    class="mt-1 block w-full"
-                    placeholder="{{ __('Contraseña actual') }}"
-                    x-model="password"
-                />
-                 <p x-show="errorMessage" x-text="errorMessage" class="mt-2 text-sm text-red-600"></p>
-            </div>
-
-            <div class="mt-6 flex justify-end">
-                <x-secondary-button x-on:click="openDisableModal = false; password = ''; errorMessage = ''">
-                    {{ __('Cancelar') }}
-                </x-secondary-button>
-
-                <x-danger-button class="ms-3" x-on:click="disableMfa">
-                    {{ __('Sí, desactivar seguridad') }}
-                </x-danger-button>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                {{ __('¿Seguro que quieres desactivar 2FA?') }}
+                            </h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500">
+                                    {{ __('Tu cuenta quedará vulnerable. Ingresa tu contraseña para confirmar.') }}
+                                </p>
+                                <div class="mt-4">
+                                    <input type="password" 
+                                           x-model="password" 
+                                           class="shadow-sm focus:ring-red-500 focus:border-red-500 block w-full sm:text-sm border-gray-300 rounded-md" 
+                                           placeholder="Contraseña actual"
+                                           @keyup.enter="disableMfa">
+                                    <p x-show="errorMessage" x-text="errorMessage" class="mt-2 text-sm text-red-600 font-bold"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" @click="disableMfa" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        {{ __('Sí, desactivar') }}
+                    </button>
+                    <button type="button" @click="openDisableModal = false; password = ''; errorMessage = ''" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        {{ __('Cancelar') }}
+                    </button>
+                </div>
             </div>
         </div>
-    </x-modal>
+    </div>
 
     <script>
         function mfaHandler() {
@@ -258,21 +275,32 @@
                             this.code = '';
                             alert('¡Excelente! Tu cuenta ahora es mucho más segura.');
                         } else {
-                            this.errorMessage = data.message || 'El código es incorrecto. Intenta esperar al siguiente.';
+                            this.errorMessage = data.message || 'Código incorrecto.';
                         }
                     } catch (e) {
-                        this.errorMessage = 'Error de conexión. Revisa tu internet.';
+                        this.errorMessage = 'Error de conexión.';
                     }
                 },
 
                 async disableMfa() {
+                    if (this.password.length === 0) {
+                        this.errorMessage = 'Por favor ingresa tu contraseña.';
+                        return;
+                    }
+                    
                     this.errorMessage = '';
+                    
                     try {
                         const res = await fetch('{{ route("mfa.disable") }}', {
                             method: 'POST',
-                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' },
+                            headers: { 
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}', 
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
                             body: JSON.stringify({ password: this.password })
                         });
+                        
                         const data = await res.json();
 
                         if (res.ok) {
@@ -280,11 +308,17 @@
                             this.openDisableModal = false;
                             this.password = '';
                             this.setupStep = 0;
+                            alert('2FA Desactivado correctamente.');
                         } else {
-                            this.errorMessage = data.message || 'La contraseña es incorrecta.';
+                            if (data.errors && data.errors.password) {
+                                this.errorMessage = data.errors.password[0];
+                            } else {
+                                this.errorMessage = data.message || 'Error al desactivar.';
+                            }
                         }
                     } catch (e) {
-                        this.errorMessage = 'Error al intentar desactivar.';
+                        console.error(e);
+                        this.errorMessage = 'Error de conexión.';
                     }
                 }
             }

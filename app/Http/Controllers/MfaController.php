@@ -20,7 +20,7 @@ class MfaController extends Controller
         $google2fa = new Google2FA();
         $secret = $google2fa->generateSecretKey();
         $g2faUrl = $google2fa->getQRCodeUrl(
-            'Minmer Global',
+            'Control Tower - Minmer Global',
             $user->email,
             $secret
         );

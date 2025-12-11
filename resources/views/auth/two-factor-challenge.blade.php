@@ -18,14 +18,12 @@
         
         body {
             font-family: 'Montserrat', sans-serif;
-            /* Fondo base */
             background-image: url('{{ Storage::disk('s3')->url('fondDeLogin.png') }}');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
         }
 
-        /* --- Animaciones de Fondo --- */
         .ambient-light {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -50,23 +48,20 @@
             100% { transform: translate(-20px, -30px) scale(0.9); }
         }
 
-        /* --- Glassmorphism Premium --- */
         .glass-card {
-            background: rgba(255, 255, 255, 0.05); /* Muy transparente */
+            background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(25px) saturate(110%);
             -webkit-backdrop-filter: blur(25px) saturate(110%);
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
 
-        /* --- Input Interactivo de Alta Tecnología --- */
         .scanner-input-container {
             position: relative;
             overflow: hidden;
             border-radius: 1rem;
         }
 
-        /* Línea de escaneo luminosa */
         .scanner-line {
             position: absolute;
             top: 0; left: -100%;
@@ -80,7 +75,6 @@
             transition: left 1.5s ease-in-out infinite;
         }
 
-        /* Brillo en el borde al enfocar */
         .input-glow {
             position: absolute;
             inset: -2px;
@@ -99,7 +93,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* --- Utilidades de Animación de Entrada --- */
         .animate-enter-up { animation: enter-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
         .delay-100 { animation-delay: 0.1s; }
         .delay-200 { animation-delay: 0.2s; }
