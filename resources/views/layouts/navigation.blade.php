@@ -150,17 +150,8 @@
                 </div>
             </div>
 
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <button @click="toggleTheme()"
-                        class="p-2 rounded-md focus:outline-none transition-colors duration-150 nav-toggle-btn"
-                        aria-label="Toggle theme">
-                    <svg x-show="theme === 'default'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    <svg x-show="theme === 'gold'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                    </svg>
-                </button>
+            <div class="hidden sm:flex sm:items-center sm:ms-6 space-x-4">
+                
                 @if (Auth::user()->is_area_admin && $manageableAreas->count() > 1 && request()->routeIs('area_admin.*'))
                     <div class="ms-3 relative">
                         <x-dropdown align="right" width="60">
@@ -189,27 +180,133 @@
                         </x-dropdown>
                     </div>
                 @endif
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 border border-transparent text-sm leading-4 font-medium rounded-md nav-user-btn focus:outline-none transition ease-in-out duration-150">
-                            @if (Auth::user()->profile_photo_path)
-                                <img class="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover mr-2 object-center" src="{{ Storage::disk('s3')->url(Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()->name }}">
-                            @else
-                                <svg class="h-7 w-7 sm:h-8 sm:w-8 rounded-full text-gray-400 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg>
-                            @endif
-                            <div class="hidden sm:block">{{ Auth::user()->name }}</div>
-                            <div class="ms-0.5 sm:ms-1"><svg class="fill-current h-3 w-3 sm:h-4 sm:w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg></div>
-                        </button>
-                    </x-slot>
 
-                    <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">{{ __('Perfil') }}</x-dropdown-link>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('Cerrar Sesión') }}</x-dropdown-link>
-                        </form>
-                    </x-slot>
-                </x-dropdown>
+                <div x-data="{ userMenuOpen: false }">
+                    <div class="relative">
+                        <button @click="userMenuOpen = !userMenuOpen" 
+                                @click.away="userMenuOpen = false"
+                                class="flex items-center gap-3 pl-1 pr-3 py-1 rounded-full transition-all duration-300 bg-white hover:bg-gray-100 group border border-transparent hover:border-gray-200 focus:outline-none">
+                            
+                            <div class="relative">
+                                @if (Auth::user()->profile_photo_path)
+                                    <img class="h-9 w-9 rounded-xl object-cover shadow-sm group-hover:shadow-md transition-all duration-300" 
+                                         src="{{ Storage::disk('s3')->url(Auth::user()->profile_photo_path) }}" 
+                                         alt="{{ Auth::user()->name }}">
+                                @else
+                                    <div class="h-9 w-9 rounded-xl bg-[#2c3856] text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                                        {{ substr(Auth::user()->name, 0, 1) }}
+                                    </div>
+                                @endif
+                                <span class="absolute -bottom-1 -right-1 block h-3 w-3 rounded-full ring-2 ring-white bg-green-400"></span>
+                            </div>
+
+                            <div class="text-left hidden lg:block">
+                                <p class="text-xs font-bold text-[#2c3856] leading-tight" style="font-family: 'Raleway', sans-serif;">
+                                    {{ Auth::user()->name }}
+                                </p>
+                                <p class="text-[10px] text-gray-500 font-medium truncate max-w-[100px]" style="font-family: 'Montserrat', sans-serif;">
+                                    {{ Auth::user()->position ?? 'Usuario' }}
+                                </p>
+                            </div>
+
+                            <svg class="h-4 w-4 text-gray-400 group-hover:text-[#ff9c00] transition-transform duration-300 transform" 
+                                 :class="{'rotate-180': userMenuOpen}"
+                                 xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+
+                        <div x-show="userMenuOpen"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+                             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave-end="opacity-0 translate-y-2 scale-95"
+                             class="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl ring-1 ring-black ring-opacity-5 z-50 overflow-hidden origin-top-right">
+                            
+                            <div class="relative bg-[#2c3856] p-6 text-center group">
+                                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 rounded-full bg-[#ff9c00] opacity-10 blur-xl"></div>
+                                <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-20 h-20 rounded-full bg-white opacity-5 blur-xl"></div>
+
+                                <div class="relative inline-block mb-3">
+                                    @if (Auth::user()->profile_photo_path)
+                                        <img class="h-24 w-24 rounded-2xl object-cover border-4 border-white/10 shadow-lg transform transition-transform duration-500 hover:scale-105 hover:rotate-1" 
+                                             src="{{ Storage::disk('s3')->url(Auth::user()->profile_photo_path) }}" 
+                                             alt="{{ Auth::user()->name }}">
+                                    @else
+                                        <div class="h-24 w-24 rounded-2xl bg-white/10 text-white flex items-center justify-center text-3xl font-bold border-4 border-white/10 shadow-lg backdrop-blur-sm">
+                                            {{ substr(Auth::user()->name, 0, 1) }}
+                                        </div>
+                                    @endif
+                                    <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-[#ff9c00] text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-md whitespace-nowrap border border-[#2c3856]">
+                                        {{ Auth::user()->area?->name ?? 'General' }}
+                                    </div>
+                                </div>
+
+                                <h3 class="text-white text-lg font-extrabold tracking-wide" style="font-family: 'Raleway', sans-serif;">
+                                    {{ Auth::user()->name }}
+                                </h3>
+                                <p class="text-gray-300 text-sm font-medium mt-1" style="font-family: 'Montserrat', sans-serif;">
+                                    {{ Auth::user()->position ?? 'Sin Puesto Definido' }}
+                                </p>
+                            </div>
+
+                            <div class="p-3 bg-white">
+                                
+                                <div class="mb-3 p-3 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-gray-600 pl-1">Apariencia</span>
+                                    <button @click="toggleTheme()" class="relative inline-flex items-center h-8 rounded-full w-32 transition-colors duration-300 focus:outline-none bg-white border border-gray-200 shadow-inner overflow-hidden">
+                                        <div class="absolute inset-0 opacity-20 transition-colors duration-300" 
+                                             :class="theme === 'default' ? 'bg-[#2c3856]' : 'bg-[#ff9c00]'"></div>
+                                        
+                                        <span class="absolute w-full text-center text-[10px] font-bold z-10 transition-opacity duration-300"
+                                              :class="theme === 'default' ? 'text-[#2c3856] pr-6 opacity-100' : 'opacity-0'">
+                                              MINMER
+                                        </span>
+                                        <span class="absolute w-full text-center text-[10px] font-bold z-10 transition-opacity duration-300"
+                                              :class="theme === 'gold' ? 'text-[#B8860B] pl-6 opacity-100' : 'opacity-0'">
+                                              GOLD
+                                        </span>
+
+                                        <span class="absolute left-1 inline-block w-6 h-6 transform transition-transform duration-300 ease-spring rounded-full shadow bg-white flex items-center justify-center z-20"
+                                              :class="theme === 'default' ? 'translate-x-0' : 'translate-x-24'">
+                                            <svg x-show="theme === 'default'" class="w-3.5 h-3.5 text-[#2c3856]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                                            <svg x-show="theme === 'gold'" class="w-3.5 h-3.5 text-[#ff9c00]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                        </span>
+                                    </button>
+                                </div>
+
+                                <div class="space-y-1">
+                                    <a href="{{ route('profile.edit') }}" 
+                                       class="flex items-center px-4 py-3 text-sm text-gray-700 rounded-xl hover:bg-gray-50 hover:text-[#2c3856] transition-all duration-200 group">
+                                        <div class="mr-3 p-2 rounded-lg bg-gray-100 text-gray-500 group-hover:bg-[#e8ebf5] group-hover:text-[#2c3856] transition-colors">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                        </div>
+                                        <div>
+                                            <span class="font-bold block">Mi Perfil</span>
+                                            <span class="text-xs text-gray-400 font-medium">Configuración de cuenta</span>
+                                        </div>
+                                        <svg class="w-4 h-4 ml-auto text-gray-300 group-hover:text-[#ff9c00] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    </a>
+
+                                    <div class="border-t border-gray-100 my-1"></div>
+
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" 
+                                                class="w-full flex items-center px-4 py-3 text-sm text-red-600 rounded-xl hover:bg-red-50 transition-all duration-200 group">
+                                            <div class="mr-3 p-2 rounded-lg bg-red-50 text-red-400 group-hover:bg-red-100 group-hover:text-red-600 transition-colors">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                                            </div>
+                                            <span class="font-bold">Cerrar Sesión</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="-me-2 flex items-center sm:hidden">
