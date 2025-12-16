@@ -18,7 +18,7 @@ use App\Models\User;
 use Dompdf\Dompdf;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\FriendsAndFamily\FfAdministrationController;
-
+use App\Models\Area;
 
 class FfOrderController extends Controller
 {
@@ -91,6 +91,46 @@ class FfOrderController extends Controller
         return view('friends-and-family.orders.show', compact('header', 'movements', 'totalItems', 'totalValue'));
     }
 
+    private function getCompanyInfo($areaId = null)
+    {
+        if (!$areaId && Auth::check()) {
+            $areaId = Auth::user()->area_id;
+        }
+
+        return [
+            'emitter_name' => 'Consorcio Monter S.A. de C.V.',
+            'emitter_phone' => '5533347203',
+            'emitter_address' => 'Jose de Teresa 65 A',
+            'emitter_colonia' => 'San Angel, Alvaro Obregon, CDMX, Mexico',
+            'emitter_cp' => '01000'
+        ];
+
+        // Lógica para cambiar según el ID del área (Ajusta los IDs)
+        /*
+        if ($areaId == 2) {
+            return [
+                'emitter_name' => 'Sucursal Norte S.A. de C.V.',
+                'emitter_phone' => '8181234567',
+                'emitter_address' => 'Av. Fundidora 500',
+                'emitter_colonia' => 'Centro, Monterrey, NL, Mexico',
+                'emitter_cp' => '64000'
+            ];
+        }
+        */
+
+    }
+
+    private function getLogoUrl($areaId)
+    {
+        if ($areaId) {
+            $area = Area::find($areaId);
+            if ($area && $area->icon_path) {
+                return Storage::disk('s3')->url($area->icon_path);
+            }
+        }
+        return Storage::disk('s3')->url('logoConsorcioMonter.png');
+    }    
+
     public function approve($folio)
     {
         $this->authorizeAdmin();
@@ -108,6 +148,7 @@ class FfOrderController extends Controller
 
         if ($movements->isNotEmpty()) {
             $header = $movements->first();
+            $companyInfo = $this->getCompanyInfo($header->area_id);
             
             if (!empty($header->notification_emails)) {
                 try {
@@ -145,9 +186,9 @@ class FfOrderController extends Controller
                         ];
                     }
 
-                    $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
+                    $logoUrl = $this->getLogoUrl($header->area_id);
                     
-                    $pdfData = [
+                    $pdfData = array_merge([
                         'items' => $pdfItems,
                         'grandTotal' => $grandTotal,
                         'folio' => $folio,
@@ -163,7 +204,7 @@ class FfOrderController extends Controller
                         'vendedor_name' => $header->user->name ?? 'N/A',
                         'logo_url' => $logoUrl,
                         'order_type' => $header->order_type,
-                    ];
+                    ], $companyInfo);
 
                     $dompdf = new Dompdf();
                     $dompdf->set_option('isRemoteEnabled', true);
@@ -192,9 +233,9 @@ class FfOrderController extends Controller
                                 'logoUrl' => Storage::disk('s3')->url('LogoAzulm.PNG'),
                                 'specific_address' => $header->address . ', ' . $header->locality,
                                 'specific_observations' => $header->observations,
-                                'prepFields' => \App\Http\Controllers\FriendsAndFamily\FfAdministrationController::getPrepFieldsStatic(), 
-                                'docFields' => \App\Http\Controllers\FriendsAndFamily\FfAdministrationController::getDocFieldsStatic(),
-                                'evidFields' => \App\Http\Controllers\FriendsAndFamily\FfAdministrationController::getEvidFieldsStatic(),
+                                'prepFields' => FfAdministrationController::getPrepFieldsStatic(), 
+                                'docFields' => FfAdministrationController::getDocFieldsStatic(),
+                                'evidFields' => FfAdministrationController::getEvidFieldsStatic(),
                             ];
                             $pdfCond = Pdf::loadView('friends-and-family.admin.conditions-pdf', $condData);
                             $pdfCond->setPaper('A4', 'portrait');
@@ -249,6 +290,7 @@ class FfOrderController extends Controller
                 ffInventoryMovement::create([
                     'ff_product_id' => $mov->ff_product_id,
                     'user_id' => Auth::id(),
+                    'area_id' => $mov->area_id,
                     'quantity' => abs($mov->quantity),
                     'reason' => 'RECHAZO Pedido #' . $folio . ': ' . $request->reason,
                     'folio' => $folio,
@@ -301,6 +343,7 @@ class FfOrderController extends Controller
                 ->get();
 
             if ($movements->isNotEmpty() && !empty($header->notification_emails)) {
+                $companyInfo = $this->getCompanyInfo($header->area_id);
                 
                 $pdfItems = [];
                 $grandTotal = 0;
@@ -336,9 +379,9 @@ class FfOrderController extends Controller
                     ];
                 }
 
-                $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
+                $logoUrl = $this->getLogoUrl($header->area_id);
                 
-                $pdfData = [
+                $pdfData = array_merge([
                     'items' => $pdfItems,
                     'grandTotal' => $grandTotal,
                     'folio' => $folio,
@@ -354,7 +397,7 @@ class FfOrderController extends Controller
                     'vendedor_name' => $header->user->name ?? 'N/A',
                     'logo_url' => $logoUrl,
                     'order_type' => $header->order_type,
-                ];
+                ], $companyInfo);
 
                 $dompdf = new Dompdf();
                 $dompdf->set_option('isRemoteEnabled', true);
@@ -383,9 +426,9 @@ class FfOrderController extends Controller
                             'logoUrl' => Storage::disk('s3')->url('LogoAzulm.PNG'),
                             'specific_address' => $header->address . ', ' . $header->locality,
                             'specific_observations' => $header->observations,
-                            'prepFields' => \App\Http\Controllers\FriendsAndFamily\FfAdministrationController::getPrepFieldsStatic(), 
-                            'docFields' => \App\Http\Controllers\FriendsAndFamily\FfAdministrationController::getDocFieldsStatic(),
-                            'evidFields' => \App\Http\Controllers\FriendsAndFamily\FfAdministrationController::getEvidFieldsStatic(),
+                            'prepFields' => FfAdministrationController::getPrepFieldsStatic(), 
+                            'docFields' => FfAdministrationController::getDocFieldsStatic(),
+                            'evidFields' => FfAdministrationController::getEvidFieldsStatic(),
                         ];
                         $pdfCond = Pdf::loadView('friends-and-family.admin.conditions-pdf', $condData);
                         $pdfCond->setPaper('A4', 'portrait');
@@ -478,6 +521,7 @@ class FfOrderController extends Controller
                 ffInventoryMovement::create([
                     'ff_product_id' => $mov->ff_product_id,
                     'user_id' => $mov->user_id, 
+                    'area_id' => $mov->area_id,
                     'quantity' => abs($mov->quantity),
                     'reason' => 'RECHAZO (Email) Pedido #' . $folio . ': ' . $request->reason,
                     'folio' => $folio,

@@ -12,6 +12,7 @@ use Dompdf\Dompdf;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
 
 class FfReportController extends Controller
 {
@@ -81,9 +82,15 @@ class FfReportController extends Controller
         $startDateIso = $startDate->toIso8601String();
         $endDateIso = $endDate->toIso8601String();
         
-        $vendedores = User::whereHas('movements', function ($query) {
+        $vendedoresQuery = User::whereHas('movements', function ($query) {
                 $query->where('quantity', '<', 0);
-            })->orderBy('name')->get(['id', 'name']);
+            })->orderBy('name');
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $vendedoresQuery->where('area_id', Auth::user()->area_id);
+        }
+
+        $vendedores = $vendedoresQuery->get(['id', 'name']);
         
         return view('friends-and-family.reports.index', compact(
             'totalUnidadesVendidas',
@@ -101,9 +108,15 @@ class FfReportController extends Controller
 
     public function transactions(Request $request)
     {
-        $vendedores = \App\Models\User::whereHas('movements', function ($query) {
+        $vendedoresQuery = User::whereHas('movements', function ($query) {
             $query->where('quantity', '<', 0);
-        })->orderBy('name')->get();
+        })->orderBy('name');
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $vendedoresQuery->where('area_id', Auth::user()->area_id);
+        }
+        
+        $vendedores = $vendedoresQuery->get();
 
         $userIdFilter = $request->input('vendedor_id');
         $search = $request->input('search');
@@ -178,8 +191,11 @@ class FfReportController extends Controller
 
         $firstMovement = $saleMovements->first();
         $user = $firstMovement->user;
-
-        $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');        
+        
+        $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
+        if ($user && $user->area && $user->area->icon_path) {
+            $logoUrl = Storage::disk('s3')->url($user->area->icon_path);
+        }
 
         $pdfData = [
             'items' => [],
@@ -371,7 +387,15 @@ class FfReportController extends Controller
 
     public function sellerPerformance()
     {
-        $vendedores = User::select('id', 'name')->whereHas('cartItems')->orWhereHas('movements')->get();
+        $vendedoresQuery = User::select('id', 'name')->where(function($q) {
+            $q->whereHas('cartItems')->orWhereHas('movements');
+        });
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $vendedoresQuery->where('area_id', Auth::user()->area_id);
+        }
+
+        $vendedores = $vendedoresQuery->get();
         
         $sellerPerformanceData = $vendedores->map(function ($user) {
             
@@ -487,8 +511,14 @@ class FfReportController extends Controller
         $data = [];
 
         try {
+            $user = Auth::user();
+            $iconPath = 'logoConsorcioMonter.png'; 
+            if ($user->area && $user->area->icon_path) {
+                $iconPath = $user->area->icon_path;
+            }
+
             try {
-                $logoContent = Storage::disk('s3')->get('logoConsorcioMonter.png');
+                $logoContent = Storage::disk('s3')->get($iconPath);
                 $data['logo_base_64'] = 'data:image/png;base64,' . base64_encode($logoContent);
             } catch (\Exception $e) {
                 $data['logo_base_64'] = null; 
@@ -702,7 +732,13 @@ class FfReportController extends Controller
         $data['kpis']['lowStockAlertsCount'] = $stockBajo;
 
         $vendedoresActivos = $data['ventasPorVendedor']->count();
-        $totalVendedores = User::whereHas('area', fn($q) => $q->where('name', 'Consorcio Monter'))->count();
+        
+        $totalVendedoresQuery = User::query();
+        if (!Auth::user()->isSuperAdmin()) {
+            $totalVendedoresQuery->where('area_id', Auth::user()->area_id);
+        }
+        $totalVendedores = $totalVendedoresQuery->count();
+        
         if ($totalVendedores == 0) { $totalVendedores = max($vendedoresActivos, 1); }
         
         $data['pictogramChart'] = [

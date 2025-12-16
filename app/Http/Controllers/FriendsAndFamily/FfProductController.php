@@ -5,12 +5,14 @@ namespace App\Http\Controllers\FriendsAndFamily;
 use App\Http\Controllers\Controller;
 use App\Models\ffProduct;
 use App\Models\FfSalesChannel;
+use App\Models\Area;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use ZipArchive;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -23,10 +25,30 @@ class FfProductController extends Controller
         return view('friends-and-family.catalog.index', compact('products', 'channels'));
     }
 
+    private function getLogoUrl($areaId)
+    {
+        if ($areaId) {
+            $area = Area::find($areaId);
+            if ($area && $area->icon_path) {
+                return Storage::disk('s3')->url($area->icon_path);
+            }
+        }
+        return Storage::disk('s3')->url('logoConsorcioMonter.png');
+    }
+
     public function store(Request $request)
     {
+        $user = Auth::user();
+        
         $validated = $request->validate([
-            'sku' => 'required|string|max:255|unique:ff_products,sku',
+            'sku' => [
+                'required', 
+                'string', 
+                'max:255', 
+                Rule::unique('ff_products')->where(function ($query) use ($user) {
+                    return $query->where('area_id', $user->area_id);
+                })
+            ],
             'description' => 'required|string|max:500',
             'unit_price' => 'required|numeric|min:0',
             'brand' => 'nullable|string|max:255',
@@ -62,8 +84,17 @@ class FfProductController extends Controller
 
     public function update(Request $request, ffProduct $catalog)
     {
+        $user = Auth::user();
+
         $validated = $request->validate([
-            'sku' => ['required', 'string', 'max:255', Rule::unique('ff_products')->ignore($catalog->id)],
+            'sku' => [
+                'required', 
+                'string', 
+                'max:255', 
+                Rule::unique('ff_products')->ignore($catalog->id)->where(function ($query) use ($user) {
+                    return $query->where('area_id', $user->area_id);
+                })
+            ],
             'description' => 'required|string|max:500',
             'unit_price' => 'required|numeric|min:0',
             'brand' => 'nullable|string|max:255',
@@ -356,7 +387,7 @@ class FfProductController extends Controller
             }
         }
         
-        $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
+        $logoUrl = $this->getLogoUrl(Auth::user()->area_id);
 
         $data = [
             'products' => $products,
@@ -383,7 +414,7 @@ class FfProductController extends Controller
             'master_box_weight' => 'nullable|string',
         ]);
 
-        $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
+        $logoUrl = $this->getLogoUrl(Auth::user()->area_id);
         
         $data = [
             'product' => $product,

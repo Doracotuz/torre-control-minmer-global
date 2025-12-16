@@ -21,10 +21,6 @@ use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    /**
-     *
-     * @return \Illuminate\View\View
-     */
     public function index(Request $request)
     {
         $areas = Area::orderBy('name')->get();
@@ -70,22 +66,15 @@ class UserController extends Controller
         ]);
     }
 
-    /**
-     *
-     * @return \Illuminate\View\View
-     */
     public function create()
     {
         $areas = Area::orderBy('name')->get();
         $positions = OrganigramPosition::orderBy('name')->get();
-        return view('admin.users.create', compact('areas', 'positions'));
+        $availableModules = User::availableModules();
+
+        return view('admin.users.create', compact('areas', 'positions', 'availableModules'));
     }
 
-    /**
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function store(Request $request)
     {
         $rules = [
@@ -97,6 +86,8 @@ class UserController extends Controller
             'is_area_admin' => 'boolean',
             'is_client' => 'boolean',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'visible_modules' => 'nullable|array',
+            'visible_modules.*' => 'string',
         ];
 
         if (!$request->has('is_client') || !$request->input('is_client')) {
@@ -113,7 +104,8 @@ class UserController extends Controller
         $data = $request->all();
         $data['password'] = Hash::make($request->password);
         $data['is_area_admin'] = $request->has('is_area_admin');
-        $data['is_client'] = $request->has('is_client'); //
+        $data['is_client'] = $request->has('is_client');
+        $data['visible_modules'] = $request->input('visible_modules', []);
 
         if ($data['is_client'] && !$request->filled('area_id')) {
             $data['area_id'] = null;
@@ -151,27 +143,17 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'Usuario creado exitosamente.');
     }
 
-    /**
-     *
-     * @param  \App\Models\User  $user
-     * @return \Illuminate\View\View
-     */
     public function edit(User $user)
     {
         $areas = Area::orderBy('name')->get();
         $positions = OrganigramPosition::orderBy('name')->get();
         $accessibleFolderIds = $user->accessibleFolders->pluck('id')->toArray();
-        
         $userAccessibleAreaIds = $user->accessibleAreas->pluck('id')->toArray();
+        $availableModules = User::availableModules();
 
-        return view('admin.users.edit', compact('user', 'areas', 'accessibleFolderIds', 'positions', 'userAccessibleAreaIds')); 
+        return view('admin.users.edit', compact('user', 'areas', 'accessibleFolderIds', 'positions', 'userAccessibleAreaIds', 'availableModules')); 
     }
 
-    /**
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\User  $user
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function update(Request $request, User $user)
     {
         $rules = [
@@ -191,7 +173,9 @@ class UserController extends Controller
             'is_active' => 'boolean',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'accessible_area_ids' => 'nullable|array',
-            'accessible_area_ids.*' => 'exists:areas,id',            
+            'accessible_area_ids.*' => 'exists:areas,id',
+            'visible_modules' => 'nullable|array',
+            'visible_modules.*' => 'string',            
         ];
 
         if (!$request->has('is_client') || !$request->input('is_client')) {
@@ -209,6 +193,7 @@ class UserController extends Controller
 
         $data['is_area_admin'] = $request->has('is_area_admin');
         $data['is_client'] = $request->has('is_client');
+        $data['visible_modules'] = $request->input('visible_modules', []);
 
         if ($data['is_client'] && !$request->filled('area_id')) {
             $data['area_id'] = null;
@@ -251,10 +236,6 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'Usuario actualizado exitosamente.');
     }
 
-    /**
-     * @param  \App\Models\User  $user
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function destroy(User $user)
     {
         if ($user->id === Auth::id()) {
@@ -369,5 +350,4 @@ class UserController extends Controller
 
         return redirect()->route('admin.users.index')->with('error', 'No se pudo enviar el correo a los usuarios seleccionados. Revise los logs.');
     }
-    
 }

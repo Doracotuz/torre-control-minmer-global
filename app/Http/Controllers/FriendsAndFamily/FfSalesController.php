@@ -18,11 +18,11 @@ use Illuminate\Support\Facades\Storage;
 use Dompdf\Dompdf;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\NewSaleMail;
 use App\Mail\OrderActionMail;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\UploadedFile;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Validation\Rule;
 
 class FfSalesController extends Controller
 {
@@ -30,6 +30,29 @@ class FfSalesController extends Controller
     {
         $lastMovement = ffInventoryMovement::orderByDesc('folio')->first();
         return ($lastMovement ? $lastMovement->folio : 10000) + 1;
+    }
+
+    private function getCompanyInfo($areaId = null)
+    {
+        if (!$areaId && Auth::check()) {
+            $areaId = Auth::user()->area_id;
+        }
+
+        return [
+            'emitter_name' => 'Consorcio Monter S.A. de C.V.',
+            'emitter_phone' => '5533347203',
+            'emitter_address' => 'Jose de Teresa 65 A',
+            'emitter_colonia' => 'San Angel, Alvaro Obregon, CDMX, Mexico',
+            'emitter_cp' => '01000'
+        ];
+    }
+
+    private function getLogoUrl($area)
+    {
+        if ($area && $area->icon_path) {
+            return Storage::disk('s3')->url($area->icon_path);
+        }
+        return Storage::disk('s3')->url('logoConsorcioMonter.png');
     }
 
     public function index(Request $request)
@@ -61,7 +84,14 @@ class FfSalesController extends Controller
     public function updateCartItem(Request $request)
     {
         $request->validate([
-            'product_id' => 'required|exists:ff_products,id',
+            'product_id' => [
+                'required',
+                Rule::exists('ff_products', 'id')->where(function ($query) {
+                    if (!Auth::user()->isSuperAdmin()) {
+                        $query->where('area_id', Auth::user()->area_id);
+                    }
+                })
+            ],
             'quantity' => 'required|integer|min:0',
             'folio' => 'nullable|integer'
         ]);
@@ -221,6 +251,7 @@ class FfSalesController extends Controller
                 ffInventoryMovement::create([
                     'ff_product_id' => $mov->ff_product_id,
                     'user_id' => $user->id,
+                    'area_id' => $mov->area_id, 
                     'quantity' => abs($mov->quantity),
                     'reason' => 'CANCELACIÓN Venta Folio ' . $folio . ': ' . $request->reason,
                     'client_name' => $mov->client_name,
@@ -287,11 +318,39 @@ class FfSalesController extends Controller
             'evidence_1' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
             'evidence_2' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
             'evidence_3' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            'ff_client_id' => 'nullable|exists:ff_clients,id',
+            'ff_client_id' => [
+                'nullable', 
+                Rule::exists('ff_clients', 'id')->where(function ($query) {
+                    if (!Auth::user()->isSuperAdmin()) {
+                        $query->where('area_id', Auth::user()->area_id);
+                    }
+                })
+            ],
             'ff_client_branch_id' => 'nullable|exists:ff_client_branches,id',
-            'ff_sales_channel_id' => 'nullable|exists:ff_sales_channels,id',
-            'ff_transport_line_id' => 'nullable|exists:ff_transport_lines,id',
-            'ff_payment_condition_id' => 'nullable|exists:ff_payment_conditions,id',
+            'ff_sales_channel_id' => [
+                'nullable',
+                Rule::exists('ff_sales_channels', 'id')->where(function ($query) {
+                    if (!Auth::user()->isSuperAdmin()) {
+                        $query->where('area_id', Auth::user()->area_id);
+                    }
+                })
+            ],
+            'ff_transport_line_id' => [
+                'nullable',
+                Rule::exists('ff_transport_lines', 'id')->where(function ($query) {
+                    if (!Auth::user()->isSuperAdmin()) {
+                        $query->where('area_id', Auth::user()->area_id);
+                    }
+                })
+            ],
+            'ff_payment_condition_id' => [
+                'nullable',
+                Rule::exists('ff_payment_conditions', 'id')->where(function ($query) {
+                    if (!Auth::user()->isSuperAdmin()) {
+                        $query->where('area_id', Auth::user()->area_id);
+                    }
+                })
+            ],
         ]);
 
         $cartItems = ffCartItem::where('user_id', $user->id)->with('product')->get();
@@ -329,6 +388,7 @@ class FfSalesController extends Controller
                     ffInventoryMovement::create([
                         'ff_product_id' => $mov->ff_product_id,
                         'user_id' => $user->id,
+                        'area_id' => $mov->area_id, 
                         'quantity' => abs($mov->quantity),
                         'reason' => 'Ajuste por Edición Folio ' . $ventaFolio,
                         'folio' => $ventaFolio,
@@ -384,6 +444,7 @@ class FfSalesController extends Controller
                 ffInventoryMovement::create([
                     'ff_product_id' => $product->id,
                     'user_id' => $user->id,
+                    'area_id' => $user->area_id, 
                     'quantity' => -$quantity,
                     'reason' => ucfirst($orderType) . ' F&F Folio ' . $ventaFolio,
                     'client_name' => $request->client_name,
@@ -450,8 +511,10 @@ class FfSalesController extends Controller
             return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
         }
         
-        $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
-        $pdfData = [
+        $logoUrl = $this->getLogoUrl($user->area);
+        $companyInfo = $this->getCompanyInfo($user->area_id);
+
+        $pdfData = array_merge([
             'items' => $pdfItems,
             'grandTotal' => $grandTotal,
             'folio' => $ventaFolio,
@@ -467,7 +530,7 @@ class FfSalesController extends Controller
             'vendedor_name' => $user->name,
             'logo_url' => $logoUrl,
             'order_type' => $orderType,
-        ];
+        ], $companyInfo);
 
         $dompdf = new Dompdf();
         $options = $dompdf->getOptions();
@@ -486,7 +549,7 @@ class FfSalesController extends Controller
                 })->get(); 
             
             if ($admins->isNotEmpty()) {
-                $adminMailData = [
+                $adminMailData = array_merge([
                     'folio' => $ventaFolio,
                     'client_name' => $request->client_name,
                     'company_name' => $request->company_name,
@@ -498,7 +561,7 @@ class FfSalesController extends Controller
                     'items' => $pdfItems,
                     'logo_url' => $logoUrl,
                     'has_backorder' => $orderHasBackorder,
-                ];
+                ], $companyInfo);
                 
                 foreach($admins as $admin) {
                     Mail::to($admin->email)->send(new OrderActionMail(
@@ -526,13 +589,15 @@ class FfSalesController extends Controller
             'numSets'  => 'required|integer|min:1',
         ]);
 
+        $user = Auth::user();
+        $logoUrl = $this->getLogoUrl($user->area);
+
         $pdfData = [
             'products' => $data['products'],
             'numSets'  => $data['numSets'],
             'date'     => now()->format('d/m/Y'),
+            'logo_url' => $logoUrl,
         ];
-        
-        $pdfData['logo_url'] = Storage::disk('s3')->url('logoConsorcioMonter.png');
         
         $pdfView = view('friends-and-family.sales.print-pdf', $pdfData);
         $dompdf = new Dompdf();
@@ -749,6 +814,7 @@ class FfSalesController extends Controller
                 ffInventoryMovement::create([
                     'ff_product_id' => $mov->ff_product_id,
                     'user_id' => $user->id,
+                    'area_id' => $mov->area_id, 
                     'quantity' => abs($mov->quantity),
                     'reason' => 'DEVOLUCIÓN Préstamo Folio ' . $folio,
                     'folio' => $folio,
@@ -783,5 +849,4 @@ class FfSalesController extends Controller
             return response()->json(['message' => 'Error'], 500);
         }
     }    
-
 }

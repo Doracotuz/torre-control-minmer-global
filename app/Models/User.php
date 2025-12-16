@@ -30,6 +30,7 @@ class User extends Authenticatable
         'is_area_admin',
         'is_client',
         'is_active',
+        'visible_modules',
     ];
 
     /**
@@ -51,6 +52,7 @@ class User extends Authenticatable
             'is_area_admin' => 'boolean',
             'is_client' => 'boolean',
             'is_active' => 'boolean',
+            'visible_modules' => 'array',
         ];
     }
 
@@ -112,5 +114,37 @@ class User extends Authenticatable
     {
         return $this->hasMany(ffInventoryMovement::class, 'user_id');
     }
+
+    public static function availableModules(): array
+    {
+        return [
+            'dashboard' => 'Dashboard General',
+            'files' => 'Gestión de Archivos / Carpetas',
+            'orders' => 'Pedidos (Friends & Family)',
+            'client_dashboard' => 'Dashboard Cliente (Tablero)',
+            'organigram' => 'Organigrama',
+            'tracking' => 'Tracking',
+            'rfq' => 'RFQ (Moët Hennessy)',
+            'carbon' => 'Huella de Carbono',
+            'certifications' => 'Certificaciones',
+            'assistance' => 'Asistencia (WhatsApp)',
+            'visits' => 'Gestión de Visitas',
+            'routes' => 'Gestión de Rutas',
+            'tickets' => 'Tickets de Soporte',
+            'projects' => 'Proyectos',
+            'wms' => 'WMS',
+            'customer_service' => 'Customer Service',
+            'area_admin' => 'Panel Admin de Área',
+        ];
+    }
+    
+    public function hasModuleAccess(string $moduleKey): bool
+    {
+        if (is_null($this->visible_modules)) {
+            return false; 
+        }
+        
+        return in_array($moduleKey, $this->visible_modules);
+    }    
 
 }

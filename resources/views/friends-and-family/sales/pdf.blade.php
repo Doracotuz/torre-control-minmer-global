@@ -18,17 +18,10 @@
             background-color: #fff;
         }
 
-        .header-box {
-            height: 110px; 
-        }
-
+        .header-box { height: 110px; }
         .logo-img { max-height: 85px; max-width: 200px; margin-bottom: 0px; }
         
-        .company-info-table td {
-            padding: 1px 2px;
-            font-size: 9px;
-            border: none;
-        }
+        .company-info-table td { padding: 1px 2px; font-size: 9px; border: none; }
         .label { font-weight: bold; width: 65px; display: inline-block; }
 
         .remision-content { padding: 5px 10px; }
@@ -56,7 +49,6 @@
             font-size: 10px;
         }
         .items-table th:last-child { border-right: none; }
-        
         .items-table td { 
             border-right: 2px solid #000; 
             border-bottom: 1px solid #000;
@@ -64,53 +56,19 @@
             font-size: 10px;
         }
         .items-table td:last-child { border-right: none; }
-        
         .items-table tr.empty-row td { height: 14px; color: transparent; }
 
-        .footer-conforme {
-            height: 60px;
-            margin-bottom: 10px;
-            position: relative;
-        }
+        .footer-conforme { height: 60px; margin-bottom: 10px; position: relative; }
         .conforme-label { font-weight: bold; font-size: 9px; margin: 5px; }
-        .conforme-line {
-            width: 40%;
-            border-bottom: 2px solid #000;
-            position: absolute;
-            bottom: 20px;
-            left: 30%;
-        }
-        .conforme-text {
-            position: absolute;
-            bottom: 5px;
-            width: 100%;
-            text-align: center;
-            font-weight: bold;
-            font-size: 8px;
-        }
+        .conforme-line { width: 40%; border-bottom: 2px solid #000; position: absolute; bottom: 20px; left: 30%; }
+        .conforme-text { position: absolute; bottom: 5px; width: 100%; text-align: center; font-weight: bold; font-size: 8px; }
 
-        .transportista-box { 
-            height: 145px;
-            position: relative; 
-            font-size: 9px; 
-        }
+        .transportista-box { height: 145px; position: relative; font-size: 9px; }
         .transport-label { font-weight: bold; margin: 5px; font-size: 10px; }
         .transport-table td { padding: 3px 2px; border: none; }
 
-        .date-right {
-            position: absolute;
-            right: 20px;
-            bottom: 55px;
-            text-align: right;
-            font-weight: bold;
-        }
-
-        .obs-container {
-            position: absolute;
-            bottom: 5px;
-            left: 5px;
-            right: 5px;
-        }
+        .date-right { position: absolute; right: 20px; bottom: 55px; text-align: right; font-weight: bold; }
+        .obs-container { position: absolute; bottom: 5px; left: 5px; right: 5px; }
         .obs-label { font-weight: bold; font-style: italic; color: #aaa; font-size: 9px; margin-bottom: 1px; }
         .obs-box { border: 1px solid #aaa; height: 25px; width: 100%; font-size: 8px; overflow: hidden; }
         .obs-text { padding: 2px; }
@@ -122,7 +80,6 @@
     </style>
 </head>
 <body>
-    
     <div style="font-size: 9px; text-align: right; margin-bottom: 2px; color: #666;">COPIA: Original</div>
 
     <table class="main-table" cellspacing="0" cellpadding="0">
@@ -138,23 +95,23 @@
                                 <table class="company-info-table">
                                     <tr>
                                         <td class="label">Razón Social</td>
-                                        <td>Consorcio Monter S.A. de C.V.</td>
+                                        <td>{{ $emitter_name ?? 'Consorcio Monter S.A. de C.V.' }}</td>
                                     </tr>
                                     <tr>
                                         <td class="label">Teléfono</td>
-                                        <td>5533347203</td>
+                                        <td>{{ $emitter_phone ?? '5533347203' }}</td>
                                     </tr>
                                     <tr>
                                         <td class="label">Dirección</td>
-                                        <td>Jose de Teresa 65 A</td>
+                                        <td>{{ $emitter_address ?? 'Jose de Teresa 65 A' }}</td>
                                     </tr>
                                     <tr>
                                         <td></td>
-                                        <td>San Angel, Alvaro Obregon, CDMX, Mexico</td>
+                                        <td>{{ $emitter_colonia ?? 'San Angel, Alvaro Obregon, CDMX, Mexico' }}</td>
                                     </tr>
                                     <tr>
                                         <td class="label">Cód. Postal</td>
-                                        <td>01000</td>
+                                        <td>{{ $emitter_cp ?? '01000' }}</td>
                                     </tr>
                                 </table>
                             </td>
@@ -253,19 +210,16 @@
 
     <div class="rounded-box transportista-box">
         <div class="transport-label">DATOS DEL TRANSPORTISTA</div>
-        
         <table class="transport-table" style="width: 60%; margin-left: 5px;">
             <tr><td>Nombre</td></tr>
             <tr><td>Datos del Vehículo</td></tr>
             <tr><td>Chofer</td></tr>
             <tr><td>Lugar de Entrega</td></tr>
         </table>
-
         <div class="date-right">
             <div>Fecha</div>
             <div style="margin-top: 5px;">Hora</div>
         </div>
-
         <div class="obs-container">
             <div class="obs-label">Observaciones</div>
             <div class="obs-box">
@@ -273,6 +227,5 @@
             </div>
         </div>
     </div>
-
 </body>
 </html>

@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use App\Traits\BelongsToArea;
 
 class ffProduct extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToArea;
 
     protected $fillable = [
         'sku',
@@ -23,6 +24,7 @@ class ffProduct extends Model
         'upc',
         'photo_path',
         'is_active',
+        'area_id',
     ];
 
     protected $casts = [

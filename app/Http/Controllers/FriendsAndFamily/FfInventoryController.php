@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderActionMail;
+use Illuminate\Validation\Rule;
 
 class FfInventoryController extends Controller
 {
@@ -48,7 +49,14 @@ class FfInventoryController extends Controller
         }
 
         $request->validate([
-            'product_id' => 'required|exists:ff_products,id',
+            'product_id' => [
+                'required',
+                Rule::exists('ff_products', 'id')->where(function ($query) {
+                    if (!Auth::user()->isSuperAdmin()) {
+                        $query->where('area_id', Auth::user()->area_id);
+                    }
+                }),
+            ],
             'quantity'   => 'required|integer|not_in:0',
             'reason'     => 'required|string|max:255',
         ]);
@@ -351,7 +359,7 @@ class FfInventoryController extends Controller
 
                 Mail::to($movement->user->email)->send(new OrderActionMail($mailData, 'backorder_filled'));
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("Error enviando email backorder: " . $e->getMessage());
+                Log::error("Error enviando email backorder: " . $e->getMessage());
             }
         }
 
@@ -360,7 +368,7 @@ class FfInventoryController extends Controller
 
     public function backorderRelations()
     {
-        $products = \App\Models\ffProduct::whereHas('movements', function($q) {
+        $products = ffProduct::whereHas('movements', function($q) {
             $q->where('is_backorder', true)
               ->where('backorder_fulfilled', false);
         })
@@ -377,5 +385,4 @@ class FfInventoryController extends Controller
 
         return view('friends-and-family.inventory.backorder-relations', compact('products'));
     }    
-    
 }

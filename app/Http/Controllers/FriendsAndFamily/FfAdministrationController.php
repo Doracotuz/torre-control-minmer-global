@@ -8,6 +8,13 @@ use App\Models\FfClient;
 use App\Models\FfSalesChannel;
 use App\Models\FfTransportLine;
 use App\Models\FfPaymentCondition;
+use App\Models\FfClientBranch;
+use App\Models\FfClientDeliveryCondition;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class FfAdministrationController extends Controller
 {
@@ -55,9 +62,21 @@ class FfAdministrationController extends Controller
     {
         if (!array_key_exists($type, $this->catalogs)) { abort(404); }
 
-        $request->validate(['name' => 'required|string|max:255']);
-        
         $modelClass = $this->catalogs[$type]['model'];
+        $tableName = (new $modelClass)->getTable();
+        $user = Auth::user();
+
+        $request->validate([
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique($tableName)->where(function ($query) use ($user) {
+                    return $query->where('area_id', $user->area_id);
+                })
+            ]
+        ]);
+        
         $modelClass::create(['name' => $request->name, 'is_active' => true]);
 
         return redirect()->back()->with('success', 'Registro creado correctamente.');
@@ -67,9 +86,21 @@ class FfAdministrationController extends Controller
     {
         if (!array_key_exists($type, $this->catalogs)) { abort(404); }
 
-        $request->validate(['name' => 'required|string|max:255']);
-
         $modelClass = $this->catalogs[$type]['model'];
+        $tableName = (new $modelClass)->getTable();
+        $user = Auth::user();
+
+        $request->validate([
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique($tableName)->ignore($id)->where(function ($query) use ($user) {
+                    return $query->where('area_id', $user->area_id);
+                })
+            ]
+        ]);
+
         $item = $modelClass::findOrFail($id);
         $item->update(['name' => $request->name]);
 
@@ -107,7 +138,7 @@ class FfAdministrationController extends Controller
         return redirect()->back()->with('success', 'Sucursal agregada correctamente.');
     }
 
-    public function branchesUpdate(Request $request, \App\Models\FfClientBranch $branch)
+    public function branchesUpdate(Request $request, FfClientBranch $branch)
     {
         $request->validate([
             'name' => 'required|string|max:255',
@@ -121,7 +152,7 @@ class FfAdministrationController extends Controller
         return redirect()->back()->with('success', 'Sucursal actualizada correctamente.');
     }
 
-    public function branchesDestroy(\App\Models\FfClientBranch $branch)
+    public function branchesDestroy(FfClientBranch $branch)
     {
         $branch->delete();
         return redirect()->back()->with('success', 'Sucursal eliminada correctamente.');
@@ -129,7 +160,7 @@ class FfAdministrationController extends Controller
 
     public function conditionsEdit(FfClient $client)
     {
-        $conditions = $client->deliveryConditions ?? new \App\Models\FfClientDeliveryCondition();
+        $conditions = $client->deliveryConditions ?? new FfClientDeliveryCondition();
         
         return view('friends-and-family.admin.client-conditions', compact('client', 'conditions'));
     }
@@ -165,7 +196,7 @@ class FfAdministrationController extends Controller
         foreach ($imageFields as $imgField) {
             if ($request->hasFile($imgField)) {
                 if ($conditions->$imgField) {
-                    \Illuminate\Support\Facades\Storage::disk('s3')->delete($conditions->$imgField);
+                    Storage::disk('s3')->delete($conditions->$imgField);
                 }
                 
                 $path = $request->file($imgField)->store("ff_conditions/{$client->id}", 's3');
@@ -181,7 +212,7 @@ class FfAdministrationController extends Controller
         return redirect()->back()->with('success', 'Condiciones de entrega actualizadas.');
     }
 
-    public function exportConditionsPdf(\App\Models\FfClient $client)
+    public function exportConditionsPdf(FfClient $client)
     {
         $conditions = $client->deliveryConditions;
         
@@ -189,60 +220,19 @@ class FfAdministrationController extends Controller
             return redirect()->back()->with('error', 'El cliente no tiene condiciones configuradas.');
         }
 
-        $logoUrl = \Illuminate\Support\Facades\Storage::disk('s3')->url('LogoAzulm.PNG');
+        $logoUrl = Storage::disk('s3')->url('LogoAzulm.PNG');
 
-        $prepFields = [
-            'Revisión de UPC vs Factura' => 'revision_upc',
-            'Distribución por Tienda' => 'distribucion_tienda',
-            'Re-etiquetado' => 're_etiquetado',
-            'Colocación de Sensor' => 'colocacion_sensor',
-            'Preparado Especial' => 'preparado_especial',
-            'Tipo de Unidad Aceptada' => 'tipo_unidad_aceptada',
-            'Equipo de Seguridad' => 'equipo_seguridad',
-            'Registro Patronal (SUA)' => 'registro_patronal',
-            'Entrega con Otros Pedidos' => 'entrega_otros_pedidos',
-            'Insumos y Herramientas' => 'insumos_herramientas',
-            'Maniobra' => 'maniobra',
-            'Identificaciones para Acceso' => 'identificaciones',
-            'Etiqueta de Frágil' => 'etiqueta_fragil',
-            'Tarima CHEP' => 'tarima_chep',
-            'Granel' => 'granel',
-            'Tarima Estándar' => 'tarima_estandar',
-        ];
+        $prepFields = self::getPrepFieldsStatic();
+        $docFields = self::getDocFieldsStatic();
+        $evidFields = self::getEvidFieldsStatic();
 
-        $docFields = [
-            'Factura' => 'doc_factura',
-            'DO' => 'doc_do',
-            'Carta Maniobra' => 'doc_carta_maniobra',
-            'Carta Poder' => 'doc_carta_poder',
-            'Orden de Compra' => 'doc_orden_compra',
-            'Carta Confianza' => 'doc_carta_confianza',
-            'Confirmación de Cita' => 'doc_confirmacion_cita',
-            'Carta Caja Cerrada' => 'doc_carta_caja_cerrada',
-            'Confirmación de Facturas' => 'doc_confirmacion_facturas',
-            'Carátula de Entrega' => 'doc_caratula_entrega',
-            'Pase Vehicular' => 'doc_pase_vehicular',
-        ];
-
-        $evidFields = [
-            'Folio de Recibo' => 'evid_folio_recibo',
-            'Factura Sellada o Firmada' => 'evid_factura_sellada',
-            'Sello Tarima CHEP' => 'evid_sello_tarima',
-            'Etiqueta de Recibo' => 'evid_etiqueta_recibo',
-            'Acuse de Orden de Compra' => 'evid_acuse_oc',
-            'Hoja de Rechazo' => 'evid_hoja_rechazo',
-            'Anotación de Rechazo' => 'evid_anotacion_rechazo',
-            'Contrarrecibo de Equipo' => 'evid_contrarrecibo',
-            'Formato de Reparto' => 'evid_formato_reparto',
-        ];
-
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('friends-and-family.admin.conditions-pdf', compact('client', 'conditions', 'logoUrl', 'prepFields', 'docFields', 'evidFields'));
+        $pdf = Pdf::loadView('friends-and-family.admin.conditions-pdf', compact('client', 'conditions', 'logoUrl', 'prepFields', 'docFields', 'evidFields'));
         
         $pdf->setPaper('A4', 'portrait');
         $pdf->setOption('isRemoteEnabled', true);
         $pdf->setOption('dpi', 150);
 
-        return $pdf->stream('Condiciones_Entrega_' . \Illuminate\Support\Str::slug($client->name) . '.pdf');
+        return $pdf->stream('Condiciones_Entrega_' . Str::slug($client->name) . '.pdf');
     }
 
     public static function getPrepFieldsStatic()
@@ -311,10 +301,10 @@ class FfAdministrationController extends Controller
             abort(403, 'Campo no permitido');
         }
 
-        $condition = \App\Models\FfClientDeliveryCondition::findOrFail($conditionId);
+        $condition = FfClientDeliveryCondition::findOrFail($conditionId);
 
         if ($condition->$field) {
-            \Illuminate\Support\Facades\Storage::disk('s3')->delete($condition->$field);
+            Storage::disk('s3')->delete($condition->$field);
             
             $condition->$field = null;
             $condition->save();
@@ -323,6 +313,5 @@ class FfAdministrationController extends Controller
         }
 
         return redirect()->back()->with('error', 'No había imagen para eliminar.');
-    }    
-    
+    }
 }

@@ -189,11 +189,11 @@
                             
                             <div class="relative">
                                 @if (Auth::user()->profile_photo_path)
-                                    <img class="h-9 w-9 rounded-xl object-cover shadow-sm group-hover:shadow-md transition-all duration-300" 
+                                    <img class="h-9 w-9 rounded-full object-cover shadow-sm group-hover:shadow-md transition-all duration-300" 
                                          src="{{ Storage::disk('s3')->url(Auth::user()->profile_photo_path) }}" 
                                          alt="{{ Auth::user()->name }}">
                                 @else
-                                    <div class="h-9 w-9 rounded-xl bg-[#2c3856] text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                                    <div class="h-9 w-9 rounded-full bg-[#2c3856] text-white flex items-center justify-center font-bold text-sm shadow-sm">
                                         {{ substr(Auth::user()->name, 0, 1) }}
                                     </div>
                                 @endif
@@ -254,8 +254,7 @@
 
                             <div class="p-3 bg-white">
                                 
-                                <div class="mb-3 p-3 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-gray-600 pl-1">Apariencia</span>
+                                <div class="mb-3 p-3 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center">
                                     <button @click="toggleTheme()" class="relative inline-flex items-center h-8 rounded-full w-32 transition-colors duration-300 focus:outline-none bg-white border border-gray-200 shadow-inner overflow-hidden">
                                         <div class="absolute inset-0 opacity-20 transition-colors duration-300" 
                                              :class="theme === 'default' ? 'bg-[#2c3856]' : 'bg-[#ff9c00]'"></div>
@@ -330,167 +329,151 @@
          x-transition:leave-start="opacity-100 transform translate-y-0"
          x-transition:leave-end="opacity-0 transform -translate-y-4">
         
-        @if(Auth::user()->area?->name === 'Consrocio Monter')
-            <div class="pt-2 pb-3 space-y-1">
-                <x-responsive-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="mobile-menu-link">
-                    {{ __('Friends & Family') }}
+        <div class="pt-2 pb-3 space-y-1">
+            
+            @if(Auth::user()->hasModuleAccess('dashboard'))
+                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="mobile-menu-link">
+                    {{ __('Dashboard') }}
                 </x-responsive-nav-link>
-            </div>
+            @endif
 
-        @else
-            <div class="pt-2 pb-3 space-y-1">
-                
-                @if(!Auth::user()->is_client)
-                    <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="mobile-menu-link">
-                        {{ __('Dashboard') }}
-                    </x-responsive-nav-link>
-                @endif
+            @if(Auth::user()->is_client && Auth::user()->hasModuleAccess('client_dashboard'))
+                <x-responsive-nav-link :href="route('tablero.index')" :active="request()->routeIs('tablero.index')" class="mobile-menu-link">
+                    {{ __('Dashboard') }}
+                </x-responsive-nav-link>
+            @endif
 
+            @if(Auth::user()->hasModuleAccess('files'))
+                <x-responsive-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="mobile-menu-link">
+                    @if (Auth::user()->is_client)
+                        {{ __('Archivos') }}
+                    @else
+                        {{ __('Gestión de Archivos') }}
+                    @endif
+                </x-responsive-nav-link>
+            @endif
+
+            @if(Auth::user()->hasModuleAccess('orders'))
+                <x-responsive-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="mobile-menu-link">
+                    {{ __('Pedidos') }}
+                </x-responsive-nav-link>
+            @endif
+
+            @if(Auth::user()->hasModuleAccess('organigram'))
                 @if (Auth::user()->is_client)
-                    <x-responsive-nav-link :href="route('tablero.index')" :active="request()->routeIs('tablero.index')" class="mobile-menu-link">
-                        {{ __('Dashboard') }}
-                    </x-responsive-nav-link>
-                @endif
-
-                @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
-                    <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="mobile-menu-link">
-                        <span class="nav-text">{{ __('Archivos') }}</span>
+                    <x-responsive-nav-link :href="route('client.organigram.interactive')" :active="request()->routeIs('client.organigram.interactive')" class="mobile-menu-link">
+                        {{ __('Organigrama') }}
                     </x-responsive-nav-link>
                 @else
-                    <x-responsive-nav-link :href="route('folders.index')" :active="request()->routeIs('folders.index')" class="mobile-menu-link">
-                        @if (Auth::user()->is_client)
-                            {{ __('Archivos') }}
-                        @else
-                            {{ __('Gestión de Archivos') }}
-                        @endif
+                    <x-responsive-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.*')" class="mobile-menu-link">
+                        {{ __('Organigrama') }}
                     </x-responsive-nav-link>
                 @endif
+            @endif
 
-                @if (Auth::user()->is_client)
-                    @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
-                        <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="mobile-menu-link">
-                            {{ __('Organigrama') }}
-                        </x-responsive-nav-link>
+            @if(Auth::user()->hasModuleAccess('tracking'))
+                <x-responsive-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="mobile-menu-link" target="_blank" rel="noopener noreferrer">
+                    {{ __('Tracking') }}
+                </x-responsive-nav-link>
+            @endif
 
-                        <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="mobile-menu-link">
-                            {{ __('Tracking') }}
-                        </x-responsive-nav-link>
-                    @else
-                        <x-responsive-nav-link :href="route('client.organigram.interactive')" :active="request()->routeIs('client.organigram.interactive')" class="mobile-menu-link">
-                            {{ __('Organigrama') }}
-                        </x-responsive-nav-link>
+            @if(Auth::user()->hasModuleAccess('rfq'))
+                <x-responsive-nav-link :href="route('rfq.index')" class="text-[#FF9C00] hover:text-orange-400 focus:text-orange-400 font-semibold focus:outline-none focus:bg-gray-700 mobile-menu-link">
+                    {{ __('RFQ Moët Hennessy') }}
+                </x-responsive-nav-link>
+            @endif
 
-                        <x-responsive-nav-link :href="route('tracking.index')" :active="request()->routeIs('tracking.index')" class="mobile-menu-link" target="_blank" rel="noopener noreferrer">
-                            {{ __('Tracking') }}
-                        </x-responsive-nav-link>
-                    @endif
-                    
-                    <x-responsive-nav-link :href="route('rfq.index')" class="text-[#FF9C00] hover:text-orange-400 focus:text-orange-400 font-semibold focus:outline-none focus:bg-gray-700">
-                        {{ __('RFQ Moët Hennessy') }}
-                    </x-responsive-nav-link>
+            @if(Auth::user()->hasModuleAccess('carbon'))
+                <x-responsive-nav-link href="#" class="mobile-menu-link">
+                    {{ __('Huella de Carbono') }}
+                </x-responsive-nav-link>
+            @endif
 
-                    <div class="pt-4 mt-4 mobile-menu-divider space-y-1">
-                        @if(in_array(Auth::id(), ['24', '25', '26', '27', '4', '5', '6']))
-                            <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="mobile-menu-link">
-                                {{ __('Huella de Carbono') }}
-                            </x-responsive-nav-link>
-                            <x-responsive-nav-link href="#" @click.prevent="checkAccess($event)" class="mobile-menu-link">
-                                {{ __('Certificaciones') }}
-                            </x-responsive-nav-link>
-                            <x-responsive-nav-link :href="$whatsappLink" target="_blank" @click.prevent="checkAccess($event)" class="mobile-menu-link">
-                                {{ __('Asistencia') }}
-                            </x-responsive-nav-link>
-                        @else
-                            <x-responsive-nav-link href="#" class="mobile-menu-link">
-                                {{ __('Huella de Carbono') }}
-                            </x-responsive-nav-link>
-                            <x-responsive-nav-link href="#" class="mobile-menu-link">
-                                {{ __('Certificaciones') }}
-                            </x-responsive-nav-link>
-                            <x-responsive-nav-link :href="$whatsappLink" target="_blank" class="mobile-menu-link">
-                                {{ __('Asistencia') }}
-                            </x-responsive-nav-link>
-                        @endif
+            @if(Auth::user()->hasModuleAccess('certifications'))
+                <x-responsive-nav-link href="#" class="mobile-menu-link">
+                    {{ __('Certificaciones') }}
+                </x-responsive-nav-link>
+            @endif
+
+            @if(Auth::user()->hasModuleAccess('assistance'))
+                <x-responsive-nav-link :href="$whatsappLink" target="_blank" class="mobile-menu-link">
+                    {{ __('Asistencia') }}
+                </x-responsive-nav-link>
+            @endif
+
+            @if(!Auth::user()->is_client && Auth::user()->hasModuleAccess('visits'))
+                <x-responsive-nav-link :href="route('area_admin.visits.index')" :active="request()->routeIs('area_admin.visits.*')" class="mobile-menu-link">
+                    {{ __('Gestión de Visitas') }}
+                </x-responsive-nav-link>
+            @endif
+
+            @if(Auth::user()->hasModuleAccess('routes'))
+                <x-responsive-nav-link :href="route('rutas.dashboard')" :active="request()->routeIs('rutas.*')" class="mobile-menu-link">
+                    {{ __('Gestión de Rutas') }}
+                </x-responsive-nav-link>
+            @endif
+
+            @if(Auth::user()->hasModuleAccess('tickets'))
+                <x-responsive-nav-link :href="route('tickets.index')" :active="request()->routeIs('tickets.*')" class="mobile-menu-link">
+                    {{ __('Tickets de Soporte') }}
+                </x-responsive-nav-link>
+            @endif
+
+            @if(Auth::user()->hasModuleAccess('projects'))
+                @can('viewAny', App\Models\Project::class)
+                    <x-responsive-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')" class="mobile-menu-link">
+                        {{ __('Proyectos') }}
+                    </x-responsive-nav-link>  
+                @endcan
+            @endif
+
+            @if(Auth::user()->hasModuleAccess('wms'))
+                <x-responsive-nav-link :href="route('wms.dashboard')" :active="request()->routeIs('wms.*')" class="mobile-menu-link">
+                    {{ __('WMS') }}
+                </x-responsive-nav-link>
+            @endif
+
+            @if(Auth::user()->hasModuleAccess('customer_service'))
+                <x-responsive-nav-link :href="route('customer-service.index')" :active="request()->routeIs('customer-service.*')" class="mobile-menu-link">
+                    {{ __('Customer Service') }}
+                </x-responsive-nav-link>
+            @endif
+            
+            @if (Auth::user()->isSuperAdmin())
+                <div class="pt-4 pb-3 mobile-menu-divider">
+                    <button @click="isMobileSuperAdminMenuOpen = !isMobileSuperAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
+                        <span class="font-semibold">Super Admin</span>
+                        <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileSuperAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                    </button>
+                    <div x-show="isMobileSuperAdminMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
+                        <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="mobile-menu-link">
+                            {{ __('Panel General') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('admin.statistics.index')" :active="request()->routeIs('admin.statistics.*')" class="mobile-menu-link">
+                            {{ __('Estadísticas') }}
+                        </x-responsive-nav-link>
                     </div>
-                @endif
-
-                @if (!Auth::user()->is_client)
-                    <x-responsive-nav-link :href="route('area_admin.visits.index')" :active="request()->routeIs('area_admin.visits.*')" class="mobile-menu-link">
-                        {{ __('Gestión de Visitas') }}
-                    </x-responsive-nav-link>
-
-                    @if(in_array(Auth::user()->area?->name, ['Tráfico', 'Tráfico Importaciones', 'Administración']))
-                    <x-responsive-nav-link :href="route('rutas.dashboard')" :active="request()->routeIs('rutas.*')" class="mobile-menu-link">
-                        {{ __('Gestión de Rutas') }}
-                    </x-responsive-nav-link>
-                    @endif
-
-                    <x-responsive-nav-link :href="route('tickets.index')" :active="request()->routeIs('tickets.*')" class="mobile-menu-link">
-                        {{ __('Tickets de Soporte') }}
-                    </x-responsive-nav-link>
-
-                    @can('viewAny', App\Models\Project::class)
-                        <x-responsive-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')" class="mobile-menu-link">
-                            {{ __('Proyectos') }}
-                        </x-responsive-nav-link>  
-                    @endcan
-
-                    @if (Auth::check() && !Auth::user()->is_client && in_array(Auth::user()->area?->name, ['Administración', 'Almacén']))
-                        <x-responsive-nav-link :href="route('wms.dashboard')" :active="request()->routeIs('wms.*')" class="mobile-menu-link">
-                            {{ __('WMS') }}
+                </div>
+            @elseif (Auth::user()->hasModuleAccess('area_admin'))
+                <div class="pt-4 pb-3 mobile-menu-divider">
+                    <button @click="isMobileAreaAdminMenuOpen = !isMobileAreaAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
+                        <span class="font-semibold">Admin de Área</span>
+                        <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileAreaAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                    </button>
+                    <div x-show="isMobileAreaAdminMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
+                        <x-responsive-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="mobile-menu-link">
+                            {{ __('Panel de Área') }}
                         </x-responsive-nav-link>
-                    @endif
-
-                    @if(Auth::user()->is_area_admin && in_array(Auth::user()->area?->name, ['Recursos Humanos', 'Innovación y Desarrollo']))
-                        <x-responsive-nav-link :href="route('admin.organigram.index')" :active="request()->routeIs('admin.organigram.*')" class="mobile-menu-link">
-                            {{ __('Organigrama') }}
+                        <x-responsive-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.*')" class="mobile-menu-link">
+                            {{ __('Gestión de Usuarios') }}
                         </x-responsive-nav-link>
-                    @endif
-
-                    @if(in_array(Auth::user()->area?->name, ['Customer Service', 'Administración', 'Tráfico']))
-                        <x-responsive-nav-link :href="route('customer-service.index')" :active="request()->routeIs('customer-service.*')" class="mobile-menu-link">
-                            {{ __('Customer Service') }}
+                        <x-responsive-nav-link :href="route('area_admin.folder_permissions.index')" :active="request()->routeIs('area_admin.folder_permissions.*')" class="mobile-menu-link">
+                            {{ __('Permisos de Carpetas') }}
                         </x-responsive-nav-link>
-                    @endif
-                    
-                @endif
-
-                @if (Auth::user()->isSuperAdmin())
-                    <div class="pt-4 pb-3 mobile-menu-divider">
-                        <button @click="isMobileSuperAdminMenuOpen = !isMobileSuperAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
-                            <span class="font-semibold">Super Admin</span>
-                            <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileSuperAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-                        </button>
-                        <div x-show="isMobileSuperAdminMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
-                            <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="mobile-menu-link">
-                                {{ __('Panel General') }}
-                            </x-responsive-nav-link>
-                            <x-responsive-nav-link :href="route('admin.statistics.index')" :active="request()->routeIs('admin.statistics.*')" class="mobile-menu-link">
-                                {{ __('Estadísticas') }}
-                            </x-responsive-nav-link>
-                        </div>
                     </div>
-                @elseif (Auth::user()->is_area_admin)
-                    <div class="pt-4 pb-3 mobile-menu-divider">
-                        <button @click="isMobileAreaAdminMenuOpen = !isMobileAreaAdminMenuOpen" class="flex items-center justify-between w-full px-4 py-2 text-left text-base font-medium text-white hover:text-[#ff9c00] hover:bg-gray-700 focus:outline-none focus:text-[#ff9c00] focus:bg-gray-700 transition duration-150 ease-in-out">
-                            <span class="font-semibold">Admin de Área</span>
-                            <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isMobileAreaAdminMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-                        </button>
-                        <div x-show="isMobileAreaAdminMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4">
-                            <x-responsive-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="mobile-menu-link">
-                                {{ __('Panel de Área') }}
-                            </x-responsive-nav-link>
-                            <x-responsive-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.*')" class="mobile-menu-link">
-                                {{ __('Gestión de Usuarios') }}
-                            </x-responsive-nav-link>
-                            <x-responsive-nav-link :href="route('area_admin.folder_permissions.index')" :active="request()->routeIs('area_admin.folder_permissions.*')" class="mobile-menu-link">
-                                {{ __('Permisos de Carpetas') }}
-                            </x-responsive-nav-link>
-                        </div>
-                    </div>
-                @endif
-            </div>
-        @endif
+                </div>
+            @endif
+        </div>
 
         <div class="pt-4 pb-3 mobile-menu-divider">
             <button @click="toggleTheme()" class="mobile-menu-link flex items-center w-full text-left">

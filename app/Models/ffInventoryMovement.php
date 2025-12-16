@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToArea;
 
 class ffInventoryMovement extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToArea;
 
     protected $fillable = [
         'ff_product_id',
@@ -40,6 +41,7 @@ class ffInventoryMovement extends Model
         'approved_at',
         'notification_emails',
         'is_backorder',
+        'area_id',
         'backorder_fulfilled',     
     ];
 

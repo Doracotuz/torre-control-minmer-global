@@ -264,6 +264,28 @@
                         </div>
                     </div>
 
+                    <div class="col-span-1 md:col-span-2 mt-6 border-t pt-6">
+                        <h3 class="text-lg font-semibold text-[#2c3856] mb-4">{{ __('Acceso a Módulos (Sidebar)') }}</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            @foreach($availableModules as $key => $label)
+                                <div class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <label for="module_{{ $key }}" class="flex items-center cursor-pointer w-full">
+                                        <input type="checkbox" 
+                                            id="module_{{ $key }}" 
+                                            name="visible_modules[]" 
+                                            value="{{ $key }}"
+                                            class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]"
+                                            {{-- Lógica para marcar check en Edit (usando old o valor base) --}}
+                                            {{ (isset($user) && $user->hasModuleAccess($key)) || (is_array(old('visible_modules')) && in_array($key, old('visible_modules'))) ? 'checked' : '' }}
+                                        >
+                                        <span class="ml-2 text-sm text-gray-700 font-medium">{{ $label }}</span>
+                                    </label>
+                                </div>
+                            @endforeach
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">Selecciona los módulos que aparecerán en la barra lateral izquierda del usuario.</p>
+                    </div>                    
+
                     <div class="flex items-center justify-end mt-8 border-t pt-6">
                         <a href="{{ route('admin.users.index') }}" class="text-sm text-gray-600 hover:text-gray-900 underline mr-6">
                             Cancelar
