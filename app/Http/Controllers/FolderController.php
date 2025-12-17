@@ -13,8 +13,6 @@ use Illuminate\Support\Str;
 use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Log;
 
-
-
 class FolderController extends Controller
 {
     /**
@@ -35,7 +33,7 @@ class FolderController extends Controller
             $manageableAreas = Area::orderBy('name')->get();
             $manageableAreaIds = $manageableAreas->pluck('id');
         } elseif ($user->is_area_admin) {
-            $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique(); //
+            $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
             $manageableAreas = Area::whereIn('id', $manageableAreaIds)->orderBy('name')->get();
         } elseif (!$user->isClient()) {
             $manageableAreaIds->push($user->area_id);
@@ -128,8 +126,13 @@ class FolderController extends Controller
         $user = Auth::user();
         $currentFolder = $folder;
         
-        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique(); 
-        $manageableAreas = Area::whereIn('id', $manageableAreaIds)->orderBy('name')->get();
+        if ($user->isSuperAdmin()) {
+            $manageableAreas = Area::orderBy('name')->get();
+            $manageableAreaIds = $manageableAreas->pluck('id'); 
+        } else {
+            $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique(); 
+            $manageableAreas = Area::whereIn('id', $manageableAreaIds)->orderBy('name')->get();
+        }
 
         $isSuperAdmin = $user->isSuperAdmin();
         $isAreaAdmin = $user->is_area_admin;
@@ -208,7 +211,7 @@ class FolderController extends Controller
         ]);
 
         $areaName = Area::find($targetAreaId)->name ?? 'N/A';
-        $parentName = $parentFolder->name ?? 'Raíz';
+        $parentName = isset($parentFolder) ? $parentFolder->name : 'Raíz';
 
         ActivityLog::create([
             'user_id' => $user->id,
@@ -444,7 +447,7 @@ class FolderController extends Controller
                             'path' => $path,
                             'folder_id' => $folder->id,
                             'user_id' => Auth::id(),
-                        ]); //
+                        ]); 
                         
                         $uploadedCount++;
                     } catch (\Exception $e) {

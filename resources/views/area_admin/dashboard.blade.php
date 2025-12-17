@@ -1,5 +1,52 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
+    
+    @php
+        $areaIconSvg = '';
+        $areaCustomIconPath = null;
+        $areaName = 'General';
+
+        if (Auth::user()->area) {
+            $areaName = Auth::user()->area->name;
+            $areaCustomIconPath = Auth::user()->area->icon_path;
+
+            if (!$areaCustomIconPath) {
+                switch ($areaName) {
+                    case 'Recursos Humanos': 
+                        $areaIconSvg = '<svg class="w-full h-full text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h-5v-2a3 3 0 013-3h2a3 3 0 013 3v2h-5zM9 10a3 3 0 11-6 0 3 3 0 016 0zM11 12a3 3 0 10-6 0 3 3 0 006 0z"></path></svg>'; 
+                        break;
+                    case 'Customer Service': 
+                        $areaIconSvg = '<svg class="w-full h-full text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>'; 
+                        break;
+                    case 'Tráfico': 
+                        $areaIconSvg = '<svg class="w-full h-full text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17l-4 4m0 0l-4-4m4 4V3m6 18v-3.586a1 1 0 01.293-.707l2.414-2.414A1 1 0 0115.586 14H18a2 2 0 002-2V7a2 2 0 00-2-2h-3.586a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 0110 2.414V1H4a2 2 0 00-2 2v14a2 2 0 002 2h5z"></path></svg>'; 
+                        break;
+                    case 'Almacén': 
+                        $areaIconSvg = '<svg class="w-full h-full text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>'; 
+                        break;
+                    case 'Valor Agregado': 
+                        $areaIconSvg = '<svg class="w-full h-full text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>'; 
+                        break;
+                    case 'POSM': 
+                        $areaIconSvg = '<svg class="w-full h-full text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>'; 
+                        break;
+                    case 'Brokerage': 
+                        $areaIconSvg = '<svg class="w-full h-full text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 15l-3-3m0 0l-3 3m3-3V3m3 12h8a2 2 0 002-2V7a2 2 0 00-2-2h-3l-4-3H9a2 2 0 00-2 2v4m-7 10h14a2 2 0 002-2V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4"></path></svg>'; 
+                        break;
+                    case 'Innovación y Desarrollo': 
+                        $areaIconSvg = '<svg class="w-full h-full text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 20v-3m0 0l.688-.688c.482-.482 1.132-.756 1.802-.756h.71a2 2 0 002-2V8.5a2 2 0 00-2-2h-.71c-.67 0-1.32-.274-1.802-.756L12 5m0 15v-3m0 0l-.688-.688c-.482-.482-1.132-.756-1.802-.756H6a2 2 0 01-2-2V8.5a2 2 0 012-2h.71c.67 0 1.32-.274 1.802-.756L12 5"></path></svg>'; 
+                        break;
+                    case 'Administración': 
+                        $areaIconSvg = '<svg class="w-full h-full text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.827 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.827 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.827-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.827-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>'; 
+                        break;
+                    default: 
+                        $areaIconSvg = '<svg class="w-full h-full text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>'; 
+                        break;
+                }
+            }
+        }
+    @endphp
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Raleway:wght@700;800;900&display=swap');
 
@@ -114,22 +161,39 @@
         <div class="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 pt-8">
             
             <div class="flex flex-col md:flex-row justify-between items-end mb-10 opacity-0 animate-intro">
-                <div>
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-[#2c3856] uppercase tracking-wider">
-                            <span id="welcome-subtitle">Panel de Control</span>
-                        </span>
-                        <div class="flex items-center gap-1.5 px-3 py-1 bg-white border border-gray-200 rounded-full">
-                            <span class="w-2 h-2 rounded-full bg-[#ff9c00] animate-pulse"></span>
-                            <span class="text-xs font-bold text-gray-500" id="area-name-display">Cargando...</span>
-                        </div>
-                    </div>
+                
+                <div class="flex items-center gap-6">
                     
-                    <h1 class="text-4xl md:text-5xl tracking-tight mt-2 brand-font">
-                        <span class="font-bold text-gray-400">Hola,</span>
-                        <span class="font-black text-[#2c3856]">{{ Auth::user()->name }}</span>
-                    </h1>
+                    @if (Auth::user()->area)
+                    <div class="hidden md:flex items-center justify-center w-32 h-32 rounded-3xl bg-white shadow-lg border border-gray-100 p-4 shrink-0 transition-transform hover:scale-125 hover:shadow-2xl duration-300 z-10 relative">
+                        @if ($areaCustomIconPath)
+                            <img src="{{ Storage::disk('s3')->url($areaCustomIconPath) }}" 
+                                 alt="{{ $areaName }} Icon" 
+                                 class="w-full h-full object-contain">
+                        @else
+                            {!! $areaIconSvg !!}
+                        @endif
+                    </div>
+                    @endif
+
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-[#2c3856] uppercase tracking-wider">
+                                <span id="welcome-subtitle">Panel de Control</span>
+                            </span>
+                            <div class="flex items-center gap-1.5 px-3 py-1 bg-white border border-gray-200 rounded-full">
+                                <span class="w-2 h-2 rounded-full bg-[#ff9c00] animate-pulse"></span>
+                                <span class="text-xs font-bold text-gray-500" id="area-name-display">Cargando...</span>
+                            </div>
+                        </div>
+                        
+                        <h1 class="text-4xl md:text-5xl tracking-tight mt-2 brand-font">
+                            <span class="font-bold text-gray-400">Hola,</span>
+                            <span class="font-black text-[#2c3856]">{{ Auth::user()->name }}</span>
+                        </h1>
+                    </div>
                 </div>
+                
                 <div class="mt-4 md:mt-0 text-right hidden md:block">
                     <p class="text-4xl font-black text-[#2c3856] tracking-tight" x-text="time"></p>
                     <p class="text-sm font-bold text-[#ff9c00] uppercase tracking-widest" x-text="date"></p>
@@ -415,7 +479,6 @@
                             ...common,
                             series: this.data.activityBreakdown.map(item => item.total),
                             labels: this.data.activityBreakdown.map(item => item.action_type),
-                            // CAMBIO CLAVE AQUÍ: height 100% para usar el espacio vertical verticalmente
                             chart: { type: 'donut', height: '100%', parentHeightOffset: 0 },
                             legend: { position: 'bottom', fontSize: '11px', offsetY: 0 },
                             plotOptions: { pie: { donut: { size: '65%', labels: { show: true, total: { show: true, label: 'TOTAL', color: '#2c3856' } } } } }

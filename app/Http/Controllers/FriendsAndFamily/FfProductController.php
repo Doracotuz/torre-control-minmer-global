@@ -60,7 +60,7 @@ class FfProductController extends Controller
             'upc' => 'nullable|string|max:255',
             'channels' => 'nullable|array',
             'channels.*' => 'exists:ff_sales_channels,id',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:20048',
         ]);
 
         $data = $validated;
@@ -106,7 +106,7 @@ class FfProductController extends Controller
             'upc' => 'nullable|string|max:255',
             'channels' => 'nullable|array',
             'channels.*' => 'exists:ff_sales_channels,id',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:20048',
             'is_active' => 'required|boolean',
         ]);
 

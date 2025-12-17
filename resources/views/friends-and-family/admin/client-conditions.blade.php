@@ -117,7 +117,18 @@
                         <h4 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Evidencia Fotográfica (Preparado)</h4>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             @for($i=1; $i<=3; $i++)
-                                <x-image-uploader name="prep_img_{{ $i }}" label="Imagen {{ $i }}" :current="$conditions->getImageUrl('prep_img_'.$i)" />
+                                <div class="relative group">
+                                    <x-image-uploader name="prep_img_{{ $i }}" label="Imagen {{ $i }}" :current="$conditions->getImageUrl('prep_img_'.$i)" />
+                                    
+                                    @if($conditions->getImageUrl('prep_img_'.$i))
+                                        <button type="button" 
+                                                onclick="if(confirm('¿Estás seguro de eliminar esta imagen?')) document.getElementById('delete-form-prep-{{ $i }}').submit();"
+                                                class="absolute top-0 right-0 mt-2 mr-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-all transform hover:scale-110 z-10" 
+                                                title="Eliminar imagen actual">
+                                            <i class="fas fa-trash-alt text-xs"></i>
+                                        </button>
+                                    @endif
+                                </div>
                             @endfor
                         </div>
                     </div>
@@ -147,7 +158,18 @@
                         <h4 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Ejemplos de Documentos</h4>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             @for($i=1; $i<=3; $i++)
-                                <x-image-uploader name="doc_img_{{ $i }}" label="Ejemplo {{ $i }}" :current="$conditions->getImageUrl('doc_img_'.$i)" />
+                                <div class="relative group">
+                                    <x-image-uploader name="doc_img_{{ $i }}" label="Ejemplo {{ $i }}" :current="$conditions->getImageUrl('doc_img_'.$i)" />
+
+                                    @if($conditions->getImageUrl('doc_img_'.$i))
+                                        <button type="button" 
+                                                onclick="if(confirm('¿Estás seguro de eliminar esta imagen?')) document.getElementById('delete-form-doc-{{ $i }}').submit();"
+                                                class="absolute top-0 right-0 mt-2 mr-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-all transform hover:scale-110 z-10" 
+                                                title="Eliminar imagen actual">
+                                            <i class="fas fa-trash-alt text-xs"></i>
+                                        </button>
+                                    @endif
+                                </div>
                             @endfor
                         </div>
                     </div>
@@ -178,19 +200,15 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             @for($i=1; $i<=3; $i++)
                                 <div class="relative group">
-                                    <x-image-uploader name="prep_img_{{ $i }}" label="Imagen {{ $i }}" :current="$conditions->getImageUrl('prep_img_'.$i)" />
+                                    <x-image-uploader name="evid_img_{{ $i }}" label="Imagen {{ $i }}" :current="$conditions->getImageUrl('evid_img_'.$i)" />
 
-                                    @if($conditions->getImageUrl('prep_img_'.$i))
-                                        <form action="{{ route('ff.admin.clients.conditions.delete-image', ['conditionId' => $conditions->id, 'field' => 'prep_img_'.$i]) }}" 
-                                            method="POST" 
-                                            class="absolute top-0 right-0 mt-2 mr-2"
-                                            onsubmit="return confirm('¿Estás seguro de eliminar esta imagen?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-all transform hover:scale-110" title="Eliminar imagen actual">
-                                                <i class="fas fa-trash-alt text-xs"></i>
-                                            </button>
-                                        </form>
+                                    @if($conditions->getImageUrl('evid_img_'.$i))
+                                        <button type="button" 
+                                                onclick="if(confirm('¿Estás seguro de eliminar esta imagen?')) document.getElementById('delete-form-evid-{{ $i }}').submit();"
+                                                class="absolute top-0 right-0 mt-2 mr-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-all transform hover:scale-110 z-10" 
+                                                title="Eliminar imagen actual">
+                                            <i class="fas fa-trash-alt text-xs"></i>
+                                        </button>
                                     @endif
                                 </div>
                             @endfor
@@ -199,5 +217,39 @@
                 </div>
             </div>
         </form>
+
+        @for($i=1; $i<=3; $i++)
+            @if($conditions->getImageUrl('prep_img_'.$i))
+                <form id="delete-form-prep-{{ $i }}" 
+                      action="{{ route('ff.admin.clients.conditions.delete-image', ['conditionId' => $conditions->id, 'field' => 'prep_img_'.$i]) }}" 
+                      method="POST" style="display: none;">
+                    @csrf
+                    @method('DELETE')
+                </form>
+            @endif
+        @endfor
+
+        @for($i=1; $i<=3; $i++)
+            @if($conditions->getImageUrl('doc_img_'.$i))
+                <form id="delete-form-doc-{{ $i }}" 
+                      action="{{ route('ff.admin.clients.conditions.delete-image', ['conditionId' => $conditions->id, 'field' => 'doc_img_'.$i]) }}" 
+                      method="POST" style="display: none;">
+                    @csrf
+                    @method('DELETE')
+                </form>
+            @endif
+        @endfor
+
+        @for($i=1; $i<=3; $i++)
+            @if($conditions->getImageUrl('evid_img_'.$i))
+                <form id="delete-form-evid-{{ $i }}" 
+                      action="{{ route('ff.admin.clients.conditions.delete-image', ['conditionId' => $conditions->id, 'field' => 'evid_img_'.$i]) }}" 
+                      method="POST" style="display: none;">
+                    @csrf
+                    @method('DELETE')
+                </form>
+            @endif
+        @endfor
+
     </div>
 </x-app-layout>

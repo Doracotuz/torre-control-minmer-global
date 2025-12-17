@@ -17,7 +17,7 @@ class CheckFriendsAndFamilyAccess
         $user = Auth::user();
 
         $isSuperAdmin = $user && $user->isSuperAdmin();
-        $isVentas = $user && $user->area?->name === 'Consorcio Monter';
+        $isVentas = $user && in_array($user->area?->name, ['Consorcio Monter', 'Consorcio Minmer', 'Empresa de Prueba']);
 
         if ($isSuperAdmin || $isVentas) {
             
