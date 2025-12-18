@@ -1,301 +1,414 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-[#2c3856] leading-tight">
-            {{ __('Editar Usuario:') }} <span class="text-[#ff9c00]">{{ $user->name }}</span>
-        </h2>
-    </x-slot>
+    <x-slot name="header"></x-slot>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Raleway:wght@700;800;900&display=swap');
+        [x-cloak] { display: none !important; }
+        .font-raleway { font-family: 'Raleway', sans-serif; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        
+        .perspective-container { perspective: 1000px; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(44, 56, 86, 0.1);
+        }
+        
+        .input-group:focus-within label { color: #ff9c00; transform: translateY(-1.5rem) scale(0.8); }
+        .input-group label { transition: all 0.3s ease; transform-origin: left top; }
+        .input-group input:not(:placeholder-shown) + label, 
+        .input-group select:not(:placeholder-shown) + label { transform: translateY(-1.5rem) scale(0.8); }
+        
+        .input-group input[value]:not([value=""]) + label { transform: translateY(-1.5rem) scale(0.8); }
 
-    <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200">
-                
-                <form method="POST" action="{{ route('admin.users.update', $user) }}" enctype="multipart/form-data" class="p-6 md:p-8"
-                      x-data="{ 
-                          photoName: null, 
-                          photoPreview: '{{ $user->profile_photo_path ? Storage::disk('s3')->url($user->profile_photo_path) : null }}',
-                          isClient: {{ old('is_client', $user->is_client) ? 'true' : 'false' }},
-                          selectedFolderIds: @json(old('accessible_folder_ids', $accessibleFolderIds)),
-                          folders: [],
-                          loadingFolders: true,
-                          loadFolders(parentId = null) {
-                              this.loadingFolders = true;
-                              fetch('{{ route('admin.api.folders_for_client_access') }}?parent_id=' + (parentId || ''))
-                                  .then(response => response.json())
-                                  .then(data => {
-                                      this.folders = data.map(folder => ({ ...folder, isOpen: false, children: [] }));
-                                      this.loadingFolders = false;
-                                  })
-                                  .catch(error => {
-                                      console.error('Error loading folders:', error);
-                                      this.loadingFolders = false;
-                                  });
-                          },
-                          toggleFolder(folder) {
-                              folder.isOpen = !folder.isOpen;
-                              if (folder.isOpen && folder.children.length === 0 && folder.has_children) {
-                                  this.loadingFolders = true;
-                                  fetch('{{ route('admin.api.folders_for_client_access') }}?parent_id=' + folder.id)
-                                      .then(response => response.json())
-                                      .then(data => {
-                                          folder.children = data.map(child => ({ ...child, isOpen: false, children: [] }));
-                                          this.loadingFolders = false;
-                                      })
-                                      .catch(error => {
-                                          console.error('Error loading subfolders:', error);
-                                          this.loadingFolders = false;
-                                      });
-                              }
-                          },
-                          init() {
-                              this.loadFolders();
-                              // Si es cliente, deshabilita el campo de área al cargar
-                              if (this.isClient) {
-                                  const areaSelect = document.getElementById('area_id');
-                                  if (areaSelect) {
-                                      areaSelect.disabled = true;
-                                  }
-                              }
-                          }
-                      }">
-                    @csrf
-                    @method('PUT')
+        .radio-tile:checked + div { border-color: #ff9c00; background: linear-gradient(145deg, #ffffff, #fff8f0); box-shadow: 0 10px 20px -5px rgba(255, 156, 0, 0.3); transform: translateY(-4px); }
+        .radio-tile:checked + div .indicator { background-color: #ff9c00; border-color: #ff9c00; }
+        .radio-tile:checked + div .indicator svg { opacity: 1; }
+        
+        .folder-check:checked + div { background-color: #2c3856; border-color: #2c3856; }
+        .folder-check:checked + div svg { opacity: 1; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #ff9c00; }
+        
+        .blob { position: absolute; filter: blur(80px); opacity: 0.6; animation: float 10s infinite ease-in-out; z-index: 0; }
+        @keyframes float { 0% { transform: translate(0, 0); } 50% { transform: translate(30px, -50px); } 100% { transform: translate(0, 0); } }
+        
+        .toggle-checkbox:checked { right: 0; border-color: #ff9c00; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #ff9c00; }
+    </style>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div class="min-h-screen font-montserrat relative overflow-hidden flex flex-col">
+        
+        <div class="blob w-96 h-96 top-0 left-0 rounded-full mix-blend-multiply"></div>
+        <div class="blob w-96 h-96 bottom-0 right-0 rounded-full mix-blend-multiply animation-delay-2000"></div>
 
-                        <div class="space-y-6">
-                            <div>
-                                <x-input-label for="name" :value="__('Nombre')" class="font-semibold" />
-                                <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name', $user->name)" required autofocus />
-                                <x-input-error :messages="$errors->get('name')" class="mt-2" />
-                            </div>
+        <div x-data="{ 
+            step: 1,
+            maxSteps: 4,
+            direction: 'next',
+            photoPreview: '{{ $user->profile_photo_path ? Storage::disk('s3')->url($user->profile_photo_path) : null }}',
+            photoName: null,
+            removePhoto: false,
+            isClient: {{ old('is_client', $user->is_client) ? 'true' : 'false' }},
+            selectedFolderIds: @json(old('accessible_folder_ids', $accessibleFolderIds)),
+            folders: [],
+            loadingFolders: true,
+            isActive: {{ old('is_active', $user->is_active) ? 'true' : 'false' }},
+            
+            goToStep(target) {
+                if(target > this.step && !this.validateStep()) return;
+                this.direction = target > this.step ? 'next' : 'prev';
+                this.step = target;
+            },
+            next() {
+                if(this.validateStep()) {
+                    this.direction = 'next';
+                    if(this.step < this.maxSteps) this.step++;
+                }
+            },
+            prev() {
+                this.direction = 'prev';
+                if(this.step > 1) this.step--;
+            },
+            validateStep() {
+                const container = document.getElementById(`step-${this.step}`);
+                if(!container) return true;
+                const inputs = container.querySelectorAll('input[required], select[required]');
+                let valid = true;
+                inputs.forEach(el => {
+                    if(!el.checkValidity()) {
+                        el.reportValidity();
+                        valid = false;
+                    }
+                });
+                return valid;
+            },
+            loadFolders(parentId = null) {
+                this.loadingFolders = true;
+                fetch('{{ route('admin.api.folders_for_client_access') }}?parent_id=' + (parentId || ''))
+                    .then(r => r.json())
+                    .then(data => {
+                        this.folders = data.map(f => ({ ...f, isOpen: false, children: [] }));
+                        this.loadingFolders = false;
+                    });
+            },
+            toggleFolder(folder) {
+                folder.isOpen = !folder.isOpen;
+                if (folder.isOpen && folder.children.length === 0 && folder.has_children) {
+                    fetch('{{ route('admin.api.folders_for_client_access') }}?parent_id=' + folder.id)
+                        .then(r => r.json())
+                        .then(data => {
+                            folder.children = data.map(c => ({ ...c, isOpen: false, children: [] }));
+                        });
+                }
+            },
+            clearPhoto() {
+                this.photoPreview = null;
+                this.photoName = null;
+                this.removePhoto = true;
+                this.$refs.photo.value = '';
+            },
+            init() {
+                this.loadFolders();
+                if(this.isClient && document.getElementById('area_id')) {
+                    document.getElementById('area_id').disabled = true;
+                }
+            }
+        }" class="flex-1 flex flex-col relative z-10 h-full max-h-screen">
 
-                            <div>
-                                <x-input-label for="position" :value="__('Posición')" class="font-semibold" />
-                                <select id="position" name="position" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm">
-                                    <option value="">{{ __('Selecciona una Posición') }}</option>
-                                    @foreach ($positions as $position)
-                                        <option value="{{ $position->name }}" {{ old('position', $user->position) == $position->name ? 'selected' : '' }}>
-                                            {{ $position->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <x-input-error :messages="$errors->get('position')" class="mt-2" />
-                            </div>
+            <header class="pt-8 px-6 lg:px-12 flex justify-between items-end mb-4">
+                <div>
+                    <h1 class="font-raleway font-black text-4xl text-[#2c3856] leading-none tracking-tight">Editar <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-[#ffb347]">{{ $user->name }}</span></h1>
+                </div>
+                <div class="flex space-x-2">
+                    <template x-for="i in maxSteps">
+                        <div class="h-1.5 rounded-full transition-all duration-500 ease-out" 
+                             :class="i <= step ? 'w-8 bg-[#ff9c00]' : 'w-2 bg-gray-300'"></div>
+                    </template>
+                </div>
+            </header>
 
-                            <div>
-                                <x-input-label for="phone_number" :value="__('Número Telefónico')" class="font-semibold" />
-                                <x-text-input id="phone_number" class="block mt-1 w-full" type="tel" name="phone_number" :value="old('phone_number', $user->phone_number)" />
-                                <x-input-error :messages="$errors->get('phone_number')" class="mt-2" />
-                            </div>                            
+            <form method="POST" action="{{ route('admin.users.update', $user) }}" enctype="multipart/form-data" class="flex-1 flex flex-col lg:flex-row overflow-hidden px-4 lg:px-8 pb-8 gap-6">
+                @csrf
+                @method('PUT')
 
-                            <div>
-                                <x-input-label for="email" :value="__('Email')" class="font-semibold" />
-                                <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $user->email)" required />
-                                <x-input-error :messages="$errors->get('email')" class="mt-2" />
-                            </div>
+                <div class="hidden lg:flex flex-col w-64 shrink-0 space-y-2 pt-10">
+                    <button type="button" @click="goToStep(1)" :class="step === 1 ? 'bg-white shadow-lg text-[#2c3856] scale-105' : 'text-gray-500 hover:bg-white/50'" class="px-6 py-4 rounded-2xl text-left transition-all duration-300 font-bold text-sm flex items-center group">
+                        <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs mr-3 transition-colors" :class="step >= 1 ? 'bg-[#ff9c00] text-white' : 'bg-gray-200'">1</span>
+                        Identidad
+                    </button>
+                    <button type="button" @click="goToStep(2)" :class="step === 2 ? 'bg-white shadow-lg text-[#2c3856] scale-105' : 'text-gray-500 hover:bg-white/50'" class="px-6 py-4 rounded-2xl text-left transition-all duration-300 font-bold text-sm flex items-center group">
+                        <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs mr-3 transition-colors" :class="step >= 2 ? 'bg-[#ff9c00] text-white' : 'bg-gray-200'">2</span>
+                        Roles
+                    </button>
+                    <button type="button" @click="goToStep(3)" :class="step === 3 ? 'bg-white shadow-lg text-[#2c3856] scale-105' : 'text-gray-500 hover:bg-white/50'" class="px-6 py-4 rounded-2xl text-left transition-all duration-300 font-bold text-sm flex items-center group">
+                        <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs mr-3 transition-colors" :class="step >= 3 ? 'bg-[#ff9c00] text-white' : 'bg-gray-200'">3</span>
+                        Permisos
+                    </button>
+                    <button type="button" @click="goToStep(4)" :class="step === 4 ? 'bg-white shadow-lg text-[#2c3856] scale-105' : 'text-gray-500 hover:bg-white/50'" class="px-6 py-4 rounded-2xl text-left transition-all duration-300 font-bold text-sm flex items-center group">
+                        <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs mr-3 transition-colors" :class="step >= 4 ? 'bg-[#ff9c00] text-white' : 'bg-gray-200'">4</span>
+                        Interfaz
+                    </button>
+                </div>
 
-                            <div>
-                                <x-input-label for="password" :value="__('Nueva Contraseña')" class="font-semibold" />
-                                <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" autocomplete="new-password" />
-                                <p class="mt-1 text-xs text-gray-500">Dejar vacío para no cambiar la contraseña.</p>
-                                <x-input-error :messages="$errors->get('password')" class="mt-2" />
-                            </div>
+                <div class="flex-1 glass-card rounded-[2.5rem] relative overflow-hidden flex flex-col perspective-container shadow-2xl">
+                    
+                    <div class="flex-1 relative overflow-y-auto custom-scrollbar p-8 lg:p-12">
+                        
+                        <div x-show="step === 1" x-transition:enter="transition ease-out duration-500 delay-100" x-transition:enter-start="opacity-0 translate-x-10" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-300 absolute" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-10" class="w-full h-full" id="step-1">
+                            <h2 class="text-2xl font-bold text-[#2c3856] mb-8">Información Personal</h2>
+                            <div class="flex flex-col xl:flex-row gap-10">
+                                <div class="w-full xl:w-1/3 flex flex-col items-center justify-start">
+                                    <div class="relative group w-48 h-48 mx-auto">
+                                        <div class="absolute inset-0 bg-gradient-to-tr from-[#ff9c00] to-[#ffb347] rounded-full blur-lg opacity-40 group-hover:opacity-60 transition-opacity"></div>
+                                        <div class="relative w-full h-full rounded-full bg-white border-4 border-white shadow-xl overflow-hidden">
+                                            <template x-if="!photoPreview">
+                                                <div class="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300">
+                                                    <svg class="w-20 h-20" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg>
+                                                </div>
+                                            </template>
+                                            <template x-if="photoPreview">
+                                                <img :src="photoPreview" class="w-full h-full object-cover">
+                                            </template>
+                                            
+                                            <button type="button" x-show="photoPreview" @click.prevent="clearPhoto()" class="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-red-600">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
 
-                            <div>
-                                <x-input-label for="password_confirmation" :value="__('Confirmar Nueva Contraseña')" class="font-semibold" />
-                                <x-text-input id="password_confirmation" class="block mt-1 w-full" type="password" name="password_confirmation" />
-                                <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+                                            <label class="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-[2px]">
+                                                <svg class="w-8 h-8 text-white mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                                                <span class="text-white text-[10px] font-bold uppercase tracking-widest">Cambiar</span>
+                                                <input type="file" x-ref="photo" name="profile_photo" class="hidden" @change="photoName = $event.target.files[0].name; removePhoto = false; const reader = new FileReader(); reader.onload = (e) => { photoPreview = e.target.result; }; reader.readAsDataURL($event.target.files[0]);">
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <p class="mt-4 text-xs font-bold text-gray-400 uppercase tracking-widest" x-text="photoName || 'Foto Actual'"></p>
+                                    <input type="hidden" name="remove_profile_photo" :value="removePhoto ? '1' : '0'">
+                                </div>
+                                
+                                <div class="w-full xl:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
+                                    <div class="input-group relative">
+                                        <input type="text" name="name" id="name" required placeholder=" " class="block w-full px-0 py-2 bg-transparent border-0 border-b-2 border-gray-300 focus:ring-0 focus:border-[#ff9c00] transition-colors text-[#2c3856] font-semibold text-lg" value="{{ old('name', $user->name) }}">
+                                        <label for="name" class="absolute left-0 top-2 text-gray-500 pointer-events-none">Nombre Completo</label>
+                                        <x-input-error :messages="$errors->get('name')" class="mt-1" />
+                                    </div>
+                                    <div class="input-group relative">
+                                        <input type="email" name="email" id="email" required placeholder=" " class="block w-full px-0 py-2 bg-transparent border-0 border-b-2 border-gray-300 focus:ring-0 focus:border-[#ff9c00] transition-colors text-[#2c3856] font-semibold text-lg" value="{{ old('email', $user->email) }}">
+                                        <label for="email" class="absolute left-0 top-2 text-gray-500 pointer-events-none">Email Corporativo</label>
+                                        <x-input-error :messages="$errors->get('email')" class="mt-1" />
+                                    </div>
+                                    <div class="input-group relative">
+                                        <input type="tel" name="phone_number" id="phone_number" placeholder=" " class="block w-full px-0 py-2 bg-transparent border-0 border-b-2 border-gray-300 focus:ring-0 focus:border-[#ff9c00] transition-colors text-[#2c3856] font-semibold text-lg" value="{{ old('phone_number', $user->phone_number) }}">
+                                        <label for="phone_number" class="absolute left-0 top-2 text-gray-500 pointer-events-none">Teléfono</label>
+                                    </div>
+                                    <div class="input-group relative">
+                                        <select name="position" id="position" class="block w-full px-0 py-2 bg-transparent border-0 border-b-2 border-gray-300 focus:ring-0 focus:border-[#ff9c00] transition-colors text-[#2c3856] font-semibold text-lg">
+                                            <option value=""></option>
+                                            @foreach ($positions as $position)
+                                                <option value="{{ $position->name }}" {{ old('position', $user->position) == $position->name ? 'selected' : '' }}>
+                                                    {{ $position->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <label for="position" class="absolute left-0 top-2 text-gray-500 pointer-events-none transform -translate-y-6 scale-75">Cargo / Posición</label>
+                                    </div>
+                                    
+                                    <div class="input-group relative">
+                                        <input type="password" name="password" id="password" placeholder=" " autocomplete="new-password" class="block w-full px-0 py-2 bg-transparent border-0 border-b-2 border-gray-300 focus:ring-0 focus:border-[#ff9c00] transition-colors text-[#2c3856] font-semibold text-lg">
+                                        <label for="password" class="absolute left-0 top-2 text-gray-500 pointer-events-none">Nueva Contraseña (Opcional)</label>
+                                    </div>
+                                    <div class="input-group relative">
+                                        <input type="password" name="password_confirmation" id="password_confirmation" placeholder=" " class="block w-full px-0 py-2 bg-transparent border-0 border-b-2 border-gray-300 focus:ring-0 focus:border-[#ff9c00] transition-colors text-[#2c3856] font-semibold text-lg">
+                                        <label for="password_confirmation" class="absolute left-0 top-2 text-gray-500 pointer-events-none">Confirmar Contraseña</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="space-y-6">
-                            <div>
-                                <x-input-label :value="__('Foto de Perfil')" class="font-semibold mb-3 text-center" />
+                        <div x-show="step === 2" x-transition:enter="transition ease-out duration-500 delay-100" x-transition:enter-start="opacity-0 translate-x-10" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-300 absolute" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-10" class="w-full h-full" id="step-2" style="display: none;">
+                            <div class="flex justify-between items-center mb-8">
+                                <h2 class="text-2xl font-bold text-[#2c3856]">Rol y Estado</h2>
                                 
-                                <div class="flex flex-col items-center space-y-4">
-                                    <div class="w-32 h-32 rounded-full bg-gray-100 border-4 border-gray-200 flex items-center justify-center overflow-hidden shadow-md">
-                                        <template x-if="!photoPreview">
-                                            <svg class="w-20 h-20 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM12 12.5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path></svg>
-                                        </template>
-                                        <template x-if="photoPreview">
-                                            <img :src="photoPreview" class="w-full h-full object-cover">
-                                        </template>
+                                <div class="flex items-center">
+                                    <input type="hidden" name="is_active" value="0">
+                                    <span class="mr-3 text-sm font-bold uppercase tracking-wider" :class="isActive ? 'text-[#2c3856]' : 'text-gray-400'">Estado Activo</span>
+                                    <div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
+                                        <input type="checkbox" name="is_active" id="is_active" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 shadow-sm z-10 left-0 border-gray-300" x-model="isActive" value="1">
+                                        <label for="is_active" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-200 cursor-pointer transition-colors duration-300"></label>
                                     </div>
-
-                                    <label for="profile_photo" class="inline-flex items-center px-5 py-2 bg-[#ff9c00] text-white rounded-full font-semibold text-xs uppercase tracking-widest hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-300 transform hover:scale-105 shadow-md cursor-pointer">
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                        <span x-text="photoName || 'Cambiar Foto'"></span>
-                                    </label>
-                                    
-                                    <input id="profile_photo" name="profile_photo" type="file" class="hidden" x-ref="photo"
-                                           x-on:change="
-                                                photoName = $refs.photo.files.length > 0 ? $refs.photo.files[0].name : null;
-                                                if (photoName) {
-                                                    const reader = new FileReader();
-                                                    reader.onload = (e) => { photoPreview = e.target.result; };
-                                                    reader.readAsDataURL($refs.photo.files[0]);
-                                                }
-                                           ">
-                                    
-                                    @if ($user->profile_photo_path)
-                                        <label for="remove_profile_photo" class="flex items-center text-sm text-red-600 hover:text-red-800 cursor-pointer">
-                                            <input type="checkbox" name="remove_profile_photo" id="remove_profile_photo" value="1" 
-                                                   class="rounded border-gray-300 text-red-600 shadow-sm focus:ring-red-500"
-                                                   x-on:click="if ($event.target.checked) { photoPreview = null; photoName = null; $refs.photo.value = ''; }">
-                                            <span class="ml-2">{{ __('Eliminar foto actual') }}</span>
-                                        </label>
-                                    @endif
-
-                                    <x-input-error :messages="$errors->get('profile_photo')" class="mt-2" />
                                 </div>
                             </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto h-[60%]">
+                                <label class="cursor-pointer relative group">
+                                    <input type="checkbox" name="is_client" value="1" x-model="isClient" class="radio-tile sr-only" @change="if(isClient) { document.getElementById('area_id').disabled=true; document.getElementById('area_id').value=''; } else { document.getElementById('area_id').disabled=false; document.getElementById('area_id').value='{{ $user->area_id }}'; }">
+                                    <div class="w-full h-full rounded-3xl border-2 border-gray-100 bg-white p-8 flex flex-col items-center justify-center transition-all duration-300 hover:border-gray-300 relative overflow-hidden">
+                                        <div class="indicator w-6 h-6 rounded-full border-2 border-gray-300 absolute top-6 right-6 flex items-center justify-center transition-all duration-300">
+                                            <svg class="w-3 h-3 text-white opacity-0 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                        </div>
+                                        <div class="w-20 h-20 rounded-2xl bg-orange-50 text-[#ff9c00] flex items-center justify-center mb-6 text-4xl group-hover:scale-110 transition-transform duration-500">
+                                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                                        </div>
+                                        <h3 class="text-xl font-black text-[#2c3856] mb-2 uppercase tracking-wide">Cliente Externo</h3>
+                                        <p class="text-center text-gray-500 text-sm leading-relaxed px-4">Acceso "Read-Only" restringido a carpetas específicas. Sin acceso a módulos internos.</p>
+                                    </div>
+                                </label>
+                                <div x-show="!isClient" class="h-full">
+                                    <label class="cursor-pointer relative group h-full block">
+                                        <input type="checkbox" name="is_area_admin" value="1" {{ old('is_area_admin', $user->is_area_admin) ? 'checked' : '' }} class="radio-tile sr-only">
+                                        <div class="w-full h-full rounded-3xl border-2 border-gray-100 bg-white p-8 flex flex-col items-center justify-center transition-all duration-300 hover:border-gray-300 relative overflow-hidden">
+                                            <div class="indicator w-6 h-6 rounded-full border-2 border-gray-300 absolute top-6 right-6 flex items-center justify-center transition-all duration-300">
+                                                <svg class="w-3 h-3 text-white opacity-0 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                            </div>
+                                            <div class="w-20 h-20 rounded-2xl bg-blue-50 text-[#2c3856] flex items-center justify-center mb-6 text-4xl group-hover:scale-110 transition-transform duration-500">
+                                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                            </div>
+                                            <h3 class="text-xl font-black text-[#2c3856] mb-2 uppercase tracking-wide">Admin de Área</h3>
+                                            <p class="text-center text-gray-500 text-sm leading-relaxed px-4">Gestión total de archivos y usuarios dentro de su área asignada.</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div x-show="!isClient" class="mt-8 max-w-lg mx-auto" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0">
+                                <div class="input-group relative">
+                                    <select id="area_id" name="area_id" class="block w-full px-0 py-2 bg-transparent border-0 border-b-2 border-gray-300 focus:ring-0 focus:border-[#ff9c00] transition-colors text-[#2c3856] font-semibold text-lg text-center">
+                                        <option value=""></option>
+                                        @foreach ($areas as $area)
+                                            <option value="{{ $area->id }}" {{ old('area_id', $user->area_id) == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <label for="area_id" class="absolute left-0 w-full text-center top-2 text-gray-500 pointer-events-none transform -translate-y-6 scale-75">Área Principal</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div x-show="step === 3" x-transition:enter="transition ease-out duration-500 delay-100" x-transition:enter-start="opacity-0 translate-x-10" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-300 absolute" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-10" class="w-full h-full" id="step-3" style="display: none;">
                             
-                            <div x-show="!isClient" x-transition.opacity>
-                                <x-input-label for="area_id" :value="__('Área Principal')" class="font-semibold" />
-                                <select id="area_id" name="area_id" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm" x-bind:required="!isClient">
-                                    <option value="">{{ __('Selecciona un Área') }}</option>
-                                    @foreach ($areas as $area)
-                                        <option value="{{ $area->id }}" {{ old('area_id', $user->area_id) == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
-                                    @endforeach
-                                </select>
-                                <x-input-error :messages="$errors->get('area_id')" class="mt-2" />
-                            </div>
-
-                            <div class="mt-4" x-show="!isClient" x-transition.opacity>
-                                <x-input-label for="accessible_area_ids" :value="__('Áreas Secundarias de Acceso (Opcional)')" class="font-semibold" />
-                                <p class="text-xs text-gray-500 mb-2">
-                                    {{ __('El usuario podrá ver los archivos de estas áreas, además de su área principal.') }}
-                                </p>
-                                
-                                <select name="accessible_area_ids[]" id="accessible_area_ids" multiple
-                                        class="block w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm" 
-                                        size="6">
-                                    @foreach($areas as $area)
-                                        <option value="{{ $area->id }}" 
-                                                {{ in_array($area->id, old('accessible_area_ids', $userAccessibleAreaIds ?? [])) ? 'selected' : '' }}>
-                                            {{ $area->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <p class="mt-1 text-xs text-gray-500">Mantén presionado Ctrl (o Cmd en Mac) para seleccionar varias.</p>
-                                <x-input-error :messages="$errors->get('accessible_area_ids')" class="mt-2" />
-                            </div>
-                            <div class="pt-2">
-                                <label for="is_area_admin" class="inline-flex items-center">
-                                    <input id="is_area_admin" type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" name="is_area_admin" value="1" {{ old('is_area_admin', $user->is_area_admin) ? 'checked' : '' }}>
-                                    <span class="ms-2 text-sm text-gray-600">{{ __('Asignar como Administrador de Área') }}</span>
-                                </label>
-                            </div>  
-
-                            <div class="pt-2">
-                                <label for="is_client" class="inline-flex items-center">
-                                <input type="checkbox" name="is_client" id="is_client" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" value="1" x-model="isClient"
-                                    @change="
-                                        const areaSelect = document.getElementById('area_id');
-                                        areaSelect.disabled = isClient;
-                                        if (isClient) {
-                                            areaSelect.value = ''; // Limpiar el valor si se convierte en cliente
-                                        } else {
-                                            areaSelect.value = '{{ $user->area_id }}';
-                                        }
-                                    ">
-                                <span class="ms-2 text-sm text-gray-600">{{ __('Asignar como Usuario Cliente') }}</span>
-                                </label>
-                            </div>
-                            
-                            <div class="pt-4 border-t border-gray-100 mt-6">
-                                <label for="is_active" class="inline-flex items-center">
-                                    <input type="hidden" name="is_active" value="0">
-                                    <input id="is_active" type="checkbox" 
-                                           class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" 
-                                           name="is_active" value="1" 
-                                           {{ old('is_active', $user->is_active) ? 'checked' : '' }}>
-                                    <span class="ms-2 text-sm text-gray-600">{{ __('Usuario Activo') }}</span>
-                                </label>
-                                <p class="mt-1 text-xs text-gray-500">
-                                    {{ __('Si se desmarca, el usuario no podrá iniciar sesión.') }}
-                                </p>
-                            </div>                            
-
-                            <div x-show="isClient" x-transition.opacity class="mt-4">
-                                <x-input-label :value="__('Carpetas Accesibles (para clientes)')" class="font-semibold mb-2" />
-                                <div class="border border-gray-300 rounded-md p-3 max-h-60 overflow-y-auto bg-white">
-                                    <p x-show="loadingFolders" class="text-sm text-gray-500">Cargando carpetas...</p>
-    
-                                    <ul class="space-y-1" x-show="!loadingFolders">
+                            <div x-show="isClient" class="h-full flex flex-col">
+                                <div class="flex items-center justify-between mb-6">
+                                    <h2 class="text-2xl font-bold text-[#2c3856]">Acceso a Carpetas</h2>
+                                    <span class="text-xs font-bold bg-orange-100 text-[#ff9c00] px-3 py-1 rounded-full uppercase">Modo Cliente</span>
+                                </div>
+                                <div class="flex-1 bg-white/50 rounded-2xl border border-white/60 p-6 overflow-y-auto custom-scrollbar shadow-inner">
+                                    <div x-show="loadingFolders" class="h-full flex flex-col items-center justify-center">
+                                        <div class="w-10 h-10 border-4 border-[#ff9c00] border-t-transparent rounded-full animate-spin mb-4"></div>
+                                        <p class="text-[#2c3856] font-bold text-xs uppercase tracking-widest">Sincronizando Archivos...</p>
+                                    </div>
+                                    <ul x-show="!loadingFolders" class="space-y-3">
                                         <template x-for="folder in folders" :key="folder.id">
-                                            <li x-data="{ currentFolder: folder }" x-init="$nextTick(() => { 
-                                                const template = document.getElementById('folder-item-template').content.cloneNode(true);
-                                                $el.appendChild(template);
-                                            })"></li>
+                                            <li x-data="{ currentFolder: folder }" x-init="$nextTick(() => { $el.appendChild(document.getElementById('tree-node').content.cloneNode(true)); })"></li>
                                         </template>
                                     </ul>
-
-                                    <template id="folder-item-template">
-                                        <div class="flex items-start">
-                                            <div class="flex items-center">
-                                                <template x-if="currentFolder.has_children">
-                                                    <button type="button" @click.prevent="toggleFolder(currentFolder)" class="mr-1 text-gray-500 hover:text-gray-700 focus:outline-none">
-                                                        <svg x-show="!currentFolder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                                                        <svg x-show="currentFolder.isOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                                    </button>
-                                                </template>
-                                                <template x-if="!currentFolder.has_children">
-                                                    <span class="mr-1 w-4 h-4 inline-block"></span>
-                                                </template>
-                                                <input type="checkbox" :id="'folder_' + currentFolder.id" :value="currentFolder.id" x-model="selectedFolderIds" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00] mr-2">
-                                                <label :for="'folder_' + currentFolder.id" x-text="currentFolder.name" class="text-sm text-gray-700 cursor-pointer"></label>
-                                            </div>
-                                        </div>
-                                        <ul x-show="currentFolder.isOpen" x-transition.opacity class="ml-6 mt-1 w-full space-y-1">
-                                            <template x-for="childFolder in currentFolder.children" :key="childFolder.id">
-                                                <li x-data="{ currentFolder: childFolder }" x-init="$nextTick(() => {
-                                                    const template = document.getElementById('folder-item-template').content.cloneNode(true);
-                                                    $el.appendChild(template);
-                                                })"></li>
-                                            </template>
-                                        </ul>
-                                    </template>
                                 </div>
+                                <template id="tree-node">
+                                    <div class="pl-4 border-l-2 border-gray-100/50">
+                                        <div class="flex items-center py-2 group">
+                                            <button type="button" @click="toggleFolder(currentFolder)" class="mr-2 text-gray-400 hover:text-[#ff9c00] transition-colors" x-show="currentFolder.has_children">
+                                                <svg class="w-5 h-5 transform transition-transform" :class="{'rotate-90': currentFolder.isOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                            </button>
+                                            <span class="w-7" x-show="!currentFolder.has_children"></span>
+                                            
+                                            <label class="flex items-center cursor-pointer flex-1">
+                                                <input type="checkbox" :value="currentFolder.id" x-model="selectedFolderIds" class="folder-check sr-only">
+                                                <div class="w-5 h-5 rounded border-2 border-gray-300 bg-white mr-3 flex items-center justify-center transition-all duration-200">
+                                                    <svg class="w-3 h-3 text-white opacity-0 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                                </div>
+                                                <div class="flex items-center">
+                                                    <svg class="w-5 h-5 text-[#ff9c00] mr-2 opacity-80" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+                                                    <span class="text-sm font-bold text-gray-600 group-hover:text-[#2c3856] transition-colors" x-text="currentFolder.name"></span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                        <div x-show="currentFolder.isOpen" x-collapse>
+                                            <ul class="mt-1">
+                                                <template x-for="childFolder in currentFolder.children" :key="childFolder.id">
+                                                    <li x-data="{ currentFolder: childFolder }" x-init="$nextTick(() => { $el.appendChild(document.getElementById('tree-node').content.cloneNode(true)); })"></li>
+                                                </template>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </template>
                                 <input type="hidden" name="accessible_folder_ids[]" :value="selectedFolderIds.join(',')">
-                                <p class="mt-1 text-xs text-gray-500">Selecciona las carpetas a las que este usuario cliente tendrá acceso.</p>
-                                <x-input-error :messages="$errors->get('accessible_folder_ids')" class="mt-2" />
+                            </div>
+
+                            <div x-show="!isClient" class="h-full flex flex-col items-center justify-center">
+                                <h2 class="text-2xl font-bold text-[#2c3856] mb-2">Accesos Transversales</h2>
+                                <p class="text-gray-500 mb-8 text-center max-w-md">Seleccione áreas adicionales a las que este usuario podrá acceder además de su área principal.</p>
+                                
+                                <div class="w-full max-w-3xl grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    @foreach($areas as $area)
+                                        <label class="cursor-pointer relative group">
+                                            <input type="checkbox" name="accessible_area_ids[]" value="{{ $area->id }}" 
+                                                   class="radio-tile sr-only" 
+                                                   {{ in_array($area->id, old('accessible_area_ids', $userAccessibleAreaIds ?? [])) ? 'checked' : '' }}>
+                                            <div class="p-4 rounded-xl border border-gray-200 bg-white transition-all duration-300 hover:shadow-lg relative overflow-hidden group-hover:-translate-y-1">
+                                                <span class="text-sm font-bold text-[#2c3856] relative z-10">{{ $area->name }}</span>
+                                                <div class="indicator w-4 h-4 rounded-full border border-gray-300 absolute top-2 right-2 flex items-center justify-center transition-all">
+                                                    <div class="w-2 h-2 bg-white rounded-full opacity-0"></div>
+                                                </div>
+                                                <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-[#2c3856] to-[#ff9c00] opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                                            </div>
+                                        </label>
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="col-span-1 md:col-span-2 mt-6 border-t pt-6">
-                        <h3 class="text-lg font-semibold text-[#2c3856] mb-4">{{ __('Acceso a Módulos (Sidebar)') }}</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            @foreach($availableModules as $key => $label)
-                                <div class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                                    <label for="module_{{ $key }}" class="flex items-center cursor-pointer w-full">
-                                        <input type="checkbox" 
-                                            id="module_{{ $key }}" 
-                                            name="visible_modules[]" 
-                                            value="{{ $key }}"
-                                            class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]"
-                                            {{-- Lógica para marcar check en Edit (usando old o valor base) --}}
-                                            {{ (isset($user) && $user->hasModuleAccess($key)) || (is_array(old('visible_modules')) && in_array($key, old('visible_modules'))) ? 'checked' : '' }}
-                                        >
-                                        <span class="ml-2 text-sm text-gray-700 font-medium">{{ $label }}</span>
+                        <div x-show="step === 4" x-transition:enter="transition ease-out duration-500 delay-100" x-transition:enter-start="opacity-0 translate-x-10" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-300 absolute" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-10" class="w-full h-full" id="step-4" style="display: none;">
+                            <div class="text-center mb-10">
+                                <h2 class="text-2xl font-bold text-[#2c3856]">Personalización de Interfaz</h2>
+                                <p class="text-gray-500">Active los módulos visibles en el sidebar del usuario</p>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                                @foreach($availableModules as $key => $label)
+                                    <label class="cursor-pointer relative group">
+                                        <input type="checkbox" name="visible_modules[]" value="{{ $key }}" class="peer sr-only" {{ (isset($user) && $user->hasModuleAccess($key)) || (is_array(old('visible_modules')) && in_array($key, old('visible_modules'))) ? 'checked' : '' }}>
+                                        <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm transition-all duration-300 peer-checked:bg-[#2c3856] peer-checked:border-[#2c3856] peer-checked:shadow-xl group-hover:scale-[1.02]">
+                                            <div class="flex justify-between items-start mb-4">
+                                                <div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 peer-checked:bg-white/10 peer-checked:text-[#ff9c00] transition-colors">
+                                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                                                </div>
+                                                <div class="w-5 h-5 rounded-full border-2 border-gray-200 peer-checked:border-[#ff9c00] peer-checked:bg-[#ff9c00] flex items-center justify-center">
+                                                    <svg class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                                </div>
+                                            </div>
+                                            <h3 class="font-bold text-gray-600 peer-checked:text-white text-lg transition-colors">{{ $label }}</h3>
+                                            <p class="text-xs text-gray-400 mt-1 peer-checked:text-gray-300">Visible en barra lateral</p>
+                                        </div>
                                     </label>
-                                </div>
-                            @endforeach
+                                @endforeach
+                            </div>
                         </div>
-                        <p class="mt-2 text-xs text-gray-500">Selecciona los módulos que aparecerán en la barra lateral izquierda del usuario.</p>
-                    </div>                    
 
-                    <div class="flex items-center justify-end mt-8 border-t pt-6">
-                        <a href="{{ route('admin.users.index') }}" class="text-sm text-gray-600 hover:text-gray-900 underline mr-6">
-                            Cancelar
-                        </a>
-                        <x-primary-button>
-                            {{ __('Actualizar Usuario') }}
-                        </x-primary-button>
                     </div>
-                </form>
-            </div>
+
+                    <div class="p-6 border-t border-white/50 flex justify-between items-center bg-white/30 backdrop-blur-md">
+                        <button type="button" x-show="step > 1" @click="prev()" class="px-6 py-3 rounded-xl text-[#2c3856] font-bold hover:bg-white/50 transition-colors flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            Anterior
+                        </button>
+                        <div x-show="step === 1">
+                            <a href="{{ route('admin.users.index') }}" class="text-xs font-bold text-gray-500 hover:text-[#2c3856] uppercase tracking-widest px-4">Cancelar</a>
+                        </div>
+                        
+                        <button type="button" x-show="step < maxSteps" @click="next()" class="px-8 py-3 bg-[#2c3856] text-white rounded-xl font-bold shadow-[0_10px_20px_-5px_rgba(44,56,86,0.4)] hover:shadow-[0_15px_30px_-5px_rgba(44,56,86,0.5)] hover:-translate-y-1 transition-all flex items-center">
+                            Siguiente
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+
+                        <button type="submit" x-show="step === maxSteps" class="px-8 py-3 bg-gradient-to-r from-[#ff9c00] to-[#ffb347] text-white rounded-xl font-bold shadow-[0_10px_20px_-5px_rgba(255,156,0,0.4)] hover:shadow-[0_15px_30px_-5px_rgba(255,156,0,0.5)] hover:-translate-y-1 transition-all flex items-center animate-pulse">
+                            Guardar Cambios
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </button>
+                    </div>
+
+                </div>
+            </form>
         </div>
     </div>
 </x-app-layout>
