@@ -135,6 +135,7 @@ class User extends Authenticatable
             'wms' => 'WMS',
             'customer_service' => 'Customer Service',
             'area_admin' => 'Panel Admin de Área',
+            'electronic_label' => 'Marbete Electrónico',
         ];
     }
     

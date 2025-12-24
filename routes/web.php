@@ -64,6 +64,7 @@ use App\Http\Controllers\FriendsAndFamily\FfReportController;
 use App\Http\Controllers\FriendsAndFamily\FfAdministrationController;
 use App\Http\Controllers\FriendsAndFamily\FfOrderController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\ElectronicLabelController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -772,6 +773,15 @@ Route::middleware(['auth'])->prefix('wms')->name('wms.')->group(function () {
     Route::get('reports/abc-analysis/export', [WMSReportController::class, 'exportAbcAnalysis'])->name('reports.abc-analysis.export');  
     Route::get('reports/slotting-heatmap', [WMSReportController::class, 'showSlottingHeatmap'])->name('reports.slotting-heatmap');
     Route::get('/api/search-products', [WMSProductController::class, 'apiSearchProducts'])->name('api.search-products');
+
+});
+
+Route::middleware(['auth'])->prefix('marbete-electronico')->name('electronic-label.')->group(function () {
+    
+    Route::get('/', [ElectronicLabelController::class, 'index'])->name('index');
+
+    Route::get('/create', [ElectronicLabelController::class, 'create'])->name('create');
+    Route::post('/', [ElectronicLabelController::class, 'store'])->name('store');
 
 });
 
