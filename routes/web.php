@@ -461,6 +461,7 @@ Route::middleware(['auth', 'not_client'])->group(function () {
 });
 
     Route::get('/tracking', [App\Http\Controllers\Rutas\TrackingController::class, 'index'])->name('tracking.index');
+    Route::get('/app/qr/faces/pages/mobile/validadorqr/{unique_identifier}', [App\Http\Controllers\ElectronicLabelController::class, 'validateQr'])->name('electronic-label.validate');
 
 Route::prefix('maniobrista')->name('maniobrista.')->group(function () {
     Route::get('/', [ManiobristaController::class, 'showLoginForm'])->name('login');
@@ -782,6 +783,10 @@ Route::middleware(['auth'])->prefix('marbete-electronico')->name('electronic-lab
 
     Route::get('/create', [ElectronicLabelController::class, 'create'])->name('create');
     Route::post('/', [ElectronicLabelController::class, 'store'])->name('store');
+    Route::get('/records', [ElectronicLabelController::class, 'records'])->name('records'); 
+    Route::get('/download-csv/{series}/{date}', [ElectronicLabelController::class, 'downloadCsv'])->name('download-csv');
+    Route::get('/batch/{series}/{date}', [ElectronicLabelController::class, 'showBatch'])->name('show-batch');
+    Route::delete('/batch/{series}/{date}', [ElectronicLabelController::class, 'destroyBatch'])->name('destroy-batch');    
 
 });
 
