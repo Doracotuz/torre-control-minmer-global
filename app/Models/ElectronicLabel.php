@@ -27,7 +27,8 @@ class ElectronicLabel extends Model
         'product_batch',
         'maker_name',
         'maker_rfc',
-        'user_id'
+        'user_id',
+        'created_at',
     ];
     
     protected $casts = [
