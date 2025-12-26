@@ -23,11 +23,12 @@ class ElectronicLabelController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'quantity' => 'required|integer|min:1|max:5000',
+            'quantity' => 'required|integer|min:1|max:1000000',
             'series' => 'required|string|size:2|alpha_num',
             'label_type' => 'required|string|max:255',
             'elaboration_date' => 'required|date',
             'label_batch' => 'required|string|max:255',
+            
             'product_name' => 'required|string|max:255',
             'product_type' => 'required|string|max:255',
             'alcohol_content' => 'required|numeric|between:0,100',
@@ -35,6 +36,7 @@ class ElectronicLabelController extends Controller
             'origin' => 'required|string|max:255',
             'packaging_date' => 'required|date',
             'product_batch' => 'required|string|max:255',
+
             'maker_name' => 'required|string|max:255',
             'maker_rfc' => 'required|string|max:13',
         ]);
@@ -42,8 +44,10 @@ class ElectronicLabelController extends Controller
         $series = $request->series;
         $quantity = $request->quantity;
         $createdCount = 0;
+        
+        $now = now(); 
 
-        DB::transaction(function () use ($request, $series, $quantity, &$createdCount) {
+        DB::transaction(function () use ($request, $series, $quantity, &$createdCount, $now) {
             
             $lastLabel = ElectronicLabel::where('series', $series)
                                         ->lockForUpdate()
@@ -81,6 +85,9 @@ class ElectronicLabelController extends Controller
 
                     'maker_name' => $request->maker_name,
                     'maker_rfc' => $request->maker_rfc,
+                    
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ]);
 
                 $createdCount++;
@@ -88,7 +95,7 @@ class ElectronicLabelController extends Controller
         });
 
         return redirect()->route('electronic-label.create')
-                         ->with('success', "¡Éxito! Se han generado {$createdCount} marbetes de la serie '{$series}' con la información registrada.");
+                         ->with('success', "¡Éxito! Se han generado {$createdCount} marbetes de la serie '{$series}'.");
     }
 
     public function records()   
