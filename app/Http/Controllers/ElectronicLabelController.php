@@ -23,7 +23,7 @@ class ElectronicLabelController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'quantity' => 'required|integer|min:1|max:1000000',
+            'quantity' => 'required|integer|min:1|max:500000',
             'series' => 'required|string|size:2|alpha_num',
             'label_type' => 'required|string|max:255',
             'elaboration_date' => 'required|date',

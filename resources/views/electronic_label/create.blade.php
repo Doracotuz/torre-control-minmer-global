@@ -52,14 +52,14 @@
                             
                             <div>
                                 <label class="input-label">Tipo de Marbete</label>
-                                <input type="text" name="label_type" required class="input-field" placeholder="Ej. Nacional / Importación">
+                                <input type="text" name="label_type" required class="input-field" placeholder="Ej. Marbete Nacional / Marbete Importado">
                             </div>
 
                             <div>
                                 <label class="input-label">Serie</label>
                                 <input type="text" name="series" id="series" x-model="series" maxlength="2" required 
                                     oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '')"
-                                    class="input-field uppercase tracking-widest font-bold" placeholder="Ej. AA">
+                                    class="input-field uppercase tracking-widest font-bold" placeholder="Ej. le">
                             </div>
 
                             <div>
@@ -74,7 +74,7 @@
 
                             <div class="md:col-span-2 bg-orange-50 p-4 rounded-xl border border-orange-100">
                                 <label class="input-label text-[#ff9c00]">Cantidad a Generar</label>
-                                <input type="number" name="quantity" min="1" max="5000" required class="input-field border-orange-200 focus:border-orange-400" placeholder="Número de folios">
+                                <input type="number" name="quantity" min="1" max="500000" required class="input-field border-orange-200 focus:border-orange-400" placeholder="Número de folios">
                             </div>
                         </div>
                     </div>
@@ -100,7 +100,7 @@
 
                             <div>
                                 <label class="input-label">Capacidad</label>
-                                <input type="text" name="capacity" required class="input-field" placeholder="Ej. 750 ml">
+                                <input type="text" name="capacity" required class="input-field" placeholder="Ej. 750">
                             </div>
 
                             <div>
