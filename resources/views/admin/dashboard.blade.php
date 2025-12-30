@@ -404,13 +404,15 @@
             </div>
 
             <div class="grid grid-cols-1 gap-6 mb-8">
-                 <div class="bento-card p-6 opacity-0 translate-y-4 stagger-animate">
-                    <div class="flex items-center justify-between mb-4">
+                <div class="bento-card p-6 opacity-0 translate-y-4 stagger-animate">
+                    <div class="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4">
                         <h3 class="text-xl font-extrabold text-[#2c3856]">Mapa de Calor (Intensidad por Hora)</h3>
-                        <div class="flex gap-2 text-xs font-bold">
-                            <span class="px-2 py-1 rounded bg-blue-50 text-[#2c3856]">Bajo</span>
-                            <span class="px-2 py-1 rounded bg-[#2c3856] text-white">Alto</span>
-                            <span class="px-2 py-1 rounded bg-[#ff9c00] text-white">Intenso</span>
+                        
+                        <div class="flex flex-wrap gap-2 text-[10px] uppercase font-bold tracking-wider">
+                            <span class="px-2 py-1 rounded text-white shadow-sm" style="background-color: #93c5fd; color: #1e3a8a;">Bajo</span>
+                            <span class="px-2 py-1 rounded text-white shadow-sm" style="background-color: #3b82f6;">Medio</span>
+                            <span class="px-2 py-1 rounded text-white shadow-sm" style="background-color: #2c3856;">Alto</span>
+                            <span class="px-2 py-1 rounded text-white shadow-sm" style="background-color: #ff9c00;">Intenso</span>
                         </div>
                     </div>
                     <div id="chart-heatmap" style="min-height: 300px;"></div>
@@ -436,7 +438,6 @@
                     setInterval(() => this.updateTime(), 1000);
                     this.fetchData();
                     
-                    // Comprobación de seguridad para GSAP
                     if (typeof gsap !== 'undefined') {
                         this.initAnimations();
                     } else {
@@ -490,7 +491,6 @@
 
                         this.recentActivities = data.recentActivities;
                         
-                        // Comprobación de seguridad para ApexCharts
                         if (typeof ApexCharts !== 'undefined') {
                             this.renderCharts(data);
                         } else {
@@ -524,72 +524,161 @@
                 },
 
                 renderCharts(data) {
+                    const vibrantPalette = [
+                        '#2c3856', '#ff9c00', '#10b981', '#ef4444', '#3b82f6', 
+                        '#8b5cf6', '#ec4899', '#f59e0b', '#6366f1', '#14b8a6', 
+                        '#84cc16', '#f43f5e', '#06b6d4', '#d946ef', '#eab308', 
+                        '#0ea5e9', '#a855f7', '#fb7185', '#22c55e', '#64748b'
+                    ];
+
                     const commonOptions = {
                         chart: {
                             fontFamily: 'Montserrat, sans-serif',
-                            toolbar: { show: false },
-                            background: 'transparent'
+                            background: 'transparent',
+                            toolbar: {
+                                show: true,
+                                tools: {
+                                    download: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+                                    selection: false, zoom: false, zoomin: false, zoomout: false, pan: false, reset: false
+                                }
+                            },
+                            animations: { enabled: true }
                         },
-                        colors: ['#2c3856', '#ff9c00', '#4a5f8a', '#ffb340', '#666666'],
-                        dataLabels: { enabled: false },
-                        theme: { mode: 'light' }
+                        theme: { mode: 'light' },
+                        dataLabels: {
+                            enabled: true,
+                            style: {
+                                fontSize: '11px',
+                                fontFamily: 'Montserrat, sans-serif',
+                                fontWeight: 700,
+                                colors: ['#fff']
+                            },
+                            background: {
+                                enabled: true,
+                                foreColor: '#fff',
+                                padding: 6,
+                                borderRadius: 6,
+                                borderWidth: 0,
+                                opacity: 0.9,
+                                dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.25 }
+                            },
+                            dropShadow: { enabled: false }
+                        },
+                        tooltip: {
+                            theme: 'light',
+                            style: { fontSize: '12px', fontFamily: 'Montserrat, sans-serif' },
+                            y: {
+                                formatter: function(val) {
+                                    return new Intl.NumberFormat('es-MX').format(val)
+                                }
+                            },
+                            marker: { show: true }
+                        }
                     };
 
                     if (data.actionData) {
                         new ApexCharts(document.querySelector("#chart-activity"), {
                             ...commonOptions,
-                            series: [{ name: 'Acciones', data: data.actionData.map(d => d.total) }],
-                            chart: { type: 'area', height: 350, toolbar: { show: false } },
-                            stroke: { curve: 'smooth', width: 3 },
-                            fill: {
-                                type: 'gradient',
-                                gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.1, stops: [0, 90, 100] }
+                            series: [{ name: 'Eventos', data: data.actionData.map(d => d.y) }],
+                            chart: { type: 'bar', height: 350, toolbar: { show: true } },
+                            plotOptions: {
+                                bar: { borderRadius: 8, columnWidth: '50%', distributed: true, dataLabels: { position: 'top' } }
                             },
-                            xaxis: { 
-                                categories: data.actionData.map(d => d.action),
-                                labels: { style: { colors: '#666', fontSize: '10px' } } 
+                            colors: vibrantPalette,
+                            xaxis: {
+                                categories: data.actionData.map(d => d.x),
+                                labels: { style: { fontSize: '11px', fontWeight: 600, colors: '#64748b' }, rotate: -45 },
+                                axisBorder: { show: false }, axisTicks: { show: false }
                             },
-                            grid: { borderColor: 'rgba(0,0,0,0.05)' }
+                            yaxis: { labels: { style: { colors: '#94a3b8' } } },
+                            dataLabels: {
+                                enabled: true, offsetY: -25, style: { colors: ['#2c3856'] }, background: { enabled: false }
+                            },
+                            legend: { show: false },
+                            grid: { borderColor: '#f1f5f9', strokeDashArray: 4 }
                         }).render();
                     }
 
                     if (data.userTypeData && data.userTypeData.length > 0) {
-                         new ApexCharts(document.querySelector("#chart-user-types"), {
+                        const totalUsers = data.userTypeData.reduce((acc, curr) => acc + curr.y, 0);
+                        new ApexCharts(document.querySelector("#chart-user-types"), {
                             ...commonOptions,
-                            series: data.userTypeData.map(d => d.total_actions),
-                            labels: data.userTypeData.map(d => d.user_type_label),
-                            chart: { type: 'donut', height: '100%' },
-                            plotOptions: { pie: { donut: { size: '65%' } } },
-                            legend: { position: 'bottom', fontSize: '12px' },
+                            series: data.userTypeData.map(d => d.y),
+                            labels: data.userTypeData.map(d => d.x),
+                            chart: { type: 'donut', height: 350 },
+                            colors: ['#2c3856', '#3b82f6', '#ff9c00', '#94a3b8'],
+                            plotOptions: {
+                                pie: {
+                                    donut: {
+                                        size: '75%',
+                                        labels: {
+                                            show: true,
+                                            name: { show: true, fontSize: '14px', fontWeight: 600, color: '#64748b', offsetY: -10 },
+                                            value: { show: true, fontSize: '30px', fontWeight: 900, color: '#2c3856', offsetY: 10 },
+                                            total: {
+                                                show: true, showAlways: true, label: 'TOTAL', fontSize: '11px', fontWeight: 700, color: '#94a3b8',
+                                                formatter: function () { return totalUsers; }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            legend: { position: 'bottom', markers: { radius: 12 }, itemMargin: { horizontal: 10, vertical: 5 } },
                             stroke: { show: false }
                         }).render();
                     }
 
                     if (data.creationDeletion) {
-                        const series = Object.values(data.creationDeletion);
-                        const labels = Object.keys(data.creationDeletion);
+                        const series = Array.isArray(data.creationDeletion) ? data.creationDeletion : Object.values(data.creationDeletion);
+                        const labels = Array.isArray(data.creationDeletion) ? [] : Object.keys(data.creationDeletion);
+                        const totalOps = series.reduce((a, b) => a + b, 0);
+
                         new ApexCharts(document.querySelector("#chart-creation-deletion"), {
                             ...commonOptions,
                             series: series.length ? series : [0],
                             labels: labels.length ? labels : ['Sin datos'],
-                            chart: { type: 'donut', height: '100%' },
-                            colors: ['#10b981', '#ef4444'], 
-                            plotOptions: { pie: { donut: { size: '65%' } } },
-                            legend: { position: 'bottom', fontSize: '12px' },
+                            chart: { type: 'donut', height: 350 },
+                            colors: ['#10b981', '#ef4444'],
+                            plotOptions: {
+                                pie: {
+                                    donut: {
+                                        size: '75%',
+                                        labels: {
+                                            show: true,
+                                            total: { show: true, label: 'OPS', fontSize: '11px', fontWeight: 700, color: '#94a3b8', formatter: () => totalOps }
+                                        }
+                                    }
+                                }
+                            },
+                            legend: { position: 'bottom', markers: { radius: 12 } },
                             stroke: { show: false }
                         }).render();
                     }
 
                     if (data.fileTypes && data.fileTypes.length > 0) {
-                         new ApexCharts(document.querySelector("#chart-file-types"), {
+                        const totalFiles = data.fileTypes.reduce((acc, curr) => acc + curr.y, 0);
+
+                        new ApexCharts(document.querySelector("#chart-file-types"), {
                             ...commonOptions,
-                            series: data.fileTypes.map(d => d.total),
-                            labels: data.fileTypes.map(d => d.file_extension.toUpperCase()),
-                            chart: { type: 'polarArea', height: 250 },
+                            series: data.fileTypes.map(d => d.y),
+                            labels: data.fileTypes.map(d => (d.x ? d.x.toString().toUpperCase() : 'OTROS')),
+                            colors: vibrantPalette,
+                            chart: { type: 'polarArea', height: 320 },
                             fill: { opacity: 0.9 },
-                            stroke: { width: 1, colors: ['#fff'] },
+                            stroke: { width: 2, colors: ['#fff'] },
                             yaxis: { show: false },
-                            legend: { position: 'bottom', fontSize: '10px' }
+                            legend: { position: 'right', offsetY: 20, fontSize: '11px', markers: { radius: 10 } },
+                            plotOptions: {
+                                polarArea: { rings: { strokeWidth: 0 }, spokes: { strokeWidth: 0 } }
+                            },
+                            tooltip: {
+                                y: {
+                                    formatter: function(val) {
+                                        const percent = totalFiles > 0 ? ((val / totalFiles) * 100).toFixed(1) : 0;
+                                        return val + " (" + percent + "%)";
+                                    }
+                                }
+                            }
                         }).render();
                     }
 
@@ -598,50 +687,89 @@
                             x: i.toString().padStart(2, '0') + ':00',
                             y: data.activityByHour[i] || 0
                         }));
+                        const values = heatmapData.map(d => d.y);
+                        const maxVal = Math.max(...values);
+                        const step1 = maxVal > 0 ? Math.ceil(maxVal * 0.25) : 1; 
+                        const step2 = maxVal > 0 ? Math.ceil(maxVal * 0.50) : 2; 
+                        const step3 = maxVal > 0 ? Math.ceil(maxVal * 0.80) : 3;
 
                         new ApexCharts(document.querySelector("#chart-heatmap"), {
                             ...commonOptions,
                             series: [{ name: 'Actividad', data: heatmapData }],
-                            chart: { type: 'heatmap', height: 300, toolbar: {show: false} },
+                            chart: { type: 'heatmap', height: 350, toolbar: { show: false } },
+                            dataLabels: { enabled: false },
                             plotOptions: {
                                 heatmap: {
                                     shadeIntensity: 0.5,
                                     radius: 6,
+                                    useFillColorAsStroke: true,
                                     colorScale: {
                                         ranges: [
                                             { from: 0, to: 0, color: '#f3f4f6', name: 'Inactivo' },
-                                            { from: 1, to: 10, color: '#93c5fd', name: 'Bajo' },
-                                            { from: 11, to: 50, color: '#2c3856', name: 'Medio' },
-                                            { from: 51, to: 1000, color: '#ff9c00', name: 'Alto' }
+                                            { from: 1, to: step1, color: '#93c5fd', name: `Bajo (1-${step1})` },
+                                            { from: step1 + 1, to: step2, color: '#3b82f6', name: `Medio (${step1 + 1}-${step2})` },
+                                            { from: step2 + 1, to: step3, color: '#2c3856', name: `Alto (${step2 + 1}-${step3})` },
+                                            { from: step3 + 1, to: maxVal + 100, color: '#ff9c00', name: `Intenso (> ${step3})` } 
                                         ]
                                     }
                                 }
                             },
-                            dataLabels: { enabled: false }
+                            stroke: { width: 1, colors: ['#fff'] },
+                            tooltip: {
+                                y: {
+                                    formatter: function(val) {
+                                        return val + " acciones";
+                                    }
+                                }
+                            }
                         }).render();
                     }
-                    
+
                     if(data.foldersByArea) {
-                         new ApexCharts(document.querySelector("#chart-area-volume"), {
+                        new ApexCharts(document.querySelector("#chart-area-volume"), {
                             ...commonOptions,
-                            series: [{ name: 'Carpetas', data: data.foldersByArea.map(d => d.total_folders) }],
-                            chart: { height: 250, type: 'bar', toolbar: {show: false} },
-                            plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
-                            xaxis: { categories: data.foldersByArea.map(d => d.name), labels: { style: { fontSize: '9px' } } },
-                            colors: ['#2c3856']
-                         }).render();
+                            series: [{ name: 'Total Carpetas', data: data.foldersByArea.map(d => d.y) }],
+                            chart: { height: 300, type: 'bar', toolbar: { show: false } },
+                            colors: ['#2c3856'],
+                            plotOptions: {
+                                bar: { borderRadius: 4, columnWidth: '65%', dataLabels: { position: 'top' } }
+                            },
+                            xaxis: {
+                                categories: data.foldersByArea.map(d => d.x),
+                                labels: { rotate: -45, style: { fontSize: '10px', fontWeight: 600 } },
+                                axisBorder: { show: false }, axisTicks: { show: false }
+                            },
+                            dataLabels: {
+                                enabled: true, offsetY: -20, style: { fontSize: '11px', colors: ["#2c3856"] }, background: { enabled: false }
+                            },
+                            grid: { show: false }
+                        }).render();
                     }
 
                     if (data.topUsers) {
                         new ApexCharts(document.querySelector("#chart-top-users"), {
                             ...commonOptions,
                             series: [{ name: 'Acciones', data: data.topUsers.map(d => d.total_actions) }],
-                            chart: { type: 'bar', height: 250, toolbar: {show: false} },
-                            plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '50%' } },
+                            chart: { type: 'bar', height: 300, toolbar: { show: false } },
+                            plotOptions: {
+                                bar: {
+                                    horizontal: true, barHeight: '60%', borderRadius: 6,
+                                    colors: { backgroundBarColors: ['#f8fafc'], backgroundBarRadius: 6 },
+                                    dataLabels: { position: 'bottom' }
+                                }
+                            },
                             colors: ['#ff9c00'],
-                            xaxis: { labels: { show: false } },
-                            yaxis: { labels: { style: { fontSize: '11px', fontWeight: 600 } } },
-                            dataLabels: { enabled: true, textAnchor: 'start', style: { colors: ['#fff'] }, offsetX: 0 }
+                            xaxis: {
+                                categories: data.topUsers.map(d => d.name),
+                                labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false }
+                            },
+                            yaxis: { labels: { style: { fontSize: '12px', fontWeight: 600, colors: '#2c3856' } } },
+                            dataLabels: {
+                                enabled: true, textAnchor: 'start', style: { colors: ['#2c3856'], fontSize: '12px', fontWeight: 800 },
+                                background: { enabled: false }, formatter: function (val) { return "  " + val + " acc."; }, offsetX: 0
+                            },
+                            grid: { show: false },
+                            tooltip: { enabled: false }
                         }).render();
                     }
                 }

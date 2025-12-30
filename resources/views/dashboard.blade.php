@@ -464,7 +464,7 @@
                         theme: { mode: 'light' }
                     };
 
-                    if(this.data.foldersByArea.length) {
+                    if(this.data.foldersByArea && this.data.foldersByArea.length > 0) {
                         new ApexCharts(document.querySelector("#chart-folders"), {
                             ...common,
                             series: [{ data: this.data.foldersByArea }],
@@ -473,30 +473,43 @@
                         }).render();
                     }
 
-                    if(Object.keys(this.data.fileTypes).length) {
+                    if(this.data.fileTypes && this.data.fileTypes.length > 0) {
                         new ApexCharts(document.querySelector("#chart-files"), {
                             ...common,
-                            series: Object.values(this.data.fileTypes),
-                            labels: Object.keys(this.data.fileTypes).map(k => k.toUpperCase()),
+                            series: this.data.fileTypes.map(d => d.y),
+                            labels: this.data.fileTypes.map(d => d.x.toUpperCase()),
                             chart: { type: 'donut', height: 250 },
                             legend: { position: 'bottom', fontSize: '10px' },
                             plotOptions: { pie: { donut: { size: '65%' } } }
                         }).render();
                     }
 
-                    if(Object.keys(this.data.userTypeData).length) {
+                    if(this.data.userTypeData && this.data.userTypeData.length > 0) {
                         new ApexCharts(document.querySelector("#chart-users-radial"), {
                             ...common,
-                            series: Object.values(this.data.userTypeData),
-                            labels: Object.keys(this.data.userTypeData),
+                            series: this.data.userTypeData.map(d => d.y),
+                            labels: this.data.userTypeData.map(d => d.x),
                             chart: { type: 'radialBar', height: 280 },
                             colors: ['#2c3856', '#ff9c00', '#10b981', '#666666'], 
-                            plotOptions: { radialBar: { dataLabels: { total: { show: true, label: 'TOTAL', color: '#2c3856' } } } }
+                            plotOptions: { 
+                                radialBar: { 
+                                    dataLabels: { 
+                                        total: { 
+                                            show: true, 
+                                            label: 'TOTAL', 
+                                            color: '#2c3856',
+                                            formatter: function (w) {
+                                                return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                                            }
+                                        } 
+                                    } 
+                                } 
+                            }
                         }).render();
                     }
 
                     @if(Auth::user()->isSuperAdmin())
-                        if(this.data.usersByArea.length) {
+                        if(this.data.usersByArea && this.data.usersByArea.length > 0) {
                             new ApexCharts(document.querySelector("#chart-users-bar"), {
                                 ...common,
                                 series: [{ name: 'Usuarios', data: this.data.usersByArea.map(i => i.count) }],

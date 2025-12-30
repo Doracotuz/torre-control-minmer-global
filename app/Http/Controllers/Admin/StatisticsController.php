@@ -318,14 +318,17 @@ class StatisticsController extends Controller
         $startDate = now()->subDays(30)->format('Y-m-d');
         $endDate = now()->format('Y-m-d');
 
-        $actionData = ActivityLog::select('action', DB::raw('count(*) as total'))
+        // 1. Action Data (Ya estaba bien, pero aseguramos formato x, y)
+        $actionData = ActivityLog::select('action as x', DB::raw('count(*) as y'))
             ->whereDate('created_at', '>=', $startDate)
             ->whereDate('created_at', '<=', $endDate)
             ->groupBy('action')
-            ->orderByDesc('total')
+            ->orderByDesc('y')
             ->limit(10)
             ->get();
 
+        // 2. CORRECCIÓN: Usuarios vs Tipo
+        // Antes usabas pluck (devuelve objeto clave-valor). Ahora mapeamos a [{x: 'Label', y: Value}]
         $userTypeData = ActivityLog::select(DB::raw('CASE
             WHEN users.is_area_admin = 1 AND areas.name = "Administración" THEN "Super Admin"
             WHEN users.is_area_admin = 1 THEN "Admin de Área"
@@ -337,21 +340,28 @@ class StatisticsController extends Controller
             ->whereDate('activity_logs.created_at', '>=', $startDate)
             ->whereDate('activity_logs.created_at', '<=', $endDate)
             ->groupBy('user_type_label')
-            ->pluck('total_actions', 'user_type_label');
+            ->get()
+            ->map(function($item) {
+                return ['x' => $item->user_type_label, 'y' => $item->total_actions];
+            });
 
+        // 3. CORRECCIÓN: Volumen de Carpetas
+        // Ya tenías 'as x' y 'as y', pero aseguramos el get() limpio.
         $foldersByArea = Folder::select('areas.name as x', DB::raw('count(folders.id) as y'))
             ->join('areas', 'folders.area_id', '=', 'areas.id')
             ->groupBy('areas.name')
             ->orderByDesc('y')
             ->get();
 
-        $filesByArea = FileLink::select('areas.name', DB::raw('count(file_links.id) as total_files'))
+        // 4. Estandarización: Archivos por Área (Faltaban alias x e y, lo que podía romper gráficas genéricas)
+        $filesByArea = FileLink::select('areas.name as x', DB::raw('count(file_links.id) as y'))
             ->join('folders', 'file_links.folder_id', '=', 'folders.id')
             ->join('areas', 'folders.area_id', '=', 'areas.id')
             ->where('file_links.type', 'file')
             ->groupBy('areas.name')
             ->get();
             
+        // ... (Tu lógica de creationDeletion se mantiene igual, suele ser para gráficas custom) ...
         $creationDeletion = ActivityLog::select('action_key', DB::raw('count(*) as total'))
             ->whereDate('created_at', '>=', $startDate)
             ->whereDate('created_at', '<=', $endDate)
@@ -393,6 +403,9 @@ class StatisticsController extends Controller
             ->orderByDesc('count')
             ->get();
 
+        // 5. CORRECCIÓN: Tipos de Archivo
+        // Antes usabas toArray() sobre una colección con claves string (JSON Object).
+        // Ahora transformamos a lista de objetos [{x: 'ext', y: count}] y usamos values() para reiniciar índices.
         $fileTypes = FileLink::where('type', 'file')
             ->whereNotNull('path')
             ->get()
@@ -401,11 +414,12 @@ class StatisticsController extends Controller
                 return empty($ext) ? 'otros' : $ext;
             })
             ->countBy()
+            ->map(function ($count, $ext) {
+                return ['x' => $ext, 'y' => $count];
+            })
             ->sortDesc()
             ->take(5)
-            ->toArray();
-
-        // Log::info("Total fileTypes encontrados: " . json_encode($fileTypes));
+            ->values(); // Importante: values() convierte el array asociativo en indexado para JSON
 
         $topUsers = ActivityLog::select('users.name', DB::raw('count(*) as total_actions'))
             ->join('users', 'activity_logs.user_id', '=', 'users.id')
@@ -423,13 +437,13 @@ class StatisticsController extends Controller
             'totalFileLinks' => $totalFileLinks,
             'recentActivities' => $recentActivities,
             'actionData' => $actionData,
-            'userTypeData' => $userTypeData,
-            'foldersByArea' => $foldersByArea,
-            'filesByArea' => $filesByArea,
+            'userTypeData' => $userTypeData,     // Corregido
+            'foldersByArea' => $foldersByArea,   // Corregido
+            'filesByArea' => $filesByArea,       // Estandarizado
             'creationDeletion' => $creationDeletion,
             'activityByHour' => $activityByHour,
             'usersByArea' => $usersByArea,
-            'fileTypes' => $fileTypes,
+            'fileTypes' => $fileTypes,           // Corregido
             'topUsers' => $topUsers,
         ]);
     }
