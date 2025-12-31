@@ -1,90 +1,189 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Dashboard de Rutas') }}
-        </h2>
+    <x-slot name="head">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=Raleway:wght@700;800;900&display=swap" rel="stylesheet">
+        
+        <style>
+            .font-brand-heading { font-family: 'Raleway', sans-serif; }
+            .font-brand-body { font-family: 'Montserrat', sans-serif; }
+            .animate-enter { animation: enter 0.6s ease-out forwards; opacity: 0; transform: translateY(20px); }
+            .delay-100 { animation-delay: 0.1s; }
+            .delay-200 { animation-delay: 0.2s; }
+            .delay-300 { animation-delay: 0.3s; }
+            
+            @keyframes enter {
+                to { opacity: 1; transform: translateY(0); }
+            }
+
+            .glass-card {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+        </style>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <x-slot name="header">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="font-brand-heading font-extrabold text-3xl text-[#2c3856] leading-tight tracking-tight">
+                    CONTROL TOWER <span class="text-[#ff9c00]"> TRANSPORTES</span>
+                </h2>
+                <p class="font-brand-body text-sm text-[#666666] mt-1">Visión estratégica de operaciones en tiempo real</p>
+            </div>
+            <div class="hidden sm:flex items-center space-x-2 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100">
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span class="text-xs font-brand-body font-bold text-[#2c3856]">SISTEMA ONLINE</span>
+            </div>
+        </div>
+    </x-slot>
 
+    <div class="py-10 min-h-screen font-brand-body">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
 
-            
-            <div class="mb-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <a href="{{ route('rutas.plantillas.index') }}" class="block p-6 bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-xl hover:bg-gray-50 transition-all duration-300 transform hover:-translate-y-1">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-full bg-[#ff9c00] text-white mr-4">
-                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m0 0v2.25m0-2.25h1.5m-1.5 0H5.25m11.25-8.25v2.25m0-2.25h-1.5m1.5 0H12m0 0v2.25m0-2.25V6.75m0 0H9m12 6.75h-1.5m1.5 0v-2.25m0 2.25H12m0 0H9m12 6.75h-1.5m1.5 0v-2.25m0 2.25H12m0 0H9m-3.75 0H5.25m0 0V9.75M5.25 12h1.5m0 0V9.75m0 0H5.25m3.75 0H9m-3.75 0H5.25m0 0h1.5m3 0h1.5m-1.5 0H9m-3.75 0H9" /></svg>
-                        </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-enter">
+                
+                <a href="{{ route('rutas.plantillas.index') }}" class="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg border-l-4 border-[#ff9c00] transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#ff9c00]/20">
+                    <div class="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-[#ff9c00] opacity-10 transition-transform group-hover:scale-150"></div>
+                    <div class="flex items-center justify-between relative z-10">
                         <div>
-                            <h5 class="mb-1 text-xl font-bold tracking-tight text-[#2c3856]">Gestión de Rutas</h5>
-                            <p class="font-normal text-gray-600 text-sm">Crear, editar y eliminar plantillas de rutas.</p>
+                            <p class="text-sm font-bold text-[#666666] uppercase tracking-wider mb-1">Planeación</p>
+                            <h3 class="text-2xl font-brand-heading font-extrabold text-[#2c3856]">Gestión de Rutas</h3>
+                            <p class="text-xs text-gray-500 mt-2 font-medium">Administrar plantillas maestras</p>
+                        </div>
+                        <div class="h-12 w-12 rounded-xl bg-[#fff5e0] text-[#ff9c00] flex items-center justify-center shadow-sm">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 01-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
                         </div>
                     </div>
                 </a>
-                
-                <a href="{{ route('rutas.asignaciones.index') }}" class="block p-6 bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-xl hover:bg-gray-50 transition-all duration-300 transform hover:-translate-y-1">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-full bg-[#2c3856] text-white mr-4">
-                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
-                        </div>
+
+                <a href="{{ route('rutas.asignaciones.index') }}" class="group relative overflow-hidden rounded-2xl bg-[#2c3856] p-6 shadow-lg border border-[#2c3856] transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
+                    <div class="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white opacity-5 transition-transform group-hover:scale-150"></div>
+                    <div class="flex items-center justify-between relative z-10">
                         <div>
-                            <h5 class="mb-1 text-xl font-bold tracking-tight text-[#2c3856]">Asignaciones</h5>
-                            <p class="font-normal text-gray-600 text-sm">Asignar guías y facturas a las rutas planeadas.</p>
+                            <p class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-1">Operación</p>
+                            <h3 class="text-2xl font-brand-heading font-extrabold text-white">Asignaciones</h3>
+                            <p class="text-xs text-gray-300 mt-2 font-medium">Despacho de guías y facturas</p>
+                        </div>
+                        <div class="h-12 w-12 rounded-xl bg-white/10 text-white flex items-center justify-center backdrop-blur-sm">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
                         </div>
                     </div>
                 </a>
-                
-                <a href="{{ route('rutas.monitoreo.index') }}" class="block p-6 bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-xl hover:bg-gray-50 transition-all duration-300 transform hover:-translate-y-1">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-full bg-[#666666] text-white mr-4">
-                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                        </div>
+
+                <a href="{{ route('rutas.monitoreo.index') }}" class="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg border-l-4 border-[#666666] transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
+                    <div class="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-[#666666] opacity-10 transition-transform group-hover:scale-150"></div>
+                    <div class="flex items-center justify-between relative z-10">
                         <div>
-                            <h5 class="mb-1 text-xl font-bold tracking-tight text-[#2c3856]">Monitoreo</h5>
-                            <p class="font-normal text-gray-600 text-sm">Visualizar rutas activas y eventos en tiempo real.</p>
+                            <p class="text-sm font-bold text-[#666666] uppercase tracking-wider mb-1">Control</p>
+                            <h3 class="text-2xl font-brand-heading font-extrabold text-[#2c3856]">Monitoreo en Vivo</h3>
+                            <p class="text-xs text-gray-500 mt-2 font-medium">Tracking y eventos críticos</p>
+                        </div>
+                        <div class="h-12 w-12 rounded-xl bg-gray-100 text-[#2c3856] flex items-center justify-center shadow-sm">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                         </div>
                     </div>
                 </a>
             </div>
             
-            <div class="bg-white p-4 rounded-lg shadow-md mb-6">
-                <form action="{{ route('rutas.dashboard') }}" method="GET" class="flex flex-col sm:flex-row items-center gap-4">
-                    <div>
-                        <label for="start_date" class="block text-sm font-medium text-gray-700">Fecha de inicio</label>
-                        <input type="date" name="start_date" id="start_date" value="{{ request('start_date', $startDate) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                    </div>
-                    <div>
-                        <label for="end_date" class="block text-sm font-medium text-gray-700">Fecha de fin</label>
-                        <input type="date" name="end_date" id="end_date" value="{{ request('end_date', $endDate) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                    </div>
-                    <div class="self-end">
-                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#2c3856] hover:bg-[#1a2b41] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            Filtrar
+            <div class="animate-enter delay-100 bg-white rounded-xl shadow-md border border-gray-100 p-1">
+                <form action="{{ route('rutas.dashboard') }}" method="GET" class="flex flex-col lg:flex-row items-end lg:items-center justify-between gap-4 p-4">
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 w-full lg:w-auto items-center">
+                        <div class="flex items-center gap-2 text-[#2c3856]">
+                            <svg class="w-5 h-5 text-[#ff9c00]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            <span class="font-bold text-sm uppercase">Rango de Datos:</span>
+                        </div>
+                        
+                        <div class="relative group">
+                            <input type="date" name="start_date" value="{{ request('start_date', $startDate) }}" 
+                                class="block w-full pl-3 pr-10 py-2 text-sm border-gray-200 rounded-lg focus:ring-[#ff9c00] focus:border-[#ff9c00] bg-gray-50 group-hover:bg-white transition-colors cursor-pointer">
+                        </div>
+                        <span class="text-gray-400 font-bold">-</span>
+                        <div class="relative group">
+                            <input type="date" name="end_date" value="{{ request('end_date', $endDate) }}" 
+                                class="block w-full pl-3 pr-10 py-2 text-sm border-gray-200 rounded-lg focus:ring-[#ff9c00] focus:border-[#ff9c00] bg-gray-50 group-hover:bg-white transition-colors cursor-pointer">
+                        </div>
+                        
+                        <button type="submit" class="w-full sm:w-auto inline-flex justify-center items-center px-6 py-2 border border-transparent text-sm font-bold rounded-lg text-white bg-[#2c3856] hover:bg-[#1a2b41] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2c3856] transition-all shadow-md hover:shadow-lg">
+                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                            Filtrar Datos
                         </button>
                     </div>
-                    <div class="self-end border-l pl-4 ml-4">
-                        <a href="{{ route('rutas.dashboard.export', ['start_date' => request('start_date', $startDate), 'end_date' => request('end_date', $endDate)]) }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                            Exportar a CSV
+
+                    <div class="flex items-center gap-3 w-full lg:w-auto justify-end border-t lg:border-t-0 pt-4 lg:pt-0 border-gray-100">
+                        <a href="{{ route('rutas.dashboard.export', ['start_date' => request('start_date', $startDate), 'end_date' => request('end_date', $endDate)]) }}" 
+                           class="inline-flex items-center px-4 py-2 border border-gray-200 text-xs font-bold uppercase rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:text-[#2c3856] transition-colors">
+                            <svg class="w-4 h-4 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            CSV General
                         </a>
-                        <a href="{{ route('rutas.dashboard.exportTiempos', ['start_date' => request('start_date', $startDate), 'end_date' => request('end_date', $endDate)]) }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                            Reporte de Tiempos
+                        <a href="{{ route('rutas.dashboard.exportTiempos', ['start_date' => request('start_date', $startDate), 'end_date' => request('end_date', $endDate)]) }}" 
+                           class="inline-flex items-center px-4 py-2 border border-gray-200 text-xs font-bold uppercase rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:text-[#2c3856] transition-colors">
+                            <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            Rep. Tiempos
                         </a>
                     </div>
                 </form>
             </div>       
-                 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-lg shadow-md col-span-1 min-h-[350px]"><canvas id="chart1"></canvas></div>
-                <div class="bg-white p-6 rounded-lg shadow-md col-span-1"><canvas id="chart2"></canvas></div>
-                <div class="bg-white p-6 rounded-lg shadow-md col-span-1"><canvas id="chart3"></canvas></div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-enter delay-200">
+                
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 col-span-1 lg:col-span-2">
+                    <h4 class="font-brand-heading text-lg text-[#2c3856] font-bold mb-4 border-b border-gray-100 pb-2">Distribución de Rutas</h4>
+                    <div class="relative h-64 w-full">
+                        <canvas id="chart1"></canvas>
+                    </div>
+                </div>
 
-                <div class="bg-white p-6 rounded-lg shadow-md col-span-1 min-h-[350px]"><canvas id="chart4"></canvas></div>
-                <div class="bg-white p-6 rounded-lg shadow-md col-span-1"><canvas id="chart5"></canvas></div>
-                <div class="bg-white p-6 rounded-lg shadow-md col-span-1"><canvas id="chart6"></canvas></div>
-
-                <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-3min-h-[600px]"><canvas id="chart7"></canvas></div>
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 col-span-1 flex flex-col justify-center">
+                    <h4 class="font-brand-heading text-lg text-[#2c3856] font-bold mb-2 text-center">Salud de Guías</h4>
+                    <div class="relative h-56 w-full flex justify-center">
+                        <canvas id="chart2"></canvas>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <span class="text-xs text-gray-400 uppercase tracking-widest font-bold">Efectividad Global</span>
+                    </div>
+                </div>
             </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-enter delay-300">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-md border border-gray-100 col-span-1 lg:col-span-2">
+                    <h5 class="font-brand-heading text-base text-[#666666] font-bold mb-3">Cobertura por Región</h5>
+                    <div class="h-48"><canvas id="chart3"></canvas></div>
+                </div>
+
+                <div class="bg-[#2c3856] p-5 rounded-2xl shadow-md border border-gray-600 col-span-1 text-white">
+                    <h5 class="font-brand-heading text-base text-white font-bold mb-3">Tipificación de Eventos</h5>
+                    <div class="h-48"><canvas id="chart4"></canvas></div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-md border border-gray-100 col-span-1">
+                    <h5 class="font-brand-heading text-base text-[#666666] font-bold mb-3">Status Entregas</h5>
+                    <div class="h-48 flex justify-center"><canvas id="chart6"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-enter delay-300">
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 col-span-1">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="font-brand-heading text-lg text-[#2c3856] font-bold">Top Operadores</h4>
+                        <span class="px-2 py-1 bg-[#fff5e0] text-[#ff9c00] text-xs font-bold rounded">MVP</span>
+                    </div>
+                    <div class="h-64"><canvas id="chart5"></canvas></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 col-span-1 lg:col-span-2 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-[#2c3856] opacity-5 rounded-bl-full -mr-10 -mt-10"></div>
+                    <h4 class="font-brand-heading text-lg text-[#2c3856] font-bold mb-4">Tendencia de Productividad (7 Días)</h4>
+                    <div class="h-64"><canvas id="chart7"></canvas></div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -92,67 +191,195 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const colorNaranja = 'rgba(255, 156, 0, 0.6)';
-        const colorAzul = 'rgba(44, 60, 86, 0.6)';
-        const colorGris = 'rgba(102, 102, 102, 0.6)';
-        const colorGrisOscuro = 'rgba(43, 43, 43, 0.6)';
-        const colorBlanco = 'rgba(255, 255, 255, 0.6)';
+        Chart.defaults.font.family = "'Montserrat', sans-serif";
+        Chart.defaults.color = '#666666';
         
-        const borderNaranja = 'rgba(255, 156, 0, 1)';
-        const borderAzul = 'rgba(44, 60, 86, 1)';
-        const borderGris = 'rgba(102, 102, 102, 1)';
-        const borderGrisOscuro = 'rgba(43, 43, 43, 1)';
+        const BRAND = {
+            navy: '#2c3856',
+            orange: '#ff9c00',
+            grey: '#666666',
+            darkGrey: '#2b2b2b',
+            white: '#ffffff',
+            navyLight: 'rgba(44, 60, 86, 0.7)',
+            orangeLight: 'rgba(255, 156, 0, 0.7)',
+            success: '#10B981',
+            danger: '#EF4444'
+        };
 
-        const chart1Data = @json($chart1Data);
+        const rawData1 = @json($chart1Data);
+        const rawData2 = @json($chart2Data);
+        const rawData3 = @json($chart3Data);
+        const rawData4 = @json($chart4Data);
+        const rawData5 = @json($chart5Data);
+        const rawData6 = @json($chart6Data);
+        const rawData7 = @json($chart7Data);
+
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { usePointStyle: true, padding: 20, font: { size: 11, weight: 600 } } },
+                tooltip: {
+                    backgroundColor: BRAND.navy,
+                    titleFont: { family: "'Raleway', sans-serif", size: 13 },
+                    bodyFont: { family: "'Montserrat', sans-serif" },
+                    padding: 10,
+                    cornerRadius: 8,
+                    displayColors: false
+                }
+            },
+            layout: { padding: 10 }
+        };
+
         const ctx1 = document.getElementById('chart1').getContext('2d');
+        const gradient1 = ctx1.createLinearGradient(0, 0, 0, 400);
+        gradient1.addColorStop(0, BRAND.orange);
+        gradient1.addColorStop(1, 'rgba(255, 156, 0, 0.2)');
+
         new Chart(ctx1, {
-            type: 'bar', data: { labels: chart1Data.labels, datasets: [{ label: 'Rutas por Tipo', data: chart1Data.data, backgroundColor: [colorNaranja, colorAzul, colorGris], borderColor: [borderNaranja, borderAzul, borderGris], borderWidth: 1 }] },
-            options: { responsive: true, plugins: { title: { display: true, text: 'Rutas por Tipo' } }, scales: { y: { beginAtZero: true } } }
+            type: 'bar',
+            data: { 
+                labels: rawData1.labels,
+                datasets: [{ 
+                    label: 'Volumen de Rutas', 
+                    data: rawData1.data, 
+                    backgroundColor: [BRAND.orange, BRAND.navy, BRAND.grey], 
+                    borderRadius: 6,
+                    barThickness: 40
+                }] 
+            },
+            options: {
+                ...commonOptions,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { grid: { borderDash: [5, 5], color: '#f0f0f0' }, border: { display: false } },
+                    x: { grid: { display: false } }
+                }
+            }
         });
 
-        const chart2Data = @json($chart2Data);
-        const ctx2 = document.getElementById('chart2').getContext('2d');
-        new Chart(ctx2, {
-            type: 'doughnut', data: { labels: chart2Data.labels, datasets: [{ label: 'Guías por Estatus', data: chart2Data.data, backgroundColor: [colorGris, colorAzul, borderNaranja, 'rgba(75, 192, 192, 0.6)'], hoverOffset: 4 }] },
-            options: { responsive: true, plugins: { title: { display: true, text: 'Guías por Estatus' } } }
+        new Chart(document.getElementById('chart2').getContext('2d'), {
+            type: 'doughnut', 
+            data: { 
+                labels: rawData2.labels, 
+                datasets: [{ 
+                    data: rawData2.data, 
+                    backgroundColor: [BRAND.grey, BRAND.navy, BRAND.orange, '#e0e0e0'], 
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }] 
+            },
+            options: {
+                ...commonOptions,
+                cutout: '75%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 10 } }
+                }
+            }
         });
 
-        const chart3Data = @json($chart3Data);
-        const ctx3 = document.getElementById('chart3').getContext('2d');
-        new Chart(ctx3, {
-            type: 'bar', data: { labels: chart3Data.labels, datasets: [{ label: 'No. de Rutas', data: chart3Data.data, backgroundColor: colorAzul, borderColor: borderAzul, borderWidth: 1 }] },
-            options: { responsive: true, plugins: { title: { display: true, text: 'Plantillas por Región' } }, scales: { y: { beginAtZero: true } } }
+        new Chart(document.getElementById('chart3').getContext('2d'), {
+            type: 'bar', 
+            data: { 
+                labels: rawData3.labels, 
+                datasets: [{ 
+                    label: 'Rutas', 
+                    data: rawData3.data, 
+                    backgroundColor: BRAND.navy, 
+                    borderRadius: 4,
+                    barPercentage: 0.6
+                }] 
+            },
+            options: {
+                ...commonOptions,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }
+            }
         });
 
-        const chart4Data = @json($chart4Data);
-        const ctx4 = document.getElementById('chart4').getContext('2d');
-        new Chart(ctx4, {
-            type: 'pie', data: { labels: chart4Data.labels, datasets: [{ label: 'Eventos por Tipo', data: chart4Data.data, backgroundColor: [colorNaranja, colorGrisOscuro, colorGris], hoverOffset: 4 }] },
-            options: { responsive: true, plugins: { title: { display: true, text: 'Eventos Registrados por Tipo' } } }
+        Chart.defaults.color = '#ffffff'; 
+        new Chart(document.getElementById('chart4').getContext('2d'), {
+            type: 'pie', 
+            data: { 
+                labels: rawData4.labels, 
+                datasets: [{ 
+                    data: rawData4.data, 
+                    backgroundColor: [BRAND.orange, '#4b5563', '#9ca3af'], 
+                    borderWidth: 2,
+                    borderColor: BRAND.navy
+                }] 
+            },
+            options: {
+                ...commonOptions,
+                plugins: { legend: { position: 'right', labels: { color: '#ffffff' } } }
+            }
+        });
+        Chart.defaults.color = '#666666';
+
+        new Chart(document.getElementById('chart5').getContext('2d'), {
+            type: 'bar', 
+            data: { 
+                labels: rawData5.labels, 
+                datasets: [{ 
+                    label: 'Guías', 
+                    data: rawData5.data, 
+                    backgroundColor: BRAND.orange, 
+                    borderRadius: 20,
+                    barThickness: 15
+                }] 
+            },
+            options: {
+                ...commonOptions,
+                indexAxis: 'y',
+                scales: { x: { display: false }, y: { grid: { display: false } } }
+            }
         });
 
-        const chart5Data = @json($chart5Data);
-        const ctx5 = document.getElementById('chart5').getContext('2d');
-        new Chart(ctx5, {
-            type: 'bar', data: { labels: chart5Data.labels, datasets: [{ label: 'Guías Asignadas', data: chart5Data.data, backgroundColor: colorNaranja, borderColor: borderNaranja, borderWidth: 1 }] },
-            options: { indexAxis: 'y', responsive: true, plugins: { title: { display: true, text: 'Top 5 Operadores' } }, scales: { x: { beginAtZero: true } } }
+        new Chart(document.getElementById('chart6').getContext('2d'), {
+            type: 'doughnut', 
+            data: { 
+                labels: rawData6.labels, 
+                datasets: [{ 
+                    data: rawData6.data, 
+                    backgroundColor: [BRAND.success, BRAND.danger], 
+                    borderWidth: 0
+                }] 
+            },
+            options: { ...commonOptions, cutout: '60%' }
         });
 
-        const chart6Data = @json($chart6Data);
-        const ctx6 = document.getElementById('chart6').getContext('2d');
-        new Chart(ctx6, {
-            type: 'doughnut', data: { labels: chart6Data.labels, datasets: [{ label: 'Estatus de Facturas', data: chart6Data.data, backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'], hoverOffset: 4 }] },
-            options: { responsive: true, plugins: { title: { display: true, text: 'Estatus de Entregas' } } }
-        });
-
-        const chart7Data = @json($chart7Data);
         const ctx7 = document.getElementById('chart7').getContext('2d');
+        const gradient7 = ctx7.createLinearGradient(0, 0, 0, 300);
+        gradient7.addColorStop(0, 'rgba(44, 60, 86, 0.4)');
+        gradient7.addColorStop(1, 'rgba(44, 60, 86, 0.0)');
+
         new Chart(ctx7, {
-            type: 'line', data: { labels: chart7Data.labels, datasets: [{
-                label: 'Guías Completadas por Día', data: chart7Data.data,
-                fill: true, backgroundColor: colorAzul, borderColor: borderAzul, tension: 0.1
-            }] },
-            options: { responsive: true, plugins: { title: { display: true, text: 'Actividad de los Últimos 7 Días' } }, scales: { y: { beginAtZero: true } } }
+            type: 'line', 
+            data: { 
+                labels: rawData7.labels, 
+                datasets: [{
+                    label: 'Guías Completadas', 
+                    data: rawData7.data,
+                    fill: true, 
+                    backgroundColor: gradient7, 
+                    borderColor: BRAND.navy, 
+                    borderWidth: 3,
+                    pointBackgroundColor: BRAND.orange,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.4
+                }] 
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    y: { grid: { borderDash: [5, 5] }, beginAtZero: true },
+                    x: { grid: { display: false } }
+                }
+            }
         });
     });
     </script>

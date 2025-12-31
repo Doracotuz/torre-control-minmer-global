@@ -98,7 +98,12 @@
                     $data = $isFactura ? $item : $item;
                     $id = $isFactura ? $item->numero_factura : $item->invoice_number;
                     
-                    // Cálculo de estado avanzado
+                    $todosLosEventos = $data->eventos;
+                    if ($isFactura && $data->guia && $data->guia->eventos) {
+                        $todosLosEventos = $todosLosEventos->merge($data->guia->eventos);
+                    }
+                    $todosLosEventos = $todosLosEventos->unique('id')->sortByDesc('created_at');
+
                     $progress = 10;
                     $statusText = 'Procesando';
                     $stepIndex = 1;
@@ -106,8 +111,11 @@
                     if ($isFactura) {
                         if ($data->estatus_entrega == 'Entregada') {
                             $progress = 100; $statusText = 'Entregado'; $stepIndex = 4;
-                        } elseif (!$data->eventos->isEmpty()) {
-                            $progress = 66; $statusText = 'En Ruta'; $stepIndex = 3;
+                        } elseif (!$todosLosEventos->isEmpty()) {
+                            $progress = 66; 
+                            $ultimoEvento = $todosLosEventos->first();
+                            $statusText = $ultimoEvento->subtipo ?? 'En Ruta';
+                            $stepIndex = 3;
                         } elseif ($data->csPlanning) {
                             $progress = 33; $statusText = 'Preparación'; $stepIndex = 2;
                         }
@@ -187,9 +195,9 @@
                                 Bitácora de Actividad
                             </h4>
 
-                            @if($isFactura && !$data->eventos->isEmpty())
+                            @if($isFactura && !$todosLosEventos->isEmpty())
                                 <div class="relative pl-4 border-l-2 border-slate-200 space-y-8">
-                                    @foreach($data->eventos as $evento)
+                                    @foreach($todosLosEventos as $evento)
                                         <div class="relative group">
                                             <div class="absolute -left-[23px] top-1 w-4 h-4 rounded-full border-2 border-white shadow-sm transition-colors duration-300 {{ $loop->first ? 'bg-[#ff9c00]' : 'bg-slate-300 group-hover:bg-blue-400' }}"></div>
                                             
@@ -237,8 +245,8 @@
 
                         <div class="lg:col-span-5 space-y-6">
                             
-                            @if($isFactura && !$data->eventos->isEmpty())
-                                @php $lastEvent = $data->eventos->first(); @endphp
+                            @if($isFactura && !$todosLosEventos->isEmpty())
+                                @php $lastEvent = $todosLosEventos->first(); @endphp
                                 <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
                                     <div class="relative rounded-xl overflow-hidden group">
                                         <img 

@@ -347,14 +347,14 @@
         // MAPA DEL INDEX
         window.initIndexMap = function() {
             if (!document.getElementById('map-panel')) return;
-            indexMap = new google.maps.Map(document.getElementById("map-panel"), { center: { lat: 19.4326, lng: -99.1332 }, zoom: 10, mapTypeControl: false, gestureHandling: 'greedy', });
-            directionsService = new google.maps.DirectionsService();
-            document.querySelectorAll('.route-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', (event) => {
-                    const rutaId = event.target.dataset.rutaId;
-                    if (event.target.checked) { drawRoute(rutaId); } else { removeRoute(rutaId); }
-                });
+            
+            indexMap = new google.maps.Map(document.getElementById("map-panel"), { 
+                center: { lat: 19.4326, lng: -99.1332 }, 
+                zoom: 10, 
+                mapTypeControl: false, 
+                gestureHandling: 'greedy', 
             });
+            directionsService = new google.maps.DirectionsService();
         };
 
         // MAPA DE MONITOREO 
@@ -638,7 +638,34 @@
                 }
             }            
             function actualizarNombreParada(index, nuevoNombre) { if (paradas[index]) paradas[index].nombre = nuevoNombre; }
-            function trazarRuta() { if (paradas.length < 2) { if (directionsRenderer) directionsRenderer.setDirections({ routes: [] }); actualizarDistancia(null); return; } const waypoints = paradas.slice(1, -1).map(p => ({ location: new google.maps.LatLng(p.lat, p.lng), stopover: true })); const request = { origin: new google.maps.LatLng(paradas[0].lat, paradas[0].lng), destination: new google.maps.LatLng(paradas[paradas.length - 1].lat, paradas[paradas.length - 1].lng), waypoints: waypoints, travelMode: 'DRIVING' }; if (directionsService) { directionsService.route(request, (result, status) => { if (status == 'OK') { directionsRenderer.setDirections(result); directionsRenderer.setOptions({ draggable: true }); } }); } }
+            function trazarRuta() { 
+                if (paradas.length < 2) { 
+                    if (directionsRenderer) {
+                        directionsRenderer.setMap(null); 
+                    }
+                    actualizarDistancia(null); 
+                    return; 
+                } 
+
+                const waypoints = paradas.slice(1, -1).map(p => ({ location: new google.maps.LatLng(p.lat, p.lng), stopover: true })); 
+                
+                const request = { 
+                    origin: new google.maps.LatLng(paradas[0].lat, paradas[0].lng), 
+                    destination: new google.maps.LatLng(paradas[paradas.length - 1].lat, paradas[paradas.length - 1].lng), 
+                    waypoints: waypoints, 
+                    travelMode: 'DRIVING' 
+                }; 
+                
+                if (directionsService) { 
+                    directionsService.route(request, (result, status) => { 
+                        if (status == 'OK') { 
+                            directionsRenderer.setMap(map); 
+                            directionsRenderer.setDirections(result); 
+                            directionsRenderer.setOptions({ draggable: true }); 
+                        } 
+                    }); 
+                } 
+            }
             function validarYEnviarFormulario() { const form = document.getElementById('rutaForm'); const paradasContainer = document.getElementById('paradas-hidden-inputs'); const errorContainer = document.getElementById('paradas-error'); if (!form || !paradasContainer || !errorContainer) { alert("Error: No se encontró el formulario."); return; } if (paradas.length < 2) { errorContainer.classList.remove('hidden'); return; } errorContainer.classList.add('hidden'); paradasContainer.innerHTML = ''; paradas.forEach((parada, index) => { paradasContainer.innerHTML += `<input type="hidden" name="paradas[${index}][nombre_lugar]" value="${parada.nombre.replace(/"/g, "'")}"><input type="hidden" name="paradas[${index}][latitud]" value="${parada.lat}"><input type="hidden" name="paradas[${index}][longitud]" value="${parada.lng}">`; }); form.submit(); }
             
             function actualizarDistancia(route) { 

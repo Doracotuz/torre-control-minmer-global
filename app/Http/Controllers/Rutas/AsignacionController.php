@@ -236,87 +236,91 @@ class AsignacionController extends Controller
             'operador' => 'required|string',
             'placas' => 'required|string',
             'fecha_asignacion' => 'required|date',
-            'planning_ids' => 'required|array|min:1',
+            'planning_ids' => 'nullable|array', 
             'planning_ids.*' => 'exists:cs_plannings,id',
             'telefono' => 'nullable|string|max:20',
+            'facturas' => 'required|array|min:1',
+            'facturas.*.numero_factura' => 'required|string',
+            'facturas.*.destino' => 'required|string',
+            'facturas.*.cajas' => 'required|integer',
+            'facturas.*.botellas' => 'required|integer',
+            'facturas.*.hora_cita' => 'nullable|string',
+            'facturas.*.so' => 'nullable|string',
+            'facturas.*.fecha_entrega' => 'nullable|date',
         ]);
 
         try {
             DB::beginTransaction();
 
             $guia = Guia::where('guia', $validatedData['guia'])->first();
+            
+            $datosGuia = [
+                'operador' => $validatedData['operador'],
+                'placas' => $validatedData['placas'],
+                'fecha_asignacion' => $validatedData['fecha_asignacion'],
+                'telefono' => $validatedData['telefono'] ?? null,
+                'estatus' => 'En Espera',
+                'origen' => $request->input('origen'), 
+                'custodia' => $request->input('custodia'),
+                'hora_planeada' => $request->input('hora_planeada'),
+                'pedimento' => $request->input('pedimento'),
+            ];
+
             if ($guia) {
-                $guia->update([
-                    'operador' => $validatedData['operador'],
-                    'placas' => $validatedData['placas'],
-                    'fecha_asignacion' => $validatedData['fecha_asignacion'],
-                    'telefono' => $validatedData['telefono'] ?? null,
-                    'estatus' => 'En Espera',
-                ]);
+                $guia->update($datosGuia);
             } else {
-                $guia = Guia::create([
-                    'guia' => $validatedData['guia'],
-                    'operador' => $validatedData['operador'],
-                    'placas' => $validatedData['placas'],
-                    'fecha_asignacion' => $validatedData['fecha_asignacion'],
-                    'estatus' => 'En Espera',
-                    'telefono' => $validatedData['telefono'] ?? null,
-                ]);
+                $datosGuia['guia'] = $validatedData['guia'];
+                $guia = Guia::create($datosGuia);
             }
 
-            $planningRecords = \App\Models\CsPlanning::find($validatedData['planning_ids']);
-            $processedCount = 0;
-            $skippedIds = [];
+            foreach ($request->facturas as $facturaData) {
+                $guia->facturas()->updateOrCreate(
+                    [
+                        'numero_factura' => $facturaData['numero_factura'],
+                        'guia_id' => $guia->id
+                    ],
+                    [
+                        'destino' => $facturaData['destino'],
+                        'cajas' => $facturaData['cajas'],
+                        'botellas' => $facturaData['botellas'],
+                        'hora_cita' => $facturaData['hora_cita'] ?? null,
+                        'so' => $facturaData['so'] ?? null,
+                        'fecha_entrega' => $facturaData['fecha_entrega'] ?? null,
+                    ]
+                );
+            }
+            $processedCount = count($request->facturas);
+            
+            if (!empty($validatedData['planning_ids'])) {
+                $planningRecords = \App\Models\CsPlanning::find($validatedData['planning_ids']);
+                foreach ($planningRecords as $planning) {
+                    $facturaGuardada = $guia->facturas()->where('numero_factura', $planning->factura ?? $planning->so_number)->first();
+                    
+                    if($facturaGuardada) {
+                    $facturaGuardada->update(['cs_planning_id' => $planning->id]);
+                    }
 
-            foreach ($planningRecords as $planning) {
-                if ($planning->guia_id !== null) {
-                    $skippedIds[] = $planning->id;
-                    continue;
-                }
-
-                $facturaExistente = $guia->facturas()->where('cs_planning_id', $planning->id)->first();
-                if (!$facturaExistente) {
-                    $guia->facturas()->create([
-                        'cs_planning_id' => $planning->id,
-                        'numero_factura' => $planning->factura ?? $planning->so_number,
-                        'destino' => $planning->razon_social,
-                        'cajas' => $planning->cajas,
-                        'botellas' => $planning->pzs,
-                        'hora_cita' => $planning->hora_cita,
-                        'so' => $planning->so_number,
-                        'fecha_entrega' => $planning->fecha_entrega,
-                    ]);
-                } else {
-                    $facturaExistente->update([
-                        'numero_factura' => $planning->factura ?? $planning->so_number,
-                        'destino' => $planning->razon_social,
-                        'cajas' => $planning->cajas,
-                        'botellas' => $planning->pzs,
-                        'hora_cita' => $planning->hora_cita,
-                        'so' => $planning->so_number,
-                        'fecha_entrega' => $planning->fecha_entrega,
+                    $planning->update([
+                        'guia_id' => $guia->id,
+                        'status' => 'Asignado en Guía',
+                        'operador' => $guia->operador, 
+                        'placas' => $guia->placas,
+                        'telefono' => $guia->telefono,
                     ]);
                 }
-                
-                $planning->update([
-                    'guia_id' => $guia->id,
-                    'status' => 'Asignado en Guía',
-                ]);
-                $processedCount++;
             }
 
             DB::commit();
 
-            $message = "Guía {$guia->guia} procesada exitosamente con {$processedCount} órdenes.";
-            if (!empty($skippedIds)) {
-                $message .= " Se omitieron " . count($skippedIds) . " órdenes que ya estaban asignadas.";
-            }
-            
-            return redirect()->route('rutas.asignaciones.index')->with('success', $message);
+            return redirect()->route('rutas.asignaciones.index')
+                ->with('success', "Guía {$guia->guia} procesada correctamente con {$processedCount} facturas.");
+
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error al crear/actualizar la guía: " . $e->getMessage());
-            return redirect()->route('customer-service.planning.index')->with('error', 'Ocurrió un error al procesar la guía.');
+            \Illuminate\Support\Facades\Log::error("Error store asignación: " . $e->getMessage());
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Ocurrió un error: ' . $e->getMessage());
         }
     }
 

@@ -66,6 +66,25 @@
                 <p class="text-red-800 font-medium">{{ session('error') }}</p>
             </div>
         @endif
+        @if ($errors->any())
+            <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl shadow-lg">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-red-800 font-bold">No se pudo guardar:</h3>
+                        <ul class="mt-1 list-disc list-inside text-sm text-red-700">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        @endif        
 
         <div class="glass-panel rounded-2xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.07)] overflow-hidden ring-1 ring-slate-900/5 p-6 md:p-8 space-y-8">
             
@@ -240,7 +259,7 @@
                                     <input type="file" id="original-evidencia" accept="image/*" multiple @change="processImages" class="hidden">
                                 </label>
                             </div>
-                            <input type="hidden" name="evidencia[]" id="processed-evidencia">
+                            <input type="file" name="evidencia[]" id="processed-evidencia" multiple class="hidden">
                             <div class="flex justify-between mt-2">
                                 <p class="text-xs text-gray-500" x-text="modal.evidenceRequired ? 'Obligatoria (máx. 10)' : 'Opcional'"></p>
                                 <p class="text-xs text-[#ff9c00] font-semibold" id="file-count"></p>
@@ -474,11 +493,18 @@
                         
                         form.submit();
                     },
-                    () => {
-                        this.locationError = 'No se pudo obtener la ubicación. Por favor, activa el GPS y otorga los permisos necesarios.';
+                    (error) => {
+                        console.error("Error GPS:", error);
+                        let mensaje = 'Error desconocido.';
+                        switch(error.code) {
+                            case 1: mensaje = 'Permiso denegado (Revisa el candado del navegador).'; break;
+                            case 2: mensaje = 'Posición no disponible (Tu dispositivo no detecta señal).'; break;
+                            case 3: mensaje = 'Tiempo de espera agotado (Timeout).'; break;
+                        }
+                        this.locationError = mensaje;
                         this.isLoading = false;
                     },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                    { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
                 );
             }
         }));
