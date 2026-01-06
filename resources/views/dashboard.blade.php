@@ -237,50 +237,81 @@
             <div x-show="!loading" x-cloak class="space-y-6">
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="bento-card p-6 flex items-center justify-between opacity-0 animate-stagger">
-                        <div>
-                            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Usuarios</p>
-                            <h3 class="text-3xl font-black text-[#2c3856]" x-text="formatNum(data.totalUsers)">0</h3>
+                    
+                    <div class="bento-card p-6 relative overflow-hidden group hover:shadow-lg transition-all duration-300 opacity-0 animate-stagger">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-blue-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
+                        <div class="relative z-10 flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-bold text-slate-400 uppercase tracking-wider">Total Usuarios</p>
+                                <h3 class="text-4xl font-black text-[#2c3856] mt-1 group-hover:translate-x-1 transition-transform duration-300" x-text="formatNum(data.totalUsers)">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-sm group-hover:rotate-12 transition-transform duration-300">
+                                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                                    <path fill-opacity="0.4" d="M16 11.37A4 4 0 1 1 12.63 7 4 4 0 0 1 16 11.37Z"/>
+                                    <path d="M16 11.37A4 4 0 0 0 14 17c.5.5.5 2 .5 3 0 1-1 2-2 2h4.5a3.5 3.5 0 0 0 3.5-3.5 4.5 4.5 0 0 0-4.5-4.5v-2.63Z"/>
+                                    <path fill-opacity="0.4" d="M12.5 17c-.5.5-.5 2-.5 3 0 1 1 2 2 2h-9a3.5 3.5 0 0 1-3.5-3.5A4.5 4.5 0 0 1 6 14h6.5Z"/>
+                                </svg>
+                            </div>
                         </div>
-                        <div class="stat-icon icon-navy">
-                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                        </div>
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-300 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
                     </div>
 
-                    <div class="bento-card p-6 flex items-center justify-between opacity-0 animate-stagger">
-                        <div>
-                            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Áreas</p>
-                            <h3 class="text-3xl font-black text-[#2c3856]" x-text="formatNum(data.totalAreas)">0</h3>
+                    <div class="bento-card p-6 relative overflow-hidden group hover:shadow-lg transition-all duration-300 opacity-0 animate-stagger">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-orange-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
+                        <div class="relative z-10 flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-bold text-slate-400 uppercase tracking-wider">Total Áreas</p>
+                                <h3 class="text-4xl font-black text-[#2c3856] mt-1 group-hover:translate-x-1 transition-transform duration-300" x-text="formatNum(data.totalAreas)">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-[#ff9c00] shadow-sm group-hover:rotate-12 transition-transform duration-300">
+                                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                                    <path fill-opacity="0.4" d="M22 6.5a4.5 4.5 0 0 0-4.5-4.5h-11A4.5 4.5 0 0 0 2 6.5v11A4.5 4.5 0 0 0 6.5 22h11a4.5 4.5 0 0 0 4.5-4.5v-11Z"/>
+                                    <path d="M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM18 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM12 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM18 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+                                </svg>
+                            </div>
                         </div>
-                        <div class="stat-icon icon-orange">
-                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                        </div>
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-[#ff9c00] to-orange-300 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
                     </div>
 
-                    <div class="bento-card p-6 flex items-center justify-between opacity-0 animate-stagger">
-                        <div>
-                            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Carpetas</p>
-                            <h3 class="text-3xl font-black text-[#2c3856]" x-text="formatNum(data.totalFolders)">0</h3>
+                    <div class="bento-card p-6 relative overflow-hidden group hover:shadow-lg transition-all duration-300 opacity-0 animate-stagger">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-violet-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
+                        <div class="relative z-10 flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-bold text-slate-400 uppercase tracking-wider">Total Carpetas</p>
+                                <h3 class="text-4xl font-black text-[#2c3856] mt-1 group-hover:translate-x-1 transition-transform duration-300" x-text="formatNum(data.totalFolders)">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600 shadow-sm group-hover:rotate-12 transition-transform duration-300">
+                                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19.9 21.5H4.1c-1.4 0-2.5-1.1-2.5-2.5V8c0-1.4 1.1-2.5 2.5-2.5h2.9c.7 0 1.3-.3 1.8-.8l.9-1.2c.5-.5 1.1-.8 1.8-.8h5.9c1.4 0 2.5 1.1 2.5 2.5v13.8c0 1.4-1.1 2.5-2.5 2.5Z" fill-opacity="0.4"/>
+                                    <path d="M21.5 11h-19c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5h19c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5Z"/>
+                                </svg>
+                            </div>
                         </div>
-                        <div class="stat-icon icon-navy">
-                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
-                        </div>
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-violet-500 to-violet-300 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
                     </div>
 
-                    <div class="bento-card p-6 flex items-center justify-between opacity-0 animate-stagger">
-                        <div>
-                            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Archivos</p>
-                            <h3 class="text-3xl font-black text-[#2c3856]" x-text="formatNum(data.totalFileLinks)">0</h3>
+                    <div class="bento-card p-6 relative overflow-hidden group hover:shadow-lg transition-all duration-300 opacity-0 animate-stagger">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
+                        <div class="relative z-10 flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-bold text-slate-400 uppercase tracking-wider">Total Archivos</p>
+                                <h3 class="text-4xl font-black text-[#2c3856] mt-1 group-hover:translate-x-1 transition-transform duration-300" x-text="formatNum(data.totalFileLinks)">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm group-hover:rotate-12 transition-transform duration-300">
+                                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                                    <path fill-opacity="0.4" d="M16 2H8C4.691 2 2 4.691 2 8v8c0 3.309 2.691 6 6 6h8c3.309 0 6-2.691 6-6V8c0-3.309-2.691-6-6-6Z"/>
+                                    <path d="M14.5 18h-5c-.825 0-1.5-.675-1.5-1.5S8.675 15 9.5 15h5c.825 0 1.5.675 1.5 1.5s-.675 1.5-1.5 1.5Zm0-5h-5c-.825 0-1.5-.675-1.5-1.5S8.675 10 9.5 10h5c.825 0 1.5.675 1.5 1.5s-.675 1.5-1.5 1.5Zm0-5h-5c-.825 0-1.5-.675-1.5-1.5S8.675 5 9.5 5h5c.825 0 1.5.675 1.5 1.5s-.675 1.5-1.5 1.5Z"/>
+                                </svg>
+                            </div>
                         </div>
-                        <div class="stat-icon icon-orange">
-                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        </div>
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-300 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
                     </div>
+
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     
-                    <div class="lg:col-span-3 flex flex-col gap-6 opacity-0 animate-stagger">
+                    <div class="lg:col-span-3 flex flex-col gap-6 opacity-0 animate-stagger h-full">
                         <div class="bento-card p-6">
                             <h3 class="text-lg font-bold text-[#2c3856] mb-4">Accesos Directos</h3>
                             <div class="space-y-3">
@@ -314,12 +345,12 @@
                             </div>
                         </div>
 
-                        <div class="bento-card p-6 flex-1 flex flex-col">
+                        <div class="bento-card p-6 flex-1 flex flex-col h-full">
                             <div class="flex items-center justify-between mb-4">
                                 <h3 class="text-lg font-bold text-[#2c3856]">Actividad Reciente</h3>
                                 <div class="w-2 h-2 bg-[#ff9c00] rounded-full animate-ping"></div>
                             </div>
-                            <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4 max-h-[250px]">
+                            <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
                                 <template x-if="data.recentActivities.length === 0">
                                     <p class="text-sm text-gray-400 text-center py-4">Sin actividad registrada</p>
                                 </template>
