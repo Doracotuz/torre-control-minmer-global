@@ -29,11 +29,9 @@
             body { font-family: 'Montserrat', sans-serif; }
             .font-brand { font-family: 'Raleway', sans-serif; }
             
-            /* Animaciones de Entrada */
             .stagger-load { opacity: 0; animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
             @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
             
-            /* Fondo Animado Sutil */
             .bg-pattern {
                 background-image: radial-gradient(#2c3856 0.5px, transparent 0.5px), radial-gradient(#ff9c00 0.5px, #f0f2f5 0.5px);
                 background-size: 20px 20px;
@@ -41,7 +39,6 @@
                 opacity: 0.05;
             }
 
-            /* Efecto Cristal */
             .glass-card {
                 background: rgba(255, 255, 255, 0.9);
                 backdrop-filter: blur(10px);
@@ -55,7 +52,6 @@
                 border-color: rgba(255, 156, 0, 0.3);
             }
 
-            /* Botón Brillante */
             .btn-shine {
                 position: relative; overflow: hidden;
             }
@@ -82,8 +78,8 @@
                     <a href="{{ route('electronic-label.index') }}" class="group inline-flex items-center text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-[#ff9c00] mb-2 transition-colors">
                         <span class="mr-2 group-hover:-translate-x-1 transition-transform">←</span> Dashboard Principal
                     </a>
-                    <h1 class="text-5xl font-black text-[#2c3856] font-brand tracking-tight">
-                        Historial de <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#2c3856] to-[#ff9c00]">Lotes</span>
+                    <h1 class="text-3xl font-bold text-[#2c3856] font-brand">
+                        Historial de Lotes
                     </h1>
                     <p class="text-gray-500 mt-2 font-medium max-w-lg">
                         Administración y trazabilidad de marbetes electrónicos generados.

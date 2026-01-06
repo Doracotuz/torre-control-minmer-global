@@ -373,7 +373,7 @@ class WMSPurchaseOrderController extends Controller
             $files = is_array($files) ? $files : [$files];
 
             foreach ($files as $file) {
-                $path = $file->store("public/receipt_evidence/{$purchaseOrder->po_number}");
+                $path = $file->store("receipt_evidence/{$purchaseOrder->po_number}");
                 ReceiptEvidence::create([
                     'purchase_order_id' => $purchaseOrder->id,
                     'user_id' => Auth::id(),
