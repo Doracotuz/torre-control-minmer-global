@@ -502,7 +502,7 @@ class FfSalesController extends Controller
         $pdfContent = $dompdf->output();
 
     try {
-        Log::info("Buscando admins para área ID: " . $user->area_id);
+        // Log::info("Buscando admins para área ID: " . $user->area_id);
         $admins = \App\Models\User::where('is_area_admin', true)
             ->where('area_id', $user->area_id)
             ->get(); 
@@ -535,7 +535,7 @@ class FfSalesController extends Controller
                 ));
             }
         } else {
-            Log::warning("NO se enviaron correos: No hay admins en el área " . $user->area_id);
+            // Log::warning("NO se enviaron correos: No hay admins en el área " . $user->area_id);
             \Illuminate\Support\Facades\Log::warning("Pedido F&F #{$ventaFolio} creado en área {$user->area_id} sin administradores para notificar.");
         }
 
