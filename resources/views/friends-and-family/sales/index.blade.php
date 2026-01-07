@@ -149,12 +149,12 @@
                     <template x-if="form.ff_sales_channel_id">
                         <div>
                             <template x-if="viewMode === 'grid'">
-                                <div class="grid gap-6" 
-                                     :class="layoutMode === 'sidebar' 
+                                <div id="products-grid-container" class="grid gap-6" 
+                                    :class="layoutMode === 'sidebar' 
                                         ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4' 
                                         : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'">
                                     
-                                    <template x-for="product in filteredProducts" :key="product.id">
+                                    <template x-for="product in paginatedProducts" :key="product.id">
                                         <div class="group bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_20px_rgb(0,0,0,0.08)] transition-all duration-300 border border-gray-100 relative flex flex-col h-full hover:-translate-y-1"
                                             :class="{ 'ring-2 ring-[#2c3856] ring-offset-2': getProductInCart(product.id) > 0 }">
                                             
@@ -250,7 +250,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody class="divide-y divide-gray-100">
-                                                <template x-for="product in filteredProducts" :key="product.id">
+                                                <template x-for="product in paginatedProducts" :key="product.id">
                                                     <tr class="hover:bg-gray-50 transition-colors group" 
                                                         :class="getProductInCart(product.id) > 0 ? 'bg-blue-50/30' : ''">
                                                         
@@ -301,8 +301,8 @@
                                                         <td class="p-3">
                                                             <div class="flex items-center bg-white rounded-lg border border-gray-200 shadow-sm w-32 mx-auto">
                                                                 <button @click="updateQuantity(product, -1)" 
-                                                                    class="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-l-lg disabled:opacity-30" 
-                                                                    :disabled="!getProductInCart(product.id)">
+                                                                        class="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-l-lg disabled:opacity-30" 
+                                                                        :disabled="!getProductInCart(product.id)">
                                                                     <i class="fas fa-minus text-[10px]"></i>
                                                                 </button>
                                                                 
@@ -315,7 +315,7 @@
                                                                     @focus="$event.target.select()">
                                                                     
                                                                 <button @click="updateQuantity(product, 1)" 
-                                                                    class="w-8 h-8 flex items-center justify-center bg-[#2c3856] text-white hover:bg-[#1e273d] transition-colors rounded-r-lg">
+                                                                        class="w-8 h-8 flex items-center justify-center bg-[#2c3856] text-white hover:bg-[#1e273d] transition-colors rounded-r-lg">
                                                                     <i class="fas fa-plus text-[10px]"></i>
                                                                 </button>
                                                             </div>
@@ -336,6 +336,38 @@
                                 <p class="text-gray-500 text-sm">Intenta cambiar los filtros de búsqueda.</p>
                                 <button @click="resetFilters()" class="mt-4 text-[#2c3856] text-sm font-bold hover:underline">Limpiar filtros</button>
                             </div>
+                            <div x-show="totalPages > 1" class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-200">
+                                
+                                <div class="text-xs text-gray-500 font-bold">
+                                    Mostrando <span x-text="((currentPage - 1) * itemsPerPage) + 1"></span> - 
+                                    <span x-text="Math.min(currentPage * itemsPerPage, filteredProducts.length)"></span> 
+                                    de <span x-text="filteredProducts.length"></span> productos
+                                </div>
+
+                                <div class="flex items-center gap-1">
+                                    <button @click="changePage(currentPage - 1)" 
+                                            :disabled="currentPage === 1"
+                                            class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                        <i class="fas fa-chevron-left text-xs"></i>
+                                    </button>
+
+                                    <template x-for="page in getPageRange()">
+                                        <button @click="typeof page === 'number' ? changePage(page) : null"
+                                                x-text="page"
+                                                :class="page === currentPage 
+                                                    ? 'bg-[#2c3856] text-white border-[#2c3856]' 
+                                                    : (typeof page === 'number' ? 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50' : 'border-transparent text-gray-400 cursor-default')"
+                                                class="w-8 h-8 flex items-center justify-center rounded-lg border text-xs font-bold transition-colors">
+                                        </button>
+                                    </template>
+
+                                    <button @click="changePage(currentPage + 1)" 
+                                            :disabled="currentPage === totalPages"
+                                            class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                        <i class="fas fa-chevron-right text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>                            
                         </div>
                     </template>
                 </div>
@@ -572,7 +604,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="pt-2">
+                                        <!-- <div class="pt-2">
                                             <div class="flex items-center text-[#2c3856] font-bold text-xs uppercase tracking-wider mb-2 pb-1 border-b border-gray-100">
                                                 <i class="fas fa-camera mr-2 text-[#ff9c00]"></i> Evidencias
                                             </div>
@@ -601,7 +633,7 @@
                                                     </div>
                                                 </template>
                                             </div>
-                                        </div>
+                                        </div> -->
 
                                         <div x-show="editMode && form.order_type === 'prestamo' && !form.is_loan_returned" class="pt-2">
                                             <button @click="returnLoan()" class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded text-[10px] uppercase shadow-sm transition-colors flex items-center justify-center">
@@ -708,6 +740,8 @@
                 existingEvidences: [],
                 evidenceFiles: {},
                 globalDiscount: '',
+                currentPage: 1,
+                itemsPerPage: 20,                
                 
                 filters: {
                     search: '',
@@ -792,7 +826,62 @@
                             this.releaseStockOnExit();
                         }
                     });
+
+                    this.$watch('filters', () => {
+                        this.currentPage = 1;
+                    });
+                    this.$watch('form.ff_sales_channel_id', () => {
+                        this.currentPage = 1;
+                    });
+
                 },
+
+                get paginatedProducts() {
+                    const start = (this.currentPage - 1) * this.itemsPerPage;
+                    const end = start + this.itemsPerPage;
+                    return this.filteredProducts.slice(start, end);
+                },
+
+                get totalPages() {
+                    return Math.ceil(this.filteredProducts.length / this.itemsPerPage);
+                },
+
+                changePage(page) {
+                    if (page >= 1 && page <= this.totalPages) {
+                        this.currentPage = page;
+                        document.getElementById('products-grid-container').scrollIntoView({ behavior: 'smooth' });
+                    }
+                },
+                
+                getPageRange() {
+                    let current = this.currentPage;
+                    let last = this.totalPages;
+                    let delta = 2;
+                    let left = current - delta;
+                    let right = current + delta + 1;
+                    let range = [];
+                    let rangeWithDots = [];
+                    let l;
+
+                    for (let i = 1; i <= last; i++) {
+                        if (i == 1 || i == last || i >= left && i < right) {
+                            range.push(i);
+                        }
+                    }
+
+                    for (let i of range) {
+                        if (l) {
+                            if (i - l === 2) {
+                                rangeWithDots.push(l + 1);
+                            } else if (i - l !== 1) {
+                                rangeWithDots.push('...');
+                            }
+                        }
+                        rangeWithDots.push(i);
+                        l = i;
+                    }
+                    return rangeWithDots;
+                },                
 
                 onChannelChangeConfirm() {
                     if (this.localCart.size > 0) {

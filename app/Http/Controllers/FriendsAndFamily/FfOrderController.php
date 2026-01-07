@@ -546,4 +546,45 @@ class FfOrderController extends Controller
             ]);
         }
     }
+
+    public function uploadBatchEvidences(Request $request, $folio)
+    {
+        $request->validate([
+            'evidence_1' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'evidence_2' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'evidence_3' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+        ]);
+
+        $updates = [];
+        $hasUploads = false;
+
+        for ($i = 1; $i <= 3; $i++) {
+            $inputName = "evidence_{$i}";
+            
+            if ($request->hasFile($inputName)) {
+                $path = $request->file($inputName)->store("ff_evidence/{$folio}", 's3');
+                $updates["evidence_path_{$i}"] = $path;
+                $hasUploads = true;
+            }
+        }
+
+        if ($hasUploads) {
+            \App\Models\ffInventoryMovement::where('folio', $folio)->update($updates);
+            return redirect()->back()->with('success', 'Evidencias guardadas correctamente.');
+        }
+
+        return redirect()->back()->with('warning', 'No se seleccionó ningún archivo para subir.');
+    }
+
+    public function downloadEvidence(Request $request)
+    {
+        $path = $request->query('path');
+        
+        if (!$path || !Storage::disk('s3')->exists($path)) {
+            abort(404);
+        }
+
+        return Storage::disk('s3')->download($path);
+    }    
+
 }

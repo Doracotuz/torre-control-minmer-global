@@ -23,6 +23,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\UploadedFile;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
 
 class FfSalesController extends Controller
 {
@@ -315,9 +316,6 @@ class FfSalesController extends Controller
             'discounts' => 'nullable|array',
             'documents' => 'array|max:5',
             'documents.*' => 'file|mimes:pdf|max:10240',
-            'evidence_1' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            'evidence_2' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            'evidence_3' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
             'ff_client_id' => [
                 'nullable', 
                 Rule::exists('ff_clients', 'id')->where(function ($query) {
@@ -362,7 +360,7 @@ class FfSalesController extends Controller
         $ventaFolio = $request->folio;
         $orderType = $request->order_type;
         $inputDiscounts = $request->input('discounts', []);
-        
+
         $pdfItems = [];
         $grandTotal = 0;
         $orderHasBackorder = false;
@@ -370,47 +368,8 @@ class FfSalesController extends Controller
         DB::beginTransaction();
 
         try {
-            $existingEvidences = ['path_1' => null, 'path_2' => null, 'path_3' => null];
-
             if ($isEditMode) {
-                $originalMovements = ffInventoryMovement::where('folio', $ventaFolio)
-                    ->where('quantity', '<', 0)
-                    ->get();
-                
-                if ($originalMovements->isNotEmpty()) {
-                    $first = $originalMovements->first();
-                    $existingEvidences['path_1'] = $first->evidence_path_1;
-                    $existingEvidences['path_2'] = $first->evidence_path_2;
-                    $existingEvidences['path_3'] = $first->evidence_path_3;
-                }
-
-                foreach($originalMovements as $mov) {
-                    ffInventoryMovement::create([
-                        'ff_product_id' => $mov->ff_product_id,
-                        'user_id' => $user->id,
-                        'area_id' => $mov->area_id, 
-                        'quantity' => abs($mov->quantity),
-                        'reason' => 'Ajuste por Edición Folio ' . $ventaFolio,
-                        'folio' => $ventaFolio,
-                        'ff_client_id' => $mov->ff_client_id,
-                        'ff_client_branch_id' => $mov->ff_client_branch_id,
-                        'ff_sales_channel_id' => $mov->ff_sales_channel_id,
-                        'ff_transport_line_id' => $mov->ff_transport_line_id,
-                        'ff_payment_condition_id' => $mov->ff_payment_condition_id,
-                        'status' => 'approved',
-                        'is_backorder' => false,
-                        'backorder_fulfilled' => true
-                    ]);
-                }
-            }
-
-            $finalEvidencePaths = [];
-            for ($i = 1; $i <= 3; $i++) {
-                if ($request->hasFile("evidence_{$i}")) {
-                    $finalEvidencePaths[$i] = $request->file("evidence_{$i}")->store("ff_evidence/{$ventaFolio}", 's3');
-                } else {
-                    $finalEvidencePaths[$i] = $existingEvidences["path_{$i}"];
-                }
+                ffInventoryMovement::where('folio', $ventaFolio)->delete();
             }
 
             foreach ($cartItems as $item) {
@@ -459,9 +418,9 @@ class FfSalesController extends Controller
                     'order_type' => $orderType,
                     'status' => 'pending',
                     'discount_percentage' => $discountPercent,
-                    'evidence_path_1' => $finalEvidencePaths[1],
-                    'evidence_path_2' => $finalEvidencePaths[2],
-                    'evidence_path_3' => $finalEvidencePaths[3],
+                    'evidence_path_1' => null,
+                    'evidence_path_2' => null,
+                    'evidence_path_3' => null,
                     'notification_emails' => $request->email_recipients,
                     'is_backorder' => $isBackorder,
                     'backorder_fulfilled' => !$isBackorder,
@@ -510,7 +469,7 @@ class FfSalesController extends Controller
             DB::rollBack();
             return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
         }
-        
+
         $logoUrl = $this->getLogoUrl($user->area);
         $companyInfo = $this->getCompanyInfo($user->area_id);
 
@@ -542,43 +501,48 @@ class FfSalesController extends Controller
         $dompdf->render();
         $pdfContent = $dompdf->output();
 
-        try {
-            $admins = \App\Models\User::where('is_area_admin', true)
-                ->whereHas('area', function($q) {
-                    $q->whereIn('name', ['Administración', 'Consorcio Monter']);
-                })->get(); 
-            
-            if ($admins->isNotEmpty()) {
-                $adminMailData = array_merge([
-                    'folio' => $ventaFolio,
-                    'client_name' => $request->client_name,
-                    'company_name' => $request->company_name,
-                    'delivery_date' => Carbon::parse($request->delivery_date)->format('d/m/Y H:i'),
-                    'surtidor_name' => $request->surtidor_name,
-                    'order_type' => $orderType,
-                    'user_name' => $user->name,
-                    'grandTotal' => $grandTotal,
-                    'items' => $pdfItems,
-                    'logo_url' => $logoUrl,
-                    'has_backorder' => $orderHasBackorder,
-                ], $companyInfo);
-                
-                foreach($admins as $admin) {
-                    Mail::to($admin->email)->send(new OrderActionMail(
-                        $adminMailData, 
-                        'admin_alert', 
-                        null,
-                        null,
-                        [],
-                        null,
-                        $admin->id
-                    ));
-                }
-            }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Error enviando alerta admin F&F: " . $e->getMessage());
-        }
+    try {
+        Log::info("Buscando admins para área ID: " . $user->area_id);
+        $admins = \App\Models\User::where('is_area_admin', true)
+            ->where('area_id', $user->area_id)
+            ->get(); 
         
+        if ($admins->isNotEmpty()) {
+            $adminMailData = array_merge([
+                'folio' => $ventaFolio,
+                'client_name' => $request->client_name,
+                'company_name' => $request->company_name,
+                'delivery_date' => Carbon::parse($request->delivery_date)->format('d/m/Y H:i'),
+                'surtidor_name' => $request->surtidor_name,
+                'order_type' => $orderType,
+                'user_name' => $user->name,
+                'user_area' => $user->area->name ?? 'N/A',
+                'grandTotal' => $grandTotal,
+                'items' => $pdfItems,
+                'logo_url' => $logoUrl,
+                'has_backorder' => $orderHasBackorder,
+            ], $companyInfo);
+            
+            foreach($admins as $admin) {
+                Mail::to($admin->email)->send(new OrderActionMail(
+                    $adminMailData, 
+                    'admin_alert', 
+                    null,
+                    null,
+                    [],
+                    null,
+                    $admin->id
+                ));
+            }
+        } else {
+            Log::warning("NO se enviaron correos: No hay admins en el área " . $user->area_id);
+            \Illuminate\Support\Facades\Log::warning("Pedido F&F #{$ventaFolio} creado en área {$user->area_id} sin administradores para notificar.");
+        }
+
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::error("Error enviando alerta admin F&F: " . $e->getMessage());
+    }
+
         return response($pdfContent, 200, ['Content-Type' => 'application/pdf', 'X-Venta-Folio' => $ventaFolio]);
     }
 

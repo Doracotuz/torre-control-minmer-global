@@ -186,7 +186,7 @@
                     <td class="text-center">{{ $item['quantity'] }}</td>
                     <td style="font-style: italic; padding-left: 5px;">{{ $item['description'] }}</td>
                     <td class="text-center" style="font-style: italic;">{{ $item['sku'] }}</td>
-                    <td class="text-center"> </td> 
+                    <td class="text-center">${{ number_format($item['unit_price'], 2) }} / ${{ number_format($item['total_price'], 2) }}</td>
                 </tr>
                 @endforeach
                 

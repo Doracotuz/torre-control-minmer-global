@@ -833,6 +833,8 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
         Route::post('/generate-executive', [FfReportController::class, 'generateExecutiveReport'])->name('generateExecutive');
     
     });
+    Route::post('/orders/{folio}/upload-evidences', [FfOrderController::class, 'uploadBatchEvidences'])->name('orders.uploadBatchEvidences');
+    Route::get('/evidence/download', [FfOrderController::class, 'downloadEvidence'])->name('evidence.download');
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'index'])->name('index');
         Route::get('/catalog/{type}', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'show'])->name('show');
@@ -851,7 +853,7 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
     Route::get('/orders', [FfOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{folio}', [FfOrderController::class, 'show'])->name('orders.show');
     Route::post('/orders/{folio}/approve', [FfOrderController::class, 'approve'])->name('orders.approve');
-    Route::post('/orders/{folio}/reject', [FfOrderController::class, 'reject'])->name('orders.reject');    
+    Route::post('/orders/{folio}/reject', [FfOrderController::class, 'reject'])->name('orders.reject');
 });
 
 Route::get('/project-files/{file}/download', [ProjectFileController::class, 'download'])

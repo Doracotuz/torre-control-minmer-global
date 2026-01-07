@@ -330,35 +330,152 @@
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-[2rem] p-8 shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100">
+                    <div class="bg-white rounded-[2rem] p-8 shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100"
+                        x-data="{
+                            showModal: false,
+                            activeUrl: '',
+                            activePath: '',
+                            activeType: '',
+                            isFullScreen: false,
+                            openEvidence(url, path) {
+                                this.activeUrl = url;
+                                this.activePath = path;
+                                const extension = url.split('.').pop().split(/\#|\?/)[0].toLowerCase();
+                                this.activeType = ['jpg', 'jpeg', 'png', 'webp'].includes(extension) ? 'image' : 'pdf';
+                                this.showModal = true;
+                                this.isFullScreen = false;
+                            }
+                        }">
+
                         <div class="flex justify-between items-center mb-6">
-                            <h3 class="font-bold text-[#2c3856]">Evidencias</h3>
-                            <a href="{{ route('ff.sales.index', ['edit_folio' => $header->folio]) }}" class="text-[10px] font-bold text-blue-500 hover:underline uppercase">Editar / Subir</a>
+                            <h3 class="font-bold text-[#2c3856]">Evidencias de Entrega</h3>
                         </div>
 
-                        <div class="space-y-3">
-                            @php $hasEvidence = false; @endphp
-                            @for($i=1; $i<=3; $i++)
-                                @if($url = $header->getEvidenceUrl($i))
-                                    @php $hasEvidence = true; @endphp
-                                    <a href="{{ $url }}" target="_blank" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-100 transition-all group">
-                                        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-blue-500 shadow-sm group-hover:scale-110 transition-transform">
-                                            <i class="fas fa-image"></i>
+                        <form action="{{ route('ff.orders.uploadBatchEvidences', $header->folio) }}" method="POST" enctype="multipart/form-data">
+                            @csrf
+                            
+                            <div class="space-y-4 mb-6">
+                                @for($i=1; $i<=3; $i++)
+                                    @php 
+                                        $pathField = "evidence_path_{$i}";
+                                        $currentPath = $header->$pathField;
+                                    @endphp
+                                    
+                                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 transition-all hover:bg-slate-100">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <span class="text-xs font-bold text-slate-700 uppercase flex items-center gap-2">
+                                                <span class="w-6 h-6 rounded-full bg-[#2c3856] text-white flex items-center justify-center text-[10px]">{{ $i }}</span>
+                                                Evidencia
+                                            </span>
+                                            
+                                            @if($url = $header->getEvidenceUrl($i))
+                                                <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
+                                                    <i class="fas fa-check mr-1"></i> Cargada
+                                                </span>
+                                            @else
+                                                <span class="text-[10px] font-bold text-slate-400 bg-white px-2 py-1 rounded-full border border-slate-200 shadow-sm">
+                                                    Pendiente
+                                                </span>
+                                            @endif
                                         </div>
-                                        <div class="flex-1">
-                                            <p class="text-xs font-bold text-slate-700 group-hover:text-blue-700">Evidencia {{ $i }}</p>
-                                        </div>
-                                        <i class="fas fa-external-link-alt text-slate-300 text-xs"></i>
-                                    </a>
-                                @endif
-                            @endfor
 
-                            @if(!$hasEvidence)
-                                <div class="text-center py-8 border-2 border-dashed border-slate-100 rounded-xl">
-                                    <i class="fas fa-folder-open text-slate-200 text-3xl mb-2"></i>
-                                    <p class="text-xs text-slate-400 font-medium">Sin archivos adjuntos</p>
+                                        @if($url = $header->getEvidenceUrl($i))
+                                            <div class="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-8 h-8 rounded bg-blue-50 flex items-center justify-center text-blue-500">
+                                                        <i class="fas fa-file-invoice"></i>
+                                                    </div>
+                                                    <span class="text-xs font-medium text-slate-500 truncate max-w-[150px]">Archivo cargado</span>
+                                                </div>
+                                                
+                                                <button type="button" 
+                                                        @click="openEvidence('{{ $url }}', '{{ $currentPath }}')"
+                                                        class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold hover:bg-blue-100 transition-colors">
+                                                    <i class="fas fa-eye mr-1"></i> Ver
+                                                </button>
+                                            </div>
+                                        @else
+                                            <label class="block cursor-pointer group">
+                                                <span class="sr-only">Elegir archivo</span>
+                                                <input type="file" name="evidence_{{ $i }}" accept=".pdf,.jpg,.jpeg,.png"
+                                                    class="block w-full text-xs text-slate-500
+                                                    file:mr-4 file:py-2 file:px-4
+                                                    file:rounded-lg file:border-0
+                                                    file:text-xs file:font-bold
+                                                    file:bg-white file:text-[#2c3856]
+                                                    file:border file:border-slate-200
+                                                    file:shadow-sm
+                                                    hover:file:bg-slate-50
+                                                    transition-all cursor-pointer
+                                                "/>
+                                            </label>
+                                        @endif
+                                    </div>
+                                @endfor
+                            </div>
+
+                            @if(!$header->getEvidenceUrl(1) || !$header->getEvidenceUrl(2) || !$header->getEvidenceUrl(3))
+                                <button type="submit" class="w-full py-3 bg-[#2c3856] hover:bg-[#1e273d] text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    Subir Evidencias Seleccionadas
+                                </button>
+                            @else
+                                <div class="text-center p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 text-sm font-bold">
+                                    <i class="fas fa-check-circle mr-1"></i> Expediente completo
                                 </div>
                             @endif
+                        </form>
+
+                        <div x-show="showModal" 
+                            style="display: none;"
+                            class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                            :class="isFullScreen ? 'p-0' : 'p-4'"
+                            x-transition:enter="transition ease-out duration-300"
+                            x-transition:enter-start="opacity-0"
+                            x-transition:enter-end="opacity-100"
+                            x-transition:leave="transition ease-in duration-200"
+                            x-transition:leave-start="opacity-100"
+                            x-transition:leave-end="opacity-0">
+                            
+                            <div class="bg-white flex flex-col shadow-2xl overflow-hidden transition-all duration-300" 
+                                :class="isFullScreen ? 'w-full h-full rounded-none' : 'w-full max-w-4xl max-h-[90vh] rounded-2xl'"
+                                @click.away="if(!isFullScreen) showModal = false">
+                                
+                                <div class="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50 flex-shrink-0">
+                                    <h3 class="font-bold text-gray-700">Vista Previa</h3>
+                                    <div class="flex gap-2">
+                                        
+                                        <button @click="isFullScreen = !isFullScreen" 
+                                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white border border-transparent hover:border-gray-200 text-gray-500 transition-all"
+                                                :title="isFullScreen ? 'Salir de pantalla completa' : 'Pantalla completa'">
+                                            <i class="fas" :class="isFullScreen ? 'fa-compress' : 'fa-expand'"></i>
+                                        </button>
+
+                                        <a :href="'{{ route('ff.evidence.download') }}?path=' + activePath" 
+                                        class="px-4 py-2 bg-[#2c3856] text-white text-xs font-bold rounded-lg hover:bg-[#1e273d] transition-colors flex items-center gap-2">
+                                            <i class="fas fa-download"></i> Descargar
+                                        </a>
+
+                                        <button @click="showModal = false" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-600 transition-colors">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="flex-1 overflow-auto bg-gray-100 p-4 flex items-center justify-center relative">
+                                    <div class="absolute inset-0 flex items-center justify-center z-0 text-gray-400">
+                                        <i class="fas fa-circle-notch fa-spin fa-2x"></i>
+                                    </div>
+
+                                    <template x-if="activeType === 'image'">
+                                        <img :src="activeUrl" class="max-w-full max-h-full object-contain rounded-lg shadow-lg relative z-10 bg-white">
+                                    </template>
+
+                                    <template x-if="activeType === 'pdf'">
+                                        <iframe :src="activeUrl" class="w-full h-full min-h-[60vh] rounded-lg shadow-lg relative z-10 bg-white border border-gray-200"></iframe>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
