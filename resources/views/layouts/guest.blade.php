@@ -82,7 +82,7 @@
         <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center text-center text-xs sm:text-sm text-white">
             <a href="{{ route('terms.conditions') }}" class="text-white hover:underline mb-2 md:mb-0">Términos y condiciones</a>
             <a href="{{ route('privacy.policy') }}" class="text-white hover:underline mb-2 md:mb-0">Política de privacidad</a>
-            <span>© 2025 Minmer Global. Todos los derechos reservados.</span>
+            <span>© 2026 Minmer Global. Todos los derechos reservados.</span>
         </div>
     </footer>
 
