@@ -305,14 +305,22 @@ class FfReportController extends Controller
         ));
     }
 
-    public function stockAvailability()
+    public function stockAvailability(Request $request)
     {
-        $products = ffProduct::where('is_active', true)
+        $search = $request->input('search');
+
+        $query = ffProduct::where('is_active', true)
             ->withSum('movements', 'quantity')
-            ->withSum('cartItems', 'quantity')
-            ->get();
-            
-        $data = $products->map(function($product) {
+            ->withSum('cartItems', 'quantity');
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('sku', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        $allProducts = $query->get()->map(function($product) {
             $totalStock = (int) ($product->movements_sum_quantity ?? 0);
             $totalReserved = (int) ($product->cart_items_sum_quantity ?? 0);
             $available = $totalStock - $totalReserved;
@@ -324,27 +332,38 @@ class FfReportController extends Controller
                 'total_reserved' => $totalReserved,
                 'available' => $available,
             ];
-        })->sortByDesc('total_stock');
+        });
 
-        $categories = $data->pluck('sku')->take(10)->toArray();
-        $stockData = $data->pluck('total_stock')->take(10)->toArray();
-        $reservedData = $data->pluck('total_reserved')->take(10)->toArray();
-        $availableData = $data->pluck('available')->take(10)->toArray();
+        $lowStockAlerts = $allProducts->filter(fn ($p) => $p['available'] < 10)->sortBy('available');
 
+        $chartData = $allProducts->sortByDesc('total_stock')->take(15);
         $chartStockVsReserved = [
             'series' => [
-                ['name' => 'Stock Disponible', 'data' => $availableData],
-                ['name' => 'Reservado (Carrito)', 'data' => $reservedData],
+                ['name' => 'Stock Disponible', 'data' => $chartData->pluck('available')->toArray()],
+                ['name' => 'Reservado (Carrito)', 'data' => $chartData->pluck('total_reserved')->toArray()],
             ],
-            'categories' => $categories,
+            'categories' => $chartData->pluck('sku')->toArray(),
         ];
+
+        $sortedCollection = $allProducts->sortBy('available');
         
-        $lowStockAlerts = $data->filter(fn ($p) => $p['available'] > 0 && $p['available'] < 10);
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage();
+        $perPage = 50;
+        $currentPageItems = $sortedCollection->slice(($currentPage - 1) * $perPage, $perPage)->all();
+        
+        $paginatedData = new \Illuminate\Pagination\LengthAwarePaginator(
+            $currentPageItems, 
+            $sortedCollection->count(), 
+            $perPage, 
+            $currentPage, 
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         return view('friends-and-family.reports.stock-availability', compact(
-            'data',
+            'paginatedData',
             'chartStockVsReserved',
-            'lowStockAlerts'
+            'lowStockAlerts',
+            'search'
         ));
     }
 

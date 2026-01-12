@@ -43,6 +43,40 @@
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01);
         }
 
+        .input-tech {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(44, 56, 86, 0.1);
+            color: var(--c-navy);
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 10px 16px;
+            border-radius: 8px;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        .input-tech:focus {
+            background: #fff;
+            border-color: var(--c-orange);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 156, 0, 0.15);
+        }
+
+        .pagination-link {
+            display: inline-flex; items-center; justify-center;
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            font-size: 11px; font-weight: 700;
+            background: white; border: 1px solid #e2e8f0;
+            color: var(--c-navy);
+            transition: all 0.2s;
+        }
+        .pagination-link.active {
+            background: var(--c-navy); color: white; border-color: var(--c-navy);
+        }
+        .pagination-link:hover:not(.active) {
+            border-color: var(--c-orange); color: var(--c-orange);
+        }
+
         .tech-table th {
             font-family: 'Raleway', sans-serif; font-weight: 800; text-transform: uppercase;
             font-size: 0.7rem; letter-spacing: 0.05em; color: var(--c-navy);
@@ -56,7 +90,6 @@
         .tech-row:hover { background-color: rgba(255, 255, 255, 0.8) !important; }
 
         .font-impact { font-family: 'Raleway', sans-serif; letter-spacing: -0.02em; }
-        
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -86,7 +119,7 @@
                     DISPONIBILIDAD <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-orange-600">STOCK</span>
                 </h2>
                 <p class="text-sm text-slate-500 font-medium mt-2 max-w-xl">
-                    Monitoreo en tiempo real de existencias físicas vs. comprometidas en órdenes activas.
+                    Monitoreo en tiempo real de existencias físicas vs. comprometidas.
                 </p>
             </div>
             
@@ -103,7 +136,6 @@
                 @if ($lowStockAlerts->count() > 0)
                     <div class="card-complex border-l-4 border-rose-500 overflow-hidden relative">
                         <div class="absolute inset-0 opacity-5 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#ef4444_10px,#ef4444_20px)]"></div>
-                        
                         <div class="p-6 relative z-10">
                             <div class="flex items-center gap-3 mb-4">
                                 <div class="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center text-rose-600 shadow-sm">
@@ -111,16 +143,18 @@
                                 </div>
                                 <div>
                                     <h3 class="text-lg font-impact font-black text-[#2c3856]">CRITICAL_STOCK_LEVEL</h3>
-                                    <p class="text-xs font-bold text-rose-500 uppercase tracking-wide">Se detectaron {{ $lowStockAlerts->count() }} SKUs por debajo del umbral de seguridad (< 10 uds)</p>
+                                    <p class="text-xs font-bold text-rose-500 uppercase tracking-wide">
+                                        Atención: {{ $lowStockAlerts->count() }} SKUs requieren reabastecimiento.
+                                    </p>
                                 </div>
                             </div>
                             
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                @foreach ($lowStockAlerts->take(6) as $product)
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                                @foreach ($lowStockAlerts->take(8) as $product)
                                     <div class="bg-white/80 rounded-lg p-3 border border-rose-100 flex justify-between items-center shadow-sm">
                                         <div>
                                             <div class="text-[10px] font-bold text-slate-400">SKU: {{ $product['sku'] }}</div>
-                                            <div class="text-xs font-bold text-[#2c3856] truncate max-w-[150px]" title="{{ $product['description'] }}">{{ $product['description'] }}</div>
+                                            <div class="text-xs font-bold text-[#2c3856] truncate max-w-[120px]" title="{{ $product['description'] }}">{{ $product['description'] }}</div>
                                         </div>
                                         <div class="text-right">
                                             <div class="text-[10px] text-slate-400">Disp.</div>
@@ -128,10 +162,12 @@
                                         </div>
                                     </div>
                                 @endforeach
-                                @if($lowStockAlerts->count() > 6)
-                                    <div class="bg-rose-50/50 rounded-lg p-3 border border-rose-100 flex items-center justify-center text-xs font-bold text-rose-600 cursor-pointer hover:bg-rose-100 transition-colors">
-                                        + {{ $lowStockAlerts->count() - 6 }} ítems adicionales
-                                    </div>
+                                
+                                @if($lowStockAlerts->count() > 8)
+                                    <a href="#inventory-table" class="bg-rose-50/50 rounded-lg p-3 border border-rose-100 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-rose-100 transition-colors group">
+                                        <span class="text-xs font-bold text-rose-600 group-hover:scale-110 transition-transform">+ {{ $lowStockAlerts->count() - 8 }} Más</span>
+                                        <span class="text-[9px] text-rose-400">Ver en tabla</span>
+                                    </a>
                                 @endif
                             </div>
                         </div>
@@ -143,7 +179,7 @@
                         </div>
                         <div>
                             <h3 class="text-lg font-impact font-black text-[#2c3856]">SISTEMA ÓPTIMO</h3>
-                            <p class="text-xs font-medium text-emerald-600 uppercase tracking-wide">Todos los productos mantienen niveles de inventario saludables (> 10 uds).</p>
+                            <p class="text-xs font-medium text-emerald-600 uppercase tracking-wide">Inventario saludable. Ningún producto por debajo del umbral de seguridad.</p>
                         </div>
                     </div>
                 @endif
@@ -154,36 +190,41 @@
                 <div class="lg:col-span-1 card-complex p-6 flex flex-col animate-enter" style="animation-delay: 0.2s;">
                     <div class="mb-6">
                         <h3 class="text-base font-impact font-black text-[#2c3856] uppercase flex items-center gap-2">
-                            <i class="fas fa-chart-pie text-[#ff9c00]"></i> Retención de Stock
+                            <i class="fas fa-chart-pie text-[#ff9c00]"></i> Top 15 Retención
                         </h3>
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-1">
-                            Análisis Top 10 SKUs: Libre vs. Carrito
+                            Análisis de items con mayor volumen
                         </p>
                     </div>
                     
-                    <div class="flex-grow relative w-full" style="min-height: 350px;">
+                    <div class="flex-grow relative w-full" style="min-height: 400px;">
                         <div id="chart-stock-vs-reserved" class="absolute inset-0"></div>
-                    </div>
-                    
-                    <div class="mt-4 p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-[10px] text-slate-600 leading-relaxed">
-                        <i class="fas fa-info-circle text-blue-500 mr-1"></i>
-                        El segmento <strong>Reservado</strong> representa unidades actualmente en carritos de compra activos que aún no se han concretado como venta final.
                     </div>
                 </div>
 
-                <div class="lg:col-span-2 card-complex overflow-hidden flex flex-col animate-enter" style="animation-delay: 0.3s;">
-                    <div class="p-6 border-b border-slate-100 bg-white/50 backdrop-blur-sm flex justify-between items-center">
+                <div id="inventory-table" class="lg:col-span-2 card-complex overflow-hidden flex flex-col animate-enter" style="animation-delay: 0.3s;">
+                    
+                    <div class="p-6 border-b border-slate-100 bg-white/50 backdrop-blur-sm flex flex-col sm:flex-row justify-between items-center gap-4">
                         <div>
                             <h3 class="text-base font-impact font-black text-[#2c3856] uppercase">Inventario Maestro</h3>
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-1">
-                                {{ count($data) }} Referencias listadas
+                                {{ $paginatedData->total() }} Referencias Totales
                             </p>
                         </div>
-                        <div class="flex gap-2 text-[10px] font-bold uppercase">
-                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Disp. Alta</span>
-                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#ff9c00]"></span> Disp. Baja</span>
-                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Crítico</span>
-                        </div>
+
+                        <form method="GET" action="{{ route('ff.reports.stockAvailability') }}" class="w-full sm:w-auto flex items-center gap-2">
+                            <div class="relative w-full sm:w-64">
+                                <input type="text" name="search" value="{{ $search }}" placeholder="Buscar SKU o Descripción..." class="input-tech pl-9">
+                            </div>
+                            <button type="submit" class="bg-[#2c3856] text-white rounded-lg w-9 h-9 flex items-center justify-center hover:bg-[#ff9c00] transition-colors shadow-sm">
+                                <i class="fas fa-arrow-right text-xs"></i>
+                            </button>
+                            @if($search)
+                                <a href="{{ route('ff.reports.stockAvailability') }}" class="bg-slate-200 text-slate-500 rounded-lg w-9 h-9 flex items-center justify-center hover:bg-slate-300 transition-colors" title="Limpiar Filtro">
+                                    <i class="fas fa-times text-xs"></i>
+                                </a>
+                            @endif
+                        </form>
                     </div>
                     
                     <div class="flex-grow overflow-x-auto custom-scroll">
@@ -199,7 +240,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 bg-white/40">
-                                @forelse ($data as $product)
+                                @forelse ($paginatedData as $product)
                                     <tr class="tech-row transition-colors">
                                         <td class="font-mono text-xs font-bold text-[#2c3856]">
                                             {{ $product['sku'] }}
@@ -223,29 +264,32 @@
                                         </td>
                                         <td class="text-center">
                                             @if ($product['available'] <= 0)
-                                                <span class="inline-flex items-center justify-center px-2 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-600 border border-rose-200">
-                                                    AGOTADO
-                                                </span>
+                                                <span class="inline-flex items-center justify-center px-2 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-600 border border-rose-200">AGOTADO</span>
                                             @elseif ($product['available'] < 10)
-                                                <span class="inline-flex items-center justify-center px-2 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-600 border border-amber-100">
-                                                    BAJO
-                                                </span>
+                                                <span class="inline-flex items-center justify-center px-2 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-600 border border-amber-100">BAJO</span>
                                             @else
-                                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-50 text-emerald-500 text-[10px]">
-                                                    <i class="fas fa-check"></i>
-                                                </span>
+                                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-50 text-emerald-500 text-[10px]"><i class="fas fa-check"></i></span>
                                             @endif
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
                                         <td colspan="6" class="px-6 py-12 text-center text-slate-400 text-xs font-bold uppercase">
-                                            Base de datos de inventario vacía.
+                                            No se encontraron productos con el criterio de búsqueda.
                                         </td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
+                    </div>
+
+                    <div class="p-4 border-t border-slate-100 bg-white/30 backdrop-blur-sm flex justify-between items-center">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase">
+                            Mostrando {{ $paginatedData->firstItem() ?? 0 }} - {{ $paginatedData->lastItem() ?? 0 }} de {{ $paginatedData->total() }}
+                        </div>
+                        <div class="flex gap-1">
+                            {{ $paginatedData->links('pagination::simple-tailwind') }} 
+                        </div>
                     </div>
                 </div>
 
@@ -272,13 +316,13 @@
                     bar: {
                         horizontal: true,
                         borderRadius: 4,
-                        barHeight: '60%',
+                        barHeight: '70%',
                         dataLabels: {
                             total: {
                                 enabled: true,
                                 formatter: (val) => val.toLocaleString(),
                                 style: { fontSize: '10px', fontWeight: 900, color: '#2c3856' },
-                                offsetX: 10
+                                offsetX: 5
                             }
                         }
                     },
@@ -287,17 +331,11 @@
                 stroke: { width: 1, colors: ['#fff'] },
                 xaxis: {
                     categories: dataStockVsReserved.categories,
-                    labels: {
-                        style: { colors: '#64748b', fontSize: '10px', fontWeight: 600 }
-                    },
-                    axisBorder: { show: false },
-                    axisTicks: { show: false }
+                    labels: { style: { colors: '#64748b', fontSize: '10px', fontWeight: 600 } },
+                    axisBorder: { show: false }, axisTicks: { show: false }
                 },
                 yaxis: {
-                    labels: {
-                        style: { colors: '#2c3856', fontSize: '10px', fontWeight: 700 },
-                        maxWidth: 100
-                    }
+                    labels: { style: { colors: '#2c3856', fontSize: '10px', fontWeight: 700 }, maxWidth: 120 }
                 },
                 grid: {
                     borderColor: '#f1f5f9',
