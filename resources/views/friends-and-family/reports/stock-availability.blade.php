@@ -1,79 +1,249 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex flex-col md:flex-row justify-between items-center"> 
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Reportes: Disponibilidad de Stock y Reservas') }}
-            </h2>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@700;800;900&display=swap');
+
+        :root {
+            --c-navy: #2c3856;
+            --c-navy-light: #3b4b72;
+            --c-orange: #ff9c00;
+            --c-red: #ef4444;
+            --c-green: #10b981;
+        }
+
+        body { font-family: 'Montserrat', sans-serif; background-color: #f0f2f5; overflow-x: hidden; }
+
+        .complex-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
+            background: linear-gradient(135deg, #eef2f3 0%, #e6e9ef 100%);
+        }
+        .complex-bg::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(44, 56, 86, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(44, 56, 86, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .orb-float {
+            position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.5;
+            animation: floatOrb 25s infinite ease-in-out;
+        }
+
+        .card-complex {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 1);
+            box-shadow: 
+                0 4px 6px -1px rgba(0, 0, 0, 0.05), 
+                0 2px 4px -1px rgba(0, 0, 0, 0.03),
+                inset 0 0 20px rgba(255, 255, 255, 0.5);
+            border-radius: 16px; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-complex:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01);
+        }
+
+        .tech-table th {
+            font-family: 'Raleway', sans-serif; font-weight: 800; text-transform: uppercase;
+            font-size: 0.7rem; letter-spacing: 0.05em; color: var(--c-navy);
+            background: rgba(44, 56, 86, 0.02); border-bottom: 2px solid rgba(44, 56, 86, 0.05);
+            padding: 12px 16px;
+        }
+        .tech-table td {
+            font-size: 0.85rem; padding: 12px 16px; border-bottom: 1px solid rgba(0,0,0,0.03);
+            vertical-align: middle;
+        }
+        .tech-row:hover { background-color: rgba(255, 255, 255, 0.8) !important; }
+
+        .font-impact { font-family: 'Raleway', sans-serif; letter-spacing: -0.02em; }
+        
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: var(--c-navy); }
+
+        @keyframes floatOrb { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(40px, -60px); } }
+        .animate-enter { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+
+    <div class="complex-bg">
+        <div class="orb-float bg-rose-400 w-96 h-96 top-0 left-1/4 mix-blend-multiply"></div>
+        <div class="orb-float bg-blue-400 w-80 h-80 bottom-0 right-1/4 mix-blend-multiply" style="animation-delay: -5s;"></div>
+    </div>
+
+    <div class="relative min-h-screen py-10 px-4 sm:px-6 lg:px-8 max-w-[1920px] mx-auto">
+        
+        <x-slot name="header"></x-slot>
+
+        <div class="flex flex-col md:flex-row justify-between items-end mb-10 animate-enter gap-6"> 
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-2 h-2 bg-[#ff9c00] rounded-full animate-pulse"></div>
+                    <span class="text-[10px] font-bold tracking-[0.25em] text-[#2c3856] uppercase">Auditoría de Recursos</span>
+                </div>
+                <h2 class="text-4xl md:text-5xl font-impact font-black text-[#2c3856] leading-none">
+                    DISPONIBILIDAD <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-orange-600">STOCK</span>
+                </h2>
+                <p class="text-sm text-slate-500 font-medium mt-2 max-w-xl">
+                    Monitoreo en tiempo real de existencias físicas vs. comprometidas en órdenes activas.
+                </p>
+            </div>
+            
             <a href="{{ route('ff.reports.index') }}"
-            class="inline-flex items-center px-6 py-2 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest bg-[#2c3856] hover:bg-[#ff9c00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff9c00] shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 ease-in-out">
-                <i class="fas fa-tachometer-alt mr-2"></i>
-                Volver a "Reportes"
+               class="group flex items-center gap-3 px-6 py-2.5 bg-white/60 backdrop-blur-sm border border-[#2c3856]/10 rounded-lg hover:bg-[#2c3856] hover:text-white transition-all duration-300 shadow-sm">
+                <i class="fas fa-arrow-left text-[#ff9c00] group-hover:text-white transition-colors"></i>
+                <span class="text-xs font-black uppercase tracking-widest">Panel Principal</span>
             </a>
         </div>
-    </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-8xl mx-auto sm:px-6 lg:px-8">
-            <div class="space-y-6">
+        <div class="space-y-8">
 
+            <div class="animate-enter" style="animation-delay: 0.1s;">
                 @if ($lowStockAlerts->count() > 0)
-                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow-md" role="alert">
-                        <p class="font-bold">🚨 Alerta de Bajo Stock (Umbral < 10 disponibles)</p>
-                        <ul class="mt-2 list-disc list-inside">
-                            @foreach ($lowStockAlerts as $product)
-                                <li>
-                                    **{{ $product['sku'] }}** ({{ $product['description'] }}): 
-                                    Stock Total: **{{ $product['total_stock'] }}**, 
-                                    Reservado: **{{ $product['total_reserved'] }}**, 
-                                    **Disponible: {{ $product['available'] }}**
-                                </li>
-                            @endforeach
-                        </ul>
+                    <div class="card-complex border-l-4 border-rose-500 overflow-hidden relative">
+                        <div class="absolute inset-0 opacity-5 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#ef4444_10px,#ef4444_20px)]"></div>
+                        
+                        <div class="p-6 relative z-10">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center text-rose-600 shadow-sm">
+                                    <i class="fas fa-radiation animate-pulse"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-impact font-black text-[#2c3856]">CRITICAL_STOCK_LEVEL</h3>
+                                    <p class="text-xs font-bold text-rose-500 uppercase tracking-wide">Se detectaron {{ $lowStockAlerts->count() }} SKUs por debajo del umbral de seguridad (< 10 uds)</p>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                @foreach ($lowStockAlerts->take(6) as $product)
+                                    <div class="bg-white/80 rounded-lg p-3 border border-rose-100 flex justify-between items-center shadow-sm">
+                                        <div>
+                                            <div class="text-[10px] font-bold text-slate-400">SKU: {{ $product['sku'] }}</div>
+                                            <div class="text-xs font-bold text-[#2c3856] truncate max-w-[150px]" title="{{ $product['description'] }}">{{ $product['description'] }}</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-[10px] text-slate-400">Disp.</div>
+                                            <div class="text-lg font-black text-rose-600 leading-none">{{ $product['available'] }}</div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                                @if($lowStockAlerts->count() > 6)
+                                    <div class="bg-rose-50/50 rounded-lg p-3 border border-rose-100 flex items-center justify-center text-xs font-bold text-rose-600 cursor-pointer hover:bg-rose-100 transition-colors">
+                                        + {{ $lowStockAlerts->count() - 6 }} ítems adicionales
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
                     </div>
                 @else
-                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-md">
-                        <p class="font-bold">✅ Nivel de Stock Óptimo</p>
-                        <p>No hay productos activos por debajo del umbral de disponibilidad (10 unidades).</p>
+                    <div class="card-complex border-l-4 border-emerald-500 p-6 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl shadow-sm">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-impact font-black text-[#2c3856]">SISTEMA ÓPTIMO</h3>
+                            <p class="text-xs font-medium text-emerald-600 uppercase tracking-wide">Todos los productos mantienen niveles de inventario saludables (> 10 uds).</p>
+                        </div>
                     </div>
                 @endif
+            </div>
 
-                <div class="bg-white p-6 rounded-lg shadow-xl">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">
-                        Stock Disponible vs. Stock Comprometido (Top 10 SKUs)
-                    </h3>
-                    <p class="text-sm text-gray-500 mb-4">
-                        Representación visual del stock disponible para venta inmediata y el stock retenido en carritos de otros usuarios.
-                    </p>
-                    <div id="chart-stock-vs-reserved" style="min-height: 400px;"></div>
-                </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
-                <div class="bg-white p-6 rounded-lg shadow-xl">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">
-                        Inventario Detallado (Disponibilidad Real)
-                    </h3>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                <div class="lg:col-span-1 card-complex p-6 flex flex-col animate-enter" style="animation-delay: 0.2s;">
+                    <div class="mb-6">
+                        <h3 class="text-base font-impact font-black text-[#2c3856] uppercase flex items-center gap-2">
+                            <i class="fas fa-chart-pie text-[#ff9c00]"></i> Retención de Stock
+                        </h3>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-1">
+                            Análisis Top 10 SKUs: Libre vs. Carrito
+                        </p>
+                    </div>
+                    
+                    <div class="flex-grow relative w-full" style="min-height: 350px;">
+                        <div id="chart-stock-vs-reserved" class="absolute inset-0"></div>
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-[10px] text-slate-600 leading-relaxed">
+                        <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                        El segmento <strong>Reservado</strong> representa unidades actualmente en carritos de compra activos que aún no se han concretado como venta final.
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 card-complex overflow-hidden flex flex-col animate-enter" style="animation-delay: 0.3s;">
+                    <div class="p-6 border-b border-slate-100 bg-white/50 backdrop-blur-sm flex justify-between items-center">
+                        <div>
+                            <h3 class="text-base font-impact font-black text-[#2c3856] uppercase">Inventario Maestro</h3>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-1">
+                                {{ count($data) }} Referencias listadas
+                            </p>
+                        </div>
+                        <div class="flex gap-2 text-[10px] font-bold uppercase">
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Disp. Alta</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#ff9c00]"></span> Disp. Baja</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Crítico</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-grow overflow-x-auto custom-scroll">
+                        <table class="min-w-full divide-y divide-slate-100 tech-table">
+                            <thead>
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Total</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Reservado</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">DISPONIBLE REAL</th>
+                                    <th class="text-left w-24">Código SKU</th>
+                                    <th class="text-left">Descripción del Producto</th>
+                                    <th class="text-right">Físico Total</th>
+                                    <th class="text-right">En Reserva</th>
+                                    <th class="text-right">Disponible Real</th>
+                                    <th class="text-center w-24">Estado</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach ($data as $product)
-                                    <tr class="@if ($product['available'] <= 0) bg-red-50 @elseif ($product['available'] < 10) bg-yellow-50 @endif">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $product['sku'] }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product['description'] }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">{{ number_format($product['total_stock']) }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-red-500">{{ number_format($product['total_reserved']) }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-extrabold @if ($product['available'] <= 0) text-red-600 @elseif ($product['available'] < 10) text-yellow-600 @else text-green-600 @endif">
-                                            {{ number_format($product['available']) }}
+                            <tbody class="divide-y divide-slate-100 bg-white/40">
+                                @forelse ($data as $product)
+                                    <tr class="tech-row transition-colors">
+                                        <td class="font-mono text-xs font-bold text-[#2c3856]">
+                                            {{ $product['sku'] }}
+                                        </td>
+                                        <td class="text-xs font-medium text-slate-600 uppercase">
+                                            {{ $product['description'] }}
+                                        </td>
+                                        <td class="text-right font-mono text-xs text-slate-500">
+                                            {{ number_format($product['total_stock']) }}
+                                        </td>
+                                        <td class="text-right font-mono text-xs text-blue-500 font-bold">
+                                            {{ $product['total_reserved'] > 0 ? number_format($product['total_reserved']) : '-' }}
+                                        </td>
+                                        <td class="text-right">
+                                            <span class="text-sm font-black font-mono 
+                                                @if ($product['available'] <= 0) text-rose-600 
+                                                @elseif ($product['available'] < 10) text-[#d97706] 
+                                                @else text-emerald-600 @endif">
+                                                {{ number_format($product['available']) }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            @if ($product['available'] <= 0)
+                                                <span class="inline-flex items-center justify-center px-2 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-600 border border-rose-200">
+                                                    AGOTADO
+                                                </span>
+                                            @elseif ($product['available'] < 10)
+                                                <span class="inline-flex items-center justify-center px-2 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-600 border border-amber-100">
+                                                    BAJO
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-50 text-emerald-500 text-[10px]">
+                                                    <i class="fas fa-check"></i>
+                                                </span>
+                                            @endif
                                         </td>
                                     </tr>
-                                @endforeach
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="px-6 py-12 text-center text-slate-400 text-xs font-bold uppercase">
+                                            Base de datos de inventario vacía.
+                                        </td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -84,67 +254,75 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>    
-
     <script>
-        const dataStockVsReserved = @json($chartStockVsReserved);
+        document.addEventListener('DOMContentLoaded', function () {
+            const dataStockVsReserved = @json($chartStockVsReserved);
 
-        var optionsStockVsReserved = {
-            series: dataStockVsReserved.series,
-            chart: {
-                type: 'bar',
-                height: 380,
-                stacked: true,
-                toolbar: { show: false }
-            },
-            plotOptions: {
-                bar: {
-                    horizontal: true,
-                    dataLabels: {
-                        total: {
-                            enabled: true,
-                            formatter: function (val) {
-                                return val.toLocaleString();
-                            },
-                            style: {
-                                fontSize: '13px',
-                                fontWeight: 900
+            var optionsStockVsReserved = {
+                series: dataStockVsReserved.series,
+                chart: {
+                    type: 'bar',
+                    height: '100%', 
+                    stacked: true,
+                    toolbar: { show: false },
+                    fontFamily: 'Montserrat, sans-serif',
+                    animations: { enabled: true, easing: 'easeinout', speed: 800 }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: true,
+                        borderRadius: 4,
+                        barHeight: '60%',
+                        dataLabels: {
+                            total: {
+                                enabled: true,
+                                formatter: (val) => val.toLocaleString(),
+                                style: { fontSize: '10px', fontWeight: 900, color: '#2c3856' },
+                                offsetX: 10
                             }
                         }
+                    },
+                },
+                dataLabels: { enabled: false },
+                stroke: { width: 1, colors: ['#fff'] },
+                xaxis: {
+                    categories: dataStockVsReserved.categories,
+                    labels: {
+                        style: { colors: '#64748b', fontSize: '10px', fontWeight: 600 }
+                    },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false }
+                },
+                yaxis: {
+                    labels: {
+                        style: { colors: '#2c3856', fontSize: '10px', fontWeight: 700 },
+                        maxWidth: 100
                     }
                 },
-            },
-            stroke: {
-                width: 1,
-                colors: ['#fff']
-            },
-            xaxis: {
-                categories: dataStockVsReserved.categories,
-                title: {
-                    text: 'Unidades'
-                }
-            },
-            yaxis: {
-                title: {
-                    text: 'SKU'
-                }
-            },
-            tooltip: {
-                y: {
-                    formatter: function (val) {
-                        return val.toLocaleString() + " unidades"
-                    }
-                }
-            },
-            fill: {
-                opacity: 1
-            },
-            legend: {
-                position: 'bottom',
-            },
-            colors: ['#48BB78', '#E53E3E']
-        };
+                grid: {
+                    borderColor: '#f1f5f9',
+                    strokeDashArray: 4,
+                    xaxis: { lines: { show: true } },
+                    yaxis: { lines: { show: false } },
+                    padding: { top: 0, right: 20, bottom: 0, left: 10 } 
+                },
+                tooltip: {
+                    theme: 'light',
+                    y: { formatter: (val) => val.toLocaleString() + " uds" }
+                },
+                fill: { opacity: 0.9 },
+                legend: {
+                    position: 'top',
+                    horizontalAlign: 'right',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    itemMargin: { horizontal: 10 }
+                },
+                colors: ['#2c3856', '#ff9c00'] 
+            };
 
-        var chartStockVsReserved = new ApexCharts(document.querySelector("#chart-stock-vs-reserved"), optionsStockVsReserved);
-        chartStockVsReserved.render();
+            var chart = new ApexCharts(document.querySelector("#chart-stock-vs-reserved"), optionsStockVsReserved);
+            chart.render();
+        });
     </script>
 </x-app-layout>

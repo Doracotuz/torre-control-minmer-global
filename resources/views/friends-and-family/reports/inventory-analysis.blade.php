@@ -233,7 +233,6 @@
                 tooltip: {
                     theme: 'light',
                     custom: function({ series, seriesIndex, dataPointIndex, w }) {
-                        // AQUÍ ESTÁ LA CORRECCIÓN CLAVE PARA LEER EL OBJETO
                         const rawData = w.config.series[seriesIndex].data[dataPointIndex];
                         
                         let label = rawData.label || 'Producto';
