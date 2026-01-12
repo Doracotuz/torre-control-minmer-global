@@ -4,9 +4,7 @@
 
         :root {
             --c-navy: #2c3856;
-            --c-navy-light: #3b4b72;
             --c-orange: #ff9c00;
-            --c-dark: #1a1f2e;
         }
 
         body { font-family: 'Montserrat', sans-serif; background-color: #f0f2f5; overflow-x: hidden; }
@@ -59,7 +57,7 @@
                 <h2 class="text-5xl font-impact font-black text-[#2c3856] leading-none">
                     ANÁLISIS DE <span class="text-[#ff9c00]">MOVIMIENTOS</span>
                 </h2>
-                <p class="text-base text-slate-500 font-medium mt-2 max-w-2xl">
+                <p class="text-lg text-slate-500 font-medium mt-2 max-w-2xl">
                     Visualización avanzada de flujo de stock, causas de ajuste y correlación de rotación.
                 </p>
             </div>
@@ -174,15 +172,15 @@
                 xaxis: {
                     categories: dataMovementReasons.categories,
                     labels: {
-                        style: { colors: '#64748b', fontSize: '12px', fontWeight: 600, fontFamily: 'Montserrat, sans-serif' },
+                        style: { colors: '#64748b', fontSize: '13px', fontWeight: 600, fontFamily: 'Montserrat, sans-serif' },
                         rotate: -45
                     },
                     axisBorder: { show: false },
                     axisTicks: { show: false }
                 },
                 yaxis: {
-                    title: { text: 'Volumen de Unidades', style: { fontSize: '13px', fontWeight: 700, color: '#94a3b8' } },
-                    labels: { style: { colors: '#64748b', fontSize: '12px', fontWeight: 600 } }
+                    title: { text: 'Volumen de Unidades', style: { fontSize: '14px', fontWeight: 700, color: '#94a3b8' } },
+                    labels: { style: { colors: '#64748b', fontSize: '13px', fontWeight: 600 } }
                 },
                 grid: { borderColor: '#e2e8f0', strokeDashArray: 4, yaxis: { lines: { show: true } } },
                 tooltip: {
@@ -219,59 +217,49 @@
                     type: 'numeric',
                     labels: {
                         formatter: function (val) { return '$' + parseFloat(val).toFixed(0); },
-                        style: { colors: '#64748b', fontSize: '12px', fontWeight: 600 }
+                        style: { colors: '#64748b', fontSize: '13px', fontWeight: 600 }
                     },
-                    title: { text: 'Precio Unitario (MXN)', style: { fontSize: '13px', fontWeight: 700, color: '#94a3b8' } },
+                    title: { text: 'Precio Unitario (MXN)', style: { fontSize: '14px', fontWeight: 700, color: '#94a3b8' } },
                     axisBorder: { show: false },
                     axisTicks: { show: false },
                     crosshairs: { show: true }
                 },
                 yaxis: {
                     tickAmount: 7,
-                    title: { text: 'Stock Físico Actual', style: { fontSize: '13px', fontWeight: 700, color: '#94a3b8' } },
-                    labels: { style: { colors: '#64748b', fontSize: '12px', fontWeight: 600 } }
+                    title: { text: 'Stock Físico Actual', style: { fontSize: '14px', fontWeight: 700, color: '#94a3b8' } },
+                    labels: { style: { colors: '#64748b', fontSize: '13px', fontWeight: 600 } }
                 },
                 grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
                 tooltip: {
                     theme: 'light',
                     custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                        // AQUÍ ESTÁ LA CORRECCIÓN CLAVE PARA LEER EL OBJETO
                         const rawData = w.config.series[seriesIndex].data[dataPointIndex];
-
-                        let label = 'Producto';
-                        let precio = 0;
-                        let stock = 0;
-                        let vendido = 0;
-
-                        if (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) {
-                            label = rawData.label || rawData.name || 'Producto';
-                            precio = rawData.x;
-                            stock = (rawData.y !== undefined) ? rawData.y : (rawData.stock || 0);
-                            vendido = rawData.z;
-                        } else if (Array.isArray(rawData)) {
-                            precio = rawData[0];
-                            stock = rawData[1];
-                            vendido = rawData[2];
-                        }
+                        
+                        let label = rawData.label || 'Producto';
+                        let precio = rawData.x;
+                        let stock = rawData.y;
+                        let vendido = rawData.z;
 
                         const precioFmt = parseFloat(precio).toFixed(2);
                         const stockFmt = parseInt(stock).toLocaleString();
                         const vendidoFmt = parseInt(vendido).toLocaleString();
 
                         return `
-                            <div class="px-4 py-3 bg-white border border-slate-200 rounded-lg shadow-xl">
-                                <div class="text-xs font-bold text-[#ff9c00] uppercase tracking-wider mb-1">Detalle de SKU</div>
-                                <div class="text-base font-black text-[#2c3856] mb-2">${label}</div>
-                                <div class="space-y-1">
-                                    <div class="flex justify-between gap-4 text-xs">
-                                        <span class="text-slate-500">Precio:</span>
+                            <div class="px-4 py-3 bg-white border border-slate-200 rounded-lg shadow-xl" style="min-width: 200px;">
+                                <div class="text-xs font-bold text-[#ff9c00] uppercase tracking-wider mb-2 border-b border-slate-100 pb-1">Detalle de SKU</div>
+                                <div class="text-lg font-black text-[#2c3856] mb-3">${label}</div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-slate-500 font-medium">Precio:</span>
                                         <span class="font-bold text-[#2c3856]">$${precioFmt}</span>
                                     </div>
-                                    <div class="flex justify-between gap-4 text-xs">
-                                        <span class="text-slate-500">Stock:</span>
-                                        <span class="font-bold text-[#2c3856]">${stockFmt} uds</span>
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-slate-500 font-medium">Stock:</span>
+                                        <span class="font-bold text-[#2c3856] bg-slate-100 px-2 rounded">${stockFmt} uds</span>
                                     </div>
-                                    <div class="flex justify-between gap-4 text-xs">
-                                        <span class="text-slate-500">Rotación:</span>
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-slate-500 font-medium">Rotación:</span>
                                         <span class="font-bold text-emerald-600">${vendidoFmt} vendidos</span>
                                     </div>
                                 </div>

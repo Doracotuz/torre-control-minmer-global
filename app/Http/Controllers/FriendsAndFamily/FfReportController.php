@@ -273,11 +273,12 @@ class FfReportController extends Controller
             'categories' => $reasons,
         ];
         
-        $rotationProducts = ffProduct::withSum('movements as total_stock', 'quantity')
-            ->join('ff_inventory_movements', 'ff_products.id', '=', 'ff_inventory_movements.ff_product_id')
+        $rotationProducts = ffProduct::join('ff_inventory_movements', 'ff_products.id', '=', 'ff_inventory_movements.ff_product_id')
             ->select(
+                'ff_products.id',
                 'ff_products.sku',
                 'ff_products.unit_price',
+                DB::raw('SUM(ff_inventory_movements.quantity) as total_stock'),
                 DB::raw('SUM(CASE WHEN ff_inventory_movements.quantity < 0 THEN ABS(ff_inventory_movements.quantity) ELSE 0 END) as total_vendido')
             )
             ->groupBy('ff_products.id', 'ff_products.sku', 'ff_products.unit_price')
