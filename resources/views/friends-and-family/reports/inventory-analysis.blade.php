@@ -237,14 +237,25 @@
                     custom: function({ series, seriesIndex, dataPointIndex, w }) {
                         const rawData = w.config.series[seriesIndex].data[dataPointIndex];
 
-                        const label = rawData.label || 'Producto';
-                        const precio = rawData.x;
-                        const stock = rawData.y;
-                        const vendido = rawData.z;
+                        let label = 'Producto';
+                        let precio = 0;
+                        let stock = 0;
+                        let vendido = 0;
 
-                        const precioFmt = (typeof precio === 'number') ? precio.toFixed(2) : '0.00';
-                        const stockFmt = (stock !== undefined && stock !== null) ? stock : '0';
-                        const vendidoFmt = (vendido !== undefined && vendido !== null) ? vendido : '0';
+                        if (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) {
+                            label = rawData.label || rawData.name || 'Producto';
+                            precio = rawData.x;
+                            stock = (rawData.y !== undefined) ? rawData.y : (rawData.stock || 0);
+                            vendido = rawData.z;
+                        } else if (Array.isArray(rawData)) {
+                            precio = rawData[0];
+                            stock = rawData[1];
+                            vendido = rawData[2];
+                        }
+
+                        const precioFmt = parseFloat(precio).toFixed(2);
+                        const stockFmt = parseInt(stock).toLocaleString();
+                        const vendidoFmt = parseInt(vendido).toLocaleString();
 
                         return `
                             <div class="px-4 py-3 bg-white border border-slate-200 rounded-lg shadow-xl">
