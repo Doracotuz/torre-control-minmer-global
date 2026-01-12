@@ -122,7 +122,7 @@
                     <span class="text-[9px] font-bold tracking-[0.2em] text-[#2c3856] uppercase">Base de Datos • Log V.4</span>
                 </div>
                 <h2 class="text-4xl font-impact font-black text-[#2c3856] leading-none">
-                    TRANSACCIONES<span class="text-[#ff9c00]">.LOG</span>
+                    REPORTE DE<span class="text-[#ff9c00]"> TRANSACCIONES</span>
                 </h2>
             </div>
             
