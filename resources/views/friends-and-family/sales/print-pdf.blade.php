@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Friends & Family - Lista de Productos</title>
+    <title>Marketing - Lista de Productos</title>
     <style>
         @page { margin: 70px 50px; }
         body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10px; color: #222; line-height: 1.4; }
