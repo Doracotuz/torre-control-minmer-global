@@ -235,11 +235,16 @@
                 tooltip: {
                     theme: 'light',
                     custom: function({ series, seriesIndex, dataPointIndex, w }) {
-                        const data = w.globals.series[seriesIndex][dataPointIndex];
-                        const label = w.config.series[seriesIndex].data[dataPointIndex].label;
-                        const precio = parseFloat(data[0]).toFixed(2);
-                        const stock = data[1];
-                        const vendido = data[2];
+                        const rawData = w.config.series[seriesIndex].data[dataPointIndex];
+
+                        const label = rawData.label || 'Producto';
+                        const precio = rawData.x;
+                        const stock = rawData.y;
+                        const vendido = rawData.z;
+
+                        const precioFmt = (typeof precio === 'number') ? precio.toFixed(2) : '0.00';
+                        const stockFmt = (stock !== undefined && stock !== null) ? stock : '0';
+                        const vendidoFmt = (vendido !== undefined && vendido !== null) ? vendido : '0';
 
                         return `
                             <div class="px-4 py-3 bg-white border border-slate-200 rounded-lg shadow-xl">
@@ -248,15 +253,15 @@
                                 <div class="space-y-1">
                                     <div class="flex justify-between gap-4 text-xs">
                                         <span class="text-slate-500">Precio:</span>
-                                        <span class="font-bold text-[#2c3856]">$${precio}</span>
+                                        <span class="font-bold text-[#2c3856]">$${precioFmt}</span>
                                     </div>
                                     <div class="flex justify-between gap-4 text-xs">
                                         <span class="text-slate-500">Stock:</span>
-                                        <span class="font-bold text-[#2c3856]">${stock} uds</span>
+                                        <span class="font-bold text-[#2c3856]">${stockFmt} uds</span>
                                     </div>
                                     <div class="flex justify-between gap-4 text-xs">
                                         <span class="text-slate-500">Rotación:</span>
-                                        <span class="font-bold text-emerald-600">${vendido} vendidos</span>
+                                        <span class="font-bold text-emerald-600">${vendidoFmt} vendidos</span>
                                     </div>
                                 </div>
                             </div>
