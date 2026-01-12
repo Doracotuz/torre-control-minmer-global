@@ -119,7 +119,7 @@
             <div>
                 <div class="flex items-center gap-2 mb-1">
                     <div class="w-2 h-2 bg-[#ff9c00] rounded-full animate-pulse"></div>
-                    <span class="text-[9px] font-bold tracking-[0.2em] text-[#2c3856] uppercase">Base de Datos • Log V.4</span>
+                    <span class="text-[9px] font-bold tracking-[0.2em] text-[#2c3856] uppercase">Base de Datos</span>
                 </div>
                 <h2 class="text-4xl font-impact font-black text-[#2c3856] leading-none">
                     REPORTE DE<span class="text-[#ff9c00]"> TRANSACCIONES</span>
@@ -145,7 +145,6 @@
                     <div class="lg:col-span-3">
                         <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Query (Folio/Cliente)</label>
                         <div class="relative">
-                            <i class="fas fa-terminal absolute left-3 top-2.5 text-slate-400 text-xs"></i>
                             <input type="text" name="search" id="search" value="{{ $search }}" placeholder="Input Data..." class="input-cockpit pl-8">
                         </div>
                     </div>
@@ -154,7 +153,7 @@
                         <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Agente de Venta</label>
                         <div class="relative">
                             <select name="vendedor_id" id="vendedor_id" class="input-cockpit cursor-pointer appearance-none">
-                                <option value="">● TODOS LOS AGENTES</option>
+                                <option value="">TODOS LOS AGENTES</option>
                                 @foreach ($vendedores as $vendedor)
                                     <option value="{{ $vendedor->id }}" @if ($userIdFilter == $vendedor->id) selected @endif>
                                         {{ strtoupper($vendedor->name) }}
