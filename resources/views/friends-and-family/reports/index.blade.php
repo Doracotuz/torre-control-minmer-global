@@ -112,14 +112,12 @@
                 <div class="relative group">
                     <div class="absolute -inset-1 bg-gradient-to-r from-[#ff9c00] to-[#2c3856] rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
                     <div class="relative px-4 py-2 bg-white ring-1 ring-gray-900/5 rounded-lg leading-none flex items-top justify-start space-x-6">
-                        <span class="font-impact font-black text-2xl text-[#2c3856]">MINMER<span class="text-[#ff9c00]">.SYS</span></span>
+                        <span class="font-impact font-black text-2xl text-[#2c3856]">CONTROL TOWER<span class="text-[#ff9c00]"> REPORTES</span></span>
                     </div>
                 </div>
                 <div class="hidden md:block">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Torre de Control v4.5</p>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                        <span class="text-[9px] font-mono text-[#2c3856]">SISTEMA: EN LÍNEA</span>
                     </div>
                 </div>
             </div>
@@ -127,12 +125,12 @@
             <div class="flex-grow flex flex-col md:flex-row items-center justify-end gap-3 px-4 py-2 w-full">
                 <form method="GET" action="{{ route('ff.reports.index') }}" class="w-full md:w-auto">
                     <div class="relative group">
-                        <label class="absolute -top-2 left-2 bg-white px-1 text-[9px] font-bold text-[#ff9c00] z-10">AGENTE</label>
+                        <label class="absolute -top-2 left-2 bg-white px-1 text-[13px] font-bold text-[#ff9c00] z-10">AGENTE</label>
                         <select name="user_id" onchange="this.form.submit()" class="input-cockpit w-full md:w-64 cursor-pointer">
-                            <option value="">● VISTA GLOBAL CORPORATIVA</option>
+                            <option value="">VISTA GLOBAL CORPORATIVA</option>
                             @foreach ($vendedores as $vendedor)
                                 <option value="{{ $vendedor->id }}" @if ($userIdFilter == $vendedor->id) selected @endif>
-                                    👤 {{ strtoupper($vendedor->name) }}
+                                    {{ strtoupper($vendedor->name) }}
                                 </option>
                             @endforeach
                         </select>
@@ -145,17 +143,17 @@
                     
                     <div class="flex items-center gap-1 bg-white/50 p-1 rounded-lg border border-slate-200">
                         <div class="relative">
-                            <label class="absolute -top-2.5 left-2 text-[8px] font-bold text-slate-400">INICIO</label>
+                            <label class="absolute -top-2.5 left-2 text-[13px] font-bold text-slate-400">INICIO</label>
                             <input type="date" name="start_date" required class="input-cockpit border-none bg-transparent w-28 focus:ring-0">
                         </div>
                         <span class="text-[#2c3856] font-bold text-xs">↔</span>
                         <div class="relative">
-                            <label class="absolute -top-2.5 left-2 text-[8px] font-bold text-slate-400">FIN</label>
+                            <label class="absolute -top-2.5 left-2 text-[13px] font-bold text-slate-400">FIN</label>
                             <input type="date" name="end_date" required class="input-cockpit border-none bg-transparent w-28 focus:ring-0">
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full md:w-auto px-6 py-2.5 bg-[#2c3856] hover:bg-[#1a2236] text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg shadow-[#2c3856]/30 transition-all flex items-center justify-center gap-2 group">
+                    <button type="submit" class="w-full md:w-auto px-6 py-2.5 bg-[#2c3856] hover:bg-[#1a2236] text-white text-[11px] font-black uppercase tracking-widest rounded-lg shadow-lg shadow-[#2c3856]/30 transition-all flex items-center justify-center gap-2 group">
                         <span>GENERAR PDF</span>
                         <i class="fas fa-file-export group-hover:translate-x-1 transition-transform text-[#ff9c00]"></i>
                     </button>
@@ -212,7 +210,7 @@
                         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner flex items-center justify-center border border-white">
                             <i class="fas fa-cubes text-[#2c3856]"></i>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-400 uppercase">Volumen</span>
+                        <span class="text-[18px] font-bold text-slate-400 uppercase">Volumen</span>
                     </div>
                     <div>
                         <h2 class="text-4xl font-impact font-black text-[#2c3856] mt-2 group-hover:text-[#ff9c00] transition-colors">{{ number_format($totalUnidadesVendidas) }}</h2>
@@ -236,7 +234,7 @@
                                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                                     <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
                                 </span>
-                                <span class="text-[10px] font-black text-rose-500 uppercase tracking-widest">Atención Requerida</span>
+                                <span class="text-[15px] font-black text-rose-500 uppercase tracking-widest">Atención Requerida</span>
                             </div>
                             <h2 class="text-5xl font-impact font-black text-[#2c3856]">
                                 {{ number_format($stockAgotadoCount) }} <span class="text-xl text-slate-400 font-medium">Items</span>
