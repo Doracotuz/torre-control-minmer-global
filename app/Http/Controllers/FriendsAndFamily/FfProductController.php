@@ -20,11 +20,11 @@ class FfProductController extends Controller
 {
     public function index()
     {
-        $products = ffProduct::with('channels')->orderBy('description')->get();
+        $products = ffProduct::orderBy('description')->get();
         $channels = FfSalesChannel::where('is_active', true)->orderBy('name')->get();
         
         $areas = [];
-        if (Auth::user()->isSuperAdmin()) { 
+        if (Auth::user()->isSuperAdmin()) {
             $areas = Area::orderBy('name')->get();
         }
 
@@ -230,7 +230,14 @@ class FfProductController extends Controller
         $request->validate([
             'product_file' => 'required|file|mimes:csv,txt',
             'image_zip'    => 'nullable|file|mimetypes:application/zip,application/x-zip-compressed,application/x-zip,application/octet-stream,multipart/x-zip',
+            'area_id'      => 'nullable|exists:areas,id',
         ]);
+
+        $targetAreaId = Auth::user()->area_id;
+        
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $targetAreaId = $request->input('area_id');
+        }
 
         $csvPath = $request->file('product_file')->getPathname();
         $tempZipDir = null;
@@ -269,7 +276,6 @@ class FfProductController extends Controller
 
                 $channelsStr = mb_convert_encoding(trim($row[11] ?? ''), 'UTF-8', 'ISO-8859-1');
                 $channelIds = [];
-                
                 if (!empty($channelsStr)) {
                     $channelNames = preg_split('/[,|]/', $channelsStr); 
                     foreach($channelNames as $name) {
@@ -295,6 +301,7 @@ class FfProductController extends Controller
                     'height'         => !empty($row[8]) ? (float)$row[8] : null,
                     'upc'            => mb_convert_encoding(trim($row[9] ?? ''), 'UTF-8', 'ISO-8859-1'),
                     'is_active'      => true,
+                    'area_id'        => $targetAreaId 
                 ];
 
                 $photoFilename = trim($row[10] ?? '');
@@ -312,7 +319,13 @@ class FfProductController extends Controller
                     }
                 }
 
-                $product = ffProduct::updateOrCreate(['sku' => $sku], $productData);
+                $product = ffProduct::updateOrCreate(
+                    [
+                        'sku' => $sku, 
+                        'area_id' => $targetAreaId
+                    ], 
+                    $productData
+                );
                 
                 if (!empty($channelIds)) {
                     $product->channels()->sync($channelIds);
@@ -332,9 +345,11 @@ class FfProductController extends Controller
 
         if ($tempZipDir) $this->cleanupTempDir($tempZipDir);
 
-        $message = "¡Éxito! Se actualizaron/crearon $importCount productos.";
+        $areaName = Area::find($targetAreaId)->name ?? 'Área desconocida';
+        $message = "¡Éxito! Se actualizaron $importCount productos en el área: $areaName.";
+        
         if (count($missingPhotos) > 0) {
-            $message .= " (Nota: No se encontraron fotos para: " . implode(', ', $missingPhotos) . ")";
+            $message .= " (Faltaron " . count($missingPhotos) . " fotos)";
         }
 
         return response()->json(['message' => $message], 200);

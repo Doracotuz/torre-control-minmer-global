@@ -446,7 +446,7 @@
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity" @click="closeUploadModal()"></div>
                 <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
-                     <form @submit.prevent="submitImport($event)" class="p-6">
+                    <form @submit.prevent="submitImport($event)" class="p-6">
                         <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
                             <h3 class="text-xl font-bold text-[#2c3856] flex items-center"><i class="fas fa-file-excel mr-3 text-[#2c3856]"></i> Importación Masiva</h3>
                             <button type="button" @click="closeUploadModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
@@ -461,16 +461,29 @@
                             </ol>
                         </div>
                         <div class="space-y-6">
-                             <div><label class="block text-sm font-bold text-gray-700 mb-2">Paso 1: Descargar Catálogo Actual</label><a href="{{ route('ff.catalog.downloadTemplate') }}" class="w-full flex items-center justify-center p-3 border border-gray-300 rounded-xl hover:border-[#2c3856] hover:bg-gray-50 transition-colors group cursor-pointer text-sm font-bold text-gray-600 shadow-sm bg-white"><i class="fas fa-download mr-2 text-blue-600 group-hover:scale-110 transition-transform"></i> Descargar plantilla.csv</a></div>
-                             <div><label class="block text-sm font-bold text-gray-700 mb-2">Paso 2: Subir CSV Editado <span class="text-red-500">*</span></label><input type="file" name="product_file" accept=".csv" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-[#2c3856] file:text-white hover:file:bg-[#1a233a] bg-gray-50 rounded-lg border border-gray-200 cursor-pointer"/></div>
-                             <div><label class="block text-sm font-bold text-gray-700 mb-1">Paso 3: Imágenes Nuevas (Opcional)</label><input type="file" name="image_zip" accept=".zip" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-gray-600 file:text-white hover:file:bg-gray-700 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer"/></div>
-                             <div x-show="uploadMessage" :class="uploadSuccess ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'" class="p-4 rounded-xl text-sm border font-medium"><p x-text="uploadMessage"></p></div>
+                            @if(Auth::user()->isSuperAdmin())
+                                <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                                    <label class="block text-sm font-bold text-gray-800 mb-2">Destino de Importación</label>
+                                    <select name="area_id" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
+                                        @foreach($areas as $area)
+                                            <option value="{{ $area->id }}" {{ Auth::user()->area_id == $area->id ? 'selected' : '' }}>
+                                                {{ $area->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <p class="text-[10px] text-gray-500 mt-1">Selecciona a qué área pertenecerán estos productos.</p>
+                                </div>
+                            @endif                            
+                            <div><label class="block text-sm font-bold text-gray-700 mb-2">Paso 1: Descargar Catálogo Actual</label><a href="{{ route('ff.catalog.downloadTemplate') }}" class="w-full flex items-center justify-center p-3 border border-gray-300 rounded-xl hover:border-[#2c3856] hover:bg-gray-50 transition-colors group cursor-pointer text-sm font-bold text-gray-600 shadow-sm bg-white"><i class="fas fa-download mr-2 text-blue-600 group-hover:scale-110 transition-transform"></i> Descargar plantilla.csv</a></div>
+                            <div><label class="block text-sm font-bold text-gray-700 mb-2">Paso 2: Subir CSV Editado <span class="text-red-500">*</span></label><input type="file" name="product_file" accept=".csv" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-[#2c3856] file:text-white hover:file:bg-[#1a233a] bg-gray-50 rounded-lg border border-gray-200 cursor-pointer"/></div>
+                            <div><label class="block text-sm font-bold text-gray-700 mb-1">Paso 3: Imágenes Nuevas (Opcional)</label><input type="file" name="image_zip" accept=".zip" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-gray-600 file:text-white hover:file:bg-gray-700 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer"/></div>
+                            <div x-show="uploadMessage" :class="uploadSuccess ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'" class="p-4 rounded-xl text-sm border font-medium"><p x-text="uploadMessage"></p></div>
                         </div>
                         <div class="mt-8 flex gap-3 border-t border-gray-100 pt-4">
-                             <button type="button" @click="closeUploadModal()" class="flex-1 py-2.5 px-4 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition-colors">Cancelar</button>
-                             <button type="submit" :disabled="isSaving" class="flex-1 py-2.5 px-4 bg-[#2c3856] text-white rounded-xl font-bold hover:bg-[#1a233a] shadow-lg transition-colors"><span x-text="isSaving ? 'Procesando...' : 'Iniciar Importación'"></span></button>
+                            <button type="button" @click="closeUploadModal()" class="flex-1 py-2.5 px-4 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition-colors">Cancelar</button>
+                            <button type="submit" :disabled="isSaving" class="flex-1 py-2.5 px-4 bg-[#2c3856] text-white rounded-xl font-bold hover:bg-[#1a233a] shadow-lg transition-colors"><span x-text="isSaving ? 'Procesando...' : 'Iniciar Importación'"></span></button>
                         </div>
-                     </form>
+                    </form>
                 </div>
             </div>
         </div>
