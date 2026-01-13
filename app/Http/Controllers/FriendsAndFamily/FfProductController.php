@@ -482,19 +482,24 @@ class FfProductController extends Controller
         return $pdf->stream('Ficha_Tecnica_'.$product->sku.'.pdf');
     }
 
-    public function exportInventoryPdf(Request $request)
+    public function exportInventoryPdf(Request $request)    
     {
         ini_set('max_execution_time', 300);
         ini_set('memory_limit', '512M');
 
         $query = ffProduct::orderBy('brand')
                     ->orderBy('description');
+
         $query = $this->applyFilters($query, $request);
+
         $products = $query->get();
-        $logoUrl = $this->getLogoUrl(Auth::user()->area_id);
+        
+        $logoUrl = Storage::disk('s3')->url('LogoAzulm.PNG');
+
         $data = [
             'products' => $products,
             'logo_url' => $logoUrl,
+            'print_date' => now()->format('d/m/Y H:i'), 
         ];
 
         $pdf = Pdf::loadView('friends-and-family.catalog.inventory-pdf', $data);
