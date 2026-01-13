@@ -10,8 +10,8 @@
         }
 
         body {
-            margin-top: 2.8cm;
-            margin-bottom: 1.2cm;
+            margin-top: 3cm;
+            margin-bottom: 3cm;
             background-color: #ffffff;
             color: #2b2b2b;
             font-size: 11px;
@@ -22,7 +22,7 @@
             top: 0cm;
             left: 0cm;
             right: 0cm;
-            height: 2.2cm;
+            height: 2.5cm;
             border-bottom: 4px solid #ff9c00;
             background: white;
             z-index: 1000;
@@ -45,14 +45,47 @@
             text-transform: uppercase;
             text-align: right;
             letter-spacing: -0.5px;
+            margin-bottom: 10px;
         }
 
-        .doc-meta {
-            color: #666666;
-            font-size: 10px;
+        .input-group {
             text-align: right;
-            margin-top: 5px;
+            font-size: 10px;
             font-weight: bold;
+            color: #2c3856;
+            line-height: 1.8;
+        }
+
+        .manual-line {
+            display: inline-block;
+            border-bottom: 1px solid #2c3856;
+            width: 150px;
+            margin-left: 5px;
+        }
+        
+        .manual-line-long {
+            display: inline-block;
+            border-bottom: 1px solid #2c3856;
+            width: 250px;
+            margin-left: 5px;
+        }
+
+        .signatures-section {
+            position: fixed;
+            bottom: 0.8cm;
+            left: 0cm;
+            right: 0cm;
+            height: 1.8cm;
+        }
+
+        .sig-box {
+            border-top: 1px solid #2b2b2b;
+            padding-top: 5px;
+            text-align: center;
+            font-size: 9px;
+            font-weight: bold;
+            color: #2c3856;
+            text-transform: uppercase;
         }
 
         footer {
@@ -60,12 +93,12 @@
             bottom: 0cm;
             left: 0cm;
             right: 0cm;
-            height: 0.8cm;
-            border-top: 1px solid #eeeeee;
+            height: 0.5cm;
             text-align: center;
-            line-height: 0.8cm;
-            font-size: 9px;
+            font-size: 8px;
             color: #999999;
+            border-top: 1px solid #eeeeee;
+            padding-top: 2px;
         }
 
         .inventory-table {
@@ -110,9 +143,7 @@
             margin: 0 auto;
         }
 
-        .cell-info {
-            padding-left: 15px;
-        }
+        .cell-info { padding-left: 15px; }
 
         .sku-badge {
             display: inline-block;
@@ -153,9 +184,7 @@
             background-color: #ffffff;
         }
 
-        .cell-notes {
-            width: 140px;
-        }
+        .cell-notes { width: 140px; }
 
         .notes-line {
             border-bottom: 1px solid #d1d5db;
@@ -164,9 +193,7 @@
             margin-bottom: 8px;
         }
 
-        .status-row {
-            text-align: center;
-        }
+        .status-row { text-align: center; }
 
         .status-pill {
             display: inline-block;
@@ -186,22 +213,47 @@
     <header>
         <table class="header-tbl">
             <tr>
-                <td width="30%" valign="bottom" class="logo-container">
+                <td width="30%" valign="top" class="logo-container" style="padding-top: 10px;">
                     <img src="{{ $logo_url }}" alt="Minmer Logo">
                 </td>
-                <td width="70%" valign="bottom">
-                    <div class="doc-title">Reporte de Inventario</div>
-                    <div class="doc-meta">
-                        {{ Auth::user()->area ? Auth::user()->area->name : 'Global' }} | 
-                        Generado: {{ date('d/m/Y H:i') }}
+                <td width="70%" valign="top">
+                    <div class="doc-title">Toma de Inventario Físico</div>
+                    
+                    <div class="input-group">
+                        <div>
+                            UBICACIÓN: <span class="manual-line-long"></span>
+                        </div>
+                        <div style="margin-top: 5px;">
+                            FECHA: <span class="manual-line"></span> &nbsp;&nbsp; HORA: <span class="manual-line" style="width: 80px;"></span>
+                        </div>
                     </div>
                 </td>
             </tr>
         </table>
     </header>
 
+    <div class="signatures-section">
+        <table width="100%">
+            <tr>
+                <td width="10%"></td>
+                <td width="35%">
+                    <div class="sig-box">
+                        <br>NOMBRE Y FIRMA DEL CONTADOR
+                    </div>
+                </td>
+                <td width="10%"></td>
+                <td width="35%">
+                    <div class="sig-box">
+                        <br>NOMBRE Y FIRMA DE QUIEN VERIFICÓ
+                    </div>
+                </td>
+                <td width="10%"></td>
+            </tr>
+        </table>
+    </div>
+
     <footer>
-        Minmer Global Control Tower • {{ date('Y') }} • Pág. <span class="pagenum"></span>
+        Minmer Global Control Tower • Formato de Control Interno • Pág. <span class="pagenum"></span>
     </footer>
 
     <table class="inventory-table">
@@ -239,7 +291,7 @@
                     </div>
 
                     <div style="margin-top: 8px; font-size: 9px; color: #999;">
-                        Sistema: {{ $product->movements_sum_quantity ?? 0 }} unids.
+                        Stock Sistema: {{ $product->movements_sum_quantity ?? 0 }} unids.
                     </div>
                 </td>
 
@@ -265,10 +317,10 @@
     <script type="text/php">
         if (isset($pdf)) {
             $text = "{PAGE_NUM} / {PAGE_COUNT}";
-            $size = 9;
+            $size = 8;
             $font = $fontMetrics->getFont("Helvetica");
             $width = $fontMetrics->get_text_width($text, $font, $size);
-            $pdf->page_text(540, 810, $text, $font, $size, array(0.6, 0.6, 0.6));
+            $pdf->page_text(540, 825, $text, $font, $size, array(0.6, 0.6, 0.6));
         }
     </script>
 
