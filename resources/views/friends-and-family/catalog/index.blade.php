@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
-    <div x-data='productManager(@json($products), @json($channels))' class="min-h-screen relative">
+    <div x-data='productManager(@json($products), @json($channels), @json($areas ?? []))' class="min-h-screen relative">
         
         <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
             <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-8">
@@ -75,17 +75,20 @@
                             <span x-show="activeFilterCount > 0" class="flex h-5 w-5 items-center justify-center rounded-full bg-[#2c3856] text-[10px] text-white" x-text="activeFilterCount"></span>
                         </button>
                         <div class="h-8 w-px bg-gray-300 mx-2"></div>
+                        <a :href="generateUrl('{{ route('ff.catalog.exportInventoryPdf') }}')" target="_blank" class="px-4 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold whitespace-nowrap shadow-sm">
+                            <i class="fas fa-clipboard-list mr-2 text-gray-400"></i> Inventario
+                        </a>                      
                         <button @click="openPdfModal()" class="px-4 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold whitespace-nowrap shadow-sm">
                             <i class="fas fa-file-pdf mr-2 text-gray-400"></i> PDF
                         </button>
-                        <a href="{{ route('ff.catalog.exportCsv') }}" target="_blank" class="px-4 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold whitespace-nowrap shadow-sm">
+                        <a :href="generateUrl('{{ route('ff.catalog.exportCsv') }}')" target="_blank" class="px-4 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold whitespace-nowrap shadow-sm">
                             <i class="fas fa-file-csv mr-2 text-gray-400"></i> CSV
                         </a>
                     </div>
                 </div>
 
                 <div x-show="showFilters" class="mt-4 pt-4 border-t border-gray-100">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Marca</label>
                             <select x-model="filters.brand" @change="currentPage = 1" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
@@ -93,6 +96,17 @@
                                 <template x-for="brand in uniqueBrands"><option :value="brand" x-text="brand"></option></template>
                             </select>
                         </div>
+                        @if(Auth::user()->isSuperAdmin())
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Área</label>
+                                <select x-model="filters.area" @change="currentPage = 1" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
+                                    <option value="">Todas las áreas</option>
+                                    <template x-for="area in areas" :key="area.id">
+                                        <option :value="area.id" x-text="area.name"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        @endif                        
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Tipo</label>
                             <select x-model="filters.type" @change="currentPage = 1" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
@@ -478,14 +492,15 @@
     </div>
 
     <script>
-        function productManager(initialProducts, initialChannels) {
+        function productManager(initialProducts, initialChannels, initialAreas) {
             return {
                 products: initialProducts || [],
                 channels: initialChannels || [],
+                areas: initialAreas || [],
                 loading: true,
                 currentPage: 1, itemsPerPage: 12,
                 isEditorOpen: false, showFilters: false,
-                filters: { search: '', brand: '', type: '', status: 'all', channel: '' },
+                filters: { search: '', brand: '', type: '', status: 'all', channel: '', area: '' },
                 isSaving: false, photoPreview: null,
                 form: { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, upc: '', photo: null, photo_url: null, is_active: true, channels: [] },
                 isUploadModalOpen: false, uploadMessage: '', uploadSuccess: false,
@@ -500,15 +515,20 @@
                     localStorage.setItem('ff_catalog_view_mode', mode);
                 },
 
-                get filteredProducts() {
+                get filteredProducts() {    
                     if (!this.products) return [];
                     let result = this.products;
                     const search = this.filters.search.toLowerCase();
+                    
                     if (search) { result = result.filter(p => (p.sku && p.sku.toLowerCase().includes(search)) || (p.description && p.description.toLowerCase().includes(search)) || (p.brand && p.brand.toLowerCase().includes(search)) || (p.upc && p.upc.toLowerCase().includes(search))); }
                     if (this.filters.brand) result = result.filter(p => p.brand === this.filters.brand);
                     if (this.filters.type) result = result.filter(p => p.type === this.filters.type);
                     if (this.filters.status !== 'all') { const isActive = this.filters.status === 'active'; result = result.filter(p => Boolean(p.is_active) === isActive); }
                     if (this.filters.channel) { result = result.filter(p => p.channels && p.channels.some(c => c.id == this.filters.channel)); }
+                    if (this.filters.area) { 
+                        result = result.filter(p => p.area_id == this.filters.area); 
+                    }
+
                     return result;
                 },
 
@@ -517,9 +537,35 @@
                 changePage(page) { if (page >= 1 && page <= this.totalPages) { this.currentPage = page; window.scrollTo({ top: 0, behavior: 'smooth' }); } },
                 get uniqueBrands() { if (!this.products) return []; const brands = this.products.map(p => p.brand).filter(b => b); return [...new Set(brands)].sort(); },
                 get uniqueTypes() { if (!this.products) return []; const types = this.products.map(p => p.type).filter(t => t); return [...new Set(types)].sort(); },
-                get activeFilterCount() { let count = 0; if(this.filters.brand) count++; if(this.filters.type) count++; if(this.filters.status !== 'all') count++; if(this.filters.channel) count++; return count; },
+                get activeFilterCount() { let count = 0; if(this.filters.brand) count++; if(this.filters.type) count++; if(this.filters.status !== 'all') count++; if(this.filters.channel) count++; if(this.filters.area) count++; return count; },
+                get stats() {
+                    const total = this.filteredProducts.length;
+                    const active = this.filteredProducts.filter(p => p.is_active).length;
+                    const inactive = total - active;
+
+                    return [
+                        { 
+                            label: 'Total Listado', 
+                            value: total, 
+                            icon: 'fas fa-boxes', 
+                            color: 'bg-blue-50 text-blue-700' 
+                        },
+                        { 
+                            label: 'Activos', 
+                            value: active, 
+                            icon: 'fas fa-check-circle', 
+                            color: 'bg-emerald-50 text-emerald-700' 
+                        },
+                        { 
+                            label: 'Inactivos', 
+                            value: inactive, 
+                            icon: 'fas fa-times-circle', 
+                            color: 'bg-red-50 text-red-700' 
+                        }
+                    ];
+                },                
                 formatMoney(amount) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount); },
-                resetFilters() { this.filters.brand = ''; this.filters.type = ''; this.filters.status = 'all'; this.filters.search = ''; this.filters.channel = ''; this.currentPage = 1; },
+                resetFilters() { this.filters.brand = ''; this.filters.type = ''; this.filters.status = 'all'; this.filters.search = ''; this.filters.channel = ''; this.filters.area = ''; this.currentPage = 1; },
                 selectNewProduct() { this.resetForm(); this.isEditorOpen = true; },
                 editProduct(product) { const channelIds = product.channels ? product.channels.map(c => c.id) : []; this.form = { ...product, photo: null, channels: channelIds }; this.photoPreview = null; this.isEditorOpen = true; },
                 closeEditor() { this.isEditorOpen = false; setTimeout(() => this.resetForm(), 300); },
@@ -553,10 +599,27 @@
                 closeUploadModal() { this.isUploadModalOpen = false; if(this.uploadSuccess) location.reload(); },
                 async submitImport(event) { this.isSaving = true; this.uploadMessage = ''; const formData = new FormData(event.target); try { const response = await fetch("{{ route('ff.catalog.import') }}", { method: 'POST', body: formData, headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json'} }); const data = await response.json(); this.uploadSuccess = response.ok; this.uploadMessage = data.message || (data.errors ? Object.values(data.errors).join(' ') : 'Error'); if(this.uploadSuccess) event.target.reset(); } catch (e) { this.uploadMessage = 'Error de conexión'; } finally { this.isSaving = false; } },
                 openPdfModal() { this.pdfPercentage = 0; this.isPdfModalOpen = true; },
-                generatePdf() { window.open("{{ route('ff.catalog.exportPdf') }}?percentage=" + this.pdfPercentage, '_blank'); this.isPdfModalOpen = false; },
+                generatePdf() { 
+                    let url = this.generateUrl("{{ route('ff.catalog.exportPdf') }}");
+                    url += '&percentage=' + this.pdfPercentage;
+                    
+                    window.open(url, '_blank'); 
+                    this.isPdfModalOpen = false; 
+                },
                 openDetailModal(product) { this.detailProduct = product; this.isDetailModalOpen = true; },
                 openSheetModal(product) { this.sheetProduct = product; this.isSheetModalOpen = true; },
                 closeDetailAndEdit(product) { this.isDetailModalOpen = false; setTimeout(() => { this.editProduct(product); }, 300); },
+                generateUrl(baseUrl) {
+                    const params = new URLSearchParams();
+                    if(this.filters.search) params.append('search', this.filters.search);
+                    if(this.filters.brand) params.append('brand', this.filters.brand);
+                    if(this.filters.type) params.append('type', this.filters.type);
+                    if(this.filters.status !== 'all') params.append('status', this.filters.status);
+                    if(this.filters.channel) params.append('channel', this.filters.channel);
+                    if(this.filters.area) params.append('area_id', this.filters.area);
+                    
+                    return baseUrl + '?' + params.toString();
+                },                
                 getChannelStyle(name) {
                     if (!name) return 'bg-gray-100 text-gray-600 border-gray-200';
                     const styles = [

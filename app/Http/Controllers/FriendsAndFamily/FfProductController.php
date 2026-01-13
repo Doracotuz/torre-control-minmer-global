@@ -20,9 +20,52 @@ class FfProductController extends Controller
 {
     public function index()
     {
-        $products = ffProduct::orderBy('description')->get();
-        $channels = FfSalesChannel::where('is_active', true)->orderBy('name')->get();        
-        return view('friends-and-family.catalog.index', compact('products', 'channels'));
+        $products = ffProduct::with('channels')->orderBy('description')->get();
+        $channels = FfSalesChannel::where('is_active', true)->orderBy('name')->get();
+        
+        $areas = [];
+        if (Auth::user()->isSuperAdmin()) { 
+            $areas = Area::orderBy('name')->get();
+        }
+
+        return view('friends-and-family.catalog.index', compact('products', 'channels', 'areas'));
+    }
+
+    private function applyFilters($query, Request $request)
+    {
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('sku', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('brand', 'like', "%{$search}%")
+                  ->orWhere('upc', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('brand')) {
+            $query->where('brand', $request->input('brand'));
+        }
+        if ($request->filled('type')) {
+            $query->where('type', $request->input('type'));
+        }
+
+        if ($request->filled('status') && $request->input('status') !== 'all') {
+            $isActive = $request->input('status') === 'active';
+            $query->where('is_active', $isActive);
+        }
+
+        if ($request->filled('channel')) {
+            $query->whereHas('channels', function($q) use ($request) {
+                $q->where('ff_sales_channels.id', $request->input('channel'));
+            });
+        }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $query->where('area_id', $request->input('area_id'));
+        }
+
+        return $query;
     }
 
     private function getLogoUrl($areaId)
@@ -329,10 +372,15 @@ class FfProductController extends Controller
         }
     }
 
-    public function exportCsv()
+    public function exportCsv(Request $request)
     {
-        $products = ffProduct::with('channels')->orderBy('brand')->orderBy('description')->get();
-        $filename = 'catalogo_completo_ff_' . date('Y-m-d') . '.csv';
+        $query = ffProduct::with('channels')->orderBy('brand')->orderBy('description');
+
+        $query = $this->applyFilters($query, $request);
+
+        $products = $query->get();
+        
+        $filename = 'catalogo_filtrado_ff_' . date('Y-m-d') . '.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
@@ -376,9 +424,11 @@ class FfProductController extends Controller
 
         $percentage = $request->input('percentage', 0);
 
-        $products = ffProduct::orderBy('brand')
-                    ->orderBy('description')
-                    ->get();
+        $query = ffProduct::orderBy('brand')->orderBy('description');
+
+        $query = $this->applyFilters($query, $request);
+
+        $products = $query->get();
 
         if ($percentage > 0) {
             foreach ($products as $product) {
@@ -431,4 +481,29 @@ class FfProductController extends Controller
         
         return $pdf->stream('Ficha_Tecnica_'.$product->sku.'.pdf');
     }
+
+    public function exportInventoryPdf(Request $request)
+    {
+        ini_set('max_execution_time', 300);
+        ini_set('memory_limit', '512M');
+
+        $query = ffProduct::orderBy('brand')
+                    ->orderBy('description');
+        $query = $this->applyFilters($query, $request);
+        $products = $query->get();
+        $logoUrl = $this->getLogoUrl(Auth::user()->area_id);
+        $data = [
+            'products' => $products,
+            'logo_url' => $logoUrl,
+        ];
+
+        $pdf = Pdf::loadView('friends-and-family.catalog.inventory-pdf', $data);
+        
+        $pdf->setPaper('A4', 'portrait');
+        $pdf->setOption('isRemoteEnabled', true);
+        $pdf->setOption('dpi', 150);
+        
+        return $pdf->stream('Toma_Inventario_FF_'.date('Y-m-d').'.pdf');
+    }
+
 }
