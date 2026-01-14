@@ -24,6 +24,7 @@ use Illuminate\Http\UploadedFile;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
+use App\Models\Area;
 
 class FfSalesController extends Controller
 {
@@ -58,10 +59,17 @@ class FfSalesController extends Controller
 
     public function index(Request $request)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->id;
         $editFolio = $request->input('edit_folio');
 
-        $products = ffProduct::where('is_active', true)
+        $productsQuery = ffProduct::where('is_active', true);
+        
+        if (!$user->isSuperAdmin()) {
+            $productsQuery->where('area_id', $user->area_id);
+        }
+
+        $products = $productsQuery
             ->with(['channels', 'cartItems' => function ($query) use ($userId) {
                 $query->where('user_id', $userId);
             }])
@@ -72,10 +80,22 @@ class FfSalesController extends Controller
             ->orderBy('description')
             ->get();
 
-        $clients = FfClient::where('is_active', true)->with('branches')->orderBy('name')->get();
-        $channels = FfSalesChannel::where('is_active', true)->orderBy('name')->get();
-        $transports = FfTransportLine::where('is_active', true)->orderBy('name')->get();
-        $payments = FfPaymentCondition::where('is_active', true)->orderBy('name')->get();
+        $clientsQuery = FfClient::where('is_active', true)->with('branches');
+        $channelsQuery = FfSalesChannel::where('is_active', true);
+        $transportsQuery = FfTransportLine::where('is_active', true);
+        $paymentsQuery = FfPaymentCondition::where('is_active', true);
+
+        if (!$user->isSuperAdmin()) {
+            $clientsQuery->where('area_id', $user->area_id);
+            $channelsQuery->where('area_id', $user->area_id);
+            $transportsQuery->where('area_id', $user->area_id);
+            $paymentsQuery->where('area_id', $user->area_id);
+        }
+
+        $clients = $clientsQuery->orderBy('name')->get();
+        $channels = $channelsQuery->orderBy('name')->get();
+        $transports = $transportsQuery->orderBy('name')->get();
+        $payments = $paymentsQuery->orderBy('name')->get();
 
         $nextFolio = $this->getNextFolio();            
         
@@ -117,8 +137,16 @@ class FfSalesController extends Controller
     public function getReservations()
     {
         $userId = Auth::id();
-        $reservations = ffCartItem::where('user_id', '!=', $userId)
-            ->groupBy('ff_product_id')
+        
+        $query = ffCartItem::where('user_id', '!=', $userId);
+        
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->whereHas('product', function($q) {
+                $q->where('area_id', Auth::user()->area_id);
+            });
+        }
+
+        $reservations = $query->groupBy('ff_product_id')
             ->select('ff_product_id', DB::raw('SUM(quantity) as reserved_quantity'))
             ->pluck('reserved_quantity', 'ff_product_id');
         
@@ -139,6 +167,10 @@ class FfSalesController extends Controller
         }
 
         $header = $movements->first();
+        if (!Auth::user()->isSuperAdmin() && $header->area_id !== Auth::user()->area_id) {
+            return response()->json(['message' => 'No tienes permiso para cargar este pedido.'], 403);
+        }
+
         $user = Auth::user();
 
         ffCartItem::where('user_id', $user->id)->delete();
@@ -184,7 +216,7 @@ class FfSalesController extends Controller
                     });
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Error cargando documentos: " . $e->getMessage());
+            Log::error("Error cargando documentos: " . $e->getMessage());
         }
 
         $evidences = [];
@@ -243,6 +275,10 @@ class FfSalesController extends Controller
             }
 
             $header = $originalMovements->first();
+            if (!$user->isSuperAdmin() && $header->area_id !== $user->area_id) {
+                throw new \Exception("No tienes permiso para cancelar este pedido.");
+            }
+
             $emailRecipients = [];
             if ($request->filled('email_recipients')) {
                  $emailRecipients = explode(';', $request->email_recipients);
@@ -265,8 +301,6 @@ class FfSalesController extends Controller
                 ]);
             }
 
-            ffCartItem::where('user_id', $user->id)->delete();
-
             DB::commit();
 
             if (!empty($emailRecipients)) {
@@ -282,7 +316,7 @@ class FfSalesController extends Controller
                 
                 try {
                     Mail::to($emailRecipients)->send(new OrderActionMail($mailData, 'cancel'));
-                } catch (\Exception $e) { \Illuminate\Support\Facades\Log::error("Error mail cancel: ".$e->getMessage()); }
+                } catch (\Exception $e) { Log::error("Error mail cancel: ".$e->getMessage()); }
             }
 
             return response()->json(['message' => 'Pedido cancelado y stock restaurado.']);
@@ -369,11 +403,21 @@ class FfSalesController extends Controller
 
         try {
             if ($isEditMode) {
+                $existingOrder = ffInventoryMovement::where('folio', $ventaFolio)->first();
+                if ($existingOrder && !$user->isSuperAdmin() && $existingOrder->area_id !== $user->area_id) {
+                    throw new \Exception("No tienes permiso para editar este folio.");
+                }
+                
                 ffInventoryMovement::where('folio', $ventaFolio)->delete();
             }
 
             foreach ($cartItems as $item) {
                 $product = $item->product;
+                
+                if (!$user->isSuperAdmin() && $product->area_id !== $user->area_id) {
+                    throw new \Exception("El producto SKU {$product->sku} no pertenece a tu área.");
+                }
+
                 $quantity = $item->quantity;
                 
                 $basePrice = $product->unit_price ?? 0;
@@ -501,47 +545,45 @@ class FfSalesController extends Controller
         $dompdf->render();
         $pdfContent = $dompdf->output();
 
-    try {
-        // Log::info("Buscando admins para área ID: " . $user->area_id);
-        $admins = \App\Models\User::where('is_area_admin', true)
-            ->where('area_id', $user->area_id)
-            ->get(); 
-        
-        if ($admins->isNotEmpty()) {
-            $adminMailData = array_merge([
-                'folio' => $ventaFolio,
-                'client_name' => $request->client_name,
-                'company_name' => $request->company_name,
-                'delivery_date' => Carbon::parse($request->delivery_date)->format('d/m/Y H:i'),
-                'surtidor_name' => $request->surtidor_name,
-                'order_type' => $orderType,
-                'user_name' => $user->name,
-                'user_area' => $user->area->name ?? 'N/A',
-                'grandTotal' => $grandTotal,
-                'items' => $pdfItems,
-                'logo_url' => $logoUrl,
-                'has_backorder' => $orderHasBackorder,
-            ], $companyInfo);
+        try {
+            $admins = \App\Models\User::where('is_area_admin', true)
+                ->where('area_id', $user->area_id)
+                ->get(); 
             
-            foreach($admins as $admin) {
-                Mail::to($admin->email)->send(new OrderActionMail(
-                    $adminMailData, 
-                    'admin_alert', 
-                    null,
-                    null,
-                    [],
-                    null,
-                    $admin->id
-                ));
+            if ($admins->isNotEmpty()) {
+                $adminMailData = array_merge([
+                    'folio' => $ventaFolio,
+                    'client_name' => $request->client_name,
+                    'company_name' => $request->company_name,
+                    'delivery_date' => Carbon::parse($request->delivery_date)->format('d/m/Y H:i'),
+                    'surtidor_name' => $request->surtidor_name,
+                    'order_type' => $orderType,
+                    'user_name' => $user->name,
+                    'user_area' => $user->area->name ?? 'N/A',
+                    'grandTotal' => $grandTotal,
+                    'items' => $pdfItems,
+                    'logo_url' => $logoUrl,
+                    'has_backorder' => $orderHasBackorder,
+                ], $companyInfo);
+                
+                foreach($admins as $admin) {
+                    Mail::to($admin->email)->send(new OrderActionMail(
+                        $adminMailData, 
+                        'admin_alert', 
+                        null,
+                        null,
+                        [],
+                        null,
+                        $admin->id
+                    ));
+                }
+            } else {
+                Log::warning("Pedido F&F #{$ventaFolio} creado en área {$user->area_id} sin administradores para notificar.");
             }
-        } else {
-            // Log::warning("NO se enviaron correos: No hay admins en el área " . $user->area_id);
-            \Illuminate\Support\Facades\Log::warning("Pedido F&F #{$ventaFolio} creado en área {$user->area_id} sin administradores para notificar.");
-        }
 
-    } catch (\Exception $e) {
-        \Illuminate\Support\Facades\Log::error("Error enviando alerta admin F&F: " . $e->getMessage());
-    }
+        } catch (\Exception $e) {
+            Log::error("Error enviando alerta admin F&F: " . $e->getMessage());
+        }
 
         return response($pdfContent, 200, ['Content-Type' => 'application/pdf', 'X-Venta-Folio' => $ventaFolio]);
     }
@@ -584,6 +626,10 @@ class FfSalesController extends Controller
     public function downloadTemplate(Request $request)
     {
         $query = ffProduct::where('is_active', true);
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -639,6 +685,9 @@ class FfSalesController extends Controller
         ]);
 
         $userId = Auth::id();
+        $userAreaId = Auth::user()->area_id;
+        $isSuperAdmin = Auth::user()->isSuperAdmin();
+
         $path = $request->file('order_csv')->getRealPath();
         $handle = fopen($path, 'r');
         
@@ -657,7 +706,11 @@ class FfSalesController extends Controller
 
                 if ($qty <= 0 || empty($sku)) continue;
 
-                $product = ffProduct::where('sku', $sku)->first();
+                $query = ffProduct::where('sku', $sku);
+                if (!$isSuperAdmin) {
+                    $query->where('area_id', $userAreaId);
+                }
+                $product = $query->first();
 
                 if ($product) {
                     $reservedOthers = $product->cartItems()->where('user_id', '!=', $userId)->sum('quantity');
@@ -702,60 +755,6 @@ class FfSalesController extends Controller
         ]);
     }
 
-    private function getPrepFields()
-    {
-        return [
-            'Revisión de UPC vs Factura' => 'revision_upc',
-            'Distribución por Tienda' => 'distribucion_tienda',
-            'Re-etiquetado' => 're_etiquetado',
-            'Colocación de Sensor' => 'colocacion_sensor',
-            'Preparado Especial' => 'preparado_especial',
-            'Tipo de Unidad Aceptada' => 'tipo_unidad_aceptada',
-            'Equipo de Seguridad' => 'equipo_seguridad',
-            'Registro Patronal (SUA)' => 'registro_patronal',
-            'Entrega con Otros Pedidos' => 'entrega_otros_pedidos',
-            'Insumos y Herramientas' => 'insumos_herramientas',
-            'Maniobra' => 'maniobra',
-            'Identificaciones para Acceso' => 'identificaciones',
-            'Etiqueta de Frágil' => 'etiqueta_fragil',
-            'Tarima CHEP' => 'tarima_chep',
-            'Granel' => 'granel',
-            'Tarima Estándar' => 'tarima_estandar',
-        ];
-    }
-
-    private function getDocFields()
-    {
-        return [
-            'Factura' => 'doc_factura',
-            'DO' => 'doc_do',
-            'Carta Maniobra' => 'doc_carta_maniobra',
-            'Carta Poder' => 'doc_carta_poder',
-            'Orden de Compra' => 'doc_orden_compra',
-            'Carta Confianza' => 'doc_carta_confianza',
-            'Confirmación de Cita' => 'doc_confirmacion_cita',
-            'Carta Caja Cerrada' => 'doc_carta_caja_cerrada',
-            'Confirmación de Facturas' => 'doc_confirmacion_facturas',
-            'Carátula de Entrega' => 'doc_caratula_entrega',
-            'Pase Vehicular' => 'doc_pase_vehicular',
-        ];
-    }
-
-    private function getEvidFields()
-    {
-        return [
-            'Folio de Recibo' => 'evid_folio_recibo',
-            'Factura Sellada o Firmada' => 'evid_factura_sellada',
-            'Sello Tarima CHEP' => 'evid_sello_tarima',
-            'Etiqueta de Recibo' => 'evid_etiqueta_recibo',
-            'Acuse de Orden de Compra' => 'evid_acuse_oc',
-            'Hoja de Rechazo' => 'evid_hoja_rechazo',
-            'Anotación de Rechazo' => 'evid_anotacion_rechazo',
-            'Contrarrecibo de Equipo' => 'evid_contrarrecibo',
-            'Formato de Reparto' => 'evid_formato_reparto',
-        ];
-    }
-
     public function returnLoan(Request $request)
     {
         $request->validate(['folio' => 'required|integer']);
@@ -772,6 +771,11 @@ class FfSalesController extends Controller
 
             if ($loanMovements->isEmpty()) {
                 throw new \Exception("Este folio no es un préstamo activo o ya fue devuelto.");
+            }
+
+            $header = $loanMovements->first();
+            if (!$user->isSuperAdmin() && $header->area_id !== $user->area_id) {
+                throw new \Exception("No tienes permiso para gestionar este préstamo.");
             }
 
             foreach($loanMovements as $mov) {

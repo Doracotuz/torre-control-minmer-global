@@ -22,6 +22,10 @@ class FfReportController extends Controller
 
         $baseQuery = ffInventoryMovement::where('quantity', '<', 0);
         
+        if (!Auth::user()->isSuperAdmin()) {
+            $baseQuery->where('area_id', Auth::user()->area_id);
+        }
+
         if ($userIdFilter) {
             $baseQuery->where('user_id', $userIdFilter);
         }
@@ -34,8 +38,8 @@ class FfReportController extends Controller
             )
             ->first();
 
-        $totalUnidadesVendidas = (int) $ventasCompletas->total_unidades_vendidas;
-        $valorTotalVendido = (float) $ventasCompletas->valor_total_vendido;
+        $totalUnidadesVendidas = (int) ($ventasCompletas->total_unidades_vendidas ?? 0);
+        $valorTotalVendido = (float) ($ventasCompletas->valor_total_vendido ?? 0);
 
         $topProductos = (clone $baseQuery)
             ->select('ff_product_id', DB::raw('SUM(ABS(quantity)) as total_vendido'))
@@ -62,8 +66,12 @@ class FfReportController extends Controller
             'labels' => $ventasPorVendedor->map(fn ($v) => $v->user->name ?? 'Usuario Eliminado')->toArray(),
         ];
         
-        $stockAgotadoCount = ffProduct::withSum('movements', 'quantity')
-            ->get()
+        $productsQuery = ffProduct::withSum('movements', 'quantity');
+        if (!Auth::user()->isSuperAdmin()) {
+            $productsQuery->where('area_id', Auth::user()->area_id);
+        }
+
+        $stockAgotadoCount = $productsQuery->get()
             ->filter(fn ($p) => ($p->movements_sum_quantity ?? 0) <= 0)
             ->count();
             
@@ -83,8 +91,11 @@ class FfReportController extends Controller
         $endDateIso = $endDate->toIso8601String();
         
         $vendedoresQuery = User::whereHas('movements', function ($query) {
-                $query->where('quantity', '<', 0);
-            })->orderBy('name');
+            $query->where('quantity', '<', 0);
+            if (!Auth::user()->isSuperAdmin()) {
+                $query->where('area_id', Auth::user()->area_id);
+            }
+        })->orderBy('name');
 
         if (!Auth::user()->isSuperAdmin()) {
             $vendedoresQuery->where('area_id', Auth::user()->area_id);
@@ -110,6 +121,9 @@ class FfReportController extends Controller
     {
         $vendedoresQuery = User::whereHas('movements', function ($query) {
             $query->where('quantity', '<', 0);
+            if (!Auth::user()->isSuperAdmin()) {
+                $query->where('area_id', Auth::user()->area_id);
+            }
         })->orderBy('name');
 
         if (!Auth::user()->isSuperAdmin()) {
@@ -130,6 +144,7 @@ class FfReportController extends Controller
                 'ff_inventory_movements.user_id',
                 'ff_inventory_movements.client_name',
                 'ff_inventory_movements.surtidor_name',
+                'ff_inventory_movements.area_id',
                 DB::raw('MAX(ff_inventory_movements.created_at) as created_at'),
                 DB::raw('COUNT(ff_inventory_movements.id) as total_items'),
                 DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_units'),
@@ -139,8 +154,13 @@ class FfReportController extends Controller
                 'ff_inventory_movements.folio', 
                 'ff_inventory_movements.user_id', 
                 'ff_inventory_movements.client_name', 
-                'ff_inventory_movements.surtidor_name'
+                'ff_inventory_movements.surtidor_name',
+                'ff_inventory_movements.area_id'
             );
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('ff_inventory_movements.area_id', Auth::user()->area_id);
+        }
 
         if ($userIdFilter) {
             $query->where('ff_inventory_movements.user_id', $userIdFilter);
@@ -180,6 +200,10 @@ class FfReportController extends Controller
     
     public function reprintReceipt(ffInventoryMovement $movement)
     {
+        if (!Auth::user()->isSuperAdmin() && $movement->area_id !== Auth::user()->area_id) {
+            abort(403);
+        }
+
         $saleMovements = ffInventoryMovement::where('folio', $movement->folio)
             ->where('quantity', '<', 0)
             ->with(['product', 'user'])
@@ -203,7 +227,6 @@ class FfReportController extends Controller
             'copies' => ['Original'],
             'folio' => $firstMovement->folio,
             'date' => $firstMovement->created_at->format('d/m/Y'),
-            
             'client_name' => $firstMovement->client_name,
             'company_name' => $firstMovement->company_name,
             'client_phone' => $firstMovement->client_phone,
@@ -211,7 +234,6 @@ class FfReportController extends Controller
             'locality' => $firstMovement->locality,
             'delivery_date' => $firstMovement->delivery_date ? $firstMovement->delivery_date->format('d/m/Y H:i') : 'N/A',
             'observations' => $firstMovement->observations,
-            
             'surtidor_name' => $firstMovement->surtidor_name,
             'vendedor_name' => $user->name ?? 'N/A',
             'logo_url' => $logoUrl,
@@ -256,7 +278,12 @@ class FfReportController extends Controller
     
     public function inventoryAnalysis()
     {
-        $movementReasons = ffInventoryMovement::select(
+        $movementQuery = ffInventoryMovement::query();
+        if (!Auth::user()->isSuperAdmin()) {
+            $movementQuery->where('area_id', Auth::user()->area_id);
+        }
+
+        $movementReasons = $movementQuery->select(
                 'reason', 
                 DB::raw('SUM(CASE WHEN quantity > 0 THEN quantity ELSE 0 END) as entradas'),
                 DB::raw('SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) as salidas')
@@ -273,7 +300,12 @@ class FfReportController extends Controller
             'categories' => $reasons,
         ];
         
-        $rotationProducts = ffProduct::join('ff_inventory_movements', 'ff_products.id', '=', 'ff_inventory_movements.ff_product_id')
+        $productsQuery = ffProduct::query();
+        if (!Auth::user()->isSuperAdmin()) {
+            $productsQuery->where('area_id', Auth::user()->area_id);
+        }
+
+        $rotationProducts = $productsQuery->join('ff_inventory_movements', 'ff_products.id', '=', 'ff_inventory_movements.ff_product_id')
             ->select(
                 'ff_products.id',
                 'ff_products.sku',
@@ -312,6 +344,10 @@ class FfReportController extends Controller
         $query = ffProduct::where('is_active', true)
             ->withSum('movements', 'quantity')
             ->withSum('cartItems', 'quantity');
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
 
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -369,7 +405,13 @@ class FfReportController extends Controller
 
     public function catalogAnalysis()
     {
-        $products = ffProduct::select('unit_price', 'brand', 'type', 'is_active')->get();
+        $query = ffProduct::select('unit_price', 'brand', 'type', 'is_active');
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
+
+        $products = $query->get();
         
         $priceRanges = [
             '0-100' => $products->whereBetween('unit_price', [0, 100])->count(),
@@ -419,9 +461,14 @@ class FfReportController extends Controller
         
         $sellerPerformanceData = $vendedores->map(function ($user) {
             
-            $salesData = ffInventoryMovement::where('user_id', $user->id)
-                ->where('quantity', '<', 0)
-                ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
+            $query = ffInventoryMovement::where('user_id', $user->id)
+                ->where('quantity', '<', 0);
+
+            if (!Auth::user()->isSuperAdmin()) {
+                $query->where('area_id', Auth::user()->area_id);
+            }
+
+            $salesData = $query->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
                 ->select(
                     DB::raw('COUNT(ff_inventory_movements.id) as total_pedidos'),
                     DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_unidades'),
@@ -459,8 +506,13 @@ class FfReportController extends Controller
         $userId = $request->input('user_id');
         $limit = $request->input('limit', 10);
 
-        $query = ffInventoryMovement::where('quantity', '<', 0)
-            ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
+        $query = ffInventoryMovement::where('quantity', '<', 0);
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
+
+        $query->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
             ->select(
                 'ff_inventory_movements.folio',
                 'ff_inventory_movements.user_id',
@@ -497,10 +549,18 @@ class FfReportController extends Controller
 
     public function apiGetSaleDetails(Request $request, $folio)
     {
-        $movements = ffInventoryMovement::where('folio', $folio)
-            ->where('quantity', '<', 0)
-            ->with('product:id,sku,description,unit_price')
-            ->get();
+        $query = ffInventoryMovement::where('folio', $folio)
+            ->where('quantity', '<', 0);
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
+
+        $movements = $query->with('product:id,sku,description,unit_price')->get();
+
+        if ($movements->isEmpty()) {
+            return response()->json(['error' => 'Pedido no encontrado o sin permisos'], 404);
+        }
 
         $items = $movements->map(function ($mov) {
             $product = $mov->product;
@@ -641,6 +701,10 @@ class FfReportController extends Controller
 
         $baseQuery = ffInventoryMovement::where('ff_inventory_movements.quantity', '<', 0);
         
+        if (!Auth::user()->isSuperAdmin()) {
+            $baseQuery->where('area_id', Auth::user()->area_id);
+        }
+
         if ($userIdFilter) {
             $baseQuery->where('ff_inventory_movements.user_id', $userIdFilter);
         }
@@ -662,11 +726,11 @@ class FfReportController extends Controller
             ->first();
         
         $data['kpis'] = [
-            'valorTotalVendido' => (float) $ventasCompletas->valor,
-            'totalUnidadesVendidas' => (int) $ventasCompletas->unidades,
-            'totalVentas' => (int) $ventasCompletas->total_ventas,
-            'ticketPromedio' => $ventasCompletas->total_ventas > 0 ? $ventasCompletas->valor / $ventasCompletas->total_ventas : 0,
-            'unidadesPorVenta' => $ventasCompletas->total_ventas > 0 ? $ventasCompletas->unidades / $ventasCompletas->total_ventas : 0,
+            'valorTotalVendido' => (float) ($ventasCompletas->valor ?? 0),
+            'totalUnidadesVendidas' => (int) ($ventasCompletas->unidades ?? 0),
+            'totalVentas' => (int) ($ventasCompletas->total_ventas ?? 0),
+            'ticketPromedio' => ($ventasCompletas->total_ventas ?? 0) > 0 ? $ventasCompletas->valor / $ventasCompletas->total_ventas : 0,
+            'unidadesPorVenta' => ($ventasCompletas->total_ventas ?? 0) > 0 ? $ventasCompletas->unidades / $ventasCompletas->total_ventas : 0,
         ];
         
         $data['topProductos'] = (clone $baseQuery)
@@ -679,6 +743,10 @@ class FfReportController extends Controller
         $ventasPorVendedorQuery = ffInventoryMovement::where('ff_inventory_movements.quantity', '<', 0)
             ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
             ->join('users', 'ff_inventory_movements.user_id', '=', 'users.id');
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $ventasPorVendedorQuery->where('ff_inventory_movements.area_id', Auth::user()->area_id);
+        }
 
         if ($userIdFilter) {
             $ventasPorVendedorQuery->where('ff_inventory_movements.user_id', $userIdFilter);
@@ -701,7 +769,12 @@ class FfReportController extends Controller
             ->orderByDesc('valor_total')
             ->get();
 
-        $productsCatalog = ffProduct::select('unit_price')->get();
+        $productsCatalogQuery = ffProduct::select('unit_price');
+        if (!Auth::user()->isSuperAdmin()) {
+            $productsCatalogQuery->where('area_id', Auth::user()->area_id);
+        }
+        $productsCatalog = $productsCatalogQuery->get();
+
         $priceRangesRaw = [
             '0-100' => $productsCatalog->whereBetween('unit_price', [0, 100])->count(),
             '101-300' => $productsCatalog->whereBetween('unit_price', [101, 300])->count(),
@@ -713,7 +786,12 @@ class FfReportController extends Controller
             return [$range => ['count' => $count, 'percent' => ($count / $totalProductos) * 100]];
         });
 
-        $allProducts = ffProduct::withSum('movements', 'quantity')->withSum('cartItems', 'quantity')->get();
+        $allProductsQuery = ffProduct::withSum('movements', 'quantity')->withSum('cartItems', 'quantity');
+        if (!Auth::user()->isSuperAdmin()) {
+            $allProductsQuery->where('area_id', Auth::user()->area_id);
+        }
+        $allProducts = $allProductsQuery->get();
+
         $totalSKUs = $allProducts->count();
         $stockAgotado = 0;
         $stockBajo = 0;

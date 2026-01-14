@@ -31,19 +31,32 @@
             editMode: false, 
             itemId: null, 
             itemName: '',
+            itemAreaId: '', 
             modalTitle: '',
             search: '',
+            isSuperAdmin: {{ Auth::user()->isSuperAdmin() ? 'true' : 'false' }},
             get filteredItems() {
                 if (this.search === '') return {{ $items }};
-                return {{ $items }}.filter(item => item.name.toLowerCase().includes(this.search.toLowerCase()));
+                return {{ $items }}.filter(item => 
+                    item.name.toLowerCase().includes(this.search.toLowerCase()) || 
+                    (item.area && item.area.name.toLowerCase().includes(this.search.toLowerCase()))
+                );
             },
             openCreate() {
-                this.editMode = false; this.itemId = null; this.itemName = '';
-                this.modalTitle = 'Crear Nuevo Registro'; this.showModal = true;
+                this.editMode = false; 
+                this.itemId = null; 
+                this.itemName = '';
+                this.itemAreaId = ''; 
+                this.modalTitle = 'Crear Nuevo Registro'; 
+                this.showModal = true;
             },
-            openEdit(id, name) {
-                this.editMode = true; this.itemId = id; this.itemName = name;
-                this.modalTitle = 'Editar Registro'; this.showModal = true;
+            openEdit(id, name, areaId) {
+                this.editMode = true; 
+                this.itemId = id; 
+                this.itemName = name;
+                this.itemAreaId = areaId; 
+                this.modalTitle = 'Editar Registro'; 
+                this.showModal = true;
             }
         }">
 
@@ -87,6 +100,9 @@
                     <thead>
                         <tr class="bg-gray-50/50">
                             <th class="px-8 py-5 text-xs font-extrabold text-gray-400 uppercase tracking-wider font-montserrat">ID</th>
+                            @if(Auth::user()->isSuperAdmin())
+                                <th class="px-8 py-5 text-xs font-extrabold text-gray-400 uppercase tracking-wider font-montserrat">Área</th>
+                            @endif
                             <th class="px-8 py-5 text-xs font-extrabold text-gray-400 uppercase tracking-wider font-montserrat w-full">Nombre / Descripción</th>
                             <th class="px-8 py-5 text-xs font-extrabold text-gray-400 uppercase tracking-wider font-montserrat text-right">Acciones</th>
                         </tr>
@@ -97,6 +113,17 @@
                                 <td class="px-8 py-5">
                                     <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-gray-100 text-gray-500 font-mono text-xs font-bold group-hover:bg-[#2c3856] group-hover:text-white transition-colors"><span x-text="'#' + item.id"></span></span>
                                 </td>
+                                
+                                @if(Auth::user()->isSuperAdmin())
+                                    <td class="px-8 py-5 whitespace-nowrap">
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border"
+                                              :class="item.area ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-50 text-gray-500 border-gray-100'">
+                                            <i class="fas fa-building text-[10px]"></i>
+                                            <span x-text="item.area ? item.area.name : 'Global/N/A'"></span>
+                                        </span>
+                                    </td>
+                                @endif
+
                                 <td class="px-8 py-5">
                                     <div class="flex items-center">
                                         <div class="h-2 w-2 rounded-full bg-[#ff9c00] mr-3 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -117,7 +144,7 @@
                                             </a>                                            
                                         @endif
 
-                                        <button @click="openEdit(item.id, item.name)" class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center shadow-sm" title="Editar"><i class="fas fa-pencil-alt text-sm"></i></button>
+                                        <button @click="openEdit(item.id, item.name, item.area_id)" class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center shadow-sm" title="Editar"><i class="fas fa-pencil-alt text-sm"></i></button>
                                         <form :action="'/ff/admin/catalog/{{ $type }}/' + item.id" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este registro?');">
                                             @csrf @method('DELETE')
                                             <button type="submit" class="w-9 h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-sm" title="Eliminar"><i class="fas fa-trash-alt text-sm"></i></button>
@@ -128,7 +155,7 @@
                         </template>
                         <template x-if="filteredItems.length === 0">
                             <tr>
-                                <td colspan="3" class="px-8 py-16 text-center">
+                                <td colspan="{{ Auth::user()->isSuperAdmin() ? '4' : '3' }}" class="px-8 py-16 text-center">
                                     <div class="flex flex-col items-center justify-center">
                                         <div class="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mb-4 animate-bounce"><i class="fas fa-search text-3xl text-gray-300"></i></div>
                                         <h3 class="text-lg font-bold text-[#2c3856]">No se encontraron resultados</h3>
@@ -154,11 +181,35 @@
                     <form method="POST" :action="editMode ? '/ff/admin/catalog/{{ $type }}/' + itemId : '/ff/admin/catalog/{{ $type }}'">
                         @csrf
                         <template x-if="editMode"><input type="hidden" name="_method" value="PUT"></template>
-                        <div class="mb-8">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Nombre / Descripción</label>
-                            <input type="text" name="name" x-model="itemName" required autofocus class="w-full rounded-xl px-4 py-3 input-modern text-[#2c3856] font-semibold text-lg placeholder-gray-300" placeholder="Ej. Nombre del registro...">
+                        
+                        <div class="space-y-6">
+                            
+                            @if(Auth::user()->isSuperAdmin())
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Asignar al Área</label>
+                                <div class="relative">
+                                    <select name="area_id" x-model="itemAreaId" class="w-full rounded-xl px-4 py-3 input-modern text-[#2c3856] font-semibold appearance-none cursor-pointer" required>
+                                        <option value="" disabled>Seleccione un Área</option>
+                                        @if(isset($areas))
+                                            @foreach($areas as $area)
+                                                <option value="{{ $area->id }}">{{ $area->name }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
+                                        <i class="fas fa-chevron-down text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
+
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Nombre / Descripción</label>
+                                <input type="text" name="name" x-model="itemName" required autofocus class="w-full rounded-xl px-4 py-3 input-modern text-[#2c3856] font-semibold text-lg placeholder-gray-300" placeholder="Ej. Nombre del registro...">
+                            </div>
                         </div>
-                        <div class="flex justify-end gap-3 pt-4">
+
+                        <div class="flex justify-end gap-3 pt-8">
                             <button type="button" @click="showModal = false" class="px-5 py-2.5 rounded-xl text-gray-500 hover:bg-gray-50 font-bold transition-colors text-sm">Cancelar</button>
                             <button type="submit" class="btn-animated px-8 py-2.5 bg-[#ff9c00] hover:bg-[#e08b00] text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 text-sm"><span x-text="editMode ? 'Actualizar' : 'Guardar Registro'"></span></button>
                         </div>

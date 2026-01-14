@@ -20,7 +20,13 @@ class FfProductController extends Controller
 {
     public function index()
     {
-        $channels = FfSalesChannel::where('is_active', true)->orderBy('name')->get();
+        $channelsQuery = FfSalesChannel::where('is_active', true)->orderBy('name');
+        
+        if (!Auth::user()->isSuperAdmin()) {
+            $channelsQuery->where('area_id', Auth::user()->area_id);
+        }
+        
+        $channels = $channelsQuery->get();
         
         $areas = [];
         if (Auth::user()->isSuperAdmin()) {
@@ -62,10 +68,6 @@ class FfProductController extends Controller
             $query->whereHas('channels', function($q) use ($request) {
                 $q->where('ff_sales_channels.id', $request->input('channel'));
             });
-        }
-
-        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
-            $query->where('area_id', $request->input('area_id'));
         }
 
         return $query;
@@ -110,7 +112,15 @@ class FfProductController extends Controller
             'height' => 'nullable|numeric|min:0',
             'upc' => 'nullable|string|max:255',
             'channels' => 'nullable|array',
-            'channels.*' => 'exists:ff_sales_channels,id',
+            'channels.*' => [
+                'exists:ff_sales_channels,id',
+                function ($attribute, $value, $fail) use ($user, $targetAreaId) {
+                    if (!$user->isSuperAdmin()) {
+                        $exists = FfSalesChannel::where('id', $value)->where('area_id', $targetAreaId)->exists();
+                        if (!$exists) $fail('El canal de venta seleccionado no es válido para su área.');
+                    }
+                }
+            ],
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:20048',
             'area_id' => 'nullable|exists:areas,id',
         ]);
@@ -139,6 +149,10 @@ class FfProductController extends Controller
     {
         $user = Auth::user();
 
+        if (!$user->isSuperAdmin() && $catalog->area_id !== $user->area_id) {
+            abort(403, 'No tienes permiso para editar este producto.');
+        }
+
         $targetAreaId = $catalog->area_id; 
         if ($user->isSuperAdmin() && $request->filled('area_id')) {
             $targetAreaId = $request->input('area_id');
@@ -163,7 +177,15 @@ class FfProductController extends Controller
             'height' => 'nullable|numeric|min:0',
             'upc' => 'nullable|string|max:255',
             'channels' => 'nullable|array',
-            'channels.*' => 'exists:ff_sales_channels,id',
+            'channels.*' => [
+                'exists:ff_sales_channels,id',
+                function ($attribute, $value, $fail) use ($user, $targetAreaId) {
+                    if (!$user->isSuperAdmin()) {
+                        $exists = FfSalesChannel::where('id', $value)->where('area_id', $targetAreaId)->exists();
+                        if (!$exists) $fail('El canal de venta seleccionado no es válido.');
+                    }
+                }
+            ],
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:20048',
             'is_active' => 'required|boolean',
             'area_id' => 'nullable|exists:areas,id',
@@ -194,6 +216,10 @@ class FfProductController extends Controller
 
     public function destroy(ffProduct $catalog)
     {
+        if (!Auth::user()->isSuperAdmin() && $catalog->area_id !== Auth::user()->area_id) {
+            abort(403, 'No tienes permiso para eliminar este producto.');
+        }
+
         $catalog->delete();
 
         return response()->json(['message' => 'Producto eliminado permanentemente'], 204);
@@ -201,7 +227,13 @@ class FfProductController extends Controller
 
     public function downloadTemplate()
     {
-        $products = ffProduct::orderBy('sku')->with('channels')->get();
+        $query = ffProduct::orderBy('sku')->with('channels');
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
+
+        $products = $query->get();
 
         $headers = [
             'Content-Type'        => 'text/csv',
@@ -300,7 +332,7 @@ class FfProductController extends Controller
                         if(empty($name)) continue;
                         
                         $channel = FfSalesChannel::firstOrCreate(
-                            ['name' => $name],
+                            ['name' => $name, 'area_id' => $targetAreaId],
                             ['is_active' => true]
                         );
                         $channelIds[] = $channel->id;
@@ -410,6 +442,10 @@ class FfProductController extends Controller
 
         $query = $this->applyFilters($query, $request);
 
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
+
         $products = $query->get();
         
         $filename = 'catalogo_filtrado_ff_' . date('Y-m-d') . '.csv';
@@ -460,6 +496,10 @@ class FfProductController extends Controller
 
         $query = $this->applyFilters($query, $request);
 
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
+
         $products = $query->get();
 
         if ($percentage > 0) {
@@ -489,6 +529,10 @@ class FfProductController extends Controller
 
     public function generateTechnicalSheet(Request $request, ffProduct $product)
     {
+        if (!Auth::user()->isSuperAdmin() && $product->area_id !== Auth::user()->area_id) {
+            abort(403);
+        }
+
         $request->validate([
             'alcohol_vol' => 'nullable|string',
             'boxes_per_layer' => 'nullable|string',
@@ -496,7 +540,7 @@ class FfProductController extends Controller
             'master_box_weight' => 'nullable|string',
         ]);
 
-        $logoUrl = $this->getLogoUrl(Auth::user()->area_id);
+        $logoUrl = $this->getLogoUrl($product->area_id);
         
         $data = [
             'product' => $product,
@@ -643,5 +687,4 @@ class FfProductController extends Controller
 
         return response()->json($products);
     }    
-
 }

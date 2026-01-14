@@ -1,10 +1,3 @@
-@php 
-    $productsCount = \App\Models\ffProduct::where('is_active', true)->count(); 
-    $todayMovements = \App\Models\ffInventoryMovement::whereDate('created_at', \Carbon\Carbon::today())->count(); 
-    $lowStockCount = \App\Models\ffProduct::withSum('movements', 'quantity')->get()->filter(function ($product) { return ($product->movements_sum_quantity ?? 0) < 10; })->count(); 
-    $lastSale = \App\Models\ffInventoryMovement::where('quantity', '<', 0)->latest('created_at')->first(); 
-@endphp
-
 <x-app-layout> 
     <x-slot name="header"></x-slot>
     
@@ -234,7 +227,7 @@
                             </div>
                             @if($lowStockCount > 0)
                             <div class="stat-badge w-max !border-red-500 !bg-red-500/20">
-                                <span>⚠️ {{ $lowStockCount }} Alertas de Stock</span>
+                                <span>{{ $lowStockCount }} Alertas de Stock</span>
                             </div>
                             @endif
                         </div>

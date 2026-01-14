@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Area;
 
 class FfAdministrationController extends Controller
 {
@@ -53,66 +54,105 @@ class FfAdministrationController extends Controller
         }
 
         $config = $this->catalogs[$type];
-        $items = $config['model']::orderBy('name')->get();
+        $modelClass = $config['model'];
+        $query = $modelClass::query();
 
-        return view('friends-and-family.admin.catalog', compact('items', 'type', 'config'));
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        } else {
+            $query->with('area');
+        }
+
+        $items = $query->orderBy('name')->get();
+        $areas = Auth::user()->isSuperAdmin() ? Area::all() : [];
+
+        return view('friends-and-family.admin.catalog', compact('items', 'type', 'config', 'areas'));
     }
 
     public function store(Request $request, $type)
     {
-        if (!array_key_exists($type, $this->catalogs)) { abort(404); }
+        if (!array_key_exists($type, $this->catalogs)) {
+            abort(404);
+        }
 
         $modelClass = $this->catalogs[$type]['model'];
         $tableName = (new $modelClass)->getTable();
         $user = Auth::user();
+        $targetAreaId = $user->isSuperAdmin() ? $request->input('area_id') : $user->area_id;
 
         $request->validate([
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique($tableName)->where(function ($query) use ($user) {
-                    return $query->where('area_id', $user->area_id);
+                Rule::unique($tableName)->where(function ($query) use ($targetAreaId) {
+                    return $query->where('area_id', $targetAreaId);
                 })
-            ]
+            ],
+            'area_id' => $user->isSuperAdmin() ? 'required|exists:areas,id' : 'nullable'
         ]);
-        
-        $modelClass::create(['name' => $request->name, 'is_active' => true]);
+
+        $modelClass::create([
+            'name' => $request->name,
+            'is_active' => true,
+            'area_id' => $targetAreaId
+        ]);
 
         return redirect()->back()->with('success', 'Registro creado correctamente.');
     }
 
     public function update(Request $request, $type, $id)
     {
-        if (!array_key_exists($type, $this->catalogs)) { abort(404); }
+        if (!array_key_exists($type, $this->catalogs)) {
+            abort(404);
+        }
 
         $modelClass = $this->catalogs[$type]['model'];
         $tableName = (new $modelClass)->getTable();
         $user = Auth::user();
+        $item = $modelClass::findOrFail($id);
+
+        if (!$user->isSuperAdmin() && $item->area_id !== $user->area_id) {
+            abort(403, 'No tienes permiso para editar este registro.');
+        }
+
+        $targetAreaId = $user->isSuperAdmin() && $request->filled('area_id') ? $request->input('area_id') : $item->area_id;
 
         $request->validate([
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique($tableName)->ignore($id)->where(function ($query) use ($user) {
-                    return $query->where('area_id', $user->area_id);
+                Rule::unique($tableName)->ignore($id)->where(function ($query) use ($targetAreaId) {
+                    return $query->where('area_id', $targetAreaId);
                 })
-            ]
+            ],
+            'area_id' => $user->isSuperAdmin() ? 'required|exists:areas,id' : 'nullable'
         ]);
 
-        $item = $modelClass::findOrFail($id);
-        $item->update(['name' => $request->name]);
+        $data = ['name' => $request->name];
+        if ($user->isSuperAdmin()) {
+            $data['area_id'] = $targetAreaId;
+        }
+
+        $item->update($data);
 
         return redirect()->back()->with('success', 'Registro actualizado correctamente.');
     }
 
     public function destroy($type, $id)
     {
-        if (!array_key_exists($type, $this->catalogs)) { abort(404); }
+        if (!array_key_exists($type, $this->catalogs)) {
+            abort(404);
+        }
 
         $modelClass = $this->catalogs[$type]['model'];
         $item = $modelClass::findOrFail($id);
+
+        if (!Auth::user()->isSuperAdmin() && $item->area_id !== Auth::user()->area_id) {
+            abort(403, 'No tienes permiso para eliminar este registro.');
+        }
+
         $item->delete();
 
         return redirect()->back()->with('success', 'Registro eliminado correctamente.');
@@ -120,12 +160,18 @@ class FfAdministrationController extends Controller
 
     public function branchesIndex(FfClient $client)
     {
+        if (!Auth::user()->isSuperAdmin() && $client->area_id !== Auth::user()->area_id) {
+            abort(403);
+        }
         $branches = $client->branches()->orderBy('name')->get();
         return view('friends-and-family.admin.branches', compact('client', 'branches'));
     }
 
     public function branchesStore(Request $request, FfClient $client)
     {
+        if (!Auth::user()->isSuperAdmin() && $client->area_id !== Auth::user()->area_id) {
+            abort(403);
+        }
         $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:500',
@@ -140,6 +186,9 @@ class FfAdministrationController extends Controller
 
     public function branchesUpdate(Request $request, FfClientBranch $branch)
     {
+        if (!Auth::user()->isSuperAdmin() && $branch->client->area_id !== Auth::user()->area_id) {
+            abort(403);
+        }
         $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:500',
@@ -154,29 +203,38 @@ class FfAdministrationController extends Controller
 
     public function branchesDestroy(FfClientBranch $branch)
     {
+        if (!Auth::user()->isSuperAdmin() && $branch->client->area_id !== Auth::user()->area_id) {
+            abort(403);
+        }
         $branch->delete();
         return redirect()->back()->with('success', 'Sucursal eliminada correctamente.');
     }
 
     public function conditionsEdit(FfClient $client)
     {
+        if (!Auth::user()->isSuperAdmin() && $client->area_id !== Auth::user()->area_id) {
+            abort(403);
+        }
         $conditions = $client->deliveryConditions ?? new FfClientDeliveryCondition();
-        
+
         return view('friends-and-family.admin.client-conditions', compact('client', 'conditions'));
     }
 
     public function conditionsUpdate(Request $request, FfClient $client)
     {
+        if (!Auth::user()->isSuperAdmin() && $client->area_id !== Auth::user()->area_id) {
+            abort(403);
+        }
         $booleans = [
-            'revision_upc', 'distribucion_tienda', 're_etiquetado', 'colocacion_sensor', 
-            'preparado_especial', 'tipo_unidad_aceptada', 'equipo_seguridad', 'registro_patronal', 
-            'entrega_otros_pedidos', 'insumos_herramientas', 'maniobra', 'identificaciones', 
+            'revision_upc', 'distribucion_tienda', 're_etiquetado', 'colocacion_sensor',
+            'preparado_especial', 'tipo_unidad_aceptada', 'equipo_seguridad', 'registro_patronal',
+            'entrega_otros_pedidos', 'insumos_herramientas', 'maniobra', 'identificaciones',
             'etiqueta_fragil', 'tarima_chep', 'granel', 'tarima_estandar',
-            'doc_factura', 'doc_do', 'doc_carta_maniobra', 'doc_carta_poder', 'doc_orden_compra', 
-            'doc_carta_confianza', 'doc_confirmacion_cita', 'doc_carta_caja_cerrada', 
+            'doc_factura', 'doc_do', 'doc_carta_maniobra', 'doc_carta_poder', 'doc_orden_compra',
+            'doc_carta_confianza', 'doc_confirmacion_cita', 'doc_carta_caja_cerrada',
             'doc_confirmacion_facturas', 'doc_caratula_entrega', 'doc_pase_vehicular',
-            'evid_folio_recibo', 'evid_factura_sellada', 'evid_sello_tarima', 'evid_etiqueta_recibo', 
-            'evid_acuse_oc', 'evid_hoja_rechazo', 'evid_anotacion_rechazo', 'evid_contrarrecibo', 
+            'evid_folio_recibo', 'evid_factura_sellada', 'evid_sello_tarima', 'evid_etiqueta_recibo',
+            'evid_acuse_oc', 'evid_hoja_rechazo', 'evid_anotacion_rechazo', 'evid_contrarrecibo',
             'evid_formato_reparto'
         ];
 
@@ -198,7 +256,7 @@ class FfAdministrationController extends Controller
                 if ($conditions->$imgField) {
                     Storage::disk('s3')->delete($conditions->$imgField);
                 }
-                
+
                 $path = $request->file($imgField)->store("ff_conditions/{$client->id}", 's3');
                 $sanitizedData[$imgField] = $path;
             }
@@ -214,8 +272,11 @@ class FfAdministrationController extends Controller
 
     public function exportConditionsPdf(FfClient $client)
     {
+        if (!Auth::user()->isSuperAdmin() && $client->area_id !== Auth::user()->area_id) {
+            abort(403);
+        }
         $conditions = $client->deliveryConditions;
-        
+
         if (!$conditions) {
             return redirect()->back()->with('error', 'El cliente no tiene condiciones configuradas.');
         }
@@ -227,7 +288,7 @@ class FfAdministrationController extends Controller
         $evidFields = self::getEvidFieldsStatic();
 
         $pdf = Pdf::loadView('friends-and-family.admin.conditions-pdf', compact('client', 'conditions', 'logoUrl', 'prepFields', 'docFields', 'evidFields'));
-        
+
         $pdf->setPaper('A4', 'portrait');
         $pdf->setOption('isRemoteEnabled', true);
         $pdf->setOption('dpi', 150);
@@ -302,13 +363,18 @@ class FfAdministrationController extends Controller
         }
 
         $condition = FfClientDeliveryCondition::findOrFail($conditionId);
+        
+        $client = $condition->client; 
+        if (!Auth::user()->isSuperAdmin() && $client && $client->area_id !== Auth::user()->area_id) {
+            abort(403);
+        }
 
         if ($condition->$field) {
             Storage::disk('s3')->delete($condition->$field);
-            
+
             $condition->$field = null;
             $condition->save();
-            
+
             return redirect()->back()->with('success', 'Imagen eliminada correctamente.');
         }
 

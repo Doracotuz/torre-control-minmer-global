@@ -25,8 +25,13 @@ class FfOrderController extends Controller
     public function index(Request $request)
     {
         $query = ffInventoryMovement::query()
-            ->where('quantity', '<', 0)
-            ->select(
+            ->where('quantity', '<', 0);
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
+
+        $query->select(
                 'folio', 
                 'client_name', 
                 'company_name', 
@@ -35,11 +40,12 @@ class FfOrderController extends Controller
                 'delivery_date', 
                 'created_at',
                 'user_id',
+                'area_id',
                 DB::raw('SUM(ABS(quantity)) as total_items'),
                 DB::raw('MAX(id) as id'),
                 DB::raw('MAX(CASE WHEN is_backorder = 1 AND backorder_fulfilled = 0 THEN 1 ELSE 0 END) as has_active_backorder')
             )
-            ->groupBy('folio', 'client_name', 'company_name', 'order_type', 'status', 'delivery_date', 'created_at', 'user_id');
+            ->groupBy('folio', 'client_name', 'company_name', 'order_type', 'status', 'delivery_date', 'created_at', 'user_id', 'area_id');
 
         if ($request->filled('folio')) {
             $query->where('folio', 'like', "%{$request->folio}%");
@@ -82,6 +88,10 @@ class FfOrderController extends Controller
         }
 
         $header = $movements->first();
+
+        if (!Auth::user()->isSuperAdmin() && $header->area_id !== Auth::user()->area_id) {
+            abort(403, 'No tienes permiso para ver este pedido.');
+        }
         
         $totalItems = $movements->sum(fn($m) => abs($m->quantity));
         $totalValue = $movements->sum(fn($m) => abs($m->quantity) * ($m->product->unit_price * (1 - ($m->discount_percentage/100))));
@@ -104,20 +114,6 @@ class FfOrderController extends Controller
             'emitter_colonia' => 'San Angel, Alvaro Obregon, CDMX, Mexico',
             'emitter_cp' => '01000'
         ];
-
-        // Lógica para cambiar según el ID del área (Ajusta los IDs)
-        /*
-        if ($areaId == 2) {
-            return [
-                'emitter_name' => 'Sucursal Norte S.A. de C.V.',
-                'emitter_phone' => '8181234567',
-                'emitter_address' => 'Av. Fundidora 500',
-                'emitter_colonia' => 'Centro, Monterrey, NL, Mexico',
-                'emitter_cp' => '64000'
-            ];
-        }
-        */
-
     }
 
     private function getLogoUrl($areaId)
@@ -134,6 +130,11 @@ class FfOrderController extends Controller
     public function approve($folio)
     {
         $this->authorizeAdmin();
+
+        $check = ffInventoryMovement::where('folio', $folio)->firstOrFail();
+        if (!Auth::user()->isSuperAdmin() && $check->area_id !== Auth::user()->area_id) {
+            abort(403, 'No tienes permiso para aprobar este pedido.');
+        }
 
         ffInventoryMovement::where('folio', $folio)->update([
             'status' => 'approved',
@@ -273,6 +274,12 @@ class FfOrderController extends Controller
     public function reject(Request $request, $folio)
     {
         $this->authorizeAdmin();
+        
+        $check = ffInventoryMovement::where('folio', $folio)->firstOrFail();
+        if (!Auth::user()->isSuperAdmin() && $check->area_id !== Auth::user()->area_id) {
+            abort(403, 'No tienes permiso para rechazar este pedido.');
+        }
+
         $request->validate(['reason' => 'required|string|max:255']);
 
         DB::beginTransaction();
@@ -311,7 +318,7 @@ class FfOrderController extends Controller
     private function authorizeAdmin()
     {
         $user = Auth::user();
-        if (!($user->is_area_admin)) {
+        if (!$user->isSuperAdmin() && !$user->is_area_admin) {
             abort(403, 'No tienes permisos para autorizar pedidos.');
         }
     }
@@ -549,6 +556,11 @@ class FfOrderController extends Controller
 
     public function uploadBatchEvidences(Request $request, $folio)
     {
+        $check = ffInventoryMovement::where('folio', $folio)->firstOrFail();
+        if (!Auth::user()->isSuperAdmin() && $check->area_id !== Auth::user()->area_id) {
+            abort(403, 'No tienes permiso para subir evidencias a este pedido.');
+        }
+
         $request->validate([
             'evidence_1' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
             'evidence_2' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
@@ -569,7 +581,7 @@ class FfOrderController extends Controller
         }
 
         if ($hasUploads) {
-            \App\Models\ffInventoryMovement::where('folio', $folio)->update($updates);
+            ffInventoryMovement::where('folio', $folio)->update($updates);
             return redirect()->back()->with('success', 'Evidencias guardadas correctamente.');
         }
 
@@ -580,11 +592,28 @@ class FfOrderController extends Controller
     {
         $path = $request->query('path');
         
-        if (!$path || !Storage::disk('s3')->exists($path)) {
+        if (!$path) {
+            abort(404);
+        }
+
+        $exists = ffInventoryMovement::where(function($q) use ($path) {
+            $q->where('evidence_path_1', $path)
+              ->orWhere('evidence_path_2', $path)
+              ->orWhere('evidence_path_3', $path);
+        });
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $exists->where('area_id', Auth::user()->area_id);
+        }
+        
+        if (!$exists->exists()) {
+            abort(403, 'Archivo no encontrado o sin permisos.');
+        }
+
+        if (!Storage::disk('s3')->exists($path)) {
             abort(404);
         }
 
         return Storage::disk('s3')->download($path);
     }    
-
 }

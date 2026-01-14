@@ -19,7 +19,13 @@ class FfInventoryController extends Controller
 {
     public function index()
     {
-        $products = ffProduct::withSum('movements', 'quantity')
+        $query = ffProduct::query();
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
+
+        $products = $query->withSum('movements', 'quantity')
                         ->orderBy('description')
                         ->get();
         
@@ -27,17 +33,16 @@ class FfInventoryController extends Controller
             $product->description = str_replace(["\n", "\r", "\t"], ' ', $product->description);
         });
 
-        $brands = ffProduct::whereNotNull('brand')
-            ->where('brand', '!=', '')
-            ->distinct()
-            ->orderBy('brand')
-            ->pluck('brand');
+        $brandsQuery = ffProduct::whereNotNull('brand')->where('brand', '!=', '');
+        $typesQuery = ffProduct::whereNotNull('type')->where('type', '!=', '');
 
-        $types = ffProduct::whereNotNull('type')
-            ->where('type', '!=', '')
-            ->distinct()
-            ->orderBy('type')
-            ->pluck('type');
+        if (!Auth::user()->isSuperAdmin()) {
+            $brandsQuery->where('area_id', Auth::user()->area_id);
+            $typesQuery->where('area_id', Auth::user()->area_id);
+        }
+
+        $brands = $brandsQuery->distinct()->orderBy('brand')->pluck('brand');
+        $types = $typesQuery->distinct()->orderBy('type')->pluck('type');
         
         return view('friends-and-family.inventory.index', compact('products', 'brands', 'types'));
     }
@@ -61,9 +66,16 @@ class FfInventoryController extends Controller
             'reason'     => 'required|string|max:255',
         ]);
 
+        $product = ffProduct::findOrFail($request->product_id);
+
+        if (!Auth::user()->isSuperAdmin() && $product->area_id !== Auth::user()->area_id) {
+            abort(403, 'Este producto no pertenece a tu área.');
+        }
+
         $movement = ffInventoryMovement::create([
-            'ff_product_id' => $request->product_id,
+            'ff_product_id' => $product->id,
             'user_id'       => Auth::id(),
+            'area_id'       => $product->area_id,
             'quantity'      => $request->quantity,
             'reason'        => $request->reason,
         ]);
@@ -80,9 +92,13 @@ class FfInventoryController extends Controller
 
     public function logIndex()
     {
-        $movements = ffInventoryMovement::with('product', 'user')
-                        ->orderBy('created_at', 'desc')
-                        ->paginate(50);
+        $query = ffInventoryMovement::with('product', 'user')->orderBy('created_at', 'desc');
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
+
+        $movements = $query->paginate(50);
         
         return view('friends-and-family.inventory.log', compact('movements'));
     }
@@ -90,6 +106,10 @@ class FfInventoryController extends Controller
     public function exportCsv(Request $request)
     {
         $query = ffProduct::withSum('movements', 'quantity');
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -136,7 +156,13 @@ class FfInventoryController extends Controller
 
     public function exportLogCsv()
     {
-        $movements = ffInventoryMovement::with('product', 'user')->orderBy('created_at', 'desc')->get();
+        $query = ffInventoryMovement::with('product', 'user')->orderBy('created_at', 'desc');
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
+
+        $movements = $query->get();
 
         $headers = [
             'Content-Type' => 'text/csv',
@@ -197,9 +223,14 @@ class FfInventoryController extends Controller
                     continue;
                 }
 
-                $product = ffProduct::where('sku', $sku)->first();
+                $query = ffProduct::where('sku', $sku);
+                if (!Auth::user()->isSuperAdmin()) {
+                    $query->where('area_id', Auth::user()->area_id);
+                }
+                $product = $query->first();
+
                 if (!$product) {
-                    $errors[] = "Línea $rowNumber: El SKU '$sku' no fue encontrado.";
+                    $errors[] = "Línea $rowNumber: El SKU '$sku' no fue encontrado o no pertenece a tu área.";
                     continue;
                 }
 
@@ -216,6 +247,7 @@ class FfInventoryController extends Controller
                 ffInventoryMovement::create([
                     'ff_product_id' => $product->id,
                     'user_id'       => Auth::id(),
+                    'area_id'       => $product->area_id,
                     'quantity'      => (int)$quantity,
                     'reason'        => $reason . " (Importación CSV)",
                 ]);
@@ -249,6 +281,10 @@ class FfInventoryController extends Controller
     public function downloadMovementTemplate(Request $request)
     {
         $query = ffProduct::query();
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -309,12 +345,18 @@ class FfInventoryController extends Controller
 
     public function backorders()
     {
-        $backorders = ffInventoryMovement::where('is_backorder', true)
-            ->where('backorder_fulfilled', false)
-            ->with(['product', 'user']) 
+        $query = ffInventoryMovement::where('is_backorder', true)
+            ->where('backorder_fulfilled', false);
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
+
+        $backorders = $query->with(['product', 'user']) 
             ->orderBy('created_at', 'asc') 
             ->get()
             ->groupBy('ff_product_id');
+            
         return view('friends-and-family.inventory.backorders', compact('backorders'));
     }
 
@@ -323,6 +365,11 @@ class FfInventoryController extends Controller
         $request->validate(['movement_id' => 'required|exists:ff_inventory_movements,id']);
         
         $movement = ffInventoryMovement::with(['product', 'user'])->find($request->movement_id);
+
+        if (!Auth::user()->isSuperAdmin() && $movement->area_id !== Auth::user()->area_id) {
+            abort(403, 'No tienes permiso para gestionar este backorder.');
+        }
+
         $product = $movement->product;
         
         $currentStock = $product->movements()->sum('quantity');
@@ -368,7 +415,13 @@ class FfInventoryController extends Controller
 
     public function backorderRelations()
     {
-        $products = ffProduct::whereHas('movements', function($q) {
+        $productsQuery = ffProduct::query();
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $productsQuery->where('area_id', Auth::user()->area_id);
+        }
+
+        $products = $productsQuery->whereHas('movements', function($q) {
             $q->where('is_backorder', true)
               ->where('backorder_fulfilled', false);
         })
