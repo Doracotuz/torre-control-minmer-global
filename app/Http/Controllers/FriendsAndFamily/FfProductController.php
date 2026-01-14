@@ -547,39 +547,29 @@ class FfProductController extends Controller
 
         $products = $query->get();
 
-        $tempDir = storage_path('app/public/temp_pdf_images_' . uniqid());
+        $tempDir = storage_path('app/public/temp_pdf_' . uniqid());
         if (!file_exists($tempDir)) {
             mkdir($tempDir, 0777, true);
         }
 
         foreach ($products as $product) {
             $product->local_photo_path = null;
-
             if ($product->photo_path) {
                 try {
                     if (Storage::disk('s3')->exists($product->photo_path)) {
                         $imageContent = Storage::disk('s3')->get($product->photo_path);
-                        
                         $sourceImage = @imagecreatefromstring($imageContent);
-                        
                         if ($sourceImage) {
                             $width = imagesx($sourceImage);
-                            $height = imagesy($sourceImage);
                             $newWidth = 150;
-                            $newHeight = floor($height * ($newWidth / $width));
-
+                            $newHeight = floor(imagesy($sourceImage) * ($newWidth / $width));
                             $virtualImage = imagecreatetruecolor($newWidth, $newHeight);
-                            
                             imagealphablending($virtualImage, false);
                             imagesavealpha($virtualImage, true);
+                            imagecopyresampled($virtualImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, imagesy($sourceImage));
                             
-                            imagecopyresampled($virtualImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
-
-                            $localFileName = $product->id . '.jpg';
-                            $localPath = $tempDir . '/' . $localFileName;
-                            
+                            $localPath = $tempDir . '/' . $product->id . '.jpg';
                             imagejpeg($virtualImage, $localPath, 60); 
-
                             $product->local_photo_path = $localPath;
 
                             imagedestroy($virtualImage);
@@ -587,28 +577,47 @@ class FfProductController extends Controller
                         }
                     }
                 } catch (\Exception $e) {
-                    Log::warning("Error procesando imagen producto {$product->sku}: " . $e->getMessage());
+                    Log::warning("Error img producto {$product->sku}: " . $e->getMessage());
                 }
             }
         }
         
-        $logoUrl = $this->getLogoUrl($targetAreaId);
+        $logoKey = 'LogoAzulm.PNG'; 
+        
+        if (!Storage::disk('s3')->exists($logoKey)) {
+             if ($targetAreaId) {
+                $area = Area::find($targetAreaId);
+                if ($area && $area->icon_path) $logoKey = $area->icon_path;
+             } else {
+                $logoKey = 'logoConsorcioMonter.png';
+             }
+        }
+
+        $localLogoPath = null;
+        try {
+            if (Storage::disk('s3')->exists($logoKey)) {
+                $logoContent = Storage::disk('s3')->get($logoKey);
+                $localLogoPath = $tempDir . '/logo_header.png';
+                file_put_contents($localLogoPath, $logoContent);
+            }
+        } catch (\Exception $e) {
+            Log::error("Error descargando logo: " . $e->getMessage());
+        }
+
+        $finalLogo = $localLogoPath ?? $this->getLogoUrl($targetAreaId);
 
         $data = [
             'products' => $products,
-            'logo_url' => $logoUrl,
+            'logo_url' => $finalLogo,
             'print_date' => now()->format('d/m/Y H:i'), 
         ];
 
         $pdf = Pdf::loadView('friends-and-family.catalog.inventory-pdf', $data);
         $pdf->setPaper('A4', 'portrait');
-        
         $output = $pdf->output();
 
         $files = glob($tempDir . '/*'); 
-        foreach($files as $file){ 
-            if(is_file($file)) unlink($file); 
-        }
+        foreach($files as $file){ if(is_file($file)) unlink($file); }
         rmdir($tempDir);
 
         return response()->streamDownload(
