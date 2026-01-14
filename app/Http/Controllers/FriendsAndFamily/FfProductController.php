@@ -83,13 +83,18 @@ class FfProductController extends Controller
     {
         $user = Auth::user();
         
+        $targetAreaId = $user->area_id;
+        if ($user->isSuperAdmin() && $request->filled('area_id')) {
+            $targetAreaId = $request->input('area_id');
+        }
+
         $validated = $request->validate([
             'sku' => [
                 'required', 
                 'string', 
                 'max:255', 
-                Rule::unique('ff_products')->where(function ($query) use ($user) {
-                    return $query->where('area_id', $user->area_id);
+                Rule::unique('ff_products')->where(function ($query) use ($targetAreaId) {
+                    return $query->where('area_id', $targetAreaId);
                 })
             ],
             'description' => 'required|string|max:500',
@@ -104,10 +109,12 @@ class FfProductController extends Controller
             'channels' => 'nullable|array',
             'channels.*' => 'exists:ff_sales_channels,id',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:20048',
+            'area_id' => 'nullable|exists:areas,id',
         ]);
 
         $data = $validated;
         $data['is_active'] = $request->boolean('is_active', true);
+        $data['area_id'] = $targetAreaId;
 
         if ($request->hasFile('photo')) {
             $path = $request->file('photo')->store('ff_catalog_photos', 's3');
@@ -129,13 +136,18 @@ class FfProductController extends Controller
     {
         $user = Auth::user();
 
+        $targetAreaId = $catalog->area_id; 
+        if ($user->isSuperAdmin() && $request->filled('area_id')) {
+            $targetAreaId = $request->input('area_id');
+        }
+
         $validated = $request->validate([
             'sku' => [
                 'required', 
                 'string', 
                 'max:255', 
-                Rule::unique('ff_products')->ignore($catalog->id)->where(function ($query) use ($user) {
-                    return $query->where('area_id', $user->area_id);
+                Rule::unique('ff_products')->ignore($catalog->id)->where(function ($query) use ($targetAreaId) {
+                    return $query->where('area_id', $targetAreaId);
                 })
             ],
             'description' => 'required|string|max:500',
@@ -151,10 +163,12 @@ class FfProductController extends Controller
             'channels.*' => 'exists:ff_sales_channels,id',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:20048',
             'is_active' => 'required|boolean',
+            'area_id' => 'nullable|exists:areas,id',
         ]);
 
         $data = $validated;
         $data['is_active'] = $request->boolean('is_active');
+        $data['area_id'] = $targetAreaId;
 
         if ($request->hasFile('photo')) {
             if ($catalog->photo_path) {

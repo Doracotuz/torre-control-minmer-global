@@ -314,6 +314,17 @@
                                             </div>
                                         </div>
                                         <div class="space-y-6">
+                                            @if(Auth::user()->isSuperAdmin())
+                                                <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200 mb-4">
+                                                    <label class="block text-xs font-bold text-gray-800 mb-1">Área Asignada</label>
+                                                    <select x-model="form.area_id" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
+                                                        <template x-for="area in areas" :key="area.id">
+                                                            <option :value="area.id" x-text="area.name" :selected="form.area_id == area.id"></option>
+                                                        </template>
+                                                    </select>
+                                                    <p class="text-[10px] text-gray-500 mt-1">Este producto se creará en el inventario del área seleccionada.</p>
+                                                </div>
+                                            @endif                                            
                                             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
                                                 <span class="text-sm font-bold text-gray-900">Activado / Desactivado</span>
                                                 <button type="button" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none" :class="form.is_active ? 'bg-[#2c3856]' : 'bg-gray-300'" @click="form.is_active = !form.is_active">
@@ -580,9 +591,9 @@
                 formatMoney(amount) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount); },
                 resetFilters() { this.filters.brand = ''; this.filters.type = ''; this.filters.status = 'all'; this.filters.search = ''; this.filters.channel = ''; this.filters.area = ''; this.currentPage = 1; },
                 selectNewProduct() { this.resetForm(); this.isEditorOpen = true; },
-                editProduct(product) { const channelIds = product.channels ? product.channels.map(c => c.id) : []; this.form = { ...product, photo: null, channels: channelIds }; this.photoPreview = null; this.isEditorOpen = true; },
+                editProduct(product) { const channelIds = product.channels ? product.channels.map(c => c.id) : []; this.form = { ...product, photo: null, channels: channelIds, area_id: product.area_id}; this.photoPreview = null; this.isEditorOpen = true; },
                 closeEditor() { this.isEditorOpen = false; setTimeout(() => this.resetForm(), 300); },
-                resetForm() { this.form = { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, upc: '', photo: null, photo_url: null, is_active: true, channels: [] }; this.photoPreview = null; },
+                resetForm() { this.form = { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, upc: '', photo: null, photo_url: null, is_active: true, channels: [], area_id: {{ Auth::user()->area_id }} }; this.photoPreview = null; },
                 previewPhoto(event) { const file = event.target.files[0]; if (file) { this.form.photo = file; const reader = new FileReader(); reader.onload = (e) => { this.photoPreview = e.target.result; }; reader.readAsDataURL(file); } },
                 async saveProduct() {
                     if (this.isSaving) return; this.isSaving = true;
