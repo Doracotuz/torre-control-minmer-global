@@ -157,7 +157,7 @@
                         @if(Auth::user()->isSuperAdmin())
                             <div>
                                 <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Área</label>
-                                <select x-model="filters.area" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
+                                <select x-model="filters.area_id" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
                                     <option value="">Todas las áreas</option>
                                     <template x-for="area in areas" :key="area.id">
                                         <option :value="area.id" x-text="area.name"></option>
@@ -575,7 +575,7 @@
                 loading: false,
                 currentPage: 1, itemsPerPage: 12,
                 isEditorOpen: false, showFilters: false,
-                filters: { search: '', brand: '', type: '', status: 'all', channel: '', area: '' },
+                filters: { search: '', brand: '', type: '', status: 'all', channel: '', area_id: '' },
                 searchTimeout: null,
                 isSaving: false, photoPreview: null,
                 form: { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, upc: '', photo: null, photo_url: null, is_active: true, channels: [], area_id: {{ Auth::user()->area_id }} },
@@ -637,10 +637,12 @@
                     }
                 },
 
-                get activeFilterCount() { let count = 0; if(this.filters.brand) count++; if(this.filters.type) count++; if(this.filters.status !== 'all') count++; if(this.filters.channel) count++; if(this.filters.area) count++; return count; },
+                get activeFilterCount() { let count = 0; if(this.filters.brand) count++; if(this.filters.type) count++; if(this.filters.status !== 'all') count++; if(this.filters.channel) count++; if(this.filters.area_id) count++; return count; },
                 
                 formatMoney(amount) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount); },
-                resetFilters() { this.filters.brand = ''; this.filters.type = ''; this.filters.status = 'all'; this.filters.search = ''; this.filters.channel = ''; this.filters.area = ''; this.pagination.current_page = 1; this.fetchProducts(); },
+                
+                resetFilters() { this.filters.brand = ''; this.filters.type = ''; this.filters.status = 'all'; this.filters.search = ''; this.filters.channel = ''; this.filters.area_id = ''; this.pagination.current_page = 1; this.fetchProducts(); },
+                
                 selectNewProduct() { this.resetForm(); this.isEditorOpen = true; },
                 editProduct(product) { const channelIds = product.channels ? product.channels.map(c => c.id) : []; this.form = { ...product, photo: null, channels: channelIds, area_id: product.area_id}; this.photoPreview = null; this.isEditorOpen = true; },
                 closeEditor() { this.isEditorOpen = false; setTimeout(() => this.resetForm(), 300); },
@@ -719,7 +721,6 @@
                 generatePdf() { 
                     let url = this.generateUrl("{{ route('ff.catalog.exportPdf') }}");
                     url += '&percentage=' + this.pdfPercentage;
-                    
                     window.open(url, '_blank'); 
                     this.isPdfModalOpen = false; 
                 },
@@ -733,7 +734,7 @@
                     if(this.filters.type) params.append('type', this.filters.type);
                     if(this.filters.status !== 'all') params.append('status', this.filters.status);
                     if(this.filters.channel) params.append('channel', this.filters.channel);
-                    if(this.filters.area) params.append('area_id', this.filters.area);
+                    if(this.filters.area_id) params.append('area_id', this.filters.area_id);
                     
                     return baseUrl + '?' + params.toString();
                 },                
