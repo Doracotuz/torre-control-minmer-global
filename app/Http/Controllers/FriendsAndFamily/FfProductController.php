@@ -20,7 +20,6 @@ class FfProductController extends Controller
 {
     public function index()
     {
-        $products = ffProduct::orderBy('description')->get();
         $channels = FfSalesChannel::where('is_active', true)->orderBy('name')->get();
         
         $areas = [];
@@ -28,7 +27,11 @@ class FfProductController extends Controller
             $areas = Area::orderBy('name')->get();
         }
 
-        return view('friends-and-family.catalog.index', compact('products', 'channels', 'areas'));
+        return view('friends-and-family.catalog.index', [
+            'products' => [],
+            'channels' => $channels,
+            'areas' => $areas
+        ]);
     }
 
     private function applyFilters($query, Request $request)
@@ -625,5 +628,20 @@ class FfProductController extends Controller
             'Toma_Inventario_FF_'.date('Y-m-d').'.pdf'
         );
     }
+
+    public function searchProducts(Request $request)
+    {
+        $query = ffProduct::with('channels')->orderBy('brand')->orderBy('description');
+
+        $query = $this->applyFilters($query, $request);
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('area_id', Auth::user()->area_id);
+        }
+
+        $products = $query->paginate(12);
+
+        return response()->json($products);
+    }    
 
 }

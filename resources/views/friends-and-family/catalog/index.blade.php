@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
-    <div x-data='productManager(@json($products), @json($channels), @json($areas ?? []))' class="min-h-screen relative">
+    <div x-data='productManager(@json($channels), @json($areas ?? []))' class="min-h-screen relative">
         
         <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
             <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-8">
@@ -42,18 +42,79 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-                <template x-for="(stat, index) in stats" :key="index">
-                    <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm flex items-center gap-4 transition-transform hover:scale-[1.01]">
-                        <div :class="`p-3 rounded-xl ${stat.color} shadow-sm`">
-                            <i :class="stat.icon"></i>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                
+                <div class="relative overflow-hidden rounded-2xl bg-[#2c3856] p-5 shadow-lg shadow-[#2c3856]/20 group hover:-translate-y-1 transition-all duration-500">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-[#ff9c00] rounded-full mix-blend-overlay filter blur-[40px] opacity-10 group-hover:opacity-20 transition-opacity duration-700"></div>
+                    <div class="relative z-10 flex flex-col justify-between h-full">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-[9px] font-bold text-white/60 uppercase tracking-[0.2em] mb-0.5">Base de Datos</p>
+                                <h3 class="text-white font-extrabold text-sm">Catálogo Global</h3>
+                            </div>
+                            <div class="flex items-end gap-1 h-5">
+                                <div class="w-1 bg-[#ff9c00] rounded-sm h-2 animate-[pulse_2s_ease-in-out_infinite]"></div>
+                                <div class="w-1 bg-white/30 rounded-sm h-3 animate-[pulse_2s_ease-in-out_0.2s_infinite]"></div>
+                                <div class="w-1 bg-white/60 rounded-sm h-5 animate-[pulse_2s_ease-in-out_0.4s_infinite]"></div>
+                                <div class="w-1 bg-white rounded-sm h-3 animate-[pulse_2s_ease-in-out_0.6s_infinite]"></div>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-xs text-gray-500 font-bold uppercase tracking-wider" x-text="stat.label"></p>
-                            <p class="text-2xl font-bold text-gray-800" x-text="stat.value"></p>
+                        <div class="mt-3" x-data="{ current: 0, target: 0 }" x-effect="target = pagination.total; const step = Math.ceil(target / 20); const timer = setInterval(() => { if(current < target) { current = Math.min(current + step, target); } else if(current > target) { current = target; } else { clearInterval(timer); } }, 20);">
+                            <h2 class="text-4xl font-black text-white tracking-tight leading-none" x-text="current">0</h2>
+                            <div class="w-full bg-[#1a233a] h-1 mt-2.5 rounded-full overflow-hidden">
+                                <div class="h-full bg-[#ff9c00] w-2/3 shadow-[0_0_8px_#ff9c00]"></div>
+                            </div>
                         </div>
                     </div>
-                </template>
+                </div>
+
+                <div class="relative overflow-hidden rounded-2xl bg-white p-5 shadow-md shadow-gray-100 border border-gray-100 group hover:border-[#ff9c00]/30 transition-all duration-500">
+                    <div class="absolute -bottom-6 -right-6 w-24 h-24 border-[10px] border-[#ff9c00]/5 rounded-full group-hover:scale-110 transition-transform duration-700"></div>
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-0.5">Segmentación</p>
+                                <h3 class="text-[#2c3856] font-extrabold text-sm">Filtros Activos</h3>
+                            </div>
+                            <div class="flex flex-col gap-1 items-end opacity-50 group-hover:opacity-100 transition-opacity">
+                                <div class="w-6 h-0.5 bg-gray-200 rounded-full overflow-hidden"><div class="h-full bg-[#ff9c00] w-1/2 ml-auto"></div></div>
+                                <div class="w-4 h-0.5 bg-gray-200 rounded-full overflow-hidden"><div class="h-full bg-[#2c3856] w-2/3"></div></div>
+                                <div class="w-6 h-0.5 bg-gray-200 rounded-full overflow-hidden"><div class="h-full bg-[#ff9c00] w-1/3"></div></div>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline gap-2" x-data="{ current: 0, target: 0 }" x-effect="target = activeFilterCount; const step = 1; const timer = setInterval(() => { if(current < target) { current += step; } else if(current > target) { current -= step; } else { clearInterval(timer); } }, 50);">
+                            <h2 class="text-4xl font-black text-[#2c3856] tracking-tighter leading-none" x-text="current">0</h2>
+                            <span class="text-xs font-bold text-[#ff9c00] uppercase tracking-wide" x-show="activeFilterCount > 0">Aplicados</span>
+                            <span class="text-xs font-bold text-gray-300 uppercase tracking-wide" x-show="activeFilterCount === 0">Ninguno</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative overflow-hidden rounded-2xl bg-white p-5 shadow-md shadow-gray-100 border border-gray-100 group hover:border-[#2c3856]/30 transition-all duration-500">
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-0.5">En Pantalla</p>
+                                <h3 class="text-[#2c3856] font-extrabold text-sm">Resultados</h3>
+                            </div>
+                            <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-50 border border-gray-100">
+                                <span class="relative flex h-2 w-2">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2c3856] opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-2 w-2 bg-[#2c3856]"></span>
+                                </span>
+                                <span class="text-[8px] font-bold text-[#2c3856] uppercase">Live</span>
+                            </div>
+                        </div>
+                        <div x-data="{ current: 0, target: 0 }" x-effect="target = products.length; const step = Math.ceil(target / 15); const timer = setInterval(() => { if(current < target) { current = Math.min(current + step, target); } else if(current > target) { current = target; } else { clearInterval(timer); } }, 30);">
+                            <h2 class="text-4xl font-black text-[#2c3856] tracking-tighter leading-none" x-text="current">0</h2>
+                            <div class="flex items-center gap-2 mt-1">
+                                <p class="text-[10px] font-bold text-gray-400">
+                                    Página <span x-text="pagination.current_page" class="text-[#2c3856]"></span> de <span x-text="pagination.last_page"></span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="sticky top-4 z-30 bg-white/90 backdrop-blur-md border border-gray-200 shadow-lg shadow-gray-200/50 rounded-2xl p-3 mb-8 transition-all">
@@ -62,7 +123,7 @@
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="fas fa-search text-gray-400 group-focus-within:text-[#2c3856]"></i>
                         </div>
-                        <input type="text" x-model="filters.search" @input="currentPage = 1"
+                        <input type="text" x-model="filters.search"
                             class="block w-full pl-10 pr-3 py-2.5 border-gray-200 bg-gray-50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:bg-white focus:border-transparent transition-all" 
                             placeholder="Buscar SKU, nombre, UPC...">
                     </div>
@@ -91,15 +152,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Marca</label>
-                            <select x-model="filters.brand" @change="currentPage = 1" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
-                                <option value="">Todas las marcas</option>
-                                <template x-for="brand in uniqueBrands"><option :value="brand" x-text="brand"></option></template>
-                            </select>
+                            <input type="text" x-model="filters.brand" placeholder="Escribe marca..." class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
                         </div>
                         @if(Auth::user()->isSuperAdmin())
                             <div>
                                 <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Área</label>
-                                <select x-model="filters.area" @change="currentPage = 1" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
+                                <select x-model="filters.area" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
                                     <option value="">Todas las áreas</option>
                                     <template x-for="area in areas" :key="area.id">
                                         <option :value="area.id" x-text="area.name"></option>
@@ -109,14 +167,11 @@
                         @endif                        
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Tipo</label>
-                            <select x-model="filters.type" @change="currentPage = 1" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
-                                <option value="">Todos los tipos</option>
-                                <template x-for="type in uniqueTypes"><option :value="type" x-text="type"></option></template>
-                            </select>
+                            <input type="text" x-model="filters.type" placeholder="Escribe tipo..." class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
                         </div>
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Canal de Venta</label>
-                            <select x-model="filters.channel" @change="currentPage = 1" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
+                            <select x-model="filters.channel" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
                                 <option value="">Todos los canales</option>
                                 <template x-for="channel in channels" :key="channel.id"><option :value="channel.id" x-text="channel.name"></option></template>
                             </select>
@@ -124,9 +179,9 @@
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Estado</label>
                             <div class="flex gap-2">
-                                <button @click="filters.status = 'all'; currentPage = 1" :class="filters.status === 'all' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Todos</button>
-                                <button @click="filters.status = 'active'; currentPage = 1" :class="filters.status === 'active' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Activos</button>
-                                <button @click="filters.status = 'inactive'; currentPage = 1" :class="filters.status === 'inactive' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Inactivos</button>
+                                <button @click="filters.status = 'all'" :class="filters.status === 'all' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Todos</button>
+                                <button @click="filters.status = 'active'" :class="filters.status === 'active' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Activos</button>
+                                <button @click="filters.status = 'inactive'" :class="filters.status === 'inactive' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Inactivos</button>
                             </div>
                         </div>
                         <div class="flex items-end md:col-span-4 justify-end">
@@ -145,7 +200,7 @@
                     </template>
                 </div>
 
-                <div x-show="!loading && filteredProducts.length === 0" class="flex flex-col items-center justify-center py-20 text-center" style="display: none;">
+                <div x-show="!loading && products.length === 0" class="flex flex-col items-center justify-center py-20 text-center" style="display: none;">
                     <div class="bg-white p-6 rounded-full shadow-lg mb-6"><i class="fas fa-search text-4xl text-gray-300"></i></div>
                     <h3 class="text-xl font-bold text-gray-900">No se encontraron productos</h3>
                     <p class="text-gray-500 mt-2">Intenta ajustar los filtros o tu búsqueda.</p>
@@ -153,7 +208,7 @@
                 </div>
 
                 <div x-show="!loading && viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <template x-for="product in paginatedProducts" :key="product.id">
+                    <template x-for="product in products" :key="product.id">
                         <div class="group relative bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer">
                             <div class="absolute top-3 right-3 z-10 flex flex-col gap-2 items-end">
                                 <span :class="product.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-100 text-gray-500 border-gray-200'" class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md border shadow-sm"><span x-text="product.is_active ? 'Activo' : 'Inactivo'"></span></span>
@@ -167,7 +222,7 @@
                                 </template>
                             </div>
                             <div class="h-56 w-full p-6 bg-white flex items-center justify-center relative border-b border-gray-100">
-                                <img :src="product.photo_url" class="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105" :class="{'grayscale opacity-40': !product.is_active}">
+                                <img :src="product.photo_url" loading="lazy" class="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105" :class="{'grayscale opacity-40': !product.is_active}">
                                 <div x-show="!product.is_active" class="absolute inset-0 flex items-center justify-center pointer-events-none">
                                     <span class="bg-gray-800/80 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest backdrop-blur-sm transform -rotate-12">Inactivo</span>
                                 </div>
@@ -206,11 +261,11 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <template x-for="product in paginatedProducts" :key="product.id">
+                                <template x-for="product in products" :key="product.id">
                                     <tr class="hover:bg-gray-50 transition-colors cursor-pointer group" @click="editProduct(product)">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="h-12 w-12 rounded-lg border border-gray-200 p-1 bg-white relative">
-                                                <img :src="product.photo_url" class="h-full w-full object-contain" :class="{'grayscale opacity-40': !product.is_active}">
+                                                <img :src="product.photo_url" loading="lazy" class="h-full w-full object-contain" :class="{'grayscale opacity-40': !product.is_active}">
                                             </div>
                                         </td>
                                         <td class="px-6 py-4">
@@ -263,26 +318,21 @@
                     </div>
                 </div>
 
-                <div x-show="!loading && filteredProducts.length > 0" class="mt-8 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-gray-200 pt-6">
+                <div x-show="!loading && products.length > 0" class="mt-8 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-gray-200 pt-6">
                     <div class="text-sm text-gray-500">
-                        Mostrando <span class="font-bold text-gray-900" x-text="((currentPage - 1) * itemsPerPage) + 1"></span> a 
-                        <span class="font-bold text-gray-900" x-text="Math.min(currentPage * itemsPerPage, filteredProducts.length)"></span> de 
-                        <span class="font-bold text-gray-900" x-text="filteredProducts.length"></span> resultados
+                        Mostrando <span class="font-bold text-gray-900" x-text="pagination.from"></span> a 
+                        <span class="font-bold text-gray-900" x-text="pagination.to"></span> de 
+                        <span class="font-bold text-gray-900" x-text="pagination.total"></span> resultados
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <button @click="changePage(currentPage - 1)" :disabled="currentPage === 1" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><i class="fas fa-chevron-left mr-1"></i> Anterior</button>
-                        <div class="hidden md:flex gap-1">
-                            <template x-for="page in totalPages" :key="page">
-                                <button x-show="page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)"
-                                        @click="changePage(page)"
-                                        x-text="page"
-                                        :class="currentPage === page ? 'bg-[#2c3856] text-white border-[#2c3856]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg border text-sm font-bold transition-colors">
-                                </button>
-                            </template>
-                        </div>
-                        <button @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Siguiente <i class="fas fa-chevron-right ml-1"></i></button>
+                        <button @click="changePage(pagination.current_page - 1)" :disabled="pagination.current_page === 1" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><i class="fas fa-chevron-left mr-1"></i> Anterior</button>
+                        
+                        <span class="text-sm font-bold text-gray-700 bg-gray-100 px-3 py-2 rounded-lg">
+                            Pág. <span x-text="pagination.current_page"></span> de <span x-text="pagination.last_page"></span>
+                        </span>
+
+                        <button @click="changePage(pagination.current_page + 1)" :disabled="pagination.current_page === pagination.last_page" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Siguiente <i class="fas fa-chevron-right ml-1"></i></button>
                     </div>
                 </div>
             </div>
@@ -389,7 +439,7 @@
                         <button @click="isDetailModalOpen = false" class="text-gray-400 hover:text-gray-600 focus:outline-none"><i class="fas fa-times fa-lg"></i></button>
                     </div>
                     <div class="p-8 flex flex-col md:flex-row gap-8">
-                        <div class="w-full md:w-1/2 flex items-center justify-center bg-gray-50 rounded-xl border border-gray-100 p-6"><img :src="detailProduct.photo_url" class="max-h-[400px] w-auto object-contain drop-shadow-lg"></div>
+                        <div class="w-full md:w-1/2 flex items-center justify-center bg-gray-50 rounded-xl border border-gray-100 p-6"><img :src="detailProduct.photo_url" loading="lazy" class="max-h-[400px] w-auto object-contain drop-shadow-lg"></div>
                         <div class="w-full md:w-1/2 flex flex-col justify-between">
                             <div class="space-y-6">
                                 <div><span class="inline-block px-3 py-1 bg-gray-200 text-gray-700 text-sm font-mono font-bold rounded-lg mb-2" x-text="detailProduct.sku"></span><h2 class="text-3xl font-extrabold text-gray-900 leading-tight" x-text="detailProduct.description"></h2><p class="text-gray-500 font-bold text-lg mt-2" x-text="detailProduct.brand"></p></div>
@@ -516,87 +566,90 @@
     </div>
 
     <script>
-        function productManager(initialProducts, initialChannels, initialAreas) {
+        function productManager(initialChannels, initialAreas) {
             return {
-                products: initialProducts || [],
+                products: [],
+                pagination: { current_page: 1, last_page: 1, total: 0 },
                 channels: initialChannels || [],
                 areas: initialAreas || [],
-                loading: true,
+                loading: false,
                 currentPage: 1, itemsPerPage: 12,
                 isEditorOpen: false, showFilters: false,
                 filters: { search: '', brand: '', type: '', status: 'all', channel: '', area: '' },
+                searchTimeout: null,
                 isSaving: false, photoPreview: null,
-                form: { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, upc: '', photo: null, photo_url: null, is_active: true, channels: [] },
+                form: { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, upc: '', photo: null, photo_url: null, is_active: true, channels: [], area_id: {{ Auth::user()->area_id }} },
                 isUploadModalOpen: false, uploadMessage: '', uploadSuccess: false,
                 isPdfModalOpen: false, pdfPercentage: 0,
                 isDetailModalOpen: false, detailProduct: {}, isSheetModalOpen: false, sheetProduct: {},
                 viewMode: localStorage.getItem('ff_catalog_view_mode') || 'grid',
 
-                init() { setTimeout(() => { this.loading = false; }, 300); },
+                init() {
+                    this.fetchProducts();
+                    this.$watch('filters', () => {
+                        this.pagination.current_page = 1;
+                        this.debouncedFetch();
+                    });
+                },
+
+                debouncedFetch() {
+                    clearTimeout(this.searchTimeout);
+                    this.searchTimeout = setTimeout(() => {
+                        this.fetchProducts();
+                    }, 400);
+                },
+
+                async fetchProducts() {
+                    this.loading = true;
+                    const params = new URLSearchParams({
+                        page: this.pagination.current_page,
+                        ...this.filters
+                    });
+
+                    try {
+                        const response = await fetch(`{{ route('ff.catalog.search') }}?${params.toString()}`);
+                        const data = await response.json();
+                        this.products = data.data;
+                        this.pagination = {
+                            current_page: data.current_page,
+                            last_page: data.last_page,
+                            total: data.total,
+                            from: data.from,
+                            to: data.to
+                        };
+                    } catch (error) {
+                        console.error('Error cargando productos:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
 
                 toggleView(mode) {
                     this.viewMode = mode;
                     localStorage.setItem('ff_catalog_view_mode', mode);
                 },
 
-                get filteredProducts() {    
-                    if (!this.products) return [];
-                    let result = this.products;
-                    const search = this.filters.search.toLowerCase();
-                    
-                    if (search) { result = result.filter(p => (p.sku && p.sku.toLowerCase().includes(search)) || (p.description && p.description.toLowerCase().includes(search)) || (p.brand && p.brand.toLowerCase().includes(search)) || (p.upc && p.upc.toLowerCase().includes(search))); }
-                    if (this.filters.brand) result = result.filter(p => p.brand === this.filters.brand);
-                    if (this.filters.type) result = result.filter(p => p.type === this.filters.type);
-                    if (this.filters.status !== 'all') { const isActive = this.filters.status === 'active'; result = result.filter(p => Boolean(p.is_active) === isActive); }
-                    if (this.filters.channel) { result = result.filter(p => p.channels && p.channels.some(c => c.id == this.filters.channel)); }
-                    if (this.filters.area) { 
-                        result = result.filter(p => p.area_id == this.filters.area); 
+                changePage(page) {
+                    if (page >= 1 && page <= this.pagination.last_page) {
+                        this.pagination.current_page = page;
+                        this.fetchProducts();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
-
-                    return result;
                 },
 
-                get paginatedProducts() { const start = (this.currentPage - 1) * this.itemsPerPage; return this.filteredProducts.slice(start, start + this.itemsPerPage); },
-                get totalPages() { return Math.ceil(this.filteredProducts.length / this.itemsPerPage); },
-                changePage(page) { if (page >= 1 && page <= this.totalPages) { this.currentPage = page; window.scrollTo({ top: 0, behavior: 'smooth' }); } },
-                get uniqueBrands() { if (!this.products) return []; const brands = this.products.map(p => p.brand).filter(b => b); return [...new Set(brands)].sort(); },
-                get uniqueTypes() { if (!this.products) return []; const types = this.products.map(p => p.type).filter(t => t); return [...new Set(types)].sort(); },
                 get activeFilterCount() { let count = 0; if(this.filters.brand) count++; if(this.filters.type) count++; if(this.filters.status !== 'all') count++; if(this.filters.channel) count++; if(this.filters.area) count++; return count; },
-                get stats() {
-                    const total = this.filteredProducts.length;
-                    const active = this.filteredProducts.filter(p => p.is_active).length;
-                    const inactive = total - active;
-
-                    return [
-                        { 
-                            label: 'Total Listado', 
-                            value: total, 
-                            icon: 'fas fa-boxes', 
-                            color: 'bg-blue-50 text-blue-700' 
-                        },
-                        { 
-                            label: 'Activos', 
-                            value: active, 
-                            icon: 'fas fa-check-circle', 
-                            color: 'bg-emerald-50 text-emerald-700' 
-                        },
-                        { 
-                            label: 'Inactivos', 
-                            value: inactive, 
-                            icon: 'fas fa-times-circle', 
-                            color: 'bg-red-50 text-red-700' 
-                        }
-                    ];
-                },                
+                
                 formatMoney(amount) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount); },
-                resetFilters() { this.filters.brand = ''; this.filters.type = ''; this.filters.status = 'all'; this.filters.search = ''; this.filters.channel = ''; this.filters.area = ''; this.currentPage = 1; },
+                resetFilters() { this.filters.brand = ''; this.filters.type = ''; this.filters.status = 'all'; this.filters.search = ''; this.filters.channel = ''; this.filters.area = ''; this.pagination.current_page = 1; this.fetchProducts(); },
                 selectNewProduct() { this.resetForm(); this.isEditorOpen = true; },
                 editProduct(product) { const channelIds = product.channels ? product.channels.map(c => c.id) : []; this.form = { ...product, photo: null, channels: channelIds, area_id: product.area_id}; this.photoPreview = null; this.isEditorOpen = true; },
                 closeEditor() { this.isEditorOpen = false; setTimeout(() => this.resetForm(), 300); },
                 resetForm() { this.form = { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, upc: '', photo: null, photo_url: null, is_active: true, channels: [], area_id: {{ Auth::user()->area_id }} }; this.photoPreview = null; },
                 previewPhoto(event) { const file = event.target.files[0]; if (file) { this.form.photo = file; const reader = new FileReader(); reader.onload = (e) => { this.photoPreview = e.target.result; }; reader.readAsDataURL(file); } },
                 async saveProduct() {
-                    if (this.isSaving) return; this.isSaving = true;
+                    if (this.isSaving) return;
+                    this.isSaving = true;
+
                     const formData = new FormData();
                     Object.keys(this.form).forEach(key => {
                         if (key === 'photo_url' || key === 'channels') return;
@@ -606,22 +659,62 @@
                         if (value === null) value = '';
                         formData.append(key, value);
                     });
-                    if (this.form.channels && this.form.channels.length > 0) { this.form.channels.forEach(id => formData.append('channels[]', id)); }
+
+                    if (this.form.channels && this.form.channels.length > 0) {
+                        this.form.channels.forEach(id => formData.append('channels[]', id));
+                    }
+
                     const isUpdate = !!this.form.id;
                     if (isUpdate) formData.append('_method', 'PUT');
+
                     const url = isUpdate ? `{{ url('ff/catalog') }}/${this.form.id}` : `{{ route('ff.catalog.store') }}`;
+
                     try {
-                        const response = await fetch(url, { method: 'POST', body: formData, headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json', }, });
-                        if (!response.ok) { const errorData = await response.json(); alert('Error: ' + (errorData.message || 'Verifica los datos')); throw new Error('Error en validación'); }
-                        const savedProduct = await response.json();
-                        if (isUpdate) { const index = this.products.findIndex(p => p.id === savedProduct.id); if (index > -1) this.products.splice(index, 1, savedProduct); } else { this.products.unshift(savedProduct); }
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'Accept': 'application/json',
+                            },
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(data.message || (data.errors ? Object.values(data.errors).flat().join('\n') : 'Error al guardar'));
+                        }
+
+                        this.fetchProducts();
                         this.closeEditor();
-                    } catch (error) { console.error(error); } finally { this.isSaving = false; }
+                    } catch (error) {
+                        alert(error.message);
+                    } finally {
+                        this.isSaving = false;
+                    }
                 },
-                async deleteProduct(product) { if (!confirm(`¿Eliminar definitivamente "${product.description}"?`)) return; try { const response = await fetch(`{{ url('ff/catalog') }}/${product.id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json', }, }); if (!response.ok) throw new Error('Error al eliminar'); this.products = this.products.filter(p => p.id !== product.id); this.closeEditor(); } catch (error) { alert('No se pudo eliminar.'); } },
+                async deleteProduct(product) {
+                    if (!confirm(`¿Eliminar definitivamente "${product.description}"?`)) return;
+                    try {
+                        const response = await fetch(`{{ url('ff/catalog') }}/${product.id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'Accept': 'application/json',
+                            },
+                        });
+                        
+                        if (!response.ok) throw new Error('Error al eliminar');
+                        
+                        this.fetchProducts();
+                        this.closeEditor();
+                    } catch (error) {
+                        alert('No se pudo eliminar.');
+                    }
+                },
                 openUploadModal() { this.isUploadModalOpen = true; this.uploadMessage = ''; },
                 closeUploadModal() { this.isUploadModalOpen = false; if(this.uploadSuccess) location.reload(); },
-                async submitImport(event) { this.isSaving = true; this.uploadMessage = ''; const formData = new FormData(event.target); try { const response = await fetch("{{ route('ff.catalog.import') }}", { method: 'POST', body: formData, headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json'} }); const data = await response.json(); this.uploadSuccess = response.ok; this.uploadMessage = data.message || (data.errors ? Object.values(data.errors).join(' ') : 'Error'); if(this.uploadSuccess) event.target.reset(); } catch (e) { this.uploadMessage = 'Error de conexión'; } finally { this.isSaving = false; } },
+                async submitImport(event) { this.isSaving = true; this.uploadMessage = ''; const formData = new FormData(event.target); try { const response = await fetch("{{ route('ff.catalog.import') }}", { method: 'POST', body: formData, headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json'} }); const data = await response.json(); this.uploadSuccess = response.ok; this.uploadMessage = data.message || (data.errors ? Object.values(data.errors).join(' ') : 'Error'); if(this.uploadSuccess) { event.target.reset(); this.fetchProducts(); } } catch (e) { this.uploadMessage = 'Error de conexión'; } finally { this.isSaving = false; } },
                 openPdfModal() { this.pdfPercentage = 0; this.isPdfModalOpen = true; },
                 generatePdf() { 
                     let url = this.generateUrl("{{ route('ff.catalog.exportPdf') }}");
