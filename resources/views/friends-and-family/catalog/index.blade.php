@@ -46,6 +46,7 @@
                 
                 <div class="relative overflow-hidden rounded-2xl bg-[#2c3856] p-5 shadow-lg shadow-[#2c3856]/20 group hover:-translate-y-1 transition-all duration-500">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-[#ff9c00] rounded-full mix-blend-overlay filter blur-[40px] opacity-10 group-hover:opacity-20 transition-opacity duration-700"></div>
+                    
                     <div class="relative z-10 flex flex-col justify-between h-full">
                         <div class="flex justify-between items-center">
                             <div>
@@ -59,6 +60,7 @@
                                 <div class="w-1 bg-white rounded-sm h-3 animate-[pulse_2s_ease-in-out_0.6s_infinite]"></div>
                             </div>
                         </div>
+
                         <div class="mt-3" x-data="{ current: 0, target: 0 }" x-effect="target = pagination.total; const step = Math.ceil(target / 20); const timer = setInterval(() => { if(current < target) { current = Math.min(current + step, target); } else if(current > target) { current = target; } else { clearInterval(timer); } }, 20);">
                             <h2 class="text-4xl font-black text-white tracking-tight leading-none" x-text="current">0</h2>
                             <div class="w-full bg-[#1a233a] h-1 mt-2.5 rounded-full overflow-hidden">
@@ -70,6 +72,7 @@
 
                 <div class="relative overflow-hidden rounded-2xl bg-white p-5 shadow-md shadow-gray-100 border border-gray-100 group hover:border-[#ff9c00]/30 transition-all duration-500">
                     <div class="absolute -bottom-6 -right-6 w-24 h-24 border-[10px] border-[#ff9c00]/5 rounded-full group-hover:scale-110 transition-transform duration-700"></div>
+
                     <div class="relative z-10">
                         <div class="flex justify-between items-center mb-3">
                             <div>
@@ -82,6 +85,7 @@
                                 <div class="w-6 h-0.5 bg-gray-200 rounded-full overflow-hidden"><div class="h-full bg-[#ff9c00] w-1/3"></div></div>
                             </div>
                         </div>
+
                         <div class="flex items-baseline gap-2" x-data="{ current: 0, target: 0 }" x-effect="target = activeFilterCount; const step = 1; const timer = setInterval(() => { if(current < target) { current += step; } else if(current > target) { current -= step; } else { clearInterval(timer); } }, 50);">
                             <h2 class="text-4xl font-black text-[#2c3856] tracking-tighter leading-none" x-text="current">0</h2>
                             <span class="text-xs font-bold text-[#ff9c00] uppercase tracking-wide" x-show="activeFilterCount > 0">Aplicados</span>
@@ -94,7 +98,7 @@
                     <div class="relative z-10">
                         <div class="flex justify-between items-center mb-3">
                             <div>
-                                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-0.5">En Pantalla</p>
+                                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-0.5">Coincidencias</p>
                                 <h3 class="text-[#2c3856] font-extrabold text-sm">Resultados</h3>
                             </div>
                             <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-50 border border-gray-100">
@@ -105,16 +109,18 @@
                                 <span class="text-[8px] font-bold text-[#2c3856] uppercase">Live</span>
                             </div>
                         </div>
-                        <div x-data="{ current: 0, target: 0 }" x-effect="target = products.length; const step = Math.ceil(target / 15); const timer = setInterval(() => { if(current < target) { current = Math.min(current + step, target); } else if(current > target) { current = target; } else { clearInterval(timer); } }, 30);">
+
+                        <div x-data="{ current: 0, target: 0 }" x-effect="target = pagination.total; const step = Math.ceil(target / 15); const timer = setInterval(() => { if(current < target) { current = Math.min(current + step, target); } else if(current > target) { current = target; } else { clearInterval(timer); } }, 30);">
                             <h2 class="text-4xl font-black text-[#2c3856] tracking-tighter leading-none" x-text="current">0</h2>
                             <div class="flex items-center gap-2 mt-1">
                                 <p class="text-[10px] font-bold text-gray-400">
-                                    Página <span x-text="pagination.current_page" class="text-[#2c3856]"></span> de <span x-text="pagination.last_page"></span>
+                                    Mostrando página <span x-text="pagination.current_page" class="text-[#2c3856]"></span> de <span x-text="pagination.last_page"></span>
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
+
             </div>
 
             <div class="sticky top-4 z-30 bg-white/90 backdrop-blur-md border border-gray-200 shadow-lg shadow-gray-200/50 rounded-2xl p-3 mb-8 transition-all">
@@ -640,9 +646,7 @@
                 get activeFilterCount() { let count = 0; if(this.filters.brand) count++; if(this.filters.type) count++; if(this.filters.status !== 'all') count++; if(this.filters.channel) count++; if(this.filters.area_id) count++; return count; },
                 
                 formatMoney(amount) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount); },
-                
                 resetFilters() { this.filters.brand = ''; this.filters.type = ''; this.filters.status = 'all'; this.filters.search = ''; this.filters.channel = ''; this.filters.area_id = ''; this.pagination.current_page = 1; this.fetchProducts(); },
-                
                 selectNewProduct() { this.resetForm(); this.isEditorOpen = true; },
                 editProduct(product) { const channelIds = product.channels ? product.channels.map(c => c.id) : []; this.form = { ...product, photo: null, channels: channelIds, area_id: product.area_id}; this.photoPreview = null; this.isEditorOpen = true; },
                 closeEditor() { this.isEditorOpen = false; setTimeout(() => this.resetForm(), 300); },
@@ -721,6 +725,7 @@
                 generatePdf() { 
                     let url = this.generateUrl("{{ route('ff.catalog.exportPdf') }}");
                     url += '&percentage=' + this.pdfPercentage;
+                    
                     window.open(url, '_blank'); 
                     this.isPdfModalOpen = false; 
                 },
@@ -734,6 +739,7 @@
                     if(this.filters.type) params.append('type', this.filters.type);
                     if(this.filters.status !== 'all') params.append('status', this.filters.status);
                     if(this.filters.channel) params.append('channel', this.filters.channel);
+                    
                     if(this.filters.area_id) params.append('area_id', this.filters.area_id);
                     
                     return baseUrl + '?' + params.toString();
