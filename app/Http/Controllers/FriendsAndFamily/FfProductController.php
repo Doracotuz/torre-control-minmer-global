@@ -511,19 +511,88 @@ class FfProductController extends Controller
         return $pdf->stream('Ficha_Tecnica_'.$product->sku.'.pdf');
     }
 
-    public function exportInventoryPdf(Request $request)    
+    public function exportInventoryPdf(Request $request)
     {
-        ini_set('max_execution_time', 300);
-        ini_set('memory_limit', '512M');
+        set_time_limit(0); 
+        ini_set('max_execution_time', 600);
+        ini_set('memory_limit', '1024M');
 
-        $query = ffProduct::orderBy('brand')
-                    ->orderBy('description');
+        $query = ffProduct::orderBy('brand')->orderBy('description');
 
-        $query = $this->applyFilters($query, $request);
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('sku', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('brand', 'like', "%{$search}%")
+                  ->orWhere('upc', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('brand')) $query->where('brand', $request->input('brand'));
+        if ($request->filled('type')) $query->where('type', $request->input('type'));
+        if ($request->filled('status') && $request->input('status') !== 'all') {
+            $query->where('is_active', $request->input('status') === 'active');
+        }
+        if ($request->filled('channel')) {
+            $query->whereHas('channels', fn($q) => $q->where('id', $request->input('channel')));
+        }
+        
+        $targetAreaId = Auth::user()->isSuperAdmin() && $request->filled('area_id') 
+            ? $request->input('area_id') 
+            : Auth::user()->area_id;
+
+        if ($targetAreaId) {
+            $query->where('area_id', $targetAreaId);
+        }
 
         $products = $query->get();
+
+        $tempDir = storage_path('app/public/temp_pdf_images_' . uniqid());
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0777, true);
+        }
+
+        foreach ($products as $product) {
+            $product->local_photo_path = null;
+
+            if ($product->photo_path) {
+                try {
+                    if (Storage::disk('s3')->exists($product->photo_path)) {
+                        $imageContent = Storage::disk('s3')->get($product->photo_path);
+                        
+                        $sourceImage = @imagecreatefromstring($imageContent);
+                        
+                        if ($sourceImage) {
+                            $width = imagesx($sourceImage);
+                            $height = imagesy($sourceImage);
+                            $newWidth = 150;
+                            $newHeight = floor($height * ($newWidth / $width));
+
+                            $virtualImage = imagecreatetruecolor($newWidth, $newHeight);
+                            
+                            imagealphablending($virtualImage, false);
+                            imagesavealpha($virtualImage, true);
+                            
+                            imagecopyresampled($virtualImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+                            $localFileName = $product->id . '.jpg';
+                            $localPath = $tempDir . '/' . $localFileName;
+                            
+                            imagejpeg($virtualImage, $localPath, 60); 
+
+                            $product->local_photo_path = $localPath;
+
+                            imagedestroy($virtualImage);
+                            imagedestroy($sourceImage);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Error procesando imagen producto {$product->sku}: " . $e->getMessage());
+                }
+            }
+        }
         
-        $logoUrl = Storage::disk('s3')->url('LogoAzulm.PNG');
+        $logoUrl = $this->getLogoUrl($targetAreaId);
 
         $data = [
             'products' => $products,
@@ -532,12 +601,20 @@ class FfProductController extends Controller
         ];
 
         $pdf = Pdf::loadView('friends-and-family.catalog.inventory-pdf', $data);
-        
         $pdf->setPaper('A4', 'portrait');
-        $pdf->setOption('isRemoteEnabled', true);
-        $pdf->setOption('dpi', 150);
         
-        return $pdf->stream('Toma_Inventario_FF_'.date('Y-m-d').'.pdf');
+        $output = $pdf->output();
+
+        $files = glob($tempDir . '/*'); 
+        foreach($files as $file){ 
+            if(is_file($file)) unlink($file); 
+        }
+        rmdir($tempDir);
+
+        return response()->streamDownload(
+            fn () => print($output),
+            'Toma_Inventario_FF_'.date('Y-m-d').'.pdf'
+        );
     }
 
 }

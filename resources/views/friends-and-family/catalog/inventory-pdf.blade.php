@@ -269,7 +269,9 @@
             @foreach($products as $product)
             <tr>
                 <td class="cell-image">
-                    @if($product->photo_url)
+                    @if($product->local_photo_path)
+                        <img src="{{ $product->local_photo_path }}" class="product-img" alt="Prod">
+                    @elseif($product->photo_url)
                         <img src="{{ $product->photo_url }}" class="product-img" alt="Prod">
                     @else
                         <div style="height: 80px; width: 80px; background: #f3f4f6; border-radius: 6px; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: #ccc;">
