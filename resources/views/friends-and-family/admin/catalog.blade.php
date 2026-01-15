@@ -34,13 +34,25 @@
             itemAreaId: '', 
             modalTitle: '',
             search: '',
+            selectedArea: '',
             isSuperAdmin: {{ Auth::user()->isSuperAdmin() ? 'true' : 'false' }},
+            
             get filteredItems() {
-                if (this.search === '') return {{ $items }};
-                return {{ $items }}.filter(item => 
-                    item.name.toLowerCase().includes(this.search.toLowerCase()) || 
-                    (item.area && item.area.name.toLowerCase().includes(this.search.toLowerCase()))
-                );
+                let items = {{ $items }};
+
+                if (this.selectedArea !== '') {
+                    items = items.filter(item => item.area_id == this.selectedArea);
+                }
+
+                if (this.search !== '') {
+                    const searchLower = this.search.toLowerCase();
+                    items = items.filter(item => 
+                        item.name.toLowerCase().includes(searchLower) || 
+                        (item.area && item.area.name.toLowerCase().includes(searchLower))
+                    );
+                }
+                
+                return items;
             },
             openCreate() {
                 this.editMode = false; 
@@ -84,10 +96,26 @@
         </div>
 
         <div class="flex flex-col md:flex-row gap-6 mb-8 animate-slide-up" style="animation-delay: 0.1s;">
+            
+            @if(Auth::user()->isSuperAdmin())
+                <div class="relative w-full md:w-64">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                        <i class="fas fa-filter"></i>
+                    </div>
+                    <select x-model="selectedArea" class="block w-full pl-10 pr-8 py-3 bg-white border-none rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] text-gray-700 font-medium focus:ring-2 focus:ring-[#ff9c00] transition-all appearance-none cursor-pointer">
+                        <option value="">Todas las Áreas</option>
+                        @foreach($areas as $area)
+                            <option value="{{ $area->id }}">{{ $area->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
+
             <div class="relative flex-1">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fas fa-search text-gray-400"></i></div>
                 <input type="text" x-model="search" class="block w-full pl-11 pr-4 py-3 bg-white border-none rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-[#ff9c00] transition-all" placeholder="Buscar en {{ strtolower($config['title']) }}...">
             </div>
+            
             <div class="bg-white px-6 py-3 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex items-center gap-3 border border-gray-100">
                 <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Registros</div>
                 <div class="text-2xl font-black text-[#2c3856]" x-text="filteredItems.length"></div>
@@ -159,7 +187,7 @@
                                     <div class="flex flex-col items-center justify-center">
                                         <div class="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mb-4 animate-bounce"><i class="fas fa-search text-3xl text-gray-300"></i></div>
                                         <h3 class="text-lg font-bold text-[#2c3856]">No se encontraron resultados</h3>
-                                        <p class="text-gray-400 text-sm mt-1">Intenta con otra búsqueda o agrega un nuevo registro.</p>
+                                        <p class="text-gray-400 text-sm mt-1">Intenta ajustar tus filtros de búsqueda.</p>
                                     </div>
                                 </td>
                             </tr>
