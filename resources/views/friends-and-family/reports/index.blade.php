@@ -380,8 +380,8 @@
         const dataTopProductos = @json($chartTopProductos);
         const dataVentasVendedor = @json($chartVentasVendedor);
         const stockAgotadoCount = {{ $stockAgotadoCount }};
-        const currentAreaId = "{{ request('area_id') }}";
         const currentUserId = document.getElementById('user_id') ? document.getElementById('user_id').value : '';
+        const currentAreaId = "{{ request('area_id') }}";
 
         const commonOptions = {
             fontFamily: 'Montserrat, sans-serif',
@@ -435,7 +435,11 @@
             }
 
             let url = '{{ route('ff.reports.api.recentMovements') }}';
-            let params = new URLSearchParams({ user_id: currentUserId, area_id: currentAreaId, limit: 10 });
+            let params = new URLSearchParams({ 
+                user_id: currentUserId, 
+                area_id: currentAreaId,
+                limit: 10 
+            });
 
             fetch(`${url}?${params.toString()}`)
                 .then(r => r.ok ? r.json() : Promise.reject('Error'))

@@ -621,11 +621,11 @@ class FfReportController extends Controller
         $query = ffInventoryMovement::where('quantity', '<', 0);
 
         if (!Auth::user()->isSuperAdmin()) {
-            $query->where('area_id', Auth::user()->area_id);
+            $query->where('ff_inventory_movements.area_id', Auth::user()->area_id);
         }
 
         if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
-            $query->where('area_id', $request->input('area_id'));
+            $query->where('ff_inventory_movements.area_id', $request->input('area_id'));
         }
 
         $query->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
