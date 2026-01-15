@@ -129,6 +129,10 @@ class FfReportController extends Controller
         if (!Auth::user()->isSuperAdmin()) {
             $vendedoresQuery->where('area_id', Auth::user()->area_id);
         }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $query->where('ff_inventory_movements.area_id', $request->input('area_id'));
+        }        
         
         $vendedores = $vendedoresQuery->get();
 
@@ -348,6 +352,10 @@ class FfReportController extends Controller
         if (!Auth::user()->isSuperAdmin()) {
             $query->where('area_id', Auth::user()->area_id);
         }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $query->where('area_id', $request->input('area_id'));
+        }        
 
         if ($search) {
             $query->where(function($q) use ($search) {

@@ -18,13 +18,17 @@ use App\Models\Area;
 
 class FfInventoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $query = ffProduct::query();
 
         if (!Auth::user()->isSuperAdmin()) {
             $query->where('area_id', Auth::user()->area_id);
         }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $query->where('area_id', $request->input('area_id'));
+        }        
 
         $products = $query->withSum('movements', 'quantity')
                         ->orderBy('description')
@@ -121,6 +125,10 @@ class FfInventoryController extends Controller
         if (!Auth::user()->isSuperAdmin()) {
             $query->where('area_id', Auth::user()->area_id);
         }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $query->where('area_id', $request->input('area_id'));
+        }        
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -295,6 +303,10 @@ class FfInventoryController extends Controller
 
         if (!Auth::user()->isSuperAdmin()) {
             $query->where('area_id', Auth::user()->area_id);
+        }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $query->where('area_id', $request->input('area_id'));
         }
 
         if ($request->filled('search')) {

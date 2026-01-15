@@ -46,9 +46,9 @@ class FfProductController extends Controller
             $search = $request->input('search');
             $query->where(function($q) use ($search) {
                 $q->where('sku', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('brand', 'like', "%{$search}%")
-                  ->orWhere('upc', 'like', "%{$search}%");
+                ->orWhere('description', 'like', "%{$search}%")
+                ->orWhere('brand', 'like', "%{$search}%")
+                ->orWhere('upc', 'like', "%{$search}%");
             });
         }
 
@@ -68,6 +68,10 @@ class FfProductController extends Controller
             $query->whereHas('channels', function($q) use ($request) {
                 $q->where('ff_sales_channels.id', $request->input('channel'));
             });
+        }
+
+        if ($request->filled('area_id')) {
+            $query->where('area_id', $request->input('area_id'));
         }
 
         return $query;

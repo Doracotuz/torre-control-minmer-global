@@ -631,6 +631,10 @@ class FfSalesController extends Controller
             $query->where('area_id', Auth::user()->area_id);
         }
 
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $query->where('area_id', $request->input('area_id'));
+        }
+
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function($q) use ($search) {

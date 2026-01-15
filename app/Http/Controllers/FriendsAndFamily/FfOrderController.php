@@ -31,6 +31,10 @@ class FfOrderController extends Controller
             $query->where('area_id', Auth::user()->area_id);
         }
 
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $query->where('area_id', $request->input('area_id'));
+        }        
+
         $query->select(
                 'folio', 
                 'client_name', 
