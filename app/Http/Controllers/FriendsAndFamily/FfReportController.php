@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ffProduct;
 use App\Models\ffInventoryMovement;
 use App\Models\User;
+use App\Models\Area;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Dompdf\Dompdf;
@@ -20,14 +21,23 @@ class FfReportController extends Controller
     {
         $userIdFilter = $request->input('user_id');
 
-        $baseQuery = ffInventoryMovement::where('quantity', '<', 0);
+        $areas = [];
+        if (Auth::user()->isSuperAdmin()) {
+            $areas = Area::orderBy('name')->get();
+        }
+
+        $baseQuery = ffInventoryMovement::where('ff_inventory_movements.quantity', '<', 0);
         
         if (!Auth::user()->isSuperAdmin()) {
-            $baseQuery->where('area_id', Auth::user()->area_id);
+            $baseQuery->where('ff_inventory_movements.area_id', Auth::user()->area_id);
+        }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $baseQuery->where('ff_inventory_movements.area_id', $request->input('area_id'));
         }
 
         if ($userIdFilter) {
-            $baseQuery->where('user_id', $userIdFilter);
+            $baseQuery->where('ff_inventory_movements.user_id', $userIdFilter);
         }
 
         $ventasCompletas = (clone $baseQuery)
@@ -67,8 +77,13 @@ class FfReportController extends Controller
         ];
         
         $productsQuery = ffProduct::withSum('movements', 'quantity');
+        
         if (!Auth::user()->isSuperAdmin()) {
             $productsQuery->where('area_id', Auth::user()->area_id);
+        }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $productsQuery->where('area_id', $request->input('area_id'));
         }
 
         $stockAgotadoCount = $productsQuery->get()
@@ -90,15 +105,22 @@ class FfReportController extends Controller
         $startDateIso = $startDate->toIso8601String();
         $endDateIso = $endDate->toIso8601String();
         
-        $vendedoresQuery = User::whereHas('movements', function ($query) {
+        $vendedoresQuery = User::whereHas('movements', function ($query) use ($request) {
             $query->where('quantity', '<', 0);
             if (!Auth::user()->isSuperAdmin()) {
                 $query->where('area_id', Auth::user()->area_id);
+            }
+            if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+                $query->where('area_id', $request->input('area_id'));
             }
         })->orderBy('name');
 
         if (!Auth::user()->isSuperAdmin()) {
             $vendedoresQuery->where('area_id', Auth::user()->area_id);
+        }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $vendedoresQuery->where('area_id', $request->input('area_id'));
         }
 
         $vendedores = $vendedoresQuery->get(['id', 'name']);
@@ -113,16 +135,20 @@ class FfReportController extends Controller
             'vendedores',
             'userIdFilter',
             'chartTopProductos',
-            'chartVentasVendedor'
+            'chartVentasVendedor',
+            'areas'
         ));
     }
 
     public function transactions(Request $request)
     {
-        $vendedoresQuery = User::whereHas('movements', function ($query) {
+        $vendedoresQuery = User::whereHas('movements', function ($query) use ($request) {
             $query->where('quantity', '<', 0);
             if (!Auth::user()->isSuperAdmin()) {
                 $query->where('area_id', Auth::user()->area_id);
+            }
+            if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+                $query->where('area_id', $request->input('area_id'));
             }
         })->orderBy('name');
 
@@ -131,8 +157,8 @@ class FfReportController extends Controller
         }
 
         if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
-            $query->where('ff_inventory_movements.area_id', $request->input('area_id'));
-        }        
+            $vendedoresQuery->where('area_id', $request->input('area_id'));
+        }
         
         $vendedores = $vendedoresQuery->get();
 
@@ -141,7 +167,7 @@ class FfReportController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
-        $query = ffInventoryMovement::where('quantity', '<', 0)
+        $query = ffInventoryMovement::where('ff_inventory_movements.quantity', '<', 0)
             ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
             ->select(
                 'ff_inventory_movements.folio',
@@ -164,6 +190,10 @@ class FfReportController extends Controller
 
         if (!Auth::user()->isSuperAdmin()) {
             $query->where('ff_inventory_movements.area_id', Auth::user()->area_id);
+        }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $query->where('ff_inventory_movements.area_id', $request->input('area_id'));
         }
 
         if ($userIdFilter) {
@@ -191,6 +221,11 @@ class FfReportController extends Controller
             ->with('user')
             ->paginate(50)
             ->withQueryString();
+            
+        $areas = [];
+        if (Auth::user()->isSuperAdmin()) {
+            $areas = Area::orderBy('name')->get();
+        }
 
         return view('friends-and-family.reports.transactions', compact(
             'sales', 
@@ -198,7 +233,8 @@ class FfReportController extends Controller
             'userIdFilter', 
             'search', 
             'startDate', 
-            'endDate'
+            'endDate',
+            'areas'
         ));
     }
     
@@ -221,7 +257,11 @@ class FfReportController extends Controller
         $user = $firstMovement->user;
         
         $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
-        if ($user && $user->area && $user->area->icon_path) {
+        $area = Area::find($firstMovement->area_id);
+
+        if ($area && $area->icon_path) {
+            $logoUrl = Storage::disk('s3')->url($area->icon_path);
+        } elseif ($user && $user->area && $user->area->icon_path) {
             $logoUrl = Storage::disk('s3')->url($user->area->icon_path);
         }
 
@@ -280,11 +320,16 @@ class FfReportController extends Controller
         );
     }
     
-    public function inventoryAnalysis()
+    public function inventoryAnalysis(Request $request)
     {
         $movementQuery = ffInventoryMovement::query();
+        
         if (!Auth::user()->isSuperAdmin()) {
             $movementQuery->where('area_id', Auth::user()->area_id);
+        }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $movementQuery->where('area_id', $request->input('area_id'));
         }
 
         $movementReasons = $movementQuery->select(
@@ -305,8 +350,13 @@ class FfReportController extends Controller
         ];
         
         $productsQuery = ffProduct::query();
+        
         if (!Auth::user()->isSuperAdmin()) {
-            $productsQuery->where('area_id', Auth::user()->area_id);
+            $productsQuery->where('ff_products.area_id', Auth::user()->area_id);
+        }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $productsQuery->where('ff_products.area_id', $request->input('area_id'));
         }
 
         $rotationProducts = $productsQuery->join('ff_inventory_movements', 'ff_products.id', '=', 'ff_inventory_movements.ff_product_id')
@@ -335,9 +385,15 @@ class FfReportController extends Controller
             ]]
         ];
 
+        $areas = [];
+        if (Auth::user()->isSuperAdmin()) {
+            $areas = Area::orderBy('name')->get();
+        }
+
         return view('friends-and-family.reports.inventory-analysis', compact(
             'chartMovementReasons',
-            'chartRotation'
+            'chartRotation',
+            'areas'
         ));
     }
 
@@ -355,7 +411,7 @@ class FfReportController extends Controller
 
         if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
             $query->where('area_id', $request->input('area_id'));
-        }        
+        }
 
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -403,20 +459,30 @@ class FfReportController extends Controller
             ['path' => $request->url(), 'query' => $request->query()]
         );
 
+        $areas = [];
+        if (Auth::user()->isSuperAdmin()) {
+            $areas = Area::orderBy('name')->get();
+        }
+
         return view('friends-and-family.reports.stock-availability', compact(
             'paginatedData',
             'chartStockVsReserved',
             'lowStockAlerts',
-            'search'
+            'search',
+            'areas'
         ));
     }
 
-    public function catalogAnalysis()
+    public function catalogAnalysis(Request $request)
     {
         $query = ffProduct::select('unit_price', 'brand', 'type', 'is_active');
 
         if (!Auth::user()->isSuperAdmin()) {
             $query->where('area_id', Auth::user()->area_id);
+        }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $query->where('area_id', $request->input('area_id'));
         }
 
         $products = $query->get();
@@ -448,32 +514,64 @@ class FfReportController extends Controller
             'labels' => $brandDistribution->keys()->toArray(),
         ];
 
+        $areas = [];
+        if (Auth::user()->isSuperAdmin()) {
+            $areas = Area::orderBy('name')->get();
+        }
+
         return view('friends-and-family.reports.catalog-analysis', compact(
             'chartPriceDistribution',
             'chartActiveInactive',
-            'chartBrand'
+            'chartBrand',
+            'areas'
         ));
     }
 
-    public function sellerPerformance()
+    public function sellerPerformance(Request $request)
     {
-        $vendedoresQuery = User::select('id', 'name')->where(function($q) {
-            $q->whereHas('cartItems')->orWhereHas('movements');
+        $vendedoresQuery = User::select('id', 'name')->where(function($q) use ($request) {
+            $q->whereHas('cartItems', function($query) use ($request) {
+                if (!Auth::user()->isSuperAdmin()) {
+                    $query->whereHas('product', function($q) {
+                        $q->where('area_id', Auth::user()->area_id);
+                    });
+                }
+                if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+                    $query->whereHas('product', function($q) use ($request) {
+                        $q->where('area_id', $request->input('area_id'));
+                    });
+                }
+            })->orWhereHas('movements', function($query) use ($request) {
+                if (!Auth::user()->isSuperAdmin()) {
+                    $query->where('area_id', Auth::user()->area_id);
+                }
+                if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+                    $query->where('area_id', $request->input('area_id'));
+                }
+            });
         });
 
         if (!Auth::user()->isSuperAdmin()) {
             $vendedoresQuery->where('area_id', Auth::user()->area_id);
         }
+        
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $vendedoresQuery->where('area_id', $request->input('area_id'));
+        }
 
         $vendedores = $vendedoresQuery->get();
         
-        $sellerPerformanceData = $vendedores->map(function ($user) {
+        $sellerPerformanceData = $vendedores->map(function ($user) use ($request) {
             
             $query = ffInventoryMovement::where('user_id', $user->id)
                 ->where('quantity', '<', 0);
 
             if (!Auth::user()->isSuperAdmin()) {
                 $query->where('area_id', Auth::user()->area_id);
+            }
+
+            if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+                $query->where('area_id', $request->input('area_id'));
             }
 
             $salesData = $query->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
@@ -503,9 +601,15 @@ class FfReportController extends Controller
             'labels' => $sellerPerformanceData->pluck('name')->toArray(),
         ];
 
+        $areas = [];
+        if (Auth::user()->isSuperAdmin()) {
+            $areas = Area::orderBy('name')->get();
+        }
+
         return view('friends-and-family.reports.seller-performance', compact(
             'sellerPerformanceData',
-            'chartValorVendedor'
+            'chartValorVendedor',
+            'areas'
         ));
     }
 
@@ -518,6 +622,10 @@ class FfReportController extends Controller
 
         if (!Auth::user()->isSuperAdmin()) {
             $query->where('area_id', Auth::user()->area_id);
+        }
+
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $query->where('area_id', $request->input('area_id'));
         }
 
         $query->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
@@ -564,6 +672,10 @@ class FfReportController extends Controller
             $query->where('area_id', Auth::user()->area_id);
         }
 
+        if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $query->where('area_id', $request->input('area_id'));
+        }
+
         $movements = $query->with('product:id,sku,description,unit_price')->get();
 
         if ($movements->isEmpty()) {
@@ -595,19 +707,34 @@ class FfReportController extends Controller
         $userIdFilter = $request->input('user_id');
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
+        $areaFilterId = $request->input('area_id');
         
         $data = [];
 
         try {
             $user = Auth::user();
-            $iconPath = 'logoConsorcioMonter.png'; 
-            if ($user->area && $user->area->icon_path) {
-                $iconPath = $user->area->icon_path;
+            $iconPath = 'logoConsorcioMonter.png';
+
+            if ($user->isSuperAdmin()) {
+                if ($areaFilterId) {
+                    $selectedArea = Area::find($areaFilterId);
+                    if ($selectedArea && $selectedArea->icon_path) {
+                        $iconPath = $selectedArea->icon_path;
+                    }
+                }
+            } else {
+                if ($user->area && $user->area->icon_path) {
+                    $iconPath = $user->area->icon_path;
+                }
             }
 
             try {
-                $logoContent = Storage::disk('s3')->get($iconPath);
-                $data['logo_base_64'] = 'data:image/png;base64,' . base64_encode($logoContent);
+                if (Storage::disk('s3')->exists($iconPath)) {
+                    $logoContent = Storage::disk('s3')->get($iconPath);
+                    $data['logo_base_64'] = 'data:image/png;base64,' . base64_encode($logoContent);
+                } else {
+                    $data['logo_base_64'] = null;
+                }
             } catch (\Exception $e) {
                 $data['logo_base_64'] = null; 
             }
@@ -615,6 +742,14 @@ class FfReportController extends Controller
             $data = array_merge($data, $this->gatherReportData($userIdFilter, $startDate, $endDate));
             
             $data['user_filter_name'] = $userIdFilter ? User::find($userIdFilter)->name : 'Todos';
+            
+            if ($areaFilterId) {
+                $data['area_name'] = Area::find($areaFilterId)->name ?? 'Global';
+            } elseif ($user->area) {
+                $data['area_name'] = $user->area->name;
+            } else {
+                $data['area_name'] = 'Global';
+            }
             
             if ($startDate && $endDate) {
                 $start = Carbon::parse($startDate)->isoFormat('D MMM YYYY');
@@ -710,7 +845,11 @@ class FfReportController extends Controller
         $baseQuery = ffInventoryMovement::where('ff_inventory_movements.quantity', '<', 0);
         
         if (!Auth::user()->isSuperAdmin()) {
-            $baseQuery->where('area_id', Auth::user()->area_id);
+            $baseQuery->where('ff_inventory_movements.area_id', Auth::user()->area_id);
+        }
+        
+        if (Auth::user()->isSuperAdmin() && request()->filled('area_id')) {
+             $baseQuery->where('ff_inventory_movements.area_id', request()->input('area_id'));
         }
 
         if ($userIdFilter) {
@@ -755,6 +894,10 @@ class FfReportController extends Controller
         if (!Auth::user()->isSuperAdmin()) {
             $ventasPorVendedorQuery->where('ff_inventory_movements.area_id', Auth::user()->area_id);
         }
+        
+        if (Auth::user()->isSuperAdmin() && request()->filled('area_id')) {
+             $ventasPorVendedorQuery->where('ff_inventory_movements.area_id', request()->input('area_id'));
+        }
 
         if ($userIdFilter) {
             $ventasPorVendedorQuery->where('ff_inventory_movements.user_id', $userIdFilter);
@@ -781,6 +924,10 @@ class FfReportController extends Controller
         if (!Auth::user()->isSuperAdmin()) {
             $productsCatalogQuery->where('area_id', Auth::user()->area_id);
         }
+        if (Auth::user()->isSuperAdmin() && request()->filled('area_id')) {
+            $productsCatalogQuery->where('area_id', request()->input('area_id'));
+        }
+
         $productsCatalog = $productsCatalogQuery->get();
 
         $priceRangesRaw = [
@@ -797,6 +944,9 @@ class FfReportController extends Controller
         $allProductsQuery = ffProduct::withSum('movements', 'quantity')->withSum('cartItems', 'quantity');
         if (!Auth::user()->isSuperAdmin()) {
             $allProductsQuery->where('area_id', Auth::user()->area_id);
+        }
+        if (Auth::user()->isSuperAdmin() && request()->filled('area_id')) {
+            $allProductsQuery->where('area_id', request()->input('area_id'));
         }
         $allProducts = $allProductsQuery->get();
 
@@ -842,6 +992,9 @@ class FfReportController extends Controller
         $totalVendedoresQuery = User::query();
         if (!Auth::user()->isSuperAdmin()) {
             $totalVendedoresQuery->where('area_id', Auth::user()->area_id);
+        }
+        if (Auth::user()->isSuperAdmin() && request()->filled('area_id')) {
+            $totalVendedoresQuery->where('area_id', request()->input('area_id'));
         }
         $totalVendedores = $totalVendedoresQuery->count();
         

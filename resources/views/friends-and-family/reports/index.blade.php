@@ -123,7 +123,21 @@
             </div>
 
             <div class="flex-grow flex flex-col md:flex-row items-center justify-end gap-3 px-4 py-2 w-full">
-                <form method="GET" action="{{ route('ff.reports.index') }}" class="w-full md:w-auto">
+                <form method="GET" action="{{ route('ff.reports.index') }}" class="w-full md:w-auto flex flex-col md:flex-row gap-3">
+                    @if(Auth::user()->isSuperAdmin())
+                        <div class="relative group">
+                            <label class="absolute -top-2 left-2 bg-white px-1 text-[13px] font-bold text-[#ff9c00] z-10">ÁREA</label>
+                            <select name="area_id" onchange="this.form.submit()" class="input-cockpit w-full md:w-48 cursor-pointer">
+                                <option value="">GLOBAL</option>
+                                @foreach($areas as $area)
+                                    <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
+                                        {{ strtoupper($area->name) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
+
                     <div class="relative group">
                         <label class="absolute -top-2 left-2 bg-white px-1 text-[13px] font-bold text-[#ff9c00] z-10">AGENTE</label>
                         <select name="user_id" onchange="this.form.submit()" class="input-cockpit w-full md:w-64 cursor-pointer">
@@ -140,6 +154,10 @@
                 <form action="{{ route('ff.reports.generateExecutive') }}" method="POST" target="_blank" class="flex flex-col md:flex-row gap-2 w-full md:w-auto items-center">
                     @csrf
                     <input type="hidden" name="user_id" value="{{ $userIdFilter }}">
+                    
+                    @if(request()->filled('area_id'))
+                        <input type="hidden" name="area_id" value="{{ request('area_id') }}">
+                    @endif
                     
                     <div class="flex items-center gap-1 bg-white/50 p-1 rounded-lg border border-slate-200">
                         <div class="relative">

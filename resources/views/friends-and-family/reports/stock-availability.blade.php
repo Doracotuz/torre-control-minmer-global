@@ -224,6 +224,20 @@
                                     <i class="fas fa-times text-xs"></i>
                                 </a>
                             @endif
+
+                            @if(Auth::user()->isSuperAdmin())
+                                <div class="relative w-full sm:w-48">
+                                    <select name="area_id" onchange="this.form.submit()" class="input-tech py-2 font-bold uppercase text-xs cursor-pointer">
+                                        <option value="">GLOBAL</option>
+                                        @foreach($areas as $area)
+                                            <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
+                                                {{ strtoupper($area->name) }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
+
                         </form>
                     </div>
                     

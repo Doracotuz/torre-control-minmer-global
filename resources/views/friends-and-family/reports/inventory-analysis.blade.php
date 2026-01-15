@@ -62,11 +62,30 @@
                 </p>
             </div>
             
+            @if(Auth::user()->isSuperAdmin())
+                <div class="mb-4 md:mb-0">
+                    <form method="GET" action="{{ route('ff.reports.inventoryAnalysis') }}">
+                        <div class="relative group">
+                            <label class="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-[#ff9c00] z-10">FILTRAR ÁREA</label>
+                            <select name="area_id" onchange="this.form.submit()" class="w-full md:w-64 bg-white border border-[#2c3856]/20 text-[#2c3856] text-xs font-bold uppercase rounded-lg py-2.5 px-3 focus:outline-none focus:border-[#ff9c00] shadow-sm cursor-pointer">
+                                <option value="">VISTA GLOBAL</option>
+                                @foreach($areas as $area)
+                                    <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
+                                        {{ strtoupper($area->name) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            @endif
+
             <a href="{{ route('ff.reports.index') }}"
                class="group flex items-center gap-3 px-8 py-3 bg-white/90 border border-[#2c3856]/10 rounded-xl hover:bg-[#2c3856] hover:text-white transition-all duration-300 shadow-md transform hover:-translate-y-1">
                 <i class="fas fa-undo-alt text-[#ff9c00] text-lg group-hover:text-white transition-colors"></i>
                 <span class="text-sm font-black uppercase tracking-widest">Regresar al Panel</span>
             </a>
+            
         </div>
 
         <div class="grid grid-cols-1 gap-8">

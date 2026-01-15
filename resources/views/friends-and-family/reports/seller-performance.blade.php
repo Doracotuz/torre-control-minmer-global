@@ -269,9 +269,20 @@
                             Listado dinámico con filtros en tiempo real
                         </p>
                     </div>
+                    @if(Auth::user()->isSuperAdmin())
+                        <form method="GET" action="{{ route('ff.reports.sellerPerformance') }}">
+                            <select name="area_id" onchange="this.form.submit()" class="input-tech py-2 w-48 font-bold uppercase text-xs cursor-pointer">
+                                <option value="">GLOBAL</option>
+                                @foreach($areas as $area)
+                                    <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
+                                        {{ strtoupper($area->name) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </form>
+                    @endif
 
                     <div class="relative w-full sm:w-64">
-                        <i class="fas fa-search absolute left-3 top-3 text-slate-400 text-xs"></i>
                         <input type="text" x-model="search" placeholder="Buscar Agente..." class="input-tech pl-9">
                     </div>
                 </div>

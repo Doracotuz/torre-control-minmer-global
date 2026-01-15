@@ -149,6 +149,25 @@
                         </div>
                     </div>
 
+                    @if(Auth::user()->isSuperAdmin())
+                        <div class="lg:col-span-2">
+                            <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">ÁREA</label>
+                            <div class="relative">
+                                <select name="area_id" onchange="this.form.submit()" class="input-cockpit cursor-pointer appearance-none">
+                                    <option value="">GLOBAL</option>
+                                    @foreach($areas as $area)
+                                        <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
+                                            {{ strtoupper($area->name) }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fas fa-chevron-down text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+                    @endif                    
+
                     <div class="lg:col-span-3">
                         <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Agente de Venta</label>
                         <div class="relative">
@@ -171,7 +190,7 @@
                         </div>
                     </div>
 
-                    <div class="lg:col-span-4 grid grid-cols-2 gap-2">
+                    <div class="lg:col-span-3 grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Rango Inicial</label>
                             <input type="datetime-local" name="start_date" id="start_date" value="{{ $startDate }}" class="input-cockpit">
@@ -182,7 +201,7 @@
                         </div>
                     </div>
 
-                    <div class="lg:col-span-2 flex justify-end gap-2">
+                    <div class="lg:col-span-1 flex justify-end gap-2">
                         @if ($userIdFilter || $search || $startDate || $endDate)
                             <button type="button" @click="clearFilter()" class="h-[34px] w-[34px] flex items-center justify-center border border-slate-300 rounded text-slate-500 hover:bg-slate-100 transition-colors" title="Reset">
                                 <i class="fas fa-sync-alt"></i>

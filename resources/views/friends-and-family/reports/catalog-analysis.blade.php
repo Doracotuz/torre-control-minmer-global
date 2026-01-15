@@ -72,12 +72,28 @@
                     Segmentación de precios, estado operativo del catálogo y penetración de marcas.
                 </p>
             </div>
+
+            <div class="flex gap-3 items-center">
+                @if(Auth::user()->isSuperAdmin())
+                    <form method="GET" action="{{ route('ff.reports.catalogAnalysis') }}">
+                        <select name="area_id" onchange="this.form.submit()" class="bg-white/60 border border-[#2c3856]/10 rounded-lg py-2.5 px-4 text-xs font-black uppercase text-[#2c3856] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] cursor-pointer hover:bg-white transition-colors shadow-sm">
+                            <option value="">CATÁLOGO GLOBAL</option>
+                            @foreach($areas as $area)
+                                <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
+                                    {{ strtoupper($area->name) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </form>
+                @endif
+            </div>
             
             <a href="{{ route('ff.reports.index') }}"
                class="group flex items-center gap-3 px-6 py-2.5 bg-white/60 backdrop-blur-sm border border-[#2c3856]/10 rounded-lg hover:bg-[#2c3856] hover:text-white transition-all duration-300 shadow-sm">
                 <i class="fas fa-arrow-left text-[#ff9c00] group-hover:text-white transition-colors"></i>
                 <span class="text-xs font-black uppercase tracking-widest">Panel Principal</span>
             </a>
+
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">

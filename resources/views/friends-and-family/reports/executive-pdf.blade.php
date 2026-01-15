@@ -129,6 +129,12 @@
         <table><tr>
             <td style="width: 50%;">@if(isset($logo_base_64)) <img src="{{ $logo_base_64 }}" alt="Logo" class="logo"> @endif</td>
             <td style="width: 50%;" class="doc-info">
+                <p class="doc-subtitle" style="font-weight: bold;">
+                    Filtro Usuario: {{ $user_filter_name }}
+                    @if(request()->filled('area_id'))
+                        | Área: {{ \App\Models\Area::find(request('area_id'))->name }}
+                    @endif
+                </p>
                 <h1 class="doc-title">Reporte de ventas</h1>
                 <p class="doc-subtitle">Desglose de información</p>
                 <p class="doc-subtitle">Generado: {{ $report_date }}</p>
