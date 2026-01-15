@@ -348,6 +348,25 @@
                                     </label>
                                 @endforeach
                             </div>
+                            <div class="mt-10 pt-8 border-t border-gray-200">
+                                <div class="text-center mb-8">
+                                    <h3 class="text-xl font-bold text-[#ff9c00]">Mosaicos Friends & Family</h3>
+                                    <p class="text-gray-400 text-sm">Seleccione qué tarjetas verá el usuario en el dashboard FF</p>
+                                </div>
+
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    @foreach(\App\Models\User::availableFfTiles() as $key => $label)
+                                        <label class="cursor-pointer relative group">
+                                            <input type="checkbox" name="ff_visible_tiles[]" value="{{ $key }}" class="peer sr-only" 
+                                                {{ (isset($user) && $user->canSeeFfTile($key)) || (is_array(old('ff_visible_tiles')) && in_array($key, old('ff_visible_tiles'))) ? 'checked' : '' }}>
+                                            
+                                            <div class="p-3 rounded-xl bg-gray-50 border border-gray-200 text-center transition-all duration-300 peer-checked:bg-[#ff9c00] peer-checked:border-[#ff9c00] peer-checked:shadow-md hover:scale-105">
+                                                <span class="text-xs font-bold text-gray-500 uppercase tracking-wide peer-checked:text-white">{{ $label }}</span>
+                                            </div>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>                            
                         </div>
 
                     </div>

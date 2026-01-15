@@ -175,144 +175,153 @@
                  :class="layout === 'original' 
                     ? 'grid-cols-12 auto-rows-[minmax(240px,auto)]' 
                     : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-5 auto-rows-auto'">
-
-                <a href="{{ route('ff.orders.index') }}" 
-                   class="op-card group animate-entry" 
-                   :class="layout === 'original' ? 'col-span-12 lg:col-span-8 row-span-2' : 'col-span-1 h-[500px]'"
-                   style="animation-delay: 0.1s;">
-                   
-                    <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80" 
-                        alt="Logística" class="card-bg-image">
-                    <div class="card-overlay"></div>
+                @if(Auth::user()->canSeeFfTile('orders'))
+                    <a href="{{ route('ff.orders.index') }}" 
+                    class="op-card group animate-entry" 
+                    :class="layout === 'original' ? 'col-span-12 lg:col-span-8 row-span-2' : 'col-span-1 h-[500px]'"
+                    style="animation-delay: 0.1s;">
                     
-                    <div class="card-icon-float">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                    </div>
-
-                    <div class="card-content">
-                        <div class="stat-badge">
-                            <span>Última venta: {{ $lastSale ? $lastSale->created_at->diffForHumans() : 'N/A' }}</span>
+                        <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80" 
+                            alt="Logística" class="card-bg-image">
+                        <div class="card-overlay"></div>
+                        
+                        <div class="card-icon-float">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                         </div>
-                        <h2 class="font-brand font-bold mb-2 leading-tight" :class="layout === 'original' ? 'text-4xl' : 'text-3xl'">Pedidos</h2>
-                        <p class="text-gray-200 text-lg font-light mb-6" :class="layout === 'original' ? 'max-w-xl' : ''">
-                            Monitor de estatus, aprobaciones y gestión operativa de transacciones.
-                        </p>
-                        <div class="flex items-center text-[#ff9c00] font-bold tracking-wider text-sm uppercase group-hover:translate-x-2 transition-transform">
-                            Ver Listado <span class="ml-2 text-xl">→</span>
-                        </div>
-                    </div>
-                </a>
 
-                <a href="{{ route('ff.inventory.index') }}" 
-                   class="op-card group animate-entry"
-                   :class="layout === 'original' ? 'col-span-12 lg:col-span-4 row-span-2' : 'col-span-1 h-[500px]'" 
-                   style="animation-delay: 0.2s;">
-                   
-                    <img src="https://images.unsplash.com/photo-1553413077-190dd305871c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
-                        alt="Almacén" class="card-bg-image">
-                    <div class="card-overlay"></div>
-
-                    <div class="card-icon-float">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                        </svg>
-                    </div>
-
-                    <div class="card-content">
-                        <div class="flex flex-col gap-2 mb-4">
-                            <div class="stat-badge w-max">
-                                <span>Movimientos Hoy: {{ $todayMovements }}</span>
+                        <div class="card-content">
+                            <div class="stat-badge">
+                                <span>Última venta: {{ $lastSale ? $lastSale->created_at->diffForHumans() : 'N/A' }}</span>
                             </div>
-                            @if($lowStockCount > 0)
-                            <div class="stat-badge w-max !border-red-500 !bg-red-500/20">
-                                <span>{{ $lowStockCount }} Alertas de Stock</span>
+                            <h2 class="font-brand font-bold mb-2 leading-tight" :class="layout === 'original' ? 'text-4xl' : 'text-3xl'">Pedidos</h2>
+                            <p class="text-gray-200 text-lg font-light mb-6" :class="layout === 'original' ? 'max-w-xl' : ''">
+                                Monitor de estatus, aprobaciones y gestión operativa de transacciones.
+                            </p>
+                            <div class="flex items-center text-[#ff9c00] font-bold tracking-wider text-sm uppercase group-hover:translate-x-2 transition-transform">
+                                Ver Listado <span class="ml-2 text-xl">→</span>
                             </div>
-                            @endif
                         </div>
-                        <h2 class="text-3xl font-brand font-bold mb-2">Inventario</h2>
-                        <p class="text-gray-300 text-sm font-light leading-relaxed">
-                            Control total de existencias, entradas y salidas de almacén.
-                        </p>
-                    </div>
-                </a>
+                    </a>
+                @endif
+                
+                @if(Auth::user()->canSeeFfTile('inventory'))
+                    <a href="{{ route('ff.inventory.index') }}" 
+                    class="op-card group animate-entry"
+                    :class="layout === 'original' ? 'col-span-12 lg:col-span-4 row-span-2' : 'col-span-1 h-[500px]'" 
+                    style="animation-delay: 0.2s;">
+                    
+                        <img src="https://images.unsplash.com/photo-1553413077-190dd305871c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
+                            alt="Almacén" class="card-bg-image">
+                        <div class="card-overlay"></div>
 
-                <a href="{{ route('ff.catalog.index') }}" 
-                   class="op-card group animate-entry"
-                   :class="layout === 'original' ? 'col-span-12 md:col-span-6 lg:col-span-4 row-span-1' : 'col-span-1 h-[500px]'"
-                   style="animation-delay: 0.3s;">
-                   
-                    <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
-                        alt="Catálogo" class="card-bg-image">
-                    <div class="card-overlay"></div>
+                        <div class="card-icon-float">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                        </div>
 
-                    <div class="card-icon-float">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                        </svg>
-                    </div>
+                        <div class="card-content">
+                            <div class="flex flex-col gap-2 mb-4">
+                                <div class="stat-badge w-max">
+                                    <span>Movimientos Hoy: {{ $todayMovements }}</span>
+                                </div>
+                                @if($lowStockCount > 0)
+                                <div class="stat-badge w-max !border-red-500 !bg-red-500/20">
+                                    <span>{{ $lowStockCount }} Alertas de Stock</span>
+                                </div>
+                                @endif
+                            </div>
+                            <h2 class="text-3xl font-brand font-bold mb-2">Inventario</h2>
+                            <p class="text-gray-300 text-sm font-light leading-relaxed">
+                                Control total de existencias, entradas y salidas de almacén.
+                            </p>
+                        </div>
+                    </a>
+                @endif
 
-                    <div class="card-content" :class="layout === 'original' ? '!justify-center' : ''">
-                        <div class="flex items-center justify-between">
+                @if(Auth::user()->canSeeFfTile('catalog'))
+                    <a href="{{ route('ff.catalog.index') }}" 
+                    class="op-card group animate-entry"
+                    :class="layout === 'original' ? 'col-span-12 md:col-span-6 lg:col-span-4 row-span-1' : 'col-span-1 h-[500px]'"
+                    style="animation-delay: 0.3s;">
+                    
+                        <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
+                            alt="Catálogo" class="card-bg-image">
+                        <div class="card-overlay"></div>
+
+                        <div class="card-icon-float">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                        </div>
+
+                        <div class="card-content" :class="layout === 'original' ? '!justify-center' : ''">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h2 class="text-2xl font-brand font-bold mb-1">Catálogo</h2>
+                                    <p class="text-gray-300 text-sm">Base maestra de productos.</p>
+                                </div>
+                            </div>
+                            <div class="mt-4" :class="layout === 'original' ? '' : 'text-left'">
+                                <span class="block text-4xl font-brand font-bold text-white">{{ $productsCount }}</span>
+                                <span class="text-xs font-bold text-[#ff9c00] uppercase tracking-wider">SKUs Activos</span>
+                            </div>
+                        </div>
+                    </a>
+                @endif
+
+                @if(Auth::user()->canSeeFfTile('reports'))
+                    <a href="{{ route('ff.reports.index') }}" 
+                    class="op-card group animate-entry"
+                    :class="layout === 'original' ? 'col-span-12 md:col-span-6 lg:col-span-4 row-span-1' : 'col-span-1 h-[500px]'"
+                    style="animation-delay: 0.4s;">
+                    
+                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
+                            alt="Reportes" class="card-bg-image">
+                        <div class="card-overlay"></div>
+
+                        <div class="card-icon-float">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+
+                        <div class="card-content" :class="layout === 'original' ? '!justify-center' : ''">
                             <div>
-                                <h2 class="text-2xl font-brand font-bold mb-1">Catálogo</h2>
-                                <p class="text-gray-300 text-sm">Base maestra de productos.</p>
+                                <h2 class="text-2xl font-brand font-bold mb-1">Reportes</h2>
+                                <p class="text-gray-300 text-sm">Inteligencia de negocios y KPIs.</p>
                             </div>
                         </div>
-                        <div class="mt-4" :class="layout === 'original' ? '' : 'text-left'">
-                             <span class="block text-4xl font-brand font-bold text-white">{{ $productsCount }}</span>
-                             <span class="text-xs font-bold text-[#ff9c00] uppercase tracking-wider">SKUs Activos</span>
+                    </a>
+                @endif
+
+                @if(Auth::user()->canSeeFfTile('admin'))
+                    <a href="{{ route('ff.admin.index') }}" 
+                    class="op-card group animate-entry"
+                    :class="layout === 'original' ? 'col-span-12 md:col-span-12 lg:col-span-4 row-span-1' : 'col-span-1 h-[500px]'"
+                    style="animation-delay: 0.5s;">
+                    
+                        <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
+                            alt="Administración" class="card-bg-image">
+                        <div class="card-overlay"></div>
+
+                        <div class="card-icon-float">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
                         </div>
-                    </div>
-                </a>
 
-                <a href="{{ route('ff.reports.index') }}" 
-                   class="op-card group animate-entry"
-                   :class="layout === 'original' ? 'col-span-12 md:col-span-6 lg:col-span-4 row-span-1' : 'col-span-1 h-[500px]'"
-                   style="animation-delay: 0.4s;">
-                   
-                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
-                        alt="Reportes" class="card-bg-image">
-                    <div class="card-overlay"></div>
-
-                    <div class="card-icon-float">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                    </div>
-
-                    <div class="card-content" :class="layout === 'original' ? '!justify-center' : ''">
-                        <div>
-                            <h2 class="text-2xl font-brand font-bold mb-1">Reportes</h2>
-                            <p class="text-gray-300 text-sm">Inteligencia de negocios y KPIs.</p>
+                        <div class="card-content" :class="layout === 'original' ? '!justify-center' : ''">
+                            <div>
+                                <h2 class="text-2xl font-brand font-bold mb-1">Administración</h2>
+                                <p class="text-gray-300 text-sm">Gestión de usuarios y sistema.</p>
+                            </div>
                         </div>
-                    </div>
-                </a>
-
-                <a href="{{ route('ff.admin.index') }}" 
-                   class="op-card group animate-entry"
-                   :class="layout === 'original' ? 'col-span-12 md:col-span-12 lg:col-span-4 row-span-1' : 'col-span-1 h-[500px]'"
-                   style="animation-delay: 0.5s;">
-                   
-                    <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
-                        alt="Administración" class="card-bg-image">
-                    <div class="card-overlay"></div>
-
-                    <div class="card-icon-float">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                    </div>
-
-                    <div class="card-content" :class="layout === 'original' ? '!justify-center' : ''">
-                        <div>
-                            <h2 class="text-2xl font-brand font-bold mb-1">Administración</h2>
-                            <p class="text-gray-300 text-sm">Gestión de usuarios y sistema.</p>
-                        </div>
-                    </div>
-                </a>
+                    </a>
+                @endif
 
             </div>
 

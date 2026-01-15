@@ -31,6 +31,7 @@ class User extends Authenticatable
         'is_client',
         'is_active',
         'visible_modules',
+        'ff_visible_tiles',
     ];
 
     /**
@@ -53,6 +54,7 @@ class User extends Authenticatable
             'is_client' => 'boolean',
             'is_active' => 'boolean',
             'visible_modules' => 'array',
+            'ff_visible_tiles' => 'array',
         ];
     }
 
@@ -146,6 +148,26 @@ class User extends Authenticatable
         }
         
         return in_array($moduleKey, $this->visible_modules);
+    }
+
+    public static function availableFfTiles(): array
+    {
+        return [
+            'orders'      => 'Pedidos',
+            'inventory'   => 'Inventario',
+            'catalog'     => 'Catálogo',
+            'reports'     => 'Reportes',
+            'admin'       => 'Administración',
+        ];
+    }
+
+    public function canSeeFfTile(string $tileKey): bool
+    {
+        if (is_null($this->ff_visible_tiles)) {
+            return false; 
+        }
+
+        return in_array($tileKey, $this->ff_visible_tiles);
     }    
 
 }

@@ -88,6 +88,8 @@ class UserController extends Controller
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'visible_modules' => 'nullable|array',
             'visible_modules.*' => 'string',
+            'ff_visible_tiles' => 'nullable|array',
+            'ff_visible_tiles.*' => 'string',            
         ];
 
         if (!$request->has('is_client') || !$request->input('is_client')) {
@@ -106,6 +108,7 @@ class UserController extends Controller
         $data['is_area_admin'] = $request->has('is_area_admin');
         $data['is_client'] = $request->has('is_client');
         $data['visible_modules'] = $request->input('visible_modules', []);
+        $data['ff_visible_tiles'] = $request->input('ff_visible_tiles', []);
 
         if ($data['is_client'] && !$request->filled('area_id')) {
             $data['area_id'] = null;
@@ -175,7 +178,9 @@ class UserController extends Controller
             'accessible_area_ids' => 'nullable|array',
             'accessible_area_ids.*' => 'exists:areas,id',
             'visible_modules' => 'nullable|array',
-            'visible_modules.*' => 'string',            
+            'visible_modules.*' => 'string',
+            'ff_visible_tiles' => 'nullable|array',
+            'ff_visible_tiles.*' => 'string',                     
         ];
 
         if (!$request->has('is_client') || !$request->input('is_client')) {
@@ -194,6 +199,7 @@ class UserController extends Controller
         $data['is_area_admin'] = $request->has('is_area_admin');
         $data['is_client'] = $request->has('is_client');
         $data['visible_modules'] = $request->input('visible_modules', []);
+        $data['ff_visible_tiles'] = $request->input('ff_visible_tiles', []);
 
         if ($data['is_client'] && !$request->filled('area_id')) {
             $data['area_id'] = null;
