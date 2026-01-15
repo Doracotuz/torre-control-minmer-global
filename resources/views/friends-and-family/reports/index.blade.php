@@ -380,6 +380,7 @@
         const dataTopProductos = @json($chartTopProductos);
         const dataVentasVendedor = @json($chartVentasVendedor);
         const stockAgotadoCount = {{ $stockAgotadoCount }};
+        const currentAreaId = "{{ request('area_id') }}";
         const currentUserId = document.getElementById('user_id') ? document.getElementById('user_id').value : '';
 
         const commonOptions = {
@@ -434,13 +435,13 @@
             }
 
             let url = '{{ route('ff.reports.api.recentMovements') }}';
-            let params = new URLSearchParams({ user_id: currentUserId, limit: 10 });
+            let params = new URLSearchParams({ user_id: currentUserId, area_id: currentAreaId, limit: 10 });
 
             fetch(`${url}?${params.toString()}`)
                 .then(r => r.ok ? r.json() : Promise.reject('Error'))
                 .then(data => {
                     if (data.length === 0) {
-                        listContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-8 bg-slate-100 rounded-lg">No hay datos registrados en este periodo.</p>';
+                        listContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-8 bg-slate-100 rounded-lg">No hay datos registrados en este periodo con los filtros actuales.</p>';
                         return;
                     }
 
