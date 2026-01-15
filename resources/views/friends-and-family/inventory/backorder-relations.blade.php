@@ -1,3 +1,10 @@
+@php
+    $areas = [];
+    if(Auth::user()->isSuperAdmin()) {
+        $areas = \App\Models\Area::orderBy('name')->get();
+    }
+@endphp
+
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
@@ -19,7 +26,23 @@
                     </p>
                 </div>
                 
-                <div class="flex gap-4">
+                <div class="flex flex-wrap items-center gap-4">
+                    @if(Auth::user()->isSuperAdmin())
+                        <form method="GET" action="{{ route('ff.inventory.backorder_relations') }}" class="h-full">
+                            <div class="relative group h-full">
+                                <select name="area_id" onchange="this.form.submit()" class="appearance-none h-full pl-5 pr-10 py-4 bg-white border border-slate-100 rounded-[2rem] text-sm font-bold text-[#2c3856] focus:ring-2 focus:ring-[#ff9c00] focus:border-transparent cursor-pointer shadow-[0_10px_40px_rgba(0,0,0,0.03)] outline-none hover:-translate-y-1 transition-transform duration-300">
+                                    <option value="">Todas las Áreas</option>
+                                    @foreach($areas as $area)
+                                        <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+                                    <i class="fas fa-chevron-down text-xs"></i>
+                                </div>
+                            </div>
+                        </form>
+                    @endif
+
                     <div class="bg-white px-6 py-4 rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-slate-100 flex items-center gap-4 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
                         <div class="absolute top-0 right-0 w-16 h-16 bg-purple-50 rounded-bl-[50px] -mr-6 -mt-6 transition-transform group-hover:scale-110"></div>
                         <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl shadow-sm relative z-10">
@@ -79,6 +102,13 @@
                                         </div>
                                         
                                         <div>
+                                            @if(Auth::user()->isSuperAdmin() && $product->area)
+                                                <div class="mb-1">
+                                                    <span class="inline-block px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 text-[9px] font-black uppercase tracking-wider">
+                                                        {{ $product->area->name }}
+                                                    </span>
+                                                </div>
+                                            @endif
                                             <h3 class="text-xl font-bold text-[#2c3856] group-hover:text-[#ff9c00] transition-colors">{{ $product->description }}</h3>
                                             <div class="flex items-center gap-3 mt-1.5">
                                                 <span class="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200">{{ $product->sku }}</span>

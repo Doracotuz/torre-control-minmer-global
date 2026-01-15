@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderActionMail;
 use Illuminate\Validation\Rule;
+use App\Models\Area;
 
 class FfInventoryController extends Controller
 {
@@ -90,17 +91,27 @@ class FfInventoryController extends Controller
         ]);
     }
 
-    public function logIndex()
+    public function logIndex(Request $request)
     {
         $query = ffInventoryMovement::with('product', 'user')->orderBy('created_at', 'desc');
+        
+        $areas = [];
+        $currentArea = '';
 
-        if (!Auth::user()->isSuperAdmin()) {
+        if (Auth::user()->isSuperAdmin()) {
+            $areas = Area::all(); 
+            
+            if ($request->filled('area_id')) {
+                $query->where('area_id', $request->area_id);
+                $currentArea = $request->area_id;
+            }
+        } else {
             $query->where('area_id', Auth::user()->area_id);
         }
 
         $movements = $query->paginate(50);
         
-        return view('friends-and-family.inventory.log', compact('movements'));
+        return view('friends-and-family.inventory.log', compact('movements', 'areas', 'currentArea'));
     }
 
     public function exportCsv(Request $request)

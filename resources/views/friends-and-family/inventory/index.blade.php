@@ -1,3 +1,10 @@
+@php
+    $areas = [];
+    if(Auth::user()->isSuperAdmin()) {
+        $areas = \App\Models\Area::orderBy('name')->get();
+    }
+@endphp
+
 <x-app-layout>
     <div x-data="inventoryManager()" x-init="init(@js($products))" class="font-sans">
 
@@ -105,6 +112,15 @@
 
                     <div class="flex flex-wrap gap-2 w-full lg:w-auto justify-end items-center">
                         
+                        @if(Auth::user()->isSuperAdmin())
+                        <select x-model="filterArea" class="pl-3 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 focus:ring-2 focus:ring-[#ff9c00] focus:border-transparent cursor-pointer hover:border-gray-300 transition-all uppercase tracking-wide">
+                            <option value="">Todas las Áreas</option>
+                            @foreach($areas as $area)
+                                <option value="{{ $area->id }}">{{ $area->name }}</option>
+                            @endforeach
+                        </select>
+                        @endif
+
                         <select x-model="filterBrand" class="pl-3 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 focus:ring-2 focus:ring-[#ff9c00] focus:border-transparent cursor-pointer hover:border-gray-300 transition-all uppercase tracking-wide">
                             <option value="">Marca</option>
                             @foreach($brands as $brand)
@@ -133,7 +149,7 @@
                             <i class="fas fa-file-download"></i>
                         </button>
 
-                        <button @click="resetFilters()" x-show="filter || filterBrand || filterType" x-transition 
+                        <button @click="resetFilters()" x-show="filter || filterBrand || filterType || filterArea" x-transition 
                                 class="ml-2 px-3 py-1.5 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-bold transition-all" 
                                 title="Limpiar Filtros">
                             <i class="fas fa-times"></i>
@@ -393,6 +409,7 @@
                 filter: '',
                 filterBrand: '',
                 filterType: '',
+                filterArea: '',
                 isModalOpen: false,
                 isImportModalOpen: false,
                 isSaving: false,
@@ -419,6 +436,8 @@
                     return this.products.filter(p => {
                         if (this.filterBrand && p.brand !== this.filterBrand) return false;
                         if (this.filterType && p.type !== this.filterType) return false;
+                        if (this.filterArea && p.area_id != this.filterArea) return false;
+                        
                         if (search) {
                             return p.sku.toLowerCase().includes(search) || 
                                    p.description.toLowerCase().includes(search) ||
@@ -470,6 +489,7 @@
                     this.filter = '';
                     this.filterBrand = '';
                     this.filterType = '';
+                    this.filterArea = '';
                 },
 
                 async submitMovement() {
@@ -519,9 +539,6 @@
                         }
                         
                         this.closeModal();
-                        
-                        // Opcional: Toast
-                        // alert("Movimiento registrado correctamente");
 
                     } catch (error) {
                         console.error(error);
@@ -537,6 +554,7 @@
                     if (this.filter) params.append('search', this.filter);
                     if (this.filterBrand) params.append('brand', this.filterBrand);
                     if (this.filterType) params.append('type', this.filterType);
+                    if (this.filterArea) params.append('area_id', this.filterArea);
                     window.location.href = `${baseUrl}?${params.toString()}`;
                 },
 
@@ -546,6 +564,7 @@
                     if (this.filter) params.append('search', this.filter);
                     if (this.filterBrand) params.append('brand', this.filterBrand);
                     if (this.filterType) params.append('type', this.filterType);
+                    if (this.filterArea) params.append('area_id', this.filterArea);
                     window.location.href = `${baseUrl}?${params.toString()}`;
                 }
             }

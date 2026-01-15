@@ -62,17 +62,40 @@
                 
                 <div class="p-6 border-b border-gray-100 flex flex-col lg:flex-row gap-4 justify-between items-center bg-white">
                     
-                    <div class="relative w-full lg:w-1/3 group">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <i class="fas fa-search text-gray-300 group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
+                    <div class="flex flex-col md:flex-row gap-4 w-full lg:w-1/2">
+                        @if(Auth::user()->isSuperAdmin())
+                        <div class="relative w-full md:w-1/2 group">
+                            <form action="{{ request()->url() }}" method="GET">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <i class="fas fa-building text-gray-300 group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
+                                </div>
+                                <select name="area_id" onchange="this.form.submit()" 
+                                        class="block w-full pl-11 pr-10 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all duration-200 font-[Montserrat] text-sm appearance-none cursor-pointer">
+                                    <option value="">Todas las Áreas</option>
+                                    @foreach($areas as $area)
+                                        <option value="{{ $area->id }}" {{ $currentArea == $area->id ? 'selected' : '' }}>
+                                            {{ $area->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                                </div>
+                            </form>
                         </div>
-                        <input type="text" x-model="search" 
-                               class="block w-full pl-11 pr-4 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all duration-200 placeholder-gray-400 font-[Montserrat] text-sm" 
-                               placeholder="Buscar por SKU, usuario o motivo...">
+                        @endif
+
+                        <div class="relative w-full {{ Auth::user()->isSuperAdmin() ? 'md:w-1/2' : 'md:w-full' }} group">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-300 group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
+                            </div>
+                            <input type="text" x-model="search" 
+                                class="block w-full pl-11 pr-4 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all duration-200 placeholder-gray-400 font-[Montserrat] text-sm" 
+                                placeholder="Buscar por SKU, usuario o motivo...">
+                        </div>
                     </div>
 
                     <div class="flex flex-wrap gap-3 w-full lg:w-auto justify-end items-center">
-                        
                         <div class="flex bg-[#F3F4F6] p-1 rounded-xl">
                             <button @click="filterType = 'all'" 
                                     :class="filterType === 'all' ? 'bg-white text-[#2c3856] shadow-sm' : 'text-gray-500 hover:text-gray-700'"
@@ -202,7 +225,7 @@
             return {
                 movements: [],
                 search: '',
-                filterType: 'all', // all, in, out
+                filterType: 'all',
 
                 init(data) {
                     this.movements = data;

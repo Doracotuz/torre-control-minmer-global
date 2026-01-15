@@ -1,3 +1,10 @@
+@php
+    $areas = [];
+    if(Auth::user()->isSuperAdmin()) {
+        $areas = \App\Models\Area::orderBy('name')->get();
+    }
+@endphp
+
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
@@ -11,134 +18,127 @@
                     </h2>
                     <p class="text-sm text-slate-500 font-medium mt-2">Surtido de pedidos pendientes por llegada de mercancía.</p>
                 </div>
-                <a href="{{ route('ff.inventory.index') }}" class="group flex items-center gap-3 px-5 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-[#2c3856] transition-all duration-300">
-                    <span class="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-[#2c3856] group-hover:text-white flex items-center justify-center transition-colors">
-                        <i class="fas fa-arrow-left text-xs"></i>
-                    </span>
-                    <span class="text-xs font-bold text-slate-500 group-hover:text-[#2c3856] uppercase tracking-wider">Inventario</span>
-                </a>
+                
+                <div class="flex items-center gap-3">
+                    @if(Auth::user()->isSuperAdmin())
+                        <form method="GET" action="{{ route('ff.inventory.backorders') }}">
+                            <div class="relative group">
+                                <select name="area_id" onchange="this.form.submit()" class="appearance-none pl-5 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 focus:ring-2 focus:ring-[#ff9c00] focus:border-transparent cursor-pointer shadow-sm hover:border-[#2c3856] transition-all outline-none">
+                                    <option value="">Todas las Áreas</option>
+                                    @foreach($areas as $area)
+                                        <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400">
+                                    <i class="fas fa-chevron-down text-xs"></i>
+                                </div>
+                            </div>
+                        </form>
+                    @endif
+
+                    <a href="{{ route('ff.inventory.index') }}" class="group flex items-center gap-3 px-5 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-[#2c3856] transition-all duration-300">
+                        <span class="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-[#2c3856] group-hover:text-white flex items-center justify-center transition-colors">
+                            <i class="fas fa-arrow-left text-xs"></i>
+                        </span>
+                        <span class="text-sm font-bold text-slate-600 group-hover:text-[#2c3856]">Volver a Inventario</span>
+                    </a>
+                </div>
             </div>
 
             @if($backorders->isEmpty())
-                <div class="bg-white rounded-[3rem] p-16 text-center shadow-[0_20px_60px_rgba(0,0,0,0.03)] border border-slate-100 relative overflow-hidden group">
-                    <div class="absolute inset-0 bg-gradient-to-b from-white to-emerald-50/30"></div>
-                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]"></div>
-                    
-                    <div class="relative z-10">
-                        <div class="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-100 transition-transform group-hover:scale-110 duration-500">
-                            <i class="fas fa-check-double text-4xl"></i>
-                        </div>
-                        <h3 class="text-3xl font-black text-[#2c3856] mb-2 tracking-tight">¡Todo Surtido!</h3>
-                        <p class="text-slate-500 font-medium text-lg">No hay pedidos pendientes de entrega en este momento.</p>
+                <div class="bg-white rounded-3xl p-12 text-center shadow-sm border border-slate-100">
+                    <div class="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                        <i class="fas fa-check-double text-3xl"></i>
                     </div>
+                    <h3 class="text-xl font-bold text-[#2c3856]">¡Todo Surtido!</h3>
+                    <p class="text-slate-400 mt-2">No hay pedidos pendientes de surtir en este momento.</p>
                 </div>
             @else
-                <div class="space-y-10">
-                    @foreach($backorders as $productId => $movements)
-                        @php 
-                            $product = $movements->first()->product;
-                            $currentStock = $product->movements()->sum('quantity');
-                            $totalDebt = $movements->sum(fn($m) => abs($m->quantity));
-                            $canFulfillAll = $currentStock >= $totalDebt;
-                            $canFulfillPartial = $currentStock > 0;
-                        @endphp
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach($backorders as $productId => $movements)
+                    @php 
+                        $product = $movements->first()->product; 
+                        $totalNeeded = $movements->sum(fn($m) => abs($m->quantity));
+                        $currentStock = $product->movements()->sum('quantity');
+                        $canFulfill = $currentStock >= $totalNeeded;
+                    @endphp
 
-                        <div class="bg-white rounded-[2.5rem] shadow-[0_15px_50px_rgba(0,0,0,0.04)] border border-slate-100 overflow-hidden relative group">
-                            
-                            <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-slate-50 to-transparent rounded-bl-[100px] -mr-10 -mt-10 transition-transform group-hover:scale-110 duration-700"></div>
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col hover:shadow-lg transition-all duration-300 relative group">
+                        
+                        <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
+                            <i class="fas fa-box-open text-9xl text-[#2c3856]"></i>
+                        </div>
 
-                            <div class="p-8 relative z-10">
-                                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 pb-8 border-b border-slate-50">
-                                    <div class="flex items-center gap-6">
-                                        <div class="relative">
-                                            <div class="w-24 h-24 bg-white border border-slate-100 rounded-2xl flex items-center justify-center p-2 shadow-sm group-hover:shadow-md transition-all duration-300">
-                                                <img src="{{ $product->photo_url }}" class="max-w-full max-h-full object-contain mix-blend-multiply">
-                                            </div>
-                                            <div class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-mono font-bold px-3 py-1 rounded-full shadow-lg">
-                                                {{ $product->sku }}
-                                            </div>
-                                        </div>
-                                        
-                                        <div>
-                                            <h3 class="text-2xl font-black text-[#2c3856] mb-2">{{ $product->description }}</h3>
-                                            <div class="flex flex-wrap gap-2">
-                                                @if($canFulfillAll)
-                                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-100 shadow-sm">
-                                                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Stock Suficiente
-                                                    </span>
-                                                @elseif($canFulfillPartial)
-                                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-bold border border-amber-100">
-                                                        <span class="w-2 h-2 rounded-full bg-amber-500"></span> Stock Parcial
-                                                    </span>
-                                                @else
-                                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 rounded-lg text-xs font-bold border border-rose-100">
-                                                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> Sin Stock
-                                                    </span>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="flex items-center gap-8 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                                        <div class="text-center px-4">
-                                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Deuda</p>
-                                            <p class="text-2xl font-black text-rose-500">-{{ $totalDebt }}</p>
-                                        </div>
-                                        <div class="w-px h-10 bg-slate-200"></div>
-                                        <div class="text-center px-4">
-                                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Stock Físico</p>
-                                            <p class="text-2xl font-black {{ $currentStock > 0 ? 'text-emerald-600' : 'text-slate-400' }}">
-                                                {{ $currentStock }}
-                                            </p>
-                                        </div>
-                                    </div>
+                        <div class="p-6 pb-4 border-b border-slate-50 bg-gradient-to-b from-white to-slate-50/50">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="w-16 h-16 bg-white rounded-2xl shadow-sm p-1 border border-slate-100">
+                                    <img src="{{ $product->photo_url }}" class="w-full h-full object-contain mix-blend-multiply">
                                 </div>
-
-                                <div class="mt-6">
-                                    <table class="w-full text-left text-sm">
-                                        <thead class="text-xs text-slate-400 font-bold uppercase bg-slate-50/50 rounded-xl">
-                                            <tr>
-                                                <th class="px-6 py-4 rounded-l-xl">Fecha</th>
-                                                <th class="px-6 py-4">Folio</th>
-                                                <th class="px-6 py-4">Cliente</th>
-                                                <th class="px-6 py-4 text-center">Debemos</th>
-                                                <th class="px-6 py-4 text-right rounded-r-xl">Acción</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-slate-50">
-                                            @foreach($movements as $mov)
-                                                <tr class="hover:bg-slate-50/80 transition-colors group">
-                                                    <td class="px-6 py-5 text-slate-500 font-mono text-xs">{{ $mov->created_at->format('d/m/Y') }}</td>
-                                                    <td class="px-6 py-5">
-                                                        <span class="font-bold text-[#2c3856] bg-slate-100 px-2 py-1 rounded group-hover:bg-[#2c3856] group-hover:text-white transition-colors">#{{ $mov->folio }}</span>
-                                                    </td>
-                                                    <td class="px-6 py-5">
-                                                        <div class="font-bold text-slate-700">{{ $mov->client_name }}</div>
-                                                        <div class="text-[10px] text-slate-400 font-medium uppercase mt-0.5">Vendedor: {{ $mov->user->name ?? 'N/A' }}</div>
-                                                    </td>
-                                                    <td class="px-6 py-5 text-center">
-                                                        <span class="font-black text-rose-500 text-lg">{{ abs($mov->quantity) }}</span>
-                                                    </td>
-                                                    <td class="px-6 py-5 text-right">
-                                                        @if($currentStock >= abs($mov->quantity))
-                                                            <button @click="fulfillOrder({{ $mov->id }})" 
-                                                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#2c3856] text-white text-xs font-bold uppercase tracking-wide rounded-xl shadow-lg shadow-blue-900/20 hover:bg-[#1e273d] hover:shadow-xl hover:-translate-y-0.5 transition-all">
-                                                                <i class="fas fa-box-open"></i> Surtir
-                                                            </button>
-                                                        @else
-                                                            <span class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-400 text-xs font-bold rounded-xl cursor-not-allowed opacity-70">
-                                                                <i class="fas fa-clock"></i> Esperando
-                                                            </span>
-                                                        @endif
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
+                                <div class="text-right">
+                                    <span class="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Stock Actual</span>
+                                    <span class="text-2xl font-black {{ $canFulfill ? 'text-emerald-500' : 'text-rose-500' }}">
+                                        {{ $currentStock }}
+                                    </span>
                                 </div>
                             </div>
+                            
+                            @if(Auth::user()->isSuperAdmin() && $product->area)
+                                <div class="mb-2">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-bold uppercase tracking-wide">
+                                        {{ $product->area->name }}
+                                    </span>
+                                </div>
+                            @endif
+
+                            <h3 class="font-bold text-[#2c3856] leading-tight mb-1 line-clamp-2" title="{{ $product->description }}">
+                                {{ $product->description }}
+                            </h3>
+                            <div class="text-xs font-mono text-slate-400 bg-slate-100 inline-block px-1.5 py-0.5 rounded">{{ $product->sku }}</div>
                         </div>
-                    @endforeach
+
+                        <div class="flex-1 bg-slate-50/30 p-4 space-y-3 overflow-y-auto max-h-[300px] custom-scroll">
+                            @foreach($movements as $movement)
+                                <div class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm relative pl-3 overflow-hidden">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 {{ $currentStock >= abs($movement->quantity) ? 'bg-emerald-400' : 'bg-rose-400' }}"></div>
+                                    
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div>
+                                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                                                {{ $movement->created_at->format('d M, Y') }}
+                                            </span>
+                                            <a href="{{ route('ff.orders.show', $movement->folio) }}" class="text-sm font-black text-[#2c3856] hover:underline hover:text-[#ff9c00]">
+                                                Folio #{{ $movement->folio }}
+                                            </a>
+                                        </div>
+                                        <span class="text-lg font-black text-rose-500">-{{ abs($movement->quantity) }}</span>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <div class="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-500 font-bold">
+                                            {{ substr($movement->user->name, 0, 1) }}
+                                        </div>
+                                        <span class="text-xs font-medium text-slate-600 truncate">{{ $movement->user->name }}</span>
+                                    </div>
+
+                                    <button @click="fulfillOrder({{ $movement->id }})" 
+                                            class="w-full py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-sm flex items-center justify-center gap-2
+                                            {{ $currentStock >= abs($movement->quantity) 
+                                                ? 'bg-[#2c3856] text-white hover:bg-[#1e273d] hover:shadow-md' 
+                                                : 'bg-slate-100 text-slate-400 cursor-not-allowed' }}"
+                                            {{ $currentStock < abs($movement->quantity) ? 'disabled' : '' }}>
+                                        <i class="fas fa-check"></i> Surtir Pedido
+                                    </button>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <div class="p-4 bg-white border-t border-slate-100 text-center">
+                            <span class="text-xs font-bold text-slate-400 uppercase">
+                                Total Requerido: <span class="text-rose-500">{{ $totalNeeded }}</span>
+                            </span>
+                        </div>
+                    </div>
+                @endforeach
                 </div>
             @endif
         </div>
@@ -163,7 +163,6 @@
                         const data = await response.json();
                         
                         if (response.ok) {
-                            // Toast visual si tuvieras librería, por ahora reload
                             window.location.reload();
                         } else {
                             alert('Error: ' + data.message);

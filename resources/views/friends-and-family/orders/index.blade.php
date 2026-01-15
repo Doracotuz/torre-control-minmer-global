@@ -1,3 +1,10 @@
+@php
+    $filterAreas = [];
+    if(Auth::user()->isSuperAdmin()) {
+        $filterAreas = \App\Models\Area::orderBy('name')->get();
+    }
+@endphp
+
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
@@ -26,17 +33,34 @@
             <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-6 mb-8">
                 <form method="GET" action="{{ route('ff.orders.index') }}" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                     
-                    <div class="md:col-span-3 relative group">
+                    <div class="{{ Auth::user()->isSuperAdmin() ? 'md:col-span-2' : 'md:col-span-3' }} relative group">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Búsqueda</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                 <i class="fas fa-search text-gray-300 group-focus-within:text-[#ff9c00] transition-colors"></i>
                             </div>
                             <input type="text" name="client" value="{{ request('client') }}" 
-                                   placeholder="Folio, Cliente o Empresa..."
+                                   placeholder="Folio, Cliente..."
                                    class="block w-full pl-11 pr-4 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all text-sm font-semibold placeholder-gray-400">
                         </div>
                     </div>
+
+                    @if(Auth::user()->isSuperAdmin())
+                    <div class="md:col-span-2">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Área</label>
+                        <div class="relative">
+                            <select name="area_id" class="block w-full pl-4 pr-10 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all text-sm font-semibold cursor-pointer appearance-none">
+                                <option value="">Todas</option>
+                                @foreach($filterAreas as $area)
+                                    <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
 
                     <div class="md:col-span-2">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Estatus</label>
@@ -68,21 +92,22 @@
                         </div>
                     </div>
 
-                    <div class="md:col-span-3 grid grid-cols-2 gap-2">
+                    <div class="{{ Auth::user()->isSuperAdmin() ? 'md:col-span-2' : 'md:col-span-3' }} grid grid-cols-2 gap-2">
                         <div>
                             <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Desde</label>
-                            <input type="date" name="date_from" value="{{ request('date_from') }}" class="block w-full px-3 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all text-xs font-semibold">
+                            <input type="date" name="date_from" value="{{ request('date_from') }}" class="block w-full px-2 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all text-xs font-semibold">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Hasta</label>
-                            <input type="date" name="date_to" value="{{ request('date_to') }}" class="block w-full px-3 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all text-xs font-semibold">
+                            <input type="date" name="date_to" value="{{ request('date_to') }}" class="block w-full px-2 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all text-xs font-semibold">
                         </div>
                     </div>
                     
                     <div class="md:col-span-1 flex items-center justify-center pb-3">
-                        <label class="inline-flex items-center cursor-pointer">
+                        <label class="inline-flex items-center cursor-pointer" title="Mostrar solo pedidos con backorders activos">
                             <input type="checkbox" name="show_backorders" value="1" {{ request('show_backorders') ? 'checked' : '' }} class="rounded border-gray-300 text-[#2c3856] shadow-sm focus:border-[#2c3856] focus:ring focus:ring-[#2c3856] focus:ring-opacity-50">
-                            <span class="ml-2 text-xs font-bold text-gray-500">Solo Backorders</span>
+                            <span class="ml-2 text-xs font-bold text-gray-500 hidden md:inline">Backorders</span>
+                            <span class="ml-2 text-xs font-bold text-gray-500 md:hidden">Solo Backorders</span>
                         </label>
                     </div>
 
@@ -100,6 +125,11 @@
                         <thead>
                             <tr class="bg-gray-50/50 border-b border-gray-100">
                                 <th class="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider font-[Montserrat]">Folio</th>
+                                
+                                @if(Auth::user()->isSuperAdmin())
+                                    <th class="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider font-[Montserrat]">Área</th>
+                                @endif
+
                                 <th class="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider font-[Montserrat] text-center">Estatus</th>
                                 <th class="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider font-[Montserrat]">Cliente</th>
                                 <th class="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider font-[Montserrat]">Tipo</th>
@@ -120,6 +150,19 @@
                                             <span class="font-bold text-[#2c3856] text-lg">{{ $order->folio }}</span>
                                         </div>
                                     </td>
+
+                                    @if(Auth::user()->isSuperAdmin())
+                                        <td class="px-6 py-4">
+                                            @if($order->area)
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600 border border-gray-200">
+                                                    <i class="fas fa-building text-[10px]"></i>
+                                                    {{ $order->area->name }}
+                                                </span>
+                                            @else
+                                                <span class="text-xs text-gray-400 italic">N/A</span>
+                                            @endif
+                                        </td>
+                                    @endif
 
                                     <td class="px-6 py-4 text-center">
                                         <div class="flex flex-col gap-1 items-center">
@@ -186,7 +229,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-6 py-16 text-center">
+                                    <td colspan="{{ Auth::user()->isSuperAdmin() ? '8' : '7' }}" class="px-6 py-16 text-center">
                                         <div class="flex flex-col items-center justify-center">
                                             <div class="bg-gray-50 rounded-full p-6 mb-4 shadow-inner">
                                                 <i class="fas fa-folder-open text-gray-300 text-3xl"></i>
