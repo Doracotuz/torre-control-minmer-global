@@ -289,17 +289,19 @@
                                             <svg class="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                                         </a>
                                         
-                                        <div class="bg-purple-50 rounded-xl p-4 border border-purple-100 relative overflow-hidden group hover:border-purple-300 transition-colors">
-                                            <div class="flex justify-between items-center mb-2">
-                                                <h4 class="font-bold text-[#2c3856]">Deuda Stock</h4>
-                                                <span class="bg-purple-200 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Status</span>
+                                        <template x-if="data.isClientArea">
+                                            <div class="bg-purple-50 rounded-xl p-4 border border-purple-100 relative overflow-hidden group hover:border-purple-300 transition-colors">
+                                                <div class="flex justify-between items-center mb-2">
+                                                    <h4 class="font-bold text-[#2c3856]">Deuda Stock</h4>
+                                                    <span class="bg-purple-200 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Status</span>
+                                                </div>
+                                                <h2 class="text-3xl font-black text-purple-600 mb-2" x-text="data.backorderCount || 0">0</h2>
+                                                <p class="text-xs text-gray-500 mb-3">Pedidos pendientes</p>
+                                                <a href="{{ route('ff.inventory.backorders') }}" class="text-xs font-bold text-purple-600 hover:text-purple-800 flex items-center gap-1">
+                                                    Ver Detalles <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                                                </a>
                                             </div>
-                                            <h2 class="text-3xl font-black text-purple-600 mb-2" x-text="data.backorderCount || 0">0</h2>
-                                            <p class="text-xs text-gray-500 mb-3">Pedidos pendientes</p>
-                                            <a href="{{ route('ff.inventory.backorders') }}" class="text-xs font-bold text-purple-600 hover:text-purple-800 flex items-center gap-1">
-                                                Ver Detalles <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                                            </a>
-                                        </div>
+                                        </template>
                                     </div>
                                 </template>
 
@@ -389,6 +391,7 @@
                 date: '',
                 data: {
                     isAreaAdmin: false,
+                    isClientArea: false,
                     areaName: '',
                     userCount: 0,
                     folderCount: 0,

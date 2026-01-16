@@ -43,6 +43,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $isAreaAdmin = $user->is_area_admin;
+        $isClientArea = false;
 
         $corporateAreas = ['Consorcio Monter', 'Lamborghini Wines', 'Empresa2', 'Empresa3'];
 
@@ -57,9 +58,13 @@ class DashboardController extends Controller
         $recentFiles = collect();
         
         if ($isAreaAdmin) {
-            $areaScopeIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
+            $activeAreaId = session('current_admin_area_id', $user->area_id);
+            $areaScopeIds = collect([$activeAreaId]);
+            
             $areaNamesCollection = Area::whereIn('id', $areaScopeIds)->get();
             $areaName = $areaNamesCollection->pluck('name')->implode(', ');
+            
+            $isClientArea = $areaNamesCollection->contains('is_client', true);
             
             $isCorporateContext = $areaNamesCollection->whereIn('name', $corporateAreas)->isNotEmpty();
 
@@ -75,6 +80,7 @@ class DashboardController extends Controller
         } else {
             $areaName = $user->area->name ?? 'Mi Área';
             $areaScopeIds = collect([$user->area_id]);
+            $isClientArea = $user->area ? $user->area->is_client : false;
 
             $isCorporateContext = in_array($areaName, $corporateAreas);
 
@@ -204,6 +210,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'isAreaAdmin' => $isAreaAdmin,
+            'isClientArea' => $isClientArea,
             'areaName' => $areaName,
             'userCount' => $userCount,
             'folderCount' => $folderCount,
