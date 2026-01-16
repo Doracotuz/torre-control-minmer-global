@@ -95,23 +95,23 @@
                                 <table class="company-info-table">
                                     <tr>
                                         <td class="label">Razón Social</td>
-                                        <td>{{ $emitter_name ?? 'Consorcio Monter S.A. de C.V.' }}</td>
+                                        <td>{{ $emitter_name ?? 'Por Definir' }}</td>
                                     </tr>
                                     <tr>
                                         <td class="label">Teléfono</td>
-                                        <td>{{ $emitter_phone ?? '5533347203' }}</td>
+                                        <td>{{ $emitter_phone ?? 'Por Definir' }}</td>
                                     </tr>
                                     <tr>
                                         <td class="label">Dirección</td>
-                                        <td>{{ $emitter_address ?? 'Jose de Teresa 65 A' }}</td>
+                                        <td>{{ $emitter_address ?? 'Por Definir' }}</td>
                                     </tr>
                                     <tr>
                                         <td></td>
-                                        <td>{{ $emitter_colonia ?? 'San Angel, Alvaro Obregon, CDMX, Mexico' }}</td>
+                                        <td>{{ $emitter_colonia ?? 'Por Definir' }}</td>
                                     </tr>
                                     <tr>
                                         <td class="label">Cód. Postal</td>
-                                        <td>{{ $emitter_cp ?? '01000' }}</td>
+                                        <td>{{ $emitter_cp ?? 'Por Definir' }}</td>
                                     </tr>
                                 </table>
                             </td>

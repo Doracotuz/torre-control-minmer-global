@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\CheckModuleAccess;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'check.organigram.admin' => \App\Http\Middleware\CheckOrganigramAdmin::class,
             'high.privilege' => \App\Http\Middleware\CheckSuperAdminOrIT::class,
             'ff.access' => \App\Http\Middleware\CheckFriendsAndFamilyAccess::class,
+            'module.access' => CheckModuleAccess::class,
         ]);
         
     })

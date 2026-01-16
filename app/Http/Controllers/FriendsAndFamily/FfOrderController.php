@@ -111,12 +111,24 @@ class FfOrderController extends Controller
             $areaId = Auth::user()->area_id;
         }
 
+        $area = $areaId ? Area::find($areaId) : null;
+
+        if ($area) {
+            return [
+                'emitter_name'    => $area->emitter_name ?? 'Pendiente de definir',
+                'emitter_phone'   => $area->emitter_phone ?? 'Pendiente de definir',
+                'emitter_address' => $area->emitter_address ?? 'Pendiente de definir',
+                'emitter_colonia' => $area->emitter_colonia ?? 'Pendiente de definir',
+                'emitter_cp'      => $area->emitter_cp ?? 'Pendiente de definir'
+            ];
+        }
+
         return [
-            'emitter_name' => 'Consorcio Monter S.A. de C.V.',
-            'emitter_phone' => '5533347203',
-            'emitter_address' => 'Jose de Teresa 65 A',
-            'emitter_colonia' => 'San Angel, Alvaro Obregon, CDMX, Mexico',
-            'emitter_cp' => '01000'
+            'emitter_name'    => 'Pendiente de definir',
+            'emitter_phone'   => 'Pendiente de definir',
+            'emitter_address' => 'Pendiente de definir',
+            'emitter_colonia' => 'Pendiente de definir',
+            'emitter_cp'      => 'Pendiente de definir'
         ];
     }
 
@@ -128,8 +140,8 @@ class FfOrderController extends Controller
                 return Storage::disk('s3')->url($area->icon_path);
             }
         }
-        return Storage::disk('s3')->url('logoConsorcioMonter.png');
-    }    
+        return Storage::disk('s3')->url('LogoAzulm.PNG');
+    }  
 
     public function approve($folio)
     {
@@ -235,7 +247,8 @@ class FfOrderController extends Controller
                             $condData = [
                                 'client' => $client,
                                 'conditions' => $client->deliveryConditions,
-                                'logoUrl' => Storage::disk('s3')->url('LogoAzulm.PNG'),
+                                // 'logoUrl' => Storage::disk('s3')->url('LogoAzulm.PNG'),
+                                'logoUrl' => $logoUrl,
                                 'specific_address' => $header->address . ', ' . $header->locality,
                                 'specific_observations' => $header->observations,
                                 'prepFields' => FfAdministrationController::getPrepFieldsStatic(), 
@@ -434,7 +447,8 @@ class FfOrderController extends Controller
                         $condData = [
                             'client' => $client,
                             'conditions' => $client->deliveryConditions,
-                            'logoUrl' => Storage::disk('s3')->url('LogoAzulm.PNG'),
+                            // 'logoUrl' => Storage::disk('s3')->url('LogoAzulm.PNG'),
+                            'logoUrl' => $logoUrl,
                             'specific_address' => $header->address . ', ' . $header->locality,
                             'specific_observations' => $header->observations,
                             'prepFields' => FfAdministrationController::getPrepFieldsStatic(), 

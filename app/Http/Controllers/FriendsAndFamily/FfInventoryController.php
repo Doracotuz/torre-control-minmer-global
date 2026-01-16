@@ -409,7 +409,10 @@ class FfInventoryController extends Controller
 
         if ($movement->user && $movement->user->email) {
             try {
-                $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
+                $area = Area::find($movement->area_id);
+                
+                $logoPath = ($area && $area->icon_path) ? $area->icon_path : 'LogoAzulm.PNG';
+                $logoUrl = Storage::disk('s3')->url($logoPath);
                 
                 $mailData = [
                     'folio' => $movement->folio,

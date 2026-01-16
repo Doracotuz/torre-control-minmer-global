@@ -40,12 +40,24 @@ class FfSalesController extends Controller
             $areaId = Auth::user()->area_id;
         }
 
+        $area = $areaId ? Area::find($areaId) : null;
+
+        if ($area) {
+            return [
+                'emitter_name'    => $area->emitter_name ?: 'Por definir',
+                'emitter_phone'   => $area->emitter_phone ?: 'Por definir',
+                'emitter_address' => $area->emitter_address ?: 'Por definir',
+                'emitter_colonia' => $area->emitter_colonia ?: 'Por definir',
+                'emitter_cp'      => $area->emitter_cp ?: 'Por definir'
+            ];
+        }
+
         return [
-            'emitter_name' => 'Consorcio Monter S.A. de C.V.',
-            'emitter_phone' => '5533347203',
-            'emitter_address' => 'Jose de Teresa 65 A',
-            'emitter_colonia' => 'San Angel, Alvaro Obregon, CDMX, Mexico',
-            'emitter_cp' => '01000'
+            'emitter_name'    => 'Por definir',
+            'emitter_phone'   => 'Por definir',
+            'emitter_address' => 'Por definir',
+            'emitter_colonia' => 'Por definir',
+            'emitter_cp'      => 'Por definir'
         ];
     }
 
@@ -54,7 +66,7 @@ class FfSalesController extends Controller
         if ($area && $area->icon_path) {
             return Storage::disk('s3')->url($area->icon_path);
         }
-        return Storage::disk('s3')->url('logoConsorcioMonter.png');
+        return Storage::disk('s3')->url('LogoAzulm.PNG');
     }
 
     public function index(Request $request)

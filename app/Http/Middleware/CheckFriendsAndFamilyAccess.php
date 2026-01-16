@@ -14,18 +14,9 @@ class CheckFriendsAndFamilyAccess
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $user = Auth::user();
-
-        $isSuperAdmin = $user && $user->isSuperAdmin();
-        $isVentas = $user && in_array($user->area?->name, ['Consorcio Monter', 'Consorcio Minmer', 'Empresa de Prueba']);
-
-        if ($isSuperAdmin || $isVentas) {
-            
             $this->runScheduledTasks();
+            
             return $next($request);
-        }
-
-        abort(403, 'Acceso denegado. No tienes permisos para acceder a este módulo.');
     }
 
     private function runScheduledTasks(): void

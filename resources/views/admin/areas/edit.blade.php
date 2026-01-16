@@ -29,6 +29,50 @@
                                 <textarea id="description" name="description" rows="4" class="block mt-1 w-full border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] rounded-md shadow-sm">{{ old('description', $area->description) }}</textarea>
                                 <x-input-error :messages="$errors->get('description')" class="mt-2" />
                             </div>
+
+                            <div class="border-t border-gray-200 pt-4 mt-4">
+                                <h3 class="text-md font-semibold text-gray-700 mb-3">Datos de Emisor / Contacto</h3>
+                                
+                                <div class="mb-4">
+                                    <label for="is_client" class="inline-flex items-center">
+                                        <input id="is_client" type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" name="is_client" value="1" {{ old('is_client', $area->is_client) ? 'checked' : '' }}>
+                                        <span class="ms-2 text-sm font-semibold text-gray-700">{{ __('¿Es un Cliente?') }}</span>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1 ml-6">Marcar si esta área representa a un cliente externo.</p>
+                                </div>
+
+                                <div class="mt-4">
+                                    <x-input-label for="emitter_name" :value="__('Razón Social')" />
+                                    <x-text-input id="emitter_name" class="block mt-1 w-full" type="text" name="emitter_name" :value="old('emitter_name', $area->emitter_name)" />
+                                    <x-input-error :messages="$errors->get('emitter_name')" class="mt-2" />
+                                </div>
+
+                                <div class="mt-4">
+                                    <x-input-label for="emitter_phone" :value="__('Teléfono')" />
+                                    <x-text-input id="emitter_phone" class="block mt-1 w-full" type="text" name="emitter_phone" :value="old('emitter_phone', $area->emitter_phone)" />
+                                    <x-input-error :messages="$errors->get('emitter_phone')" class="mt-2" />
+                                </div>
+
+                                <div class="mt-4">
+                                    <x-input-label for="emitter_address" :value="__('Dirección (Calle y Número)')" />
+                                    <x-text-input id="emitter_address" class="block mt-1 w-full" type="text" name="emitter_address" :value="old('emitter_address', $area->emitter_address)" />
+                                    <x-input-error :messages="$errors->get('emitter_address')" class="mt-2" />
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4 mt-4">
+                                    <div>
+                                        <x-input-label for="emitter_colonia" :value="__('Colonia')" />
+                                        <x-text-input id="emitter_colonia" class="block mt-1 w-full" type="text" name="emitter_colonia" :value="old('emitter_colonia', $area->emitter_colonia)" />
+                                        <x-input-error :messages="$errors->get('emitter_colonia')" class="mt-2" />
+                                    </div>
+                                    <div>
+                                        <x-input-label for="emitter_cp" :value="__('C.P.')" />
+                                        <x-text-input id="emitter_cp" class="block mt-1 w-full" type="text" name="emitter_cp" :value="old('emitter_cp', $area->emitter_cp)" />
+                                        <x-input-error :messages="$errors->get('emitter_cp')" class="mt-2" />
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
 
                         {{-- columna para icono del área --}}

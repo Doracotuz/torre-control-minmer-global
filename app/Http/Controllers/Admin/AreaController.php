@@ -36,10 +36,18 @@ class AreaController extends Controller
         $request->validate([
             'name' => 'required|string|max:255|unique:areas,name',
             'description' => 'nullable|string|max:1000',
-            'icon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'icon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:10048',
+            'emitter_name' => 'nullable|string|max:255',
+            'emitter_phone' => 'nullable|string|max:20',
+            'emitter_address' => 'nullable|string|max:255',
+            'emitter_colonia' => 'nullable|string|max:255',
+            'emitter_cp' => 'nullable|string|max:10',
+            'is_client' => 'boolean',            
         ]);
 
         $data = $request->all();
+
+        $data['is_client'] = $request->has('is_client');
 
         if ($request->hasFile('icon')) {
             $data['icon_path'] = $request->file('icon')->store('area_icons', 's3');
@@ -75,9 +83,17 @@ class AreaController extends Controller
             ],
             'description' => 'nullable|string|max:1000',
             'icon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:50048',
+            'emitter_name' => 'nullable|string|max:255',
+            'emitter_phone' => 'nullable|string|max:20',
+            'emitter_address' => 'nullable|string|max:255',
+            'emitter_colonia' => 'nullable|string|max:255',
+            'emitter_cp' => 'nullable|string|max:10',
+            'is_client' => 'boolean',            
         ]);
 
         $data = $request->all();
+
+        $data['is_client'] = $request->has('is_client');
 
         if ($request->hasFile('icon')) {
             if ($area->icon_path && Storage::disk('s3')->exists($area->icon_path)) {

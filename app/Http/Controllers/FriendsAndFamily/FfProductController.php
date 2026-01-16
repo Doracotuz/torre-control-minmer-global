@@ -103,7 +103,7 @@ class FfProductController extends Controller
                 return Storage::disk('s3')->url($area->icon_path);
             }
         }
-        return Storage::disk('s3')->url('logoConsorcioMonter.png');
+        return Storage::disk('s3')->url('LogoAzulm.PNG');
     }
 
     public function store(Request $request)
@@ -671,13 +671,11 @@ class FfProductController extends Controller
         
         $logoKey = 'LogoAzulm.PNG'; 
         
-        if (!Storage::disk('s3')->exists($logoKey)) {
-             if ($targetAreaId) {
-                $area = Area::find($targetAreaId);
-                if ($area && $area->icon_path) $logoKey = $area->icon_path;
-             } else {
-                $logoKey = 'logoConsorcioMonter.png';
-             }
+        if ($targetAreaId) {
+            $area = Area::find($targetAreaId);
+            if ($area && $area->icon_path) {
+                $logoKey = $area->icon_path;
+            }
         }
 
         $localLogoPath = null;
@@ -688,10 +686,11 @@ class FfProductController extends Controller
                 file_put_contents($localLogoPath, $logoContent);
             }
         } catch (\Exception $e) {
-            Log::error("Error descargando logo: " . $e->getMessage());
+            Log::error("Error descargando logo para PDF inventario: " . $e->getMessage());
         }
 
         $finalLogo = $localLogoPath ?? $this->getLogoUrl($targetAreaId);
+        
 
         $data = [
             'products' => $products,

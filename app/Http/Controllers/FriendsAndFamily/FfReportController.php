@@ -256,7 +256,7 @@ class FfReportController extends Controller
         $firstMovement = $saleMovements->first();
         $user = $firstMovement->user;
         
-        $logoUrl = Storage::disk('s3')->url('logoConsorcioMonter.png');
+        $logoUrl = Storage::disk('s3')->url('LogoAzulm.PNG');
         $area = Area::find($firstMovement->area_id);
 
         if ($area && $area->icon_path) {
@@ -713,7 +713,7 @@ class FfReportController extends Controller
 
         try {
             $user = Auth::user();
-            $iconPath = 'logoConsorcioMonter.png';
+            $iconPath = 'LogoAzulm.PNG';
 
             if ($user->isSuperAdmin()) {
                 if ($areaFilterId) {

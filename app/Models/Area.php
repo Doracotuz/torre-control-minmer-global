@@ -15,7 +15,17 @@ class Area extends Model
         'name',
         'description',
         'icon_path',
+        'emitter_name',
+        'emitter_phone',
+        'emitter_address',
+        'emitter_colonia',
+        'emitter_cp',
+        'is_client',        
     ];
+
+    protected $casts = [
+        'is_client' => 'boolean',
+    ];    
 
     public function users(): HasMany
     {
