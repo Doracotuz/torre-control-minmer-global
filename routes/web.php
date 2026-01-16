@@ -800,6 +800,7 @@ Route::middleware(['auth', 'ff.access'])->prefix('ff')->name('ff.')->group(funct
     Route::get('/catalog/api/search', [FfProductController::class, 'searchProducts'])->name('catalog.search');
     Route::resource('catalog', FfProductController::class);
     Route::post('/catalog/import', [FfProductController::class, 'import'])->name('catalog.import');
+    Route::delete('/catalog/bulk-destroy', [FfProductController::class, 'bulkDestroy'])->name('catalog.bulkDestroy');
     Route::post('catalog/{product}/technical-sheet', [FfProductController::class, 'generateTechnicalSheet'])->name('catalog.technicalSheet');
     Route::get('/inventory', [FfInventoryController::class, 'index'])->name('inventory.index');
     Route::post('/inventory/move', [FfInventoryController::class, 'storeMovement'])->name('inventory.storeMovement');

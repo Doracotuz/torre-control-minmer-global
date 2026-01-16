@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
-    <div x-data='productManager(@json($channels), @json($areas ?? []))' class="min-h-screen relative">
+    <div x-data='productManager(@json($channels), @json($areas ?? []), @json($brands ?? []), @json($types ?? []))' class="min-h-screen relative">
         
         <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
             <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-8">
@@ -35,6 +35,16 @@
                         <i class="fas fa-cloud-upload-alt mr-2 text-gray-500"></i> <span class="hidden sm:inline">Importar</span>
                     </button>
 
+                    @if(Auth::user()->isSuperAdmin())
+                        <button x-show="selectedProducts.length > 0" 
+                                @click="deleteSelected()"
+                                x-transition
+                                class="inline-flex items-center px-5 py-2.5 rounded-xl bg-red-600 text-white shadow-md hover:bg-red-700 transition-all font-bold">
+                            <i class="fas fa-trash-alt mr-2"></i> 
+                            <span x-text="'Eliminar (' + selectedProducts.length + ')'"></span>
+                        </button>
+                    @endif
+
                     <button @click="selectNewProduct()" 
                         class="inline-flex items-center px-5 py-2.5 rounded-xl bg-[#2c3856] text-white shadow-md hover:bg-[#1a233a] transition-all hover:-translate-y-0.5 font-bold">
                         <i class="fas fa-plus mr-2"></i> Nuevo
@@ -43,10 +53,8 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                
                 <div class="relative overflow-hidden rounded-2xl bg-[#2c3856] p-5 shadow-lg shadow-[#2c3856]/20 group hover:-translate-y-1 transition-all duration-500">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-[#ff9c00] rounded-full mix-blend-overlay filter blur-[40px] opacity-10 group-hover:opacity-20 transition-opacity duration-700"></div>
-                    
                     <div class="relative z-10 flex flex-col justify-between h-full">
                         <div class="flex justify-between items-center">
                             <div>
@@ -60,7 +68,6 @@
                                 <div class="w-1 bg-white rounded-sm h-3 animate-[pulse_2s_ease-in-out_0.6s_infinite]"></div>
                             </div>
                         </div>
-
                         <div class="mt-3" x-data="{ current: 0, target: 0 }" x-effect="target = pagination.total; const step = Math.ceil(target / 20); const timer = setInterval(() => { if(current < target) { current = Math.min(current + step, target); } else if(current > target) { current = target; } else { clearInterval(timer); } }, 20);">
                             <h2 class="text-4xl font-black text-white tracking-tight leading-none" x-text="current">0</h2>
                             <div class="w-full bg-[#1a233a] h-1 mt-2.5 rounded-full overflow-hidden">
@@ -72,7 +79,6 @@
 
                 <div class="relative overflow-hidden rounded-2xl bg-white p-5 shadow-md shadow-gray-100 border border-gray-100 group hover:border-[#ff9c00]/30 transition-all duration-500">
                     <div class="absolute -bottom-6 -right-6 w-24 h-24 border-[10px] border-[#ff9c00]/5 rounded-full group-hover:scale-110 transition-transform duration-700"></div>
-
                     <div class="relative z-10">
                         <div class="flex justify-between items-center mb-3">
                             <div>
@@ -85,7 +91,6 @@
                                 <div class="w-6 h-0.5 bg-gray-200 rounded-full overflow-hidden"><div class="h-full bg-[#ff9c00] w-1/3"></div></div>
                             </div>
                         </div>
-
                         <div class="flex items-baseline gap-2" x-data="{ current: 0, target: 0 }" x-effect="target = activeFilterCount; const step = 1; const timer = setInterval(() => { if(current < target) { current += step; } else if(current > target) { current -= step; } else { clearInterval(timer); } }, 50);">
                             <h2 class="text-4xl font-black text-[#2c3856] tracking-tighter leading-none" x-text="current">0</h2>
                             <span class="text-xs font-bold text-[#ff9c00] uppercase tracking-wide" x-show="activeFilterCount > 0">Aplicados</span>
@@ -109,7 +114,6 @@
                                 <span class="text-[8px] font-bold text-[#2c3856] uppercase">Live</span>
                             </div>
                         </div>
-
                         <div x-data="{ current: 0, target: 0 }" x-effect="target = pagination.total; const step = Math.ceil(target / 15); const timer = setInterval(() => { if(current < target) { current = Math.min(current + step, target); } else if(current > target) { current = target; } else { clearInterval(timer); } }, 30);">
                             <h2 class="text-4xl font-black text-[#2c3856] tracking-tighter leading-none" x-text="current">0</h2>
                             <div class="flex items-center gap-2 mt-1">
@@ -120,7 +124,6 @@
                         </div>
                     </div>
                 </div>
-
             </div>
 
             <div class="sticky top-4 z-30 bg-white/90 backdrop-blur-md border border-gray-200 shadow-lg shadow-gray-200/50 rounded-2xl p-3 mb-8 transition-all">
@@ -155,10 +158,15 @@
                 </div>
 
                 <div x-show="showFilters" class="mt-4 pt-4 border-t border-gray-100">
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Marca</label>
-                            <input type="text" x-model="filters.brand" placeholder="Escribe marca..." class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
+                            <select x-model="filters.brand" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
+                                <option value="">Todas las marcas</option>
+                                <template x-for="brandName in brands" :key="brandName">
+                                    <option :value="brandName" x-text="brandName"></option>
+                                </template>
+                            </select>
                         </div>
                         @if(Auth::user()->isSuperAdmin())
                             <div>
@@ -173,7 +181,12 @@
                         @endif                        
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Tipo</label>
-                            <input type="text" x-model="filters.type" placeholder="Escribe tipo..." class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
+                            <select x-model="filters.type" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
+                                <option value="">Todos los tipos</option>
+                                <template x-for="typeName in types" :key="typeName">
+                                    <option :value="typeName" x-text="typeName"></option>
+                                </template>
+                            </select>
                         </div>
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Canal de Venta</label>
@@ -190,7 +203,7 @@
                                 <button @click="filters.status = 'inactive'" :class="filters.status === 'inactive' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Inactivos</button>
                             </div>
                         </div>
-                        <div class="flex items-end md:col-span-4 justify-end">
+                        <div class="flex items-end justify-end">
                             <button @click="resetFilters()" class="px-6 py-2.5 text-sm text-gray-500 font-bold hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-colors"><i class="fas fa-times mr-1"></i> Limpiar Filtros</button>
                         </div>
                     </div>
@@ -216,6 +229,14 @@
                 <div x-show="!loading && viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <template x-for="product in products" :key="product.id">
                         <div class="group relative bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer">
+                            @if(Auth::user()->isSuperAdmin())   
+                                <div class="absolute top-12 left-0 z-30 p-2" @click.stop>
+                                    <input type="checkbox" 
+                                        :value="product.id" 
+                                        x-model="selectedProducts"
+                                        class="w-5 h-5 text-[#2c3856] rounded border-gray-300 focus:ring-[#2c3856] shadow-sm cursor-pointer bg-white/80 backdrop-blur-sm">
+                                </div>
+                            @endif
                             <div class="absolute top-3 right-3 z-10 flex flex-col gap-2 items-end">
                                 <span :class="product.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-100 text-gray-500 border-gray-200'" class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md border shadow-sm"><span x-text="product.is_active ? 'Activo' : 'Inactivo'"></span></span>
                                 <template x-if="product.channels && product.channels.length > 0">
@@ -257,6 +278,11 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
+                                    @if(Auth::user()->isSuperAdmin())
+                                        <th class="px-4 py-4 w-10">
+                                            <input type="checkbox" @change="toggleAll($event)" class="rounded border-gray-300 text-[#2c3856] focus:ring-[#2c3856]">
+                                        </th>
+                                    @endif                                    
                                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-16">Foto</th>
                                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Producto</th>
                                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider hidden md:table-cell">Detalles</th>
@@ -269,6 +295,11 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <template x-for="product in products" :key="product.id">
                                     <tr class="hover:bg-gray-50 transition-colors cursor-pointer group" @click="editProduct(product)">
+                                        @if(Auth::user()->isSuperAdmin())
+                                            <td class="px-4 py-4 whitespace-nowrap" @click.stop>
+                                                <input type="checkbox" :value="product.id" x-model="selectedProducts" class="rounded border-gray-300 text-[#2c3856] focus:ring-[#2c3856]">
+                                            </td>
+                                        @endif                                        
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="h-12 w-12 rounded-lg border border-gray-200 p-1 bg-white relative">
                                                 <img :src="product.photo_url" loading="lazy" class="h-full w-full object-contain" :class="{'grayscale opacity-40': !product.is_active}">
@@ -425,9 +456,16 @@
                                     </div>
                                 </div>
                                 <div class="flex justify-start gap-3 px-4 py-4 bg-gray-50 border-t border-gray-200">
-                                    <button type="button" @click="deleteProduct(form)" x-show="form.id" class="rounded-lg bg-white py-2 px-4 text-sm font-bold text-red-600 shadow-sm border border-red-200 hover:bg-red-50">Eliminar</button>
-                                        <button type="button" @click="closeEditor()" class="rounded-lg bg-white py-2 px-4 text-sm font-bold text-gray-700 shadow-sm border border-gray-300 hover:bg-gray-50">Cancelar</button>
-                                        <button type="submit" :disabled="isSaving" class="rounded-lg bg-[#2c3856] py-2 px-6 text-sm font-bold text-white shadow-md hover:bg-[#1a233a] disabled:opacity-50"><span x-text="isSaving ? 'Guardando...' : 'Guardar'"></span></button>
+                                    @if(Auth::user()->isSuperAdmin())
+                                        <button type="button" 
+                                                @click="deleteProduct(form)" 
+                                                x-show="form.id" 
+                                                class="rounded-lg bg-white py-2 px-4 text-sm font-bold text-red-600 shadow-sm border border-red-200 hover:bg-red-50">
+                                            Eliminar
+                                        </button>
+                                    @endif
+                                    <button type="button" @click="closeEditor()" class="rounded-lg bg-white py-2 px-4 text-sm font-bold text-gray-700 shadow-sm border border-gray-300 hover:bg-gray-50">Cancelar</button>
+                                    <button type="submit" :disabled="isSaving" class="rounded-lg bg-[#2c3856] py-2 px-6 text-sm font-bold text-white shadow-md hover:bg-[#1a233a] disabled:opacity-50"><span x-text="isSaving ? 'Guardando...' : 'Guardar'"></span></button>
                                 </div>
                             </form>
                         </div>
@@ -572,12 +610,15 @@
     </div>
 
     <script>
-        function productManager(initialChannels, initialAreas) {
+        function productManager(initialChannels, initialAreas, initialBrands, initialTypes) {
             return {
                 products: [],
+                selectedProducts: [],
                 pagination: { current_page: 1, last_page: 1, total: 0 },
                 channels: initialChannels || [],
                 areas: initialAreas || [],
+                brands: initialBrands || [],
+                types: initialTypes || [],
                 loading: false,
                 currentPage: 1, itemsPerPage: 12,
                 isEditorOpen: false, showFilters: false,
@@ -764,6 +805,40 @@
                     }
                     const index = Math.abs(hash) % styles.length;
                     return styles[index];
+                },
+
+                toggleAll(event) {
+                    if (event.target.checked) {
+                        this.selectedProducts = this.products.map(p => p.id);
+                    } else {
+                        this.selectedProducts = [];
+                    }
+                },
+
+                async deleteSelected() {
+                    if (!confirm(`¿Estás seguro de eliminar ${this.selectedProducts.length} productos seleccionados? Esta acción no se puede deshacer.`)) return;
+                    
+                    this.loading = true;
+                    try {
+                        const response = await fetch("{{ route('ff.catalog.bulkDestroy') }}", {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({ ids: this.selectedProducts })
+                        });
+                        
+                        if (!response.ok) throw new Error('Error al eliminar');
+                        
+                        this.selectedProducts = [];
+                        this.fetchProducts(); 
+                    } catch (error) {
+                        alert('No se pudieron eliminar los productos.');
+                    } finally {
+                        this.loading = false;
+                    }
                 }
             }
         }

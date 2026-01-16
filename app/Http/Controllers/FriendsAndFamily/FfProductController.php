@@ -21,12 +21,28 @@ class FfProductController extends Controller
     public function index()
     {
         $channelsQuery = FfSalesChannel::where('is_active', true)->orderBy('name');
+        $productQuery = ffProduct::query();
         
-        if (!Auth::user()->isSuperAdmin()) {
+        if (!Auth::user()->isSuperAdmin()) {    
             $channelsQuery->where('area_id', Auth::user()->area_id);
+            $productQuery->where('area_id', Auth::user()->area_id);
         }
         
         $channels = $channelsQuery->get();
+
+        $brands = (clone $productQuery)
+            ->whereNotNull('brand')
+            ->where('brand', '!=', '')
+            ->distinct()
+            ->orderBy('brand')
+            ->pluck('brand');
+
+        $types = (clone $productQuery)
+            ->whereNotNull('type')
+            ->where('type', '!=', '')
+            ->distinct()
+            ->orderBy('type')
+            ->pluck('type');        
         
         $areas = [];
         if (Auth::user()->isSuperAdmin()) {
@@ -36,7 +52,9 @@ class FfProductController extends Controller
         return view('friends-and-family.catalog.index', [
             'products' => [],
             'channels' => $channels,
-            'areas' => $areas
+            'areas' => $areas,
+            'brands' => $brands,
+            'types' => $types
         ]);
     }
 
@@ -421,6 +439,23 @@ class FfProductController extends Controller
         return null;
     }
 
+    public function bulkDestroy(Request $request)
+    {
+        if (!Auth::user()->isSuperAdmin()) {
+            abort(403, 'No tienes permiso para realizar esta acción.');
+        }
+
+        $ids = $request->input('ids', []);
+
+        if (empty($ids)) {
+            return response()->json(['message' => 'No se seleccionaron productos.'], 422);
+        }
+
+        ffProduct::whereIn('id', $ids)->delete();
+
+        return response()->json(['message' => 'Productos eliminados correctamente.'], 200);
+    }    
+
     private function cleanupTempDir(string $tempZipDir): void
     {
         try {
@@ -461,7 +496,8 @@ class FfProductController extends Controller
 
         $callback = function() use ($products) {
             $file = fopen('php://output', 'w');
-            fputs($file, "\xEF\xBB\xBF"); 
+            fputs($file, "\xEF\xBB\xBF");
+            
             fputcsv($file, ['SKU', 'Descripción', 'Precio Unitario', 'Marca', 'Tipo', 'Pzas/Caja', 'Largo', 'Ancho', 'Alto', 'UPC', 'Canales', 'Estado', 'URL Imagen']);
 
             foreach ($products as $product) {
