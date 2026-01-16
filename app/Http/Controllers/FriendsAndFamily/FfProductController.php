@@ -716,7 +716,6 @@ class FfProductController extends Controller
     public function searchProducts(Request $request)
     {
         $query = ffProduct::with('channels')->orderBy('brand')->orderBy('description');
-
         $query = $this->applyFilters($query, $request);
 
         if (!Auth::user()->isSuperAdmin()) {
@@ -725,6 +724,38 @@ class FfProductController extends Controller
 
         $products = $query->paginate(12);
 
-        return response()->json($products);
-    }    
+        $areaId = null;
+        if (Auth::user()->isSuperAdmin()) {
+            $areaId = $request->input('area_id'); 
+        } else {
+            $areaId = Auth::user()->area_id;
+        }
+
+        $metaQuery = ffProduct::query();
+        $channelQuery = FfSalesChannel::query()->where('is_active', true);
+
+        if ($areaId) {
+            $metaQuery->where('area_id', $areaId);
+            $channelQuery->where('area_id', $areaId);
+        }
+
+        $availableBrands = (clone $metaQuery)
+            ->whereNotNull('brand')->where('brand', '!=', '')
+            ->distinct()->orderBy('brand')->pluck('brand');
+
+        $availableTypes = (clone $metaQuery)
+            ->whereNotNull('type')->where('type', '!=', '')
+            ->distinct()->orderBy('type')->pluck('type');
+
+        $availableChannels = $channelQuery->orderBy('name')->get();
+
+        return response()->json([
+            'products' => $products,
+            'filters' => [
+                'brands' => $availableBrands,
+                'types' => $availableTypes,
+                'channels' => $availableChannels
+            ]
+        ]);
+    }
 }

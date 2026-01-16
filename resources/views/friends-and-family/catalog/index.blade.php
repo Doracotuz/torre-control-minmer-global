@@ -656,14 +656,20 @@
                     try {
                         const response = await fetch(`{{ route('ff.catalog.search') }}?${params.toString()}`);
                         const data = await response.json();
-                        this.products = data.data;
+                        
+                        this.products = data.products.data;
                         this.pagination = {
-                            current_page: data.current_page,
-                            last_page: data.last_page,
-                            total: data.total,
-                            from: data.from,
-                            to: data.to
+                            current_page: data.products.current_page,
+                            last_page: data.products.last_page,
+                            total: data.products.total,
+                            from: data.products.from,
+                            to: data.products.to
                         };
+
+                        this.brands = data.filters.brands;
+                        this.types = data.filters.types;
+                        this.channels = data.filters.channels;
+
                     } catch (error) {
                         console.error('Error cargando productos:', error);
                     } finally {
