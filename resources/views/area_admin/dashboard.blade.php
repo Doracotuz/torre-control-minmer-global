@@ -259,7 +259,7 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     
-                    <div class="lg:col-span-3 flex flex-col gap-6 opacity-0 animate-stagger">
+                    <div class="lg:col-span-3 flex flex-col gap-6 opacity-0 animate-stagger h-full">
                         <div class="bento-card p-6">
                             <h3 class="text-lg font-bold text-[#2c3856] mb-4">Acciones Rápidas</h3>
                             <div class="space-y-3">
@@ -334,9 +334,9 @@
 
                         <div class="bento-card p-6 flex-1 flex flex-col">
                             <h3 class="text-lg font-bold text-[#2c3856] mb-4">Equipo</h3>
-                            <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4 max-h-[250px]" id="team-list-container">
-                                
-                            </div>
+                            
+                            <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4 min-h-0" id="team-list-container">
+                                </div>
                         </div>
                     </div>
 
