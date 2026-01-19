@@ -6,90 +6,146 @@
 @endphp
 
 <x-app-layout>
-    <div x-data="inventoryManager()" x-init="init(@js($products))" class="font-sans">
+    <div x-data="inventoryManager()" x-init="init(@js($products))" class="font-sans text-slate-600">
 
         <x-slot name="header">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div>
-                    <h2 class="font-bold text-2xl text-[#2c3856] leading-tight font-[Montserrat]">
-                        <i class="fas fa-boxes mr-2 text-[#ff9c00]"></i> Inventario
+                    <h2 class="font-black text-3xl text-[#2c3856] leading-tight font-[Montserrat]">
+                        <i class="fas fa-boxes mr-3 text-[#ff9c00]"></i> Inventario
                     </h2>
-                    <p class="text-sm text-gray-500 font-[Montserrat] mt-1">Gestión de stock y movimientos</p>
+                    <p class="text-base text-slate-500 font-medium mt-1">Gestión integral de stock y movimientos</p>
                 </div>
                 
-                <div class="flex flex-wrap items-center gap-3">
+                <div class="flex flex-wrap items-center gap-4">
                     <a href="{{ route('ff.inventory.log') }}" 
-                       class="inline-flex items-center px-4 py-2 bg-white text-[#2c3856] border border-gray-200 rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm hover:bg-gray-50 hover:border-[#ff9c00] transition-all duration-300">
+                       class="inline-flex items-center px-6 py-3 bg-white text-[#2c3856] border-2 border-slate-200 rounded-2xl text-sm font-bold uppercase tracking-wider shadow-sm hover:bg-slate-50 hover:border-[#ff9c00] hover:text-[#ff9c00] transition-all duration-300 transform hover:-translate-y-0.5">
                         <i class="fas fa-history mr-2"></i> Historial
                     </a>
 
                     <a href="{{ route('ff.dashboard.index') }}" 
-                       class="inline-flex items-center px-5 py-2 bg-[#2c3856] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#1e273d] hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300">
+                       class="inline-flex items-center px-6 py-3 bg-[#2c3856] text-white rounded-2xl text-sm font-bold uppercase tracking-wider shadow-lg hover:bg-[#1e273d] hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300">
                         <i class="fas fa-arrow-left mr-2"></i> Dashboard
                     </a>
                 </div>
             </div>
         </x-slot>
 
-        <div class="py-6 bg-[#E8ECF7] min-h-screen">
+        <div class="py-8 bg-[#E8ECF7] min-h-screen">
             
-            <div class="bg-white rounded-2xl p-2 shadow-[0_2px_15px_rgba(0,0,0,0.03)] border border-slate-100 mb-6 flex flex-col md:flex-row gap-2 items-center justify-between">
-                
-                <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                    <a href="{{ route('ff.inventory.backorders') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-purple-50 border border-transparent hover:border-purple-100 transition-all group w-full md:w-auto">
-                        <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-lg shadow-sm group-hover:scale-105 group-hover:bg-purple-100 transition-all">
-                            <i class="fas fa-boxes-packing"></i>
+            <div class="mb-10 grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+
+                <div class="xl:col-span-5 flex flex-col md:flex-row gap-4 h-full">
+                    
+                    <a href="{{ route('ff.inventory.backorders') }}" 
+                    class="relative overflow-hidden w-full md:w-3/5 rounded-[2rem] bg-gradient-to-br from-[#2c3856] to-[#1e273d] p-6 text-white shadow-xl shadow-blue-900/20 group hover:shadow-2xl hover:shadow-blue-900/30 transition-all duration-300 transform hover:-translate-y-1">
+                        
+                        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-[#ff9c00]/20 transition-colors duration-500"></div>
+                        
+                        <div class="relative z-10 flex flex-col h-full justify-between min-h-[140px]">
+                            <div class="flex justify-between items-start">
+                                <div class="bg-white/10 p-3 rounded-2xl backdrop-blur-sm border border-white/5 group-hover:scale-110 transition-transform duration-300">
+                                    <i class="fas fa-box-open text-2xl text-[#ff9c00]"></i>
+                                </div>
+                                <div class="bg-[#ff9c00] text-[#2c3856] text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-wider">
+                                    Prioridad
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 class="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">Gestión de Pedidos</h3>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-2xl font-black tracking-tight group-hover:text-[#ff9c00] transition-colors">Surtir Backorders</span>
+                                    <i class="fas fa-arrow-right opacity-0 -translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 text-[#ff9c00]"></i>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex flex-col">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Acción</span>
-                            <span class="text-sm font-bold text-[#2c3856] group-hover:text-purple-700">Surtir Backorders</span>
-                        </div>
-                        <i class="fas fa-chevron-right text-slate-300 text-xs ml-2 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1"></i>
                     </a>
 
-                    <div class="w-px h-10 bg-slate-100 hidden md:block"></div>
-
-                    <a href="{{ route('ff.inventory.backorder_relations') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-all group w-full md:w-auto">
-                        <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-lg shadow-sm group-hover:scale-105 group-hover:bg-rose-100 transition-all">
-                            <i class="fas fa-file-invoice-dollar"></i>
+                    <a href="{{ route('ff.inventory.backorder_relations') }}" 
+                    class="relative w-full md:w-2/5 rounded-[2rem] bg-white p-6 shadow-sm border border-slate-100 group hover:border-rose-200 transition-all duration-300 flex flex-col justify-between hover:shadow-lg hover:shadow-rose-500/10">
+                        <div class="bg-rose-50 w-12 h-12 rounded-2xl flex items-center justify-center text-rose-500 mb-4 group-hover:rotate-12 transition-transform duration-300">
+                            <i class="fas fa-file-invoice-dollar text-xl"></i>
                         </div>
-                        <div class="flex flex-col">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Reporte</span>
-                            <span class="text-sm font-bold text-[#2c3856] group-hover:text-rose-700">Pasivos y Deuda</span>
+                        <div>
+                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Finanzas</p>
+                            <p class="text-lg font-black text-slate-700 leading-tight mt-1 group-hover:text-rose-600 transition-colors">Pasivos y<br>Deuda</p>
                         </div>
-                        <i class="fas fa-chevron-right text-slate-300 text-xs ml-2 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1"></i>
                     </a>
                 </div>
 
-                <div class="hidden lg:flex items-center gap-4 px-4">
-                    <div class="text-right">
-                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Valor Inventario</p>
-                        <p class="text-lg font-black text-[#2c3856] font-mono" x-text="formatMoney(totalValue)"></p>
+                <div class="xl:col-span-7 grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
+
+                    <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col justify-center relative overflow-hidden group">
+                        <div class="absolute -right-6 -bottom-6 text-slate-50 opacity-50 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500">
+                            <i class="fas fa-barcode text-8xl"></i>
+                        </div>
+                        <p class="text-slate-400 text-xs font-black uppercase tracking-widest z-10">Total SKUs</p>
+                        <div class="flex items-baseline gap-1 mt-2 z-10">
+                            <span class="text-4xl font-black text-[#2c3856]" x-text="filteredProducts.length">0</span>
+                            <span class="text-xs font-bold text-slate-400">visibles</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-1.5 mt-4 rounded-full overflow-hidden z-10">
+                            <div class="bg-blue-500 h-full rounded-full w-2/3 opacity-80 group-hover:w-full transition-all duration-1000"></div>
+                        </div>
                     </div>
-                    <div class="w-10 h-10 rounded-full bg-[#ff9c00]/10 flex items-center justify-center text-[#ff9c00]">
-                        <i class="fas fa-chart-line"></i>
+
+                    <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col justify-center relative overflow-hidden group">
+                        <div class="absolute -right-6 -bottom-6 text-slate-50 opacity-50 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500">
+                            <i class="fas fa-cubes text-8xl"></i>
+                        </div>
+                        <p class="text-slate-400 text-xs font-black uppercase tracking-widest z-10">Inventario Físico</p>
+                        <div class="flex items-baseline gap-1 mt-2 z-10">
+                            <span class="text-4xl font-black text-[#2c3856]" x-text="totalStock.toLocaleString()">0</span>
+                            <span class="text-xs font-bold text-slate-400">pzas</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-1.5 mt-4 rounded-full overflow-hidden z-10">
+                            <div class="bg-emerald-500 h-full rounded-full w-1/2 opacity-80 group-hover:w-3/4 transition-all duration-1000"></div>
+                        </div>
                     </div>
+
+                    <div class="bg-[#2c3856] rounded-[2rem] p-6 shadow-xl shadow-slate-400/20 flex flex-col justify-center relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-gradient-to-tr from-[#2c3856] to-[#3a4b70] opacity-100"></div>
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-[#ff9c00] rounded-full blur-[60px] opacity-10 group-hover:opacity-20 transition-opacity duration-500"></div>
+                        
+                        <div class="relative z-10">
+                            <div class="flex justify-between items-center mb-1">
+                                <p class="text-white/60 text-xs font-bold uppercase tracking-widest">Valor Total</p>
+                                <i class="fas fa-chart-line text-[#ff9c00] animate-pulse"></i>
+                            </div>
+                            
+                            <div class="mt-2">
+                                <span class="text-3xl lg:text-2xl xl:text-3xl font-black text-white font-mono tracking-tight" x-text="formatMoney(totalValue)">$0.00</span>
+                            </div>
+                            
+                            <div class="mt-4 flex items-center gap-2 text-[10px] text-white/40 bg-white/5 rounded-lg px-2 py-1 w-fit">
+                                <div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                Actualizado en tiempo real
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
             @if (session('success'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" 
-                     class="bg-emerald-100 border-l-4 border-emerald-500 text-emerald-800 px-4 py-3 rounded-xl mb-6 shadow-sm flex items-center justify-between" role="alert">
-                    <div class="flex items-center">
-                        <i class="fas fa-check-circle mr-2 text-xl"></i>
-                        <span class="font-medium">{{ session('success') }}</span>
+                     class="bg-emerald-100 border-l-8 border-emerald-500 text-emerald-800 px-6 py-5 rounded-2xl mb-8 shadow-md flex items-center justify-between" role="alert">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-check-circle text-2xl"></i>
+                        <span class="font-bold text-lg">{{ session('success') }}</span>
                     </div>
-                    <button @click="show = false" class="text-emerald-600 hover:text-emerald-800"><i class="fas fa-times"></i></button>
+                    <button @click="show = false" class="text-emerald-600 hover:text-emerald-800 transition-colors"><i class="fas fa-times text-xl"></i></button>
                 </div>
             @endif
 
             @if (session('import_errors'))
-                <div class="bg-red-50 border-l-4 border-red-500 text-red-800 px-6 py-4 rounded-xl mb-6 shadow-sm">
-                    <div class="flex items-center font-bold text-lg mb-2">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                <div class="bg-red-50 border-l-8 border-red-500 text-red-800 px-8 py-6 rounded-2xl mb-8 shadow-md">
+                    <div class="flex items-center font-black text-xl mb-3">
+                        <i class="fas fa-exclamation-triangle mr-3"></i>
                         {{ session('error_summary', 'Errores en la importación') }}
                     </div>
-                    <ul class="list-disc list-inside text-sm space-y-1 opacity-90 pl-2">
+                    <ul class="list-disc list-inside text-sm space-y-2 opacity-90 pl-2 font-medium">
                         @foreach (session('import_errors') as $error)
                             <li>{{ $error }}</li>
                         @endforeach
@@ -97,23 +153,23 @@
                 </div>
             @endif
 
-            <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+            <div class="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
                 
-                <div class="p-5 border-b border-gray-100 flex flex-col lg:flex-row gap-4 justify-between items-center bg-white/50 backdrop-blur-sm">
+                <div class="p-8 border-b border-slate-100 flex flex-col lg:flex-row gap-6 justify-between items-center bg-white">
                     
                     <div class="relative w-full lg:w-1/3 group">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <i class="fas fa-search text-gray-300 group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
+                        <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-slate-300 text-lg group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
                         </div>
                         <input type="text" x-model="filter" 
-                               class="block w-full pl-11 pr-4 py-2.5 bg-slate-50 border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all duration-200 placeholder-gray-400 font-medium text-sm" 
-                               placeholder="Buscar SKU, producto...">
+                               class="block w-full pl-12 pr-5 py-4 bg-slate-50 border-2 border-transparent text-slate-700 rounded-2xl focus:ring-0 focus:border-[#ff9c00] focus:bg-white transition-all duration-300 placeholder-slate-400 font-bold text-base shadow-inner" 
+                               placeholder="Buscar por SKU, nombre, UPC...">
                     </div>
 
-                    <div class="flex flex-wrap gap-2 w-full lg:w-auto justify-end items-center">
+                    <div class="flex flex-wrap gap-3 w-full lg:w-auto justify-end items-center">
                         
                         @if(Auth::user()->isSuperAdmin())
-                        <select x-model="filterArea" class="pl-3 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 focus:ring-2 focus:ring-[#ff9c00] focus:border-transparent cursor-pointer hover:border-gray-300 transition-all uppercase tracking-wide">
+                        <select x-model="filterArea" class="pl-4 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-0 focus:border-[#ff9c00] cursor-pointer hover:border-slate-300 transition-all uppercase tracking-wide shadow-sm">
                             <option value="">Todas las Áreas</option>
                             @foreach($areas as $area)
                                 <option value="{{ $area->id }}">{{ $area->name }}</option>
@@ -121,38 +177,38 @@
                         </select>
                         @endif
 
-                        <select x-model="filterBrand" class="pl-3 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 focus:ring-2 focus:ring-[#ff9c00] focus:border-transparent cursor-pointer hover:border-gray-300 transition-all uppercase tracking-wide">
-                            <option value="">Marca</option>
+                        <select x-model="filterBrand" class="pl-4 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-0 focus:border-[#ff9c00] cursor-pointer hover:border-slate-300 transition-all uppercase tracking-wide shadow-sm">
+                            <option value="">Todas las Marcas</option>
                             @foreach($brands as $brand)
                                 <option value="{{ $brand }}">{{ $brand }}</option>
                             @endforeach
                         </select>
 
-                        <select x-model="filterType" class="pl-3 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 focus:ring-2 focus:ring-[#ff9c00] focus:border-transparent cursor-pointer hover:border-gray-300 transition-all uppercase tracking-wide">
-                            <option value="">Tipo</option>
+                        <select x-model="filterType" class="pl-4 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-0 focus:border-[#ff9c00] cursor-pointer hover:border-slate-300 transition-all uppercase tracking-wide shadow-sm">
+                            <option value="">Todos los Tipos</option>
                             @foreach($types as $type)
                                 <option value="{{ $type }}">{{ $type }}</option>
                             @endforeach
                         </select>
                         
-                        <div class="h-6 w-px bg-gray-200 mx-2 hidden md:block"></div>
+                        <div class="h-10 w-px bg-slate-200 mx-2 hidden md:block"></div>
 
                         <button @click="openImportModal()" 
-                                class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-[#2c3856] hover:bg-slate-100 rounded-lg transition-all" 
+                                class="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-[#2c3856] hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200" 
                                 title="Importar CSV">
-                            <i class="fas fa-file-upload"></i>
+                            <i class="fas fa-file-upload text-xl"></i>
                         </button>
                         
                         <button @click="exportFilteredCsv()" 
-                                class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-[#2c3856] hover:bg-slate-100 rounded-lg transition-all" 
+                                class="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-[#2c3856] hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200" 
                                 title="Exportar CSV">
-                            <i class="fas fa-file-download"></i>
+                            <i class="fas fa-file-download text-xl"></i>
                         </button>
 
                         <button @click="resetFilters()" x-show="filter || filterBrand || filterType || filterArea" x-transition 
-                                class="ml-2 px-3 py-1.5 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-bold transition-all" 
+                                class="ml-2 px-4 py-2 text-rose-500 bg-rose-50 hover:bg-rose-100 rounded-xl text-xs font-black transition-all shadow-sm border border-rose-100" 
                                 title="Limpiar Filtros">
-                            <i class="fas fa-times"></i>
+                            <i class="fas fa-times mr-1"></i> LIMPIAR
                         </button>
                     </div>
                 </div>
@@ -160,71 +216,71 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full whitespace-nowrap text-left">
                         <thead>
-                            <tr class="bg-slate-50/50 border-b border-gray-100">
-                                <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest font-[Montserrat]">Producto</th>
-                                <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest font-[Montserrat]">Categoría</th>
-                                <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right font-[Montserrat]">Precio</th>
-                                <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center font-[Montserrat]">Stock</th>
+                            <tr class="bg-slate-50 border-b border-slate-100">
+                                <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest font-[Montserrat]">Producto</th>
+                                <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest font-[Montserrat]">Categoría</th>
+                                <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right font-[Montserrat]">Precio</th>
+                                <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center font-[Montserrat]">Stock Actual</th>
                                 @if(Auth::user()->isSuperAdmin() || Auth::user()->is_area_admin)
-                                <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right font-[Montserrat]">Acción</th>
+                                <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right font-[Montserrat]">Acciones Rápidas</th>
                                 @endif
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-50 bg-white">
+                        <tbody class="divide-y divide-slate-100 bg-white">
                             <template x-for="product in filteredProducts" :key="product.id">
-                                <tr class="hover:bg-blue-50/40 transition-colors duration-200 group">
+                                <tr class="hover:bg-blue-50/30 transition-colors duration-200 group">
                                     
-                                    <td class="px-6 py-4">
+                                    <td class="px-8 py-5">
                                         <div class="flex items-center">
-                                            <div class="h-12 w-12 flex-shrink-0 rounded-lg border border-gray-100 overflow-hidden p-1 bg-white shadow-sm group-hover:scale-105 transition-transform">
+                                            <div class="h-16 w-16 flex-shrink-0 rounded-xl border border-slate-100 overflow-hidden p-2 bg-white shadow-sm group-hover:scale-110 transition-transform duration-300">
                                                 <img class="h-full w-full object-contain mix-blend-multiply" :src="product.photo_url" :alt="product.sku">
                                             </div>
-                                            <div class="ml-4">
-                                                <div class="text-sm font-bold text-[#2c3856]" x-text="product.description"></div>
-                                                <div class="flex items-center gap-2 mt-0.5">
-                                                    <div class="text-[10px] text-slate-500 font-mono bg-slate-100 inline-block px-1.5 py-0.5 rounded border border-slate-200" x-text="product.sku"></div>
-                                                    <div x-show="product.upc" class="text-[10px] text-slate-400 font-mono" x-text="'UPC: ' + product.upc"></div>
+                                            <div class="ml-6">
+                                                <div class="text-base font-bold text-[#2c3856]" x-text="product.description"></div>
+                                                <div class="flex items-center gap-3 mt-1.5">
+                                                    <div class="text-xs text-slate-500 font-mono bg-slate-100 inline-block px-2 py-1 rounded-md border border-slate-200 font-bold" x-text="product.sku"></div>
+                                                    <div x-show="product.upc" class="text-xs text-slate-400 font-mono" x-text="'UPC: ' + product.upc"></div>
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
 
-                                    <td class="px-6 py-4">
-                                        <div class="flex flex-col gap-1">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600 w-fit uppercase" 
+                                    <td class="px-8 py-5">
+                                        <div class="flex flex-col gap-1.5">
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 w-fit uppercase tracking-wide border border-slate-200" 
                                                   x-text="product.brand || 'N/A'"></span>
-                                            <span class="text-[10px] text-slate-400 ml-0.5" x-text="product.type"></span>
+                                            <span class="text-xs text-slate-400 font-medium pl-1" x-text="product.type"></span>
                                         </div>
                                     </td>
 
-                                    <td class="px-6 py-4 text-right">
-                                        <div class="text-sm font-bold text-[#2c3856] font-mono" x-text="formatMoney(product.unit_price)"></div>
+                                    <td class="px-8 py-5 text-right">
+                                        <div class="text-base font-black text-[#2c3856] font-mono tracking-tight" x-text="formatMoney(product.unit_price)"></div>
                                     </td>
 
-                                    <td class="px-6 py-4 text-center">
-                                        <div class="inline-flex items-center justify-center px-3 py-1 rounded-lg text-xs font-bold shadow-sm border transition-all duration-300"
+                                    <td class="px-8 py-5 text-center">
+                                        <div class="inline-flex items-center justify-center px-5 py-2 rounded-xl text-sm font-black shadow-sm border transition-all duration-300 min-w-[80px]"
                                              :class="{
-                                                 'bg-emerald-50 text-emerald-700 border-emerald-100': (product.movements_sum_quantity || 0) > 5,
-                                                 'bg-amber-50 text-amber-700 border-amber-100': (product.movements_sum_quantity || 0) > 0 && (product.movements_sum_quantity || 0) <= 5,
-                                                 'bg-red-50 text-red-700 border-red-100': (product.movements_sum_quantity || 0) <= 0
+                                                 'bg-emerald-50 text-emerald-700 border-emerald-200': (product.movements_sum_quantity || 0) > 5,
+                                                 'bg-amber-50 text-amber-700 border-amber-200': (product.movements_sum_quantity || 0) > 0 && (product.movements_sum_quantity || 0) <= 5,
+                                                 'bg-red-50 text-red-700 border-red-200': (product.movements_sum_quantity || 0) <= 0
                                              }">
                                             <span x-text="product.movements_sum_quantity || 0"></span>
-                                            <span class="text-[9px] ml-1 opacity-70">pz</span>
+                                            <span class="text-[10px] ml-1.5 opacity-70 uppercase">pzas</span>
                                         </div>
                                     </td>
 
                                     @if(Auth::user()->isSuperAdmin() || Auth::user()->is_area_admin)
-                                    <td class="px-6 py-4 text-right">
-                                        <div class="flex justify-end space-x-1 opacity-60 group-hover:opacity-100 transition-opacity duration-200">
+                                    <td class="px-8 py-5 text-right">
+                                        <div class="flex justify-end gap-3 opacity-80 group-hover:opacity-100 transition-opacity duration-200">
                                             <button @click="openModal(product, 'add')" 
-                                                    class="h-8 w-8 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all shadow-sm" 
-                                                    title="Entrada">
-                                                <i class="fas fa-plus text-xs"></i>
+                                                    class="h-10 w-10 flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all shadow-sm transform hover:-translate-y-1" 
+                                                    title="Registrar Entrada">
+                                                <i class="fas fa-plus"></i>
                                             </button>
                                             <button @click="openModal(product, 'remove')" 
-                                                    class="h-8 w-8 flex items-center justify-center rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white transition-all shadow-sm" 
-                                                    title="Salida">
-                                                <i class="fas fa-minus text-xs"></i>
+                                                    class="h-10 w-10 flex items-center justify-center rounded-xl bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all shadow-sm transform hover:-translate-y-1" 
+                                                    title="Registrar Salida">
+                                                <i class="fas fa-minus"></i>
                                             </button>
                                         </div>
                                     </td>
@@ -234,15 +290,15 @@
                             
                             <template x-if="filteredProducts.length === 0">
                                 <tr>
-                                    <td colspan="5" class="px-6 py-20 text-center">
+                                    <td colspan="5" class="px-8 py-24 text-center">
                                         <div class="flex flex-col items-center justify-center">
-                                            <div class="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4">
-                                                <i class="fas fa-search text-slate-300 text-2xl"></i>
+                                            <div class="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-sm border border-slate-100">
+                                                <i class="fas fa-search text-slate-300 text-4xl"></i>
                                             </div>
-                                            <h3 class="text-base font-bold text-[#2c3856]">Sin Resultados</h3>
-                                            <p class="text-xs text-slate-400 mt-1">Ajusta los filtros de búsqueda.</p>
-                                            <button @click="resetFilters()" class="mt-4 text-[#ff9c00] text-xs font-bold hover:underline">
-                                                Ver todo
+                                            <h3 class="text-xl font-bold text-[#2c3856] mb-2">No encontramos coincidencias</h3>
+                                            <p class="text-sm text-slate-400">Intenta ajustar los filtros o el término de búsqueda.</p>
+                                            <button @click="resetFilters()" class="mt-6 text-[#ff9c00] text-sm font-bold hover:underline uppercase tracking-wide">
+                                                Limpiar todos los filtros
                                             </button>
                                         </div>
                                     </td>
@@ -252,9 +308,9 @@
                     </table>
                 </div>
                 
-                <div class="bg-white px-6 py-3 border-t border-gray-100 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    <span x-text="`Total: ${filteredProducts.length} Items`"></span>
-                    <span x-text="`Stock Global: ${totalStock}`"></span>
+                <div class="bg-slate-50 px-8 py-4 border-t border-slate-200 flex items-center justify-between text-xs font-black text-slate-400 uppercase tracking-widest">
+                    <span x-text="`Mostrando ${filteredProducts.length} productos`"></span>
+                    <span x-text="`Stock Global Visible: ${totalStock.toLocaleString()} unidades`"></span>
                 </div>
             </div>
         </div>
@@ -267,7 +323,7 @@
                 <div x-show="isModalOpen" 
                      x-transition.opacity.duration.300ms
                      class="fixed inset-0 transition-opacity" aria-hidden="true">
-                    <div class="absolute inset-0 bg-[#2c3856] opacity-60 backdrop-blur-sm"></div>
+                    <div class="absolute inset-0 bg-[#2c3856] opacity-70 backdrop-blur-md"></div>
                 </div>
 
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
@@ -275,59 +331,59 @@
                 <div x-show="isModalOpen" 
                      @click.outside="closeModal()"
                      x-transition:enter="ease-out duration-300" 
-                     x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                     x-transition:enter-start="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95" 
                      x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
                      x-transition:leave="ease-in duration-200" 
                      x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
-                     x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
-                     class="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full border border-gray-100">
+                     x-transition:leave-end="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95" 
+                     class="inline-block align-bottom bg-white rounded-[2rem] text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-slate-100">
                     
                     <form @submit.prevent="submitMovement">
-                        <div class="bg-white px-4 pt-5 pb-4 sm:p-8 relative">
-                            <button type="button" @click="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+                        <div class="bg-white px-8 pt-8 pb-6 relative">
+                            <button type="button" @click="closeModal()" class="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
                                 <i class="fas fa-times"></i>
                             </button>
                             
-                            <div class="flex flex-col items-center text-center mb-6">
-                                <div class="h-14 w-14 rounded-2xl flex items-center justify-center shadow-sm mb-4 transition-colors duration-300"
-                                     :class="form.type === 'add' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'">
-                                    <i class="fas fa-lg" :class="form.type === 'add' ? 'fa-plus' : 'fa-minus'"></i>
+                            <div class="flex flex-col items-center text-center mb-8">
+                                <div class="h-20 w-20 rounded-2xl flex items-center justify-center shadow-md mb-5 transition-colors duration-300 border-4 border-white ring-4"
+                                     :class="form.type === 'add' ? 'bg-emerald-50 text-emerald-500 ring-emerald-50' : 'bg-rose-50 text-rose-500 ring-rose-50'">
+                                    <i class="fas fa-2x" :class="form.type === 'add' ? 'fa-plus' : 'fa-minus'"></i>
                                 </div>
-                                <h3 class="text-lg font-black text-[#2c3856]" x-text="form.type === 'add' ? 'Entrada de Inventario' : 'Salida de Inventario'"></h3>
-                                <p class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-wide" x-text="form.product_name"></p>
+                                <h3 class="text-2xl font-black text-[#2c3856]" x-text="form.type === 'add' ? 'Entrada de Inventario' : 'Salida de Inventario'"></h3>
+                                <p class="text-sm font-bold text-slate-400 mt-2 uppercase tracking-wide px-4" x-text="form.product_name"></p>
                             </div>
 
-                            <div class="space-y-4">
+                            <div class="space-y-6">
                                 <div>
-                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Cantidad</label>
+                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Cantidad a mover</label>
                                     <input type="number" min="1" x-model.number="form.quantity_raw" required 
-                                           class="block w-full text-center py-3 bg-slate-50 border-none rounded-xl text-[#2c3856] focus:ring-2 focus:ring-[#2c3856] focus:bg-white transition-all font-bold text-2xl placeholder-slate-300" 
+                                           class="block w-full text-center py-4 bg-slate-50 border-2 border-transparent focus:border-[#2c3856] rounded-2xl text-[#2c3856] focus:bg-white transition-all font-black text-3xl placeholder-slate-300" 
                                            placeholder="0">
                                 </div>
 
                                 <div>
-                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Motivo</label>
+                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Motivo / Referencia</label>
                                     <input type="text" x-model="form.reason" required 
-                                           class="block w-full px-4 py-2.5 bg-slate-50 border-none rounded-xl text-slate-700 focus:ring-2 focus:ring-[#2c3856] focus:bg-white transition-all text-sm font-medium" 
-                                           placeholder="Ej. Compra, Ajuste, Merma...">
+                                           class="block w-full px-5 py-4 bg-slate-50 border-2 border-transparent focus:border-[#2c3856] rounded-2xl text-slate-700 focus:bg-white transition-all text-base font-medium" 
+                                           placeholder="Ej. Compra PO-123, Merma, Ajuste...">
                                 </div>
                             </div>
 
-                            <div x-show="errorMessage" x-transition class="mt-4 p-3 rounded-xl bg-rose-50 text-rose-600 text-xs font-bold border border-rose-100 flex items-center justify-center">
-                                <i class="fas fa-exclamation-circle mr-2"></i>
+                            <div x-show="errorMessage" x-transition class="mt-6 p-4 rounded-xl bg-rose-50 text-rose-600 text-sm font-bold border border-rose-100 flex items-center justify-center">
+                                <i class="fas fa-exclamation-circle mr-2 text-lg"></i>
                                 <span x-text="errorMessage"></span>
                             </div>
                         </div>
 
-                        <div class="bg-slate-50 px-6 py-4 flex gap-3 border-t border-slate-100">
-                            <button type="button" @click="closeModal()" class="flex-1 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all uppercase">
+                        <div class="bg-slate-50 px-8 py-6 flex gap-4 border-t border-slate-100">
+                            <button type="button" @click="closeModal()" class="flex-1 py-3.5 rounded-xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-100 hover:border-slate-300 transition-all uppercase tracking-wide">
                                 Cancelar
                             </button>
                             <button type="submit" 
                                     :disabled="isSaving"
-                                    class="flex-1 py-2.5 rounded-xl border border-transparent shadow-lg text-xs font-bold text-white transition-all transform hover:-translate-y-0.5 uppercase flex items-center justify-center"
+                                    class="flex-1 py-3.5 rounded-xl border-2 border-transparent shadow-xl text-sm font-bold text-white transition-all transform hover:-translate-y-1 uppercase flex items-center justify-center tracking-wide"
                                     :class="form.type === 'add' ? 'bg-[#2c3856] hover:bg-[#1e273d] shadow-blue-900/20' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/30'">
-                                <span x-text="isSaving ? 'Guardando...' : 'Confirmar'"></span>
+                                <span x-text="isSaving ? 'Procesando...' : 'Confirmar Movimiento'"></span>
                             </button>
                         </div>
                     </form>
@@ -340,7 +396,7 @@
              style="display: none;" x-cloak>
             <div class="flex items-center justify-center min-h-screen p-4 text-center sm:block sm:p-0">
                 
-                <div x-show="isImportModalOpen" x-transition.opacity class="fixed inset-0 bg-[#2c3856] opacity-60 backdrop-blur-sm" aria-hidden="true"></div>
+                <div x-show="isImportModalOpen" x-transition.opacity class="fixed inset-0 bg-[#2c3856] opacity-70 backdrop-blur-md" aria-hidden="true"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
                 <div x-show="isImportModalOpen" 
@@ -348,50 +404,53 @@
                      x-transition:enter="ease-out duration-300"
                      x-transition:enter-start="opacity-0 scale-95"
                      x-transition:enter-end="opacity-100 scale-100"
-                     class="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-gray-100">
+                     class="inline-block align-bottom bg-white rounded-[2rem] text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl w-full border border-slate-100">
                     
                     <form action="{{ route('ff.inventory.import') }}" method="POST" enctype="multipart/form-data">
                         @csrf
-                        <div class="bg-white px-4 pt-5 pb-4 sm:p-8">
-                            <div class="flex justify-between items-center mb-6">
-                                <div class="flex items-center gap-3">
-                                    <div class="bg-blue-50 p-2 rounded-lg text-blue-600">
-                                        <i class="fas fa-file-csv fa-lg"></i>
-                                    </div>
-                                    <h3 class="text-lg font-black text-[#2c3856]">Importación Masiva</h3>
+                        <div class="bg-white px-8 pt-8 pb-6 relative">
+                            <button type="button" @click="closeImportModal()" class="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+                                <i class="fas fa-times"></i>
+                            </button>
+
+                            <div class="flex items-center gap-4 mb-8">
+                                <div class="bg-blue-50 p-3 rounded-2xl text-blue-600 border border-blue-100">
+                                    <i class="fas fa-file-csv fa-2x"></i>
                                 </div>
-                                <button type="button" @click="closeImportModal()" class="text-gray-400 hover:text-gray-600">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                                <div>
+                                    <h3 class="text-2xl font-black text-[#2c3856]">Importación Masiva</h3>
+                                    <p class="text-slate-400 text-sm font-medium">Carga movimientos desde CSV</p>
+                                </div>
                             </div>
                             
-                            <div class="mt-4">
+                            <div class="mt-2">
                                 <div class="flex items-center justify-center w-full">
-                                    <label for="movements_file" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer bg-slate-50 hover:bg-white hover:border-[#ff9c00] transition-all group">
-                                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                            <i class="fas fa-cloud-upload-alt text-2xl text-slate-400 group-hover:text-[#ff9c00] mb-2 transition-colors"></i>
-                                            <p class="mb-1 text-xs text-slate-500 font-bold">Clic para subir archivo</p>
-                                            <p class="text-[10px] text-slate-400 uppercase">CSV (SKU, Qty, Reason)</p>
+                                    <label for="movements_file" class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-300 rounded-3xl cursor-pointer bg-slate-50 hover:bg-white hover:border-[#ff9c00] transition-all group relative overflow-hidden">
+                                        <div class="absolute inset-0 bg-[#ff9c00] opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
+                                        <div class="flex flex-col items-center justify-center pt-5 pb-6 relative z-10">
+                                            <i class="fas fa-cloud-upload-alt text-4xl text-slate-300 group-hover:text-[#ff9c00] mb-3 transition-colors transform group-hover:-translate-y-1 duration-300"></i>
+                                            <p class="mb-2 text-sm text-slate-600 font-bold group-hover:text-[#2c3856]">Clic para seleccionar archivo</p>
+                                            <p class="text-xs text-slate-400 font-bold uppercase tracking-wide">Formato CSV requerido</p>
                                         </div>
                                         <input id="movements_file" name="movements_file" type="file" class="hidden" required accept=".csv,.txt" />
                                     </label>
                                 </div>
                                 
-                                <div class="mt-4 flex items-center justify-between">
-                                    <div class="text-[10px] text-slate-400 font-medium">
+                                <div class="mt-6 flex items-center justify-between bg-blue-50/50 p-4 rounded-xl border border-blue-50">
+                                    <div class="text-xs text-blue-800 font-bold uppercase tracking-wide">
                                         ¿Necesitas el formato base?
                                     </div>
-                                    <button type="button" @click="downloadFilteredTemplate()" class="text-[10px] font-bold text-[#2c3856] hover:underline flex items-center gap-1">
+                                    <button type="button" @click="downloadFilteredTemplate()" class="text-sm font-black text-[#2c3856] hover:text-[#ff9c00] flex items-center gap-2 transition-colors">
                                         <i class="fas fa-download"></i> Descargar Plantilla
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <div class="bg-slate-50 px-6 py-4 flex flex-row-reverse gap-3 border-t border-slate-100">
-                            <button type="submit" class="flex-1 py-2.5 rounded-xl bg-[#ff9c00] text-white text-xs font-bold uppercase hover:bg-orange-600 shadow-md transition-all">
-                                Procesar
+                        <div class="bg-slate-50 px-8 py-6 flex flex-row-reverse gap-4 border-t border-slate-100">
+                            <button type="submit" class="flex-1 py-3.5 rounded-xl bg-[#ff9c00] text-white text-sm font-bold uppercase hover:bg-orange-600 shadow-lg shadow-orange-500/20 transition-all transform hover:-translate-y-1 tracking-wide">
+                                Procesar Archivo
                             </button>
-                            <button type="button" @click="closeImportModal()" class="flex-1 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-100 uppercase transition-all">
+                            <button type="button" @click="closeImportModal()" class="flex-1 py-3.5 rounded-xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-100 hover:border-slate-300 uppercase transition-all tracking-wide">
                                 Cancelar
                             </button>
                         </div>

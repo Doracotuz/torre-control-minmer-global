@@ -461,7 +461,7 @@ class FfSalesController extends Controller
                     'user_id' => $user->id,
                     'area_id' => $user->area_id, 
                     'quantity' => -$quantity,
-                    'reason' => ucfirst($orderType) . ' F&F Folio ' . $ventaFolio,
+                    'reason' => ucfirst($orderType) . ' Venta Folio ' . $ventaFolio,
                     'client_name' => $request->client_name,
                     'company_name' => $request->company_name,
                     'client_phone' => $request->client_phone,
@@ -590,11 +590,11 @@ class FfSalesController extends Controller
                     ));
                 }
             } else {
-                Log::warning("Pedido F&F #{$ventaFolio} creado en área {$user->area_id} sin administradores para notificar.");
+                Log::warning("Pedido #{$ventaFolio} creado en área {$user->area_id} sin administradores para notificar.");
             }
 
         } catch (\Exception $e) {
-            Log::error("Error enviando alerta admin F&F: " . $e->getMessage());
+            Log::error("Error enviando alerta admin: " . $e->getMessage());
         }
 
         return response($pdfContent, 200, ['Content-Type' => 'application/pdf', 'X-Venta-Folio' => $ventaFolio]);

@@ -289,7 +289,7 @@ class FfInventoryController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error en importación de movimientos F&F: " . $e->getMessage());
+            Log::error("Error en importación de movimientos: " . $e->getMessage());
             $errors[] = "Error inesperado del sistema: " . $e->getMessage();
             return redirect()->route('ff.inventory.index')
                 ->with('import_errors', $errors)

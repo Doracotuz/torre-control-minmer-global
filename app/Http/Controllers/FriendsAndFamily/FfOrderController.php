@@ -280,7 +280,7 @@ class FfOrderController extends Controller
                     }
 
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Error enviando correo de aprobación F&F: " . $e->getMessage());
+                    \Illuminate\Support\Facades\Log::error("Error enviando correo de aprobación: " . $e->getMessage());
                 }
             }
         }
