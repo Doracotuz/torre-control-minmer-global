@@ -211,14 +211,22 @@ class FfProductController extends Controller
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:20048',
             'is_active' => 'required|boolean',
             'area_id' => 'nullable|exists:areas,id',
+            'delete_photo' => 'nullable|boolean',
         ]);
 
         $data = $validated;
         $data['is_active'] = $request->boolean('is_active');
         $data['area_id'] = $targetAreaId;
 
-        if ($request->hasFile('photo')) {
+        if ($request->boolean('delete_photo')) {
             if ($catalog->photo_path) {
+                Storage::disk('s3')->delete($catalog->photo_path);
+            }
+            $data['photo_path'] = null;
+        }        
+
+        if ($request->hasFile('photo')) {
+            if (!$request->boolean('delete_photo') && $catalog->photo_path) {
                 Storage::disk('s3')->delete($catalog->photo_path);
             }
             $path = $request->file('photo')->store('ff_catalog_photos', 's3');

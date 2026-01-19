@@ -391,12 +391,25 @@
                                     </div>
                                     <div class="relative mt-6 flex-1 px-4 sm:px-6 space-y-6">
                                         <div class="flex justify-center mb-6">
-                                            <div class="relative group cursor-pointer" @click="$refs.photoInput.click()">
-                                                <div class="w-48 h-48 rounded-xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-300 group-hover:border-[#2c3856] transition-colors flex items-center justify-center relative">
-                                                    <img x-show="photoPreview" :src="photoPreview" class="w-full h-full object-contain">
+                                            <div class="relative group cursor-pointer"> <div class="w-48 h-48 rounded-xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-300 group-hover:border-[#2c3856] transition-colors flex items-center justify-center relative"
+                                                    @click="$refs.photoInput.click()"> <img x-show="photoPreview" :src="photoPreview" class="w-full h-full object-contain">
                                                     <img x-show="!photoPreview && form.photo_url" :src="form.photo_url" class="w-full h-full object-contain">
-                                                    <div x-show="!photoPreview && !form.photo_url" class="text-center p-4"><i class="fas fa-camera text-gray-400 text-3xl mb-2"></i><p class="text-xs text-gray-500 font-medium">Subir Imagen</p></div>
+                                                    
+                                                    <div x-show="!photoPreview && !form.photo_url" class="text-center p-4">
+                                                        <i class="fas fa-camera text-gray-400 text-3xl mb-2"></i>
+                                                        <p class="text-xs text-gray-500 font-medium">Subir Imagen</p>
+                                                    </div>
                                                 </div>
+
+                                                <div x-show="form.photo_url || photoPreview" class="absolute -top-2 -right-2 z-20">
+                                                    <button type="button" 
+                                                            @click.stop="removePhoto()" 
+                                                            class="bg-red-500 text-white rounded-full p-2 w-8 h-8 flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
+                                                            title="Eliminar imagen">
+                                                        <i class="fas fa-trash-alt text-xs"></i>
+                                                    </button>
+                                                </div>
+
                                                 <input type="file" @change="previewPhoto($event)" class="hidden" x-ref="photoInput" accept="image/*">
                                             </div>
                                         </div>
@@ -625,7 +638,7 @@
                 filters: { search: '', brand: '', type: '', status: 'all', channel: '', area_id: '' },
                 searchTimeout: null,
                 isSaving: false, photoPreview: null,
-                form: { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, upc: '', photo: null, photo_url: null, is_active: true, channels: [], area_id: {{ Auth::user()->area_id }} },
+                form: { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, upc: '', photo: null, photo_url: null, delete_photo: false, is_active: true, channels: [], area_id: {{ Auth::user()->area_id }} },
                 isUploadModalOpen: false, uploadMessage: '', uploadSuccess: false,
                 isPdfModalOpen: false, pdfPercentage: 0,
                 isDetailModalOpen: false, detailProduct: {}, isSheetModalOpen: false, sheetProduct: {},
@@ -699,6 +712,14 @@
                 closeEditor() { this.isEditorOpen = false; setTimeout(() => this.resetForm(), 300); },
                 resetForm() { this.form = { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, upc: '', photo: null, photo_url: null, is_active: true, channels: [], area_id: {{ Auth::user()->area_id }} }; this.photoPreview = null; },
                 previewPhoto(event) { const file = event.target.files[0]; if (file) { this.form.photo = file; const reader = new FileReader(); reader.onload = (e) => { this.photoPreview = e.target.result; }; reader.readAsDataURL(file); } },
+                removePhoto() {
+                    this.photoPreview = null;
+                    this.$refs.photoInput.value = '';
+                    this.form.photo_url = null;
+                    this.form.photo = null;
+                    this.form.delete_photo = true;
+                },
+
                 async saveProduct() {
                     if (this.isSaving) return;
                     this.isSaving = true;
@@ -707,7 +728,7 @@
                     Object.keys(this.form).forEach(key => {
                         if (key === 'photo_url' || key === 'channels') return;
                         let value = this.form[key];
-                        if (typeof value === 'boolean') value = value ? 1 : 0;
+                    if (typeof value === 'boolean') value = value ? 1 : 0;
                         if (key === 'photo' && !value) return;
                         if (value === null) value = '';
                         formData.append(key, value);
