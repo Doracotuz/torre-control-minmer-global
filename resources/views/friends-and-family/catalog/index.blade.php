@@ -532,28 +532,63 @@
         <div x-show="isSheetModalOpen" style="display: none;" class="fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity" @click="isSheetModalOpen = false"></div>
-                <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full">
-                    <form :action="`{{ url('ff/catalog') }}/${sheetProduct.id}/technical-sheet`" method="POST" target="_blank" class="flex flex-col h-full">
+                <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full">
+                    <form :action="`{{ url('ff/catalog') }}/${sheetProduct.id}/technical-sheet`" method="POST" target="_blank" class="flex flex-col md:flex-row h-full">
                         @csrf
-                        <div class="px-6 py-4 bg-[#2c3856] flex justify-between items-center">
-                            <h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="fas fa-file-invoice"></i> Generar Ficha Técnica</h3>
-                            <button type="button" @click="isSheetModalOpen = false" class="text-white/70 hover:text-white"><i class="fas fa-times"></i></button>
-                        </div>
-                        <div class="p-6 space-y-4">
-                            <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 mb-4">
-                                <p class="text-xs text-blue-800 font-medium">Completa los datos adicionales para generar el PDF.</p>
-                                <p class="font-bold text-[#2c3856] text-sm mt-1 truncate" x-text="sheetProduct.description"></p>
+                        
+                        <div class="w-full md:w-1/2 bg-gray-100 p-6 flex flex-col items-center justify-center border-r border-gray-100">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase mb-4 tracking-widest">Vista Previa de Estilos</p>
+                            <div class="w-full aspect-[1/1.4] bg-white shadow-xl rounded-lg overflow-hidden flex text-[8px]">
+                                <div :style="`background-color: ${sheetPrimaryColor}`" class="w-1/3 p-2 text-white flex flex-col gap-2">
+                                    <div class="w-full h-8 bg-white/20 rounded-sm mb-2"></div>
+                                    <div class="h-1 w-full bg-white/40"></div>
+                                    <div class="h-1 w-2/3 bg-white/40"></div>
+                                    <div class="mt-auto h-4 w-full bg-white/20"></div>
+                                </div>
+                                <div class="flex-1 p-3 flex flex-col gap-2">
+                                    <div :style="`color: ${sheetPrimaryColor}`" class="font-bold text-[10px]">FICHA #123</div>
+                                    <div class="h-3 w-3/4 bg-gray-200"></div>
+                                    <div class="h-20 w-full bg-gray-50 border border-gray-100 flex items-center justify-center">
+                                        <i class="fas fa-image text-gray-200 text-xl"></i>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-1">
+                                        <div class="h-8 border border-gray-100 p-1">
+                                            <div :style="`background-color: ${sheetAccentColor}`" class="h-1 w-1/2 rounded-full"></div>
+                                        </div>
+                                        <div class="h-8 border border-gray-100 p-1">
+                                            <div :style="`background-color: ${sheetAccentColor}`" class="h-1 w-1/2 rounded-full"></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div><label class="block text-sm font-bold text-gray-700 mb-1">Vol. Alcohol</label><input type="text" name="alcohol_vol" class="w-full rounded-lg border-gray-300 focus:ring-[#2c3856] focus:border-[#2c3856] text-sm"></div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="block text-sm font-bold text-gray-700 mb-1">Cajas/Cama</label><input type="number" name="boxes_per_layer" class="w-full rounded-lg border-gray-300 focus:ring-[#2c3856] focus:border-[#2c3856] text-sm"></div>
-                                <div><label class="block text-sm font-bold text-gray-700 mb-1">Camas/Tarima</label><input type="number" name="layers_per_pallet" class="w-full rounded-lg border-gray-300 focus:ring-[#2c3856] focus:border-[#2c3856] text-sm"></div>
-                            </div>
-                            <div><label class="block text-sm font-bold text-gray-700 mb-1">Peso Caja Master</label><input type="text" name="master_box_weight" class="w-full rounded-lg border-gray-300 focus:ring-[#2c3856] focus:border-[#2c3856] text-sm"></div>
                         </div>
-                        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-                            <button type="button" @click="isSheetModalOpen = false" class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg font-bold hover:bg-gray-50">Cancelar</button>
-                            <button type="submit" @click="setTimeout(() => isSheetModalOpen = false, 1000)" class="px-4 py-2 bg-[#2c3856] text-white rounded-lg font-bold hover:bg-[#1a233a] shadow-md">Generar PDF</button>
+
+                        <div class="flex-1 flex flex-col">
+                            <div class="px-6 py-4 bg-[#2c3856] text-white flex justify-between items-center">
+                                <h3 class="text-lg font-bold">Configurar Ficha Técnica</h3>
+                                <button type="button" @click="isSheetModalOpen = false"><i class="fas fa-times"></i></button>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Color Principal</label>
+                                        <input type="color" name="primary_color" x-model="sheetPrimaryColor" class="w-full h-10 p-1 rounded-lg border-gray-300 cursor-pointer shadow-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Color Acento</label>
+                                        <input type="color" name="accent_color" x-model="sheetAccentColor" class="w-full h-10 p-1 rounded-lg border-gray-300 cursor-pointer shadow-sm">
+                                    </div>
+                                </div>
+                                <div><label class="block text-sm font-bold text-gray-700">Vol. Alcohol</label><input type="text" name="alcohol_vol" class="w-full rounded-lg border-gray-300"></div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="block text-sm font-bold text-gray-700">Cajas/Cama</label><input type="number" name="boxes_per_layer" class="w-full rounded-lg border-gray-300"></div>
+                                    <div><label class="block text-sm font-bold text-gray-700">Camas/Tarima</label><input type="number" name="layers_per_pallet" class="w-full rounded-lg border-gray-300"></div>
+                                </div>
+                            </div>
+                            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 mt-auto">
+                                <button type="button" @click="isSheetModalOpen = false" class="px-4 py-2 font-bold text-gray-600">Cancelar</button>
+                                <button type="submit" class="px-6 py-2 bg-[#2c3856] text-white rounded-xl font-bold shadow-lg hover:bg-[#1a233a]">Generar PDF</button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -643,6 +678,8 @@
                 isPdfModalOpen: false, pdfPercentage: 0,
                 isDetailModalOpen: false, detailProduct: {}, isSheetModalOpen: false, sheetProduct: {},
                 viewMode: localStorage.getItem('ff_catalog_view_mode') || 'grid',
+                sheetPrimaryColor: '#00683f',
+                sheetAccentColor: '#f77b33',
 
                 init() {
                     this.fetchProducts();
@@ -798,7 +835,13 @@
                     this.isPdfModalOpen = false; 
                 },
                 openDetailModal(product) { this.detailProduct = product; this.isDetailModalOpen = true; },
-                openSheetModal(product) { this.sheetProduct = product; this.isSheetModalOpen = true; },
+                openSheetModal(product) {
+                    this.sheetProduct = product; 
+                    this.isSheetModalOpen = true; 
+                    this.sheetPrimaryColor = '#00683f';
+                    this.sheetAccentColor = '#f77b33';
+                    this.isSheetModalOpen = true;
+                },
                 closeDetailAndEdit(product) { this.isDetailModalOpen = false; setTimeout(() => { this.editProduct(product); }, 300); },
                 generateUrl(baseUrl) {
                     const params = new URLSearchParams();

@@ -586,14 +586,23 @@ class FfProductController extends Controller
             'boxes_per_layer' => 'nullable|string',
             'layers_per_pallet' => 'nullable|string',
             'master_box_weight' => 'nullable|string',
+            'primary_color' => 'nullable|string|max:7',
+            'accent_color' => 'nullable|string|max:7',
         ]);
 
         $logoUrl = $this->getLogoUrl($product->area_id);
+
+        $colors = [
+            'primary' => $request->input('primary_color') ?? '#00683f',
+            'accent'  => $request->input('accent_color')  ?? '#f77b33',
+        ];        
         
         $data = [
             'product' => $product,
             'extra' => $request->all(),
             'logo_url' => $logoUrl,
+            'colors' => $colors,
+
         ];
 
         $pdf = Pdf::loadView('friends-and-family.catalog.technical-sheet', $data);

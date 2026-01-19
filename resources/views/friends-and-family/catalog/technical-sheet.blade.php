@@ -22,7 +22,7 @@
 
         .sidebar {
             width: 30%;
-            background-color: #00683f;
+            background-color: {{ $colors['primary'] }}; 
             color: #ffffff;
             vertical-align: top;
             padding: 40px 30px;
@@ -89,7 +89,7 @@
 
         .product-sku {
             font-size: 20px;
-            color: #00683f;
+            color: {{ $colors['primary'] }};
             font-weight: bold;
             margin-bottom: 30px;
             display: inline-block;
@@ -142,7 +142,7 @@
 
         .metric-sub {
             font-size: 11px;
-            color: #00683f;
+            color: {{ $colors['primary'] }};
             margin-top: 3px;
         }
 
@@ -155,7 +155,7 @@
             overflow: hidden;
         }
         .progress-fill {
-            background: #f77b33ff;
+            background: {{ $colors['accent'] }};
             height: 100%;
         }
 
@@ -167,6 +167,10 @@
             color: #a0aec0;
             text-align: right;
         }
+
+        .metric-card[style*="background-color: #f0fff4"] {
+             border-color: {{ $colors['primary'] }}33;
+        }        
 
     </style>
 </head>
