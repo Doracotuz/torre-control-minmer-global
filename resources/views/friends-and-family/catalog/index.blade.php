@@ -580,8 +580,7 @@
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
-                                    <label class="block text-sm font-bold text-gray-700">Vol. Alcohol</label>
-                                    <input type="text" name="alcohol_vol" class="w-full rounded-lg border-gray-300">
+                                    <div><label class="block text-sm font-bold text-gray-700">Vol. Alcohol</label><input type="text" name="alcohol_vol" class="w-full rounded-lg border-gray-300"></div>
                                     <div><label class="block text-sm font-bold text-gray-700 mb-1">Peso Caja Master</label><input type="text" name="master_box_weight" class="w-full rounded-lg border-gray-300 focus:ring-[#2c3856] focus:border-[#2c3856] text-sm"></div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
