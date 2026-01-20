@@ -19,9 +19,9 @@
                     <p class="text-sm text-slate-500 font-medium mt-2">Surtido de pedidos pendientes por llegada de mercancía.</p>
                 </div>
                 
-                <div class="flex items-center gap-3">
-                    @if(Auth::user()->isSuperAdmin())
-                        <form method="GET" action="{{ route('ff.inventory.backorders') }}">
+                <div class="flex flex-wrap items-center gap-3">
+                    <form method="GET" action="{{ route('ff.inventory.backorders') }}" class="flex gap-2">
+                        @if(Auth::user()->isSuperAdmin())
                             <div class="relative group">
                                 <select name="area_id" onchange="this.form.submit()" class="appearance-none pl-5 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 focus:ring-2 focus:ring-[#ff9c00] focus:border-transparent cursor-pointer shadow-sm hover:border-[#2c3856] transition-all outline-none">
                                     <option value="">Todas las Áreas</option>
@@ -33,8 +33,20 @@
                                     <i class="fas fa-chevron-down text-xs"></i>
                                 </div>
                             </div>
-                        </form>
-                    @endif
+                        @endif
+
+                        <div class="relative group">
+                            <select name="warehouse_id" onchange="this.form.submit()" class="appearance-none pl-5 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 focus:ring-2 focus:ring-[#ff9c00] focus:border-transparent cursor-pointer shadow-sm hover:border-[#2c3856] transition-all outline-none">
+                                <option value="">Todos los Almacenes</option>
+                                @foreach($warehouses as $wh)
+                                    <option value="{{ $wh->id }}" {{ request('warehouse_id') == $wh->id ? 'selected' : '' }}>{{ $wh->description }}</option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400">
+                                <i class="fas fa-warehouse text-xs"></i>
+                            </div>
+                        </div>
+                    </form>
 
                     <a href="{{ route('ff.inventory.index') }}" class="group flex items-center gap-3 px-5 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-[#2c3856] transition-all duration-300">
                         <span class="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-[#2c3856] group-hover:text-white flex items-center justify-center transition-colors">
@@ -59,8 +71,14 @@
                     @php 
                         $product = $movements->first()->product; 
                         $totalNeeded = $movements->sum(fn($m) => abs($m->quantity));
-                        $currentStock = $product->movements()->sum('quantity');
-                        $canFulfill = $currentStock >= $totalNeeded;
+                        
+                        $currentStockQuery = $product->movements();
+                        if(request('warehouse_id')) {
+                            $currentStockQuery->where('ff_warehouse_id', request('warehouse_id'));
+                        }
+                        $currentStock = $currentStockQuery->sum('quantity');
+                        
+                        $canFulfillAny = $currentStock > 0;
                     @endphp
 
                     <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col hover:shadow-lg transition-all duration-300 relative group">
@@ -75,8 +93,10 @@
                                     <img src="{{ $product->photo_url }}" class="w-full h-full object-contain mix-blend-multiply">
                                 </div>
                                 <div class="text-right">
-                                    <span class="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Stock Actual</span>
-                                    <span class="text-2xl font-black {{ $canFulfill ? 'text-emerald-500' : 'text-rose-500' }}">
+                                    <span class="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">
+                                        Stock {{ request('warehouse_id') ? 'Local' : 'Global' }}
+                                    </span>
+                                    <span class="text-2xl font-black {{ $currentStock >= $totalNeeded ? 'text-emerald-500' : ($currentStock > 0 ? 'text-amber-500' : 'text-rose-500') }}">
                                         {{ $currentStock }}
                                     </span>
                                 </div>
@@ -110,7 +130,13 @@
                                                 Folio #{{ $movement->folio }}
                                             </a>
                                         </div>
-                                        <span class="text-lg font-black text-rose-500">-{{ abs($movement->quantity) }}</span>
+                                        <div class="text-right">
+                                            <span class="block text-lg font-black text-rose-500">-{{ abs($movement->quantity) }}</span>
+                                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded border 
+                                                {{ $movement->warehouse ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-500 border-gray-100' }}">
+                                                {{ $movement->warehouse ? $movement->warehouse->code : 'Global' }}
+                                            </span>
+                                        </div>
                                     </div>
 
                                     <div class="flex items-center gap-2 mb-3">

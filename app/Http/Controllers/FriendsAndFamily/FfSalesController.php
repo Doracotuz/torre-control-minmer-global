@@ -25,6 +25,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use App\Models\Area;
+use App\Models\FfWarehouse;
 
 class FfSalesController extends Controller
 {
@@ -96,6 +97,13 @@ class FfSalesController extends Controller
         $channelsQuery = FfSalesChannel::where('is_active', true);
         $transportsQuery = FfTransportLine::where('is_active', true);
         $paymentsQuery = FfPaymentCondition::where('is_active', true);
+        $warehousesQuery = FfWarehouse::where('is_active', true);
+        
+        if (!$user->isSuperAdmin()) {
+            $warehousesQuery->where('area_id', $user->area_id);
+        }
+        
+        $warehouses = $warehousesQuery->orderBy('description')->get();        
 
         if (!$user->isSuperAdmin()) {
             $clientsQuery->where('area_id', $user->area_id);
@@ -111,7 +119,7 @@ class FfSalesController extends Controller
 
         $nextFolio = $this->getNextFolio();            
         
-        return view('friends-and-family.sales.index', compact('products', 'nextFolio', 'clients', 'channels', 'transports', 'payments', 'editFolio'));
+        return view('friends-and-family.sales.index', compact('products', 'nextFolio', 'clients', 'channels', 'transports', 'payments', 'editFolio', 'warehouses'));
     }
 
     public function updateCartItem(Request $request)
@@ -256,6 +264,7 @@ class FfSalesController extends Controller
                 'ff_sales_channel_id' => $header->ff_sales_channel_id,
                 'ff_transport_line_id' => $header->ff_transport_line_id,
                 'ff_payment_condition_id' => $header->ff_payment_condition_id,
+                'ff_warehouse_id' => $header->ff_warehouse_id,
             ],
             'cart_items' => $cartItemsData,
             'discounts' => $discountsData,
@@ -379,6 +388,14 @@ class FfSalesController extends Controller
                     }
                 })
             ],
+            'ff_warehouse_id' => [
+                'required', 
+                Rule::exists('ff_warehouses', 'id')->where(function ($query) {
+                    if (!Auth::user()->isSuperAdmin()) {
+                        $query->where('area_id', Auth::user()->area_id);
+                    }
+                })
+            ],
             'ff_transport_line_id' => [
                 'nullable',
                 Rule::exists('ff_transport_lines', 'id')->where(function ($query) {
@@ -448,8 +465,9 @@ class FfSalesController extends Controller
                 }
 
                 $totalLine = $quantity * $finalPrice;
-                
-                $currentStock = $product->movements()->sum('quantity');
+                $currentStock = $product->movements()
+                    ->where('ff_warehouse_id', $request->ff_warehouse_id)
+                    ->sum('quantity');
                 $isBackorder = ($currentStock - $quantity) < 0;
                 
                 if ($isBackorder) {
@@ -483,6 +501,7 @@ class FfSalesController extends Controller
                     'ff_client_id' => $request->ff_client_id,
                     'ff_client_branch_id' => $request->ff_client_branch_id,
                     'ff_sales_channel_id' => $request->ff_sales_channel_id,
+                    'ff_warehouse_id' => $request->ff_warehouse_id, 
                     'ff_transport_line_id' => $request->ff_transport_line_id,
                     'ff_payment_condition_id' => $request->ff_payment_condition_id,
                 ]);
@@ -529,6 +548,12 @@ class FfSalesController extends Controller
         $logoUrl = $this->getLogoUrl($user->area);
         $companyInfo = $this->getCompanyInfo($user->area_id);
 
+        $warehouseName = 'N/A';
+        if ($request->ff_warehouse_id) {
+            $wh = \App\Models\FfWarehouse::find($request->ff_warehouse_id);
+            if ($wh) $warehouseName = $wh->code . ' - ' . $wh->description;
+        }
+
         $pdfData = array_merge([
             'items' => $pdfItems,
             'grandTotal' => $grandTotal,
@@ -545,6 +570,7 @@ class FfSalesController extends Controller
             'vendedor_name' => $user->name,
             'logo_url' => $logoUrl,
             'order_type' => $orderType,
+            'warehouse_name' => $warehouseName,
         ], $companyInfo);
 
         $dompdf = new Dompdf();
@@ -576,6 +602,7 @@ class FfSalesController extends Controller
                     'items' => $pdfItems,
                     'logo_url' => $logoUrl,
                     'has_backorder' => $orderHasBackorder,
+                    'warehouse_name' => $warehouseName,
                 ], $companyInfo);
                 
                 foreach($admins as $admin) {

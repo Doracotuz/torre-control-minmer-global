@@ -26,9 +26,9 @@
                     </p>
                 </div>
                 
-                <div class="flex flex-wrap items-center gap-4">
-                    @if(Auth::user()->isSuperAdmin())
-                        <form method="GET" action="{{ route('ff.inventory.backorder_relations') }}" class="h-full">
+                <div class="flex flex-wrap items-center gap-4 h-full">
+                    <form method="GET" action="{{ route('ff.inventory.backorder_relations') }}" class="flex gap-2 h-full">
+                        @if(Auth::user()->isSuperAdmin())
                             <div class="relative group h-full">
                                 <select name="area_id" onchange="this.form.submit()" class="appearance-none h-full pl-5 pr-10 py-4 bg-white border border-slate-100 rounded-[2rem] text-sm font-bold text-[#2c3856] focus:ring-2 focus:ring-[#ff9c00] focus:border-transparent cursor-pointer shadow-[0_10px_40px_rgba(0,0,0,0.03)] outline-none hover:-translate-y-1 transition-transform duration-300">
                                     <option value="">Todas las Áreas</option>
@@ -40,8 +40,20 @@
                                     <i class="fas fa-chevron-down text-xs"></i>
                                 </div>
                             </div>
-                        </form>
-                    @endif
+                        @endif
+
+                        <div class="relative group h-full">
+                            <select name="warehouse_id" onchange="this.form.submit()" class="appearance-none h-full pl-5 pr-10 py-4 bg-white border border-slate-100 rounded-[2rem] text-sm font-bold text-[#2c3856] focus:ring-2 focus:ring-[#ff9c00] focus:border-transparent cursor-pointer shadow-[0_10px_40px_rgba(0,0,0,0.03)] outline-none hover:-translate-y-1 transition-transform duration-300">
+                                <option value="">Todos los Almacenes</option>
+                                @foreach($warehouses as $wh)
+                                    <option value="{{ $wh->id }}" {{ request('warehouse_id') == $wh->id ? 'selected' : '' }}>{{ $wh->description }}</option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+                                <i class="fas fa-warehouse text-xs"></i>
+                            </div>
+                        </div>
+                    </form>
 
                     <div class="bg-white px-6 py-4 rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-slate-100 flex items-center gap-4 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
                         <div class="absolute top-0 right-0 w-16 h-16 bg-purple-50 rounded-bl-[50px] -mr-6 -mt-6 transition-transform group-hover:scale-110"></div>
@@ -75,7 +87,7 @@
                         <i class="fas fa-check text-4xl text-white"></i>
                     </div>
                     <h3 class="text-2xl font-black text-[#2c3856] mb-2">¡Todo en Orden!</h3>
-                    <p class="text-slate-500 font-medium">No existen pasivos de inventario ni backorders activos.</p>
+                    <p class="text-slate-500 font-medium">No existen pasivos de inventario ni backorders activos para los filtros seleccionados.</p>
                 </div>
             @else
                 <div class="grid grid-cols-1 gap-6">
@@ -150,7 +162,6 @@
                                             <span class="w-2 h-2 bg-[#ff9c00] rounded-full mr-3 animate-pulse"></span>
                                             Detalle de Compromisos
                                         </p>
-                                        <button class="text-xs font-bold text-blue-500 hover:text-blue-700 transition-colors">Exportar Detalle</button>
                                     </div>
                                     
                                     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -158,6 +169,7 @@
                                             <thead class="text-[10px] font-bold text-slate-400 uppercase bg-slate-50/50 border-b border-slate-100 tracking-wider">
                                                 <tr>
                                                     <th class="px-6 py-4">Folio</th>
+                                                    <th class="px-6 py-4">Almacén</th>
                                                     <th class="px-6 py-4">Cliente / Empresa</th>
                                                     <th class="px-6 py-4">Vendedor</th>
                                                     <th class="px-6 py-4 text-center">Fecha Venta</th>
@@ -173,6 +185,12 @@
                                                             <a href="{{ route('ff.orders.show', $mov->folio) }}" class="font-mono font-bold text-[#2c3856] bg-slate-100 px-2 py-1 rounded hover:bg-[#2c3856] hover:text-white transition-colors">
                                                                 #{{ $mov->folio }}
                                                             </a>
+                                                        </td>
+                                                        <td class="px-6 py-4">
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg border text-[10px] font-bold uppercase tracking-wide
+                                                                {{ $mov->warehouse ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-gray-50 text-gray-500 border-gray-100' }}">
+                                                                {{ $mov->warehouse ? $mov->warehouse->description : 'Global' }}
+                                                            </span>
                                                         </td>
                                                         <td class="px-6 py-4">
                                                             <p class="font-bold text-slate-700">{{ $mov->client_name }}</p>

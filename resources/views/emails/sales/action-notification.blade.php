@@ -90,6 +90,13 @@
                                     <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #777777; font-size: 13px; font-weight: bold;">Empresa:</td>
                                     <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #333333; font-size: 13px;">{{ $data['company_name'] }}</td>
                                 </tr>
+
+                                @if(!empty($data['warehouse_name']))
+                                <tr>
+                                    <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #777777; font-size: 13px; font-weight: bold;">Almacén:</td>
+                                    <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; color: #333333; font-size: 13px;">{{ $data['warehouse_name'] }}</td>
+                                </tr>
+                                @endif                                
                                 
                                 @if($type != 'backorder_filled')
                                 <tr>

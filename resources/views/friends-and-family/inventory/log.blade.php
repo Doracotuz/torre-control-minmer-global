@@ -16,10 +16,10 @@
                         <i class="fas fa-arrow-left mr-2"></i> Volver a Inventario
                     </a>
 
-                    <a href="{{ route('ff.inventory.log.exportCsv') }}" 
+                    <button @click="exportLog()" 
                        class="inline-flex items-center px-5 py-2 bg-[#2c3856] text-white rounded-full text-sm font-bold shadow-md hover:bg-[#1e273d] hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300">
                         <i class="fas fa-file-csv mr-2"></i> Exportar Registro
-                    </a>
+                    </button>
                 </div>
             </div>
         </x-slot>
@@ -62,38 +62,54 @@
                 
                 <div class="p-6 border-b border-gray-100 flex flex-col lg:flex-row gap-4 justify-between items-center bg-white">
                     
-                    <div class="flex flex-col md:flex-row gap-4 w-full lg:w-1/2">
+                    <form action="{{ request()->url() }}" method="GET" class="flex flex-col md:flex-row gap-4 w-full lg:w-2/3">
                         @if(Auth::user()->isSuperAdmin())
-                        <div class="relative w-full md:w-1/2 group">
-                            <form action="{{ request()->url() }}" method="GET">
-                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <i class="fas fa-building text-gray-300 group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
-                                </div>
-                                <select name="area_id" onchange="this.form.submit()" 
-                                        class="block w-full pl-11 pr-10 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all duration-200 font-[Montserrat] text-sm appearance-none cursor-pointer">
-                                    <option value="">Todas las Áreas</option>
-                                    @foreach($areas as $area)
-                                        <option value="{{ $area->id }}" {{ $currentArea == $area->id ? 'selected' : '' }}>
-                                            {{ $area->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                                    <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
-                                </div>
-                            </form>
+                        <div class="relative w-full md:w-1/3 group">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fas fa-building text-gray-300 group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
+                            </div>
+                            <select name="area_id" onchange="this.form.submit()" 
+                                    class="block w-full pl-11 pr-10 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all duration-200 font-[Montserrat] text-sm appearance-none cursor-pointer font-bold">
+                                <option value="">Todas las Áreas</option>
+                                @foreach($areas as $area)
+                                    <option value="{{ $area->id }}" {{ $currentArea == $area->id ? 'selected' : '' }}>
+                                        {{ $area->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </div>
                         </div>
                         @endif
 
-                        <div class="relative w-full {{ Auth::user()->isSuperAdmin() ? 'md:w-1/2' : 'md:w-full' }} group">
+                        <div class="relative w-full md:w-1/3 group">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fas fa-warehouse text-gray-300 group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
+                            </div>
+                            <select name="warehouse_id" onchange="this.form.submit()" 
+                                    class="block w-full pl-11 pr-10 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all duration-200 font-[Montserrat] text-sm appearance-none cursor-pointer font-bold">
+                                <option value="">Todos los Almacenes</option>
+                                @foreach($warehouses as $wh)
+                                    <option value="{{ $wh->id }}" {{ request('warehouse_id') == $wh->id ? 'selected' : '' }}>
+                                        {{ $wh->description }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </div>
+                        </div>
+
+                        <div class="relative w-full md:w-1/3 group">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                 <i class="fas fa-search text-gray-300 group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
                             </div>
                             <input type="text" x-model="search" 
                                 class="block w-full pl-11 pr-4 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all duration-200 placeholder-gray-400 font-[Montserrat] text-sm" 
-                                placeholder="Buscar por SKU, usuario o motivo...">
+                                placeholder="Buscar en resultados...">
                         </div>
-                    </div>
+                    </form>
 
                     <div class="flex flex-wrap gap-3 w-full lg:w-auto justify-end items-center">
                         <div class="flex bg-[#F3F4F6] p-1 rounded-xl">
@@ -127,6 +143,7 @@
                         <thead>
                             <tr class="bg-[#F9FAFB] border-b border-gray-100">
                                 <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider font-[Montserrat]">Producto</th>
+                                <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider font-[Montserrat]">Almacén</th>
                                 <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider font-[Montserrat]">Usuario</th>
                                 <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider text-center font-[Montserrat]">Movimiento</th>
                                 <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider font-[Montserrat]">Motivo</th>
@@ -157,6 +174,14 @@
                                                 </div>
                                             </div>
                                         </div>
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border" 
+                                              :class="mov.warehouse ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-gray-50 text-gray-500 border-gray-200'">
+                                            <i class="fas fa-warehouse mr-1.5 text-[10px]"></i>
+                                            <span x-text="mov.warehouse ? mov.warehouse.description : 'Global'"></span>
+                                        </span>
                                     </td>
 
                                     <td class="px-6 py-4">
@@ -191,7 +216,7 @@
 
                             <template x-if="filteredMovements.length === 0">
                                 <tr>
-                                    <td colspan="5" class="px-6 py-16 text-center">
+                                    <td colspan="6" class="px-6 py-16 text-center">
                                         <div class="flex flex-col items-center justify-center">
                                             <div class="bg-gray-50 rounded-full p-6 mb-4 shadow-inner">
                                                 <i class="fas fa-clipboard-list text-gray-300 text-3xl"></i>
@@ -208,13 +233,13 @@
                 
                 @if($movements->hasPages())
                 <div class="bg-gray-50/50 px-6 py-4 border-t border-gray-100">
-                    {{ $movements->links() }}
+                    {{ $movements->appends(request()->query())->links() }}
                 </div>
                 @endif
                 
                 <div class="bg-gray-50/50 px-6 py-2 border-t border-gray-100 flex items-center justify-between text-xs font-medium text-gray-400">
                     <span x-text="`Visualizando ${filteredMovements.length} registros en esta página`"></span>
-                    <span>Mostrando últimos 50 registros</span>
+                    <span>Mostrando últimos 50 registros por página</span>
                 </div>
             </div>
         </div>
@@ -235,21 +260,21 @@
                     const searchLower = this.search.toLowerCase();
                     
                     return this.movements.filter(mov => {
-                        // Filter by Type
                         if (this.filterType === 'in' && mov.quantity <= 0) return false;
                         if (this.filterType === 'out' && mov.quantity >= 0) return false;
 
-                        // Search
                         if (this.search) {
                             const productName = mov.product ? mov.product.description.toLowerCase() : '';
                             const productSku = mov.product ? mov.product.sku.toLowerCase() : '';
                             const userName = mov.user ? mov.user.name.toLowerCase() : '';
                             const reason = mov.reason.toLowerCase();
+                            const warehouse = mov.warehouse ? mov.warehouse.description.toLowerCase() : 'global';
                             
                             return productName.includes(searchLower) || 
                                    productSku.includes(searchLower) || 
                                    userName.includes(searchLower) || 
-                                   reason.includes(searchLower);
+                                   reason.includes(searchLower) ||
+                                   warehouse.includes(searchLower);
                         }
                         return true;
                     });
@@ -285,6 +310,12 @@
                 resetFilters() {
                     this.search = '';
                     this.filterType = 'all';
+                    window.location.href = "{{ route('ff.inventory.log') }}";
+                },
+
+                exportLog() {
+                    const params = new URLSearchParams(window.location.search);
+                    window.location.href = "{{ route('ff.inventory.log.exportCsv') }}?" + params.toString();
                 }
             }
         }

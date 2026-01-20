@@ -20,7 +20,9 @@
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 
-    <div x-data="salesManager()" x-init='init(@json($products), {{ $nextFolio }}, @json($clients), @json($channels), @json($transports), @json($payments), {{ $editFolio ?? "null" }})' class="bg-[#E8ECF7] font-sans text-gray-800 min-h-screen pb-12">
+    <div x-data="salesManager()" 
+    x-init='init(@json($products), {{ $nextFolio }}, @json($clients), @json($channels), @json($transports), @json($payments), @json($warehouses), {{ $editFolio ?? "null" }})' 
+    class="bg-[#E8ECF7] font-sans text-gray-800 min-h-screen pb-12">
         
         <div x-show="flashMessage" x-cloak 
              x-transition:enter="transform ease-out duration-300"
@@ -79,6 +81,20 @@
                                     </select>
                                 </div>
 
+                                <div class="relative min-w-[200px]">
+                                    <div x-show="!form.ff_warehouse_id" class="absolute -top-2 -right-2 w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
+                                    
+                                    <select x-model="form.ff_warehouse_id" 
+                                            @change="onWarehouseChangeConfirm()"
+                                            class="w-full border-2 text-xs rounded-lg py-2.5 px-3 font-bold transition-colors focus:ring-0"
+                                            :class="form.ff_warehouse_id ? 'bg-white border-gray-200 text-[#2c3856]' : 'bg-orange-50 border-orange-400 text-orange-800 animate-pulse'">
+                                        <option value="">Selecciona Almacén (Requerido)</option>
+                                        <template x-for="wh in catalogs.warehouses" :key="wh.id">
+                                            <option :value="wh.id" x-text="wh.code + ' - ' + wh.description"></option>
+                                        </template>
+                                    </select>
+                                </div>                                
+
                                 <div class="flex bg-gray-100 p-1 rounded-lg self-start sm:self-auto flex-shrink-0">
                                     <button @click="toggleLayout()" 
                                         :class="layoutMode === 'sidebar' ? 'text-gray-400 hover:text-gray-600' : 'bg-white text-[#2c3856] shadow-sm'"
@@ -136,13 +152,15 @@
                         </div>
                     </div>
 
-                    <div x-show="!form.ff_sales_channel_id" class="flex flex-col items-center justify-center py-32 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 text-center">
+                    <div x-show="!form.ff_sales_channel_id || !form.ff_warehouse_id" class="flex flex-col items-center justify-center py-32 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 text-center">
                         <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-6 animate-bounce">
-                            <i class="fas fa-store text-4xl text-orange-500"></i>
+                            <i class="fas fa-warehouse text-4xl text-orange-500"></i>
                         </div>
-                        <h3 class="text-xl font-bold text-[#2c3856] mb-2">Selecciona un Canal de Venta</h3>
+                        <h3 class="text-xl font-bold text-[#2c3856] mb-2">Configuración Requerida</h3>
                         <p class="text-gray-500 max-w-md mx-auto text-sm">
-                            Para garantizar la disponibilidad y precios correctos, por favor indica primero a qué canal pertenece este pedido.
+                            Para garantizar la disponibilidad y precios correctos, por favor selecciona el 
+                            <span class="font-bold text-orange-600">Canal de Venta</span> y el 
+                            <span class="font-bold text-orange-600">Almacén de Salida</span>.
                         </p>
                     </div>
 
@@ -730,7 +748,8 @@
                     clients: [],
                     channels: [],
                     transports: [],
-                    payments: []
+                    payments: [],
+                    warehouses: []
                 },
                 availableBranches: [],
                 viewMode: localStorage.getItem('ff_view_mode') || 'grid',
@@ -764,7 +783,10 @@
                     observations: '', email_recipients: '',
                     ff_client_id: '', ff_client_branch_id: '',
                     ff_sales_channel_id: '', ff_transport_line_id: '', ff_payment_condition_id: '',
+                    ff_warehouse_id: '',
                     order_type: 'normal',
+                    lastValidWarehouseId: '',
+                    lastValidChannelId: '',
                     is_loan_returned: false
                 },
                 
@@ -777,7 +799,7 @@
                 pdfModalOpen: false,
                 pdfModalUrl: '',
 
-                init(initialProducts, nextFolio, clients, channels, transports, payments, editFolio = null) {
+                init(initialProducts, nextFolio, clients, channels, transports, payments, warehouses, editFolio = null) {
                     const productsArray = Array.isArray(initialProducts) ? initialProducts : [];
                     this.form.folio = nextFolio;
                     
@@ -785,6 +807,7 @@
                     this.catalogs.channels = channels || [];
                     this.catalogs.transports = transports || [];
                     this.catalogs.payments = payments || [];
+                    this.catalogs.warehouses = warehouses || [];
 
                     const savedEmails = localStorage.getItem('ff_email_recipients');
                     if (savedEmails) this.form.email_recipients = savedEmails;
@@ -835,6 +858,21 @@
                     });
 
                 },
+
+                onWarehouseChangeConfirm() {
+                    if (this.localCart.size > 0) {
+                        if (confirm('Al cambiar el almacén, se vaciará el carrito actual para validar la disponibilidad de stock en la nueva ubicación. ¿Continuar?')) {
+                            this.localCart.clear();
+                            this.productDiscounts = {};
+                            this.lastValidWarehouseId = this.form.ff_warehouse_id;
+                            this.showFlashMessage('Almacén cambiado. Carrito vaciado.', 'info');
+                        } else {
+                            this.form.ff_warehouse_id = this.lastValidWarehouseId;
+                        }
+                    } else {
+                        this.lastValidWarehouseId = this.form.ff_warehouse_id;
+                    }
+                },               
 
                 get paginatedProducts() {
                     const start = (this.currentPage - 1) * this.itemsPerPage;
@@ -888,9 +926,14 @@
                         if (confirm('Al cambiar el canal de venta, se vaciará el carrito actual para validar la disponibilidad de productos. ¿Continuar?')) {
                             this.localCart.clear();
                             this.productDiscounts = {};
+                            this.lastValidChannelId = this.form.ff_sales_channel_id;
+                            this.currentPage = 1; 
                         } else {
-                            // Revertir cambio si es necesario, aqui debo colocar la lógica para revertir el cambio
+                            this.form.ff_sales_channel_id = this.lastValidChannelId;
                         }
+                    } else {
+                        this.lastValidChannelId = this.form.ff_sales_channel_id;
+                        this.currentPage = 1;
                     }
                 },
 
@@ -1190,31 +1233,40 @@
                 async loadOrderToEdit() {
                     if (!this.searchFolio) return;
                     this.isSearching = true;
+                    
                     try {
                         const response = await fetch("{{ route('ff.sales.searchOrder') }}?folio=" + this.searchFolio);
                         const data = await response.json();
+                        
                         if (!response.ok) throw new Error(data.message);
                         
                         this.form = { ...this.form, ...data.client_data };
+                        this.form.ff_warehouse_id = data.client_data.ff_warehouse_id || '';
+                        this.lastValidWarehouseId = this.form.ff_warehouse_id;
+                        this.lastValidChannelId = this.form.ff_sales_channel_id || '';
                         this.localCart.clear();
-                        if (data.cart_items) data.cart_items.forEach(item => this.localCart.set(item.product_id, item.quantity));
-                        
+                        if (data.cart_items) {
+                            data.cart_items.forEach(item => this.localCart.set(item.product_id, item.quantity));
+                        }
                         this.productDiscounts = data.discounts || {};
                         this.existingEvidences = data.evidences || [];
                         this.currentDocs = data.documents || [];
                         this.newFiles = [];
-                        
                         if (this.form.ff_client_id) {
                             const client = this.catalogs.clients.find(c => c.id == this.form.ff_client_id);
                             if(client) {
                                 this.availableBranches = client.branches || [];
                             }
                         }
-
                         this.editMode = true;
                         this.searchModalOpen = false;
                         this.showFlashMessage('Pedido cargado. Puede editar.', 'success');
-                    } catch (e) { alert(e.message || 'Error al buscar.'); } finally { this.isSearching = false; }
+
+                    } catch (e) { 
+                        alert(e.message || 'Error al buscar.'); 
+                    } finally { 
+                        this.isSearching = false; 
+                    }
                 },
 
                 cancelEditMode() {

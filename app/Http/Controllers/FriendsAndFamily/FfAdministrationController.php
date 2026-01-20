@@ -10,6 +10,7 @@ use App\Models\FfTransportLine;
 use App\Models\FfPaymentCondition;
 use App\Models\FfClientBranch;
 use App\Models\FfClientDeliveryCondition;
+use App\Models\FfWarehouse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -40,6 +41,11 @@ class FfAdministrationController extends Controller
             'title' => 'Condiciones de Pago',
             'icon' => 'fa-credit-card'
         ],
+        'warehouses' => [
+            'model' => FfWarehouse::class,
+            'title' => 'Almacenes',
+            'icon' => 'fa-warehouse'
+        ],
     ];
 
     public function index()
@@ -63,7 +69,12 @@ class FfAdministrationController extends Controller
             $query->with('area');
         }
 
-        $items = $query->orderBy('name')->get();
+        if ($type === 'warehouses') {
+            $items = $query->orderBy('code')->get();
+        } else {
+            $items = $query->orderBy('name')->get();
+        }
+        
         $areas = Auth::user()->isSuperAdmin() ? Area::all() : [];
 
         return view('friends-and-family.admin.catalog', compact('items', 'type', 'config', 'areas'));
@@ -80,23 +91,45 @@ class FfAdministrationController extends Controller
         $user = Auth::user();
         $targetAreaId = $user->isSuperAdmin() ? $request->input('area_id') : $user->area_id;
 
-        $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique($tableName)->where(function ($query) use ($targetAreaId) {
-                    return $query->where('area_id', $targetAreaId);
-                })
-            ],
-            'area_id' => $user->isSuperAdmin() ? 'required|exists:areas,id' : 'nullable'
-        ]);
+        if ($type === 'warehouses') {
+            $request->validate([
+                'code' => [
+                    'required', 'string', 'max:50',
+                    Rule::unique($tableName)->where(function ($query) use ($targetAreaId) {
+                        return $query->where('area_id', $targetAreaId);
+                    })
+                ],
+                'description' => 'required|string|max:255',
+                'address' => 'required|string|max:500',
+                'phone' => 'required|string|max:50',
+                'area_id' => $user->isSuperAdmin() ? 'required|exists:areas,id' : 'nullable'
+            ]);
 
-        $modelClass::create([
-            'name' => $request->name,
-            'is_active' => true,
-            'area_id' => $targetAreaId
-        ]);
+            $modelClass::create([
+                'code' => $request->code,
+                'description' => $request->description,
+                'address' => $request->address,
+                'phone' => $request->phone,
+                'is_active' => true,
+                'area_id' => $targetAreaId
+            ]);
+        } else {
+            $request->validate([
+                'name' => [
+                    'required', 'string', 'max:255',
+                    Rule::unique($tableName)->where(function ($query) use ($targetAreaId) {
+                        return $query->where('area_id', $targetAreaId);
+                    })
+                ],
+                'area_id' => $user->isSuperAdmin() ? 'required|exists:areas,id' : 'nullable'
+            ]);
+
+            $modelClass::create([
+                'name' => $request->name,
+                'is_active' => true,
+                'area_id' => $targetAreaId
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Registro creado correctamente.');
     }
@@ -118,19 +151,40 @@ class FfAdministrationController extends Controller
 
         $targetAreaId = $user->isSuperAdmin() && $request->filled('area_id') ? $request->input('area_id') : $item->area_id;
 
-        $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique($tableName)->ignore($id)->where(function ($query) use ($targetAreaId) {
-                    return $query->where('area_id', $targetAreaId);
-                })
-            ],
-            'area_id' => $user->isSuperAdmin() ? 'required|exists:areas,id' : 'nullable'
-        ]);
+        if ($type === 'warehouses') {
+            $request->validate([
+                'code' => [
+                    'required', 'string', 'max:50',
+                    Rule::unique($tableName)->ignore($id)->where(function ($query) use ($targetAreaId) {
+                        return $query->where('area_id', $targetAreaId);
+                    })
+                ],
+                'description' => 'required|string|max:255',
+                'address' => 'required|string|max:500',
+                'phone' => 'required|string|max:50',
+                'area_id' => $user->isSuperAdmin() ? 'required|exists:areas,id' : 'nullable'
+            ]);
 
-        $data = ['name' => $request->name];
+            $data = [
+                'code' => $request->code,
+                'description' => $request->description,
+                'address' => $request->address,
+                'phone' => $request->phone,
+            ];
+        } else {
+            $request->validate([
+                'name' => [
+                    'required', 'string', 'max:255',
+                    Rule::unique($tableName)->ignore($id)->where(function ($query) use ($targetAreaId) {
+                        return $query->where('area_id', $targetAreaId);
+                    })
+                ],
+                'area_id' => $user->isSuperAdmin() ? 'required|exists:areas,id' : 'nullable'
+            ]);
+
+            $data = ['name' => $request->name];
+        }
+
         if ($user->isSuperAdmin()) {
             $data['area_id'] = $targetAreaId;
         }

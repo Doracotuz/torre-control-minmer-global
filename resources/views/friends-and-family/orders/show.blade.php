@@ -206,6 +206,25 @@
                             </p>
                         </div>
                         @endif
+
+                        <div class="bg-white rounded-[2rem] p-8 shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100 mt-6">
+                            <h3 class="font-bold text-[#2c3856] mb-4 flex items-center gap-2">
+                                <i class="fas fa-warehouse text-[#ff9c00]"></i> Origen del Inventario
+                            </h3>
+                            <div class="pl-6 border-l-2 border-slate-100 ml-1.5">
+                                @if($header->ff_warehouse_id)
+                                    @php $wh = \App\Models\FfWarehouse::find($header->ff_warehouse_id); @endphp
+                                    @if($wh)
+                                        <p class="text-lg font-bold text-slate-700">{{ $wh->code }} - {{ $wh->description }}</p>
+                                        <p class="text-xs text-slate-400 font-mono mt-1">{{ $wh->address }}</p>
+                                    @else
+                                        <p class="text-sm text-slate-500 italic">Almacén no encontrado (ID: {{ $header->ff_warehouse_id }})</p>
+                                    @endif
+                                @else
+                                    <p class="text-sm text-slate-500 italic">Inventario General (Sin almacén específico)</p>
+                                @endif
+                            </div>
+                        </div>>                        
                     </div>
 
                     <div class="bg-white rounded-[2rem] shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100 overflow-hidden">

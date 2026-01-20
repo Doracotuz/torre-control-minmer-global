@@ -95,7 +95,7 @@
         <div class="blob bg-blue-200/40 w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
         <div class="blob bg-orange-100/60 w-[500px] h-[500px] bottom-0 right-0 translate-x-1/3 translate-y-1/3"></div>
 
-        <div class="relative z-10 max-w-7xl mx-auto">
+        <div class="relative z-10 max-w-8xl mx-auto">
             
             <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6 animate-entry" style="animation-delay: 0s;">
                 <div>
@@ -120,9 +120,9 @@
                 </a>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
                 
-                <a href="{{ route('ff.admin.show', 'clients') }}" class="modern-card group relative h-[420px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.1s;">
+                <a href="{{ route('ff.admin.show', 'clients') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.1s;">
                     <div class="card-img-container absolute inset-0 z-0 h-full w-full">
                         <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=600&q=80" 
                              class="card-bg-img w-full h-full object-cover" alt="Clientes">
@@ -153,7 +153,7 @@
                     </div>
                 </a>
 
-                <a href="{{ route('ff.admin.show', 'channels') }}" class="modern-card group relative h-[420px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.2s;">
+                <a href="{{ route('ff.admin.show', 'channels') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.2s;">
                     <div class="card-img-container absolute inset-0 z-0 h-full w-full">
                         <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80" 
                              class="card-bg-img w-full h-full object-cover" alt="Canales">
@@ -184,7 +184,7 @@
                     </div>
                 </a>
 
-                <a href="{{ route('ff.admin.show', 'transport') }}" class="modern-card group relative h-[420px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.3s;">
+                <a href="{{ route('ff.admin.show', 'transport') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.3s;">
                     <div class="card-img-container absolute inset-0 z-0 h-full w-full">
                         <img src="https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=600&q=80" 
                              class="card-bg-img w-full h-full object-cover" alt="Transporte">
@@ -215,7 +215,7 @@
                     </div>
                 </a>
 
-                <a href="{{ route('ff.admin.show', 'payment') }}" class="modern-card group relative h-[420px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.4s;">
+                <a href="{{ route('ff.admin.show', 'payment') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.4s;">
                     <div class="card-img-container absolute inset-0 z-0 h-full w-full">
                         <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80" 
                              class="card-bg-img w-full h-full object-cover" alt="Pagos">
@@ -245,6 +245,37 @@
                         </div>
                     </div>
                 </a>
+
+                <a href="{{ route('ff.admin.show', 'warehouses') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.5s;">
+                    <div class="card-img-container absolute inset-0 z-0 h-full w-full">
+                        <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80" 
+                            class="card-bg-img w-full h-full object-cover" alt="Almacenes">
+                    </div>
+
+                    <div class="relative z-10 h-full flex flex-col justify-between p-8 text-white">
+                        <div class="flex justify-between items-start">
+                            <div class="glass-icon w-16 h-16 rounded-2xl flex items-center justify-center text-3xl">
+                                <i class="fas fa-warehouse"></i>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex items-center gap-2 mb-3 opacity-80">
+                                <span class="h-px w-6 bg-[#ff9c00]"></span>
+                                <span class="text-xs font-bold uppercase tracking-wider">Infraestructura</span>
+                            </div>
+                            <h3 class="font-montserrat font-bold text-3xl mb-3 leading-none group-hover:text-[#ff9c00] transition-colors">Almacenes</h3>
+                            <p class="text-gray-300 text-sm font-light leading-relaxed mb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500 absolute group-hover:relative">
+                                Gestión de centros de distribución, bodegas y puntos de almacenamiento físico.
+                            </p>
+                            
+                            <div class="action-arrow flex items-center gap-2 text-[#ff9c00] font-bold text-sm uppercase tracking-wide">
+                                <span>Gestionar</span>
+                                <i class="fas fa-long-arrow-alt-right"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>                
 
             </div>
 

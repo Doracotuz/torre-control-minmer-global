@@ -28,6 +28,8 @@ class ffInventoryMovement extends Model
         'ff_client_branch_id',
         'ff_sales_channel_id',
         'ff_transport_line_id',
+        'ff_payment_condition_id',
+        'ff_warehouse_id',
         'order_type',
         'discount_percentage',
         'is_loan_returned',
@@ -66,21 +68,30 @@ class ffInventoryMovement extends Model
     { 
         return $this->belongsTo(FfClient::class, 'ff_client_id'); 
     }
+
     public function branch() 
     { 
         return $this->belongsTo(FfClientBranch::class, 'ff_client_branch_id'); 
     }
+
     public function channel() 
     { 
         return $this->belongsTo(FfSalesChannel::class, 'ff_sales_channel_id'); 
     }
+
     public function transport() 
     { 
         return $this->belongsTo(FfTransportLine::class, 'ff_transport_line_id'); 
     }
+
     public function payment() 
     { 
         return $this->belongsTo(FfPaymentCondition::class, 'ff_payment_condition_id'); 
+    }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(FfWarehouse::class, 'ff_warehouse_id');
     }
 
     public function getEvidenceUrl($number)
@@ -96,5 +107,4 @@ class ffInventoryMovement extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }    
-
 }

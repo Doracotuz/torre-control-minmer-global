@@ -63,6 +63,23 @@
                     @endif
 
                     <div class="md:col-span-2">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Almacén</label>
+                        <div class="relative">
+                            <select name="warehouse_id" class="block w-full pl-4 pr-10 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all text-sm font-semibold cursor-pointer appearance-none">
+                                <option value="">Todos</option>
+                                @foreach($warehouses as $wh)
+                                    <option value="{{ $wh->id }}" {{ request('warehouse_id') == $wh->id ? 'selected' : '' }}>
+                                        {{ $wh->code }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Estatus</label>
                         <div class="relative">
                             <select name="status" class="block w-full pl-4 pr-10 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all text-sm font-semibold cursor-pointer appearance-none">
@@ -130,6 +147,7 @@
                                     <th class="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider font-[Montserrat]">Área</th>
                                 @endif
 
+                                <th class="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider font-[Montserrat]">Almacén</th>
                                 <th class="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider font-[Montserrat] text-center">Estatus</th>
                                 <th class="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider font-[Montserrat]">Cliente</th>
                                 <th class="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider font-[Montserrat]">Tipo</th>
@@ -163,6 +181,16 @@
                                             @endif
                                         </td>
                                     @endif
+
+                                    <td class="px-6 py-4">
+                                        @if($order->warehouse)
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                                                <i class="fas fa-warehouse text-[10px]"></i> {{ $order->warehouse->code }}
+                                            </span>
+                                        @else
+                                            <span class="text-xs font-bold text-slate-400 italic">General</span>
+                                        @endif
+                                    </td>
 
                                     <td class="px-6 py-4 text-center">
                                         <div class="flex flex-col gap-1 items-center">
@@ -229,7 +257,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ Auth::user()->isSuperAdmin() ? '8' : '7' }}" class="px-6 py-16 text-center">
+                                    <td colspan="{{ Auth::user()->isSuperAdmin() ? '9' : '8' }}" class="px-6 py-16 text-center">
                                         <div class="flex flex-col items-center justify-center">
                                             <div class="bg-gray-50 rounded-full p-6 mb-4 shadow-inner">
                                                 <i class="fas fa-folder-open text-gray-300 text-3xl"></i>

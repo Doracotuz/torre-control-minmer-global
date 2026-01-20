@@ -24,17 +24,20 @@
         .btn-animated:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(255, 156, 0, 0.4); }
     </style>
 
-
     <div class="min-h-screen font-sans text-[#2c3856] p-6 lg:p-10"
          x-data="{ 
             showModal: false, 
             editMode: false, 
             itemId: null, 
             itemName: '',
+            itemCode: '',
+            itemAddress: '',
+            itemPhone: '',
             itemAreaId: '', 
             modalTitle: '',
             search: '',
             selectedArea: '',
+            currentType: '{{ $type }}',
             isSuperAdmin: {{ Auth::user()->isSuperAdmin() ? 'true' : 'false' }},
             
             get filteredItems() {
@@ -46,10 +49,14 @@
 
                 if (this.search !== '') {
                     const searchLower = this.search.toLowerCase();
-                    items = items.filter(item => 
-                        item.name.toLowerCase().includes(searchLower) || 
-                        (item.area && item.area.name.toLowerCase().includes(searchLower))
-                    );
+                    items = items.filter(item => {
+                        const nameMatch = item.name ? item.name.toLowerCase().includes(searchLower) : false;
+                        const descMatch = item.description ? item.description.toLowerCase().includes(searchLower) : false;
+                        const codeMatch = item.code ? item.code.toLowerCase().includes(searchLower) : false;
+                        const areaMatch = (item.area && item.area.name.toLowerCase().includes(searchLower));
+
+                        return nameMatch || descMatch || codeMatch || areaMatch;
+                    });
                 }
                 
                 return items;
@@ -58,15 +65,21 @@
                 this.editMode = false; 
                 this.itemId = null; 
                 this.itemName = '';
+                this.itemCode = '';
+                this.itemAddress = '';
+                this.itemPhone = '';
                 this.itemAreaId = ''; 
                 this.modalTitle = 'Crear Nuevo Registro'; 
                 this.showModal = true;
             },
-            openEdit(id, name, areaId) {
+            openEdit(item) {
                 this.editMode = true; 
-                this.itemId = id; 
-                this.itemName = name;
-                this.itemAreaId = areaId; 
+                this.itemId = item.id; 
+                this.itemName = item.name || item.description || '';
+                this.itemCode = item.code || '';
+                this.itemAddress = item.address || '';
+                this.itemPhone = item.phone || '';
+                this.itemAreaId = item.area_id; 
                 this.modalTitle = 'Editar Registro'; 
                 this.showModal = true;
             }
@@ -113,7 +126,7 @@
 
             <div class="relative flex-1">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fas fa-search text-gray-400"></i></div>
-                <input type="text" x-model="search" class="block w-full pl-11 pr-4 py-3 bg-white border-none rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-[#ff9c00] transition-all" placeholder="Buscar en {{ strtolower($config['title']) }}...">
+                <input type="text" x-model="search" class="block w-full pl-11 pr-4 py-3 bg-white border-none rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-[#ff9c00] transition-all" placeholder="Buscar...">
             </div>
             
             <div class="bg-white px-6 py-3 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex items-center gap-3 border border-gray-100">
@@ -131,7 +144,13 @@
                             @if(Auth::user()->isSuperAdmin())
                                 <th class="px-8 py-5 text-xs font-extrabold text-gray-400 uppercase tracking-wider font-montserrat">Área</th>
                             @endif
-                            <th class="px-8 py-5 text-xs font-extrabold text-gray-400 uppercase tracking-wider font-montserrat w-full">Nombre / Descripción</th>
+                            @if($type === 'warehouses')
+                                <th class="px-8 py-5 text-xs font-extrabold text-gray-400 uppercase tracking-wider font-montserrat">Código</th>
+                                <th class="px-8 py-5 text-xs font-extrabold text-gray-400 uppercase tracking-wider font-montserrat">Descripción</th>
+                                <th class="px-8 py-5 text-xs font-extrabold text-gray-400 uppercase tracking-wider font-montserrat">Teléfono</th>
+                            @else
+                                <th class="px-8 py-5 text-xs font-extrabold text-gray-400 uppercase tracking-wider font-montserrat w-full">Nombre / Descripción</th>
+                            @endif
                             <th class="px-8 py-5 text-xs font-extrabold text-gray-400 uppercase tracking-wider font-montserrat text-right">Acciones</th>
                         </tr>
                     </thead>
@@ -152,13 +171,20 @@
                                     </td>
                                 @endif
 
-                                <td class="px-8 py-5">
-                                    <div class="flex items-center">
-                                        <div class="h-2 w-2 rounded-full bg-[#ff9c00] mr-3 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                        <span class="font-semibold text-[#2c3856] text-lg" x-text="item.name"></span>
-                                    </div>
-                                </td>
-                                <td class="px-8 py-5 text-right">
+                                @if($type === 'warehouses')
+                                    <td class="px-8 py-5 font-bold text-[#2c3856]" x-text="item.code"></td>
+                                    <td class="px-8 py-5 font-medium text-gray-600" x-text="item.description"></td>
+                                    <td class="px-8 py-5 text-sm text-gray-500" x-text="item.phone"></td>
+                                @else
+                                    <td class="px-8 py-5">
+                                        <div class="flex items-center">
+                                            <div class="h-2 w-2 rounded-full bg-[#ff9c00] mr-3 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                            <span class="font-semibold text-[#2c3856] text-lg" x-text="item.name"></span>
+                                        </div>
+                                    </td>
+                                @endif
+
+                                <td class="px-8 py-5 text-right whitespace-nowrap">
                                     <div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                         
                                         @if($type === 'clients')
@@ -172,7 +198,7 @@
                                             </a>                                            
                                         @endif
 
-                                        <button @click="openEdit(item.id, item.name, item.area_id)" class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center shadow-sm" title="Editar"><i class="fas fa-pencil-alt text-sm"></i></button>
+                                        <button @click="openEdit(item)" class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center shadow-sm" title="Editar"><i class="fas fa-pencil-alt text-sm"></i></button>
                                         <form :action="'/ff/admin/catalog/{{ $type }}/' + item.id" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este registro?');">
                                             @csrf @method('DELETE')
                                             <button type="submit" class="w-9 h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-sm" title="Eliminar"><i class="fas fa-trash-alt text-sm"></i></button>
@@ -183,7 +209,7 @@
                         </template>
                         <template x-if="filteredItems.length === 0">
                             <tr>
-                                <td colspan="{{ Auth::user()->isSuperAdmin() ? '4' : '3' }}" class="px-8 py-16 text-center">
+                                <td colspan="{{ Auth::user()->isSuperAdmin() ? ($type === 'warehouses' ? 6 : 4) : ($type === 'warehouses' ? 5 : 3) }}" class="px-8 py-16 text-center">
                                     <div class="flex flex-col items-center justify-center">
                                         <div class="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mb-4 animate-bounce"><i class="fas fa-search text-3xl text-gray-300"></i></div>
                                         <h3 class="text-lg font-bold text-[#2c3856]">No se encontraron resultados</h3>
@@ -231,10 +257,33 @@
                             </div>
                             @endif
 
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Nombre / Descripción</label>
-                                <input type="text" name="name" x-model="itemName" required autofocus class="w-full rounded-xl px-4 py-3 input-modern text-[#2c3856] font-semibold text-lg placeholder-gray-300" placeholder="Ej. Nombre del registro...">
-                            </div>
+                            <template x-if="currentType === 'warehouses'">
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Código</label>
+                                        <input type="text" name="code" x-model="itemCode" required class="w-full rounded-xl px-4 py-3 input-modern text-[#2c3856] font-semibold" placeholder="Ej. ALM-01">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Descripción</label>
+                                        <input type="text" name="description" x-model="itemName" required class="w-full rounded-xl px-4 py-3 input-modern text-[#2c3856] font-semibold" placeholder="Ej. Almacén Central">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Teléfono</label>
+                                        <input type="text" name="phone" x-model="itemPhone" required class="w-full rounded-xl px-4 py-3 input-modern text-[#2c3856] font-semibold" placeholder="Ej. 55-1234-5678">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Dirección Completa</label>
+                                        <textarea name="address" x-model="itemAddress" required class="w-full rounded-xl px-4 py-3 input-modern text-[#2c3856] font-semibold h-24 resize-none" placeholder="Calle, Número, Colonia, CP..."></textarea>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template x-if="currentType !== 'warehouses'">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Nombre / Descripción</label>
+                                    <input type="text" name="name" x-model="itemName" required autofocus class="w-full rounded-xl px-4 py-3 input-modern text-[#2c3856] font-semibold text-lg placeholder-gray-300" placeholder="Ej. Nombre del registro...">
+                                </div>
+                            </template>
                         </div>
 
                         <div class="flex justify-end gap-3 pt-8">

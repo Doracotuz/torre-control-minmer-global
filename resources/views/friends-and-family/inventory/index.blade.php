@@ -3,6 +3,9 @@
     if(Auth::user()->isSuperAdmin()) {
         $areas = \App\Models\Area::orderBy('name')->get();
     }
+
+    $currentWarehouseId = request('warehouse_id'); 
+    $currentWarehouseName = $warehouses->where('id', $currentWarehouseId)->first()->description ?? 'Global';
 @endphp
 
 <x-app-layout>
@@ -19,12 +22,12 @@
                 
                 <div class="flex flex-wrap items-center gap-4">
                     <a href="{{ route('ff.inventory.log') }}" 
-                       class="inline-flex items-center px-6 py-3 bg-white text-[#2c3856] border-2 border-slate-200 rounded-2xl text-sm font-bold uppercase tracking-wider shadow-sm hover:bg-slate-50 hover:border-[#ff9c00] hover:text-[#ff9c00] transition-all duration-300 transform hover:-translate-y-0.5">
+                    class="inline-flex items-center px-6 py-3 bg-white text-[#2c3856] border-2 border-slate-200 rounded-2xl text-sm font-bold uppercase tracking-wider shadow-sm hover:bg-slate-50 hover:border-[#ff9c00] hover:text-[#ff9c00] transition-all duration-300 transform hover:-translate-y-0.5">
                         <i class="fas fa-history mr-2"></i> Historial
                     </a>
 
                     <a href="{{ route('ff.dashboard.index') }}" 
-                       class="inline-flex items-center px-6 py-3 bg-[#2c3856] text-white rounded-2xl text-sm font-bold uppercase tracking-wider shadow-lg hover:bg-[#1e273d] hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300">
+                    class="inline-flex items-center px-6 py-3 bg-[#2c3856] text-white rounded-2xl text-sm font-bold uppercase tracking-wider shadow-lg hover:bg-[#1e273d] hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300">
                         <i class="fas fa-arrow-left mr-2"></i> Dashboard
                     </a>
                 </div>
@@ -120,7 +123,7 @@
                             
                             <div class="mt-4 flex items-center gap-2 text-[10px] text-white/40 bg-white/5 rounded-lg px-2 py-1 w-fit">
                                 <div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-                                Actualizado en tiempo real
+                                {{ $currentWarehouseName }}
                             </div>
                         </div>
                     </div>
@@ -130,7 +133,7 @@
 
             @if (session('success'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" 
-                     class="bg-emerald-100 border-l-8 border-emerald-500 text-emerald-800 px-6 py-5 rounded-2xl mb-8 shadow-md flex items-center justify-between" role="alert">
+                    class="bg-emerald-100 border-l-8 border-emerald-500 text-emerald-800 px-6 py-5 rounded-2xl mb-8 shadow-md flex items-center justify-between" role="alert">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-check-circle text-2xl"></i>
                         <span class="font-bold text-lg">{{ session('success') }}</span>
@@ -162,20 +165,35 @@
                             <i class="fas fa-search text-slate-300 text-lg group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
                         </div>
                         <input type="text" x-model="filter" 
-                               class="block w-full pl-12 pr-5 py-4 bg-slate-50 border-2 border-transparent text-slate-700 rounded-2xl focus:ring-0 focus:border-[#ff9c00] focus:bg-white transition-all duration-300 placeholder-slate-400 font-bold text-base shadow-inner" 
-                               placeholder="Buscar por SKU, nombre, UPC...">
+                            class="block w-full pl-12 pr-5 py-4 bg-slate-50 border-2 border-transparent text-slate-700 rounded-2xl focus:ring-0 focus:border-[#ff9c00] focus:bg-white transition-all duration-300 placeholder-slate-400 font-bold text-base shadow-inner" 
+                            placeholder="Buscar por SKU, nombre, UPC...">
                     </div>
 
                     <div class="flex flex-wrap gap-3 w-full lg:w-auto justify-end items-center">
                         
                         @if(Auth::user()->isSuperAdmin())
-                        <select x-model="filterArea" class="pl-4 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-0 focus:border-[#ff9c00] cursor-pointer hover:border-slate-300 transition-all uppercase tracking-wide shadow-sm">
-                            <option value="">Todas las Áreas</option>
-                            @foreach($areas as $area)
-                                <option value="{{ $area->id }}">{{ $area->name }}</option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <select name="area_id" onchange="const params = new URLSearchParams(window.location.search); params.set('area_id', this.value); window.location.search = params.toString();" 
+                                    class="pl-4 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-0 focus:border-[#ff9c00] cursor-pointer hover:border-slate-300 transition-all uppercase tracking-wide shadow-sm appearance-none">
+                                <option value="">Todas las Áreas</option>
+                                @foreach($areas as $area)
+                                    <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400"><i class="fas fa-chevron-down text-xs"></i></div>
+                        </div>
                         @endif
+
+                        <div class="relative">
+                            <select name="warehouse_id" onchange="const params = new URLSearchParams(window.location.search); params.set('warehouse_id', this.value); window.location.search = params.toString();"
+                                    class="pl-4 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-0 focus:border-[#ff9c00] cursor-pointer hover:border-slate-300 transition-all uppercase tracking-wide shadow-sm appearance-none">
+                                <option value="">Stock Global</option>
+                                @foreach($warehouses as $wh)
+                                    <option value="{{ $wh->id }}" {{ request('warehouse_id') == $wh->id ? 'selected' : '' }}>{{ $wh->description }}</option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400"><i class="fas fa-warehouse text-xs"></i></div>
+                        </div>
 
                         <select x-model="filterBrand" class="pl-4 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-0 focus:border-[#ff9c00] cursor-pointer hover:border-slate-300 transition-all uppercase tracking-wide shadow-sm">
                             <option value="">Todas las Marcas</option>
@@ -205,7 +223,7 @@
                             <i class="fas fa-file-download text-xl"></i>
                         </button>
 
-                        <button @click="resetFilters()" x-show="filter || filterBrand || filterType || filterArea" x-transition 
+                        <button @click="resetFilters()" x-show="filter || filterBrand || filterType" x-transition 
                                 class="ml-2 px-4 py-2 text-rose-500 bg-rose-50 hover:bg-rose-100 rounded-xl text-xs font-black transition-all shadow-sm border border-rose-100" 
                                 title="Limpiar Filtros">
                             <i class="fas fa-times mr-1"></i> LIMPIAR
@@ -218,6 +236,7 @@
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-100">
                                 <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest font-[Montserrat]">Producto</th>
+                                <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest font-[Montserrat]">Almacén</th>
                                 <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest font-[Montserrat]">Categoría</th>
                                 <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right font-[Montserrat]">Precio</th>
                                 <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center font-[Montserrat]">Stock Actual</th>
@@ -246,9 +265,17 @@
                                     </td>
 
                                     <td class="px-8 py-5">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200" 
+                                            :class="'{{ $currentWarehouseId }}' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-gray-50 text-gray-500'">
+                                            <i class="fas fa-warehouse mr-1.5 text-[10px]"></i>
+                                            {{ $currentWarehouseName }}
+                                        </span>
+                                    </td>
+
+                                    <td class="px-8 py-5">
                                         <div class="flex flex-col gap-1.5">
                                             <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 w-fit uppercase tracking-wide border border-slate-200" 
-                                                  x-text="product.brand || 'N/A'"></span>
+                                                x-text="product.brand || 'N/A'"></span>
                                             <span class="text-xs text-slate-400 font-medium pl-1" x-text="product.type"></span>
                                         </div>
                                     </td>
@@ -259,11 +286,11 @@
 
                                     <td class="px-8 py-5 text-center">
                                         <div class="inline-flex items-center justify-center px-5 py-2 rounded-xl text-sm font-black shadow-sm border transition-all duration-300 min-w-[80px]"
-                                             :class="{
-                                                 'bg-emerald-50 text-emerald-700 border-emerald-200': (product.movements_sum_quantity || 0) > 5,
-                                                 'bg-amber-50 text-amber-700 border-amber-200': (product.movements_sum_quantity || 0) > 0 && (product.movements_sum_quantity || 0) <= 5,
-                                                 'bg-red-50 text-red-700 border-red-200': (product.movements_sum_quantity || 0) <= 0
-                                             }">
+                                            :class="{
+                                                'bg-emerald-50 text-emerald-700 border-emerald-200': (product.movements_sum_quantity || 0) > 5,
+                                                'bg-amber-50 text-amber-700 border-amber-200': (product.movements_sum_quantity || 0) > 0 && (product.movements_sum_quantity || 0) <= 5,
+                                                'bg-red-50 text-red-700 border-red-200': (product.movements_sum_quantity || 0) <= 0
+                                            }">
                                             <span x-text="product.movements_sum_quantity || 0"></span>
                                             <span class="text-[10px] ml-1.5 opacity-70 uppercase">pzas</span>
                                         </div>
@@ -290,7 +317,7 @@
                             
                             <template x-if="filteredProducts.length === 0">
                                 <tr>
-                                    <td colspan="5" class="px-8 py-24 text-center">
+                                    <td colspan="6" class="px-8 py-24 text-center">
                                         <div class="flex flex-col items-center justify-center">
                                             <div class="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-sm border border-slate-100">
                                                 <i class="fas fa-search text-slate-300 text-4xl"></i>
@@ -310,33 +337,33 @@
                 
                 <div class="bg-slate-50 px-8 py-4 border-t border-slate-200 flex items-center justify-between text-xs font-black text-slate-400 uppercase tracking-widest">
                     <span x-text="`Mostrando ${filteredProducts.length} productos`"></span>
-                    <span x-text="`Stock Global Visible: ${totalStock.toLocaleString()} unidades`"></span>
+                    <span x-text="`Stock Visible: ${totalStock.toLocaleString()} unidades`"></span>
                 </div>
             </div>
         </div>
 
         <div x-show="isModalOpen" 
-             class="fixed inset-0 z-50 overflow-y-auto" 
-             style="display: none;" x-cloak>
+            class="fixed inset-0 z-50 overflow-y-auto" 
+            style="display: none;" x-cloak>
             <div class="flex items-center justify-center min-h-screen p-4 text-center sm:block sm:p-0">
                 
                 <div x-show="isModalOpen" 
-                     x-transition.opacity.duration.300ms
-                     class="fixed inset-0 transition-opacity" aria-hidden="true">
+                    x-transition.opacity.duration.300ms
+                    class="fixed inset-0 transition-opacity" aria-hidden="true">
                     <div class="absolute inset-0 bg-[#2c3856] opacity-70 backdrop-blur-md"></div>
                 </div>
 
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
                 <div x-show="isModalOpen" 
-                     @click.outside="closeModal()"
-                     x-transition:enter="ease-out duration-300" 
-                     x-transition:enter-start="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95" 
-                     x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
-                     x-transition:leave="ease-in duration-200" 
-                     x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
-                     x-transition:leave-end="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95" 
-                     class="inline-block align-bottom bg-white rounded-[2rem] text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-slate-100">
+                    @click.outside="closeModal()"
+                    x-transition:enter="ease-out duration-300" 
+                    x-transition:enter-start="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95" 
+                    x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                    x-transition:leave="ease-in duration-200" 
+                    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                    x-transition:leave-end="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95" 
+                    class="inline-block align-bottom bg-white rounded-[2rem] text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-slate-100">
                     
                     <form @submit.prevent="submitMovement">
                         <div class="bg-white px-8 pt-8 pb-6 relative">
@@ -346,7 +373,7 @@
                             
                             <div class="flex flex-col items-center text-center mb-8">
                                 <div class="h-20 w-20 rounded-2xl flex items-center justify-center shadow-md mb-5 transition-colors duration-300 border-4 border-white ring-4"
-                                     :class="form.type === 'add' ? 'bg-emerald-50 text-emerald-500 ring-emerald-50' : 'bg-rose-50 text-rose-500 ring-rose-50'">
+                                    :class="form.type === 'add' ? 'bg-emerald-50 text-emerald-500 ring-emerald-50' : 'bg-rose-50 text-rose-500 ring-rose-50'">
                                     <i class="fas fa-2x" :class="form.type === 'add' ? 'fa-plus' : 'fa-minus'"></i>
                                 </div>
                                 <h3 class="text-2xl font-black text-[#2c3856]" x-text="form.type === 'add' ? 'Entrada de Inventario' : 'Salida de Inventario'"></h3>
@@ -355,17 +382,33 @@
 
                             <div class="space-y-6">
                                 <div>
+                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Almacén Afectado</label>
+                                    <div class="relative">
+                                        <select x-model="form.warehouse_id" required 
+                                                class="block w-full px-5 py-4 bg-slate-50 border-2 border-transparent focus:border-[#2c3856] rounded-2xl text-slate-700 focus:bg-white transition-all text-base font-bold appearance-none cursor-pointer">
+                                            <option value="">Seleccione un Almacén</option>
+                                            @foreach($warehouses as $wh)
+                                                <option value="{{ $wh->id }}">{{ $wh->description }} ({{ $wh->code }})</option>
+                                            @endforeach
+                                        </select>
+                                        <div class="absolute inset-y-0 right-0 flex items-center px-5 pointer-events-none text-slate-400">
+                                            <i class="fas fa-chevron-down text-xs"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
                                     <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Cantidad a mover</label>
                                     <input type="number" min="1" x-model.number="form.quantity_raw" required 
-                                           class="block w-full text-center py-4 bg-slate-50 border-2 border-transparent focus:border-[#2c3856] rounded-2xl text-[#2c3856] focus:bg-white transition-all font-black text-3xl placeholder-slate-300" 
-                                           placeholder="0">
+                                        class="block w-full text-center py-4 bg-slate-50 border-2 border-transparent focus:border-[#2c3856] rounded-2xl text-[#2c3856] focus:bg-white transition-all font-black text-3xl placeholder-slate-300" 
+                                        placeholder="0">
                                 </div>
 
                                 <div>
                                     <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Motivo / Referencia</label>
                                     <input type="text" x-model="form.reason" required 
-                                           class="block w-full px-5 py-4 bg-slate-50 border-2 border-transparent focus:border-[#2c3856] rounded-2xl text-slate-700 focus:bg-white transition-all text-base font-medium" 
-                                           placeholder="Ej. Compra PO-123, Merma, Ajuste...">
+                                        class="block w-full px-5 py-4 bg-slate-50 border-2 border-transparent focus:border-[#2c3856] rounded-2xl text-slate-700 focus:bg-white transition-all text-base font-medium" 
+                                        placeholder="Ej. Compra PO-123, Merma, Ajuste...">
                                 </div>
                             </div>
 
@@ -392,22 +435,25 @@
         </div>
 
         <div x-show="isImportModalOpen" 
-             class="fixed inset-0 z-50 overflow-y-auto" 
-             style="display: none;" x-cloak>
+            class="fixed inset-0 z-50 overflow-y-auto" 
+            style="display: none;" x-cloak>
             <div class="flex items-center justify-center min-h-screen p-4 text-center sm:block sm:p-0">
                 
                 <div x-show="isImportModalOpen" x-transition.opacity class="fixed inset-0 bg-[#2c3856] opacity-70 backdrop-blur-md" aria-hidden="true"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
                 <div x-show="isImportModalOpen" 
-                     @click.outside="closeImportModal()"
-                     x-transition:enter="ease-out duration-300"
-                     x-transition:enter-start="opacity-0 scale-95"
-                     x-transition:enter-end="opacity-100 scale-100"
-                     class="inline-block align-bottom bg-white rounded-[2rem] text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl w-full border border-slate-100">
+                    @click.outside="closeImportModal()"
+                    x-transition:enter="ease-out duration-300"
+                    x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter-end="opacity-100 scale-100"
+                    class="inline-block align-bottom bg-white rounded-[2rem] text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl w-full border border-slate-100">
                     
                     <form action="{{ route('ff.inventory.import') }}" method="POST" enctype="multipart/form-data">
                         @csrf
+                        @if(Auth::user()->isSuperAdmin())
+                            <input type="hidden" name="area_id" :value="filterArea">
+                        @endif
                         <div class="bg-white px-8 pt-8 pb-6 relative">
                             <button type="button" @click="closeImportModal()" class="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
                                 <i class="fas fa-times"></i>
@@ -478,7 +524,8 @@
                     product_name: '',
                     type: 'add',
                     quantity_raw: '',
-                    reason: ''
+                    reason: '',
+                    warehouse_id: '{{ $currentWarehouseId }}'
                 },
 
                 init(data) {
@@ -499,8 +546,8 @@
                         
                         if (search) {
                             return p.sku.toLowerCase().includes(search) || 
-                                   p.description.toLowerCase().includes(search) ||
-                                   (p.upc && p.upc.toLowerCase().includes(search));
+                                p.description.toLowerCase().includes(search) ||
+                                (p.upc && p.upc.toLowerCase().includes(search));
                         }
                         return true;
                     });
@@ -526,6 +573,7 @@
                     this.form.type = type;
                     this.form.quantity_raw = ''; 
                     this.form.reason = '';
+                    this.form.warehouse_id = '{{ $currentWarehouseId }}';
                     this.$nextTick(() => {
                         const input = document.querySelector('input[type="number"]');
                         if(input) input.focus();
@@ -548,7 +596,11 @@
                     this.filter = '';
                     this.filterBrand = '';
                     this.filterType = '';
-                    this.filterArea = '';
+                    
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.has('warehouse_id') || urlParams.has('area_id')) {
+                        window.location.href = "{{ route('ff.inventory.index') }}";
+                    }
                 },
 
                 async submitMovement() {
@@ -560,6 +612,10 @@
                     }
                     if (!this.form.reason.trim()) {
                         this.errorMessage = "El motivo es obligatorio.";
+                        return;
+                    }
+                    if (!this.form.warehouse_id) {
+                        this.errorMessage = "Debe seleccionar un almacén.";
                         return;
                     }
                     
@@ -578,7 +634,8 @@
                             body: JSON.stringify({
                                 product_id: this.form.product_id,
                                 quantity: finalQuantity,
-                                reason: this.form.reason
+                                reason: this.form.reason,
+                                warehouse_id: this.form.warehouse_id
                             }),
                             headers: {
                                 'X-CSRF-TOKEN': csrfToken,
@@ -591,10 +648,15 @@
 
                         if (!response.ok) throw new Error(data.message || 'Error desconocido');
 
-                        const productIndex = this.products.findIndex(p => p.id === data.product_id);
-                        if (productIndex > -1) {
-                            this.products[productIndex].movements_sum_quantity = parseInt(data.new_total, 10);
-                            this.products = [...this.products]; 
+                        const currentFilterWh = '{{ $currentWarehouseId }}';
+                        
+                        if (!currentFilterWh || currentFilterWh == this.form.warehouse_id) {
+                            const productIndex = this.products.findIndex(p => p.id === data.product_id);
+                            if (productIndex > -1) {
+                                this.products[productIndex].movements_sum_quantity = parseInt(data.new_total, 10);
+                                this.products = [...this.products]; 
+                            }
+                        } else {
                         }
                         
                         this.closeModal();
@@ -609,7 +671,7 @@
 
                 exportFilteredCsv() {
                     const baseUrl = "{{ route('ff.inventory.exportCsv') }}";
-                    const params = new URLSearchParams();
+                    const params = new URLSearchParams(window.location.search);
                     if (this.filter) params.append('search', this.filter);
                     if (this.filterBrand) params.append('brand', this.filterBrand);
                     if (this.filterType) params.append('type', this.filterType);
@@ -619,7 +681,7 @@
 
                 downloadFilteredTemplate() {
                     const baseUrl = "{{ route('ff.inventory.movementsTemplate') }}";
-                    const params = new URLSearchParams();
+                    const params = new URLSearchParams(window.location.search);
                     if (this.filter) params.append('search', this.filter);
                     if (this.filterBrand) params.append('brand', this.filterBrand);
                     if (this.filterType) params.append('type', this.filterType);

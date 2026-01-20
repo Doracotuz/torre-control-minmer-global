@@ -19,6 +19,7 @@ use Dompdf\Dompdf;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\FriendsAndFamily\FfAdministrationController;
 use App\Models\Area;
+use App\Models\FfWarehouse;
 
 class FfOrderController extends Controller
 {
@@ -35,6 +36,34 @@ class FfOrderController extends Controller
             $query->where('area_id', $request->input('area_id'));
         }        
 
+        if ($request->filled('warehouse_id')) {
+            $query->where('ff_warehouse_id', $request->input('warehouse_id'));
+        }
+
+        if ($request->filled('client')) {
+            $search = $request->input('client');
+            $query->where(function($q) use ($search) {
+                $q->where('folio', 'like', "%{$search}%")
+                  ->orWhere('client_name', 'like', "%{$search}%")
+                  ->orWhere('company_name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->filled('type')) {
+            $query->where('order_type', $request->input('type'));
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->input('date_from'));
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->input('date_to'));
+        }
+
         $query->select(
                 'folio', 
                 'client_name', 
@@ -45,50 +74,51 @@ class FfOrderController extends Controller
                 'created_at',
                 'user_id',
                 'area_id',
+                'ff_warehouse_id',
                 DB::raw('SUM(ABS(quantity)) as total_items'),
                 DB::raw('MAX(id) as id'),
                 DB::raw('MAX(CASE WHEN is_backorder = 1 AND backorder_fulfilled = 0 THEN 1 ELSE 0 END) as has_active_backorder')
             )
-            ->groupBy('folio', 'client_name', 'company_name', 'order_type', 'status', 'delivery_date', 'created_at', 'user_id', 'area_id');
+            ->groupBy(
+                'folio', 
+                'client_name', 
+                'company_name', 
+                'order_type', 
+                'status', 
+                'delivery_date', 
+                'created_at', 
+                'user_id',
+                'area_id',
+                'ff_warehouse_id'
+            );
 
-        if ($request->filled('folio')) {
-            $query->where('folio', 'like', "%{$request->folio}%");
-        }
-        if ($request->filled('client')) {
-            $query->where('client_name', 'like', "%{$request->client}%")
-                  ->orWhere('company_name', 'like', "%{$request->client}%");
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('type')) {
-            $query->where('order_type', $request->type);
-        }
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
-        }
-        
-        if ($request->filled('show_backorders')) {
-            $query->havingRaw('MAX(CASE WHEN is_backorder = 1 AND backorder_fulfilled = 0 THEN 1 ELSE 0 END) = 1');
+        if ($request->boolean('show_backorders')) {
+            $query->having('has_active_backorder', 1);
         }
 
-        $orders = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
+        $orders = $query->with('warehouse')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20)
+            ->withQueryString();
+            
+        $warehousesQuery = FfWarehouse::where('is_active', true);
+        if (!Auth::user()->isSuperAdmin()) {
+            $warehousesQuery->where('area_id', Auth::user()->area_id);
+        }
+        $warehouses = $warehousesQuery->orderBy('description')->get();
 
-        return view('friends-and-family.orders.index', compact('orders'));
+        return view('friends-and-family.orders.index', compact('orders', 'warehouses'));
     }
 
     public function show($folio)
     {
         $movements = ffInventoryMovement::where('folio', $folio)
             ->where('quantity', '<', 0)
-            ->with(['product', 'user', 'approver'])
+            ->with(['product', 'user', 'approver', 'warehouse'])
             ->get();
 
         if ($movements->isEmpty()) {
-            return redirect()->route('ff.orders.index')->with('error', 'Pedido no encontrado');
+            return redirect()->route('ff.orders.index')->with('error', 'Pedido no encontrado.');
         }
 
         $header = $movements->first();
@@ -96,13 +126,15 @@ class FfOrderController extends Controller
         if (!Auth::user()->isSuperAdmin() && $header->area_id !== Auth::user()->area_id) {
             abort(403, 'No tienes permiso para ver este pedido.');
         }
-        
-        $totalItems = $movements->sum(fn($m) => abs($m->quantity));
-        $totalValue = $movements->sum(fn($m) => abs($m->quantity) * ($m->product->unit_price * (1 - ($m->discount_percentage/100))));
 
-        if ($header->order_type !== 'normal') $totalValue = 0;
+        $documents = [];
+        try {
+            if (class_exists(\App\Models\FfOrderDocument::class)) {
+                $documents = \App\Models\FfOrderDocument::where('folio', $folio)->get();
+            }
+        } catch (\Exception $e) { }
 
-        return view('friends-and-family.orders.show', compact('header', 'movements', 'totalItems', 'totalValue'));
+        return view('friends-and-family.orders.show', compact('movements', 'header', 'documents'));
     }
 
     private function getCompanyInfo($areaId = null)
@@ -145,9 +177,12 @@ class FfOrderController extends Controller
 
     public function approve($folio)
     {
-        $this->authorizeAdmin();
+        if (method_exists($this, 'authorizeAdmin')) {
+            $this->authorizeAdmin();
+        }
 
         $check = ffInventoryMovement::where('folio', $folio)->firstOrFail();
+        
         if (!Auth::user()->isSuperAdmin() && $check->area_id !== Auth::user()->area_id) {
             abort(403, 'No tienes permiso para aprobar este pedido.');
         }
@@ -160,13 +195,21 @@ class FfOrderController extends Controller
 
         $movements = ffInventoryMovement::where('folio', $folio)
             ->where('quantity', '<', 0)
-            ->with('product')
+            ->with(['product', 'user'])
             ->get();
 
         if ($movements->isNotEmpty()) {
             $header = $movements->first();
-            $companyInfo = $this->getCompanyInfo($header->area_id);
             
+            $companyInfo = $this->getCompanyInfo($header->area_id);
+            $logoUrl = $this->getLogoUrl($header->area_id);
+
+            $warehouseName = 'N/A';
+            if ($header->ff_warehouse_id) {
+                $wh = \App\Models\FfWarehouse::find($header->ff_warehouse_id);
+                if ($wh) $warehouseName = $wh->code . ' - ' . $wh->description;
+            }
+
             if (!empty($header->notification_emails)) {
                 try {
                     $pdfItems = [];
@@ -175,9 +218,7 @@ class FfOrderController extends Controller
                     foreach($movements as $m) {
                         $basePrice = $m->product->unit_price;
                         $discountPercent = $m->discount_percentage ?? 0;
-                        $discountAmount = 0;
-                        $finalPrice = 0;
-
+                        
                         if ($m->order_type === 'normal') {
                             $discountAmount = $basePrice * ($discountPercent / 100);
                             $finalPrice = $basePrice - $discountAmount;
@@ -200,11 +241,10 @@ class FfOrderController extends Controller
                             'discount_amount' => $discountAmount,
                             'unit_price' => $finalPrice,
                             'total_price' => $totalLine,
+                            'is_backorder' => $m->is_backorder
                         ];
                     }
 
-                    $logoUrl = $this->getLogoUrl($header->area_id);
-                    
                     $pdfData = array_merge([
                         'items' => $pdfItems,
                         'grandTotal' => $grandTotal,
@@ -221,10 +261,13 @@ class FfOrderController extends Controller
                         'vendedor_name' => $header->user->name ?? 'N/A',
                         'logo_url' => $logoUrl,
                         'order_type' => $header->order_type,
+                        'warehouse_name' => $warehouseName,
                     ], $companyInfo);
 
                     $dompdf = new Dompdf();
-                    $dompdf->set_option('isRemoteEnabled', true);
+                    $options = $dompdf->getOptions();
+                    $options->set('isRemoteEnabled', true);
+                    $dompdf->setOptions($options);
                     $pdfView = view('friends-and-family.sales.pdf', $pdfData);
                     $dompdf->loadHtml($pdfView->render());
                     $dompdf->setPaper('A4', 'portrait');
@@ -243,11 +286,11 @@ class FfOrderController extends Controller
                     $conditionsPdfContent = null;
                     if ($header->ff_client_id) {
                         $client = FfClient::with('deliveryConditions')->find($header->ff_client_id);
-                        if ($client && $client->deliveryConditions) {
+                        
+                        if ($client && $client->deliveryConditions && method_exists(FfAdministrationController::class, 'getPrepFieldsStatic')) {
                             $condData = [
                                 'client' => $client,
                                 'conditions' => $client->deliveryConditions,
-                                // 'logoUrl' => Storage::disk('s3')->url('LogoAzulm.PNG'),
                                 'logoUrl' => $logoUrl,
                                 'specific_address' => $header->address . ', ' . $header->locality,
                                 'specific_observations' => $header->observations,
@@ -271,16 +314,16 @@ class FfOrderController extends Controller
                     if (!empty($recipients)) {
                         Mail::to($recipients)->send(new OrderActionMail(
                             $pdfData, 
-                            'new', 
+                            'new',
                             $pdfContent, 
-                            $csvContent, 
+                            $csvContent,
                             $allDocs,
                             $conditionsPdfContent
                         ));
                     }
 
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Error enviando correo de aprobación: " . $e->getMessage());
+                    \Illuminate\Support\Facades\Log::error("Error enviando correo de aprobación (#$folio): " . $e->getMessage());
                 }
             }
         }
@@ -290,16 +333,25 @@ class FfOrderController extends Controller
 
     public function reject(Request $request, $folio)
     {
-        $this->authorizeAdmin();
-        
-        $check = ffInventoryMovement::where('folio', $folio)->firstOrFail();
-        if (!Auth::user()->isSuperAdmin() && $check->area_id !== Auth::user()->area_id) {
-            abort(403, 'No tienes permiso para rechazar este pedido.');
+        $request->validate(['reason' => 'required|string|max:500']);
+
+        $movements = ffInventoryMovement::where('folio', $folio)->where('quantity', '<', 0)->get();
+
+        if ($movements->isEmpty()) {
+            return redirect()->back()->with('error', 'Pedido no encontrado.');
         }
 
-        $request->validate(['reason' => 'required|string|max:255']);
+        $header = $movements->first();
+        if (!Auth::user()->isSuperAdmin() && $header->area_id !== Auth::user()->area_id) {
+            abort(403);
+        }
+
+        if ($header->status !== 'pending') {
+            return redirect()->back()->with('error', 'Solo se pueden rechazar pedidos pendientes.');
+        }
 
         DB::beginTransaction();
+
         try {
             ffInventoryMovement::where('folio', $folio)->update([
                 'status' => 'rejected',
@@ -308,9 +360,7 @@ class FfOrderController extends Controller
                 'approved_at' => now(),
             ]);
 
-            $movements = ffInventoryMovement::where('folio', $folio)->where('quantity', '<', 0)->get();
-            
-            foreach($movements as $mov) {
+            foreach ($movements as $mov) {
                 ffInventoryMovement::create([
                     'ff_product_id' => $mov->ff_product_id,
                     'user_id' => Auth::id(),
@@ -319,12 +369,35 @@ class FfOrderController extends Controller
                     'reason' => 'RECHAZO Pedido #' . $folio . ': ' . $request->reason,
                     'folio' => $folio,
                     'status' => 'rejected',
-                    'client_name' => $mov->client_name
+                    'client_name' => $mov->client_name,
+                    'ff_client_id' => $mov->ff_client_id,
+                    'ff_warehouse_id' => $mov->ff_warehouse_id,
                 ]);
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Pedido #' . $folio . ' RECHAZADO y stock restaurado.');
+
+            if ($header->user && $header->user->email) {
+                $companyInfo = $this->getCompanyInfo($header->area_id);
+                $logoUrl = $this->getLogoUrl($header->area_id);
+                
+                $mailData = array_merge([
+                    'folio' => $folio,
+                    'client_name' => $header->client_name,
+                    'company_name' => $header->company_name,
+                    'delivery_date' => $header->delivery_date ? $header->delivery_date->format('d/m/Y H:i') : 'N/A',
+                    'surtidor_name' => $header->surtidor_name,
+                    'cancel_reason' => $request->reason,
+                    'items' => [],
+                    'logo_url' => $logoUrl
+                ], $companyInfo);
+
+                try {
+                    Mail::to($header->user->email)->send(new OrderActionMail($mailData, 'cancel'));
+                } catch (\Exception $e) {}
+            }
+
+            return redirect()->back()->with('success', 'Pedido rechazado y stock liberado.');
 
         } catch (\Exception $e) {
             DB::rollBack();
