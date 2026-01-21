@@ -2,32 +2,20 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <div>
-                <span class="text-2xl text[#2C3856]">
+                <span class="text-2xl text-[#2C3856]">
                     Bienvenido, {{ Auth::user()->name }}
                 </span>
             </div>
-                <div class="flex items-center space-x-4">
-                    @if ($currentFolder && !in_array(Auth::id(), ['4', '24', '25', '26', '27']))
-                        <a href="{{ route('indicadores.show', ['folder' => $currentFolder->id]) }}" class="inline-flex items-center px-4 py-2 bg-[#FF9C00] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#2C3856] active:bg-[#9CB3ED] focus:outline-none focus:border-blue-700 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
-                            <svg class="w-4 h-4 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                            Ver Indicadores
-                        </a>
-                    @endif
-                </div>
+            <div class="flex items-center space-x-4">
+                @if ($currentFolder && !in_array(Auth::id(), ['4', '24', '25', '26', '27']))
+                    <a href="{{ route('indicadores.show', ['folder' => $currentFolder->id]) }}" class="inline-flex items-center px-4 py-2 bg-[#FF9C00] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#2C3856] active:bg-[#9CB3ED] focus:outline-none focus:border-blue-700 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
+                        <svg class="w-4 h-4 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        Ver Indicadores
+                    </a>
+                @endif
+            </div>
         </div>
     </x-slot>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            @if (session('success'))
-                sessionStorage.setItem('flash_success', '{{ session('success') }}');
-            @endif
-            @if (session('error'))
-                sessionStorage.setItem('flash_error', '{{ session('error') }}');
-            @endif
-        });
-    </script>
-
 
     <div class="py-6 sm:py-12" 
         x-data="fileManager(
@@ -45,16 +33,14 @@
                     @endif
                     @foreach ($breadcrumbs as $breadcrumb)
                         <span class="text-gray-500">/</span>
-                        <a href="{{ route('folders.index', ['folder' => $breadcrumb->id]) }}" class="text-{#2C3856} hover:text-blue-800">{{ $breadcrumb->name }}</a>
+                        <a href="{{ route('folders.index', ['folder' => $breadcrumb->id]) }}" class="text-[#2C3856] hover:text-blue-800">{{ $breadcrumb->name }}</a>
                     @endforeach
                     <span class="text-gray-500">/</span>
                     <span class="text-[#FF9C00]">{{ $currentFolder->name }}</span>
                 @endif
             </h2>
 
-            <div id="flash-success"
-                 class="fixed top-4 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]"
-                 role="alert" style="display: none;">
+            <div id="flash-success" class="fixed top-4 right-4 z-50 bg-white border-l-4 border-[#ff9c00] text-[#2c3856] px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert" style="display: none;">
                 <div class="flex items-center">
                     <svg class="w-6 h-6 mr-3 text-[#ff9c00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     <strong class="font-bold mr-1">{{ __('¡Éxito!') }}</strong>
@@ -64,9 +50,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <div id="flash-error"
-                 class="fixed top-4 right-4 z-50 bg-white border-l-4 border-red-600 text-red-700 px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]"
-                 role="alert" style="display: none;">
+            <div id="flash-error" class="fixed top-4 right-4 z-50 bg-white border-l-4 border-red-600 text-red-700 px-6 py-4 rounded-lg shadow-xl flex items-center justify-between min-w-[300px]" role="alert" style="display: none;">
                 <div class="flex items-center">
                     <svg class="w-6 h-6 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     <strong class="font-bold mr-1">{{ __('¡Error!') }}</strong>
@@ -76,7 +60,6 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-
 
             <div class="bg-[#F0F3FA] overflow-hidden shadow-xl rounded-[40px] border border-gray-200 p-4 sm:p-8"
                  @dragover.prevent="handleDragOver($event, {{ $currentFolder ? $currentFolder->id : 'null' }})"
@@ -173,7 +156,7 @@
                         </a>
                         @endif
 
-                        @if (Auth::user()->is_area_admin || (Auth::user()->area && Auth::user()->area->name === 'Administración'))
+                        @if (Auth::user()->isSuperAdmin() || Auth::user()->is_area_admin || (!Auth::user()->is_client && $currentFolder && Auth::user()->area_id == $currentFolder->area_id))
                             @if ($currentFolder)
                                 <a href="{{ route('file_links.create', $currentFolder) }}"
                                    title="{{ __('Añadir Elemento') }}"
@@ -200,8 +183,8 @@
                              'grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8': tileSize === 'large'
                          }">
                         @foreach ($folders as $folderItem)
-                            <div class="bg-white rounded-3xl shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-200 group
-                                        hover:bg-gray-50 transform hover:scale-105 relative"
+                            <div class="bg-white rounded-3xl shadow-md p-4 sm:p-6 border border-gray-200 flex flex-col items-center justify-center text-center hover:shadow-xl transition-all duration-200 group
+                                        hover:bg-gray-50 transform relative"
                                  draggable="true"
                                  x-on:dragstart="handleDragStart($event, {{ $folderItem->id }}, 'folder')"
                                  x-on:dragover.prevent="handleDragOver($event, {{ $folderItem->id }})"
@@ -216,7 +199,7 @@
                                      path: '{{ $folderItem->parent ? $folderItem->parent->name . '/' : '' }}{{ $folderItem->name }}',
                                      item_count: '{{ $folderItem->items_count ?? 0 }}'
                                  })"
-                                 :class="{'border-blue-400 border-dashed bg-blue-100': dropTargetFolderId == {{ $folderItem->id }}}"
+                                 :class="{'!bg-indigo-200 !border-indigo-600 !border-2 ring-4 ring-indigo-300 transform scale-110 z-20 shadow-2xl': dropTargetFolderId == {{ $folderItem->id }}}"
                                  x-data="{ showDetails: false }"
                             >
                                 @if(!Auth::user()->is_client)
@@ -230,18 +213,19 @@
                                    class="flex flex-col items-center justify-center w-full"
                                    onclick="event.stopPropagation()"
                                 >
-                                    <div class="inline-flex items-center justify-center rounded-full bg-blue-100 p-2"
+                                    <div class="inline-flex items-center justify-center rounded-full bg-blue-100 p-2 transition-transform duration-200"
                                         :class="{
                                             'w-14 h-14': tileSize === 'small',
                                             'w-20 h-20': tileSize === 'medium',
-                                            'w-24 h-24': tileSize === 'large'
+                                            'w-24 h-24': tileSize === 'large',
+                                            'scale-110': dropTargetFolderId == {{ $folderItem->id }}
                                         }">
                                         <svg :class="{
                                                 'w-8 h-8': tileSize === 'small',
                                                 'w-12 h-12': tileSize === 'medium',
                                                 'w-16 h-16': tileSize === 'large'
                                             }"
-                                            class="text-[Black] group-hover:text-orange-500 transition-colors duration-200"
+                                            class="text-[#2C3856] group-hover:text-orange-500 transition-colors duration-200"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -271,13 +255,16 @@
                                     <p><span class="font-semibold">{{ __('Elementos Totales:') }}</span> {{ $folderItem->items_count ?? 0 }}</p>
                                 </div>
                                 @if(!Auth::user()->is_client)
-                                <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full justify-center">
-                                    <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center justify-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white tracking-wider hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                        {{ __('Editar') }}
+                                <div class="mt-4 flex items-center justify-center space-x-2 w-full">
+                                    <a href="{{ route('folders.edit', $folderItem) }}" 
+                                       title="{{ __('Editar') }}"
+                                       class="p-2 bg-slate-700 border border-transparent rounded-full font-bold text-white hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                     </a>
                                     <button @click.prevent="deleteSingleItem({{ $folderItem->id }}, 'folder')"
-                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-red-500 border border-transparent rounded-lg font-semibold text-xs text-white tracking-wider hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full">
-                                        {{ __('Eliminar') }}
+                                        title="{{ __('Eliminar') }}"
+                                        class="p-2 bg-red-500 border border-transparent rounded-full font-bold text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     </button>
                                 </div>
                                 @endif
@@ -372,13 +359,16 @@
                                 </div>
 
                                 @if(!Auth::user()->is_client)
-                                <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full justify-center">
-                                    <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center justify-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white tracking-wider hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                        {{ __('Editar') }}
+                                <div class="mt-4 flex items-center justify-center space-x-2 w-full">
+                                    <a href="{{ route('file_links.edit', $fileLink) }}" 
+                                       title="{{ __('Editar') }}"
+                                       class="p-2 bg-slate-700 border border-transparent rounded-full font-bold text-white hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                     </a>
                                     <button @click.prevent="deleteSingleItem({{ $fileLink->id }}, 'file_link')"
-                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-red-500 border border-transparent rounded-lg font-semibold text-xs text-white tracking-wider hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full">
-                                        {{ __('Eliminar') }}
+                                        title="{{ __('Eliminar') }}"
+                                        class="p-2 bg-red-500 border border-transparent rounded-full font-bold text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     </button>
                                 </div>
                                 @endif
@@ -417,7 +407,8 @@
                                 </thead>
                                 <tbody class="bg-[#F8F9FD] divide-y divide-gray-200">
                                     @foreach ($folders as $folderItem)
-                                        <tr class="hover:bg-gray-100 transition-colors duration-150"
+                                        <tr class="hover:bg-gray-100 transition-colors duration-150 cursor-pointer"
+                                            @click="window.location.href = '{{ route('folders.index', $folderItem) }}'"
                                             draggable="true"
                                             x-on:dragstart="handleDragStart($event, {{ $folderItem->id }}, 'folder')"
                                             x-on:dragover.prevent="handleDragOver($event, {{ $folderItem->id }})"
@@ -432,7 +423,7 @@
                                                 path: '{{ $folderItem->parent ? $folderItem->parent->name . '/' : '' }}{{ $folderItem->name }}',
                                                 item_count: '{{ $folderItem->items_count ?? 0 }}'
                                             })"
-                                            :class="{'bg-blue-100 border-blue-400 border-dashed': dropTargetFolderId == {{ $folderItem->id }}}"
+                                            :class="{'!bg-indigo-200 !border-indigo-600 !border-l-4': dropTargetFolderId == {{ $folderItem->id }}}"
                                         >
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="flex items-center">
@@ -443,7 +434,7 @@
                                                         :checked="isSelected({{ $folderItem->id }}, 'folder')"
                                                     >
                                                     @endif
-                                                    <a href="{{ route('folders.index', $folderItem) }}" class="flex items-center" onclick="event.stopPropagation()">
+                                                    <div class="flex items-center">
                                                             <div class="inline-flex items-center justify-center rounded-full bg-blue-100 p-2"
                                                                 :class="{
                                                                     'w-14 h-14': tileSize === 'small',
@@ -471,7 +462,7 @@
                                                                 ({{ $folderItem->items_count ?? 0 }} elementos)
                                                             </span>
                                                         </div>
-                                                    </a>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -484,13 +475,16 @@
                                                 {{ $folderItem->created_at->format('d M Y, H:i') }}
                                             </td>
                                             @if(!Auth::user()->is_client)
-                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                                                <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                                    {{ __('Editar') }}
+                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3" @click.stop="">
+                                                <a href="{{ route('folders.edit', $folderItem) }}" 
+                                                   title="{{ __('Editar') }}"
+                                                   class="inline-flex items-center p-2 bg-slate-700 border border-transparent rounded-full font-bold text-white hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                                 </a>
                                                 <button @click.prevent="deleteSingleItem({{ $folderItem->id }}, 'folder')"
-                                                    class="inline-flex items-center px-3 py-1.5 bg-red-500 border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                                    {{ __('Eliminar') }}
+                                                    title="{{ __('Eliminar') }}"
+                                                    class="inline-flex items-center p-2 bg-red-500 border border-transparent rounded-full font-bold text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                 </button>
                                             </td>
                                             @endif
@@ -578,13 +572,16 @@
                                                 {{ $fileLink->created_at->format('d M Y, H:i') }}
                                             </td>
                                             @if(!Auth::user()->is_client)
-                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                                                <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                                    {{ __('Editar') }}
+                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3" @click.stop="">
+                                                <a href="{{ route('file_links.edit', $fileLink) }}" 
+                                                   title="{{ __('Editar') }}"
+                                                   class="inline-flex items-center p-2 bg-slate-700 border border-transparent rounded-full font-bold text-white hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                                 </a>
                                                 <button @click.prevent="deleteSingleItem({{ $fileLink->id }}, 'file_link')"
-                                                    class="inline-flex items-center px-3 py-1.5 bg-red-500 border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                                    {{ __('Eliminar') }}
+                                                    title="{{ __('Eliminar') }}"
+                                                    class="inline-flex items-center p-2 bg-red-500 border border-transparent rounded-full font-bold text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                 </button>
                                             </td>
                                             @endif
@@ -625,14 +622,18 @@
                                     </div>
                                     @if(!Auth::user()->is_client)
                                     <div class="flex justify-end gap-2 mt-4">
-                                        <a href="{{ route('folders.edit', $folderItem) }}" class="inline-flex items-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
-                                            {{ __('Editar') }}
+                                        <a href="{{ route('folders.edit', $folderItem) }}" 
+                                           title="{{ __('Editar') }}"
+                                           class="inline-flex items-center p-2 bg-slate-700 border border-transparent rounded-full font-bold text-white hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                         </a>
-                                        <form action="{{ route('folders.destroy', $folderItem) }}" method="POST" class="inline-block w-full" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta carpeta? Esto también eliminará todo su contenido (subcarpetas, archivos y enlaces).'); event.stopPropagation();">
+                                        <form action="{{ route('folders.destroy', $folderItem) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta carpeta? Esto también eliminará todo su contenido (subcarpetas, archivos y enlaces).'); event.stopPropagation();">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-red-500 border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
-                                                {{ __('Eliminar') }}
+                                            <button type="submit" 
+                                                    title="{{ __('Eliminar') }}"
+                                                    class="inline-flex items-center p-2 bg-red-500 border border-transparent rounded-full font-bold text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                             </button>
                                         </form>
                                     </div>
@@ -715,14 +716,18 @@
                                     </div>
                                     @if(!Auth::user()->is_client)
                                     <div class="flex justify-end gap-2 mt-4">
-                                        <a href="{{ route('file_links.edit', $fileLink) }}" class="inline-flex items-center px-3 py-1.5 bg-[#2C3856] border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
-                                            {{ __('Editar') }}
+                                        <a href="{{ route('file_links.edit', $fileLink) }}" 
+                                           title="{{ __('Editar') }}"
+                                           class="inline-flex items-center p-2 bg-slate-700 border border-transparent rounded-full font-bold text-white hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                         </a>
-                                        <form action="{{ route('file_links.destroy', $fileLink) }}" method="POST" class="inline-block w-full" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este elemento?'); event.stopPropagation();">
+                                        <form action="{{ route('file_links.destroy', $fileLink) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este elemento?'); event.stopPropagation();">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-red-500 border border-transparent rounded-lg font-semibold text-xs text-white tracking-widest hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
-                                                {{ __('Eliminar') }}
+                                            <button type="submit" 
+                                                    title="{{ __('Eliminar') }}"
+                                                    class="inline-flex items-center p-2 bg-red-500 border border-transparent rounded-full font-bold text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                             </button>
                                         </form>
                                     </div>
@@ -735,7 +740,6 @@
             </div>
         </div>
 
-        {{-- MODAL DE PROPIEDADES --}}
         <div x-show="showPropertiesModal"
              x-transition:enter="transition ease-out duration-300"
              x-transition:enter-start="opacity-0"
@@ -810,7 +814,6 @@
             </div>
         </div>
 
-        {{-- INICIO DEL MODAL DE MOVER ELEMENTOS --}}
         <div x-show="showMoveModal"
              x-transition:enter="transition ease-out duration-300"
              x-transition:enter-start="opacity-0"
@@ -895,77 +898,122 @@
             x-transition:leave-end="opacity-0 scale-90"
             class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50"
             style="display: none;"
-            @click.away="showMediaModal = false"
-            @keydown.escape.window="showMediaModal = false"
-            x-data="{ fullscreen: false }">
+            @click.away="closeMediaModal()"
+            @keydown.escape.window="closeMediaModal()">
             
-            <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col relative"
-                :class="fullscreen && mediaModalData.type === 'pdf' ? '!max-w-none !rounded-none !max-h-none !h-screen !w-screen !m-0 fixed inset-0' : ''"
+            <div class="bg-white rounded-lg shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col relative"
+                :class="fullscreen && ['pdf', 'word', 'excel', 'image', 'video'].includes(mediaModalData.type) ? '!max-w-none !rounded-none !max-h-none !h-screen !w-screen !m-0 fixed inset-0 z-[60]' : ''"
                 @click.stop>
                 
-                <div class="flex justify-between items-center p-4 border-b border-gray-200"
-                    :class="fullscreen && mediaModalData.type === 'pdf' ? 'bg-white/90 backdrop-blur-sm' : ''">
-                    <h3 class="text-xl font-semibold text-[#2c3856]" x-text="mediaModalData.name"></h3>
+                <div class="flex justify-between items-center p-4 border-b border-gray-200 z-50 bg-white"
+                    :class="fullscreen ? 'shadow-sm' : ''">
                     
-                    <template x-if="mediaModalData.type === 'pdf'">
-                        <button @click="fullscreen = !fullscreen" 
-                                class="text-gray-600 hover:bg-gray-100 p-2 rounded-full transition-all"
-                                :title="fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'">
-                            <svg x-show="!fullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
-                            </svg>
-                            <svg x-show="fullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </template>
-                </div>
-
-                <div class="p-6 overflow-y-auto flex-1 flex flex-col items-center justify-center"
-                    :class="fullscreen && mediaModalData.type === 'pdf' ? '!p-2' : ''">
-                    <div class="w-full flex-1 flex items-center justify-center">
-                        <template x-if="mediaModalData.type === 'image'">
-                            <img :src="mediaModalData.url" alt="Vista previa" class="max-w-full max-h-[70vh] rounded-lg shadow-lg object-contain">
-                        </template>
-                        
-                        <template x-if="mediaModalData.type === 'video'">
-                            <video :src="mediaModalData.url" controls controlslist="nodownload" class="max-w-full max-h-[70vh] rounded-lg shadow-lg"></video>
-                        </template>
-                        
-                        <template x-if="mediaModalData.type === 'pdf'">
-                            <iframe :src="mediaModalData.url" 
-                                    class="w-full rounded-lg border-2 border-gray-300"
-                                    :class="fullscreen ? '!h-[calc(100vh-10rem)] !border-0 !rounded-none' : 'h-[70vh]'"></iframe>
-                        </template>
-                        
-                        <template x-if="mediaModalData.type === 'audio'">
-                            <audio :src="mediaModalData.url" controls class="w-full max-w-sm"></audio>
-                        </template>
-                        
-                        <template x-if="mediaModalData.type === 'other'">
-                            <div class="text-center p-8">
-                                <svg class="w-24 h-24 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                                <p class="text-gray-600 font-semibold text-lg">No se puede previsualizar este archivo</p>
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <h3 class="text-xl font-semibold text-[#2c3856] truncate max-w-md" x-text="mediaModalData.name"></h3>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <template x-if="fullscreen">
+                            <div class="flex items-center bg-gray-100 rounded-lg mr-4 border border-gray-200">
+                                <button @click="zoomOut()" class="p-2 text-gray-600 hover:text-[#ff9c00] hover:bg-gray-200 rounded-l-lg transition-colors" title="Reducir">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
+                                </button>
+                                <span class="text-xs font-bold text-gray-500 w-12 text-center" x-text="Math.round(zoomLevel * 100) + '%'"></span>
+                                <button @click="zoomIn()" class="p-2 text-gray-600 hover:text-[#ff9c00] hover:bg-gray-200 rounded-r-lg transition-colors" title="Aumentar">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                </button>
                             </div>
                         </template>
+
+                        <template x-if="['pdf', 'word', 'excel', 'image', 'video'].includes(mediaModalData.type)">
+                            <button @click="fullscreen = !fullscreen; zoomLevel = 1;" 
+                                    class="text-gray-500 hover:text-[#2c3856] p-2 rounded-full hover:bg-gray-100 transition-all mr-1"
+                                    :title="fullscreen ? 'Restaurar tamaño' : 'Pantalla completa'">
+                                <svg x-show="!fullscreen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                                <svg x-show="fullscreen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9L4 4m0 0l5 0m-5 0l0 5M15 9l5-5m0 0l-5 0m5 0l0 5M9 15l-5 5m0 0l5 0m-5 0l0-5M15 15l5 5m0 0l-5 0m5 0l0-5"></path></svg>
+                            </button>
+                        </template>
+                        
+                        <button @click="closeMediaModal()" class="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors" title="Cerrar">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
                     </div>
                 </div>
 
-                <div class="flex justify-end p-4 border-t border-gray-200"
-                    :class="fullscreen && mediaModalData.type === 'pdf' ? 'bg-white/90 backdrop-blur-sm' : ''">
-                    <template x-if="mediaModalData.type === 'other'">
-                        <a :href="mediaModalData.downloadUrl" :download="mediaModalData.name"
-                        class="inline-flex items-center px-4 py-2 bg-[#FF9C00] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-orange-600 focus:bg-orange-600 active:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-[#2c3856] focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                            </svg>
-                            Descargar
-                        </a>
-                    </template>
-                    <button @click="showMediaModal = false; fullscreen = false"
-                    class="ml-3 inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-full font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 shadow-md">
+                <div class="flex-1 bg-gray-100 overflow-hidden relative flex flex-col w-full h-full">
+                    
+                    <div x-show="mediaModalData.loading" class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 z-20">
+                        <div class="loader-spinner mb-3"></div>
+                        <p class="text-sm font-bold text-gray-500">Cargando documento...</p>
+                    </div>
+
+                    <div id="fs-container" class="w-full h-full overflow-auto flex transition-all duration-200" 
+                        :class="fullscreen ? '!p-0' : 'p-4'"
+                        :style="mediaModalData.type === 'excel' ? 'justify-content: flex-start;' : 'justify-content: center;'">
+                        
+                        <div class="flex min-h-full min-w-full transition-transform duration-200 ease-out"
+                            :class="mediaModalData.type === 'excel' ? 'items-start justify-start' : 'items-center justify-center'"
+                            :style="zoomLevel === 1 ? '' : 'transform: scale(' + zoomLevel + '); transform-origin: ' + (mediaModalData.type === 'excel' ? 'top left' : 'top center') + ';'">
+
+                            <template x-if="mediaModalData.type === 'image'">
+                                <div class="flex items-center justify-center w-full min-h-full py-4">
+                                    <img :src="mediaModalData.url" alt="Vista previa" 
+                                        class="max-w-full rounded-lg shadow-lg object-contain transition-all duration-300"
+                                        :class="fullscreen ? 'max-h-none shadow-none' : 'max-h-[70vh]'">
+                                </div>
+                            </template>
+                            
+                            <template x-if="mediaModalData.type === 'video'">
+                                <div class="flex items-center justify-center w-full min-h-full">
+                                    <video :src="mediaModalData.url" 
+                                        controls 
+                                        preload="metadata"
+                                        class="max-w-full rounded-lg shadow-lg transition-all duration-300"
+                                        :class="fullscreen ? 'max-h-[95vh] !rounded-none !shadow-none' : 'max-h-[70vh]'">
+                                        Tu navegador no soporta la reproducción de videos.
+                                    </video>
+                                </div>
+                            </template>
+                            
+                            <template x-if="mediaModalData.type === 'pdf'">
+                                <iframe :src="mediaModalData.url" class="w-full bg-white shadow-lg"
+                                        :class="fullscreen ? 'h-[95vh] w-[95vw]' : 'h-[70vh] w-full rounded-lg border-2 border-gray-300'"></iframe>
+                            </template>
+                            
+                            <template x-if="mediaModalData.type === 'audio'">
+                                <div class="flex items-center justify-center w-full min-h-full">
+                                    <audio :src="mediaModalData.url" controls class="w-full max-w-sm shadow-md rounded-full"></audio>
+                                </div>
+                            </template>
+
+                            <div x-show="mediaModalData.type === 'word'" id="word-container" class="w-full"
+                                :class="fullscreen ? 'h-auto' : 'h-[70vh]'"></div>
+
+                            <div x-show="mediaModalData.type === 'excel'" 
+                                class="bg-white border border-gray-200 overflow-visible inline-block"
+                                :class="fullscreen ? 'h-auto min-w-full' : 'h-[70vh] w-full rounded-lg'">
+                                <div id="excel-container" class="excel-viewer"></div>
+                            </div>
+                            
+                            <template x-if="mediaModalData.type === 'other'">
+                                <div class="flex flex-col items-center justify-center p-10 w-full h-full">
+                                    <svg class="w-24 h-24 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    <p class="text-gray-600 font-semibold text-lg">Vista previa no disponible</p>
+                                    <a :href="mediaModalData.downloadUrl" class="mt-4 text-[#ff9c00] hover:underline font-bold">Descargar archivo</a>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end p-4 border-t border-gray-200 bg-white z-10">
+                    <a :href="mediaModalData.downloadUrl" :download="mediaModalData.name"
+                    class="inline-flex items-center px-4 py-2 bg-[#FF9C00] border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:bg-orange-600 focus:outline-none shadow-md transition-all">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Descargar
+                    </a>
+                    <button @click="closeMediaModal()"
+                        class="ml-3 inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-full font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:outline-none shadow-md transition-all">
                         Cerrar
                     </button>
                 </div>
@@ -1013,11 +1061,19 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.8/dist/axios.min.js"></script>
         <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            @if (session('success'))
+                sessionStorage.setItem('flash_success', '{{ session('success') }}');
+            @endif
+            @if (session('error'))
+                sessionStorage.setItem('flash_error', '{{ session('error') }}');
+            @endif
+        });
+
         document.addEventListener('alpine:init', () => {
             Alpine.data('fileManager', (currentFolderId, manageableAreas) => ({
                 showPropertiesModal: false,
@@ -1036,6 +1092,8 @@
                 highlightMainDropArea: false,
                 isDraggingFile: false,
                 showMediaModal: false,
+                fullscreen: false,
+                zoomLevel: 1,
                 mediaModalData: {
                     name: '',
                     type: '',
@@ -1131,7 +1189,6 @@
                         try {
                             draggedItem = JSON.parse(draggedData);
                         } catch (e) {
-                            console.warn('Los datos arrastrados no son un JSON válido:', draggedData, e);
                             return;
                         }
 
@@ -1169,7 +1226,6 @@
                                 window.location.reload();
                             })
                             .catch(error => {
-                                console.error('Error al mover:', error);
                                 sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar mover el elemento.');
                                 window.location.reload();
                             });
@@ -1251,7 +1307,6 @@
                     })
                     .catch(error => {
                         document.getElementById('loading-overlay').classList.add('hidden');
-                        console.error('Error al eliminar:', error);
                         document.getElementById('flash-error-message').innerText = 'Ocurrió un error de red al intentar eliminar el elemento.';
                         document.getElementById('flash-error').style.display = 'flex';
                         setTimeout(() => {
@@ -1261,31 +1316,93 @@
                     });
                 },
 
-                openMediaModal(name, extension, url, downloadUrl) {
+                zoomIn() {
+                    this.zoomLevel = Math.min(this.zoomLevel + 0.25, 3);
+                },
+                zoomOut() {
+                    this.zoomLevel = Math.max(this.zoomLevel - 0.25, 0.1);
+                },
+                
+                closeMediaModal() {
+                    this.showMediaModal = false;
+                    
+                    setTimeout(() => {
+                        this.fullscreen = false;
+                        this.zoomLevel = 1;
+                        this.mediaModalData.type = ''; 
+                        this.mediaModalData.url = '';
+                    }, 200); 
+                },                
+
+                async openMediaModal(name, extension, url, downloadUrl) {
                     const fileExtension = extension.toLowerCase();
                     const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi'];
                     const audioExtensions = ['mp3', 'wav', 'ogg'];
-                    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
+                    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'];
+                    const wordExtensions = ['docx'];
+                    const excelExtensions = ['xlsx', 'xls', 'csv'];
                     const pdfExtension = 'pdf';
 
-                    let mediaType = '';
-                    if (imageExtensions.includes(fileExtension)) {
-                        mediaType = 'image';
-                    } else if (videoExtensions.includes(fileExtension)) {
-                        mediaType = 'video';
-                    } else if (audioExtensions.includes(fileExtension)) {
-                        mediaType = 'audio';
-                    } else if (fileExtension === pdfExtension) {
-                        mediaType = 'pdf';
-                    } else {
-                        mediaType = 'other';
-                    }
+                    let mediaType = 'other';
+                    
+                    const wordContainer = document.getElementById('word-container');
+                    const excelContainer = document.getElementById('excel-container');
+                    if(wordContainer) wordContainer.innerHTML = '';
+                    if(excelContainer) excelContainer.innerHTML = '';
 
-                    this.mediaModalData.name = name;
-                    this.mediaModalData.type = mediaType;
-                    this.mediaModalData.url = url;
-                    this.mediaModalData.downloadUrl = downloadUrl;
+                    if (imageExtensions.includes(fileExtension)) mediaType = 'image';
+                    else if (videoExtensions.includes(fileExtension)) mediaType = 'video';
+                    else if (audioExtensions.includes(fileExtension)) mediaType = 'audio';
+                    else if (fileExtension === pdfExtension) mediaType = 'pdf';
+                    else if (wordExtensions.includes(fileExtension)) mediaType = 'word';
+                    else if (excelExtensions.includes(fileExtension)) mediaType = 'excel';
+
+                    this.mediaModalData = {
+                        name: name,
+                        type: mediaType,
+                        url: url,
+                        downloadUrl: downloadUrl,
+                        loading: false
+                    };
+                    
                     this.showMediaModal = true;
+                    this.zoomLevel = 1;
+                    this.fullscreen = false;                    
+
+                    if (mediaType === 'word' || mediaType === 'excel') {
+                        this.mediaModalData.loading = true;
+                        
+                        try {
+                            const response = await fetch(downloadUrl);
+                            if (!response.ok) throw new Error('Error al descargar archivo');
+                            const blob = await response.blob();
+
+                            if (mediaType === 'word') {
+                                const options = {
+                                    className: "docx", 
+                                    inWrapper: true, 
+                                    ignoreWidth: false, 
+                                    breakPages: true,
+                                    trimXmlDeclaration: true
+                                };
+                                await docx.renderAsync(blob, wordContainer, null, options);
+                            } 
+                            else if (mediaType === 'excel') {
+                                const arrayBuffer = await blob.arrayBuffer();
+                                const workbook = XLSX.read(arrayBuffer);
+                                const firstSheetName = workbook.SheetNames[0];
+                                const worksheet = workbook.Sheets[firstSheetName];
+                                const html = XLSX.utils.sheet_to_html(worksheet);
+                                excelContainer.innerHTML = html;
+                            }
+                        } catch (error) {
+                            console.error("Error renderizando documento:", error);
+                            alert("No se pudo visualizar el documento. Por favor descárgalo.");
+                            this.mediaModalData.type = 'other';
+                        } finally {
+                            this.mediaModalData.loading = false;
+                        }
+                    }
                 },
 
                 deleteSelected() {
@@ -1329,7 +1446,6 @@
                     })
                     .catch(error => {
                         document.getElementById('loading-overlay').classList.add('hidden');
-                        console.error('Error al eliminar:', error);
                         document.getElementById('flash-error-message').innerText = 'Ocurrió un error de red al intentar eliminar los elementos.';
                         document.getElementById('flash-error').style.display = 'flex';
                         setTimeout(() => {
@@ -1338,12 +1454,6 @@
                         }, 2000);
                     });
                 },
-
-                showMoveModal: false,
-                moveTargetFolderId: null,
-                moveTargetFolderName: 'Selecciona una carpeta...',
-                availableMoveFolders: [],
-                currentMoveBrowseFolder: null,
 
                 openMoveModal() {
                     this.showMoveModal = true;
@@ -1375,7 +1485,6 @@
                         this.availableMoveFolders = data;
                     })
                     .catch(error => {
-                        console.error('Error al cargar carpetas para mover:', error);
                         sessionStorage.setItem('flash_error', 'Error al cargar carpetas de destino.');
                         window.location.reload();
                     });
@@ -1421,10 +1530,9 @@
                         return;
                     }
                     if (this.moveTargetFolderId === null && this.moveTargetFolderName !== 'Raíz') {
-                         alert('Por favor, selecciona una carpeta de destino o la Raíz.');
-                         return;
+                        alert('Por favor, selecciona una carpeta de destino o la Raíz.');
+                        return;
                     }
-
 
                     if (!confirm(`¿Estás seguro de que quieres mover los elementos seleccionados a "${this.moveTargetFolderName}"?`)) {
                         return;
@@ -1455,7 +1563,6 @@
                         window.location.reload();
                     })
                     .catch(error => {
-                        console.error('Error al mover elementos:', error);
                         sessionStorage.setItem('flash_error', 'Ocurrió un error de red al intentar mover los elementos.');
                         window.location.reload();
                     })
@@ -1503,7 +1610,6 @@
                     if (!itemsList || itemsList.length === 0) return;
 
                     if (targetFolderId === null && targetAreaId === null) {
-                        console.error('Error: Se intentó subir a la raíz sin especificar un área.');
                         sessionStorage.setItem('flash_error', 'Error: No se especificó un área de destino.');
                         window.location.reload();
                         return;
@@ -1543,7 +1649,6 @@
                                     }
                                 });
                             } catch (error) {
-                                console.error('Error al subir el archivo:', item.file.name, error);
                                 sessionStorage.setItem('flash_error', `Error al subir "${item.file.name}". La carga se ha detenido.`);
                                 this.isUploading = false;
                                 window.location.reload();
@@ -1648,4 +1753,46 @@
             }));
         });
     </script>
+    <style>
+        #fs-container:fullscreen { background: #e5e7eb; padding: 20px; display: flex; align-items: center; justify-content: center; overflow: auto; }
+        #fs-container:fullscreen img, #fs-container:fullscreen iframe { height: 100%; width: 100%; }
+        
+        .loader-spinner { border: 4px solid #f3f3f3; border-top: 4px solid #ff9c00; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .excel-viewer { width: 100%; overflow: visible; }
+        .excel-viewer table { 
+            min-width: 100%;
+            width: auto;
+            border-collapse: collapse; 
+            font-size: 12px; 
+            background: white; 
+        }
+        
+        .excel-viewer td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; color: #2c3856; white-space: nowrap; }
+        
+        .excel-viewer tr:first-child td { 
+            background-color: #f1f5f9; 
+            font-weight: bold; 
+            color: #1e293b;
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+            border-bottom: 2px solid #cbd5e1;
+        }
+
+        .excel-viewer tr:not(:first-child):nth-child(even) { background-color: #f8fafc; }
+        .excel-viewer tr:hover td { background-color: #e2e8f0; }
+        
+        #word-container { width: 100%; overflow-y: auto; background-color: #e5e7eb; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
+        #word-container .docx-wrapper { background: transparent !important; padding: 0 !important; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        #word-container section.docx { background: white !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px !important; padding: 40px !important; width: 21cm !important; min-height: 29.7cm !important; color: black !important; }
+        #word-container section.docx p { margin-bottom: 1em; line-height: 1.5; }
+        #word-container section.docx table { border-collapse: collapse; }
+        #word-container section.docx table td, #word-container section.docx table th { border: 1px solid #000; padding: 4px; }
+    </style>
+
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/docx-preview@0.1.15/dist/docx-preview.min.js"></script>
 </x-app-layout>

@@ -45,7 +45,7 @@ class DashboardController extends Controller
         $isAreaAdmin = $user->is_area_admin;
         $isClientArea = false;
 
-        $corporateAreas = ['Consorcio Monter', 'Lamborghini Wines', 'Empresa2', 'Empresa3'];
+        $corporateAreas = ['Consorcio Monter', 'Lamborghini Wines', 'Empresa de Prueba', 'Empresa3'];
 
         $areaScopeIds = collect();
         $areaName = "";

@@ -348,8 +348,12 @@ class FolderController extends Controller
             return redirect()->route('folders.index', $folder)->with('error', 'Los usuarios tipo Cliente no tienen permiso para añadir elementos a esta carpeta.');
         }
 
-        if (!$isSuperAdmin && !($isAreaAdmin && $manageableAreaIds->contains($folder->area_id))) {
-             return redirect()->route('folders.index', $folder)->with('error', 'No tienes permiso para añadir elementos a esta carpeta.');
+        $hasAccess = $isSuperAdmin || 
+                    ($isAreaAdmin && $manageableAreaIds->contains($folder->area_id)) ||
+                    (!$isAreaAdmin && !$user->isClient() && $user->area_id === $folder->area_id);
+
+        if (!$hasAccess) {
+            return redirect()->route('folders.index', $folder)->with('error', 'No tienes permiso para añadir elementos a esta carpeta.');
         }
 
         return view('file_links.create', compact('folder'));
@@ -372,7 +376,11 @@ class FolderController extends Controller
             return response()->json(['message' => 'Los usuarios tipo Cliente no tienen permiso para añadir elementos a esta carpeta.'], 403);
         }
         
-        if (!$isSuperAdmin && !($isAreaAdmin && $manageableAreaIds->contains($folder->area_id))) {
+        $hasAccess = $isSuperAdmin || 
+                    ($isAreaAdmin && $manageableAreaIds->contains($folder->area_id)) ||
+                    (!$isAreaAdmin && !$user->isClient() && $user->area_id === $folder->area_id);
+
+        if (!$hasAccess) {
             return response()->json(['message' => 'No tienes permiso para añadir elementos a esta carpeta.'], 403);
         }
         $validationRules = [
@@ -562,8 +570,12 @@ class FolderController extends Controller
             return response()->json(['success' => false, 'message' => 'Los usuarios tipo Cliente no tienen permiso para subir archivos aquí.'], 403);
         }
 
-        if (!$isSuperAdmin && !($isAreaAdmin && $manageableAreaIds->contains($targetAreaId))) {
-             return response()->json(['success' => false, 'message' => 'No tienes permiso para subir archivos aquí.'], 403);
+        $hasAccess = $isSuperAdmin || 
+                    ($isAreaAdmin && $manageableAreaIds->contains($targetAreaId)) ||
+                    (!$isAreaAdmin && !$user->isClient() && $user->area_id === $targetAreaId);
+
+        if (!$hasAccess) {
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para subir archivos aquí.'], 403);
         }
 
         foreach ($request->file('files') as $file) {
@@ -954,8 +966,12 @@ class FolderController extends Controller
              return response()->json(['success' => false, 'message' => 'No tienes permiso para subir carpetas aquí.'], 403);
         }
 
-        if (!$isSuperAdmin && !($isAreaAdmin && $manageableAreaIds->contains($baseFolderAreaId))) {
-             return response()->json(['success' => false, 'message' => 'No tienes permiso para subir carpetas en esta área.'], 403);
+        $hasAccess = $isSuperAdmin || 
+                    ($isAreaAdmin && $manageableAreaIds->contains($baseFolderAreaId)) ||
+                    (!$isAreaAdmin && !$user->isClient() && $user->area_id === $baseFolderAreaId);
+
+        if (!$hasAccess) {
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para subir carpetas en esta área.'], 403);
         }
         
         $uploadedCount = 0;
