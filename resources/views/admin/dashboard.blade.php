@@ -158,11 +158,11 @@
                 <div>
                     <div class="flex items-center gap-3 mb-2">
                         <span class="px-3 py-1 bg-white/50 text-[#2c3856] text-xs font-bold rounded-full border border-[#2c3856]/10 tracking-wider uppercase backdrop-blur-sm">
-                            Admin Console v2.0
+                            Consola de Administración
                         </span>
                         <div class="flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-[#ff9c00] pulse-indicator"></span>
-                            <span class="text-xs text-gray-500 font-medium">Sistema Operativo</span>
+                            <span class="text-xs text-gray-500 font-medium">Sistema Operando</span>
                         </div>
                     </div>
                     <h1 class="text-4xl md:text-5xl font-extrabold text-[#2c3856] tracking-tight">
