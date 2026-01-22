@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use App\Traits\BelongsToArea;
+use App\Models\ffInventoryMovement;
+use App\Models\FfOrderEvidence;
+use App\Models\FfOrderDocument;
+// -----------------------------
 
 class ffProduct extends Model
 {
@@ -50,9 +54,41 @@ class ffProduct extends Model
 
     protected static function booted(): void
     {
-        static::deleted(function (ffProduct $product) {
+        static::deleting(function (ffProduct $product) {
+            
             if ($product->photo_path) {
-                Storage::disk('s3')->delete($product->photo_path);
+                if(Storage::disk('s3')->exists($product->photo_path)){
+                    Storage::disk('s3')->delete($product->photo_path);
+                }
+            }
+
+            $folios = ffInventoryMovement::where('ff_product_id', $product->id)
+                        ->pluck('folio')
+                        ->unique();
+
+            foreach ($folios as $folio) {
+                $otherItemsCount = ffInventoryMovement::where('folio', $folio)
+                                    ->where('ff_product_id', '!=', $product->id)
+                                    ->count();
+
+                if ($otherItemsCount === 0) {
+                    
+                    $evidences = FfOrderEvidence::where('folio', $folio)->get();
+                    foreach ($evidences as $evidence) {
+                        if (Storage::disk('s3')->exists($evidence->path)) {
+                            Storage::disk('s3')->delete($evidence->path);
+                        }
+                        $evidence->delete();
+                    }
+
+                    $documents = FfOrderDocument::where('folio', $folio)->get();
+                    foreach ($documents as $doc) {
+                        if ($doc->path && Storage::disk('s3')->exists($doc->path)) {
+                            Storage::disk('s3')->delete($doc->path);
+                        }
+                        $doc->delete();
+                    }
+                }
             }
         });
     }

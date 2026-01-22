@@ -77,7 +77,8 @@ class FfOrderController extends Controller
                 'ff_warehouse_id',
                 DB::raw('SUM(ABS(quantity)) as total_items'),
                 DB::raw('MAX(id) as id'),
-                DB::raw('MAX(CASE WHEN is_backorder = 1 AND backorder_fulfilled = 0 THEN 1 ELSE 0 END) as has_active_backorder')
+                DB::raw('MAX(CASE WHEN status != "cancelled" AND is_backorder = 1 AND backorder_fulfilled = 0 THEN 1 ELSE 0 END) as has_active_backorder'),
+                DB::raw('(SELECT COUNT(*) FROM ff_order_evidences WHERE ff_order_evidences.folio = ff_inventory_movements.folio) as evidences_count')
             )
             ->groupBy(
                 'folio', 
@@ -127,6 +128,18 @@ class FfOrderController extends Controller
             abort(403, 'No tienes permiso para ver este pedido.');
         }
 
+        $totalItems = $movements->sum(fn($m) => abs($m->quantity));
+
+        $totalValue = $movements->sum(function($m) {
+            if ($m->order_type === 'normal') {
+                $basePrice = $m->product->unit_price;
+                $discount = $m->discount_percentage ?? 0;
+                $finalPrice = $basePrice - ($basePrice * ($discount / 100));
+                return abs($m->quantity) * $finalPrice;
+            }
+            return 0;
+        });
+
         $documents = [];
         try {
             if (class_exists(\App\Models\FfOrderDocument::class)) {
@@ -134,7 +147,7 @@ class FfOrderController extends Controller
             }
         } catch (\Exception $e) { }
 
-        return view('friends-and-family.orders.show', compact('movements', 'header', 'documents'));
+        return view('friends-and-family.orders.show', compact('movements', 'header', 'documents', 'totalItems', 'totalValue'));
     }
 
     private function getCompanyInfo($areaId = null)
@@ -201,6 +214,8 @@ class FfOrderController extends Controller
         if ($movements->isNotEmpty()) {
             $header = $movements->first();
             
+            $emailType = $header->was_edited ? 'update' : 'new';
+
             $companyInfo = $this->getCompanyInfo($header->area_id);
             $logoUrl = $this->getLogoUrl($header->area_id);
 
@@ -309,12 +324,12 @@ class FfOrderController extends Controller
                         return ['path' => $doc->path, 'name' => $doc->filename];
                     })->toArray();
 
-                    $recipients = array_filter(array_map('trim', explode(';', $header->notification_emails)));
+                    $recipients = array_filter(array_map('trim', explode(',', str_replace(';', ',', $header->notification_emails))));
                     
                     if (!empty($recipients)) {
                         Mail::to($recipients)->send(new OrderActionMail(
                             $pdfData, 
-                            'new',
+                            $emailType,
                             $pdfContent, 
                             $csvContent,
                             $allDocs,
@@ -440,6 +455,9 @@ class FfOrderController extends Controller
                 ->get();
 
             if ($movements->isNotEmpty() && !empty($header->notification_emails)) {
+                
+                $emailType = $header->was_edited ? 'update' : 'new';
+
                 $companyInfo = $this->getCompanyInfo($header->area_id);
                 
                 $pdfItems = [];
@@ -516,11 +534,10 @@ class FfOrderController extends Controller
                 $conditionsPdfContent = null;
                 if ($header->ff_client_id) {
                     $client = FfClient::with('deliveryConditions')->find($header->ff_client_id);
-                    if ($client && $client->deliveryConditions) {
+                    if ($client && $client->deliveryConditions && method_exists(FfAdministrationController::class, 'getPrepFieldsStatic')) {
                         $condData = [
                             'client' => $client,
                             'conditions' => $client->deliveryConditions,
-                            // 'logoUrl' => Storage::disk('s3')->url('LogoAzulm.PNG'),
                             'logoUrl' => $logoUrl,
                             'specific_address' => $header->address . ', ' . $header->locality,
                             'specific_observations' => $header->observations,
@@ -539,12 +556,12 @@ class FfOrderController extends Controller
                     return ['path' => $doc->path, 'name' => $doc->filename];
                 })->toArray();
 
-                $recipients = array_filter(array_map('trim', explode(';', $header->notification_emails)));
+                $recipients = array_filter(array_map('trim', explode(',', str_replace(';', ',', $header->notification_emails))));
                 
                 if (!empty($recipients)) {
                     Mail::to($recipients)->send(new OrderActionMail(
                         $pdfData, 
-                        'new', 
+                        $emailType,
                         $pdfContent, 
                         $csvContent, 
                         $allDocs,
@@ -648,35 +665,53 @@ class FfOrderController extends Controller
     public function uploadBatchEvidences(Request $request, $folio)
     {
         $check = ffInventoryMovement::where('folio', $folio)->firstOrFail();
+        
         if (!Auth::user()->isSuperAdmin() && $check->area_id !== Auth::user()->area_id) {
             abort(403, 'No tienes permiso para subir evidencias a este pedido.');
         }
 
         $request->validate([
-            'evidence_1' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            'evidence_2' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            'evidence_3' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'evidences' => 'required|array',
+            'evidences.*' => 'file|mimes:jpg,jpeg,png,pdf,zip,rar|max:20480',
         ]);
 
-        $updates = [];
-        $hasUploads = false;
+        $count = 0;
 
-        for ($i = 1; $i <= 3; $i++) {
-            $inputName = "evidence_{$i}";
-            
-            if ($request->hasFile($inputName)) {
-                $path = $request->file($inputName)->store("ff_evidence/{$folio}", 's3');
-                $updates["evidence_path_{$i}"] = $path;
-                $hasUploads = true;
+        if ($request->hasFile('evidences')) {
+            foreach ($request->file('evidences') as $file) {
+                $filename = $file->getClientOriginalName();
+                $path = $file->store("ff_evidence/{$folio}", 's3');
+
+                \App\Models\FfOrderEvidence::create([
+                    'folio' => $folio,
+                    'filename' => $filename,
+                    'path' => $path,
+                    'uploaded_by' => Auth::id()
+                ]);
+                
+                $count++;
             }
         }
 
-        if ($hasUploads) {
-            ffInventoryMovement::where('folio', $folio)->update($updates);
-            return redirect()->back()->with('success', 'Evidencias guardadas correctamente.');
+        return redirect()->back()->with('success', "Se han subido $count evidencias correctamente.");
+    }
+
+    public function deleteEvidence($id)
+    {
+        $evidence = \App\Models\FfOrderEvidence::findOrFail($id);
+        
+        $movement = ffInventoryMovement::where('folio', $evidence->folio)->first();
+        if (!Auth::user()->isSuperAdmin() && $movement && $movement->area_id !== Auth::user()->area_id) {
+            abort(403);
         }
 
-        return redirect()->back()->with('warning', 'No se seleccionó ningún archivo para subir.');
+        if (Storage::disk('s3')->exists($evidence->path)) {
+            Storage::disk('s3')->delete($evidence->path);
+        }
+
+        $evidence->delete();
+
+        return redirect()->back()->with('success', 'Evidencia eliminada.');
     }
 
     public function downloadEvidence(Request $request)
@@ -687,24 +722,129 @@ class FfOrderController extends Controller
             abort(404);
         }
 
-        $exists = ffInventoryMovement::where(function($q) use ($path) {
-            $q->where('evidence_path_1', $path)
-              ->orWhere('evidence_path_2', $path)
-              ->orWhere('evidence_path_3', $path);
-        });
+        $evidence = \App\Models\FfOrderEvidence::where('path', $path)->first();
 
-        if (!Auth::user()->isSuperAdmin()) {
-            $exists->where('area_id', Auth::user()->area_id);
-        }
-        
-        if (!$exists->exists()) {
-            abort(403, 'Archivo no encontrado o sin permisos.');
+        if ($evidence) {
+            $order = ffInventoryMovement::where('folio', $evidence->folio)->first();
+            
+            if ($order && !Auth::user()->isSuperAdmin() && $order->area_id !== Auth::user()->area_id) {
+                abort(403, 'No tienes permiso para ver esta evidencia.');
+            }
+        } 
+        else {
+            $exists = ffInventoryMovement::where(function($q) use ($path) {
+                $q->where('evidence_path_1', $path)
+                  ->orWhere('evidence_path_2', $path)
+                  ->orWhere('evidence_path_3', $path);
+            });
+
+            if (!Auth::user()->isSuperAdmin()) {
+                $exists->where('area_id', Auth::user()->area_id);
+            }
+            
+            if (!$exists->exists()) {
+                abort(403, 'Archivo no registrado en el sistema.');
+            }
         }
 
         if (!Storage::disk('s3')->exists($path)) {
-            abort(404);
+            abort(404, 'El archivo físico no existe en la nube.');
         }
 
         return Storage::disk('s3')->download($path);
-    }    
+    }
+
+    public function downloadReport($folio)
+    {
+        set_time_limit(300); 
+        ini_set('memory_limit', '512M');
+
+        $movements = ffInventoryMovement::where('folio', $folio)
+            ->where('quantity', '<', 0)
+            ->with(['product', 'warehouse'])
+            ->get();
+
+        if ($movements->isEmpty()) {
+            return redirect()->back()->with('error', 'Pedido no encontrado.');
+        }
+
+        $header = $movements->first();
+
+        if (!Auth::user()->isSuperAdmin() && $header->area_id !== Auth::user()->area_id) {
+            abort(403, 'No tienes permiso para ver este reporte.');
+        }
+
+        $evidences = \App\Models\FfOrderEvidence::where('folio', $folio)->get();
+
+        if ($evidences->isEmpty()) {
+            return redirect()->back()->with('error', 'Este pedido no tiene evidencias cargadas.');
+        }
+
+        $tempDir = storage_path('app/public/temp_report_' . uniqid());
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0777, true);
+        }
+
+        $processedEvidences = [];
+
+        foreach ($evidences as $ev) {
+            $localPath = null;
+            $isImage = in_array(strtolower(pathinfo($ev->filename, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'webp']);
+
+            if (Storage::disk('s3')->exists($ev->path)) {
+                $content = Storage::disk('s3')->get($ev->path);
+                $tempName = uniqid() . '_' . $ev->filename;
+                $localPath = $tempDir . '/' . $tempName;
+                file_put_contents($localPath, $content);
+            }
+
+            $processedEvidences[] = [
+                'filename' => $ev->filename,
+                'local_path' => $localPath,
+                'is_image' => $isImage,
+                'uploaded_at' => $ev->created_at
+            ];
+        }
+
+        $logoUrl = $this->getLogoUrl($header->area_id);
+        $localLogo = null;
+        try {
+            $logoKey = 'LogoAzulm.PNG';
+            if($header->area_id) {
+                $area = Area::find($header->area_id);
+                if($area && $area->icon_path) $logoKey = $area->icon_path;
+            }
+            
+            if(Storage::disk('s3')->exists($logoKey)){
+                $logoContent = Storage::disk('s3')->get($logoKey);
+                $localLogo = $tempDir . '/logo.png';
+                file_put_contents($localLogo, $logoContent);
+            }
+        } catch(\Exception $e) {}
+
+        $companyInfo = $this->getCompanyInfo($header->area_id);
+        
+        $data = [
+            'header' => $header,
+            'items' => $movements,
+            'evidences' => $processedEvidences,
+            'logo_path' => $localLogo ?? $logoUrl,
+            'company' => $companyInfo,
+            'date' => now()->format('d/m/Y H:i')
+        ];
+
+        $pdf = Pdf::loadView('friends-and-family.orders.report-evidence', $data);
+        $pdf->setPaper('A4', 'portrait');
+        $output = $pdf->output();
+
+        $files = glob($tempDir . '/*'); 
+        foreach($files as $file){ if(is_file($file)) unlink($file); }
+        rmdir($tempDir);
+
+        return response()->streamDownload(
+            fn () => print($output),
+            'Reporte_Evidencia_Folio_'.$folio.'.pdf'
+        );
+    }
+
 }

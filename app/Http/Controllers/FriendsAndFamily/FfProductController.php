@@ -350,10 +350,10 @@ class FfProductController extends Controller
             DB::beginTransaction();
 
             while (($row = fgetcsv($handle)) !== FALSE) {
-                $sku = mb_convert_encoding(trim($row[0] ?? ''), 'UTF-8', 'ISO-8859-1');
+                $sku = $this->cleanCsvValue($row[0] ?? '');
                 if (empty($sku)) continue;
 
-                $channelsStr = mb_convert_encoding(trim($row[11] ?? ''), 'UTF-8', 'ISO-8859-1');
+                $channelsStr = $this->cleanCsvValue($row[11] ?? '');
                 $channelIds = [];
                 if (!empty($channelsStr)) {
                     $channelNames = preg_split('/[,|]/', $channelsStr); 
@@ -370,17 +370,17 @@ class FfProductController extends Controller
                 }
 
                 $productData = [
-                    'description'    => mb_convert_encoding(trim($row[1] ?? ''), 'UTF-8', 'ISO-8859-1'),
+                    'description'    => $this->cleanCsvValue($row[1] ?? ''),
                     'unit_price'     => (float)($row[2] ?? 0.00),
-                    'brand'          => mb_convert_encoding(trim($row[3] ?? ''), 'UTF-8', 'ISO-8859-1'),
-                    'type'           => mb_convert_encoding(trim($row[4] ?? ''), 'UTF-8', 'ISO-8859-1'),
+                    'brand'          => $this->cleanCsvValue($row[3] ?? ''),
+                    'type'           => $this->cleanCsvValue($row[4] ?? ''),
                     'pieces_per_box' => !empty($row[5]) ? (int)$row[5] : null,
                     'length'         => !empty($row[6]) ? (float)$row[6] : null,
                     'width'          => !empty($row[7]) ? (float)$row[7] : null,
                     'height'         => !empty($row[8]) ? (float)$row[8] : null,
-                    'upc'            => mb_convert_encoding(trim($row[9] ?? ''), 'UTF-8', 'ISO-8859-1'),
+                    'upc'            => $this->cleanCsvValue($row[9] ?? ''),
                     'is_active'      => true,
-                    'area_id'        => $targetAreaId 
+                    'area_id'        => $targetAreaId
                 ];
 
                 $photoFilename = trim($row[10] ?? '');
@@ -535,8 +535,8 @@ class FfProductController extends Controller
 
     public function exportPdf(Request $request)
     {
-        ini_set('max_execution_time', 300);
-        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        ini_set('memory_limit', '1024M');
 
         $percentage = $request->input('percentage', 0);
 
@@ -550,19 +550,80 @@ class FfProductController extends Controller
 
         $products = $query->get();
 
-        if ($percentage > 0) {
-            foreach ($products as $product) {
+        $tempDir = storage_path('app/public/temp_pdf_' . uniqid());
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0777, true);
+        }
+
+        foreach ($products as $product) {
+            if ($percentage > 0) {
                 $increase = $product->unit_price * ($percentage / 100);
                 $product->unit_price += $increase;
             }
+
+            if ($product->photo_path) {
+                try {
+                    if (Storage::disk('s3')->exists($product->photo_path)) {
+                        $imageContent = Storage::disk('s3')->get($product->photo_path);
+                        $sourceImage = @imagecreatefromstring($imageContent);
+                        
+                        if ($sourceImage) {
+                            $width = imagesx($sourceImage);
+                            $newWidth = 150;
+                            $newHeight = floor(imagesy($sourceImage) * ($newWidth / $width));
+                            
+                            $virtualImage = imagecreatetruecolor($newWidth, $newHeight);
+                            
+                            imagealphablending($virtualImage, false);
+                            imagesavealpha($virtualImage, true);
+                            
+                            imagecopyresampled($virtualImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, imagesy($sourceImage));
+                            
+                            $localPath = $tempDir . '/' . $product->id . '.jpg';
+                            imagejpeg($virtualImage, $localPath, 60);
+                            
+                            $product->photo_url = $localPath;
+
+                            imagedestroy($virtualImage);
+                            imagedestroy($sourceImage);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Error procesando imagen para PDF: " . $e->getMessage());
+                }
+            }
         }
         
-        $logoUrl = $this->getLogoUrl(Auth::user()->area_id);
+        $targetAreaId = Auth::user()->isSuperAdmin() && $request->filled('area_id') 
+            ? $request->input('area_id') 
+            : Auth::user()->area_id;
+
+        $logoKey = 'LogoAzulm.PNG';
+        
+        if ($targetAreaId) {
+            $area = Area::find($targetAreaId);
+            if ($area && $area->icon_path) {
+                $logoKey = $area->icon_path;
+            }
+        }
+
+        $localLogoPath = null;
+        try {
+            if (Storage::disk('s3')->exists($logoKey)) {
+                $logoContent = Storage::disk('s3')->get($logoKey);
+                $localLogoPath = $tempDir . '/logo_header.png';
+                file_put_contents($localLogoPath, $logoContent);
+            }
+        } catch (\Exception $e) {
+            Log::error("Error descargando logo para PDF: " . $e->getMessage());
+        }
+
+        $finalLogo = $localLogoPath ?? $this->getLogoUrl($targetAreaId);
 
         $data = [
             'products' => $products,
             'date' => now()->format('d/m/Y'),
-            'logo_url' => $logoUrl,
+            'logo_url' => $finalLogo,
             'percentage_text' => $percentage > 0 ? " (Precios +{$percentage}%)" : ""
         ];
 
@@ -572,7 +633,18 @@ class FfProductController extends Controller
         $pdf->setOption('isRemoteEnabled', true);
         $pdf->setOption('dpi', 150);
         
-        return $pdf->stream('Catalogo_FF_'.now()->format('Ymd').'.pdf');
+        $output = $pdf->output();
+
+        $files = glob($tempDir . '/*');
+        foreach($files as $file){ 
+            if(is_file($file)) unlink($file); 
+        }
+        rmdir($tempDir);
+        
+        return response()->streamDownload(
+            fn () => print($output),
+            'Catalogo_FF_'.now()->format('Ymd').'.pdf'
+        );
     }
 
     public function generateTechnicalSheet(Request $request, ffProduct $product)
@@ -774,4 +846,17 @@ class FfProductController extends Controller
             ]
         ]);
     }
+
+    private function cleanCsvValue($value)
+    {
+        if (!$value) return '';
+        $value = trim($value);
+
+        if (mb_check_encoding($value, 'UTF-8')) {
+            return preg_replace('/^\xEF\xBB\xBF/', '', $value);
+        }
+
+        return mb_convert_encoding($value, 'UTF-8', 'Windows-1252');
+    }
+
 }

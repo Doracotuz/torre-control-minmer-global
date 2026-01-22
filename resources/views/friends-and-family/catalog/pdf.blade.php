@@ -55,6 +55,10 @@
             border-spacing: 20px 30px;
         }
 
+        .products-table td {
+            page-break-inside: avoid;
+        }
+
         .product-card {
             background-color: #fff;
             border: 1px solid #d1d5db;
@@ -63,6 +67,7 @@
             height: 425px;
             width: 100%;
             position: relative;
+            page-break-inside: avoid;
         }
 
         .img-container {
@@ -190,7 +195,7 @@
             <tr>
                 <td class="header-title">
                     <h1>Catálogo de productos</h1>
-                    <h2>Colección Exclusiva {{ Auth::user()->area ? ' - ' . Auth::user()->area->name : '' }}</h2>
+                    <h2>Colección Exclusiva {{ Auth::user()->area ? ' - ' . Auth::user()->area->name : '' }}{{ $percentage_text ?? '' }}</h2>
                 </td>
                 <td class="header-logo" align="right">
                     <img src="{{ $logo_url }}" alt="Logo">

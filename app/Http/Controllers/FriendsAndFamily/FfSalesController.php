@@ -75,23 +75,57 @@ class FfSalesController extends Controller
         $user = Auth::user();
         $userId = $user->id;
         $editFolio = $request->input('edit_folio');
-
         $productsQuery = ffProduct::where('is_active', true);
         
         if (!$user->isSuperAdmin()) {
             $productsQuery->where('area_id', $user->area_id);
         }
 
+        $areas = [];
+        if ($user->isSuperAdmin()) {
+            $areas = Area::all();
+        }        
+
         $products = $productsQuery
             ->with(['channels', 'cartItems' => function ($query) use ($userId) {
                 $query->where('user_id', $userId);
             }])
-            ->withSum('movements', 'quantity')
-            ->withSum(['cartItems as reserved_by_others' => function ($query) use ($userId) {
-                $query->where('user_id', '!=', $userId);
-            }], 'quantity')
             ->orderBy('description')
             ->get();
+
+        $inventoryBreakdown = ffInventoryMovement::selectRaw('ff_product_id, ff_warehouse_id, SUM(quantity) as total_stock')
+            ->whereIn('ff_product_id', $products->pluck('id'))
+            ->groupBy('ff_product_id', 'ff_warehouse_id')
+            ->get();
+
+        $reservationsBreakdown = ffCartItem::selectRaw('ff_product_id, ff_warehouse_id, SUM(quantity) as reserved_qty')
+            ->where('user_id', '!=', $userId)
+            ->whereIn('ff_product_id', $products->pluck('id'))
+            ->whereNotNull('ff_warehouse_id')
+            ->groupBy('ff_product_id', 'ff_warehouse_id')
+            ->get();
+
+        $products->each(function($product) use ($inventoryBreakdown, $reservationsBreakdown) {
+            
+            $physicalStocks = $inventoryBreakdown
+                ->where('ff_product_id', $product->id)
+                ->mapWithKeys(fn($item) => [$item->ff_warehouse_id => (int)$item->total_stock]);
+
+            $reservedStocks = $reservationsBreakdown
+                ->where('ff_product_id', $product->id)
+                ->mapWithKeys(fn($item) => [$item->ff_warehouse_id => (int)$item->reserved_qty]);
+
+            $netStocks = [];
+            
+            foreach ($physicalStocks as $whId => $qty) {
+                $reserved = $reservedStocks[$whId] ?? 0;
+                $netStocks[$whId] = max(0, $qty - $reserved);
+            }
+
+            $product->setAttribute('stocks_by_warehouse', $netStocks);
+            
+            $product->setAttribute('reserved_by_others', 0);
+        });
 
         $clientsQuery = FfClient::where('is_active', true)->with('branches');
         $channelsQuery = FfSalesChannel::where('is_active', true);
@@ -100,26 +134,25 @@ class FfSalesController extends Controller
         $warehousesQuery = FfWarehouse::where('is_active', true);
         
         if (!$user->isSuperAdmin()) {
-            $warehousesQuery->where('area_id', $user->area_id);
-        }
-        
-        $warehouses = $warehousesQuery->orderBy('description')->get();        
-
-        if (!$user->isSuperAdmin()) {
             $clientsQuery->where('area_id', $user->area_id);
             $channelsQuery->where('area_id', $user->area_id);
             $transportsQuery->where('area_id', $user->area_id);
             $paymentsQuery->where('area_id', $user->area_id);
+            $warehousesQuery->where('area_id', $user->area_id);
         }
 
         $clients = $clientsQuery->orderBy('name')->get();
         $channels = $channelsQuery->orderBy('name')->get();
         $transports = $transportsQuery->orderBy('name')->get();
         $payments = $paymentsQuery->orderBy('name')->get();
+        $warehouses = $warehousesQuery->orderBy('description')->get();        
 
         $nextFolio = $this->getNextFolio();            
         
-        return view('friends-and-family.sales.index', compact('products', 'nextFolio', 'clients', 'channels', 'transports', 'payments', 'editFolio', 'warehouses'));
+        return view('friends-and-family.sales.index', compact(
+            'products', 'nextFolio', 'clients', 'channels', 
+            'transports', 'payments', 'editFolio', 'warehouses','areas'
+        ));
     }
 
     public function updateCartItem(Request $request)
@@ -134,21 +167,34 @@ class FfSalesController extends Controller
                 })
             ],
             'quantity' => 'required|integer|min:0',
-            'folio' => 'nullable|integer'
+            'warehouse_id' => [
+                'required',
+                Rule::exists('ff_warehouses', 'id')->where(function ($query) {
+                    if (!Auth::user()->isSuperAdmin()) {
+                        $query->where('area_id', Auth::user()->area_id);
+                    }
+                })
+            ],
         ]);
 
         $productId = $request->product_id;
+        $warehouseId = $request->warehouse_id;
         $quantity = $request->quantity;
         $userId = Auth::id();
 
         if ($quantity <= 0) {
-            ffCartItem::where('user_id', $userId)->where('ff_product_id', $productId)->delete();
+            ffCartItem::where('user_id', $userId)
+                    ->where('ff_product_id', $productId)
+                    ->delete();
             return response()->json(['message' => 'Producto liberado']);
         }
 
         ffCartItem::updateOrCreate(
             ['user_id' => $userId, 'ff_product_id' => $productId],
-            ['quantity' => $quantity]
+            [
+                'quantity' => $quantity,
+                'ff_warehouse_id' => $warehouseId
+            ]
         );
 
         return response()->json(['message' => 'Producto agregado al pedido']);
@@ -187,6 +233,11 @@ class FfSalesController extends Controller
         }
 
         $header = $movements->first();
+        if (in_array($header->status, ['cancelled', 'rejected'])) {
+            return response()->json([
+                'message' => 'No es posible editar un pedido que ya está CANCELADO o RECHAZADO.'
+            ], 422);
+        }        
         if (!Auth::user()->isSuperAdmin() && $header->area_id !== Auth::user()->area_id) {
             return response()->json(['message' => 'No tienes permiso para cargar este pedido.'], 403);
         }
@@ -292,18 +343,23 @@ class FfSalesController extends Controller
                 ->get();
 
             if ($originalMovements->isEmpty()) {
-                throw new \Exception("El pedido ya fue cancelado o no existe.");
+                throw new \Exception("El pedido no contiene productos o no existe.");
             }
 
             $header = $originalMovements->first();
+
+            if (in_array($header->status, ['cancelled', 'rejected'])) {
+                throw new \Exception("Este pedido ya se encuentra cancelado o rechazado.");
+            }
+
             if (!$user->isSuperAdmin() && $header->area_id !== $user->area_id) {
                 throw new \Exception("No tienes permiso para cancelar este pedido.");
             }
 
-            $emailRecipients = [];
-            if ($request->filled('email_recipients')) {
-                 $emailRecipients = explode(';', $request->email_recipients);
-            }
+            ffInventoryMovement::where('folio', $folio)->update([
+                'status' => 'cancelled',
+                'updated_at' => now()
+            ]);
 
             foreach($originalMovements as $mov) {
                 ffInventoryMovement::create([
@@ -314,6 +370,8 @@ class FfSalesController extends Controller
                     'reason' => 'CANCELACIÓN Venta Folio ' . $folio . ': ' . $request->reason,
                     'client_name' => $mov->client_name,
                     'folio' => $folio,
+                    'status' => 'cancelled',
+                    'ff_warehouse_id' => $mov->ff_warehouse_id, 
                     'ff_client_id' => $mov->ff_client_id,
                     'ff_client_branch_id' => $mov->ff_client_branch_id,
                     'ff_sales_channel_id' => $mov->ff_sales_channel_id,
@@ -351,6 +409,11 @@ class FfSalesController extends Controller
     public function checkout(Request $request)
     {
         $user = Auth::user();
+
+        $targetAreaId = $user->area_id;
+        if ($user->isSuperAdmin() && $request->filled('area_id')) {
+            $targetAreaId = $request->input('area_id');
+        }        
         
         $isEditMode = filter_var($request->input('is_edit_mode'), FILTER_VALIDATE_BOOLEAN);
 
@@ -433,8 +496,13 @@ class FfSalesController extends Controller
         try {
             if ($isEditMode) {
                 $existingOrder = ffInventoryMovement::where('folio', $ventaFolio)->first();
+                
                 if ($existingOrder && !$user->isSuperAdmin() && $existingOrder->area_id !== $user->area_id) {
                     throw new \Exception("No tienes permiso para editar este folio.");
+                }
+
+                if ($existingOrder && in_array($existingOrder->status, ['cancelled', 'rejected'])) {
+                    throw new \Exception("Acción denegada: Este pedido está cancelado y no puede ser modificado.");
                 }
                 
                 ffInventoryMovement::where('folio', $ventaFolio)->delete();
@@ -477,6 +545,7 @@ class FfSalesController extends Controller
                 ffInventoryMovement::create([
                     'ff_product_id' => $product->id,
                     'user_id' => $user->id,
+                    'area_id' => $targetAreaId,
                     'area_id' => $user->area_id, 
                     'quantity' => -$quantity,
                     'reason' => ucfirst($orderType) . ' Venta Folio ' . $ventaFolio,
@@ -491,6 +560,7 @@ class FfSalesController extends Controller
                     'folio' => $ventaFolio,
                     'order_type' => $orderType,
                     'status' => 'pending',
+                    'was_edited' => $isEditMode,
                     'discount_percentage' => $discountPercent,
                     'evidence_path_1' => null,
                     'evidence_path_2' => null,
@@ -546,6 +616,19 @@ class FfSalesController extends Controller
         }
 
         $logoUrl = $this->getLogoUrl($user->area);
+        $logoBase64 = null;
+        try {
+            $logoKey = $user->area->icon_path ?? 'LogoAzulm.PNG'; 
+            
+            if (Storage::disk('s3')->exists($logoKey)) {
+                $imageContent = Storage::disk('s3')->get($logoKey);
+                $type = pathinfo($logoKey, PATHINFO_EXTENSION);
+                $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($imageContent);
+            }
+        } catch (\Exception $e) {
+            $logoBase64 = $logoUrl; 
+        }
+
         $companyInfo = $this->getCompanyInfo($user->area_id);
 
         $warehouseName = 'N/A';
@@ -568,7 +651,7 @@ class FfSalesController extends Controller
             'surtidor_name' => $request->surtidor_name,
             'observations' => $request->observations,
             'vendedor_name' => $user->name,
-            'logo_url' => $logoUrl,
+            'logo_url' => $logoBase64,
             'order_type' => $orderType,
             'warehouse_name' => $warehouseName,
         ], $companyInfo);
@@ -589,6 +672,9 @@ class FfSalesController extends Controller
                 ->get(); 
             
             if ($admins->isNotEmpty()) {
+                
+                $emailType = 'admin_alert'; 
+
                 $adminMailData = array_merge([
                     'folio' => $ventaFolio,
                     'client_name' => $request->client_name,
@@ -603,17 +689,14 @@ class FfSalesController extends Controller
                     'logo_url' => $logoUrl,
                     'has_backorder' => $orderHasBackorder,
                     'warehouse_name' => $warehouseName,
+                    'is_edit' => $isEditMode
                 ], $companyInfo);
                 
                 foreach($admins as $admin) {
                     Mail::to($admin->email)->send(new OrderActionMail(
                         $adminMailData, 
-                        'admin_alert', 
-                        null,
-                        null,
-                        [],
-                        null,
-                        $admin->id
+                        $emailType,
+                        null, null, [], null, $admin->id
                     ));
                 }
             } else {

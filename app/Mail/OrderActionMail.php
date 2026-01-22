@@ -35,14 +35,20 @@ class OrderActionMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $prefix = match($this->type) {
-            'new' => 'Nuevo Pedido',
-            'update' => 'Actualización de Pedido',
-            'cancel' => 'CANCELACIÓN de Pedido',
-            'admin_alert' => 'ALERTA: Nuevo Pedido por Aprobar',
-            'backorder_filled' => '✅ STOCK DISPONIBLE: Backorder Surtido',
-            default => 'Notificación de Pedido'
-        };
+        $prefix = 'Notificación de Pedido';
+        $isEdit = $this->data['is_edit'] ?? false;
+
+        if ($this->type === 'admin_alert') {
+            $prefix = $isEdit ? 'ACTUALIZACIÓN de Pedido' : 'ALERTA: Nuevo Pedido por Aprobar';
+        } else {
+            $prefix = match($this->type) {
+                'new' => 'Nuevo Pedido',
+                'update' => 'Actualización de Pedido',
+                'cancel' => 'CANCELACIÓN de Pedido',
+                'backorder_filled' => '✅ STOCK DISPONIBLE: Backorder Surtido',
+                default => 'Notificación de Pedido'
+            };
+        }
 
         return new Envelope(
             subject: "$prefix #" . $this->data['folio'] . ' - ' . $this->data['client_name'],

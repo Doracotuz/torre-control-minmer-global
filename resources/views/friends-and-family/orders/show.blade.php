@@ -1,23 +1,223 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
+    <style>
+        .loader-spinner { border: 4px solid #f3f3f3; border-top: 4px solid #ff9c00; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .excel-viewer table { width: 100%; border-collapse: collapse; font-size: 12px; background: white; }
+        .excel-viewer th, .excel-viewer td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; color: #2c3856; white-space: nowrap; }
+        .excel-viewer th { background-color: #f8fafc; font-weight: bold; position: sticky; top: 0; z-index: 10; }
+        .excel-viewer tr:nth-child(even) { background-color: #f8fafc; }
+        
+        #word-container { width: 100%; height: 100%; overflow-y: auto; background-color: #e5e7eb; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
+        #word-container .docx-wrapper { background: transparent !important; padding: 0 !important; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        #word-container section.docx { background: white !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important; margin-bottom: 20px !important; padding: 40px !important; width: 21cm !important; min-height: 29.7cm !important; color: black !important; }
+        
+        #fs-container:fullscreen { background: #e5e7eb; padding: 20px; display: flex; align-items: center; justify-content: center; overflow: auto; }
+        #fs-container:fullscreen img, #fs-container:fullscreen iframe { height: 100%; width: 100%; }
+        [x-cloak] { display: none !important; }
+    </style>
+
     <div class="bg-[#F8FAFC] min-h-screen font-sans pb-12 relative rounded-3xl" 
          x-data="{ 
             showRejectModal: false,
             toastVisible: false,
             toastMessage: '',
+            previewModalOpen: false,
+            previewDownloadUrl: '',
+            previewBlobUrl: '', 
+            previewType: 'other', 
+            previewName: '',
+            previewLoading: false,
+            isDragging: false,
+            files: [],
+
             copyToClipboard(text) {
                 navigator.clipboard.writeText(text);
                 this.toastMessage = 'Folio copiado al portapapeles';
                 this.toastVisible = true;
                 setTimeout(() => this.toastVisible = false, 3000);
+            },
+
+            handleDrop(e) {
+                this.isDragging = false;
+                let droppedFiles = e.dataTransfer.files;
+                if (droppedFiles.length > 0) {
+                    this.files = droppedFiles;
+                    $refs.evidenceInput.files = droppedFiles; 
+                }
+            },
+
+            async openPreview(url, filename) {
+                let ext = filename.split('.').pop().toLowerCase();
+                
+                this.previewDownloadUrl = url;
+                this.previewName = filename;
+
+                const images = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'];
+                const words = ['docx']; 
+                const excels = ['xlsx', 'xls', 'csv'];
+                const videos = ['mp4', 'webm', 'ogg', 'mov', 'avi'];
+
+                if (images.includes(ext)) this.previewType = 'image';
+                else if (ext === 'pdf') this.previewType = 'pdf';
+                else if (words.includes(ext)) this.previewType = 'word';
+                else if (excels.includes(ext)) this.previewType = 'excel';
+                else if (videos.includes(ext)) this.previewType = 'video';
+                else {
+                    // Si no es soportado, forzar descarga directa
+                    window.location.href = url;
+                    return;
+                }
+
+                this.previewModalOpen = true;
+                this.previewLoading = true;
+                this.previewBlobUrl = ''; 
+
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Network error');
+                    const blob = await response.blob();
+                    
+                    if (this.previewType === 'word') {
+                        const container = document.getElementById('word-container');
+                        container.innerHTML = '';
+                        await docx.renderAsync(blob, container, null, { 
+                            className: 'docx', inWrapper: true, ignoreWidth: false, breakPages: true 
+                        });
+                    } 
+                    else if (this.previewType === 'excel') {
+                        const arrayBuffer = await blob.arrayBuffer();
+                        const workbook = XLSX.read(arrayBuffer);
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        const html = XLSX.utils.sheet_to_html(worksheet);
+                        document.getElementById('excel-container').innerHTML = html;
+                    } 
+                    else {
+                        const objectUrl = URL.createObjectURL(blob);
+                        this.previewBlobUrl = objectUrl;
+                    }
+
+                } catch (error) {
+                    console.error('Error fetching file blob:', error);
+                    alert('No se pudo generar la vista previa. Descargando archivo...');
+                    window.location.href = url;
+                    this.previewModalOpen = false;
+                } finally {
+                    this.previewLoading = false;
+                }
+            },
+
+            closePreview() {
+                this.previewModalOpen = false;
+                setTimeout(() => {
+                    if (this.previewBlobUrl) { URL.revokeObjectURL(this.previewBlobUrl); this.previewBlobUrl = ''; }
+                    this.previewType = 'other';
+                    const wordContainer = document.getElementById('word-container');
+                    const excelContainer = document.getElementById('excel-container');
+                    if(wordContainer) wordContainer.innerHTML = '';
+                    if(excelContainer) excelContainer.innerHTML = '';
+                }, 300);
+            },
+
+            toggleFullscreen() {
+                const container = document.getElementById('fs-container');
+                if (!document.fullscreenElement) {
+                    container.requestFullscreen().catch(err => { console.error(`Error: ${err.message}`); });
+                } else { document.exitFullscreen(); }
             }
          }">
 
         @php
-            $hasBackorder = $movements->contains('is_backorder', true);
+            $isActive = !in_array($header->status, ['cancelled', 'rejected']);
+            $hasBackorder = $isActive && $movements->contains('is_backorder', true);
             $backorderCount = $movements->where('is_backorder', true)->sum(fn($m) => abs($m->quantity));
         @endphp
+
+        <div x-show="previewModalOpen" 
+             x-cloak 
+             class="fixed inset-0 z-[100] flex items-center justify-center px-4 py-6"
+             role="dialog" 
+             aria-modal="true">
+            
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" 
+                 x-show="previewModalOpen"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 @click="closePreview()"></div>
+
+            <div class="relative w-full max-w-7xl h-full max-h-[95vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col transform transition-all"
+                 x-show="previewModalOpen"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95">
+                
+                <div class="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-gray-50/95 backdrop-blur-md z-20">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
+                            <template x-if="previewType === 'image'"><i class="fas fa-image"></i></template>
+                            <template x-if="previewType === 'pdf'"><i class="fas fa-file-pdf"></i></template>
+                            <template x-if="previewType === 'word'"><i class="fas fa-file-word"></i></template>
+                            <template x-if="previewType === 'excel'"><i class="fas fa-file-excel"></i></template>
+                            <template x-if="previewType === 'video'"><i class="fas fa-video"></i></template>
+                        </div>
+                        <h3 class="text-sm md:text-lg font-bold text-[#2c3856] truncate max-w-[200px] md:max-w-md" x-text="previewName">Vista Previa</h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="toggleFullscreen()" class="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Pantalla Completa">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <a :href="previewDownloadUrl" download class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Descargar">
+                            <i class="fas fa-download"></i>
+                        </a>
+                        <button @click="closePreview()" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="fs-container" class="flex-1 bg-gray-100 overflow-hidden relative flex flex-col items-center justify-start w-full h-full">
+                    
+                    <div x-show="previewLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 z-50">
+                        <div class="loader-spinner mb-3"></div>
+                        <p class="text-sm font-bold text-gray-500">Renderizando documento...</p>
+                    </div>
+
+                    <template x-if="previewType === 'image' && previewBlobUrl">
+                        <div class="flex items-center justify-center min-h-full p-4 w-full h-full overflow-auto">
+                            <img :src="previewBlobUrl" class="max-w-full max-h-full object-contain rounded-lg shadow-lg" alt="Vista previa">
+                        </div>
+                    </template>
+                    
+                    <template x-if="previewType === 'pdf' && previewBlobUrl">
+                        <iframe :src="previewBlobUrl" class="w-full h-full border-none bg-white" frameborder="0"></iframe>
+                    </template>
+
+                    <template x-if="previewType === 'video' && previewBlobUrl">
+                        <div class="flex items-center justify-center min-h-full w-full h-full">
+                            <video :src="previewBlobUrl" controls class="max-w-full max-h-full rounded-lg shadow-lg">
+                                Tu navegador no soporta la reproducción de video.
+                            </video>
+                        </div>
+                    </template>                    
+
+                    <div x-show="previewType === 'word'" id="word-container"></div>
+
+                    <div x-show="previewType === 'excel'" class="w-full h-full overflow-auto bg-white">
+                        <div id="excel-container" class="excel-viewer w-full p-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div x-show="toastVisible" 
              x-transition:enter="transition ease-out duration-300"
@@ -48,11 +248,27 @@
                         </button>
                         
                         <span class="px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2
-                            {{ $header->status == 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                              ($header->status == 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-100' : 
-                              'bg-amber-50 text-amber-600 border-amber-100') }}">
-                            <span class="w-2 h-2 rounded-full {{ $header->status == 'approved' ? 'bg-emerald-500' : ($header->status == 'rejected' ? 'bg-rose-500' : 'bg-amber-500 animate-pulse') }}"></span>
-                            {{ match($header->status) { 'pending'=>'Revisión', 'approved'=>'Aprobado', 'rejected'=>'Rechazado', default=>'Desconocido' } }}
+                            {{ match($header->status) {
+                                'approved' => 'bg-emerald-50 text-emerald-600 border-emerald-100',
+                                'rejected' => 'bg-rose-50 text-rose-600 border-rose-100',
+                                'cancelled' => 'bg-slate-100 text-slate-500 border-slate-200', default => 'bg-amber-50 text-amber-600 border-amber-100'
+                            } }}">
+                            
+                            <span class="w-2 h-2 rounded-full 
+                                {{ match($header->status) {
+                                    'approved' => 'bg-emerald-500',
+                                    'rejected' => 'bg-rose-500',
+                                    'cancelled' => 'bg-slate-400',
+                                    default => 'bg-amber-500 animate-pulse'
+                                } }}">
+                            </span>
+                            
+                            {{ match($header->status) { 
+                                'pending' => 'Revisión', 
+                                'approved' => 'Aprobado', 
+                                'rejected' => 'Rechazado', 
+                                'cancelled' => 'Cancelado', default => 'Desconocido' 
+                            } }}
                         </span>
 
                         @if($hasBackorder)
@@ -90,7 +306,6 @@
                             </div>
 
                             <div class="relative z-10 flex justify-between">
-                                
                                 <div class="flex flex-col items-center gap-3">
                                     <div class="w-10 h-10 rounded-full bg-[#2c3856] text-white flex items-center justify-center shadow-lg shadow-blue-900/20 ring-4 ring-white">
                                         <i class="fas fa-file-signature text-xs"></i>
@@ -141,7 +356,6 @@
                                         </div>
                                     @endif
                                 </div>
-
                             </div>
                         </div>
                     </div>                    
@@ -224,16 +438,75 @@
                                     <p class="text-sm text-slate-500 italic">Inventario General (Sin almacén específico)</p>
                                 @endif
                             </div>
-                        </div>>                        
+                        </div>                    
                     </div>
 
                     <div class="bg-white rounded-[2rem] shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100 overflow-hidden">
-                        <div class="px-8 py-6 border-b border-slate-50 flex justify-between items-center">
+                        
+                        <div class="px-6 md:px-8 py-6 border-b border-slate-50 flex justify-between items-center">
                             <h3 class="font-bold text-[#2c3856]">Items del Pedido</h3>
                             <span class="text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-full">{{ $totalItems }} unidades</span>
                         </div>
-                        
-                        <div class="overflow-x-auto">
+
+                        <div class="block md:hidden">
+                            <div class="divide-y divide-slate-50">
+                                @foreach($movements as $item)
+                                    @php 
+                                        $basePrice = $item->product->unit_price;
+                                        $discountPercent = $item->discount_percentage ?? 0;
+                                        $discountAmount = 0;
+                                        $finalPrice = 0;
+                                        $qty = abs($item->quantity);
+
+                                        if ($item->order_type === 'normal') {
+                                            $discountAmount = $basePrice * ($discountPercent / 100);
+                                            $finalPrice = $basePrice - $discountAmount;
+                                        }
+                                    @endphp
+
+                                    <div class="p-5 {{ $item->is_backorder ? 'bg-purple-50/30' : '' }}">
+                                        <div class="flex gap-4">
+                                            <div class="w-16 h-16 rounded-xl bg-white border border-slate-100 flex items-center justify-center p-1 shadow-sm relative overflow-hidden flex-shrink-0">
+                                                @if($item->product->photo_url)
+                                                    <img src="{{ $item->product->photo_url }}" class="w-full h-full object-contain mix-blend-multiply" alt="Producto">
+                                                @else
+                                                    <i class="fas fa-box text-slate-200 text-lg"></i>
+                                                @endif
+                                            </div>
+
+                                            <div class="flex-1 min-w-0">
+                                                <p class="font-bold text-slate-700 text-sm leading-tight mb-1">{{ $item->product->description }}</p>
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <span class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{{ $item->product->sku }}</span>
+                                                    @if($item->is_backorder)
+                                                        <span class="text-[9px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200">
+                                                            <i class="fas fa-history text-[8px]"></i> BACKORDER
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-4 flex items-center justify-between bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                            <div class="flex flex-col">
+                                                <span class="text-[10px] text-slate-400 font-bold uppercase">Cant. & Precio</span>
+                                                <div class="flex items-baseline gap-1">
+                                                    <span class="font-bold text-slate-700">{{ $qty }}</span>
+                                                    <span class="text-xs text-slate-400">x</span>
+                                                    <span class="text-xs font-mono text-slate-600">${{ number_format($finalPrice, 2) }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="text-[10px] text-slate-400 font-bold uppercase">Total</span>
+                                                <p class="font-bold text-[#2c3856] font-mono text-base">${{ number_format($finalPrice * $qty, 2) }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <div class="hidden md:block overflow-x-auto">
                             <table class="w-full text-sm">
                                 <thead class="text-xs text-slate-400 font-bold bg-slate-50/50 uppercase tracking-wider text-left">
                                     <tr>
@@ -262,22 +535,17 @@
                                         <tr class="group transition-colors {{ $item->is_backorder ? 'bg-purple-50/30 hover:bg-purple-50/60' : 'hover:bg-slate-50/80' }}">
                                             <td class="px-8 py-5">
                                                 <div class="flex items-center gap-4">
-                                                    
                                                     <div class="w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center p-1 shadow-sm relative overflow-hidden group-hover:border-slate-300 transition-colors">
                                                         @if($item->product->photo_url)
-                                                            <img src="{{ $item->product->photo_url }}" 
-                                                                 class="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110 mix-blend-multiply" 
-                                                                 alt="Producto">
+                                                            <img src="{{ $item->product->photo_url }}" class="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110 mix-blend-multiply" alt="Producto">
                                                         @else
                                                             <i class="fas fa-box text-slate-200 text-lg"></i>
                                                         @endif
                                                     </div>
-
                                                     <div class="flex flex-col">
                                                         <span class="font-bold text-slate-700 text-base">{{ $item->product->description }}</span>
                                                         <div class="flex items-center gap-2 mt-1">
                                                             <span class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{{ $item->product->sku }}</span>
-                                                            
                                                             @if($item->is_backorder)
                                                                 <span class="text-[9px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200 flex items-center gap-1">
                                                                     <i class="fas fa-history text-[8px]"></i> BACKORDER
@@ -291,13 +559,18 @@
                                                 <span class="font-bold text-slate-700 text-base">{{ $qty }}</span>
                                             </td>
                                             <td class="px-4 py-5 text-right">
-                                                <span class="text-slate-400 font-mono text-xs">${{ number_format($basePrice, 2) }}</span>
+                                                @if($discountPercent > 0)
+                                                    <div class="flex flex-col items-end">
+                                                        <span class="text-[10px] text-slate-300 line-through decoration-slate-300">${{ number_format($basePrice, 2) }}</span>
+                                                        <span class="font-bold text-[#2c3856] font-mono text-xs">${{ number_format($finalPrice, 2) }}</span>
+                                                    </div>
+                                                @else
+                                                    <span class="text-slate-400 font-mono text-xs">${{ number_format($basePrice, 2) }}</span>
+                                                @endif
                                             </td>
                                             <td class="px-4 py-5 text-center">
                                                 @if($discountPercent > 0)
-                                                    <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg">
-                                                        -{{ number_format($discountPercent, 0) }}%
-                                                    </span>
+                                                    <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg">-{{ number_format($discountPercent, 0) }}%</span>
                                                 @else
                                                     <span class="text-slate-200 text-lg">·</span>
                                                 @endif
@@ -349,159 +622,149 @@
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-[2rem] p-8 shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100"
-                        x-data="{
-                            showModal: false,
-                            activeUrl: '',
-                            activePath: '',
-                            activeType: '',
-                            isFullScreen: false,
-                            openEvidence(url, path) {
-                                this.activeUrl = url;
-                                this.activePath = path;
-                                const extension = url.split('.').pop().split(/\#|\?/)[0].toLowerCase();
-                                this.activeType = ['jpg', 'jpeg', 'png', 'webp'].includes(extension) ? 'image' : 'pdf';
-                                this.showModal = true;
-                                this.isFullScreen = false;
-                            }
-                        }">
+                    <div class="bg-white rounded-[2rem] p-8 shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100">
 
                         <div class="flex justify-between items-center mb-6">
-                            <h3 class="font-bold text-[#2c3856]">Evidencias de Entrega</h3>
+                            <h3 class="font-bold text-[#2c3856] flex items-center gap-2">
+                                <i class="fas fa-camera text-[#ff9c00]"></i> Evidencias de Entrega
+                            </h3>
+                            <span class="text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-full">
+                                {{ $header->evidences->count() }} archivos
+                            </span>
                         </div>
+
+                        @if($header->evidences->count() > 0)
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                                @foreach($header->evidences as $evidence)
+                                    <div class="relative group bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center gap-3 hover:bg-white hover:shadow-md transition-all">
+                                        
+                                        <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 text-lg">
+                                            @if(Str::endsWith(strtolower($evidence->filename), ['jpg','jpeg','png','webp']))
+                                                <i class="fas fa-image"></i>
+                                            @elseif(Str::endsWith(strtolower($evidence->filename), ['pdf']))
+                                                <i class="fas fa-file-pdf text-red-500"></i>
+                                            @elseif(Str::endsWith(strtolower($evidence->filename), ['xls','xlsx','csv']))
+                                                <i class="fas fa-file-excel text-green-600"></i>
+                                            @elseif(Str::endsWith(strtolower($evidence->filename), ['doc','docx']))
+                                                <i class="fas fa-file-word text-blue-800"></i>
+                                            @else
+                                                <i class="fas fa-file text-slate-500"></i>
+                                            @endif
+                                        </div>
+
+                                        <div class="flex-grow min-w-0">
+                                            <p class="text-xs font-bold text-[#2c3856] truncate" title="{{ $evidence->filename }}">
+                                                {{ $evidence->filename }}
+                                            </p>
+                                            <p class="text-[10px] text-slate-400">
+                                                {{ $evidence->created_at->format('d/m/Y H:i') }} • {{ $evidence->uploader->name ?? 'Sistema' }}
+                                            </p>
+                                        </div>
+
+                                        <div class="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                            <button 
+                                                type="button" 
+                                                @click="openPreview('{{ route('ff.orders.downloadEvidence', ['path' => $evidence->path]) }}', '{{ $evidence->filename }}')" 
+                                                class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
+                                                title="Ver / Previsualizar">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            
+                                            @if(Auth::user()->is_area_admin || Auth::user()->isSuperAdmin())
+                                                <form action="{{ route('ff.evidence.delete', $evidence->id) }}" method="POST" onsubmit="return confirm('¿Eliminar evidencia permanentemente?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Eliminar">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="text-center py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-300 mb-6">
+                                <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300 mb-2">
+                                    <i class="fas fa-folder-open text-xl"></i>
+                                </div>
+                                <p class="text-xs text-slate-400 font-medium">No hay evidencias cargadas aún.</p>
+                            </div>
+                        @endif
 
                         <form action="{{ route('ff.orders.uploadBatchEvidences', $header->folio) }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             
-                            <div class="space-y-4 mb-6">
-                                @for($i=1; $i<=3; $i++)
-                                    @php 
-                                        $pathField = "evidence_path_{$i}";
-                                        $currentPath = $header->$pathField;
-                                    @endphp
-                                    
-                                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 transition-all hover:bg-slate-100">
-                                        <div class="flex justify-between items-center mb-3">
-                                            <span class="text-xs font-bold text-slate-700 uppercase flex items-center gap-2">
-                                                <span class="w-6 h-6 rounded-full bg-[#2c3856] text-white flex items-center justify-center text-[10px]">{{ $i }}</span>
-                                                Evidencia
-                                            </span>
-                                            
-                                            @if($url = $header->getEvidenceUrl($i))
-                                                <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
-                                                    <i class="fas fa-check mr-1"></i> Cargada
-                                                </span>
-                                            @else
-                                                <span class="text-[10px] font-bold text-slate-400 bg-white px-2 py-1 rounded-full border border-slate-200 shadow-sm">
-                                                    Pendiente
-                                                </span>
-                                            @endif
-                                        </div>
-
-                                        @if($url = $header->getEvidenceUrl($i))
-                                            <div class="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200">
-                                                <div class="flex items-center gap-3">
-                                                    <div class="w-8 h-8 rounded bg-blue-50 flex items-center justify-center text-blue-500">
-                                                        <i class="fas fa-file-invoice"></i>
-                                                    </div>
-                                                    <span class="text-xs font-medium text-slate-500 truncate max-w-[150px]">Archivo cargado</span>
-                                                </div>
-                                                
-                                                <button type="button" 
-                                                        @click="openEvidence('{{ $url }}', '{{ $currentPath }}')"
-                                                        class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold hover:bg-blue-100 transition-colors">
-                                                    <i class="fas fa-eye mr-1"></i> Ver
-                                                </button>
-                                            </div>
-                                        @else
-                                            <label class="block cursor-pointer group">
-                                                <span class="sr-only">Elegir archivo</span>
-                                                <input type="file" name="evidence_{{ $i }}" accept=".pdf,.jpg,.jpeg,.png"
-                                                    class="block w-full text-xs text-slate-500
-                                                    file:mr-4 file:py-2 file:px-4
-                                                    file:rounded-lg file:border-0
-                                                    file:text-xs file:font-bold
-                                                    file:bg-white file:text-[#2c3856]
-                                                    file:border file:border-slate-200
-                                                    file:shadow-sm
-                                                    hover:file:bg-slate-50
-                                                    transition-all cursor-pointer
-                                                "/>
-                                            </label>
-                                        @endif
-                                    </div>
-                                @endfor
-                            </div>
-
-                            @if(!$header->getEvidenceUrl(1) || !$header->getEvidenceUrl(2) || !$header->getEvidenceUrl(3))
-                                <button type="submit" class="w-full py-3 bg-[#2c3856] hover:bg-[#1e273d] text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                    Subir Evidencias Seleccionadas
-                                </button>
-                            @else
-                                <div class="text-center p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 text-sm font-bold">
-                                    <i class="fas fa-check-circle mr-1"></i> Expediente completo
+                            @if ($errors->any())
+                                <div class="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold border border-red-100">
+                                    <ul>
+                                        @foreach ($errors->all() as $error)
+                                            <li>• {{ $error }}</li>
+                                        @endforeach
+                                    </ul>
                                 </div>
                             @endif
-                        </form>
-
-                        <div x-show="showModal" 
-                            style="display: none;"
-                            class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-                            :class="isFullScreen ? 'p-0' : 'p-4'"
-                            x-transition:enter="transition ease-out duration-300"
-                            x-transition:enter-start="opacity-0"
-                            x-transition:enter-end="opacity-100"
-                            x-transition:leave="transition ease-in duration-200"
-                            x-transition:leave-start="opacity-100"
-                            x-transition:leave-end="opacity-0">
                             
-                            <div class="bg-white flex flex-col shadow-2xl overflow-hidden transition-all duration-300" 
-                                :class="isFullScreen ? 'w-full h-full rounded-none' : 'w-full max-w-4xl max-h-[90vh] rounded-2xl'"
-                                @click.away="if(!isFullScreen) showModal = false">
-                                
-                                <div class="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50 flex-shrink-0">
-                                    <h3 class="font-bold text-gray-700">Vista Previa</h3>
-                                    <div class="flex gap-2">
-                                        
-                                        <button @click="isFullScreen = !isFullScreen" 
-                                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white border border-transparent hover:border-gray-200 text-gray-500 transition-all"
-                                                :title="isFullScreen ? 'Salir de pantalla completa' : 'Pantalla completa'">
-                                            <i class="fas" :class="isFullScreen ? 'fa-compress' : 'fa-expand'"></i>
-                                        </button>
-
-                                        <a :href="'{{ route('ff.evidence.download') }}?path=' + activePath" 
-                                        class="px-4 py-2 bg-[#2c3856] text-white text-xs font-bold rounded-lg hover:bg-[#1e273d] transition-colors flex items-center gap-2">
-                                            <i class="fas fa-download"></i> Descargar
-                                        </a>
-
-                                        <button @click="showModal = false" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-600 transition-colors">
-                                            <i class="fas fa-times"></i>
-                                        </button>
+                            <div class="relative w-full">
+                                <label 
+                                    class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all group"
+                                    :class="isDragging ? 'border-[#ff9c00] bg-orange-50' : 'border-slate-300'"
+                                    @dragover.prevent="isDragging = true"
+                                    @dragleave.prevent="isDragging = false"
+                                    @drop.prevent="handleDrop($event)">
+                                    
+                                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <i class="fas fa-cloud-upload-alt text-2xl mb-3 text-slate-400 group-hover:text-[#2c3856] transition-colors" :class="isDragging ? 'text-[#ff9c00]' : ''"></i>
+                                        <p class="mb-1 text-sm text-slate-500 font-bold">
+                                            <span class="font-black text-[#2c3856]">Clic para subir</span> o arrastra archivos
+                                        </p>
+                                        <p class="text-[10px] text-slate-400">PDF, JPG, PNG (Máx 20MB)</p>
                                     </div>
-                                </div>
-
-                                <div class="flex-1 overflow-auto bg-gray-100 p-4 flex items-center justify-center relative">
-                                    <div class="absolute inset-0 flex items-center justify-center z-0 text-gray-400">
-                                        <i class="fas fa-circle-notch fa-spin fa-2x"></i>
-                                    </div>
-
-                                    <template x-if="activeType === 'image'">
-                                        <img :src="activeUrl" class="max-w-full max-h-full object-contain rounded-lg shadow-lg relative z-10 bg-white">
-                                    </template>
-
-                                    <template x-if="activeType === 'pdf'">
-                                        <iframe :src="activeUrl" class="w-full h-full min-h-[60vh] rounded-lg shadow-lg relative z-10 bg-white border border-gray-200"></iframe>
-                                    </template>
-                                </div>
+                                    
+                                    <input 
+                                        type="file" 
+                                        name="evidences[]" 
+                                        class="hidden" 
+                                        multiple 
+                                        x-ref="evidenceInput"
+                                        @change="files = $event.target.files" 
+                                    />
+                                </label>
                             </div>
-                        </div>
+
+                            <div x-show="files.length > 0" class="mt-4 space-y-3" x-cloak>
+                                <div class="text-xs font-bold text-[#2c3856] flex justify-between">
+                                    <span>Archivos listos para subir:</span>
+                                    <span x-text="files.length" class="bg-blue-100 text-blue-700 px-2 rounded"></span>
+                                </div>
+                                
+                                <ul class="space-y-2 max-h-40 overflow-y-auto custom-scroll pr-2">
+                                    <template x-for="file in files">
+                                        <li class="flex items-center justify-between text-xs bg-white p-2 rounded border border-slate-200">
+                                            <span class="truncate text-slate-600 w-3/4" x-text="file.name"></span>
+                                            <span class="text-[10px] text-slate-400" x-text="(file.size/1024).toFixed(1) + ' KB'"></span>
+                                        </li>
+                                    </template>
+                                </ul>
+
+                                <button type="submit" class="w-full py-3 bg-[#2c3856] hover:bg-[#1e273d] text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-2 mt-2">
+                                    <i class="fas fa-save"></i>
+                                    Guardar Evidencias
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
-                    <a href="{{ route('ff.sales.index', ['edit_folio' => $header->folio]) }}" 
-                       class="block w-full bg-white border border-slate-200 text-slate-600 font-bold py-4 rounded-xl shadow-sm hover:bg-slate-50 hover:text-[#2c3856] hover:border-[#2c3856] transition-all text-sm text-center">
-                        <i class="fas fa-pencil-alt mr-2"></i> Editar Pedido
-                    </a>
+                    @if(!in_array($header->status, ['cancelled', 'rejected']))
+                        <a href="{{ route('ff.sales.index', ['edit_folio' => $header->folio]) }}" 
+                           class="block w-full bg-white border border-slate-200 text-slate-600 font-bold py-4 rounded-xl shadow-sm hover:bg-slate-50 hover:text-[#2c3856] hover:border-[#2c3856] transition-all text-sm text-center">
+                            <i class="fas fa-pencil-alt mr-2"></i> Editar Pedido
+                        </a>
+                    @else
+                        <div class="block w-full bg-slate-100 border border-slate-200 text-slate-400 font-bold py-4 rounded-xl text-sm text-center cursor-not-allowed">
+                            <i class="fas fa-ban mr-2"></i> Edición Bloqueada ({{ ucfirst($header->status) }})
+                        </div>
+                    @endif
 
                 </div>
             </div>
@@ -546,4 +809,9 @@
         </div>
 
     </div>
+
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/docx-preview@0.1.15/dist/docx-preview.min.js"></script>
+
 </x-app-layout>

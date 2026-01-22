@@ -128,6 +128,7 @@
 
             <div class="sticky top-4 z-30 bg-white/90 backdrop-blur-md border border-gray-200 shadow-lg shadow-gray-200/50 rounded-2xl p-3 mb-8 transition-all">
                 <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    
                     <div class="relative w-full md:w-96 group">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="fas fa-search text-gray-400 group-focus-within:text-[#2c3856]"></i>
@@ -137,74 +138,91 @@
                             placeholder="Buscar SKU, nombre, UPC...">
                     </div>
 
-                    <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+                    <div class="grid grid-cols-2 sm:flex items-center gap-2 w-full md:w-auto">
+                        
                         <button @click="showFilters = !showFilters" 
                                 :class="{'bg-gray-100 text-gray-900': showFilters, 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50': !showFilters}"
-                                class="px-4 py-2.5 rounded-xl text-sm font-bold transition-colors whitespace-nowrap flex items-center gap-2 shadow-sm">
-                            <i class="fas fa-filter"></i> Filtros
-                            <span x-show="activeFilterCount > 0" class="flex h-5 w-5 items-center justify-center rounded-full bg-[#2c3856] text-[10px] text-white" x-text="activeFilterCount"></span>
+                                class="col-span-2 sm:col-span-1 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto">
+                            <i class="fas fa-filter"></i> 
+                            <span>Filtros</span>
+                            <span x-show="activeFilterCount > 0" class="flex h-5 w-5 items-center justify-center rounded-full bg-[#2c3856] text-[10px] text-white ml-1" x-text="activeFilterCount"></span>
                         </button>
-                        <div class="h-8 w-px bg-gray-300 mx-2"></div>
-                        <a :href="generateUrl('{{ route('ff.catalog.exportInventoryPdf') }}')" target="_blank" class="px-4 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold whitespace-nowrap shadow-sm">
-                            <i class="fas fa-clipboard-list mr-2 text-gray-400"></i> Inventario
-                        </a>                      
-                        <button @click="openPdfModal()" class="px-4 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold whitespace-nowrap shadow-sm">
+
+                        <div class="hidden md:block h-8 w-px bg-gray-300 mx-2"></div>
+
+                        <a :href="generateUrl('{{ route('ff.catalog.exportInventoryPdf') }}')" target="_blank" 
+                        class="px-3 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold shadow-sm flex items-center justify-center w-full sm:w-auto" title="Inventario">
+                            <i class="fas fa-clipboard-list mr-2 text-gray-400"></i> <span class="truncate">Inventario</span>
+                        </a>
+                        
+                        <button @click="openPdfModal()" 
+                                class="px-3 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold shadow-sm flex items-center justify-center w-full sm:w-auto">
                             <i class="fas fa-file-pdf mr-2 text-gray-400"></i> PDF
                         </button>
-                        <a :href="generateUrl('{{ route('ff.catalog.exportCsv') }}')" target="_blank" class="px-4 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold whitespace-nowrap shadow-sm">
+                        
+                        <a :href="generateUrl('{{ route('ff.catalog.exportCsv') }}')" target="_blank" 
+                        class="col-span-2 sm:col-span-1 px-3 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold shadow-sm flex items-center justify-center w-full sm:w-auto">
                             <i class="fas fa-file-csv mr-2 text-gray-400"></i> CSV
                         </a>
                     </div>
                 </div>
 
-                <div x-show="showFilters" class="mt-4 pt-4 border-t border-gray-100">
-                    <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
+                <div x-show="showFilters" x-transition class="mt-4 pt-4 border-t border-gray-100">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
+                        
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Marca</label>
                             <select x-model="filters.brand" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
-                                <option value="">Todas las marcas</option>
+                                <option value="">Todas</option>
                                 <template x-for="brandName in brands" :key="brandName">
                                     <option :value="brandName" x-text="brandName"></option>
                                 </template>
                             </select>
                         </div>
+
                         @if(Auth::user()->isSuperAdmin())
                             <div>
                                 <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Área</label>
                                 <select x-model="filters.area_id" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
-                                    <option value="">Todas las áreas</option>
+                                    <option value="">Todas</option>
                                     <template x-for="area in areas" :key="area.id">
                                         <option :value="area.id" x-text="area.name"></option>
                                     </template>
                                 </select>
                             </div>
                         @endif                        
+                        
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Tipo</label>
                             <select x-model="filters.type" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
-                                <option value="">Todos los tipos</option>
+                                <option value="">Todos</option>
                                 <template x-for="typeName in types" :key="typeName">
                                     <option :value="typeName" x-text="typeName"></option>
                                 </template>
                             </select>
                         </div>
+
                         <div>
-                            <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Canal de Venta</label>
+                            <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Canal</label>
                             <select x-model="filters.channel" class="w-full rounded-lg border-gray-300 text-sm focus:ring-[#2c3856] focus:border-[#2c3856]">
-                                <option value="">Todos los canales</option>
+                                <option value="">Todos</option>
                                 <template x-for="channel in channels" :key="channel.id"><option :value="channel.id" x-text="channel.name"></option></template>
                             </select>
                         </div>
-                        <div>
+
+                        <div class="sm:col-span-2 md:col-span-2 lg:col-span-1">
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Estado</label>
                             <div class="flex gap-2">
                                 <button @click="filters.status = 'all'" :class="filters.status === 'all' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Todos</button>
                                 <button @click="filters.status = 'active'" :class="filters.status === 'active' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Activos</button>
-                                <button @click="filters.status = 'inactive'" :class="filters.status === 'inactive' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Inactivos</button>
+                                <button @click="filters.status = 'inactive'" :class="filters.status === 'inactive' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">Inact.</button>
                             </div>
                         </div>
-                        <div class="flex items-end justify-end">
-                            <button @click="resetFilters()" class="px-6 py-2.5 text-sm text-gray-500 font-bold hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-colors"><i class="fas fa-times mr-1"></i> Limpiar Filtros</button>
+
+                        <div class="flex items-end justify-end sm:col-span-2 md:col-span-3 lg:col-span-1">
+                            <button @click="resetFilters()" class="w-full sm:w-auto px-6 py-2.5 text-sm text-gray-500 font-bold hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-colors border border-transparent hover:border-gray-200">
+                                <i class="fas fa-times mr-1"></i> Limpiar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -487,43 +505,131 @@
             </div>
         </div>
 
-        <div x-show="isDetailModalOpen" style="display: none;" class="fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-center justify-center min-h-screen px-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm transition-opacity" @click="isDetailModalOpen = false"></div>
-                <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full p-0">
-                    <div class="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50">
-                        <h3 class="text-lg font-bold text-[#2c3856]">Detalle del Producto</h3>
-                        <button @click="isDetailModalOpen = false" class="text-gray-400 hover:text-gray-600 focus:outline-none"><i class="fas fa-times fa-lg"></i></button>
+        <style>
+            @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+            @keyframes spotlight { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.1); } }
+            .animate-float { animation: float 6s ease-in-out infinite; }
+            .animate-spotlight { animation: spotlight 8s ease-in-out infinite; }
+        </style>
+
+        <div x-show="isDetailModalOpen" 
+            class="fixed inset-0 z-50 overflow-y-auto"
+            aria-labelledby="modal-title" role="dialog" aria-modal="true"
+            x-cloak>
+            
+            <div x-show="isDetailModalOpen" 
+                x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0 backdrop-blur-none"
+                x-transition:enter-end="opacity-100 backdrop-blur-md"
+                x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100 backdrop-blur-md"
+                x-transition:leave-end="opacity-0 backdrop-blur-none"
+                class="fixed inset-0 bg-[#2c3856]/60 transition-all"
+                @click="isDetailModalOpen = false">
+            </div>
+
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                
+                <div x-show="isDetailModalOpen"
+                    x-transition:enter="ease-out duration-500"
+                    x-transition:enter-start="opacity-0 translate-y-10 scale-95"
+                    x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                    x-transition:leave="ease-in duration-300"
+                    x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                    x-transition:leave-end="opacity-0 translate-y-10 scale-95"
+                    class="relative transform overflow-hidden rounded-[2rem] bg-white text-left shadow-2xl transition-all sm:my-8 w-full max-w-6xl flex flex-col md:flex-row md:min-h-[600px]">
+                    
+                    <button @click="isDetailModalOpen = false" class="absolute top-4 right-4 z-50 w-10 h-10 md:w-12 md:h-12 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center text-[#2c3856] hover:bg-[#2c3856] hover:text-white transition-all shadow-lg border border-white/50">
+                        <i class="fas fa-times text-lg md:text-xl"></i>
+                    </button>
+
+                    <div class="w-full md:w-1/2 bg-gradient-to-br from-[#F8FAFC] to-[#E2E8F0] relative flex items-center justify-center p-8 md:p-10 overflow-hidden min-h-[300px] md:min-h-full">
+                        
+                        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] md:w-[500px] md:h-[500px] bg-gradient-to-tr from-blue-100/50 to-purple-100/50 rounded-full blur-[60px] animate-spotlight"></div>
+                        
+                        <h1 class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-8xl md:text-[12rem] lg:text-[15rem] font-black text-white/50 select-none z-0 rotate-[-10deg] tracking-tighter leading-none whitespace-nowrap" 
+                            x-text="detailProduct.brand ? detailProduct.brand.substring(0,3) : 'FF'"></h1>
+
+                        <div class="relative z-10 w-full h-full flex items-center justify-center animate-float">
+                            <img :src="detailProduct.photo_url" 
+                                class="max-h-[250px] md:max-h-[450px] w-auto object-contain drop-shadow-[0_25px_25px_rgba(0,0,0,0.2)] transition-transform duration-700 hover:scale-105">
+                            
+                            <div class="hidden md:flex absolute -bottom-6 bg-white/80 backdrop-blur-md px-6 py-2 rounded-full shadow-xl border border-white/50 items-center gap-2" x-show="detailProduct.is_active">
+                                <span class="relative flex h-3 w-3">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                                </span>
+                                <span class="text-xs font-bold text-[#2c3856] tracking-widest uppercase">Disponible</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="p-8 flex flex-col md:flex-row gap-8">
-                        <div class="w-full md:w-1/2 flex items-center justify-center bg-gray-50 rounded-xl border border-gray-100 p-6"><img :src="detailProduct.photo_url" loading="lazy" class="max-h-[400px] w-auto object-contain drop-shadow-lg"></div>
-                        <div class="w-full md:w-1/2 flex flex-col justify-between">
-                            <div class="space-y-6">
-                                <div><span class="inline-block px-3 py-1 bg-gray-200 text-gray-700 text-sm font-mono font-bold rounded-lg mb-2" x-text="detailProduct.sku"></span><h2 class="text-3xl font-extrabold text-gray-900 leading-tight" x-text="detailProduct.description"></h2><p class="text-gray-500 font-bold text-lg mt-2" x-text="detailProduct.brand"></p></div>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100"><p class="text-xs text-gray-500 font-bold uppercase">Precio Unitario</p><p class="text-2xl font-bold text-[#2c3856]" x-text="formatMoney(detailProduct.unit_price)"></p></div>
-                                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100"><p class="text-xs text-gray-500 font-bold uppercase">Presentación</p><p class="text-xl font-bold text-gray-700" x-text="(detailProduct.pieces_per_box || 0) + ' pzas/caja'"></p></div>
-                                </div>
-                                <div class="space-y-3 pt-4 border-t border-gray-100 text-sm">
-                                    <div class="flex justify-between"><span class="text-gray-500 font-medium">UPC:</span><span class="font-bold text-gray-900" x-text="detailProduct.upc || 'N/A'"></span></div>
-                                    <div class="flex justify-between"><span class="text-gray-500 font-medium">Tipo:</span><span class="font-bold text-gray-900" x-text="detailProduct.type || 'N/A'"></span></div>
-                                    <div class="flex justify-between items-start"><span class="text-gray-500 font-medium">Canales:</span>
-                                        <div class="flex flex-wrap justify-end gap-1 max-w-[200px]">
-                                            <template x-if="detailProduct.channels && detailProduct.channels.length > 0">
-                                                <template x-for="channel in detailProduct.channels">
-                                                    <span class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-100 text-xs font-bold" x-text="channel.name"></span>
-                                                </template>
-                                            </template>
-                                            <template x-if="!detailProduct.channels || detailProduct.channels.length === 0">
-                                                <span class="text-gray-400 italic">Ninguno</span>
-                                            </template>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-between"><span class="text-gray-500 font-medium">Dimensiones:</span><span class="font-bold text-gray-900" x-text="`${detailProduct.length || 0} x ${detailProduct.width || 0} x ${detailProduct.height || 0} cm`"></span></div>
+
+                    <div class="w-full md:w-1/2 bg-white p-6 md:p-12 flex flex-col justify-center relative z-20">
+                        
+                        <div class="flex flex-wrap items-center gap-3 mb-4 md:mb-6">
+                            <span class="px-2 md:px-3 py-1 rounded-lg bg-gray-100 text-gray-500 font-mono text-[10px] md:text-xs font-bold border border-gray-200" x-text="detailProduct.sku"></span>
+                            <div class="h-px w-8 bg-gray-300 hidden md:block"></div>
+                            <span class="text-[10px] md:text-xs font-bold text-[#ff9c00] uppercase tracking-widest" x-text="detailProduct.brand || 'GENÉRICO'"></span>
+                        </div>
+
+                        <h2 class="text-2xl md:text-4xl lg:text-5xl font-black text-[#2c3856] leading-tight mb-4 md:mb-6" x-text="detailProduct.description"></h2>
+
+                        <div class="flex flex-wrap items-end gap-4 md:gap-6 mb-6 md:mb-10 border-b border-gray-100 pb-6 md:pb-8">
+                            <div>
+                                <p class="text-[10px] md:text-xs font-bold text-gray-400 uppercase mb-1">Precio Unitario</p>
+                                <p class="text-3xl md:text-5xl font-black text-[#2c3856] tracking-tighter" x-text="formatMoney(detailProduct.unit_price)"></p>
+                            </div>
+                            <div class="pb-1 md:pb-2">
+                                <span class="text-xs md:text-sm font-bold text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 whitespace-nowrap">
+                                    <i class="fas fa-box-open mr-1 text-gray-400"></i>
+                                    <span x-text="detailProduct.pieces_per_box || 0"></span> pzas/caja
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-y-4 md:gap-y-6 gap-x-4 mb-8 md:mb-10">
+                            <div class="group">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Código UPC</p>
+                                <p class="text-sm md:text-base font-bold text-gray-800 break-all" x-text="detailProduct.upc || 'N/A'"></p>
+                            </div>
+                            
+                            <div class="group">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Dimensiones (cm)</p>
+                                <p class="text-sm md:text-base font-bold text-gray-800" 
+                                x-text="(detailProduct.length || 0) + ' x ' + (detailProduct.width || 0) + ' x ' + (detailProduct.height || 0)">
+                                </p>
+                            </div>
+
+                            <div class="col-span-2 group">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Canales</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <template x-if="detailProduct.channels && detailProduct.channels.length > 0">
+                                        <template x-for="channel in detailProduct.channels">
+                                            <span class="px-3 py-1 rounded-full bg-[#F8FAFC] text-[#2c3856] text-[10px] font-extrabold uppercase tracking-wide border border-gray-200" x-text="channel.name"></span>
+                                        </template>
+                                    </template>
+                                    <template x-if="!detailProduct.channels || detailProduct.channels.length === 0">
+                                        <span class="text-xs text-gray-400 italic">Sin restricciones</span>
+                                    </template>
                                 </div>
                             </div>
-                            <div class="mt-8 flex gap-3"><button @click="openSheetModal(detailProduct)" class="flex-1 py-3 bg-[#2c3856] text-white rounded-xl font-bold hover:bg-[#1a233a] shadow-lg"><i class="fas fa-file-invoice mr-2"></i> Ficha Técnica</button><button @click="closeDetailAndEdit(detailProduct)" class="flex-1 py-3 bg-white text-[#2c3856] border border-gray-300 rounded-xl font-bold hover:bg-gray-50">Editar</button></div>
                         </div>
+
+                        <div class="mt-auto flex flex-col sm:flex-row gap-3 md:gap-4">
+                            <button @click="openSheetModal(detailProduct)" 
+                                    class="flex-1 py-3 md:py-4 bg-[#2c3856] text-white rounded-xl md:rounded-2xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group">
+                                <div class="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                                <i class="fas fa-file-invoice text-lg group-hover:rotate-12 transition-transform"></i>
+                                <span class="relative z-10 text-sm md:text-base">Generar Ficha</span>
+                            </button>
+                            
+                            <button @click="closeDetailAndEdit(detailProduct)" 
+                                    class="px-6 md:px-8 py-3 md:py-4 bg-white text-[#2c3856] border-2 border-gray-100 rounded-xl md:rounded-2xl font-bold hover:border-[#2c3856] hover:bg-gray-50 transition-all duration-300 flex items-center justify-center gap-2 group text-sm md:text-base">
+                                <span>Editar</span>
+                                <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                            </button>
+                        </div>
+
                     </div>
                 </div>
             </div>

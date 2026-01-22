@@ -42,11 +42,29 @@
                                         $badgeColor = '#2c3856';
                                         $badgeText = 'NOTIFICACIÓN';
                                         
-                                        if($type == 'new') { $badgeColor = '#28a745'; $badgeText = 'NUEVA VENTA'; }
-                                        elseif($type == 'update') { $badgeColor = '#ff9c00'; $badgeText = 'ACTUALIZACIÓN'; }
-                                        elseif($type == 'cancel') { $badgeColor = '#dc3545'; $badgeText = 'CANCELADO'; }
-                                        elseif($type == 'admin_alert') { $badgeColor = '#2c3856'; $badgeText = 'REQUIERE APROBACIÓN'; }
-                                        elseif($type == 'backorder_filled') { $badgeColor = '#7c3aed'; $badgeText = 'BACKORDER SURTIDO'; }
+                                        $isEdit = $data['is_edit'] ?? false; 
+
+                                        if($type == 'new') { 
+                                            $badgeColor = '#28a745'; 
+                                            $badgeText = 'NUEVA VENTA'; 
+                                        }
+                                        elseif($type == 'update' || $type == 'order_updated') { 
+                                            $badgeColor = '#ff9c00'; 
+                                            $badgeText = 'ACTUALIZACIÓN'; 
+                                        }
+                                        elseif($type == 'cancel') { 
+                                            $badgeColor = '#dc3545'; 
+                                            $badgeText = 'CANCELADO'; 
+                                        }
+                                        elseif($type == 'admin_alert') { 
+                                            $badgeColor = '#2c3856'; 
+                                            
+                                            $badgeText = $isEdit ? 'EDICIÓN DE PEDIDO' : 'REQUIERE APROBACIÓN';
+                                        }
+                                        elseif($type == 'backorder_filled') { 
+                                            $badgeColor = '#7c3aed'; 
+                                            $badgeText = 'BACKORDER SURTIDO'; 
+                                        }
                                     @endphp
                                     
                                     <td align="center" bgcolor="{{ $badgeColor }}" style="border-radius: 50px; padding: 6px 18px;">

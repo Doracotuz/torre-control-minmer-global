@@ -21,7 +21,7 @@
     </style>
 
     <div x-data="salesManager()" 
-    x-init='init(@json($products), {{ $nextFolio }}, @json($clients), @json($channels), @json($transports), @json($payments), @json($warehouses), {{ $editFolio ?? "null" }})' 
+    x-init='init(@json($products), {{ $nextFolio }}, @json($clients), @json($channels), @json($transports), @json($payments), @json($warehouses), {{ $editFolio ?? "null" }}, @json($areas ?? []), {{ Auth::user()->isSuperAdmin() ? "true" : "false" }})'
     class="bg-[#E8ECF7] font-sans text-gray-800 min-h-screen pb-12">
         
         <div x-show="flashMessage" x-cloak 
@@ -51,104 +51,129 @@
                 
                 <div class="flex flex-col gap-6" :class="layoutMode === 'sidebar' ? 'w-full lg:w-9/12' : 'w-full order-2'">
                     
-                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 top-4 z-30">
-                        <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
-                            <div>
-                                <a href="{{ route('ff.orders.index') }}" class="inline-flex items-center text-xs font-bold text-gray-400 hover:text-[#2c3856] mb-2 transition-colors">
-                                    <i class="fas fa-arrow-left mr-1"></i> Volver al Monitoreo
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-6 space-y-6 top-4 z-30">
+                        
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-gray-100 pb-5">
+                            
+                            <div class="min-w-fit">
+                                <a href="{{ route('ff.orders.index') }}" class="group inline-flex items-center text-xs font-semibold text-gray-400 hover:text-[#2c3856] mb-1 transition-colors">
+                                    <div class="w-6 h-6 rounded-full bg-gray-50 group-hover:bg-[#2c3856] group-hover:text-white flex items-center justify-center mr-2 transition-all">
+                                        <i class="fas fa-arrow-left"></i>
+                                    </div>
+                                    Volver al Monitoreo
                                 </a>
-                                <h1 class="text-2xl font-bold text-[#2c3856] tracking-tight">Gestión de Pedidos</h1>
-                                <p class="text-xs text-gray-500 mt-1 flex items-center gap-2">
-                                    <span x-show="!editMode">Creación de nueva venta</span>
-                                    <span x-show="editMode" class="text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-full animate-pulse border border-orange-100">
+                                <div class="flex items-center gap-3 mt-1">
+                                    <h1 class="text-2xl font-bold text-[#2c3856] tracking-tight">Gestión de Pedidos</h1>
+                                    <span x-show="editMode" x-cloak class="text-xs font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-full border border-orange-100 animate-pulse">
                                         <i class="fas fa-edit mr-1"></i> Editando #<span x-text="form.folio"></span>
                                     </span>
-                                </p>
-                            </div>
-                            
-                            <div class="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
-
-                                <div class="relative min-w-[200px]">
-                                    <div x-show="!form.ff_sales_channel_id" class="absolute -top-2 -right-2 w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
-                                    <select x-model="form.ff_sales_channel_id" 
-                                            @change="onChannelChangeConfirm()"
-                                            class="w-full border-2 text-xs rounded-lg py-2.5 px-3 font-bold transition-colors focus:ring-0"
-                                            :class="form.ff_sales_channel_id ? 'bg-white border-gray-200 text-[#2c3856]' : 'bg-orange-50 border-orange-400 text-orange-800 animate-pulse'">
-                                        <option value="">Selecciona Canal (Requerido)</option>
-                                        <template x-for="ch in catalogs.channels" :key="ch.id">
-                                            <option :value="ch.id" x-text="ch.name"></option>
-                                        </template>
-                                    </select>
                                 </div>
+                                <p x-show="!editMode" class="text-xs text-gray-500 mt-0.5 ml-8">Creación de nueva venta</p>
+                            </div>
 
-                                <div class="relative min-w-[200px]">
-                                    <div x-show="!form.ff_warehouse_id" class="absolute -top-2 -right-2 w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
-                                    
-                                    <select x-model="form.ff_warehouse_id" 
-                                            @change="onWarehouseChangeConfirm()"
-                                            class="w-full border-2 text-xs rounded-lg py-2.5 px-3 font-bold transition-colors focus:ring-0"
-                                            :class="form.ff_warehouse_id ? 'bg-white border-gray-200 text-[#2c3856]' : 'bg-orange-50 border-orange-400 text-orange-800 animate-pulse'">
-                                        <option value="">Selecciona Almacén (Requerido)</option>
-                                        <template x-for="wh in catalogs.warehouses" :key="wh.id">
-                                            <option :value="wh.id" x-text="wh.code + ' - ' + wh.description"></option>
-                                        </template>
-                                    </select>
-                                </div>                                
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto lg:min-w-[500px]">
 
-                                <div class="flex bg-gray-100 p-1 rounded-lg self-start sm:self-auto flex-shrink-0">
-                                    <button @click="toggleLayout()" 
-                                        :class="layoutMode === 'sidebar' ? 'text-gray-400 hover:text-gray-600' : 'bg-white text-[#2c3856] shadow-sm'"
-                                        class="p-2 rounded-md transition-all duration-200" title="Cambiar Diseño (Panel Superior/Lateral)">
-                                        <i class="fas" :class="layoutMode === 'sidebar' ? 'fa-columns' : 'fa-window-maximize'"></i>
-                                    </button>
-                                    <div class="w-px bg-gray-300 mx-1 my-1"></div>
-                                    <button @click="setViewMode('grid')" 
-                                        :class="viewMode === 'grid' ? 'bg-white text-[#2c3856] shadow-sm' : 'text-gray-400 hover:text-gray-600'"
-                                        class="p-2 rounded-md transition-all duration-200" title="Vista Cuadrícula">
-                                        <i class="fas fa-th-large"></i>
-                                    </button>
-                                    <button @click="setViewMode('list')" 
-                                        :class="viewMode === 'list' ? 'bg-white text-[#2c3856] shadow-sm' : 'text-gray-400 hover:text-gray-600'"
-                                        class="p-2 rounded-md transition-all duration-200" title="Vista Lista">
-                                        <i class="fas fa-list"></i>
-                                    </button>
+                                <div x-show="isSuperAdmin" class="relative group mb-3">
+                                    <label class="block text-[10px] uppercase font-bold text-gray-400 mb-1 ml-1">Área Asignada</label>
+                                    <div class="relative">
+                                        <select x-model="form.area_id" 
+                                                class="w-full text-sm rounded-lg py-2.5 px-3 font-semibold bg-gray-50 border-gray-200 text-[#2c3856] focus:ring-2 focus:ring-[#2c3856]/20">
+                                            <option value="">Selecciona Área</option>
+                                            <template x-for="area in catalogs.areas" :key="area.id">
+                                                <option :value="area.id" x-text="area.name"></option>
+                                            </template>
+                                        </select>
+                                    </div>
                                 </div>                            
                                 
-                                <select x-model="filters.brand" class="bg-gray-50 border-gray-200 text-gray-600 text-xs rounded-lg focus:ring-[#2c3856] focus:border-[#2c3856] py-2.5 px-3 min-w-[140px]">
-                                    <option value="">Todas las marcas</option>
-                                    <template x-for="brand in uniqueBrands" :key="brand">
-                                        <option :value="brand" x-text="brand"></option>
-                                    </template>
-                                </select>
+                                <div class="relative group">
+                                    <label class="block text-[10px] uppercase font-bold text-gray-400 mb-1 ml-1">Almacén de Salida</label>
+                                    <div class="relative">
+                                        <div x-show="!form.ff_warehouse_id" class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-bounce z-10 border-2 border-white"></div>
+                                        <select x-model="form.ff_warehouse_id" 
+                                                @change="onWarehouseChangeConfirm()"
+                                                class="w-full text-sm rounded-lg py-2.5 px-3 font-semibold transition-all focus:ring-2 focus:ring-[#2c3856]/20 focus:border-[#2c3856]"
+                                                :class="form.ff_warehouse_id ? 'bg-gray-50 border-gray-200 text-[#2c3856]' : 'bg-orange-50 border-orange-300 text-orange-800'">
+                                            <option value="">Selecciona Almacén</option>
+                                            <template x-for="wh in catalogs.warehouses" :key="wh.id">
+                                                <option :value="wh.id" x-text="wh.code + ' - ' + wh.description"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </div>
 
-                                <select x-model="filters.type" class="bg-gray-50 border-gray-200 text-gray-600 text-xs rounded-lg focus:ring-[#2c3856] focus:border-[#2c3856] py-2.5 px-3 min-w-[140px]">
-                                    <option value="">Todos los tipos</option>
-                                    <template x-for="type in uniqueTypes" :key="type">
-                                        <option :value="type" x-text="type"></option>
-                                    </template>
-                                </select>
+                                <div class="relative group">
+                                    <label class="block text-[10px] uppercase font-bold text-gray-400 mb-1 ml-1">Canal de Venta</label>
+                                    <div class="relative">
+                                        <div x-show="!form.ff_sales_channel_id" class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-bounce z-10 border-2 border-white"></div>
+                                        <select x-model="form.ff_sales_channel_id" 
+                                                @change="onChannelChangeConfirm()"
+                                                class="w-full text-sm rounded-lg py-2.5 px-3 font-semibold transition-all focus:ring-2 focus:ring-[#2c3856]/20 focus:border-[#2c3856]"
+                                                :class="form.ff_sales_channel_id ? 'bg-gray-50 border-gray-200 text-[#2c3856]' : 'bg-orange-50 border-orange-300 text-orange-800'">
+                                            <option value="">Selecciona Canal</option>
+                                            <template x-for="ch in catalogs.channels" :key="ch.id">
+                                                <option :value="ch.id" x-text="ch.name"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                                <div class="relative flex-grow">
+                        <div class="flex flex-col xl:flex-row gap-4 justify-between items-end xl:items-center">
+                            
+                            <div class="w-full grid grid-cols-1 md:grid-cols-12 gap-3">
+                                
+                                <div class="md:col-span-4 lg:col-span-5 relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <i class="fas fa-search text-gray-400"></i>
                                     </div>
-                                    <input type="text" x-model="filters.search" class="block w-full pl-9 pr-4 py-2.5 bg-gray-50 border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-[#2c3856] focus:border-[#2c3856] transition-all placeholder-gray-400" placeholder="Buscar SKU, producto...">
+                                    <input type="text" x-model="filters.search" 
+                                        class="block w-full pl-10 pr-4 py-2 bg-gray-50 border-gray-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-[#2c3856]/20 focus:border-[#2c3856] transition-all placeholder-gray-400" 
+                                        placeholder="Buscar por SKU o descripción...">
                                 </div>
 
-                                <div class="flex gap-2">
-                                    <button @click="downloadTemplate()" class="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-[#2c3856] transition-colors" title="Descargar Plantilla CSV">
+                                <div class="md:col-span-2 lg:col-span-2">
+                                    <select x-model="filters.brand" class="w-full bg-white border-gray-200 text-gray-600 text-xs rounded-lg focus:ring-[#2c3856] focus:border-[#2c3856] py-2.5">
+                                        <option value="">Marca: Todas</option>
+                                        <template x-for="brand in uniqueBrands" :key="brand">
+                                            <option :value="brand" x-text="brand"></option>
+                                        </template>
+                                    </select>
+                                </div>
+
+                                <div class="md:col-span-2 lg:col-span-2">
+                                    <select x-model="filters.type" class="w-full bg-white border-gray-200 text-gray-600 text-xs rounded-lg focus:ring-[#2c3856] focus:border-[#2c3856] py-2.5">
+                                        <option value="">Tipo: Todos</option>
+                                        <template x-for="type in uniqueTypes" :key="type">
+                                            <option :value="type" x-text="type"></option>
+                                        </template>
+                                    </select>
+                                </div>
+
+                                <div class="md:col-span-4 lg:col-span-3 flex justify-end gap-2">
+                                    <div class="flex bg-gray-100 p-1 rounded-lg mr-2">
+                                        <button @click="toggleLayout()" :class="layoutMode === 'sidebar' ? 'text-gray-400' : 'bg-white text-[#2c3856] shadow-sm'" class="px-2 py-1 rounded transition-all"><i class="fas" :class="layoutMode === 'sidebar' ? 'fa-columns' : 'fa-window-maximize'"></i></button>
+                                        <div class="w-px bg-gray-300 mx-1 my-1"></div>
+                                        <button @click="setViewMode('grid')" :class="viewMode === 'grid' ? 'bg-white text-[#2c3856] shadow-sm' : 'text-gray-400'" class="px-2 py-1 rounded transition-all"><i class="fas fa-th-large"></i></button>
+                                        <button @click="setViewMode('list')" :class="viewMode === 'list' ? 'bg-white text-[#2c3856] shadow-sm' : 'text-gray-400'" class="px-2 py-1 rounded transition-all"><i class="fas fa-list"></i></button>
+                                    </div>
+
+                                    <button @click="downloadTemplate()" class="w-9 h-9 flex items-center justify-center bg-white border border-gray-200 text-gray-500 rounded-lg hover:border-[#2c3856] hover:text-[#2c3856] transition-colors" title="Descargar Plantilla">
                                         <i class="fas fa-file-download"></i>
                                     </button>
-                                    <button @click="$refs.csvImportInput.click()" class="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-[#2c3856] transition-colors" title="Importar Pedido desde CSV">
+                                    
+                                    <button @click="$refs.csvImportInput.click()" class="w-9 h-9 flex items-center justify-center bg-white border border-gray-200 text-gray-500 rounded-lg hover:border-[#2c3856] hover:text-[#2c3856] transition-colors" title="Importar CSV">
                                         <i class="fas fa-file-upload"></i>
                                     </button>
                                     <input type="file" x-ref="csvImportInput" class="hidden" accept=".csv" @change="importCsvOrder($event)">
 
-                                    <button @click="openSearchModal()" class="px-4 py-2 bg-[#2c3856] text-white hover:bg-[#1e273d] rounded-lg font-bold text-xs transition-all shadow-sm whitespace-nowrap">
-                                        <i class="fas fa-history mr-2"></i> Buscar
+                                    <button @click="openSearchModal()" class="px-4 py-2 bg-[#2c3856] text-white hover:bg-[#1e273d] rounded-lg font-bold text-xs transition-all shadow-md flex items-center gap-2">
+                                        <i class="fas fa-history"></i> <span class="hidden lg:inline">Historial</span>
                                     </button>
                                 </div>
                             </div>
+
                         </div>
                     </div>
 
@@ -744,6 +769,7 @@
         function salesManager() {
             return {
                 products: [],
+                isSuperAdmin: false,
                 catalogs: {
                     clients: [],
                     channels: [],
@@ -787,7 +813,8 @@
                     order_type: 'normal',
                     lastValidWarehouseId: '',
                     lastValidChannelId: '',
-                    is_loan_returned: false
+                    is_loan_returned: false,
+                    area_id: '',
                 },
                 
                 flashMessage: '',
@@ -799,10 +826,11 @@
                 pdfModalOpen: false,
                 pdfModalUrl: '',
 
-                init(initialProducts, nextFolio, clients, channels, transports, payments, warehouses, editFolio = null) {
+                init(initialProducts, nextFolio, clients, channels, transports, payments, warehouses, editFolio = null, areas = [], isSuperAdmin = false) {
                     const productsArray = Array.isArray(initialProducts) ? initialProducts : [];
-                    this.form.folio = nextFolio;
-                    
+                    this.isSuperAdmin = isSuperAdmin;
+                    this.catalogs.areas = areas;                    
+                    this.form.folio = nextFolio;            
                     this.catalogs.clients = clients || [];
                     this.catalogs.channels = channels || [];
                     this.catalogs.transports = transports || [];
@@ -823,7 +851,7 @@
                             ...p,
                             originalIndex: index + 1,
                             photo_url: p.photo_url, 
-                            total_stock: p.movements_sum_quantity ? parseInt(p.movements_sum_quantity) : 0,
+                            stocks_by_warehouse: p.stocks_by_warehouse || {}, 
                             reserved_by_others: p.reserved_by_others ? parseInt(p.reserved_by_others) : 0,
                             unit_price: parseFloat(p.unit_price) || 0,
                             brand: p.brand || 'Sin Marca',
@@ -1112,7 +1140,13 @@
                 },
                 
                 getAvailableStock(product) {
-                    return product.total_stock - product.reserved_by_others;
+                    const warehouseId = this.form.ff_warehouse_id;
+                    
+                    if (!warehouseId) return 0;
+
+                    const specificStock = parseInt(product.stocks_by_warehouse[warehouseId]) || 0;
+                    
+                    return Math.max(0, specificStock - (product.reserved_by_others || 0));
                 },
 
                 getProductInCart(productId) { return this.localCart.get(productId); },
@@ -1133,6 +1167,12 @@
                 },
 
                 async onQuantityChange(newQuantity, product) {
+                    if (newQuantity > 0 && !this.form.ff_warehouse_id) {
+                        alert("Por favor selecciona un Almacén de Salida antes de agregar productos.");
+                        this.localCart.delete(product.id);
+                        return; 
+                    }
+
                     if (newQuantity < 0) newQuantity = 0;
                     
                     if (newQuantity === 0) { 
@@ -1142,7 +1182,7 @@
                     else { 
                         this.localCart.set(product.id, newQuantity);
                         if(this.globalDiscount && !this.productDiscounts[product.id]) {
-                             this.productDiscounts[product.id] = this.globalDiscount;
+                                this.productDiscounts[product.id] = this.globalDiscount;
                         }
                     }
 
@@ -1152,6 +1192,7 @@
                             body: JSON.stringify({ 
                                 product_id: product.id, 
                                 quantity: newQuantity,
+                                warehouse_id: this.form.ff_warehouse_id,
                                 folio: this.editMode ? this.form.folio : null 
                             }),
                             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json', 'Content-Type': 'application/json' }

@@ -44,7 +44,8 @@ class ffInventoryMovement extends Model
         'notification_emails',
         'is_backorder',
         'area_id',
-        'backorder_fulfilled',     
+        'backorder_fulfilled',
+        'was_edited',    
     ];
 
     protected $casts = [
@@ -106,5 +107,11 @@ class ffInventoryMovement extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+    
+    public function evidences()
+    {
+        return $this->hasMany(FfOrderEvidence::class, 'folio', 'folio');
     }    
+    
 }

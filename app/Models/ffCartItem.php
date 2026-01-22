@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class ffCartItem extends Model
 {
     use HasFactory;
-    protected $fillable = ['user_id', 'ff_product_id', 'quantity'];
+    protected $fillable = ['user_id', 'ff_product_id', 'quantity', 'ff_warehouse_id'];
 
     public function user()
     {
@@ -19,4 +19,10 @@ class ffCartItem extends Model
     {
         return $this->belongsTo(ffProduct::class, 'ff_product_id');
     }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(FfWarehouse::class, 'ff_warehouse_id');
+    }
+
 }
