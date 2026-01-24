@@ -27,11 +27,7 @@ class User extends Authenticatable
         'password',
         'profile_photo_path',
         'area_id',
-        'is_area_admin',
-        'is_client',
         'is_active',
-        'visible_modules',
-        'ff_visible_tiles',
     ];
 
     /**

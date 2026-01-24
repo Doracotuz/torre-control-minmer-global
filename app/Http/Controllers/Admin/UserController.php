@@ -103,28 +103,37 @@ class UserController extends Controller
 
         $request->validate($rules);
 
-        $data = $request->all();
-        $data['password'] = Hash::make($request->password);
-        $data['is_area_admin'] = $request->has('is_area_admin');
-        $data['is_client'] = $request->has('is_client');
-        $data['visible_modules'] = $request->input('visible_modules', []);
-        $data['ff_visible_tiles'] = $request->input('ff_visible_tiles', []);
+        $user = new User();
+        
+        $user->fill($request->only([
+            'name', 
+            'email', 
+            'position', 
+            'phone_number'
+        ]));
 
-        if ($data['is_client'] && !$request->filled('area_id')) {
-            $data['area_id'] = null;
+        if ($request->has('is_client') && $request->input('is_client') && !$request->filled('area_id')) {
+            $user->area_id = null;
+        } else {
+            $user->area_id = $request->area_id;
         }
+
+        $user->password = Hash::make($request->password);
+        $user->is_area_admin = $request->has('is_area_admin');
+        $user->is_client = $request->has('is_client');
+        $user->visible_modules = $request->input('visible_modules', []);
+        $user->ff_visible_tiles = $request->input('ff_visible_tiles', []);
 
         if ($request->hasFile('profile_photo')) {
-            $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 's3');
+            $user->profile_photo_path = $request->file('profile_photo')->store('profile_photos', 's3');
         } else {
-            $data['profile_photo_path'] = null;
+            $user->profile_photo_path = null;
         }
 
-        $user = User::create($data);
+        $user->save();
 
         try {
             Mail::to($user->email)->send(new WelcomeNewUser($user, $request->password));
-            
         } catch (\Exception $e) {
             Log::error("Error al enviar correo de bienvenida a {$user->email}: " . $e->getMessage());
         }        
@@ -134,12 +143,10 @@ class UserController extends Controller
             $folderIds = array_filter(array_map('intval', $folderIds));
 
             $user->accessibleFolders()->sync($folderIds);
-
             $user->accessibleAreas()->detach(); 
         } else {
             $areaIds = $request->input('accessible_area_ids', []);
             $user->accessibleAreas()->sync($areaIds);
-
             $user->accessibleFolders()->detach();
         }
 
@@ -194,38 +201,42 @@ class UserController extends Controller
 
         $request->validate($rules);
 
-        $data = $request->except(['_token', '_method', 'password_confirmation']);
+        $user->fill($request->only([
+            'name', 
+            'email', 
+            'position', 
+            'phone_number',
+            'is_active'
+        ]));
 
-        $data['is_area_admin'] = $request->has('is_area_admin');
-        $data['is_client'] = $request->has('is_client');
-        $data['visible_modules'] = $request->input('visible_modules', []);
-        $data['ff_visible_tiles'] = $request->input('ff_visible_tiles', []);
-
-        if ($data['is_client'] && !$request->filled('area_id')) {
-            $data['area_id'] = null;
+        if ($request->has('is_client') && $request->input('is_client') && !$request->filled('area_id')) {
+            $user->area_id = null;
+        } else {
+            $user->area_id = $request->area_id;
         }
 
+        $user->is_area_admin = $request->has('is_area_admin');
+        $user->is_client = $request->has('is_client');
+        $user->visible_modules = $request->input('visible_modules', []);
+        $user->ff_visible_tiles = $request->input('ff_visible_tiles', []);
+
         if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
-        } else {
-            unset($data['password']);
+            $user->password = Hash::make($request->password);
         }
 
         if ($request->hasFile('profile_photo')) {
             if ($user->profile_photo_path && Storage::disk('s3')->exists($user->profile_photo_path)) {
                 Storage::disk('s3')->delete($user->profile_photo_path);
             }
-            $data['profile_photo_path'] = $request->file('profile_photo')->store('profile_photos', 's3');
+            $user->profile_photo_path = $request->file('profile_photo')->store('profile_photos', 's3');
         } elseif ($request->input('remove_profile_photo')) {
             if ($user->profile_photo_path && Storage::disk('s3')->exists($user->profile_photo_path)) {
                 Storage::disk('s3')->delete($user->profile_photo_path);
             }
-            $data['profile_photo_path'] = null;
-        } else {
-            $data['profile_photo_path'] = $user->profile_photo_path;
+            $user->profile_photo_path = null;
         }
 
-        $user->update($data);
+        $user->save();
 
         if ($user->isClient()) {
             $folderIds = explode(',', $request->input('accessible_folder_ids')[0] ?? '');
@@ -236,9 +247,9 @@ class UserController extends Controller
         } else {
             $areaIds = $request->input('accessible_area_ids', []);
             $user->accessibleAreas()->sync($areaIds);
-
             $user->accessibleFolders()->detach();
         }
+
         return redirect()->route('admin.users.index')->with('success', 'Usuario actualizado exitosamente.');
     }
 

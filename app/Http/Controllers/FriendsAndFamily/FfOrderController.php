@@ -756,7 +756,7 @@ class FfOrderController extends Controller
 
     public function downloadReport($folio)
     {
-        set_time_limit(300); 
+        set_time_limit(300);
         ini_set('memory_limit', '512M');
 
         $movements = ffInventoryMovement::where('folio', $folio)
@@ -764,9 +764,7 @@ class FfOrderController extends Controller
             ->with(['product', 'warehouse'])
             ->get();
 
-        if ($movements->isEmpty()) {
-            return redirect()->back()->with('error', 'Pedido no encontrado.');
-        }
+        if ($movements->isEmpty()) return redirect()->back()->with('error', 'Pedido no encontrado.');
 
         $header = $movements->first();
 
@@ -776,22 +774,18 @@ class FfOrderController extends Controller
 
         $evidences = \App\Models\FfOrderEvidence::where('folio', $folio)->get();
 
-        if ($evidences->isEmpty()) {
-            return redirect()->back()->with('error', 'Este pedido no tiene evidencias cargadas.');
-        }
-
         $tempDir = storage_path('app/public/temp_report_' . uniqid());
-        if (!file_exists($tempDir)) {
-            mkdir($tempDir, 0777, true);
-        }
+        if (!file_exists($tempDir)) mkdir($tempDir, 0777, true);
 
         $processedEvidences = [];
-
         foreach ($evidences as $ev) {
             $localPath = null;
-            $isImage = in_array(strtolower(pathinfo($ev->filename, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'webp']);
+            $extension = strtolower(pathinfo($ev->filename, PATHINFO_EXTENSION));
+            $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'webp']);
+            
+            $remoteUrl = Storage::disk('s3')->url($ev->path); 
 
-            if (Storage::disk('s3')->exists($ev->path)) {
+            if ($isImage && Storage::disk('s3')->exists($ev->path)) {
                 $content = Storage::disk('s3')->get($ev->path);
                 $tempName = uniqid() . '_' . $ev->filename;
                 $localPath = $tempDir . '/' . $tempName;
@@ -801,50 +795,59 @@ class FfOrderController extends Controller
             $processedEvidences[] = [
                 'filename' => $ev->filename,
                 'local_path' => $localPath,
+                'remote_url' => $remoteUrl,
                 'is_image' => $isImage,
                 'uploaded_at' => $ev->created_at
             ];
         }
 
-        $logoUrl = $this->getLogoUrl($header->area_id);
-        $localLogo = null;
-        try {
-            $logoKey = 'LogoAzulm.PNG';
-            if($header->area_id) {
-                $area = Area::find($header->area_id);
-                if($area && $area->icon_path) $logoKey = $area->icon_path;
+        $areaLogoKey = null;
+        if($header->area_id) {
+            $area = Area::find($header->area_id);
+            if($area && $area->icon_path && Storage::disk('s3')->exists($area->icon_path)) {
+                $areaLogoKey = $area->icon_path;
             }
-            
-            if(Storage::disk('s3')->exists($logoKey)){
-                $logoContent = Storage::disk('s3')->get($logoKey);
-                $localLogo = $tempDir . '/logo.png';
-                file_put_contents($localLogo, $logoContent);
-            }
-        } catch(\Exception $e) {}
+        }
+        
+        $localAreaLogo = null;
+        if ($areaLogoKey) {
+            $content = Storage::disk('s3')->get($areaLogoKey);
+            $localAreaLogo = $tempDir . '/area_logo.' . pathinfo($areaLogoKey, PATHINFO_EXTENSION);
+            file_put_contents($localAreaLogo, $content);
+        }
+
+        $systemLogoKey = 'LogoAzulm.PNG';
+        $localSystemLogo = null;
+        if(Storage::disk('s3')->exists($systemLogoKey)){
+            $content = Storage::disk('s3')->get($systemLogoKey);
+            $localSystemLogo = $tempDir . '/system_logo.png';
+            file_put_contents($localSystemLogo, $content);
+        }
+
+        $mainLogo = $localAreaLogo ?? $localSystemLogo;
 
         $companyInfo = $this->getCompanyInfo($header->area_id);
         
         $data = [
             'header' => $header,
             'items' => $movements,
-            'evidences' => $processedEvidences,
-            'logo_path' => $localLogo ?? $logoUrl,
+            'evidences' => collect($processedEvidences),
+            'logo_path' => $mainLogo,
+            'system_logo' => $localSystemLogo,
             'company' => $companyInfo,
-            'date' => now()->format('d/m/Y H:i')
+            'date' => now()
         ];
 
         $pdf = Pdf::loadView('friends-and-family.orders.report-evidence', $data);
-        $pdf->setPaper('A4', 'portrait');
+        $pdf->setPaper('A4', 'landscape'); 
         $output = $pdf->output();
 
-        $files = glob($tempDir . '/*'); 
-        foreach($files as $file){ if(is_file($file)) unlink($file); }
+        array_map('unlink', glob("$tempDir/*.*"));
         rmdir($tempDir);
 
         return response()->streamDownload(
             fn () => print($output),
-            'Reporte_Evidencia_Folio_'.$folio.'.pdf'
+            'Entregable_Folio_'.$folio.'.pdf'
         );
     }
-
 }

@@ -100,23 +100,25 @@ class UserController extends Controller
             'profile_photo' => 'nullable|image|max:2048',
         ]);
 
-        $userData = [
+        $user = new User();
+        $user->fill([
             'name' => $request->name,
             'position' => $request->position,
             'phone_number' => $request->phone_number,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
             'area_id' => $currentArea->id,
-            'is_area_admin' => $request->boolean('is_area_admin'),
-            'is_client' => false,
-        ];
+        ]);
+
+        $user->password = Hash::make($request->password);
+        $user->is_area_admin = $request->boolean('is_area_admin'); 
+        $user->is_client = false;
 
         if ($request->hasFile('profile_photo')) {
             $path = $request->file('profile_photo')->store('profile_photos', 's3');
-            $userData['profile_photo_path'] = $path;
+            $user->profile_photo_path = $path;
         }
 
-        $user = User::create($userData);
+        $user->save();
 
         try {
             Mail::to($user->email)->send(new WelcomeNewUser($user, $request->password));

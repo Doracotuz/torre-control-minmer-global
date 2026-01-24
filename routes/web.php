@@ -760,7 +760,7 @@ Route::middleware(['auth', 'ff.access', 'module.access:orders'])->prefix('ff')->
     Route::post('/orders/{folio}/upload-evidences', [FfOrderController::class, 'uploadBatchEvidences'])->name('orders.uploadBatchEvidences');
     Route::delete('/evidence/{id}', [FfOrderController::class, 'deleteEvidence'])->name('evidence.delete');
     Route::get('/orders/evidence/download', [FfOrderController::class, 'downloadEvidence'])->name('orders.downloadEvidence');
-    Route::get('/orders/{folio}/report', [FfOrderController::class, 'downloadReport'])->name('ff.orders.downloadReport');
+    Route::get('/orders/{folio}/report', [FfOrderController::class, 'downloadReport'])->name('orders.downloadReport');
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'index'])->name('index');
         Route::get('/catalog/{type}', [App\Http\Controllers\FriendsAndFamily\FfAdministrationController::class, 'show'])->name('show');
