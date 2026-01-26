@@ -142,7 +142,7 @@
             <form method="GET" action="{{ route('ff.reports.transactions') }}" id="filter-form">
                 <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-4 items-end">
                     
-                    <div class="lg:col-span-3">
+                    <div class="lg:col-span-2">
                         <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Query (Folio/Cliente)</label>
                         <div class="relative">
                             <input type="text" name="search" id="search" value="{{ $search }}" placeholder="Input Data..." class="input-cockpit pl-8">
@@ -166,9 +166,26 @@
                                 </div>
                             </div>
                         </div>
-                    @endif                    
+                    @endif
 
-                    <div class="lg:col-span-3">
+                    <div class="lg:col-span-2">
+                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Almacén</label>
+                        <div class="relative">
+                            <select name="warehouse_id" onchange="this.form.submit()" class="input-cockpit cursor-pointer appearance-none">
+                                <option value="">-- Todos los Almacenes --</option>
+                                @foreach($warehouses as $wh)
+                                    <option value="{{ $wh->id }}" {{ request('warehouse_id') == $wh->id ? 'selected' : '' }}>
+                                        {{ $wh->code }} - {{ $wh->description }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                    </div>                    
+
+                    <div class="lg:col-span-2">
                         <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Agente de Venta</label>
                         <div class="relative">
                             <select name="vendedor_id" id="vendedor_id" class="input-cockpit cursor-pointer appearance-none">

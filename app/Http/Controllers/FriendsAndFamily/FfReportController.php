@@ -7,6 +7,7 @@ use App\Models\ffProduct;
 use App\Models\ffInventoryMovement;
 use App\Models\User;
 use App\Models\Area;
+use App\Models\FfWarehouse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Dompdf\Dompdf;
@@ -26,6 +27,14 @@ class FfReportController extends Controller
             $areas = Area::orderBy('name')->get();
         }
 
+        $warehousesQuery = FfWarehouse::where('is_active', true);
+        if (!Auth::user()->isSuperAdmin()) {
+            $warehousesQuery->where('area_id', Auth::user()->area_id);
+        } elseif ($request->filled('area_id')) {
+            $warehousesQuery->where('area_id', $request->input('area_id'));
+        }
+        $warehouses = $warehousesQuery->orderBy('description')->get();
+
         $baseQuery = ffInventoryMovement::where('ff_inventory_movements.quantity', '<', 0);
         
         if (!Auth::user()->isSuperAdmin()) {
@@ -34,6 +43,10 @@ class FfReportController extends Controller
 
         if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
             $baseQuery->where('ff_inventory_movements.area_id', $request->input('area_id'));
+        }
+
+        if ($request->filled('warehouse_id')) {
+            $baseQuery->where('ff_inventory_movements.ff_warehouse_id', $request->input('warehouse_id'));
         }
 
         if ($userIdFilter) {
@@ -76,7 +89,12 @@ class FfReportController extends Controller
             'labels' => $ventasPorVendedor->map(fn ($v) => $v->user->name ?? 'Usuario Eliminado')->toArray(),
         ];
         
-        $productsQuery = ffProduct::withSum('movements', 'quantity');
+        $warehouseId = $request->input('warehouse_id');
+        $productsQuery = ffProduct::withSum(['movements' => function($q) use ($warehouseId) {
+            if ($warehouseId) {
+                $q->where('ff_warehouse_id', $warehouseId);
+            }
+        }], 'quantity');
         
         if (!Auth::user()->isSuperAdmin()) {
             $productsQuery->where('area_id', Auth::user()->area_id);
@@ -113,6 +131,9 @@ class FfReportController extends Controller
             if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
                 $query->where('area_id', $request->input('area_id'));
             }
+            if ($request->filled('warehouse_id')) {
+                $query->where('ff_warehouse_id', $request->input('warehouse_id'));
+            }
         })->orderBy('name');
 
         if (!Auth::user()->isSuperAdmin()) {
@@ -136,7 +157,8 @@ class FfReportController extends Controller
             'userIdFilter',
             'chartTopProductos',
             'chartVentasVendedor',
-            'areas'
+            'areas',
+            'warehouses'
         ));
     }
 
@@ -149,6 +171,9 @@ class FfReportController extends Controller
             }
             if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
                 $query->where('area_id', $request->input('area_id'));
+            }
+            if ($request->filled('warehouse_id')) {
+                $query->where('ff_warehouse_id', $request->input('warehouse_id'));
             }
         })->orderBy('name');
 
@@ -175,6 +200,7 @@ class FfReportController extends Controller
                 'ff_inventory_movements.client_name',
                 'ff_inventory_movements.surtidor_name',
                 'ff_inventory_movements.area_id',
+                'ff_inventory_movements.ff_warehouse_id',
                 DB::raw('MAX(ff_inventory_movements.created_at) as created_at'),
                 DB::raw('COUNT(ff_inventory_movements.id) as total_items'),
                 DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_units'),
@@ -185,7 +211,8 @@ class FfReportController extends Controller
                 'ff_inventory_movements.user_id', 
                 'ff_inventory_movements.client_name', 
                 'ff_inventory_movements.surtidor_name',
-                'ff_inventory_movements.area_id'
+                'ff_inventory_movements.area_id',
+                'ff_inventory_movements.ff_warehouse_id'
             );
 
         if (!Auth::user()->isSuperAdmin()) {
@@ -194,6 +221,10 @@ class FfReportController extends Controller
 
         if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
             $query->where('ff_inventory_movements.area_id', $request->input('area_id'));
+        }
+
+        if ($request->filled('warehouse_id')) {
+            $query->where('ff_inventory_movements.ff_warehouse_id', $request->input('warehouse_id'));
         }
 
         if ($userIdFilter) {
@@ -218,7 +249,7 @@ class FfReportController extends Controller
         }
 
         $sales = $query->orderBy('created_at', 'desc')
-            ->with('user')
+            ->with(['user', 'warehouse'])
             ->paginate(50)
             ->withQueryString();
             
@@ -227,6 +258,14 @@ class FfReportController extends Controller
             $areas = Area::orderBy('name')->get();
         }
 
+        $warehousesQuery = FfWarehouse::where('is_active', true);
+        if (!Auth::user()->isSuperAdmin()) {
+            $warehousesQuery->where('area_id', Auth::user()->area_id);
+        } elseif ($request->filled('area_id')) {
+            $warehousesQuery->where('area_id', $request->input('area_id'));
+        }
+        $warehouses = $warehousesQuery->orderBy('description')->get();
+
         return view('friends-and-family.reports.transactions', compact(
             'sales', 
             'vendedores', 
@@ -234,7 +273,8 @@ class FfReportController extends Controller
             'search', 
             'startDate', 
             'endDate',
-            'areas'
+            'areas',
+            'warehouses'
         ));
     }
     
@@ -246,7 +286,7 @@ class FfReportController extends Controller
 
         $saleMovements = ffInventoryMovement::where('folio', $movement->folio)
             ->where('quantity', '<', 0)
-            ->with(['product', 'user'])
+            ->with(['product', 'user', 'warehouse'])
             ->get();
 
         if ($saleMovements->isEmpty()) {
@@ -265,6 +305,11 @@ class FfReportController extends Controller
             $logoUrl = Storage::disk('s3')->url($user->area->icon_path);
         }
 
+        $warehouseName = 'N/A';
+        if ($firstMovement->warehouse) {
+            $warehouseName = $firstMovement->warehouse->code . ' - ' . $firstMovement->warehouse->description;
+        }
+
         $pdfData = [
             'items' => [],
             'grandTotal' => 0,
@@ -281,6 +326,7 @@ class FfReportController extends Controller
             'surtidor_name' => $firstMovement->surtidor_name,
             'vendedor_name' => $user->name ?? 'N/A',
             'logo_url' => $logoUrl,
+            'warehouse_name' => $warehouseName,
         ];
 
         foreach ($saleMovements as $item) {
@@ -332,6 +378,10 @@ class FfReportController extends Controller
             $movementQuery->where('area_id', $request->input('area_id'));
         }
 
+        if ($request->filled('warehouse_id')) {
+            $movementQuery->where('ff_warehouse_id', $request->input('warehouse_id'));
+        }
+
         $movementReasons = $movementQuery->select(
                 'reason', 
                 DB::raw('SUM(CASE WHEN quantity > 0 THEN quantity ELSE 0 END) as entradas'),
@@ -359,7 +409,12 @@ class FfReportController extends Controller
             $productsQuery->where('ff_products.area_id', $request->input('area_id'));
         }
 
-        $rotationProducts = $productsQuery->join('ff_inventory_movements', 'ff_products.id', '=', 'ff_inventory_movements.ff_product_id')
+        $rotationProducts = $productsQuery->join('ff_inventory_movements', function($join) use ($request) {
+                $join->on('ff_products.id', '=', 'ff_inventory_movements.ff_product_id');
+                if ($request->filled('warehouse_id')) {
+                    $join->where('ff_inventory_movements.ff_warehouse_id', $request->input('warehouse_id'));
+                }
+            })
             ->select(
                 'ff_products.id',
                 'ff_products.sku',
@@ -390,20 +445,38 @@ class FfReportController extends Controller
             $areas = Area::orderBy('name')->get();
         }
 
+        $warehousesQuery = FfWarehouse::where('is_active', true);
+        if (!Auth::user()->isSuperAdmin()) {
+            $warehousesQuery->where('area_id', Auth::user()->area_id);
+        } elseif ($request->filled('area_id')) {
+            $warehousesQuery->where('area_id', $request->input('area_id'));
+        }
+        $warehouses = $warehousesQuery->orderBy('description')->get();
+
         return view('friends-and-family.reports.inventory-analysis', compact(
             'chartMovementReasons',
             'chartRotation',
-            'areas'
+            'areas',
+            'warehouses'
         ));
     }
 
     public function stockAvailability(Request $request)
     {
         $search = $request->input('search');
+        $warehouseId = $request->input('warehouse_id');
 
         $query = ffProduct::where('is_active', true)
-            ->withSum('movements', 'quantity')
-            ->withSum('cartItems', 'quantity');
+            ->withSum(['movements' => function($q) use ($warehouseId) {
+                if ($warehouseId) {
+                    $q->where('ff_warehouse_id', $warehouseId);
+                }
+            }], 'quantity')
+            ->withSum(['cartItems' => function($q) use ($warehouseId) {
+                if ($warehouseId) {
+                    $q->where('ff_warehouse_id', $warehouseId);
+                }
+            }], 'quantity');
 
         if (!Auth::user()->isSuperAdmin()) {
             $query->where('area_id', Auth::user()->area_id);
@@ -464,12 +537,21 @@ class FfReportController extends Controller
             $areas = Area::orderBy('name')->get();
         }
 
+        $warehousesQuery = FfWarehouse::where('is_active', true);
+        if (!Auth::user()->isSuperAdmin()) {
+            $warehousesQuery->where('area_id', Auth::user()->area_id);
+        } elseif ($request->filled('area_id')) {
+            $warehousesQuery->where('area_id', $request->input('area_id'));
+        }
+        $warehouses = $warehousesQuery->orderBy('description')->get();
+
         return view('friends-and-family.reports.stock-availability', compact(
             'paginatedData',
             'chartStockVsReserved',
             'lowStockAlerts',
             'search',
-            'areas'
+            'areas',
+            'warehouses'
         ));
     }
 
@@ -519,11 +601,20 @@ class FfReportController extends Controller
             $areas = Area::orderBy('name')->get();
         }
 
+        $warehousesQuery = FfWarehouse::where('is_active', true);
+        if (!Auth::user()->isSuperAdmin()) {
+            $warehousesQuery->where('area_id', Auth::user()->area_id);
+        } elseif ($request->filled('area_id')) {
+            $warehousesQuery->where('area_id', $request->input('area_id'));
+        }
+        $warehouses = $warehousesQuery->orderBy('description')->get();
+
         return view('friends-and-family.reports.catalog-analysis', compact(
             'chartPriceDistribution',
             'chartActiveInactive',
             'chartBrand',
-            'areas'
+            'areas',
+            'warehouses'
         ));
     }
 
@@ -541,12 +632,18 @@ class FfReportController extends Controller
                         $q->where('area_id', $request->input('area_id'));
                     });
                 }
+                if ($request->filled('warehouse_id')) {
+                    $query->where('ff_warehouse_id', $request->input('warehouse_id'));
+                }
             })->orWhereHas('movements', function($query) use ($request) {
                 if (!Auth::user()->isSuperAdmin()) {
                     $query->where('area_id', Auth::user()->area_id);
                 }
                 if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
                     $query->where('area_id', $request->input('area_id'));
+                }
+                if ($request->filled('warehouse_id')) {
+                    $query->where('ff_warehouse_id', $request->input('warehouse_id'));
                 }
             });
         });
@@ -572,6 +669,10 @@ class FfReportController extends Controller
 
             if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
                 $query->where('area_id', $request->input('area_id'));
+            }
+
+            if ($request->filled('warehouse_id')) {
+                $query->where('ff_warehouse_id', $request->input('warehouse_id'));
             }
 
             $salesData = $query->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
@@ -606,10 +707,19 @@ class FfReportController extends Controller
             $areas = Area::orderBy('name')->get();
         }
 
+        $warehousesQuery = FfWarehouse::where('is_active', true);
+        if (!Auth::user()->isSuperAdmin()) {
+            $warehousesQuery->where('area_id', Auth::user()->area_id);
+        } elseif ($request->filled('area_id')) {
+            $warehousesQuery->where('area_id', $request->input('area_id'));
+        }
+        $warehouses = $warehousesQuery->orderBy('description')->get();
+
         return view('friends-and-family.reports.seller-performance', compact(
             'sellerPerformanceData',
             'chartValorVendedor',
-            'areas'
+            'areas',
+            'warehouses'
         ));
     }
 
@@ -626,6 +736,10 @@ class FfReportController extends Controller
 
         if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
             $query->where('ff_inventory_movements.area_id', $request->input('area_id'));
+        }
+
+        if ($request->filled('warehouse_id')) {
+            $query->where('ff_inventory_movements.ff_warehouse_id', $request->input('warehouse_id'));
         }
 
         $query->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id')
@@ -708,6 +822,7 @@ class FfReportController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $areaFilterId = $request->input('area_id');
+        $warehouseId = $request->input('warehouse_id');
         
         $data = [];
 
@@ -749,6 +864,13 @@ class FfReportController extends Controller
                 $data['area_name'] = $user->area->name;
             } else {
                 $data['area_name'] = 'Global';
+            }
+
+            if ($warehouseId) {
+                $wh = FfWarehouse::find($warehouseId);
+                $data['warehouse_name'] = $wh ? ($wh->code . ' - ' . $wh->description) : 'Almacén Desconocido';
+            } else {
+                $data['warehouse_name'] = 'Inventario Global (Todos)';
             }
             
             if ($startDate && $endDate) {
@@ -852,6 +974,10 @@ class FfReportController extends Controller
              $baseQuery->where('ff_inventory_movements.area_id', request()->input('area_id'));
         }
 
+        if (request()->filled('warehouse_id')) {
+            $baseQuery->where('ff_inventory_movements.ff_warehouse_id', request()->input('warehouse_id'));
+        }
+
         if ($userIdFilter) {
             $baseQuery->where('ff_inventory_movements.user_id', $userIdFilter);
         }
@@ -899,6 +1025,10 @@ class FfReportController extends Controller
              $ventasPorVendedorQuery->where('ff_inventory_movements.area_id', request()->input('area_id'));
         }
 
+        if (request()->filled('warehouse_id')) {
+            $ventasPorVendedorQuery->where('ff_inventory_movements.ff_warehouse_id', request()->input('warehouse_id'));
+        }
+
         if ($userIdFilter) {
             $ventasPorVendedorQuery->where('ff_inventory_movements.user_id', $userIdFilter);
         }
@@ -941,7 +1071,17 @@ class FfReportController extends Controller
             return [$range => ['count' => $count, 'percent' => ($count / $totalProductos) * 100]];
         });
 
-        $allProductsQuery = ffProduct::withSum('movements', 'quantity')->withSum('cartItems', 'quantity');
+        $warehouseId = request()->input('warehouse_id');
+        $allProductsQuery = ffProduct::withSum(['movements' => function($q) use ($warehouseId) {
+            if ($warehouseId) {
+                $q->where('ff_warehouse_id', $warehouseId);
+            }
+        }], 'quantity')->withSum(['cartItems' => function($q) use ($warehouseId) {
+            if ($warehouseId) {
+                $q->where('ff_warehouse_id', $warehouseId);
+            }
+        }], 'quantity');
+
         if (!Auth::user()->isSuperAdmin()) {
             $allProductsQuery->where('area_id', Auth::user()->area_id);
         }

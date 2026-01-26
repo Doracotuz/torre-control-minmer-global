@@ -269,18 +269,34 @@
                             Listado dinámico con filtros en tiempo real
                         </p>
                     </div>
-                    @if(Auth::user()->isSuperAdmin())
-                        <form method="GET" action="{{ route('ff.reports.sellerPerformance') }}">
-                            <select name="area_id" onchange="this.form.submit()" class="input-tech py-2 w-48 font-bold uppercase text-xs cursor-pointer">
-                                <option value="">GLOBAL</option>
-                                @foreach($areas as $area)
-                                    <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
-                                        {{ strtoupper($area->name) }}
+                    <form method="GET" action="{{ route('ff.reports.sellerPerformance') }}" class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        
+                        @if(Auth::user()->isSuperAdmin())
+                            <div class="relative group w-full sm:w-auto">
+                                <label class="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-[#ff9c00] z-10">ÁREA</label>
+                                <select name="area_id" onchange="this.form.submit()" class="input-tech py-2 w-full sm:w-40 font-bold uppercase text-xs cursor-pointer">
+                                    <option value="">GLOBAL</option>
+                                    @foreach($areas as $area)
+                                        <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
+                                            {{ strtoupper($area->name) }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
+
+                        <div class="relative group w-full sm:w-auto">
+                            <label class="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-[#ff9c00] z-10">ALMACÉN</label>
+                            <select name="warehouse_id" onchange="this.form.submit()" class="input-tech py-2 w-full sm:w-48 font-bold uppercase text-xs cursor-pointer">
+                                <option value="">TODOS</option>
+                                @foreach($warehouses as $wh)
+                                    <option value="{{ $wh->id }}" {{ request('warehouse_id') == $wh->id ? 'selected' : '' }}>
+                                        {{ $wh->code }} - {{ Str::limit($wh->description, 15) }}
                                     </option>
                                 @endforeach
                             </select>
-                        </form>
-                    @endif
+                        </div>
+                    </form>
 
                     <div class="relative w-full sm:w-64">
                         <input type="text" x-model="search" placeholder="Buscar Agente..." class="input-tech pl-9">

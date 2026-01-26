@@ -49,6 +49,7 @@
         <x-slot name="header"></x-slot>
 
         <div class="flex flex-col md:flex-row justify-between items-end mb-10 animate-enter gap-6"> 
+            
             <div>
                 <div class="flex items-center gap-3 mb-2">
                     <div class="w-3 h-3 bg-[#ff9c00] rounded-full animate-pulse"></div>
@@ -62,13 +63,15 @@
                 </p>
             </div>
             
-            @if(Auth::user()->isSuperAdmin())
-                <div class="mb-4 md:mb-0">
-                    <form method="GET" action="{{ route('ff.reports.inventoryAnalysis') }}">
-                        <div class="relative group">
+            <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                
+                <form method="GET" action="{{ route('ff.reports.inventoryAnalysis') }}" class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                    
+                    @if(Auth::user()->isSuperAdmin())
+                        <div class="relative group w-full md:w-auto">
                             <label class="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-[#ff9c00] z-10">FILTRAR ÁREA</label>
-                            <select name="area_id" onchange="this.form.submit()" class="w-full md:w-64 bg-white border border-[#2c3856]/20 text-[#2c3856] text-xs font-bold uppercase rounded-lg py-2.5 px-3 focus:outline-none focus:border-[#ff9c00] shadow-sm cursor-pointer">
-                                <option value="">VISTA GLOBAL</option>
+                            <select name="area_id" onchange="this.form.submit()" class="w-full md:w-48 bg-white border border-[#2c3856]/20 text-[#2c3856] text-xs font-bold uppercase rounded-lg py-2.5 px-3 focus:outline-none focus:border-[#ff9c00] shadow-sm cursor-pointer hover:border-[#2c3856]/40 transition-colors">
+                                <option value="">GLOBAL</option>
                                 @foreach($areas as $area)
                                     <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
                                         {{ strtoupper($area->name) }}
@@ -76,15 +79,29 @@
                                 @endforeach
                             </select>
                         </div>
-                    </form>
-                </div>
-            @endif
+                    @endif
 
-            <a href="{{ route('ff.reports.index') }}"
-               class="group flex items-center gap-3 px-8 py-3 bg-white/90 border border-[#2c3856]/10 rounded-xl hover:bg-[#2c3856] hover:text-white transition-all duration-300 shadow-md transform hover:-translate-y-1">
-                <i class="fas fa-undo-alt text-[#ff9c00] text-lg group-hover:text-white transition-colors"></i>
-                <span class="text-sm font-black uppercase tracking-widest">Regresar al Panel</span>
-            </a>
+                    <div class="relative group w-full md:w-auto">
+                        <label class="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-[#ff9c00] z-10">FILTRAR ALMACÉN</label>
+                        <select name="warehouse_id" onchange="this.form.submit()" class="w-full md:w-56 bg-white border border-[#2c3856]/20 text-[#2c3856] text-xs font-bold uppercase rounded-lg py-2.5 px-3 focus:outline-none focus:border-[#ff9c00] shadow-sm cursor-pointer hover:border-[#2c3856]/40 transition-colors">
+                            <option value="">TODOS LOS ALMACENES</option>
+                            @foreach($warehouses as $wh)
+                                <option value="{{ $wh->id }}" {{ request('warehouse_id') == $wh->id ? 'selected' : '' }}>
+                                    {{ $wh->code }} - {{ strtoupper(Str::limit($wh->description, 20)) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                </form>
+
+                <a href="{{ route('ff.reports.index') }}"
+                   class="w-full md:w-auto group flex items-center justify-center gap-3 px-6 py-2.5 bg-white/90 border border-[#2c3856]/10 rounded-xl hover:bg-[#2c3856] hover:text-white transition-all duration-300 shadow-md transform hover:-translate-y-1">
+                    <i class="fas fa-undo-alt text-[#ff9c00] text-lg group-hover:text-white transition-colors"></i>
+                    <span class="text-xs font-black uppercase tracking-widest">Panel</span>
+                </a>
+
+            </div>
             
         </div>
 

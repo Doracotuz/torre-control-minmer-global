@@ -60,40 +60,59 @@
         <x-slot name="header"></x-slot>
 
         <div class="flex flex-col md:flex-row justify-between items-end mb-10 animate-enter gap-6"> 
+            
             <div>
                 <div class="flex items-center gap-2 mb-2">
                     <div class="w-2 h-2 bg-[#ff9c00] rounded-full animate-pulse"></div>
                     <span class="text-[10px] font-bold tracking-[0.25em] text-[#2c3856] uppercase">Inteligencia de Producto</span>
                 </div>
                 <h2 class="text-4xl md:text-5xl font-impact font-black text-[#2c3856] leading-none">
-                    CATÁLOGO <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-orange-600">& PRECIOS</span>
+                    ANÁLISIS DE <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-orange-600">CATÁLOGO</span>
                 </h2>
                 <p class="text-sm text-slate-500 font-medium mt-2 max-w-xl">
-                    Segmentación de precios, estado operativo del catálogo y penetración de marcas.
+                    Desglose de precios, marcas y distribución de stock por ubicación.
                 </p>
             </div>
+            
+            <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                
+                <form method="GET" action="{{ route('ff.reports.catalogAnalysis') }}" class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    
+                    @if(Auth::user()->isSuperAdmin())
+                        <div class="relative group w-full sm:w-auto">
+                            <label class="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-[#ff9c00] z-10">ÁREA</label>
+                            <select name="area_id" onchange="this.form.submit()" class="w-full md:w-48 bg-white border border-[#2c3856]/20 text-[#2c3856] text-xs font-bold uppercase rounded-lg py-2.5 px-3 focus:outline-none focus:border-[#ff9c00] shadow-sm cursor-pointer hover:border-[#2c3856]/40 transition-colors">
+                                <option value="">GLOBAL</option>
+                                @foreach($areas as $area)
+                                    <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
+                                        {{ strtoupper($area->name) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
 
-            <div class="flex gap-3 items-center">
-                @if(Auth::user()->isSuperAdmin())
-                    <form method="GET" action="{{ route('ff.reports.catalogAnalysis') }}">
-                        <select name="area_id" onchange="this.form.submit()" class="bg-white/60 border border-[#2c3856]/10 rounded-lg py-2.5 px-4 text-xs font-black uppercase text-[#2c3856] focus:outline-none focus:ring-2 focus:ring-[#ff9c00] cursor-pointer hover:bg-white transition-colors shadow-sm">
-                            <option value="">CATÁLOGO GLOBAL</option>
-                            @foreach($areas as $area)
-                                <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
-                                    {{ strtoupper($area->name) }}
+                    <div class="relative group w-full sm:w-auto">
+                        <label class="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-[#ff9c00] z-10">ALMACÉN</label>
+                        <select name="warehouse_id" onchange="this.form.submit()" class="w-full md:w-48 bg-white border border-[#2c3856]/20 text-[#2c3856] text-xs font-bold uppercase rounded-lg py-2.5 px-3 focus:outline-none focus:border-[#ff9c00] shadow-sm cursor-pointer hover:border-[#2c3856]/40 transition-colors">
+                            <option value="">TODOS</option>
+                            @foreach($warehouses as $wh)
+                                <option value="{{ $wh->id }}" {{ request('warehouse_id') == $wh->id ? 'selected' : '' }}>
+                                    {{ $wh->code }} - {{ Str::limit($wh->description, 15) }}
                                 </option>
                             @endforeach
                         </select>
-                    </form>
-                @endif
-            </div>
-            
-            <a href="{{ route('ff.reports.index') }}"
-               class="group flex items-center gap-3 px-6 py-2.5 bg-white/60 backdrop-blur-sm border border-[#2c3856]/10 rounded-lg hover:bg-[#2c3856] hover:text-white transition-all duration-300 shadow-sm">
-                <i class="fas fa-arrow-left text-[#ff9c00] group-hover:text-white transition-colors"></i>
-                <span class="text-xs font-black uppercase tracking-widest">Panel Principal</span>
-            </a>
+                    </div>
 
+                </form>
+
+                <a href="{{ route('ff.reports.index') }}"
+                   class="group flex items-center gap-3 px-6 py-2.5 bg-white/60 backdrop-blur-sm border border-[#2c3856]/10 rounded-lg hover:bg-[#2c3856] hover:text-white transition-all duration-300 shadow-sm w-full md:w-auto justify-center">
+                    <i class="fas fa-arrow-left text-[#ff9c00] group-hover:text-white transition-colors"></i>
+                    <span class="text-xs font-black uppercase tracking-widest">Panel</span>
+                </a>
+
+            </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">

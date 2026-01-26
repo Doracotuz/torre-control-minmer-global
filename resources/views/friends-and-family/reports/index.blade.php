@@ -139,6 +139,18 @@
                     @endif
 
                     <div class="relative group">
+                        <label class="absolute -top-2 left-2 bg-white px-1 text-[13px] font-bold text-[#ff9c00] z-10">Almacén</label>
+                        <select name="warehouse_id" onchange="this.form.submit()" class="input-cockpit w-full md:w-48 cursor-pointer">
+                            <option value="">-- Todos los Almacenes --</option>
+                            @foreach($warehouses as $wh)
+                                <option value="{{ $wh->id }}" {{ request('warehouse_id') == $wh->id ? 'selected' : '' }}>
+                                    {{ $wh->code }} - {{ $wh->description }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="relative group">
                         <label class="absolute -top-2 left-2 bg-white px-1 text-[13px] font-bold text-[#ff9c00] z-10">AGENTE</label>
                         <select name="user_id" onchange="this.form.submit()" class="input-cockpit w-full md:w-64 cursor-pointer">
                             <option value="">VISTA GLOBAL CORPORATIVA</option>
@@ -204,7 +216,6 @@
                     <div class="relative z-10 flex flex-col h-full justify-between">
                         <div class="flex justify-between items-start">
                             <div class="bg-white/10 backdrop-blur rounded px-2 py-1 text-[9px] font-bold uppercase tracking-widest border border-white/10 text-[#ff9c00]">Finanzas</div>
-                            <i class="fas fa-arrow-up text-emerald-400 bg-emerald-500/20 p-1.5 rounded text-xs"></i>
                         </div>
                         <div class="mt-4">
                             <h2 class="text-4xl xl:text-5xl font-impact font-black tracking-tight text-white group-hover:scale-105 transition-transform origin-left">

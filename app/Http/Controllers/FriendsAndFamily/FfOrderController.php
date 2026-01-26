@@ -808,7 +808,6 @@ class FfOrderController extends Controller
                 $areaLogoKey = $area->icon_path;
             }
         }
-        
         $localAreaLogo = null;
         if ($areaLogoKey) {
             $content = Storage::disk('s3')->get($areaLogoKey);
@@ -816,7 +815,7 @@ class FfOrderController extends Controller
             file_put_contents($localAreaLogo, $content);
         }
 
-        $systemLogoKey = 'LogoAzulm.PNG';
+        $systemLogoKey = 'LogoBlanco1.PNG';
         $localSystemLogo = null;
         if(Storage::disk('s3')->exists($systemLogoKey)){
             $content = Storage::disk('s3')->get($systemLogoKey);
@@ -824,8 +823,23 @@ class FfOrderController extends Controller
             file_put_contents($localSystemLogo, $content);
         }
 
-        $mainLogo = $localAreaLogo ?? $localSystemLogo;
+        $pdfLogoKey = 'pdf-logo.png'; 
+        $localPdfLogo = null;
+        if(Storage::disk('s3')->exists($pdfLogoKey)){
+            $content = Storage::disk('s3')->get($pdfLogoKey);
+            $localPdfLogo = $tempDir . '/pdf_logo.png';
+            file_put_contents($localPdfLogo, $content);
+        }
 
+        $watermarkKey = 'LogoAzulm.PNG';
+        $localWatermark = null;
+        if(Storage::disk('s3')->exists($watermarkKey)){
+            $content = Storage::disk('s3')->get($watermarkKey);
+            $localWatermark = $tempDir . '/watermark_logo.png';
+            file_put_contents($localWatermark, $content);
+        }
+
+        $mainLogo = $localAreaLogo ?? $localSystemLogo;
         $companyInfo = $this->getCompanyInfo($header->area_id);
         
         $data = [
@@ -834,6 +848,8 @@ class FfOrderController extends Controller
             'evidences' => collect($processedEvidences),
             'logo_path' => $mainLogo,
             'system_logo' => $localSystemLogo,
+            'pdf_logo' => $localPdfLogo,
+            'watermark_logo' => $localWatermark,
             'company' => $companyInfo,
             'date' => now()
         ];

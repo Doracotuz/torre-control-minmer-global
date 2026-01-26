@@ -32,21 +32,40 @@
             page-break-after: avoid;
         }
 
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            opacity: 0.08;
+            z-index: 0;
+            pointer-events: none;
+        }
+
         .sidebar {
             position: absolute;
             top: 0;
             left: 0;
             bottom: 0;
-            width: 60px;
+            width: 70px;
             background-color: #2c3856;
             z-index: 10;
+            text-align: center;
+            padding-top: 30px;
         }
 
-        .header-logo {
+        .minmer-logo-sidebar {
+            width: 50px;
+            height: auto;
+            opacity: 0.9;
+        }
+
+        .client-logo-header {
             position: absolute;
             top: 40px;
             right: 50px;
-            height: 50px;
+            height: 60px;
             max-width: 200px;
             object-fit: contain;
             z-index: 20;
@@ -59,9 +78,10 @@
         .content {
             position: absolute;
             top: 110px;
-            left: 100px;
+            left: 110px;
             right: 50px;
             bottom: 50px;
+            z-index: 5;
         }
 
         .folio-badge {
@@ -115,13 +135,14 @@
         }
 
         .evidence-grid {
-            margin-top: 15px;
+            margin-top: 10px;
             width: 100%;
         }
         .evidence-row {
             display: table;
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            table-layout: fixed;
         }
         .evidence-cell {
             display: table-cell;
@@ -132,26 +153,50 @@
         .evidence-cell:last-child {
             padding-right: 0;
         }
+        
         .ev-card {
             background-color: #ffffff;
             border: 1px solid #e2e8f0;
             padding: 5px;
-            border-radius: 4px;
+            border-radius: 6px;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.06);
+            height: 280px;
         }
+        
         .ev-img-container {
-            height: 150px;
+            height: 220px;
             width: 100%;
-            overflow: hidden;
-            background-color: #edf2f7;
-            margin-bottom: 5px;
+            background-color: #f8fafc;
+            margin-bottom: 8px;
+            display: table;
+            border-bottom: 1px solid #eee;
+            border-radius: 4px;
         }
+        
+        .ev-img-inner {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: center;
+            height: 220px;
+        }
+
         .ev-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            max-width: 100%;
+            max-height: 220px;
+            width: auto;
+            height: auto;
+            margin: 0 auto;
+            display: block;
         }
+
+        .pdf-icon {
+            width: 100px;
+            height: auto;
+            opacity: 1;
+            display: inline-block;
+        }
+
         .ev-name {
             font-size: 9px;
             font-weight: bold;
@@ -166,10 +211,10 @@
             background-color: #2c3856;
             color: #ffffff;
             text-decoration: none;
-            font-size: 8px;
+            font-size: 9px;
             font-weight: bold;
-            padding: 4px 10px;
-            border-radius: 3px;
+            padding: 5px 12px;
+            border-radius: 4px;
             margin-top: 5px;
             text-transform: uppercase;
         }
@@ -250,16 +295,29 @@
             font-size: 9px;
             color: #cbd5e0;
         }
-        
     </style>
 </head>
 <body>
 
+    @php 
+        $pageNum = 1; 
+        $itemsPerPage = 13;
+        $evidencesPerPage = 6;
+    @endphp
+
     <div class="slide">
-        <div class="sidebar"></div>
+        <div class="sidebar">
+            @if(isset($system_logo) && $system_logo)
+                <img src="{{ $system_logo }}" class="minmer-logo-sidebar">
+            @endif
+        </div>
         
+        @if(isset($watermark_logo) && $watermark_logo)
+            <img src="{{ $watermark_logo }}" class="watermark">
+        @endif
+
         @if($logo_path)
-            <img src="{{ $logo_path }}" class="header-logo">
+            <img src="{{ $logo_path }}" class="client-logo-header">
         @endif
 
         <div class="content" style="top: 140px;">
@@ -294,17 +352,27 @@
                 </div>
             </div>
         </div>
-        <div class="footer" style="color: #a0aec0;">Minmer Global | Control Tower | Página 1</div>
+        <div class="footer">Minmer Global | Control Tower | Página {{ $pageNum++ }}</div>
     </div>
 
+    @foreach($items->chunk($itemsPerPage) as $chunk)
     <div class="slide">
-        <div class="sidebar"></div>
-        @if($logo_path) <img src="{{ $logo_path }}" class="header-logo" style="height: 35px; top: 30px;"> @endif
+        <div class="sidebar">
+            @if(isset($system_logo) && $system_logo)
+                <img src="{{ $system_logo }}" class="minmer-logo-sidebar">
+            @endif
+        </div>
+
+        @if(isset($watermark_logo) && $watermark_logo)
+            <img src="{{ $watermark_logo }}" class="watermark">
+        @endif
+
+        @if($logo_path) <img src="{{ $logo_path }}" class="client-logo-header" style="height: 35px; top: 30px;"> @endif
 
         <div class="content" style="top: 80px;">
             <h3>Resumen de Artículos</h3>
             <p style="font-size: 11px; color: #718096; margin-bottom: 20px;">
-                Desglose detallado de los productos y materiales incluidos en esta entrega.
+                Desglose detallado de los productos y materiales incluidos (Página {{ $loop->iteration }}).
             </p>
 
             <table class="styled-table">
@@ -318,7 +386,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($items->take(13) as $item)
+                    @foreach($chunk as $item)
                     <tr>
                         <td style="font-weight: bold; font-family: monospace;">{{ $item->product->sku }}</td>
                         <td>{{ $item->product->description }}</td>
@@ -331,43 +399,53 @@
                     @endforeach
                 </tbody>
             </table>
-            @if($items->count() > 13)
-                <div style="text-align: center; font-size: 9px; color: #a0aec0; margin-top: 10px; font-style: italic;">
-                    ... y {{ $items->count() - 13 }} artículos más.
-                </div>
+        </div>
+        <div class="footer">Minmer Global | Control Tower | Página {{ $pageNum++ }}</div>
+    </div>
+    @endforeach
+
+    @foreach($evidences->chunk($evidencesPerPage) as $evidenceChunk)
+    <div class="slide">
+        <div class="sidebar">
+            @if(isset($system_logo) && $system_logo)
+                <img src="{{ $system_logo }}" class="minmer-logo-sidebar">
             @endif
         </div>
-        <div class="footer" style="color: #a0aec0;">Minmer Global | Control Tower | Página 2</div>
-    </div>
 
-    <div class="slide">
-        <div class="sidebar"></div>
-        @if($logo_path) <img src="{{ $logo_path }}" class="header-logo" style="height: 35px; top: 30px;"> @endif
+        @if(isset($watermark_logo) && $watermark_logo)
+            <img src="{{ $watermark_logo }}" class="watermark">
+        @endif
+
+        @if($logo_path) <img src="{{ $logo_path }}" class="client-logo-header" style="height: 35px; top: 30px;"> @endif
 
         <div class="content" style="top: 80px;">
             <h3>Registro de Evidencias</h3>
             <p style="font-size: 11px; color: #718096; margin-bottom: 20px;">
-                Documentación visual y archivos adjuntos del servicio.
+                Documentación visual y archivos adjuntos del servicio (Página {{ $loop->iteration }}).
             </p>
 
             <div class="evidence-grid">
-                @foreach($evidences->take(6)->chunk(3) as $chunk)
+                @foreach($evidenceChunk->chunk(3) as $row)
                     <div class="evidence-row">
-                        @foreach($chunk as $ev)
+                        @foreach($row as $ev)
                             <div class="evidence-cell">
                                 <div class="ev-card">
                                     <div class="ev-img-container">
-                                        @if($ev['is_image'])
-                                            <img src="{{ $ev['local_path'] }}" class="ev-img">
-                                        @else
-                                            <div style="height: 100%; display: table; width: 100%; background: #f7fafc;">
-                                                <div style="display: table-cell; vertical-align: middle; text-align: center;">
-                                                    <div style="font-size: 40px; opacity: 0.5;">📄</div>
-                                                </div>
-                                            </div>
-                                        @endif
+                                        <div class="ev-img-inner">
+                                            @if($ev['is_image'])
+                                                <img src="{{ $ev['local_path'] }}" class="ev-img">
+                                            @else
+                                                @if(isset($pdf_logo) && $pdf_logo)
+                                                    <img src="{{ $pdf_logo }}" class="pdf-icon">
+                                                @else
+                                                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAMAAABg3Am1AAAAclBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////9e30x8AAAAJXRSTlMAAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMk6u3kwwAAAXxJREFUeNrtltdOw0AQRa/tXccuTgyY3ntv/v9fI2tGlnK8E44QZzzx7szO7I52jUaO/4iU00rK5Q80S+X08q+JclE7P19V/62o61Xz81C7qJTTyr/Fm00mnd4gn02+W/w+Y/H7jM03i/cZiw823yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nw23yzeZ+J85t9n4nzm/w9+Aet5F9w3EAAAAABJRU5ErkJggg==" class="pdf-icon">
+                                                @endif
+                                            @endif
+                                        </div>
                                     </div>
-                                    <div class="ev-name">{{ $ev['filename'] }}</div>
+                                    
+                                    <div class="ev-name" title="{{ $ev['filename'] }}">{{ $ev['filename'] }}</div>
+                                    
                                     @if(!$ev['is_image'])
                                         <a href="{{ $ev['remote_url'] }}" target="_blank" class="btn-link">Ver Documento</a>
                                     @else
@@ -380,8 +458,9 @@
                 @endforeach
             </div>
         </div>
-        <div class="footer" style="color: #a0aec0;">Minmer Global | Control Tower | Página 3</div>
+        <div class="footer">Minmer Global | Control Tower | Página {{ $pageNum++ }}</div>
     </div>
+    @endforeach
 
     <div class="slide thank-you-slide">
         <div class="ty-circle"></div>
@@ -406,7 +485,7 @@
 
         <div class="powered-by">
             <span class="powered-label">Powered By</span>
-            @if($system_logo)
+            @if(isset($system_logo) && $system_logo)
                 <img src="{{ $system_logo }}" class="powered-logo">
             @else
                 <div style="font-weight: bold; font-size: 18px;">MINMER GLOBAL</div>

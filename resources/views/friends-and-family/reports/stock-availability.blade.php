@@ -212,21 +212,10 @@
                             </p>
                         </div>
 
-                        <form method="GET" action="{{ route('ff.reports.stockAvailability') }}" class="w-full sm:w-auto flex items-center gap-2">
-                            <div class="relative w-full sm:w-64">
-                                <input type="text" name="search" value="{{ $search }}" placeholder="Buscar SKU o Descripción..." class="input-tech pl-9">
-                            </div>
-                            <button type="submit" class="bg-[#2c3856] text-white rounded-lg w-9 h-9 flex items-center justify-center hover:bg-[#ff9c00] transition-colors shadow-sm">
-                                <i class="fas fa-arrow-right text-xs"></i>
-                            </button>
-                            @if($search)
-                                <a href="{{ route('ff.reports.stockAvailability') }}" class="bg-slate-200 text-slate-500 rounded-lg w-9 h-9 flex items-center justify-center hover:bg-slate-300 transition-colors" title="Limpiar Filtro">
-                                    <i class="fas fa-times text-xs"></i>
-                                </a>
-                            @endif
-
+                        <form method="GET" action="{{ route('ff.reports.stockAvailability') }}" class="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-2">
+                            
                             @if(Auth::user()->isSuperAdmin())
-                                <div class="relative w-full sm:w-48">
+                                <div class="relative w-full sm:w-40">
                                     <select name="area_id" onchange="this.form.submit()" class="input-tech py-2 font-bold uppercase text-xs cursor-pointer">
                                         <option value="">GLOBAL</option>
                                         @foreach($areas as $area)
@@ -236,6 +225,31 @@
                                         @endforeach
                                     </select>
                                 </div>
+                            @endif
+
+                            <div class="relative w-full sm:w-48">
+                                <select name="warehouse_id" onchange="this.form.submit()" class="input-tech py-2 font-bold uppercase text-xs cursor-pointer">
+                                    <option value="">TODOS (ALMACÉN)</option>
+                                    @foreach($warehouses as $wh)
+                                        <option value="{{ $wh->id }}" {{ request('warehouse_id') == $wh->id ? 'selected' : '' }}>
+                                            {{ $wh->code }} - {{ Str::limit($wh->description, 12) }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="relative w-full sm:w-56">
+                                <input type="text" name="search" value="{{ $search }}" placeholder="Buscar SKU o Descripción..." class="input-tech pl-9">
+                            </div>
+                            
+                            <button type="submit" class="bg-[#2c3856] text-white rounded-lg w-9 h-9 flex items-center justify-center hover:bg-[#ff9c00] transition-colors shadow-sm">
+                                <i class="fas fa-arrow-right text-xs"></i>
+                            </button>
+                            
+                            @if($search)
+                                <a href="{{ route('ff.reports.stockAvailability') }}" class="bg-slate-200 text-slate-500 rounded-lg w-9 h-9 flex items-center justify-center hover:bg-slate-300 transition-colors" title="Limpiar Filtro">
+                                    <i class="fas fa-times text-xs"></i>
+                                </a>
                             @endif
 
                         </form>
