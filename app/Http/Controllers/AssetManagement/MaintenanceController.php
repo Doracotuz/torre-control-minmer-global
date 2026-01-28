@@ -143,9 +143,8 @@ class MaintenanceController extends Controller
         return view('asset-management.maintenances.edit', compact('maintenance'));
     }
 
-public function update(Request $request, Maintenance $maintenance)
+    public function update(Request $request, Maintenance $maintenance)
     {
-        // 1. Verificación de permisos
         if ($maintenance->end_date) {
             $user = Auth::user();
             $isSuperAdmin = $user && $user->is_area_admin && $user->area?->name === 'Administración';
@@ -154,7 +153,6 @@ public function update(Request $request, Maintenance $maintenance)
             }
         }
 
-        // 2. Validación
         $data = $request->validate([
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
@@ -169,7 +167,6 @@ public function update(Request $request, Maintenance $maintenance)
 
         DB::transaction(function () use ($data, $maintenance, $request) {
             
-            // 3. Establecer hora 12:00 PM para evitar saltos de fecha por zona horaria
             if (\Carbon\Carbon::parse($data['start_date'])->isToday()) {
                 $effectiveStartDate = now();
             } else {
@@ -189,7 +186,6 @@ public function update(Request $request, Maintenance $maintenance)
                 $data['end_date'] = null;
             }
 
-            // 4. Gestión de Fotos
             for ($i = 1; $i <= 3; $i++) {
                 $fileInputName = "photo_{$i}";
                 $dbColumnName = "photo_{$i}_path";
@@ -205,68 +201,53 @@ public function update(Request $request, Maintenance $maintenance)
                 }
             }
 
-            // Actualizar Mantenimiento
             $maintenance->update($data);
 
-            // =========================================================================
-            // SINCRONIZACIÓN FORZADA DE FECHAS (LOG CONTRA LOG)
-            // =========================================================================
-            
-            // Paso A: Encontrar el Log del Mantenimiento (ID 12 en tu ejemplo)
             $mainLog = \App\Models\AssetLog::where('loggable_type', \App\Models\Maintenance::class)
                 ->where('loggable_id', $maintenance->id)
                 ->first();
 
             if ($mainLog) {
-                // Actualizamos la fecha del log de mantenimiento
                 $mainLog->update(['event_date' => $effectiveStartDate]);
-
-                // Obtenemos el momento exacto en que se creó este log en la BD
+                
                 $exactCreationTime = $mainLog->created_at;
 
-                // Paso B: Buscar el Log "Gemelo" (Devolución) usando el tiempo del primer log
-                // Buscamos +/- 20 segundos de diferencia en la misma tabla asset_logs
                 $returnLog = \App\Models\AssetLog::where('hardware_asset_id', $maintenance->asset_id)
-                    ->where('action_type', 'Devolución')
+                    ->where('loggable_type', 'App\Models\Assignment')
                     ->whereBetween('created_at', [
-                        $exactCreationTime->copy()->subSeconds(20),
-                        $exactCreationTime->copy()->addSeconds(20)
+                        $exactCreationTime->copy()->subSeconds(5),
+                        $exactCreationTime->copy()->addSeconds(5)
                     ])
                     ->first();
 
                 if ($returnLog) {
-                    // 1. Corregir fecha visual en línea de tiempo (Log ID 152 en tu ejemplo)
                     $returnLog->update(['event_date' => $effectiveStartDate]);
 
-                    // 2. Corregir fecha real en base de datos de asignaciones (Assignment ID 46)
-                    if ($returnLog->loggable_type === 'App\Models\Assignment' || $returnLog->loggable_type === 'Assignment') {
+                    if ($returnLog->loggable_id) {
                          \App\Models\Assignment::where('id', $returnLog->loggable_id)
                             ->update(['actual_return_date' => $effectiveStartDate]);
                     }
                 }
 
-                // Paso C: Buscar Log "Gemelo" de Préstamo Sustituto (si existe)
                 if ($maintenance->substitute_asset_id) {
                     $loanLog = \App\Models\AssetLog::where('hardware_asset_id', $maintenance->substitute_asset_id)
-                        ->where('action_type', 'Préstamo')
+                        ->where('loggable_type', 'App\Models\Assignment')
                         ->whereBetween('created_at', [
-                            $exactCreationTime->copy()->subSeconds(20),
-                            $exactCreationTime->copy()->addSeconds(20)
+                            $exactCreationTime->copy()->subSeconds(5),
+                            $exactCreationTime->copy()->addSeconds(5)
                         ])
                         ->first();
                     
                     if ($loanLog) {
                         $loanLog->update(['event_date' => $effectiveStartDate]);
-                        if ($loanLog->loggable_type === 'App\Models\Assignment' || $loanLog->loggable_type === 'Assignment') {
+                        if ($loanLog->loggable_id) {
                             \App\Models\Assignment::where('id', $loanLog->loggable_id)
                                 ->update(['assignment_date' => $effectiveStartDate]);
                         }
                     }
                 }
             }
-            // =========================================================================
 
-            // 5. Cierre o Reapertura (Estatus del Activo)
             $asset = $maintenance->asset;
             if (!empty($data['end_date'])) {
                 $targetStatus = $request->input('final_asset_status', 'En Almacén');
