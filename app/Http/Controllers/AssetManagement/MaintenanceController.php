@@ -213,6 +213,7 @@ class MaintenanceController extends Controller
             $maintenance->update($data);
 
             if ($originalStartDate !== $newStartDateString) {
+                
                 $startLog = \App\Models\AssetLog::where('loggable_type', \App\Models\Maintenance::class)
                     ->where('loggable_id', $maintenance->id)
                     ->whereIn('action_type', ['En Reparación', 'En Mantenimiento', 'Preventivo']) 
@@ -222,8 +223,16 @@ class MaintenanceController extends Controller
                     $startLog->update(['event_date' => $effectiveStartDate]);
                 }
 
+                $searchDate = \Carbon\Carbon::parse($originalStartDate);
+                
                 $assignmentsReturned = \App\Models\Assignment::where('hardware_asset_id', $maintenance->asset_id)
-                    ->whereDate('actual_return_date', $originalStartDate)
+                    ->whereNotNull('actual_return_date')
+                    ->whereBetween('actual_return_date', [
+                        $searchDate->copy()->subDays(4)->startOfDay(),
+                        $searchDate->copy()->addDays(4)->endOfDay()
+                    ])
+                    ->orderBy('actual_return_date', 'desc')
+                    ->take(1) 
                     ->get();
 
                 foreach ($assignmentsReturned as $assignment) {
@@ -243,7 +252,10 @@ class MaintenanceController extends Controller
                 if ($maintenance->substitute_asset_id) {
                     $substituteLoan = \App\Models\Assignment::where('hardware_asset_id', $maintenance->substitute_asset_id)
                         ->where('type', 'Préstamo')
-                        ->whereDate('assignment_date', $originalStartDate)
+                        ->whereBetween('assignment_date', [
+                            $searchDate->copy()->subDays(4)->startOfDay(),
+                            $searchDate->copy()->addDays(4)->endOfDay()
+                        ])
                         ->first();
 
                     if ($substituteLoan) {
