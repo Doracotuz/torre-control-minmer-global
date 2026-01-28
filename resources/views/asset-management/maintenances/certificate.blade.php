@@ -37,12 +37,13 @@
 
         $isCompleted = !is_null($maintenance->end_date);
         $isDamaged = $maintenance->asset->status === 'De Baja';
+        $isWaitingRepair = $maintenance->asset->status === 'En espera de reparación';
         
         if (!$isCompleted) {
             $docTitle = "Orden de Servicio y Diagnóstico";
             $statusText = "EN PROCESO / COTIZACIÓN";
-            $statusColor = "#d97706"; // Ámbar
-            $introText = "El presente documento detalla el diagnóstico inicial y los recursos estimados para el servicio de mantenimiento.";
+            $statusColor = "#d97706"; 
+            $introText = "El presente documento detalla el diagnóstico inicial...";
             $costLabel = "Costo Estimado / Presupuesto";
             $partsLabel = "Refacciones Requeridas / A Cotizar";
             $actionLabel = "Acciones Propuestas";
@@ -50,17 +51,26 @@
         } elseif ($isDamaged) {
             $docTitle = "Dictamen Técnico de Baja";
             $statusText = "IRREPARABLE / DAÑADO";
-            $statusColor = "#dc2626"; // Rojo
-            $introText = "Este documento certifica que el activo ha sido sometido a revisión técnica y se dictamina como <strong>IRREPARABLE</strong>. Se detallan los recursos consumidos en el intento de reparación o diagnóstico.";
-            $costLabel = "Costo Incurrido (Diagnóstico/Intento)";
-            $partsLabel = "Insumos y Refacciones Consumidas en Diagnóstico";
-            $actionLabel = "Acciones Realizadas y Resultados";
+            $statusColor = "#dc2626";
+            $introText = "Este documento certifica que el activo ha sido sometido a revisión técnica y se dictamina como <strong>IRREPARABLE</strong>...";
+            $costLabel = "Costo Incurrido";
+            $partsLabel = "Insumos Consumidos";
+            $actionLabel = "Acciones Realizadas";
+
+        } elseif ($isWaitingRepair) {
+            $docTitle = "Certificado de Mantenimiento (Pendiente)";
+            $statusText = "FUNCIONAL / ESPERA REPARACIÓN";
+            $statusColor = "#f59e0b"; // Naranja ambar
+            $introText = "El presente documento certifica que el equipo es <strong>funcional y seguro para operar</strong>, sin embargo, queda con un estatus de <em>'En espera de reparación'</em> para correcciones estéticas o menores futuras.";
+            $costLabel = "Costo del Servicio Actual";
+            $partsLabel = "Refacciones Utilizadas";
+            $actionLabel = "Acciones Realizadas";
 
         } else {
             $docTitle = "Certificado de Mantenimiento";
             $statusText = "REPARADO / FUNCIONAL";
-            $statusColor = "#059669"; // Verde
-            $introText = "El presente documento certifica que se ha realizado el servicio de mantenimiento y el equipo ha sido verificado para su <strong>correcto funcionamiento</strong>.";
+            $statusColor = "#059669";
+            $introText = "El presente documento certifica que se ha realizado el servicio...";
             $costLabel = "Costo Total del Servicio";
             $partsLabel = "Refacciones e Insumos Instalados";
             $actionLabel = "Acciones Realizadas";

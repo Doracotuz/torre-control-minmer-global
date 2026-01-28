@@ -174,6 +174,7 @@
                                             @change="if(finalStatus === 'process') { endDate = ''; finalStatus = 'En Almacén'; }"
                                             class="modern-input w-full py-3 form-select cursor-pointer">
                                         <option value="En Almacén">Equipo Reparado (Enviar a Almacén)</option>
+                                        <option value="En espera de reparación">En espera de reparación (Funcional/Asignable)</option>
                                         <option value="De Baja">Equipo Irreparable (Dar de Baja)</option>
                                         <option disabled>──────────────────────────</option>
                                         <option value="process" class="text-blue-600 font-bold">

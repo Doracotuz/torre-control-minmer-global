@@ -149,14 +149,14 @@ class MaintenanceController extends Controller
             $user = Auth::user();
             $isSuperAdmin = $user && $user->is_area_admin && $user->area?->name === 'Administración';
             if (!$isSuperAdmin) {
-                return back()->with('error', 'Mantenimiento cerrado. Solo Super Admin puede editar.');
+                return back()->with('error', 'Este mantenimiento ya fue finalizado. Solo un Super Administrador puede modificarlo.');
             }
         }
 
         $data = $request->validate([
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'final_asset_status' => 'nullable|in:En Almacén,De Baja',
+            'final_asset_status' => 'nullable|in:En Almacén,De Baja,En espera de reparación',
             'actions_taken' => 'nullable|required_with:end_date|string',
             'parts_used' => 'nullable|string',
             'cost' => 'nullable|numeric|min:0',
@@ -192,11 +192,16 @@ class MaintenanceController extends Controller
                 $removeInputName = "remove_photo_{$i}";
 
                 if ($request->input($removeInputName) === 'true') {
-                    if ($maintenance->{$dbColumnName}) Storage::disk('s3')->delete($maintenance->{$dbColumnName});
+                    if ($maintenance->{$dbColumnName}) {
+                        Storage::disk('s3')->delete($maintenance->{$dbColumnName});
+                    }
                     $data[$dbColumnName] = null;
                 }
+
                 if ($request->hasFile($fileInputName)) {
-                    if ($maintenance->{$dbColumnName}) Storage::disk('s3')->delete($maintenance->{$dbColumnName});
+                    if ($maintenance->{$dbColumnName}) {
+                        Storage::disk('s3')->delete($maintenance->{$dbColumnName});
+                    }
                     $data[$dbColumnName] = $request->file($fileInputName)->store('maintenances/photos', 's3');
                 }
             }
@@ -213,10 +218,10 @@ class MaintenanceController extends Controller
                 $exactCreationTime = $mainLog->created_at;
 
                 $returnLog = \App\Models\AssetLog::where('hardware_asset_id', $maintenance->asset_id)
-                    ->where('loggable_type', 'App\Models\Assignment')
+                    ->where('action_type', 'Devolución')
                     ->whereBetween('created_at', [
-                        $exactCreationTime->copy()->subSeconds(5),
-                        $exactCreationTime->copy()->addSeconds(5)
+                        $exactCreationTime->copy()->subSeconds(10),
+                        $exactCreationTime->copy()->addSeconds(10)
                     ])
                     ->first();
 
@@ -231,10 +236,10 @@ class MaintenanceController extends Controller
 
                 if ($maintenance->substitute_asset_id) {
                     $loanLog = \App\Models\AssetLog::where('hardware_asset_id', $maintenance->substitute_asset_id)
-                        ->where('loggable_type', 'App\Models\Assignment')
+                        ->where('action_type', 'Préstamo')
                         ->whereBetween('created_at', [
-                            $exactCreationTime->copy()->subSeconds(5),
-                            $exactCreationTime->copy()->addSeconds(5)
+                            $exactCreationTime->copy()->subSeconds(10),
+                            $exactCreationTime->copy()->addSeconds(10)
                         ])
                         ->first();
                     
@@ -249,49 +254,64 @@ class MaintenanceController extends Controller
             }
 
             $asset = $maintenance->asset;
+
             if (!empty($data['end_date'])) {
                 $targetStatus = $request->input('final_asset_status', 'En Almacén');
+
                 if ($asset->status !== $targetStatus) {
                     $asset->status = $targetStatus;
                     $asset->save();
-                    
+
+                    $logNote = "Se completó el mantenimiento. El activo vuelve a Almacén reparado.";
+                    if ($targetStatus === 'De Baja') {
+                        $logNote = "Mantenimiento concluido. El equipo fue dictaminado como irreparable / dañado.";
+                    } elseif ($targetStatus === 'En espera de reparación') {
+                        $logNote = "Mantenimiento concluido. Equipo funcional pero en espera de reparación (disponible para asignación).";
+                    }
+
                     $asset->logs()->create([
                         'user_id' => Auth::id(),
                         'action_type' => $targetStatus === 'De Baja' ? 'Baja por Mantenimiento' : 'Mantenimiento Completado',
-                        'notes' => $targetStatus === 'De Baja' ? "Mantenimiento concluido. Equipo irreparable." : "Se completó el mantenimiento.",
+                        'notes' => $logNote,
                         'event_date' => $effectiveEndDate,
                         'loggable_id' => $maintenance->id,
                         'loggable_type' => \App\Models\Maintenance::class,
                     ]);
                 }
-                
+
                 if ($maintenance->substitute_asset_id) {
                     $substitute = $maintenance->substituteAsset;
                     $loan = $substitute->currentAssignment;
+
                     if ($loan) {
                         $loan->actual_return_date = $effectiveEndDate;
                         $loan->save();
+
                         $substitute->status = 'En Almacén';
                         $substitute->save();
+
                         $substitute->logs()->create([
                             'user_id' => Auth::id(),
                             'action_type' => 'Devolución',
-                            'notes' => 'Devuelto por cierre de ticket principal.',
+                            'notes' => 'Devuelto por cierre de ticket principal. Fin de préstamo sustituto.',
                             'loggable_id' => $loan->id,
                             'loggable_type' => \App\Models\Assignment::class,
                             'event_date' => $effectiveEndDate,
                         ]);
                     }
                 }
+
             } else {
                 $targetStatus = $maintenance->type === 'Reparación' ? 'En Reparación' : 'En Mantenimiento';
+
                 if ($asset->status !== $targetStatus) {
                     $asset->status = $targetStatus;
                     $asset->save();
+
                     $asset->logs()->create([
                         'user_id' => Auth::id(),
                         'action_type' => 'Reapertura / En Proceso',
-                        'notes' => "Ticket en proceso.",
+                        'notes' => "Ticket en proceso (o reabierto). El activo regresa a estatus: $targetStatus.",
                         'event_date' => now(),
                         'loggable_id' => $maintenance->id,
                         'loggable_type' => \App\Models\Maintenance::class,
