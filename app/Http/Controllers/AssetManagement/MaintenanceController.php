@@ -175,7 +175,6 @@ class MaintenanceController extends Controller
             }
             $data['start_date'] = $effectiveStartDate;
 
-
             $effectiveEndDate = null;
             if (!empty($data['end_date'])) {
                 if (\Carbon\Carbon::parse($data['end_date'])->isToday()) {
@@ -187,7 +186,6 @@ class MaintenanceController extends Controller
             } else {
                 $data['end_date'] = null;
             }
-
 
             for ($i = 1; $i <= 3; $i++) {
                 $fileInputName = "photo_{$i}";
@@ -223,6 +221,45 @@ class MaintenanceController extends Controller
                 if ($startLog) {
                     $startLog->update(['event_date' => $effectiveStartDate]);
                 }
+
+                $assignmentsReturned = \App\Models\Assignment::where('hardware_asset_id', $maintenance->asset_id)
+                    ->whereDate('actual_return_date', $originalStartDate)
+                    ->get();
+
+                foreach ($assignmentsReturned as $assignment) {
+                    $assignment->actual_return_date = $effectiveStartDate;
+                    $assignment->save();
+
+                    $returnLog = \App\Models\AssetLog::where('loggable_type', \App\Models\Assignment::class)
+                        ->where('loggable_id', $assignment->id)
+                        ->where('action_type', 'Devolución')
+                        ->first();
+                    
+                    if ($returnLog) {
+                        $returnLog->update(['event_date' => $effectiveStartDate]);
+                    }
+                }
+
+                if ($maintenance->substitute_asset_id) {
+                    $substituteLoan = \App\Models\Assignment::where('hardware_asset_id', $maintenance->substitute_asset_id)
+                        ->where('type', 'Préstamo')
+                        ->whereDate('assignment_date', $originalStartDate)
+                        ->first();
+
+                    if ($substituteLoan) {
+                        $substituteLoan->assignment_date = $effectiveStartDate;
+                        $substituteLoan->save();
+
+                        $loanLog = \App\Models\AssetLog::where('loggable_type', \App\Models\Assignment::class)
+                            ->where('loggable_id', $substituteLoan->id)
+                            ->where('action_type', 'Préstamo')
+                            ->first();
+
+                        if ($loanLog) {
+                            $loanLog->update(['event_date' => $effectiveStartDate]);
+                        }
+                    }
+                }
             }
 
             $asset = $maintenance->asset;
@@ -237,6 +274,7 @@ class MaintenanceController extends Controller
                     $logNote = $targetStatus === 'De Baja'
                         ? "Mantenimiento concluido. El equipo fue dictaminado como irreparable / dañado."
                         : "Se completó el mantenimiento. El activo vuelve a Almacén reparado.";
+
                     $asset->logs()->create([
                         'user_id' => Auth::id(),
                         'action_type' => $targetStatus === 'De Baja' ? 'Baja por Mantenimiento' : 'Mantenimiento Completado',
