@@ -173,7 +173,7 @@
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Acciones Realizadas <span class="text-red-500">*</span></label>
                                 <div class="relative">
                                     <i class="fas fa-tools form-floating-icon top-6"></i>
-                                    <textarea name="actions_taken" rows="4" required
+                                    <textarea name="actions_taken" rows="4"
                                               class="modern-input w-full py-3 form-textarea"
                                               placeholder="Describa detalladamente la reparación o mantenimiento...">{{ old('actions_taken', $maintenance->actions_taken) }}</textarea>
                                 </div>
