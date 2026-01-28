@@ -145,17 +145,15 @@ class MaintenanceController extends Controller
 
     public function update(Request $request, Maintenance $maintenance)
     {
-        // 1. Verificación de Permisos
+        // 1. Verificación de permisos y Validaciones (Igual que antes)
         if ($maintenance->end_date) {
             $user = Auth::user();
             $isSuperAdmin = $user && $user->is_area_admin && $user->area?->name === 'Administración';
-
             if (!$isSuperAdmin) {
-                return back()->with('error', 'Este mantenimiento ya fue finalizado. Solo un Super Administrador puede modificarlo.');
+                return back()->with('error', 'Mantenimiento cerrado. Solo Super Admin puede editar.');
             }
         }
 
-        // 2. Validación
         $data = $request->validate([
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
@@ -170,7 +168,7 @@ class MaintenanceController extends Controller
 
         DB::transaction(function () use ($data, $maintenance, $request) { 
             
-            // A. Calcular Fecha de Inicio Efectiva (Regla 12:00 PM)
+            // 2. Calcular Fechas Efectivas (Regla de las 12:00 PM para evitar desfase de zona horaria)
             if (\Carbon\Carbon::parse($data['start_date'])->isToday()) {
                 $effectiveStartDate = now(); 
             } else {
@@ -178,7 +176,6 @@ class MaintenanceController extends Controller
             }
             $data['start_date'] = $effectiveStartDate;
 
-            // B. Calcular Fecha de Fin Efectiva
             $effectiveEndDate = null;
             if (!empty($data['end_date'])) {
                 if (\Carbon\Carbon::parse($data['end_date'])->isToday()) {
@@ -191,141 +188,118 @@ class MaintenanceController extends Controller
                 $data['end_date'] = null;
             }
 
-            // C. Manejo de Fotos
+            // 3. Manejo de Fotos (Igual que antes)
             for ($i = 1; $i <= 3; $i++) {
                 $fileInputName = "photo_{$i}";
                 $dbColumnName = "photo_{$i}_path";
                 $removeInputName = "remove_photo_{$i}";
 
                 if ($request->input($removeInputName) === 'true') {
-                    if ($maintenance->{$dbColumnName}) {
-                        Storage::disk('s3')->delete($maintenance->{$dbColumnName});
-                    }
+                    if ($maintenance->{$dbColumnName}) Storage::disk('s3')->delete($maintenance->{$dbColumnName});
                     $data[$dbColumnName] = null;
                 }
-
                 if ($request->hasFile($fileInputName)) {
-                    if ($maintenance->{$dbColumnName} && !isset($data[$dbColumnName])) {
-                        Storage::disk('s3')->delete($maintenance->{$dbColumnName});
-                    }
+                    if ($maintenance->{$dbColumnName}) Storage::disk('s3')->delete($maintenance->{$dbColumnName});
                     $data[$dbColumnName] = $request->file($fileInputName)->store('maintenances/photos', 's3');
                 }
             }
 
-            // Capturamos fecha original para comparar después
+            // Detectar si cambió la fecha de inicio
             $originalStartDate = $maintenance->start_date ? $maintenance->start_date->format('Y-m-d') : null;
             $newStartDateString = $effectiveStartDate->format('Y-m-d');
 
-            // --- ACTUALIZACIÓN DEL MANTENIMIENTO ---
+            // --- GUARDAR CAMBIOS EN MANTENIMIENTO ---
             $maintenance->update($data);
 
-            // --- SINCRONIZACIÓN DE HISTORIAL (Si cambió la fecha) ---
-            // Ejecutamos siempre que las fechas difieran
+            // --- SINCRONIZACIÓN INTELIGENTE (Por Tiempo de Creación) ---
             if ($originalStartDate !== $newStartDateString) {
                 
-                // 1. Actualizar el Log propio del Mantenimiento
-                $startLog = \App\Models\AssetLog::where('loggable_type', \App\Models\Maintenance::class)
+                // A. Buscar el Log del Mantenimiento propio
+                // Usamos whereFirst para obtener el objeto y su created_at
+                $mainLog = \App\Models\AssetLog::where('loggable_type', \App\Models\Maintenance::class)
                     ->where('loggable_id', $maintenance->id)
-                    // Quitamos el filtro estricto de texto para evitar errores, usamos ID y Clase
                     ->first();
 
-                if ($startLog) {
-                    $startLog->update(['event_date' => $effectiveStartDate]);
-                }
+                if ($mainLog) {
+                    // 1. Actualizar fecha del Log de Mantenimiento
+                    $mainLog->update(['event_date' => $effectiveStartDate]);
 
-                // 2. Actualizar la DEVOLUCIÓN asociada
-                // Ampliamos el rango de búsqueda a +/- 10 días para mayor seguridad
-                $searchDate = \Carbon\Carbon::parse($originalStartDate);
-                
-                $assignmentsReturned = \App\Models\Assignment::where('hardware_asset_id', $maintenance->asset_id)
-                    ->whereNotNull('actual_return_date')
-                    ->whereBetween('actual_return_date', [
-                        $searchDate->copy()->subDays(10)->startOfDay(),
-                        $searchDate->copy()->addDays(10)->endOfDay()
-                    ])
-                    ->get();
-
-                foreach ($assignmentsReturned as $assignment) {
-                    // Actualizar fecha en tabla assignments
-                    $assignment->actual_return_date = $effectiveStartDate;
-                    $assignment->save();
-
-                    // Buscar y actualizar el Log por ID exacto (sin depender del texto "Devolución")
-                    $returnLog = \App\Models\AssetLog::where('loggable_type', \App\Models\Assignment::class)
-                        ->where('loggable_id', $assignment->id)
-                        ->first();
-                    
-                    if ($returnLog) {
-                        $returnLog->update(['event_date' => $effectiveStartDate]);
-                    }
-                }
-
-                // 3. Actualizar PRÉSTAMO de Sustituto (si existe)
-                if ($maintenance->substitute_asset_id) {
-                    $substituteLoans = \App\Models\Assignment::where('hardware_asset_id', $maintenance->substitute_asset_id)
-                        ->where('type', 'Préstamo')
-                        ->whereBetween('assignment_date', [
-                            $searchDate->copy()->subDays(10)->startOfDay(),
-                            $searchDate->copy()->addDays(10)->endOfDay()
+                    // B. Buscar el Log HERMANO (Devolución)
+                    // Buscamos un log del mismo activo, tipo Devolución, creado +/- 10 segundos del log de mantenimiento
+                    $returnLog = \App\Models\AssetLog::where('hardware_asset_id', $maintenance->asset_id)
+                        ->where('action_type', 'Devolución')
+                        ->whereBetween('created_at', [
+                            $mainLog->created_at->copy()->subSeconds(20), // Margen de seguridad
+                            $mainLog->created_at->copy()->addSeconds(20)
                         ])
-                        ->get();
+                        ->first();
 
-                    foreach ($substituteLoans as $subLoan) {
-                        $subLoan->assignment_date = $effectiveStartDate;
-                        $subLoan->save();
+                    if ($returnLog) {
+                        // 2. Actualizar visualmente la Línea de Vida
+                        $returnLog->update(['event_date' => $effectiveStartDate]);
 
-                        $loanLog = \App\Models\AssetLog::where('loggable_type', \App\Models\Assignment::class)
-                            ->where('loggable_id', $subLoan->id)
+                        // 3. Actualizar la Asignación real en base de datos
+                        if ($returnLog->loggable_type === 'App\Models\Assignment') {
+                            \App\Models\Assignment::where('id', $returnLog->loggable_id)
+                                ->update(['actual_return_date' => $effectiveStartDate]);
+                        }
+                    }
+
+                    // C. Buscar Log HERMANO de PRÉSTAMO (Sustituto) si existe
+                    if ($maintenance->substitute_asset_id) {
+                        $loanLog = \App\Models\AssetLog::where('hardware_asset_id', $maintenance->substitute_asset_id)
+                            ->where('action_type', 'Préstamo')
+                            ->whereBetween('created_at', [
+                                $mainLog->created_at->copy()->subSeconds(20),
+                                $mainLog->created_at->copy()->addSeconds(20)
+                            ])
                             ->first();
-
+                        
                         if ($loanLog) {
                             $loanLog->update(['event_date' => $effectiveStartDate]);
+
+                            if ($loanLog->loggable_type === 'App\Models\Assignment') {
+                                \App\Models\Assignment::where('id', $loanLog->loggable_id)
+                                    ->update(['assignment_date' => $effectiveStartDate]);
+                            }
                         }
                     }
                 }
             }
 
-            // --- CIERRE O REAPERTURA DE TICKET ---
+            // 4. Lógica de Cierre / Reapertura (Igual que antes)
             $asset = $maintenance->asset;
-
             if (!empty($data['end_date'])) {
-                // Caso: Finalizar Mantenimiento
+                // ... (Lógica de cierre: cambio de estatus a En Almacén/De Baja)
                 $targetStatus = $request->input('final_asset_status', 'En Almacén');
-
                 if ($asset->status !== $targetStatus) {
                     $asset->status = $targetStatus;
                     $asset->save();
-
-                    $logNote = $targetStatus === 'De Baja'
-                        ? "Mantenimiento concluido. El equipo fue dictaminado como irreparable / dañado."
-                        : "Se completó el mantenimiento. El activo vuelve a Almacén reparado.";
-
+                    
+                    // Log de cierre
                     $asset->logs()->create([
                         'user_id' => Auth::id(),
                         'action_type' => $targetStatus === 'De Baja' ? 'Baja por Mantenimiento' : 'Mantenimiento Completado',
-                        'notes' => $logNote,
+                        'notes' => $targetStatus === 'De Baja' ? "Mantenimiento concluido. Equipo irreparable." : "Se completó el mantenimiento.",
                         'event_date' => $effectiveEndDate,
                         'loggable_id' => $maintenance->id,
                         'loggable_type' => \App\Models\Maintenance::class,
                     ]);
                 }
-
-                // Devolver sustituto
+                
+                // Retorno de sustituto
                 if ($maintenance->substitute_asset_id) {
                     $substitute = $maintenance->substituteAsset;
                     $loan = $substitute->currentAssignment;
-
                     if ($loan) {
                         $loan->actual_return_date = $effectiveEndDate;
                         $loan->save();
-
                         $substitute->status = 'En Almacén';
                         $substitute->save();
-
                         $substitute->logs()->create([
                             'user_id' => Auth::id(),
                             'action_type' => 'Devolución',
-                            'notes' => 'Devuelto por cierre de ticket principal. Fin de préstamo sustituto.',
+                            'notes' => 'Devuelto por cierre de ticket principal.',
                             'loggable_id' => $loan->id,
                             'loggable_type' => \App\Models\Assignment::class,
                             'event_date' => $effectiveEndDate,
@@ -334,17 +308,15 @@ class MaintenanceController extends Controller
                 }
 
             } else {
-                // Caso: Mantenimiento sigue abierto (o reabierto)
+                // Lógica de reapertura (si se borró la fecha de fin)
                 $targetStatus = $maintenance->type === 'Reparación' ? 'En Reparación' : 'En Mantenimiento';
-
                 if ($asset->status !== $targetStatus) {
                     $asset->status = $targetStatus;
                     $asset->save();
-
                     $asset->logs()->create([
                         'user_id' => Auth::id(),
                         'action_type' => 'Reapertura / En Proceso',
-                        'notes' => "Ticket en proceso (o reabierto). El activo regresa a estatus: $targetStatus.",
+                        'notes' => "Ticket en proceso.",
                         'event_date' => now(),
                         'loggable_id' => $maintenance->id,
                         'loggable_type' => \App\Models\Maintenance::class,
