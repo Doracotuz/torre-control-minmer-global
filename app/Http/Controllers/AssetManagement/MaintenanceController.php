@@ -145,7 +145,6 @@ class MaintenanceController extends Controller
 
     public function update(Request $request, Maintenance $maintenance)
     {
-        // 1. Verificación de permisos y Validaciones (Igual que antes)
         if ($maintenance->end_date) {
             $user = Auth::user();
             $isSuperAdmin = $user && $user->is_area_admin && $user->area?->name === 'Administración';
@@ -166,11 +165,10 @@ class MaintenanceController extends Controller
             'photo_3' => 'nullable|image|max:10048',
         ]);
 
-        DB::transaction(function () use ($data, $maintenance, $request) { 
+        DB::transaction(function () use ($data, $maintenance, $request) {
             
-            // 2. Calcular Fechas Efectivas (Regla de las 12:00 PM para evitar desfase de zona horaria)
             if (\Carbon\Carbon::parse($data['start_date'])->isToday()) {
-                $effectiveStartDate = now(); 
+                $effectiveStartDate = now();
             } else {
                 $effectiveStartDate = \Carbon\Carbon::parse($data['start_date'])->setTime(12, 0, 0);
             }
@@ -188,7 +186,6 @@ class MaintenanceController extends Controller
                 $data['end_date'] = null;
             }
 
-            // 3. Manejo de Fotos (Igual que antes)
             for ($i = 1; $i <= 3; $i++) {
                 $fileInputName = "photo_{$i}";
                 $dbColumnName = "photo_{$i}_path";
@@ -204,79 +201,60 @@ class MaintenanceController extends Controller
                 }
             }
 
-            // Detectar si cambió la fecha de inicio
-            $originalStartDate = $maintenance->start_date ? $maintenance->start_date->format('Y-m-d') : null;
-            $newStartDateString = $effectiveStartDate->format('Y-m-d');
-
-            // --- GUARDAR CAMBIOS EN MANTENIMIENTO ---
             $maintenance->update($data);
 
-            // --- SINCRONIZACIÓN INTELIGENTE (Por Tiempo de Creación) ---
-            if ($originalStartDate !== $newStartDateString) {
-                
-                // A. Buscar el Log del Mantenimiento propio
-                // Usamos whereFirst para obtener el objeto y su created_at
-                $mainLog = \App\Models\AssetLog::where('loggable_type', \App\Models\Maintenance::class)
-                    ->where('loggable_id', $maintenance->id)
+            $creationTime = $maintenance->created_at;
+
+            $mainLog = \App\Models\AssetLog::where('loggable_type', \App\Models\Maintenance::class)
+                ->where('loggable_id', $maintenance->id)
+                ->first();
+
+            if ($mainLog) {
+                $mainLog->update(['event_date' => $effectiveStartDate]);
+            }
+
+            $returnLog = \App\Models\AssetLog::where('hardware_asset_id', $maintenance->asset_id)
+                ->where('action_type', 'Devolución')
+                ->whereBetween('created_at', [
+                    $creationTime->copy()->subSeconds(5),
+                    $creationTime->copy()->addSeconds(5)
+                ])
+                ->first();
+
+            if ($returnLog) {
+                $returnLog->update(['event_date' => $effectiveStartDate]);
+
+                if ($returnLog->loggable_type === 'App\Models\Assignment') {
+                    \App\Models\Assignment::where('id', $returnLog->loggable_id)
+                        ->update(['actual_return_date' => $effectiveStartDate]);
+                }
+            }
+
+            if ($maintenance->substitute_asset_id) {
+                $loanLog = \App\Models\AssetLog::where('hardware_asset_id', $maintenance->substitute_asset_id)
+                    ->where('action_type', 'Préstamo')
+                    ->whereBetween('created_at', [
+                        $creationTime->copy()->subSeconds(5),
+                        $creationTime->copy()->addSeconds(5)
+                    ])
                     ->first();
-
-                if ($mainLog) {
-                    // 1. Actualizar fecha del Log de Mantenimiento
-                    $mainLog->update(['event_date' => $effectiveStartDate]);
-
-                    // B. Buscar el Log HERMANO (Devolución)
-                    // Buscamos un log del mismo activo, tipo Devolución, creado +/- 10 segundos del log de mantenimiento
-                    $returnLog = \App\Models\AssetLog::where('hardware_asset_id', $maintenance->asset_id)
-                        ->where('action_type', 'Devolución')
-                        ->whereBetween('created_at', [
-                            $mainLog->created_at->copy()->subSeconds(20), // Margen de seguridad
-                            $mainLog->created_at->copy()->addSeconds(20)
-                        ])
-                        ->first();
-
-                    if ($returnLog) {
-                        // 2. Actualizar visualmente la Línea de Vida
-                        $returnLog->update(['event_date' => $effectiveStartDate]);
-
-                        // 3. Actualizar la Asignación real en base de datos
-                        if ($returnLog->loggable_type === 'App\Models\Assignment') {
-                            \App\Models\Assignment::where('id', $returnLog->loggable_id)
-                                ->update(['actual_return_date' => $effectiveStartDate]);
-                        }
-                    }
-
-                    // C. Buscar Log HERMANO de PRÉSTAMO (Sustituto) si existe
-                    if ($maintenance->substitute_asset_id) {
-                        $loanLog = \App\Models\AssetLog::where('hardware_asset_id', $maintenance->substitute_asset_id)
-                            ->where('action_type', 'Préstamo')
-                            ->whereBetween('created_at', [
-                                $mainLog->created_at->copy()->subSeconds(20),
-                                $mainLog->created_at->copy()->addSeconds(20)
-                            ])
-                            ->first();
-                        
-                        if ($loanLog) {
-                            $loanLog->update(['event_date' => $effectiveStartDate]);
-
-                            if ($loanLog->loggable_type === 'App\Models\Assignment') {
-                                \App\Models\Assignment::where('id', $loanLog->loggable_id)
-                                    ->update(['assignment_date' => $effectiveStartDate]);
-                            }
-                        }
+                
+                if ($loanLog) {
+                    $loanLog->update(['event_date' => $effectiveStartDate]);
+                    if ($loanLog->loggable_type === 'App\Models\Assignment') {
+                        \App\Models\Assignment::where('id', $loanLog->loggable_id)
+                            ->update(['assignment_date' => $effectiveStartDate]);
                     }
                 }
             }
 
-            // 4. Lógica de Cierre / Reapertura (Igual que antes)
             $asset = $maintenance->asset;
             if (!empty($data['end_date'])) {
-                // ... (Lógica de cierre: cambio de estatus a En Almacén/De Baja)
                 $targetStatus = $request->input('final_asset_status', 'En Almacén');
                 if ($asset->status !== $targetStatus) {
                     $asset->status = $targetStatus;
                     $asset->save();
                     
-                    // Log de cierre
                     $asset->logs()->create([
                         'user_id' => Auth::id(),
                         'action_type' => $targetStatus === 'De Baja' ? 'Baja por Mantenimiento' : 'Mantenimiento Completado',
@@ -287,7 +265,6 @@ class MaintenanceController extends Controller
                     ]);
                 }
                 
-                // Retorno de sustituto
                 if ($maintenance->substitute_asset_id) {
                     $substitute = $maintenance->substituteAsset;
                     $loan = $substitute->currentAssignment;
@@ -308,7 +285,6 @@ class MaintenanceController extends Controller
                 }
 
             } else {
-                // Lógica de reapertura (si se borró la fecha de fin)
                 $targetStatus = $maintenance->type === 'Reparación' ? 'En Reparación' : 'En Mantenimiento';
                 if ($asset->status !== $targetStatus) {
                     $asset->status = $targetStatus;
