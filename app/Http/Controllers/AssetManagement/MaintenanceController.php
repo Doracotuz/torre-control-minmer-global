@@ -77,43 +77,45 @@ class MaintenanceController extends Controller
             $asset->status = $newStatus;
             $asset->save();
 
-            $eventTime = now();
-            $startDate = \Carbon\Carbon::parse($data['start_date'])
-                            ->setTime($eventTime->hour, $eventTime->minute, $eventTime->second);
+            if (\Carbon\Carbon::parse($data['start_date'])->isToday()) {
+                $effectiveDate = now();
+            } else {
+                $effectiveDate = \Carbon\Carbon::parse($data['start_date'])->setTime(12, 0, 0);
+            }
 
             $asset->logs()->create([
                 'user_id' => Auth::id(),
                 'action_type' => $newStatus,
                 'notes' => 'Enviado a ' . strtolower($newStatus) . ' por: ' . $data['diagnosis'],
-                'event_date' => $startDate,
+                'event_date' => $effectiveDate,
                 'loggable_id' => $maintenance->id,
                 'loggable_type' => \App\Models\Maintenance::class,
             ]);
 
             if ($originalUserAssignments->isNotEmpty()) {
-                $returnDate = now();
+                
                 foreach ($originalUserAssignments as $assignment) {
-                    $assignment->actual_return_date = $returnDate;
+                    $assignment->actual_return_date = $effectiveDate;
                     $assignment->save();
+                    
                     $asset->logs()->create([
                         'user_id' => Auth::id(),
                         'action_type' => 'Devolución',
                         'notes' => 'Devuelto por ' . $assignment->member->name . ' para ser enviado a mantenimiento.',
                         'loggable_id' => $assignment->id,
                         'loggable_type' => \App\Models\Assignment::class,
-                        'event_date' => $returnDate,
+                        'event_date' => $effectiveDate,
                     ]);
                 }
 
                 if (!empty($data['substitute_asset_id'])) {
                     $firstUserAssignment = $originalUserAssignments->first();
                     $substitute = HardwareAsset::find($data['substitute_asset_id']);
-                    $loanDate = now();
                     
                     $loan = $substitute->assignments()->create([
                         'type' => 'Préstamo',
                         'organigram_member_id' => $firstUserAssignment->organigram_member_id,
-                        'assignment_date' => $loanDate,
+                        'assignment_date' => $effectiveDate,
                     ]);
 
                     $substitute->status = 'Prestado';
@@ -125,7 +127,7 @@ class MaintenanceController extends Controller
                         'notes' => 'Prestado como sustituto a ' . $firstUserAssignment->member->name,
                         'loggable_id' => $loan->id,
                         'loggable_type' => \App\Models\Assignment::class,
-                        'event_date' => $loanDate,
+                        'event_date' => $effectiveDate,
                     ]);
                 }
             }
@@ -153,7 +155,8 @@ class MaintenanceController extends Controller
         }
 
         $data = $request->validate([
-            'end_date' => 'nullable|date', 
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
             'final_asset_status' => 'nullable|in:En Almacén,De Baja',
             'actions_taken' => 'required|string',
             'parts_used' => 'nullable|string',
@@ -165,13 +168,26 @@ class MaintenanceController extends Controller
 
         DB::transaction(function () use ($data, $maintenance, $request) { 
             
+            if (\Carbon\Carbon::parse($data['start_date'])->isToday()) {
+                $effectiveStartDate = now(); 
+            } else {
+                $effectiveStartDate = \Carbon\Carbon::parse($data['start_date'])->setTime(12, 0, 0);
+            }
+            $data['start_date'] = $effectiveStartDate;
+
+
+            $effectiveEndDate = null;
             if (!empty($data['end_date'])) {
-                $eventTime = now();
-                $data['end_date'] = \Carbon\Carbon::parse($data['end_date'])
-                            ->setTime($eventTime->hour, $eventTime->minute, $eventTime->second);
+                if (\Carbon\Carbon::parse($data['end_date'])->isToday()) {
+                    $effectiveEndDate = now();
+                } else {
+                    $effectiveEndDate = \Carbon\Carbon::parse($data['end_date'])->setTime(12, 0, 0);
+                }
+                $data['end_date'] = $effectiveEndDate;
             } else {
                 $data['end_date'] = null;
             }
+
 
             for ($i = 1; $i <= 3; $i++) {
                 $fileInputName = "photo_{$i}";
@@ -193,7 +209,21 @@ class MaintenanceController extends Controller
                 }
             }
 
+            $originalStartDate = $maintenance->start_date ? \Carbon\Carbon::parse($maintenance->start_date)->format('Y-m-d') : null;
+            $newStartDateString = $effectiveStartDate->format('Y-m-d');
+
             $maintenance->update($data);
+
+            if ($originalStartDate !== $newStartDateString) {
+                $startLog = \App\Models\AssetLog::where('loggable_type', \App\Models\Maintenance::class)
+                    ->where('loggable_id', $maintenance->id)
+                    ->whereIn('action_type', ['En Reparación', 'En Mantenimiento', 'Preventivo']) 
+                    ->first();
+
+                if ($startLog) {
+                    $startLog->update(['event_date' => $effectiveStartDate]);
+                }
+            }
 
             $asset = $maintenance->asset;
 
@@ -207,12 +237,11 @@ class MaintenanceController extends Controller
                     $logNote = $targetStatus === 'De Baja'
                         ? "Mantenimiento concluido. El equipo fue dictaminado como irreparable / dañado."
                         : "Se completó el mantenimiento. El activo vuelve a Almacén reparado.";
-
                     $asset->logs()->create([
                         'user_id' => Auth::id(),
                         'action_type' => $targetStatus === 'De Baja' ? 'Baja por Mantenimiento' : 'Mantenimiento Completado',
                         'notes' => $logNote,
-                        'event_date' => $data['end_date'],
+                        'event_date' => $effectiveEndDate,
                         'loggable_id' => $maintenance->id,
                         'loggable_type' => \App\Models\Maintenance::class,
                     ]);
@@ -223,8 +252,7 @@ class MaintenanceController extends Controller
                     $loan = $substitute->currentAssignment;
 
                     if ($loan) {
-                        $returnDate = now(); 
-                        $loan->actual_return_date = $returnDate;
+                        $loan->actual_return_date = $effectiveEndDate;
                         $loan->save();
 
                         $substitute->status = 'En Almacén';
@@ -236,7 +264,7 @@ class MaintenanceController extends Controller
                             'notes' => 'Devuelto por cierre de ticket principal. Fin de préstamo sustituto.',
                             'loggable_id' => $loan->id,
                             'loggable_type' => \App\Models\Assignment::class,
-                            'event_date' => $returnDate, 
+                            'event_date' => $effectiveEndDate,
                         ]);
                     }
                 }

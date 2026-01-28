@@ -118,7 +118,22 @@
                         </h3>
 
                         <div class="space-y-6">
-                            {{-- Input de Fecha --}}
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Inicio</label>
+                                <div class="relative">
+                                    <i class="fas fa-calendar-day form-floating-icon z-10"></i>
+                                    <input type="date" 
+                                           name="start_date" 
+                                           value="{{ old('start_date', $maintenance->start_date ? $maintenance->start_date->format('Y-m-d') : '') }}"
+                                           class="modern-input w-full py-3 form-input cursor-pointer font-semibold text-gray-700"
+                                           required>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1 pl-2">
+                                    <i class="fas fa-info-circle mr-1"></i> Editar esta fecha actualizará la línea de vida del activo.
+                                </p>
+                            </div>
+                        
                             <div class="bg-blue-50/50 p-5 rounded-xl border border-blue-100 transition-all"
                                  :class="endDate ? 'ring-2 ring-green-400 bg-green-50/30' : ''">
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Finalización / Cierre</label>
