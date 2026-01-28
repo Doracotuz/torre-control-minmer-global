@@ -158,7 +158,7 @@ class MaintenanceController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'final_asset_status' => 'nullable|in:En Almacén,De Baja',
-            'actions_taken' => 'required|string',
+            'actions_taken' => 'required_with:end_date|string',
             'parts_used' => 'nullable|string',
             'cost' => 'nullable|numeric|min:0',
             'photo_1' => 'nullable|image|max:10048',
