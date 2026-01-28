@@ -459,10 +459,14 @@ class FfProductController extends Controller
             return response()->json(['message' => 'No se seleccionaron productos.'], 422);
         }
 
-        ffProduct::whereIn('id', $ids)->delete();
+        $products = ffProduct::whereIn('id', $ids)->get();
+
+        foreach ($products as $product) {
+            $product->delete();
+        }
 
         return response()->json(['message' => 'Productos eliminados correctamente.'], 200);
-    }    
+    }  
 
     private function cleanupTempDir(string $tempZipDir): void
     {

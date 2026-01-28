@@ -734,6 +734,7 @@ Route::middleware(['auth', 'ff.access', 'module.access:orders'])->prefix('ff')->
     Route::get('/inventory/backorders', [FfInventoryController::class, 'backorders'])->name('inventory.backorders');
     Route::post('/inventory/backorders/fulfill', [FfInventoryController::class, 'fulfillBackorder'])->name('inventory.fulfillBackorder');
     Route::get('/inventory/backorder-relations', [FfInventoryController::class, 'backorderRelations'])->name('inventory.backorder_relations');
+    Route::post('/inventory/{id}/resolve-backorder', [FfInventoryController::class, 'resolveBackorder'])->name('inventory.resolveBackorder');    
     Route::get('/sales', [FfSalesController::class, 'index'])->name('sales.index');
     Route::post('/sales/cart/update', [FfSalesController::class, 'updateCartItem'])->name('sales.cart.update');
     Route::get('/sales/reservations', [FfSalesController::class, 'getReservations'])->name('sales.reservations');
@@ -756,6 +757,8 @@ Route::middleware(['auth', 'ff.access', 'module.access:orders'])->prefix('ff')->
         Route::get('/api/recent-movements', [FfReportController::class, 'apiGetRecentMovements'])->name('api.recentMovements');
         Route::get('/api/sale-details/{folio}', [FfReportController::class, 'apiGetSaleDetails'])->name('api.saleDetails');
         Route::post('/generate-executive', [FfReportController::class, 'generateExecutiveReport'])->name('generateExecutive');
+        Route::get('/client-analysis', [FfReportController::class, 'clientAnalysis'])->name('clientAnalysis');
+        Route::get('/client-analysis/pdf', [FfReportController::class, 'generateClientPdf'])->name('clientAnalysis.pdf');
     });
     Route::post('/orders/{folio}/upload-evidences', [FfOrderController::class, 'uploadBatchEvidences'])->name('orders.uploadBatchEvidences');
     Route::delete('/evidence/{id}', [FfOrderController::class, 'deleteEvidence'])->name('evidence.delete');

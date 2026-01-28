@@ -30,8 +30,8 @@ class DashboardController extends Controller
             session(['current_admin_area_id' => $activeAreaId, 'current_admin_area_name' => $activeArea->name]);
         }
         
-        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique(); //
-        if (!$user->is_area_admin || !$manageableAreaIds->contains($activeAreaId)) { //
+        $manageableAreaIds = $user->accessibleAreas->pluck('id')->push($user->area_id)->filter()->unique();
+        if (!$user->is_area_admin || !$manageableAreaIds->contains($activeAreaId)) {
             $activeArea = $user->area;
             session(['current_admin_area_id' => $activeArea->id, 'current_admin_area_name' => $activeArea->name]);
         }

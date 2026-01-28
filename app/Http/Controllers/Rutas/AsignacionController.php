@@ -510,8 +510,8 @@ class AsignacionController extends Controller
                         fputcsv($file, [
                             $guia->guia, $guia->operador, $guia->placas, $guia->pedimento, $guia->custodia, $guia->hora_planeada, $guia->fecha_asignacion, $guia->origen, $guia->estatus,
                             $factura->numero_factura, $factura->destino, $factura->cajas, $factura->botellas, $factura->hora_cita,
-                            $factura->so ?? 'N/A', // <-- AÑADIDO
-                            $factura->fecha_entrega ? $factura->fecha_entrega->format('d/m/Y') : 'N/A' // <-- AÑADIDO
+                            $factura->so ?? 'N/A',
+                            $factura->fecha_entrega ? $factura->fecha_entrega->format('d/m/Y') : 'N/A'
                         ]);
                     }
                 } else {

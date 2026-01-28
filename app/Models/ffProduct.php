@@ -9,7 +9,6 @@ use App\Traits\BelongsToArea;
 use App\Models\ffInventoryMovement;
 use App\Models\FfOrderEvidence;
 use App\Models\FfOrderDocument;
-// -----------------------------
 
 class ffProduct extends Model
 {

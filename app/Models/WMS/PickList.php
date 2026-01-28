@@ -16,7 +16,6 @@ class PickList extends Model
         'picker_id',
         'status',
         'picked_at'
-        // 'staging_location_id',
     ];
 
     protected $casts = [

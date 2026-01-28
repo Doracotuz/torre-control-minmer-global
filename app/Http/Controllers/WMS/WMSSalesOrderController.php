@@ -132,7 +132,6 @@ public function index(Request $request)
 
         } catch (\Exception $e) {
             DB::rollBack();
-            // dd($e);
             Log::error("Error al crear SO: " . $e->getMessage());
             return back()->with('error', 'Error al crear la orden: ' . $e->getMessage())->withInput();
         }

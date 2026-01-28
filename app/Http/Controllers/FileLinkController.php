@@ -34,7 +34,6 @@ class FileLinkController extends Controller
      */
     public function store(Request $request)
     {
-        // Esta lógica ahora vive en FolderController@storeFileLink
         return redirect()->route('folders.index')->with('error', 'Acceso no permitido.');
     }
 
@@ -137,7 +136,7 @@ class FileLinkController extends Controller
         $folderId = $fileLink->folder_id;
 
         if ($fileLink->type === 'file' && Storage::disk('s3')->exists($fileLink->path)) {
-            Storage::disk('s3')->delete($fileLink->path); //
+            Storage::disk('s3')->delete($fileLink->path);
         }
 
         ActivityLog::create([

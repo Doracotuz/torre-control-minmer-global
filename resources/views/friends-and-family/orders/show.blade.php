@@ -130,10 +130,16 @@
             }
          }">
 
-        @php
+        @php    
             $isActive = !in_array($header->status, ['cancelled', 'rejected']);
-            $hasBackorder = $isActive && $movements->contains('is_backorder', true);
-            $backorderCount = $movements->where('is_backorder', true)->sum(fn($m) => abs($m->quantity));
+            
+            $hasBackorder = $isActive && $movements->contains(function ($value, $key) {
+                return $value->is_backorder == true && $value->backorder_fulfilled == false;
+            });
+
+            $backorderCount = $movements->filter(function ($value, $key) {
+                return $value->is_backorder == true && $value->backorder_fulfilled == false;
+            })->sum(fn($m) => abs($m->quantity));
         @endphp
 
         <div x-show="previewModalOpen" 
@@ -530,11 +536,25 @@
                                                 $discountAmount = $basePrice * ($discountPercent / 100);
                                                 $finalPrice = $basePrice - $discountAmount;
                                             }
+                                            
+                                            $rowClass = 'hover:bg-slate-50/80'; // Normal
+                                            $badge = null;
+
+                                            if ($item->is_backorder) {
+                                                if ($item->backorder_fulfilled) {
+                                                    $rowClass = 'bg-emerald-50/30 hover:bg-emerald-50/60 border-l-4 border-emerald-400';
+                                                    $badge = '<span class="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1"><i class="fas fa-check-circle"></i> SURTIDO</span>';
+                                                } else {
+                                                    $rowClass = 'bg-purple-50/30 hover:bg-purple-50/60 border-l-4 border-purple-400';
+                                                    $badge = '<span class="text-[9px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200 flex items-center gap-1"><i class="fas fa-history"></i> PENDIENTE</span>';
+                                                }
+                                            }
                                         @endphp
                                         
-                                        <tr class="group transition-colors {{ $item->is_backorder ? 'bg-purple-50/30 hover:bg-purple-50/60' : 'hover:bg-slate-50/80' }}">
+                                        <tr class="group transition-colors {{ $rowClass }}">
                                             <td class="px-8 py-5">
                                                 <div class="flex items-center gap-4">
+                                                    {{-- Imagen del producto --}}
                                                     <div class="w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center p-1 shadow-sm relative overflow-hidden group-hover:border-slate-300 transition-colors">
                                                         @if($item->product->photo_url)
                                                             <img src="{{ $item->product->photo_url }}" class="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110 mix-blend-multiply" alt="Producto">
@@ -542,14 +562,16 @@
                                                             <i class="fas fa-box text-slate-200 text-lg"></i>
                                                         @endif
                                                     </div>
+                                                    
                                                     <div class="flex flex-col">
-                                                        <span class="font-bold text-slate-700 text-base">{{ $item->product->description }}</span>
+                                                        <span class="font-bold text-slate-700 text-base {{ $item->is_backorder && !$item->backorder_fulfilled ? 'text-purple-700' : '' }}">
+                                                            {{ $item->product->description }}
+                                                        </span>
                                                         <div class="flex items-center gap-2 mt-1">
                                                             <span class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{{ $item->product->sku }}</span>
-                                                            @if($item->is_backorder)
-                                                                <span class="text-[9px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200 flex items-center gap-1">
-                                                                    <i class="fas fa-history text-[8px]"></i> BACKORDER
-                                                                </span>
+                                                            
+                                                            @if($badge)
+                                                                {!! $badge !!}
                                                             @endif
                                                         </div>
                                                     </div>

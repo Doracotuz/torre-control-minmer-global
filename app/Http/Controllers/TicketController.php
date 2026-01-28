@@ -192,10 +192,8 @@ class TicketController extends Controller
         }
         else {
             if ($user->isSuperAdmin() && $ticket->agent_id && $ticket->agent_id !== $user->id) {
-                // Si un admin escribe, notifica solo al agente (si no es él mismo).
                 $ticket->agent->notify(new NewReplyNotification($reply));
             } elseif ($user->id === $ticket->agent_id) {
-                // Si el agente escribe, notifica solo a los SuperAdmins.
                 $superAdmins = User::where('is_area_admin', true)
                     ->whereHas('area', function ($query) { $query->where('name', 'Administración'); })
                     ->get();

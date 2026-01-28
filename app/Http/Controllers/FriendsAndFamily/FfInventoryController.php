@@ -586,5 +586,77 @@ class FfInventoryController extends Controller
         $warehouses = $warehousesQuery->orderBy('description')->get();
 
         return view('friends-and-family.inventory.backorder-relations', compact('products', 'warehouses'));
-    }    
+    }
+
+    public function resolveBackorder(Request $request, $id)
+    {
+        $request->validate([
+            'quantity' => 'required|numeric|min:1',
+            'warehouse_id' => 'required|exists:ff_warehouses,id',
+        ]);
+
+        try {
+            DB::transaction(function () use ($request, $id) {
+                $product = ffProduct::findOrFail($id);
+                $quantityAvailable = $request->quantity;
+
+                $folioNumerico = time(); 
+
+                ffInventoryMovement::create([
+                    'ff_product_id' => $product->id,
+                    'user_id' => Auth::id(),
+                    'ff_warehouse_id' => $request->warehouse_id,
+                    'area_id' => $product->area_id,
+                    'quantity' => $quantityAvailable,
+                    'reason' => 'Resolución de Backorder (Ingreso Directo)',
+                    'folio' => $folioNumerico,
+                    'order_type' => 'entrada',
+                    'client_name' => 'Ajuste de Inventario',
+                ]);
+
+                $pendingBackorders = ffInventoryMovement::where('ff_product_id', $product->id)
+                    ->where('is_backorder', true)
+                    ->where('backorder_fulfilled', false)
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+
+                foreach ($pendingBackorders as $backorder) {
+                    if ($quantityAvailable <= 0) break;
+
+                    $debt = abs($backorder->quantity);
+
+                    if ($quantityAvailable >= $debt) {
+                        $backorder->update([
+                            'backorder_fulfilled' => true,
+                            'was_edited' => true
+                        ]);
+                        $quantityAvailable -= $debt;
+
+                    } else {
+                        $remanente = $debt - $quantityAvailable;
+                        
+                        $backorder->update([
+                            'quantity' => -$remanente,
+                            'was_edited' => true
+                        ]);
+
+                        $fulfilledPart = $backorder->replicate();
+                        $fulfilledPart->quantity = -$quantityAvailable;
+                        $fulfilledPart->backorder_fulfilled = true;
+                        $fulfilledPart->observations .= " (Surtido Parcial)";
+                        $fulfilledPart->created_at = $backorder->created_at;
+                        $fulfilledPart->save();
+
+                        $quantityAvailable = 0; 
+                    }
+                }
+            });
+
+            return redirect()->back()->with('success', 'Mercancía ingresada. Las deudas se han ajustado y recalculado correctamente.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error al procesar el ingreso: ' . $e->getMessage());
+        }
+    }
+
 }

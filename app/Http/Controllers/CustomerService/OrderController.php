@@ -702,7 +702,7 @@ class OrderController extends Controller
         $channels = ['Corporate', 'Especialista', 'Moderno', 'On', 'On trade', 'Private' ,'POSM'];
         $customers = CsCustomer::all()->sortBy('name');
         $warehouses = CsWarehouse::all()->sortBy('name');
-        $products = CsProduct::all()->sortBy('sku'); // Obtiene todos los productos
+        $products = CsProduct::all()->sortBy('sku');
 
         return view('customer-service.orders.edit-original', compact('order', 'channels', 'customers', 'warehouses', 'products'));
     }
@@ -1012,7 +1012,6 @@ class OrderController extends Controller
 
     public function deleteEvidence(CsOrderEvidence $evidence)
     {
-        // $this->authorize('delete', $evidence);
 
         $orderId = $evidence->cs_order_id;
         $fileName = $evidence->file_name;

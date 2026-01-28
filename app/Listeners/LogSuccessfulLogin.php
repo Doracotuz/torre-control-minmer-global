@@ -40,8 +40,6 @@ class LogSuccessfulLogin
 
             'details' => [
                 'email' => $event->user->email,
-                // 'ip_address' => $this->request->ip(),
-                // 'user_agent' => $this->request->header('User-Agent'),
             ],
         ]);
     }

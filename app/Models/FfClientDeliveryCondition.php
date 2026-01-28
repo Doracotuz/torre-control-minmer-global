@@ -35,7 +35,6 @@ class FfClientDeliveryCondition extends Model
 
             foreach ($imageFields as $field) {
                 if ($condition->$field) {
-                    // Borrar del bucket S3
                     Storage::disk('s3')->delete($condition->$field);
                 }
             }

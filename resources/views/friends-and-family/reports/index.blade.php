@@ -321,13 +321,14 @@
 
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 animate-enter" style="animation-delay: 0.6s;">
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-4 animate-enter" style="animation-delay: 0.6s;">
             @php
                 $tools = [
                     ['route' => 'ff.reports.transactions', 'icon' => 'fa-receipt', 'title' => 'TRANSACCIONES', 'sub' => 'Historial Completo', 'bg' => 'from-blue-500 to-blue-600'],
                     ['route' => 'ff.reports.inventoryAnalysis', 'icon' => 'fa-dolly-flatbed', 'title' => 'MOVIMIENTOS', 'sub' => 'Entradas/Salidas', 'bg' => 'from-indigo-500 to-indigo-600'],
                     ['route' => 'ff.reports.stockAvailability', 'icon' => 'fa-warehouse', 'title' => 'DISPONIBILIDAD', 'sub' => 'Auditoría Stock', 'bg' => 'from-amber-500 to-amber-600'],
                     ['route' => 'ff.reports.catalogAnalysis', 'icon' => 'fa-tags', 'title' => 'CATÁLOGO', 'sub' => 'Precios & SKUs', 'bg' => 'from-teal-500 to-teal-600'],
+                    ['route' => 'ff.reports.clientAnalysis', 'icon' => 'fa-address-card', 'title' => 'CLIENTES', 'sub' => 'Análisis Cartera', 'bg' => 'from-cyan-500 to-cyan-600'],
                     ['route' => 'ff.reports.sellerPerformance', 'icon' => 'fa-users', 'title' => 'DESEMPEÑO', 'sub' => 'Ranking Ventas', 'bg' => 'from-pink-500 to-pink-600'],
                 ];
             @endphp

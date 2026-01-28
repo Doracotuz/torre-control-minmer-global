@@ -248,7 +248,6 @@ class AuditController extends Controller
         ]);
         
         DB::transaction(function () use ($validatedData, $guia, $request, $audit) {
-            // 1. Procesar y guardar las fotografías
             $fotoCajaVaciaPath = $request->file('foto_caja_vacia')->store('audit_carga/caja_vacia', 's3');
             $fotosCargaPaths = [];
             if ($request->hasFile('fotos_carga')) {

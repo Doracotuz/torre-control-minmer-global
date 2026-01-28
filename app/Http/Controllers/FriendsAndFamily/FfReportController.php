@@ -15,6 +15,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
+use App\Models\FfClient;
+use Illuminate\Support\Str;
 
 class FfReportController extends Controller
 {
@@ -664,11 +666,11 @@ class FfReportController extends Controller
                 ->where('quantity', '<', 0);
 
             if (!Auth::user()->isSuperAdmin()) {
-                $query->where('area_id', Auth::user()->area_id);
+                $query->where('ff_inventory_movements.area_id', Auth::user()->area_id);
             }
 
             if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
-                $query->where('area_id', $request->input('area_id'));
+                $query->where('ff_inventory_movements.area_id', $request->input('area_id'));
             }
 
             if ($request->filled('warehouse_id')) {
@@ -1164,4 +1166,344 @@ class FfReportController extends Controller
         
         return $data;
     }
+
+    public function clientAnalysis(Request $request)
+    {
+        $search = $request->input('search');
+        $areaId = $request->input('area_id');
+        $warehouseId = $request->input('warehouse_id');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        $baseQuery = ffInventoryMovement::query()
+            ->where('quantity', '<', 0)
+            ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id');
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $baseQuery->where('ff_inventory_movements.area_id', Auth::user()->area_id);
+        }
+        if (Auth::user()->isSuperAdmin() && $areaId) {
+            $baseQuery->where('ff_inventory_movements.area_id', $areaId);
+        }
+        if ($warehouseId) {
+            $baseQuery->where('ff_inventory_movements.ff_warehouse_id', $warehouseId);
+        }
+        if ($startDate && $endDate) {
+            $baseQuery->whereBetween('ff_inventory_movements.created_at', [
+                Carbon::parse($startDate)->startOfDay(), 
+                Carbon::parse($endDate)->endOfDay()
+            ]);
+        }
+        
+        if ($search) {
+            $baseQuery->where('ff_inventory_movements.client_name', 'like', "%{$search}%");
+        }
+
+        $clientSuggestionsQuery = \App\Models\FfClient::select('name')
+            ->where('is_active', true);
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $clientSuggestionsQuery->where('area_id', Auth::user()->area_id);
+        }
+        
+        $clientSuggestions = $clientSuggestionsQuery->orderBy('name')->pluck('name');
+
+        $sixMonthsAgo = Carbon::now()->subMonths(6)->startOfMonth();
+        $historyQuery = (clone $baseQuery);
+        if (!$startDate) {
+            $historyQuery->where('ff_inventory_movements.created_at', '>=', $sixMonthsAgo);
+        }
+        
+        $salesHistory = $historyQuery->select(
+                DB::raw("DATE_FORMAT(ff_inventory_movements.created_at, '%Y-%m') as mes"),
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as total')
+            )
+            ->groupBy('mes')
+            ->orderBy('mes')
+            ->get();
+
+        $chartHistory = [
+            'categories' => $salesHistory->pluck('mes')->map(fn($m) => Carbon::parse($m . '-01')->translatedFormat('M Y'))->values()->toArray(),
+            'data' => $salesHistory->pluck('total')->map(fn($val) => (float)$val)->values()->toArray(),
+        ];
+
+        $daysData = (clone $baseQuery)
+            ->select(
+                DB::raw('DAYOFWEEK(ff_inventory_movements.created_at) as dia_num'),
+                DB::raw('COUNT(*) as transacciones'),
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as total_valor')
+            )
+            ->groupBy('dia_num')
+            ->get();
+        
+        $weekMap = [1=>'Dom', 2=>'Lun', 3=>'Mar', 4=>'Mié', 5=>'Jue', 6=>'Vie', 7=>'Sáb'];
+        $chartDays = [
+            'labels' => array_values($weekMap),
+            'transactions' => array_fill(0, 7, 0),
+            'values' => array_fill(0, 7, 0),
+        ];
+        foreach($daysData as $d) {
+            $idx = $d->dia_num - 1; 
+            $chartDays['transactions'][$idx] = $d->transacciones;
+            $chartDays['values'][$idx] = $d->total_valor;
+        }
+
+        $topProducts = (clone $baseQuery)
+            ->select('ff_products.description', 'ff_products.sku', DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as qty'))
+            ->groupBy('ff_products.description', 'ff_products.sku')
+            ->orderByDesc('qty')
+            ->limit(10)
+            ->get();
+
+        $topBranches = (clone $baseQuery)
+            ->join('ff_client_branches', 'ff_inventory_movements.ff_client_branch_id', '=', 'ff_client_branches.id')
+            ->select('ff_client_branches.name', DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as total'))
+            ->groupBy('ff_client_branches.name')
+            ->orderByDesc('total')
+            ->limit(10)
+            ->get();
+            
+        $salesChannels = (clone $baseQuery)
+            ->join('ff_sales_channels', 'ff_inventory_movements.ff_sales_channel_id', '=', 'ff_sales_channels.id')
+            ->select('ff_sales_channels.name', DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as total'))
+            ->groupBy('ff_sales_channels.name')
+            ->get();
+            
+        $chartChannels = [
+            'labels' => $salesChannels->pluck('name')->values()->toArray(),
+            'series' => $salesChannels->pluck('total')->map(fn($val) => (float)$val)->values()->toArray(),
+        ];
+
+        $clientsQuery = (clone $baseQuery)
+            ->select(
+                'ff_inventory_movements.client_name',
+                DB::raw('COUNT(DISTINCT ff_inventory_movements.folio) as frecuencia'),
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as piezas'),
+                DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as valor'),
+                DB::raw('MAX(ff_inventory_movements.created_at) as ultima_compra'),
+                DB::raw('DATEDIFF(NOW(), MAX(ff_inventory_movements.created_at)) as dias_inactivo')
+            )
+            ->groupBy('ff_inventory_movements.client_name')
+            ->having('valor', '>', 0)
+            ->orderByDesc('valor');
+
+        $clientsData = $clientsQuery->get()->map(function($client) {
+            return [
+                'name' => $client->client_name ?: 'Venta Mostrador',
+                'frecuencia' => $client->frecuencia,
+                'piezas' => $client->piezas,
+                'valor' => $client->valor,
+                'ticket_promedio' => $client->frecuencia > 0 ? $client->valor / $client->frecuencia : 0,
+                'ultima_compra' => Carbon::parse($client->ultima_compra)->format('Y-m-d'),
+                'dias_inactivo' => $client->dias_inactivo,
+                'status_riesgo' => $client->dias_inactivo > 60 ? 'Alto' : ($client->dias_inactivo > 30 ? 'Medio' : 'Bajo'),
+            ];
+        });
+
+        $kpis = [
+            'total_clientes' => $clientsData->count(),
+            'ventas_totales' => $clientsData->sum('valor'),
+            'ticket_promedio_global' => $clientsData->count() > 0 ? $clientsData->avg('ticket_promedio') : 0,
+            'mejor_cliente' => $clientsData->first(),
+            'cliente_riesgo' => $clientsData->sortByDesc('dias_inactivo')->first(),
+        ];
+
+        $areas = Auth::user()->isSuperAdmin() ? Area::orderBy('name')->get() : [];
+        $warehouses = FfWarehouse::where('is_active', true)
+            ->when(!Auth::user()->isSuperAdmin(), fn($q) => $q->where('area_id', Auth::user()->area_id))
+            ->get();
+
+        return view('friends-and-family.reports.client-analysis', compact(
+            'clientsData', 
+            'kpis', 
+            'chartHistory', 
+            'chartDays', 
+            'chartChannels',
+            'topProducts', 
+            'topBranches', 
+            'areas', 
+            'warehouses', 
+            'search',
+            'startDate',
+            'endDate',
+            'clientSuggestions'
+        ));
+    }
+
+    public function generateClientPdf(Request $request)
+    {
+        Carbon::setLocale('es');
+        $search = $request->input('search');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $areaId = $request->input('area_id');
+        $warehouseId = $request->input('warehouse_id');
+
+        $query = ffInventoryMovement::where('quantity', '<', 0)
+            ->join('ff_products', 'ff_inventory_movements.ff_product_id', '=', 'ff_products.id');
+
+        if (!Auth::user()->isSuperAdmin()) {
+            $query->where('ff_inventory_movements.area_id', Auth::user()->area_id);
+        }
+        if (Auth::user()->isSuperAdmin() && $areaId) {
+            $query->where('ff_inventory_movements.area_id', $areaId);
+        }
+        if ($warehouseId) {
+            $query->where('ff_inventory_movements.ff_warehouse_id', $warehouseId);
+        }
+        if ($startDate && $endDate) {
+            $query->whereBetween('ff_inventory_movements.created_at', [
+                Carbon::parse($startDate)->startOfDay(), 
+                Carbon::parse($endDate)->endOfDay()
+            ]);
+        }
+        
+        $clientName = $search ?: "Reporte General de Cartera";
+        if (!empty($search)) {
+            $query->where('ff_inventory_movements.client_name', 'like', "%{$search}%");
+        }
+
+        $baseMetrics = (clone $query)->select(
+            DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as total_valor'),
+            DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as total_unidades'),
+            DB::raw('COUNT(DISTINCT ff_inventory_movements.folio) as total_transacciones'),
+            DB::raw('MAX(ff_inventory_movements.created_at) as ultima_compra'),
+            DB::raw('MIN(ff_inventory_movements.created_at) as primera_compra'),
+            DB::raw('AVG(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as ticket_promedio')
+        )->first();
+
+        $diasInactivo = ($baseMetrics && $baseMetrics->ultima_compra)
+            ? intval(Carbon::parse($baseMetrics->ultima_compra)->diffInDays(now())) 
+            : 0;
+            
+        $antiguedad = ($baseMetrics && $baseMetrics->primera_compra)
+            ? Carbon::parse($baseMetrics->primera_compra)->diffForHumans(null, true)
+            : 'N/A';
+
+        $svgTrend = null;
+        $historyData = (clone $query)->select(
+            DB::raw("DATE_FORMAT(ff_inventory_movements.created_at, '%Y-%m') as mes_sort"),
+            DB::raw("DATE_FORMAT(ff_inventory_movements.created_at, '%b') as mes_label"),
+            DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as total')
+        )->groupBy('mes_sort', 'mes_label')->orderBy('mes_sort', 'asc')->limit(12)->get();
+
+        if ($historyData->count() > 0) {
+            if ($historyData->count() === 1) {
+                $firstItem = $historyData->first();
+                $prevDate = Carbon::createFromFormat('Y-m', $firstItem->mes_sort)->subMonth();
+                $historyData->prepend((object)[
+                    'mes_sort' => $prevDate->format('Y-m'),
+                    'mes_label' => $prevDate->format('M'),
+                    'total' => 0
+                ]);
+            }
+
+            $w = 800; $h = 250; 
+            $maxVal = $historyData->max('total') * 1.1 ?: 1;
+            $points = [];
+            $step = $w / max(1, $historyData->count() - 1);
+            
+            foreach ($historyData->values() as $i => $d) {
+                $x = number_format($i * $step, 2, '.', '');
+                $y = number_format($h - (($d->total / $maxVal) * $h), 2, '.', ''); 
+                $points[] = "$x,$y";
+            }
+            
+            $polyPoints = implode(' ', $points);
+            $areaPoints = "0,$h $polyPoints $w,$h";
+            
+            $rawSvgTrend = '<svg width="'.$w.'" height="'.$h.'" viewBox="0 0 '.$w.' '.$h.'" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:0.3" />
+                        <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:0.0" />
+                    </linearGradient>
+                </defs>
+                <polygon points="'.$areaPoints.'" fill="url(#grad)" stroke="none" />
+                <polyline fill="none" stroke="#f59e0b" stroke-width="3" points="'.$polyPoints.'" stroke-linejoin="round" stroke-linecap="round" />
+                <circle cx="'.explode(',', end($points))[0].'" cy="'.explode(',', end($points))[1].'" r="5" fill="#1e293b" stroke="#f59e0b" stroke-width="2" />
+            </svg>';
+            $svgTrend = 'data:image/svg+xml;base64,' . base64_encode($rawSvgTrend);
+        }
+
+        $svgPie = null;
+        $rawLocs = (clone $query)->leftJoin('ff_client_branches', 'ff_inventory_movements.ff_client_branch_id', '=', 'ff_client_branches.id')
+            ->select(DB::raw('COALESCE(ff_client_branches.name, ff_inventory_movements.locality, "General") as location'))
+            ->get();
+            
+        $locData = $rawLocs->groupBy('location')->map->count()->sortDesc()->take(5);
+        $totalLoc = $locData->sum();
+        
+        if ($totalLoc > 0) {
+            $cx = 100; $cy = 100; $r = 90;
+            $cumulative = 0; $paths = [];
+            $colors = ['#1e293b', '#f59e0b', '#334155', '#d97706', '#94a3b8'];
+            $idx = 0;
+            foreach($locData as $name => $val) {
+                $percent = $val / $totalLoc;
+                if($percent > 0.999) {
+                    $paths[] = '<circle cx="'.$cx.'" cy="'.$cy.'" r="'.$r.'" fill="'.$colors[0].'" />'; break;
+                }
+                $start = 2 * pi() * $cumulative;
+                $end = 2 * pi() * ($cumulative + $percent);
+                $x1 = $cx + $r * sin($start); $y1 = $cy - $r * cos($start);
+                $x2 = $cx + $r * sin($end);   $y2 = $cy - $r * cos($end);
+                $large = $percent > 0.5 ? 1 : 0;
+                $paths[] = '<path d="M'.$cx.','.$cy.' L'.$x1.','.$y1.' A'.$r.','.$r.' 0 '.$large.',1 '.$x2.','.$y2.' Z" fill="'.$colors[$idx % 5].'" stroke="#ffffff" stroke-width="3"/>';
+                $cumulative += $percent; $idx++;
+            }
+            $rawSvgPie = '<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">'.implode('', $paths).'
+                <circle cx="100" cy="100" r="45" fill="#ffffff"/>
+                <text x="100" y="105" text-anchor="middle" font-family="Arial" font-size="14" fill="#1e293b" font-weight="bold">'.number_format($totalLoc).'</text>
+            </svg>';
+            $svgPie = 'data:image/svg+xml;base64,' . base64_encode($rawSvgPie);
+        }
+
+        $topProducts = (clone $query)->select(
+            'ff_products.sku', 'ff_products.description',
+            DB::raw('SUM(ABS(ff_inventory_movements.quantity)) as cantidad'),
+            DB::raw('SUM(ABS(ff_inventory_movements.quantity) * ff_products.unit_price) as monto')
+        )->groupBy('ff_products.sku', 'ff_products.description')->orderByDesc('monto')->limit(5)->get();
+        
+        $maxProdVal = $topProducts->max('monto') ?: 1;
+        foreach($topProducts as $p) $p->percent = ($p->monto / $maxProdVal) * 100;
+
+        $daysData = (clone $query)->select(DB::raw('DAYOFWEEK(ff_inventory_movements.created_at) as dia'), DB::raw('COUNT(*) as total'))
+            ->groupBy('dia')->pluck('total', 'dia')->toArray();
+            
+        $chartWeek = [];
+        $maxDay = max($daysData) ?: 1;
+        $labels = [1=>'Dom', 2=>'Lun', 3=>'Mar', 4=>'Mié', 5=>'Jue', 6=>'Vie', 7=>'Sáb'];
+        for($i=2; $i<=7; $i++) $labels[$i-1] = $labels[$i]; $labels[7] = 'Dom';
+        
+        $mapDays = [1=>7, 2=>1, 3=>2, 4=>3, 5=>4, 6=>5, 7=>6]; 
+
+        for($i=1; $i<=7; $i++) {
+            $dbDay = array_search($i, $mapDays);
+            $val = $daysData[$dbDay] ?? 0;
+            $intensity = $maxDay > 0 ? ($val / $maxDay) : 0;
+            $colorBg = $val > 0 ? "rgba(245, 158, 11, " . (0.15 + ($intensity * 0.85)) . ")" : "#f1f5f9";
+            $colorTxt = $intensity > 0.6 ? "#ffffff" : "#334155";
+            $chartWeek[] = ['label' => $labels[$i], 'val' => $val, 'color_bg' => $colorBg, 'color_txt' => $colorTxt];
+        }
+
+        $logoBase64 = null;
+        try {
+            $iconPath = Auth::user()->area->icon_path ?? 'LogoAzulm.PNG';
+            if (Storage::disk('s3')->exists($iconPath)) {
+                $logoBase64 = 'data:image/png;base64,' . base64_encode(Storage::disk('s3')->get($iconPath));
+            }
+        } catch (\Exception $e) {}
+
+        $data = compact('clientName','baseMetrics','diasInactivo','antiguedad','svgTrend','svgPie','locData','topProducts','chartWeek','logoBase64','totalLoc');
+        $data['report_date'] = now()->format('d F, Y');
+
+        $pdf = Pdf::loadView('friends-and-family.reports.client-pdf', $data);
+        $pdf->setPaper('A4', 'portrait');
+        $pdf->setOption('isRemoteEnabled', true); 
+        $pdf->setOption('dpi', 120);
+        
+        return $pdf->stream("Executive_Report_" . Str::slug($clientName) . ".pdf");
+    }
+
 }
