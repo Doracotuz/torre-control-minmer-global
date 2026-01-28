@@ -107,6 +107,24 @@
             @csrf
             @method('PUT')
 
+            @if ($errors->any())
+                <div class="mb-8 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-md animate-pulse">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-bold text-red-800">No se pudieron guardar los cambios:</h3>
+                            <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            @endif            
+
             <fieldset {{ !$canEdit ? 'disabled' : '' }} class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
                 <div class="lg:col-span-2 space-y-6">
