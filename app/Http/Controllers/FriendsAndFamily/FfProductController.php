@@ -540,11 +540,12 @@ class FfProductController extends Controller
     public function exportPdf(Request $request)
     {
         set_time_limit(0);
-        ini_set('memory_limit', '512M');
+        ini_set('memory_limit', '1024M');
 
         $percentage = $request->input('percentage', 0);
 
         $query = ffProduct::orderBy('brand')->orderBy('description');
+
         $query = $this->applyFilters($query, $request);
 
         if (!Auth::user()->isSuperAdmin()) {
@@ -564,35 +565,35 @@ class FfProductController extends Controller
                 $product->unit_price += $increase;
             }
 
-            $product->photo_url = null;
-
-            if ($product->photo_path && Storage::disk('s3')->exists($product->photo_path)) {
+            if ($product->photo_path) {
                 try {
-                    $imageContent = Storage::disk('s3')->get($product->photo_path);
-                    $sourceImage = @imagecreatefromstring($imageContent);
-                    
-                    if ($sourceImage) {
-                        $width = imagesx($sourceImage);
-                        $newWidth = 150; 
-                        $newHeight = floor(imagesy($sourceImage) * ($newWidth / $width));
+                    if (Storage::disk('s3')->exists($product->photo_path)) {
+                        $imageContent = Storage::disk('s3')->get($product->photo_path);
+                        $sourceImage = @imagecreatefromstring($imageContent);
                         
-                        $virtualImage = imagecreatetruecolor($newWidth, $newHeight);
-                        $white = imagecolorallocate($virtualImage, 255, 255, 255);
-                        imagefilledrectangle($virtualImage, 0, 0, $newWidth, $newHeight, $white);
-                        
-                        imagecopyresampled($virtualImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, imagesy($sourceImage));
-                        
-                        $localPath = $tempDir . '/' . $product->id . '.jpg';
-                        
-                        imagejpeg($virtualImage, $localPath, 45);
-                        
-                        $product->photo_url = $localPath;
+                        if ($sourceImage) {
+                            $width = imagesx($sourceImage);
+                            $newWidth = 150;
+                            $newHeight = floor(imagesy($sourceImage) * ($newWidth / $width));
+                            
+                            $virtualImage = imagecreatetruecolor($newWidth, $newHeight);
+                            
+                            imagealphablending($virtualImage, false);
+                            imagesavealpha($virtualImage, true);
+                            
+                            imagecopyresampled($virtualImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, imagesy($sourceImage));
+                            
+                            $localPath = $tempDir . '/' . $product->id . '.jpg';
+                            imagejpeg($virtualImage, $localPath, 60);
+                            
+                            $product->photo_url = $localPath;
 
-                        imagedestroy($virtualImage);
-                        imagedestroy($sourceImage);
+                            imagedestroy($virtualImage);
+                            imagedestroy($sourceImage);
+                        }
                     }
                 } catch (\Exception $e) {
-                    Log::warning("Error comprimiendo imagen {$product->sku}: " . $e->getMessage());
+                    Log::warning("Error procesando imagen para PDF: " . $e->getMessage());
                 }
             }
         }
@@ -602,44 +603,26 @@ class FfProductController extends Controller
             : Auth::user()->area_id;
 
         $logoKey = 'LogoAzulm.PNG';
+        
         if ($targetAreaId) {
             $area = Area::find($targetAreaId);
-            if ($area && $area->icon_path) $logoKey = $area->icon_path;
+            if ($area && $area->icon_path) {
+                $logoKey = $area->icon_path;
+            }
         }
 
         $localLogoPath = null;
         try {
             if (Storage::disk('s3')->exists($logoKey)) {
                 $logoContent = Storage::disk('s3')->get($logoKey);
-                
-                $sourceLogo = @imagecreatefromstring($logoContent);
-                if ($sourceLogo) {
-                    $width = imagesx($sourceLogo);
-                    $newWidth = ($width > 250) ? 250 : $width;
-                    $newHeight = floor(imagesy($sourceLogo) * ($newWidth / $width));
-
-                    $virtualLogo = imagecreatetruecolor($newWidth, $newHeight);
-                    
-                    imagealphablending($virtualLogo, false);
-                    imagesavealpha($virtualLogo, true);
-                    
-                    imagecopyresampled($virtualLogo, $sourceLogo, 0, 0, 0, 0, $newWidth, $newHeight, $width, imagesy($sourceLogo));
-                    
-                    $localLogoPath = $tempDir . '/logo_opt.png';
-                    imagepng($virtualLogo, $localLogoPath, 9);
-                    
-                    imagedestroy($virtualLogo);
-                    imagedestroy($sourceLogo);
-                } else {
-                    $localLogoPath = $tempDir . '/logo_header.png';
-                    file_put_contents($localLogoPath, $logoContent);
-                }
+                $localLogoPath = $tempDir . '/logo_header.png';
+                file_put_contents($localLogoPath, $logoContent);
             }
         } catch (\Exception $e) {
-            Log::error("Error procesando logo: " . $e->getMessage());
+            Log::error("Error descargando logo para PDF: " . $e->getMessage());
         }
 
-        $finalLogo = $localLogoPath ?? '';
+        $finalLogo = $localLogoPath ?? $this->getLogoUrl($targetAreaId);
 
         $data = [
             'products' => $products,
@@ -652,8 +635,7 @@ class FfProductController extends Controller
         
         $pdf->setPaper('A4', 'portrait');
         $pdf->setOption('isRemoteEnabled', true);
-        $pdf->setOption('dpi', 96);
-        $pdf->setOption('defaultFont', 'Helvetica');
+        $pdf->setOption('dpi', 150);
         
         $output = $pdf->output();
 
