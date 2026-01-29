@@ -2,7 +2,6 @@
 
 @section('content')
 
-{{-- Tu sección de <style> completa con los estilos para shimmer y glow --}}
 <style>
     :root {
         --color-primary: #2c3856;
