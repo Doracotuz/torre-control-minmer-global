@@ -628,6 +628,7 @@ Route::middleware(['auth', 'module.access:wms'])->prefix('wms')->name('wms.')->g
     Route::get('products/export-csv', [WMSProductController::class, 'exportCsv'])->name('products.export-csv');
     Route::get('products-template', [WMSProductController::class, 'downloadTemplate'])->name('products.template');
     Route::post('products-import', [WMSProductController::class, 'importCsv'])->name('products.import');
+    Route::get('products/get-catalogs', [WMSProductController::class, 'getCatalogsByArea'])->name('products.catalogs');
     Route::resource('products', WMSProductController::class);
     Route::get('locations/export-csv', [WMSLocationController::class, 'exportCsv'])->name('locations.export-csv');
     Route::resource('locations', WMSLocationController::class);

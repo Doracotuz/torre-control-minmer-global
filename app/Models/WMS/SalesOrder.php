@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Models\WMS\Area;
 
 class SalesOrder extends Model
 {
@@ -15,7 +16,8 @@ class SalesOrder extends Model
         'so_number', 
         'invoice_number', 
         'customer_name', 
-        'user_id', 
+        'user_id',
+        'area_id',
         'warehouse_id',
         'order_date', 
         'status', 
@@ -31,6 +33,11 @@ class SalesOrder extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function area()
+    {
+        return $this->belongsTo(Area::class);
+    }    
 
     public function lines()
     {

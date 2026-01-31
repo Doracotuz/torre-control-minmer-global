@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Area;
 
 class Product extends Model
 {
@@ -11,7 +12,7 @@ class Product extends Model
 
     protected $fillable = [
         'sku', 'name', 'description', 'brand_id', 'product_type_id',
-        'unit_of_measure', 'length', 'width', 'height', 'weight', 'upc','pieces_per_case'
+        'unit_of_measure', 'length', 'width', 'height', 'weight', 'upc','pieces_per_case', 'area_id'
     ];
 
     public function getVolumeAttribute()
@@ -31,4 +32,10 @@ class Product extends Model
     {
         return $this->belongsTo(ProductType::class);
     }
+
+    public function area()
+    {
+        return $this->belongsTo(Area::class);
+    }
+
 }

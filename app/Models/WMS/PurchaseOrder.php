@@ -5,22 +5,31 @@ namespace App\Models\WMS;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
+use App\Models\Area;
 use App\Models\WMS\PurchaseOrderLine;
 use App\Models\WMS\Pallet;
 use Illuminate\Support\Facades\DB;
+use App\Models\WMS\DockArrival;
 
 class PurchaseOrder extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'warehouse_id','po_number', 'expected_date', 'status', 'user_id', 'container_number',
+        'warehouse_id','po_number', 'expected_date', 'status', 'user_id', 'area_id', 'container_number',
         'document_invoice', 'pedimento_a4', 'pedimento_g1', 'total_pallets',
         'expected_bottles', 'received_bottles', 'operator_name',
         'download_start_time', 'download_end_time'
     ];
 
-    public function user() { return $this->belongsTo(User::class); }
+    public function user() 
+    { 
+        return $this->belongsTo(User::class); 
+    }
+    public function area()
+    {
+        return $this->belongsTo(Area::class);
+    }    
     public function lines() { return $this->hasMany(PurchaseOrderLine::class); }
     public function latestArrival() { return $this->hasOne(DockArrival::class)->latestOfMany(); }
 

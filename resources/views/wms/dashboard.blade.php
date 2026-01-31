@@ -1,456 +1,377 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex flex-col sm:flex-row justify-between items-center">
-            <div>
-                <h2 class="font-semibold text-2xl text-[#2c3856] leading-tight">
-                    {{ __('Centro de Mando WMS') }}
-                </h2>
-                <p class="text-gray-600 text-sm mt-1">Panel de control interactivo de operaciones y catálogos.</p>
-            </div>
-            
-            <div class="flex space-x-3 mt-4 sm:mt-0">
-                <a href="{{ route('wms.purchase-orders.index') }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition duration-150 ease-in-out">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    Gestionar Arribos (PO)
-                </a>
-                <a href="{{ route('wms.sales-orders.index') }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition duration-150 ease-in-out">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                    Gestionar Salidas (SO)
-                </a>
-            </div>
-        </div>
-    </x-slot>
+    <x-slot name="header"></x-slot>
 
     <style>
-        .tab-button.active {
-            border-color: #ff9c00;
-            background-color: #fff;
-            color: #ff9c00;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@700;800;900&display=swap');
+
+        :root {
+            --minmer-navy: #2c3856;
+            --minmer-orange: #ff9c00;
+            --minmer-grey: #666666;
+            --minmer-dark: #2b2b2b;
         }
-        .fade-in-up {
-            animation: fadeInUp 0.5s ease-out forwards;
-            opacity: 0;
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+
+        .font-raleway { font-family: 'Raleway', sans-serif; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+
+        @keyframes ken-burns { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
+        .animate-ken-burns { animation: ken-burns 20s ease-in-out infinite alternate; }
+        
+        .shadow-soft { box-shadow: 0 20px 40px -10px rgba(44, 56, 86, 0.1); }
+        
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .img-placeholder { background-color: #e2e8f0; }
     </style>
 
-    <div class="py-10" x-data="{ 
-        tab: 'mando',
-        animateCountTo(el, target) {
-            let start = 0;
-            const duration = 1500;
-            const step = (timestamp) => {
-                if (!start) start = timestamp;
-                const progress = timestamp - start;
-                const percentage = Math.min(progress / duration, 1);
-                el.count = Math.floor(target * percentage);
-                if (progress < duration) {
-                    window.requestAnimationFrame(step);
-                } else {
-                    el.count = target;
-                }
-            };
-            window.requestAnimationFrame(step);
-        }
-    }" x-cloak>
-        <div class="max-w-full mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white p-4 rounded-lg shadow-md mb-6">
-                <form method="GET" action="{{ route('wms.dashboard') }}" class="flex items-end space-x-4">
-                    <div>
-                        <label for="warehouse_id" class="block text-sm font-medium text-gray-700">Ver Datos del Almacén</label>
-                        <select name="warehouse_id" id="warehouse_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" onchange="this.form.submit()">
-                            <option value="">-- Todos los Almacenes --</option>
-                            
-                            @foreach($warehouses as $warehouse)
-                                <option value="{{ $warehouse->id }}" @if($warehouseId == $warehouse->id) selected @endif>
-                                    {{ $warehouse->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    
-                    <a href="{{ route('wms.dashboard') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                        Limpiar
-                    </a>
-                </form>
-            </div>            
+    <div class="min-h-screen text-[#2b2b2b] font-montserrat pb-20 relative overflow-x-hidden"
+         x-data="{ 
+            tab: 'mando',
+            currentSlide: 0,
+            init() {
+                setInterval(() => { this.currentSlide = (this.currentSlide < 2) ? this.currentSlide + 1 : 0; }, 6000);
+            }
+         }">
 
-            <div class="bg-white rounded-lg shadow-md p-2 mb-6">
-                <nav class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                    <button @click="tab = 'mando'" :class="{ 'active': tab === 'mando' }" class="tab-button w-full text-center py-3 px-5 font-semibold text-gray-600 border-b-2 sm:border-b-4 border-transparent hover:text-[#ff9c00] hover:border-gray-300 transition rounded-md">
-                        <i class="fas fa-tachometer-alt mr-2"></i> Centro de Mando
-                    </button>
-                    <button @click="tab = 'inventario'" :class="{ 'active': tab === 'inventario' }" class="tab-button w-full text-center py-3 px-5 font-semibold text-gray-600 border-b-2 sm:border-b-4 border-transparent hover:text-[#ff9c00] hover:border-gray-300 transition rounded-md">
-                        <i class="fas fa-boxes mr-2"></i> Acciones de Inventario
-                    </button>
-                    <button @click="tab = 'catalogos'" :class="{ 'active': tab === 'catalogos' }" class="tab-button w-full text-center py-3 px-5 font-semibold text-gray-600 border-b-2 sm:border-b-4 border-transparent hover:text-[#ff9c00] hover:border-gray-300 transition rounded-md">
-                        <i class="fas fa-book mr-2"></i> Catálogos
-                    </button>
-                    <button @click="tab = 'reportes'" :class="{ 'active': tab === 'reportes' }" class="tab-button w-full text-center py-3 px-5 font-semibold text-gray-600 border-b-2 sm:border-b-4 border-transparent hover:text-[#ff9c00] hover:border-gray-300 transition rounded-md">
-                        <i class="fas fa-chart-pie mr-2"></i> Reportes (BI)
-                    </button>
-                </nav>
+        <div class="fixed inset-0 -z-10 pointer-events-none">
+            <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-[#2c3856] rounded-full blur-[150px] opacity-5"></div>
+            <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#ff9c00] rounded-full blur-[150px] opacity-5"></div>
+        </div>
+
+        <div class="max-w-[1800px] mx-auto px-6 pt-10 relative z-10">
+            
+            <div class="flex flex-col xl:flex-row justify-between items-end mb-10 border-b border-gray-200 pb-6">
+                <div>
+                    <div class="flex items-center gap-3 mb-1">
+                        <div class="h-1 w-8 bg-[#ff9c00]"></div>
+                        <p class="text-xs font-bold text-[#666666] uppercase tracking-[0.2em]">Centro de Operaciones</p>
+                    </div>
+                    <h1 class="text-5xl md:text-6xl font-raleway font-black text-[#2c3856] mb-1 leading-none">
+                        MINMER <span class="text-[#ff9c00]">WMS</span>
+                    </h1>
+                    <p class="text-[#666666] text-lg font-medium">Panel de control logístico global</p>
+                </div>
+
+                <div class="bg-white shadow-soft border border-gray-100 rounded-full p-2 flex items-center gap-2 mt-8 xl:mt-0 transition-shadow hover:shadow-lg">
+                    <form action="{{ route('wms.dashboard') }}" method="GET" class="flex gap-2">
+                        <div class="relative group">
+                            <select name="warehouse_id" onchange="this.form.submit()" class="appearance-none bg-gray-50 hover:bg-gray-100 text-[#2c3856] font-bold text-sm py-3 pl-6 pr-10 rounded-full border-none focus:ring-0 transition-colors cursor-pointer min-w-[200px]">
+                                <option value="">Todas las Ubicaciones</option>
+                                @foreach($warehouses as $w)
+                                    <option value="{{ $w->id }}" {{ (isset($warehouseId) && $warehouseId == $w->id) ? 'selected' : '' }}>{{ $w->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="h-8 w-px bg-gray-200 my-auto"></div>
+                        <div class="relative group">
+                            <select name="area_id" onchange="this.form.submit()" class="appearance-none bg-gray-50 hover:bg-gray-100 text-[#ff9c00] font-bold text-sm py-3 pl-6 pr-10 rounded-full border-none focus:ring-0 transition-colors cursor-pointer min-w-[200px]">
+                                <option value="">Todos los Clientes</option>
+                                @foreach($areas as $area)
+                                    <option value="{{ $area->id }}" {{ (isset($areaId) && $areaId == $area->id) ? 'selected' : '' }}>{{ $area->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <a href="{{ route('wms.dashboard') }}" class="w-11 h-11 rounded-full bg-[#2c3856] hover:bg-[#1a253a] flex items-center justify-center text-white transition-all hover:rotate-180 shadow-md">
+                            ⟳
+                        </a>
+                    </form>
+                </div>
             </div>
 
-            <div x-show="tab === 'mando'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+                <button @click="tab = 'mando'" 
+                    class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500"
+                    :class="tab === 'mando' ? 'ring-4 ring-[#ff9c00]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
+                    <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
+                    <div class="absolute bottom-5 left-6 text-left">
+                        <p class="text-xs font-bold text-[#ff9c00] uppercase tracking-widest mb-1">General</p>
+                        <p class="text-2xl font-raleway font-black text-white">Dashboard</p>
+                    </div>
+                </button>
+
+                <button @click="tab = 'inventario'" 
+                    class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500"
+                    :class="tab === 'inventario' ? 'ring-4 ring-[#2c3856]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRJZdguUbIDEdJl_gQot6lco0c45KS0fCuBag&s" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
+                    <div class="absolute bottom-5 left-6 text-left">
+                        <p class="text-xs font-bold text-gray-300 uppercase tracking-widest mb-1">Acciones</p>
+                        <p class="text-2xl font-raleway font-black text-white">Inventario</p>
+                    </div>
+                </button>
+
+                <button @click="tab = 'catalogos'" 
+                    class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500"
+                    :class="tab === 'catalogos' ? 'ring-4 ring-[#666666]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
+                    <img src="https://images.unsplash.com/photo-1553413077-190dd305871c?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
+                    <div class="absolute bottom-5 left-6 text-left">
+                        <p class="text-xs font-bold text-[#ff9c00] uppercase tracking-widest mb-1">Maestros</p>
+                        <p class="text-2xl font-raleway font-black text-white">Catálogos</p>
+                    </div>
+                </button>
+
+                <button @click="tab = 'reportes'" 
+                    class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500"
+                    :class="tab === 'reportes' ? 'ring-4 ring-[#2c3856]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
+                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
+                    <div class="absolute bottom-5 left-6 text-left">
+                        <p class="text-xs font-bold text-white uppercase tracking-widest mb-1">BI</p>
+                        <p class="text-2xl font-raleway font-black text-white">Reportes</p>
+                    </div>
+                </button>
+            </div>
+
+            <div x-show="tab === 'mando'" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0">
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
                     @foreach($kpis as $kpi)
-                    <div class="bg-white p-5 rounded-lg shadow-lg flex items-center space-x-4 border-l-4 border-blue-500 fade-in-up">
-                        <div class="flex-shrink-0 p-3 rounded-full bg-blue-100">
-                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $kpi['icon'] }}"></path></svg>
-                        </div>
-                        <div x-data="{ count: 0 }" x-init="animateCountTo(count, {{ $kpi['value'] }})">
-                            <p class="text-gray-600 text-sm font-medium">{{ $kpi['label'] }}</p>
-                            <p class="text-3xl font-bold text-[#2c3856]">
-                                <span x-text="count.toLocaleString('es-MX', { maximumFractionDigits: 0 })"></span>
-                                @if($kpi['format'] === 'percent')%@endif
-                            </p>
+                    <div class="bg-white p-8 rounded-3xl shadow-soft border border-gray-100 group hover:-translate-y-1 transition-transform duration-300">
+                        <p class="text-[#666666] text-xs font-bold uppercase tracking-widest mb-3">{{ $kpi['label'] }}</p>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-5xl font-raleway font-black text-[#2c3856] tracking-tighter" x-data x-init="animateCountTo($el, {{ $kpi['value'] }})">0</span>
+                            @if($kpi['format'] === 'percent')<span class="text-xl text-[#ff9c00] font-bold">%</span>@endif
                         </div>
                     </div>
                     @endforeach
                 </div>
-                
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                    <div class="bg-white rounded-lg shadow-lg p-5 space-y-4 fade-in-up" style="animation-delay: 100ms;">
-                        <h3 class="text-xl font-bold text-blue-800 border-b-2 border-blue-200 pb-2">Flujo de Entrada</h3>
-                        
-                        <div>
-                            <h4 class="font-semibold text-gray-700 mb-2">En Muelle (Receiving)</h4>
-                            <ul class="space-y-2 max-h-48 overflow-y-auto">
-                                @forelse($receivingPOs as $po)
-                                    <li class="p-2 bg-blue-50 border border-blue-200 rounded-lg hover:shadow-md transition">
-                                        <a href="{{ route('wms.receiving.show', $po) }}" class="block">
-                                            <span class="font-bold text-blue-800">{{ $po->po_number }}</span>
-                                            <p class="text-sm text-gray-600">{{ $po->latestArrival->driver_name ?? 'Sin operador' }} - <span class="text-xs">{{ $po->latestArrival->arrival_time->diffForHumans() ?? 'N/A' }}</span></p>
-                                        </a>
-                                    </li>
-                                @empty
-                                    <li class="text-gray-500 text-sm p-2">No hay órdenes en muelle.</li>
-                                @endforelse
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-gray-700 mb-2">Próximos Arribos</h4>
-                            <ul class="space-y-2 max-h-48 overflow-y-auto">
-                                @forelse($pendingPOs as $po)
-                                    <li class="p-2 bg-gray-50 border border-gray-200 rounded-lg hover:shadow-md transition">
-                                        <a href="{{ route('wms.purchase-orders.show', $po) }}" class="block">
-                                            <span class="font-bold text-gray-800">{{ $po->po_number }}</span>
-                                            <p class="text-sm text-gray-600">Esperado: <span class="font-medium {{ $po->expected_date->isToday() ? 'text-red-600' : 'text-gray-500' }}">{{ $po->expected_date->format('d-M-Y') }}</span></p>
-                                        </a>
-                                    </li>
-                                @empty
-                                    <li class="text-gray-500 text-sm p-2">No hay arribos pendientes.</li>
-                                @endforelse
-                            </ul>
-                        </div>
-                    </div>
 
-                    <div class="bg-white rounded-lg shadow-lg p-5 space-y-4 fade-in-up" style="animation-delay: 200ms;">
-                        <h3 class="text-xl font-bold text-green-800 border-b-2 border-green-200 pb-2">Flujo de Salida</h3>
-                        
-                        <div>
-                            <h4 class="font-semibold text-gray-700 mb-2">En Surtido (Picking)</h4>
-                            <ul class="space-y-2 max-h-48 overflow-y-auto">
-                                @forelse($pickingSOs as $so)
-                                    <li class="p-2 bg-green-50 border border-green-200 rounded-lg hover:shadow-md transition">
-                                        <a href="{{ route('wms.picking.show', $so->pickList) }}" class="block">
-                                            <span class="font-bold text-green-800">{{ $so->so_number }}</span>
-                                            <p class="text-sm text-gray-600">Cliente: {{ $so->customer_name }}</p>
-                                        </a>
-                                    </li>
-                                @empty
-                                    <li class="text-gray-500 text-sm p-2">No hay órdenes en surtido.</li>
-                                @endforelse
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-gray-700 mb-2">Pendientes de Surtir</h4>
-                            <ul class="space-y-2 max-h-48 overflow-y-auto">
-                                @forelse($pendingSOs as $so)
-                                    <li class="p-2 bg-gray-50 border border-gray-200 rounded-lg hover:shadow-md transition">
-                                        <a href="{{ route('wms.sales-orders.show', $so) }}" class="block">
-                                            <span class="font-bold text-gray-800">{{ $so->so_number }}</span>
-                                            <p class="text-sm text-gray-600">Entrega: <span class="font-medium {{ $so->order_date->isToday() ? 'text-red-600' : 'text-gray-500' }}">{{ $so->order_date->format('d-M-Y') }}</span></p>
-                                        </a>
-                                    </li>
-                                @empty
-                                    <li class="text-gray-500 text-sm p-2">No hay órdenes pendientes.</li>
-                                @endforelse
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-lg shadow-lg p-5 space-y-4 fade-in-up" style="animation-delay: 300ms;">
-                        <h3 class="text-xl font-bold text-red-800 border-b-2 border-red-200 pb-2">Atención Requerida</h3>
-                        
-                        <div>
-                            <h4 class="font-semibold text-gray-700 mb-2">Discrepancias de Conteo</h4>
-                            <ul class="space-y-2 max-h-48 overflow-y-auto">
-                                @forelse($discrepancyTasks as $task)
-                                    <li class="p-2 bg-red-50 border border-red-200 rounded-lg hover:shadow-md transition">
-                                        <a href="{{ route('wms.physical-counts.show', $task->physical_count_session_id) }}" class="block">
-                                            <span class="font-bold text-red-800">Ubic: {{ $task->location->code ?? 'N/A' }}</span>
-                                            <p class="text-sm text-gray-600">SKU: {{ $task->product->sku ?? 'N/A' }}</p>
-                                        </a>
-                                    </li>
-                                @empty
-                                    <li class="text-gray-500 text-sm p-2">¡Sin discrepancias!</li>
-                                @endforelse
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-gray-700 mb-2">Stock No Disponible (QC/Dañado)</h4>
-                            <ul class="space-y-2 max-h-48 overflow-y-auto">
-                                @forelse($nonAvailableStock as $item)
-                                    <li class="p-2 bg-yellow-50 border border-yellow-200 rounded-lg hover:shadow-md transition">
-                                        <a href="{{ route('wms.reports.non-available-inventory') }}" class="block">
-                                            <span class="font-bold text-yellow-800">LPN: {{ $item->pallet->lpn ?? 'N/A' }}</span>
-                                            <p class="text-sm text-gray-600">SKU: {{ $item->product->sku ?? 'N/A' }} ({{ $item->quality->name ?? 'N/A' }})</p>
-                                        </a>
-                                    </li>
-                                @empty
-                                    <li class="text-gray-500 text-sm p-2">Sin stock no disponible.</li>
-                                @endforelse
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div x-show="tab === 'inventario'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100">
-                
-                <div class="bg-white p-5 rounded-lg shadow-lg mb-6 fade-in-up relative z-20" x-data="lpnSearch('{{ route('wms.api.find-lpn') }}')">
-                    <h3 class="text-lg font-bold text-[#2c3856] mb-3">Consulta Rápida de LPN</h3>
-                    <div class="flex items-center space-x-3 relative">
-                        <input type="text" 
-                               x-model="lpn"
-                               @keydown.enter.prevent="findLpn"
-                               class="block w-full md:w-1/3 border-gray-300 rounded-md shadow-sm focus:border-[#ff9c00] focus:ring-[#ff9c00]"
-                               placeholder="Escanear o teclear LPN...">
-                        <button @click="findLpn" class="px-5 py-2 bg-[#2c3856] text-white rounded-md hover:bg-[#1f2940] transition" :disabled="loading">
-                            <span x-show="!loading">Buscar</span>
-                            <span x-show="loading">Buscando...</span>
-                        </button>
-                    </div>
-
-                    <div x-show="error" x-transition class="mt-3 p-3 bg-red-100 text-red-700 rounded-md" x-text="error"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[650px]">
                     
-                    <div x-show="pallet" x-transition:enter="transition ease-out duration-300" 
-                         x-transition:enter-start="opacity-0 transform scale-95" 
-                         x-transition:enter-end="opacity-100 transform scale-100"
-                         class="absolute z-10 mt-2 w-full md:w-2/3 lg:w-1/2 bg-white border border-gray-200 rounded-lg shadow-2xl p-5" 
-                         @click.away="pallet = null; error = ''">
-                        
-                        <template x-if="pallet">
-                            <div>
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h4 class="text-xl font-bold text-[#ff9c00]" x-text="pallet.lpn"></h4>
-                                        <p class="text-sm text-gray-500">
-                                            En <strong class="text-gray-700" x-text="pallet.location.code"></strong> 
-                                        </p>
-                                    </div>
-                                    <button @click="pallet = null; error = ''" class="text-gray-400 hover:text-gray-600">&times;</button>
-                                </div>
-
-                                <div class="mt-4 border-t pt-4">
-                                    <h5 class="font-semibold mb-2">Contenido de la Tarima:</h5>
-                                    <ul class="space-y-2 max-h-48 overflow-y-auto">
-                                        <template x-for="item in pallet.items" :key="item.id">
-                                            <li class="flex justify-between items-center p-2 bg-gray-50 rounded-md">
-                                                <div>
-                                                    <p class="font-medium text-gray-800" x-text="item.product.sku"></p>
-                                                    <p class="text-sm text-gray-500" x-text="item.product.name"></p>
-                                                </div>
-                                                <div class="text-right">
-                                                    <p class="text-lg font-bold text-[#2c3856]" x-text="item.quantity"></p>
-                                                    <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800" x-text="item.quality.name"></span>
-                                                </div>
-                                            </li>
-                                        </template>
-                                    </ul>
-                                    <div class="text-xs text-gray-400 mt-3">
-                                        <p>Recibido por: <span x-text="pallet.user ? pallet.user.name : 'N/A'"></span></p>
-                                        <p>PO Origen: <span x-text="pallet.purchase_order ? pallet.purchase_order.po_number : 'N/A'"></span></p>
-                                    </div>
-                                </div>
+                    <div class="bg-white rounded-[2.5rem] shadow-soft border border-gray-100 overflow-hidden flex flex-col h-full group hover:shadow-xl transition-shadow duration-500">
+                        <div class="relative h-40 overflow-hidden shrink-0 img-placeholder">
+                            <img src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 to-transparent"></div>
+                            <div class="absolute bottom-5 left-8 text-white">
+                                <h3 class="text-2xl font-raleway font-black">Recepciones</h3>
+                                <p class="text-[#ff9c00] font-bold text-sm">{{ $receivingPOs->count() }} en Muelle</p>
                             </div>
-                        </template>
+                        </div>
+                        <div class="flex-1 overflow-y-auto hide-scroll p-6 space-y-3">
+                            @forelse($receivingPOs as $po)
+                                <a href="{{ route('wms.receiving.show', $po) }}" class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-blue-50 hover:border-blue-100 transition-colors">
+                                    <div>
+                                        <p class="font-bold text-[#2c3856] text-lg">{{ $po->po_number }}</p>
+                                        <p class="text-xs text-[#666666] uppercase font-bold tracking-wider mt-1">{{ $po->latestArrival->driver_name ?? 'N/A' }}</p>
+                                    </div>
+                                    <div class="w-10 h-10 rounded-full bg-white text-[#2c3856] flex items-center justify-center shadow-sm">➔</div>
+                                </a>
+                            @empty
+                                <div class="h-full flex items-center justify-center text-gray-400 font-bold">Muelle libre</div>
+                            @endforelse
+                        </div>
+                        <div class="p-6 border-t border-gray-50"><a href="{{ route('wms.purchase-orders.index') }}" class="block w-full py-4 text-center bg-[#2c3856] hover:bg-[#1a253a] text-white font-bold rounded-2xl shadow-lg">Ver Todas</a></div>
+                    </div>
+
+                    <div class="bg-white rounded-[2.5rem] shadow-soft border border-gray-100 overflow-hidden flex flex-col h-full group hover:shadow-xl transition-shadow duration-500">
+                        <div class="relative h-40 overflow-hidden shrink-0 img-placeholder">
+                            <img src="https://images.unsplash.com/photo-1532635042-a6f6ad4745f9?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 to-transparent"></div>
+                            <div class="absolute bottom-5 left-8 text-white">
+                                <h3 class="text-2xl font-raleway font-black">Despachos</h3>
+                                <p class="text-[#ff9c00] font-bold text-sm">{{ $pickingSOs->count() }} en Picking</p>
+                            </div>
+                        </div>
+                        <div class="flex-1 overflow-y-auto hide-scroll p-6 space-y-3">
+                            @forelse($pickingSOs as $so)
+                                <a href="{{ route('wms.picking.show', $so->pickList) }}" class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-green-50 hover:border-green-100 transition-colors">
+                                    <div>
+                                        <p class="font-bold text-[#2c3856] text-lg">{{ $so->so_number }}</p>
+                                        <p class="text-xs text-[#666666] uppercase font-bold tracking-wider mt-1 truncate w-32">{{ $so->customer_name }}</p>
+                                    </div>
+                                    <span class="px-3 py-1 rounded-full bg-[#e6fffa] text-[#2c3856] text-xs font-bold border border-[#2c3856]/10">PICKING</span>
+                                </a>
+                            @empty
+                                <div class="h-full flex items-center justify-center text-gray-400 font-bold">Todo despachado</div>
+                            @endforelse
+                        </div>
+                        <div class="p-6 border-t border-gray-50"><a href="{{ route('wms.sales-orders.index') }}" class="block w-full py-4 text-center bg-[#2c3856] hover:bg-[#1a253a] text-white font-bold rounded-2xl shadow-lg">Ver Todos</a></div>
+                    </div>
+
+                    <div class="bg-white rounded-[2.5rem] shadow-soft border border-gray-100 overflow-hidden flex flex-col h-full group hover:shadow-xl transition-shadow duration-500">
+                        <div class="relative h-40 overflow-hidden shrink-0 img-placeholder">
+                            <img src="https://images.unsplash.com/photo-1572670014853-1d3a3f22b40f?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-red-900/80 to-transparent mix-blend-multiply"></div>
+                            <div class="absolute bottom-5 left-8 text-white">
+                                <h3 class="text-2xl font-raleway font-black">Acciones Req.</h3>
+                                <p class="text-red-100 font-bold text-sm">{{ $discrepancyTasks->count() + $nonAvailableStock->count() }} Incidentes</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto hide-scroll p-6 space-y-3">
+                            
+                            @if($discrepancyTasks->isEmpty() && $nonAvailableStock->isEmpty())
+                                <div class="h-full flex flex-col items-center justify-center text-gray-400">
+                                    <svg class="w-12 h-12 text-green-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <p class="text-sm font-bold">Sistema Saludable</p>
+                                </div>
+                            @endif
+
+                            @foreach($discrepancyTasks as $task)
+                                <a href="{{ route('wms.physical-counts.show', $task->physical_count_session_id) }}" class="flex items-start gap-4 p-4 rounded-2xl bg-red-50 border border-red-100 hover:bg-red-100 transition-colors">
+                                    <div class="mt-1 w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
+                                    <div>
+                                        <p class="text-xs text-red-600 font-bold uppercase tracking-wider mb-1">Discrepancia Conteo</p>
+                                        <p class="font-bold text-[#2c3856] text-sm">{{ $task->location->code ?? 'N/A' }}</p>
+                                        <p class="text-xs text-[#666666]">Producto: {{ $task->product->sku ?? 'N/A' }}</p>
+                                    </div>
+                                </a>
+                            @endforeach
+
+                            @foreach($nonAvailableStock as $item)
+                                <a href="{{ route('wms.reports.non-available-inventory') }}" class="flex items-start gap-4 p-4 rounded-2xl bg-[#fff7ed] border border-orange-100 hover:bg-orange-50 transition-colors">
+                                    <div class="mt-1 w-2 h-2 rounded-full bg-[#ff9c00] flex-shrink-0"></div>
+                                    <div>
+                                        <p class="text-xs text-[#ff9c00] font-bold uppercase tracking-wider mb-1">{{ $item->quality->name ?? 'Bloqueado' }}</p>
+                                        <p class="font-bold text-[#2c3856] text-sm">LPN: {{ $item->pallet->lpn ?? 'N/A' }}</p>
+                                        <p class="text-xs text-[#666666]">SKU: {{ $item->product->sku ?? 'N/A' }}</p>
+                                    </div>
+                                </a>
+                            @endforeach
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div x-show="tab === 'inventario'" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0"
+                 x-data="lpnSearch('{{ route('wms.api.find-lpn') }}')">
+                
+                <div class="relative h-[450px] rounded-[3rem] overflow-hidden bg-white shadow-soft border border-gray-100 mb-12 flex items-center">
+                    <div class="w-full lg:w-1/2 p-12 lg:p-16 relative z-10">
+                        <span class="inline-block px-3 py-1 bg-gray-100 text-[#2c3856] rounded-full text-xs font-bold uppercase tracking-wider mb-4">Herramienta de Búsqueda</span>
+                        <h2 class="text-5xl font-raleway font-black text-[#2c3856] mb-4">Scanner LPN</h2>
+                        <p class="text-[#666666] text-lg mb-8">Localiza cualquier unidad logística. Ingresa el código de etiqueta.</p>
+                        
+                        <div class="relative max-w-lg">
+                            <input type="text" x-model="lpn" @keydown.enter.prevent="findLpn" 
+                                class="w-full h-16 pl-6 pr-32 bg-gray-50 border-2 border-gray-100 rounded-2xl text-xl text-[#2c3856] placeholder-gray-400 focus:ring-0 focus:border-[#ff9c00] transition-all font-mono uppercase tracking-widest"
+                                placeholder="LPN-XXXXXX">
+                            
+                            <button @click="findLpn" class="absolute right-2 top-2 bottom-2 px-6 bg-[#ff9c00] hover:bg-orange-600 text-white font-bold rounded-xl transition-all flex items-center justify-center shadow-lg" :disabled="loading">
+                                <span x-show="!loading">IR</span>
+                                <span x-show="loading" class="animate-spin">⟳</span>
+                            </button>
+
+                            <div x-show="pallet" @click.away="pallet = null; error = ''" class="absolute top-full left-0 w-full mt-4 bg-white border border-gray-100 rounded-2xl p-6 shadow-2xl z-50">
+                                <template x-if="pallet">
+                                    <div>
+                                        <div class="flex justify-between items-center border-b border-gray-100 pb-4 mb-4">
+                                            <div>
+                                                <p class="text-xs text-gray-400 uppercase tracking-widest">Código</p>
+                                                <p class="text-2xl font-mono text-[#2c3856] font-black" x-text="pallet.lpn"></p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-xs text-gray-400 uppercase tracking-widest">Ubicación</p>
+                                                <div class="bg-blue-50 text-[#2c3856] px-4 py-1 rounded-lg text-lg font-bold font-mono" x-text="pallet.location.code"></div>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                                            <template x-for="item in pallet.items" :key="item.id">
+                                                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                                                    <div>
+                                                        <p class="font-bold text-[#2c3856]" x-text="item.product.sku"></p>
+                                                        <p class="text-xs text-gray-500" x-text="item.product.name"></p>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <p class="text-xl font-mono text-[#ff9c00] font-bold" x-text="item.quantity"></p>
+                                                        <p class="text-[10px] text-gray-400 uppercase" x-text="item.quality.name"></p>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                            <div x-show="error" class="absolute top-full left-0 w-full mt-4 bg-red-50 text-red-600 font-bold p-4 rounded-xl text-center border border-red-100" x-text="error"></div>
+                        </div>
+                    </div>
+                    <div class="absolute right-0 top-0 w-1/2 h-full hidden lg:block img-placeholder">
+                        <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-r from-white via-white/20 to-transparent"></div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <x-wms-tile-link :href="route('wms.inventory.index')" icon="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" color="blue">
-                        Vista de Inventario (LPNs)
-                    </x-wms-tile-link>
-                    <x-wms-tile-link :href="route('wms.inventory.transfer.create')" icon="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" color="blue">
-                        Transferir LPN
-                    </x-wms-tile-link>
-                    <x-wms-tile-link :href="route('wms.inventory.split.create')" icon="M15 15l-6 6m0 0l-6-6m6 6V9a6 6 0 0112 0v3" color="blue">
-                        Dividir LPN (Split)
-                    </x-wms-tile-link>
-                    <x-wms-tile-link :href="route('wms.physical-counts.index')" icon="M9 7h6m0 0v6m0-6L9 13" color="gray">
-                        Conteos Físicos
-                    </x-wms-tile-link>
-                    <x-wms-tile-link :href="route('wms.inventory.adjustments.log')" icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" color="gray">
-                        Log de Ajustes
-                    </x-wms-tile-link>
-                    <x-wms-tile-link :href="route('wms.inventory.pallet-info.index')" icon="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" color="gray">
-                        Consulta Manual LPN
-                    </x-wms-tile-link>
+                <h3 class="text-2xl font-raleway font-black text-[#2c3856] mb-6">Acciones Operativas</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    @php
+                        $ops = [
+                            ['route' => 'wms.inventory.index', 'title' => 'Inventario General', 'desc' => 'Vista tabular de todo el stock', 'img' => 'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?q=80&w=500&auto=format&fit=crop'],
+                            ['route' => 'wms.inventory.transfer.create', 'title' => 'Transferencias', 'desc' => 'Reubicar mercancía', 'img' => 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=500&auto=format&fit=crop'],
+                            ['route' => 'wms.inventory.split.create', 'title' => 'Split (Dividir)', 'desc' => 'Separar pallets', 'img' => 'https://img1.wsimg.com/isteam/ip/2fa41b42-239e-4744-a6f7-1f8a6642ec41/0c955f09-8ae0-4fac-9a5f-3d9257bc05e4.png'],
+                            ['route' => 'wms.physical-counts.index', 'title' => 'Conteos Cíclicos', 'desc' => 'Auditorías', 'img' => 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=500&auto=format&fit=crop'],
+                            ['route' => 'wms.inventory.adjustments.log', 'title' => 'Bitácora Ajustes', 'desc' => 'Historial de cambios', 'img' => 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=500&auto=format&fit=crop'],
+                            ['route' => 'wms.inventory.pallet-info.index', 'title' => 'Consulta Manual', 'desc' => 'Búsqueda detallada', 'img' => 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=500&auto=format&fit=crop'],
+                        ];
+                    @endphp
+                    @foreach($ops as $op)
+                    <a href="{{ route($op['route']) }}" class="group relative h-48 rounded-[2rem] overflow-hidden shadow-soft hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 img-placeholder">
+                        <img src="{{ $op['img'] }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100">
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/40 to-transparent"></div>
+                        <div class="absolute bottom-6 left-8 text-white">
+                            <h3 class="text-xl font-bold font-raleway">{{ $op['title'] }}</h3>
+                            <p class="text-xs text-gray-300 font-montserrat">{{ $op['desc'] }}</p>
+                            <div class="h-1 w-10 bg-[#ff9c00] mt-3 group-hover:w-20 transition-all duration-300"></div>
+                        </div>
+                    </a>
+                    @endforeach
                 </div>
             </div>
 
-            <div x-show="tab === 'catalogos'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <x-wms-tile-link :href="route('wms.products.index')" icon="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" color="red">
-                        Productos
-                    </x-wms-tile-link>
-                    <x-wms-tile-link :href="route('wms.locations.index')" icon="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM12 11a2 2 0 100-4 2 2 0 000 4z" color="red">
-                        Ubicaciones
-                    </x-wms-tile-link>
-                    <x-wms-tile-link :href="route('wms.warehouses.index')" icon="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h6" color="red">
-                        Almacenes
-                    </x-wms-tile-link>
-                    <x-wms-tile-link :href="route('wms.brands.index')" icon="M5 13l4 4L19 7" color="red">
-                        Marcas
-                    </x-wms-tile-link>
-                    <x-wms-tile-link :href="route('wms.product-types.index')" icon="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" color="red">
-                        Tipos de Producto
-                    </x-wms-tile-link>
-                    <x-wms-tile-link :href="route('wms.qualities.index')" icon="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" color="red">
-                        Calidades
-                    </x-wms-tile-link>
-                    <x-wms-tile-link :href="route('wms.lpns.index')" icon="M5 5a2 2 0 012-2h10a2 2 0 012 2v1h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h2V5zm10 0H9v1h6V5zm-2 5h-2v6h2v-6z" color="red">
-                        Generador de LPNs
-                    </x-wms-tile-link>
+            <div x-show="tab === 'catalogos'" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    @php
+                        $catalogs = [
+                            ['r' => 'wms.products.index', 't' => 'Productos', 'img' => 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?q=80&w=500&auto=format&fit=crop'],
+                            ['r' => 'wms.locations.index', 't' => 'Ubicaciones', 'img' => 'https://images.unsplash.com/photo-1590247813693-5541d1c609fd?q=80&w=500&auto=format&fit=crop'],
+                            ['r' => 'wms.warehouses.index', 't' => 'Almacenes', 'img' => 'https://images.unsplash.com/photo-1644079446600-219068676743?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'],
+                            ['r' => 'wms.brands.index', 't' => 'Marcas', 'img' => 'https://www.headsem.com/wp-content/uploads/2015/11/ver-las-propiedades-de-hardware-de-mi-pc-en-windows.jpg'],
+                            ['r' => 'wms.product-types.index', 't' => 'Tipos', 'img' => 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTgJ4DjVBL8UI8GkgNeVWaBcZSHa_ANC8OEcQ&s'],
+                            ['r' => 'wms.qualities.index', 't' => 'Calidades', 'img' => 'https://img.freepik.com/fotos-premium/botella-rota-aislada-sobre-fondo-blanco_51524-17283.jpg'],
+                            ['r' => 'wms.lpns.index', 't' => 'Generar LPNs', 'img' => 'https://infraon.io/blog/wp-content/uploads/2023/01/BARSCANNERBLOGFinal.png'],
+                        ];
+                    @endphp
+                    @foreach($catalogs as $cat)
+                    <a href="{{ route($cat['r']) }}" class="group relative aspect-square rounded-[2rem] overflow-hidden shadow-soft hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 img-placeholder">
+                        <img src="{{ $cat['img'] }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/80 via-transparent to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
+                        <div class="absolute bottom-0 left-0 w-full p-6 text-center">
+                            <h3 class="text-lg font-raleway font-black text-white uppercase tracking-widest">{{ $cat['t'] }}</h3>
+                        </div>
+                    </a>
+                    @endforeach
                 </div>
             </div>
 
-            <div x-show="tab === 'reportes'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100">
+            <div x-show="tab === 'reportes'" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    
-                    <a href="{{ route('wms.reports.inventory') }}" 
-                       class="relative group block bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-blue-300 transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
-                        <div class="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-blue-100 rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                        <div class="mb-4 inline-block p-3 bg-blue-100 rounded-lg shadow-sm border border-blue-200">
-                            <svg class="w-8 h-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                               <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-                            </svg>
+                    @php
+                        $reports = [
+                            ['r' => 'wms.reports.inventory', 't' => 'Dashboard Inventario', 'd' => 'Stock global y valores.', 'img' => 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop'],
+                            ['r' => 'wms.reports.stock-movements', 't' => 'Kardex Movimientos', 'd' => 'Entradas, salidas y ajustes.', 'img' => 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800&auto=format&fit=crop'],
+                            ['r' => 'wms.reports.slotting-heatmap', 't' => 'Mapa de Calor', 'd' => 'Eficiencia de ubicaciones.', 'img' => 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?q=80&w=800&auto=format&fit=crop'],
+                            ['r' => 'wms.reports.non-available-inventory', 't' => 'Stock No Disponible', 'd' => 'Cuarentenas y daños.', 'img' => 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS7Uet4FxXLOk_9sb00Im42tkm1Hn7LlH3Ajw&s'],
+                            ['r' => 'wms.reports.inventory-aging', 't' => 'Antigüedad', 'd' => 'Días de inventario.', 'img' => 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTeZO6JGauFbQ-S4YABbn_soFZAOsRYzRxQ0Q&s'],
+                            ['r' => 'wms.reports.abc-analysis', 't' => 'Análisis ABC', 'd' => 'Clasificación por valor.', 'img' => 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=800&auto=format&fit=crop'],
+                        ];
+                    @endphp
+                    @foreach($reports as $rep)
+                    <a href="{{ route($rep['r']) }}" class="group relative h-64 rounded-[2.5rem] overflow-hidden shadow-soft hover:shadow-2xl transition-all duration-500 img-placeholder">
+                        <img src="{{ $rep['img'] }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-1000 grayscale group-hover:grayscale-0">
+                        <div class="absolute inset-0 bg-[#2c3856]/80 group-hover:bg-[#2c3856]/40 transition-colors duration-500"></div>
+                        <div class="absolute bottom-0 left-0 p-8 max-w-lg">
+                            <h3 class="text-2xl font-raleway font-black text-white mb-1">{{ $rep['t'] }}</h3>
+                            <p class="text-gray-200 text-sm group-hover:text-white transition-colors">{{ $rep['d'] }}</p>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-700 transition-colors duration-300">
-                            Dashboard de Inventario
-                        </h3>
-                        <p class="text-sm text-gray-600 mb-4">
-                            Visión general del stock, productos top y antigüedad del inventario. 📈
-                        </p>
-                        <span class="absolute bottom-6 right-6 text-blue-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-transform duration-300">
-                            <i class="fas fa-arrow-right fa-lg"></i>
-                        </span>
-                    </a>
-
-                    <a href="{{ route('wms.reports.stock-movements') }}" 
-                       class="relative group block bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-indigo-300 transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
-                        <div class="absolute bottom-0 left-0 -mb-12 -ml-12 w-36 h-36 bg-indigo-100 rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                        <div class="mb-4 inline-block p-3 bg-indigo-100 rounded-lg shadow-sm border border-indigo-200">
-                            <svg class="w-8 h-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                               <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                            </svg>
+                        <div class="absolute top-6 right-6 w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
+                            ➜
                         </div>
-                        <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-indigo-700 transition-colors duration-300">
-                            Historial de Movimientos
-                        </h3>
-                        <p class="text-sm text-gray-600 mb-4">
-                            Registro detallado de todas las entradas, salidas, ajustes y transferencias. 🔍
-                        </p>
-                        <span class="absolute bottom-6 right-6 text-indigo-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-transform duration-300">
-                            <i class="fas fa-arrow-right fa-lg"></i>
-                        </span>
                     </a>
-                    
-                    <a href="{{ route('wms.reports.inventory-aging') }}" 
-                       class="relative group block bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-yellow-300 transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
-                        <div class="absolute top-0 left-0 -mt-12 -ml-12 w-36 h-36 bg-yellow-100 rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                        <div class="mb-4 inline-block p-3 bg-yellow-100 rounded-lg shadow-sm border border-yellow-200">
-                            <svg class="w-8 h-8 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                               <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-yellow-700 transition-colors duration-300">
-                            Antigüedad de Inventario
-                        </h3>
-                        <p class="text-sm text-gray-600 mb-4">
-                            Análisis de inventario por LPN y sus días en almacén. ⏳
-                        </p>
-                        <span class="absolute bottom-6 right-6 text-yellow-300 group-hover:text-yellow-500 group-hover:translate-x-1 transition-transform duration-300">
-                            <i class="fas fa-arrow-right fa-lg"></i>
-                        </span>
-                    </a>
-                    
-                    <a href="{{ route('wms.reports.non-available-inventory') }}" 
-                       class="relative group block bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-red-300 transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
-                        <div class="absolute bottom-0 right-0 -mb-10 -mr-10 w-32 h-32 bg-red-100 rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                        <div class="mb-4 inline-block p-3 bg-red-100 rounded-lg shadow-sm border border-red-200">
-                            <svg class="w-8 h-8 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                               <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                               <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
-                            </svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-red-700 transition-colors duration-300">
-                            Inventario No Disponible
-                        </h3>
-                        <p class="text-sm text-gray-600 mb-4">
-                            Stock dañado, en inspección o bloqueado que requiere acción. ⚠️
-                        </p>
-                        <span class="absolute bottom-6 right-6 text-red-300 group-hover:text-red-500 group-hover:translate-x-1 transition-transform duration-300">
-                            <i class="fas fa-arrow-right fa-lg"></i>
-                        </span>
-                    </a>
-                    
-                    <a href="{{ route('wms.reports.abc-analysis') }}" 
-                       class="relative group block bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-green-300 transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
-                        <div class="absolute top-0 right-0 -mt-12 -mr-12 w-36 h-36 bg-green-100 rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                        <div class="mb-4 inline-block p-3 bg-green-100 rounded-lg shadow-sm border border-green-200">
-                            <svg class="w-8 h-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1.125-1.5M13.5 16.5L12 15m1.5 1.5l1.125-1.5M13.5 16.5h-1.5m7.5 4.5v-1.5m0 1.5A2.25 2.25 0 0018 18.75h-2.25m-7.5 0h7.5m-7.5 0l-1.125 1.5M13.5 18.75L12 21m1.5-2.25l1.125 1.5M13.5 18.75h-1.5m-3-15.75v11.25c0 1.242.984 2.25 2.25 2.25h2.25c1.242 0 2.25-.984 2.25-2.25V3m-7.5 0h7.5" />
-                            </svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-green-700 transition-colors duration-300">
-                            Análisis ABC-XYZ
-                        </h3>
-                        <p class="text-sm text-gray-600 mb-4">
-                            Clasificación de productos por Valor (ABC) y Frecuencia (XYZ). 📊
-                        </p>
-                        <span class="absolute bottom-6 right-6 text-green-300 group-hover:text-green-500 group-hover:translate-x-1 transition-transform duration-300">
-                            <i class="fas fa-arrow-right fa-lg"></i>
-                        </span>
-                    </a>
-
-                    <a href="{{ route('wms.reports.slotting-heatmap') }}" 
-                       class="relative group block bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-teal-300 transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
-                        <div class="absolute bottom-0 left-0 -mb-10 -ml-10 w-32 h-32 bg-teal-100 rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                        <div class="mb-4 inline-block p-3 bg-teal-100 rounded-lg shadow-sm border border-teal-200">
-                            <svg class="w-8 h-8 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                            </svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-teal-700 transition-colors duration-300">
-                            Mapa de Calor (Slotting)
-                        </h3>
-                        <p class="text-sm text-gray-600 mb-4">
-                            Visualización interactiva de la eficiencia de ubicaciones vs. productos. 🔥
-                        </p>
-                        <span class="absolute bottom-6 right-6 text-teal-300 group-hover:text-teal-500 group-hover:translate-x-1 transition-transform duration-300">
-                            <i class="fas fa-arrow-right fa-lg"></i>
-                        </span>
-                    </a>
-
+                    @endforeach
                 </div>
             </div>
 
@@ -458,7 +379,6 @@
     </div>
 
     <script>
-        // Script para la Búsqueda de LPN en la Pestaña "Inventario"
         function lpnSearch(apiUrl) {
             return {
                 lpn: '',
@@ -466,36 +386,22 @@
                 loading: false,
                 error: '',
                 findLpn() {
-                    if (!this.lpn.trim()) {
-                        this.pallet = null;
-                        this.error = '';
-                        return;
-                    }
+                    if (!this.lpn.trim()) return;
                     this.loading = true;
                     this.pallet = null;
                     this.error = '';
 
                     fetch(`${apiUrl}?lpn=${this.lpn}`, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json',
-                        }
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
                     })
-                    .then(response => {
-                        if (response.ok) return response.json();
-                        if (response.status === 404) throw new Error('LPN no encontrado.');
-                        throw new Error('Error de servidor.');
+                    .then(r => {
+                        if (r.ok) return r.json();
+                        if (r.status === 404) throw new Error('LPN NO EXISTE EN SISTEMA');
+                        throw new Error('ERROR DE CONEXIÓN');
                     })
-                    .then(data => {
-                        this.pallet = data;
-                        this.lpn = ''; // Limpiar input
-                    })
-                    .catch(err => {
-                        this.error = err.message;
-                    })
-                    .finally(() => {
-                        this.loading = false;
-                    });
+                    .then(data => { this.pallet = data; this.lpn = ''; })
+                    .catch(e => { this.error = e.message; })
+                    .finally(() => { this.loading = false; });
                 }
             }
         }

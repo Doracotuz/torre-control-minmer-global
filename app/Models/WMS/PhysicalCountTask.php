@@ -20,6 +20,11 @@ class PhysicalCountTask extends Model
         'pallet_id',
     ];
 
+    public function physicalCountSession()
+    {
+        return $this->belongsTo(PhysicalCountSession::class);
+    }    
+
     public function product()
     {
         return $this->belongsTo(Product::class);

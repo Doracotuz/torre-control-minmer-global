@@ -1,93 +1,187 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Centro de Control de LPNs (Etiquetas de Tarima)
-        </h2>
-    </x-slot>
+    <x-slot name="header"></x-slot>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@700;800;900&display=swap');
+        .font-raleway { font-family: 'Raleway', sans-serif; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        .shadow-soft { box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.1); }
+    </style>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="min-h-screen bg-transparent text-[#2b2b2b] font-montserrat pb-20 relative">
+        
+        <div class="max-w-[1800px] mx-auto px-6 pt-10 relative z-10">
+            
+            <div class="flex flex-col xl:flex-row justify-between items-end mb-10 border-b border-gray-200 pb-6">
+                <div>
+                    <div class="flex items-center gap-3 mb-1">
+                        <div class="h-1 w-8 bg-[#ff9c00]"></div>
+                        <p class="text-xs font-bold text-[#666666] uppercase tracking-[0.2em]">Operaciones</p>
+                    </div>
+                    <h1 class="text-5xl font-raleway font-black text-[#2c3856] mb-1 leading-none">
+                        Centro de Control <span class="text-[#ff9c00]">LPNs</span>
+                    </h1>
+                    <p class="text-[#666666] text-lg font-medium">Gestión de Etiquetas de Tarima (License Plate Numbers)</p>
+                </div>
 
-            @if (session('success'))
-                <div class="mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md" role="alert"><p>{{ session('success') }}</p></div>
-            @endif
-             @if (session('error'))
-                <div class="mb-6 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert"><p>{{ session('error') }}</p></div>
-            @endif
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-lg shadow"><p class="text-sm text-gray-500">LPNs Totales Generados</p><p class="text-3xl font-bold text-gray-800">{{ $totalLpns }}</p></div>
-                <div class="bg-white p-6 rounded-lg shadow"><p class="text-sm text-gray-500">LPNs Disponibles</p><p class="text-3xl font-bold text-green-600">{{ $unusedLpns }}</p></div>
-                <div class="bg-white p-6 rounded-lg shadow"><p class="text-sm text-gray-500">LPNs en Uso</p><p class="text-3xl font-bold text-blue-600">{{ $usedLpns }}</p></div>
+                <div class="mt-6 xl:mt-0">
+                    <a href="{{ route('wms.dashboard') }}" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-[#666666] font-bold rounded-full shadow-sm hover:shadow-md hover:border-[#2c3856] hover:text-[#2c3856] transition-all">
+                        <i class="fas fa-arrow-left"></i> <span>Dashboard</span>
+                    </a>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-white p-8 rounded-lg shadow space-y-8">
+            @if (session('success'))
+                <div class="mb-6 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-r-xl shadow-sm font-medium flex items-center gap-3">
+                    <i class="fas fa-check-circle text-xl"></i>
+                    <p>{{ session('success') }}</p>
+                </div>
+            @endif
+            @if (session('error'))
+                 <div class="mb-6 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-xl shadow-sm font-medium flex items-center gap-3">
+                    <i class="fas fa-exclamation-circle text-xl"></i>
+                    <p>{{ session('error') }}</p>
+                 </div>
+            @endif
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-white p-6 rounded-[2rem] shadow-soft border border-gray-100 flex items-center justify-between">
                     <div>
-                        <h3 class="font-bold text-lg text-gray-800">1. Generar Nuevos LPNs</h3>
-                        <p class="text-sm text-gray-600 mt-1">Crea un lote de nuevos IDs únicos para futuras tarimas.</p>
-                        <form action="{{ route('wms.lpns.generate') }}" method="POST" class="mt-4 flex items-center space-x-3">
-                            @csrf
-                            <input type="number" name="quantity" min="1" max="100" value="20" required class="rounded-md border-gray-300 shadow-sm w-32">
-                            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700">Generar</button>
-                        </form>
+                        <p class="text-xs font-bold text-[#666666] uppercase tracking-wider mb-1">Total Generados</p>
+                        <p class="text-4xl font-raleway font-black text-[#2c3856]">{{ number_format($totalLpns) }}</p>
                     </div>
-                    <div class="border-t pt-8">
-                        <h3 class="font-bold text-lg text-gray-800">2. Imprimir LPNs Disponibles</h3>
-                        <p class="text-sm text-gray-600 mt-1">Genera un PDF con códigos de barras para los LPNs que aún no se han utilizado.</p>
-                        <form action="{{ route('wms.lpns.print') }}" method="GET" target="_blank" class="mt-4 flex items-center space-x-3">
-                            <input type="number" name="quantity" min="1" max="100" value="20" required class="rounded-md border-gray-300 shadow-sm w-32">
-                            <button type="submit" class="px-4 py-2 bg-gray-700 text-white font-semibold rounded-md hover:bg-gray-800">Imprimir PDF</button>
-                        </form>
+                    <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-[#2c3856]">
+                        <i class="fas fa-barcode text-xl"></i>
                     </div>
                 </div>
-
-                <div class="bg-white p-8 rounded-lg shadow">
+                <div class="bg-white p-6 rounded-[2rem] shadow-soft border border-gray-100 flex items-center justify-between">
                     <div>
-                        <h3 class="font-bold text-lg text-gray-800">Reimprimir Etiqueta(s)</h3>
-                        <p class="text-sm text-gray-600 mt-1">Busca uno o varios LPNs (separados por coma) para volver a imprimir sus etiquetas.</p>
+                        <p class="text-xs font-bold text-[#666666] uppercase tracking-wider mb-1">Disponibles</p>
+                        <p class="text-4xl font-raleway font-black text-green-600">{{ number_format($unusedLpns) }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-600">
+                        <i class="fas fa-check text-xl"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-[2rem] shadow-soft border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-[#666666] uppercase tracking-wider mb-1">En Uso (Inventario)</p>
+                        <p class="text-4xl font-raleway font-black text-[#ff9c00]">{{ number_format($usedLpns) }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-[#fff8e6] flex items-center justify-center text-[#ff9c00]">
+                        <i class="fas fa-box text-xl"></i>
+                    </div>
+                </div>
+            </div>
 
-                        <form action="{{ route('wms.lpns.reprint') }}" method="POST" target="_blank" class="mt-4 space-y-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <div class="space-y-8">
+                    <div class="bg-white rounded-[2rem] shadow-soft border border-gray-100 p-8">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-[#2c3856] text-white flex items-center justify-center">
+                                <span class="font-bold font-raleway text-lg">1</span>
+                            </div>
+                            <h3 class="text-2xl font-raleway font-black text-[#2c3856]">Generar Nuevos</h3>
+                        </div>
+                        <p class="text-[#666666] mb-6 text-sm">Crea un lote de nuevos identificadores únicos para futuras recepciones.</p>
+                        
+                        <form action="{{ route('wms.lpns.generate') }}" method="POST" class="flex gap-4 items-end">
                             @csrf
-                            <div>
-                                <label for="lpns" class="block text-sm font-medium text-gray-700">LPN o lista de LPNs</label>
-                                <textarea name="lpns" id="lpns" rows="3" required placeholder="LPN-ABC123, LPN-DEF456, ..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm font-mono"></textarea>
-                                <p class="text-xs text-gray-500 mt-1">Separa cada LPN con una coma.</p>
-                                @error('lpns') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                            <div class="w-full">
+                                <label class="block text-xs font-bold text-[#666666] uppercase tracking-wider mb-2 ml-1">Cantidad</label>
+                                <input type="number" name="quantity" min="1" max="100" value="20" required class="w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-[#2c3856] focus:ring-[#2c3856] transition-all text-[#2c3856] font-bold">
                             </div>
-                            <div>
-                                <label for="quantity" class="block text-sm font-medium text-gray-700">Copias de cada etiqueta</label>
-                                <input type="number" name="quantity" id="quantity" value="1" min="1" max="50" required class="mt-1 block w-24 rounded-md border-gray-300 shadow-sm">
+                            <button type="submit" class="px-8 py-3 bg-[#2c3856] text-white font-bold rounded-xl hover:bg-[#1a253a] transition-all shadow-md h-[50px]">
+                                Generar
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="bg-white rounded-[2rem] shadow-soft border border-gray-100 p-8">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-[#2c3856] text-white flex items-center justify-center">
+                                <span class="font-bold font-raleway text-lg">2</span>
                             </div>
-                            <button type="submit" class="w-full px-4 py-2 bg-orange-500 text-white font-semibold rounded-md hover:bg-orange-600">
-                                <i class="fas fa-print mr-2"></i> Reimprimir
+                            <h3 class="text-2xl font-raleway font-black text-[#2c3856]">Imprimir Lote</h3>
+                        </div>
+                        <p class="text-[#666666] mb-6 text-sm">Descarga el PDF con los códigos de barras de los LPNs disponibles más recientes.</p>
+                        
+                        <form action="{{ route('wms.lpns.print') }}" method="GET" target="_blank" class="flex gap-4 items-end">
+                            <div class="w-full">
+                                <label class="block text-xs font-bold text-[#666666] uppercase tracking-wider mb-2 ml-1">Cantidad a Imprimir</label>
+                                <input type="number" name="quantity" min="1" max="100" value="20" required class="w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-[#2c3856] focus:ring-[#2c3856] transition-all text-[#2c3856] font-bold">
+                            </div>
+                            <button type="submit" class="px-8 py-3 bg-[#666666] text-white font-bold rounded-xl hover:bg-[#4d4d4d] transition-all shadow-md h-[50px] whitespace-nowrap">
+                                <i class="fas fa-print mr-2"></i> PDF
                             </button>
                         </form>
                     </div>
                 </div>
 
-                <div class="bg-white p-8 rounded-lg shadow md:col-span-2">
-                    <div>
-                        <h3 class="font-bold text-lg text-gray-800">3. Imprimir LPNs desde Archivo CSV</h3>
-                        <p class="text-sm text-gray-600 mt-1">Sube un archivo CSV con una columna de LPNs para imprimir sus etiquetas.</p>
-                        <a href="{{ route('wms.lpns.template') }}" class="text-xs text-indigo-600 font-semibold hover:underline mt-2 inline-block">
-                            <i class="fas fa-download mr-1"></i> Descargar plantilla de ejemplo
-                        </a>                        
+                <div class="space-y-8">
+                    <div class="bg-white rounded-[2rem] shadow-soft border border-gray-100 p-8">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-[#ff9c00] text-white flex items-center justify-center">
+                                <i class="fas fa-redo"></i>
+                            </div>
+                            <h3 class="text-2xl font-raleway font-black text-[#2c3856]">Reimpresión Manual</h3>
+                        </div>
+                        <p class="text-[#666666] mb-6 text-sm">Ingresa los códigos específicos que necesitas volver a imprimir.</p>
 
-                        <form action="{{ route('wms.lpns.print-from-csv') }}" method="POST" enctype="multipart/form-data" target="_blank" class="mt-4 space-y-4">
+                        <form action="{{ route('wms.lpns.reprint') }}" method="POST" target="_blank">
                             @csrf
-                            <div>
-                                <label for="lpn_file" class="block text-sm font-medium text-gray-700">Archivo CSV</label>
-                                <input type="file" name="lpn_file" id="lpn_file" accept=".csv, .txt" required class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-gray-50 hover:file:bg-gray-100">
-                                @error('lpn_file') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                            <div class="mb-4">
+                                <label class="block text-xs font-bold text-[#666666] uppercase tracking-wider mb-2 ml-1">Lista de LPNs</label>
+                                <textarea name="lpns" rows="3" required placeholder="LPN-ABC123, LPN-DEF456..." class="w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff9c00] focus:ring-[#ff9c00] transition-all font-mono text-sm resize-none"></textarea>
+                                <p class="text-xs text-gray-400 mt-2 text-right">Separar por comas</p>
                             </div>
-                            <div>
-                                <label for="csv_quantity" class="block text-sm font-medium text-gray-700">Copias de cada etiqueta</label>
-                                <input type="number" name="quantity" id="csv_quantity" value="1" min="1" max="50" required class="mt-1 block w-24 rounded-md border-gray-300 shadow-sm">
+                            <div class="flex gap-4 items-end">
+                                <div class="w-1/3">
+                                    <label class="block text-xs font-bold text-[#666666] uppercase tracking-wider mb-2 ml-1">Copias</label>
+                                    <input type="number" name="quantity" value="1" min="1" max="50" required class="w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff9c00] focus:ring-[#ff9c00] transition-all font-bold text-center">
+                                </div>
+                                <button type="submit" class="w-2/3 px-8 py-3 bg-[#ff9c00] text-white font-bold rounded-xl hover:bg-[#e68a00] transition-all shadow-md h-[50px]">
+                                    Reimprimir Etiquetas
+                                </button>
                             </div>
-                            <button type="submit" class="w-full px-4 py-2 bg-teal-600 text-white font-semibold rounded-md hover:bg-teal-700">
-                                <i class="fas fa-file-csv mr-2"></i> Imprimir desde CSV
-                            </button>
+                        </form>
+                    </div>
+
+                    <div class="bg-white rounded-[2rem] shadow-soft border border-gray-100 p-8 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-[#2c3856] rounded-bl-full opacity-5 -mr-10 -mt-10"></div>
+                        
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-green-600 text-white flex items-center justify-center">
+                                    <i class="fas fa-file-csv"></i>
+                                </div>
+                                <h3 class="text-2xl font-raleway font-black text-[#2c3856]">Importar CSV</h3>
+                            </div>
+                            <a href="{{ route('wms.lpns.template') }}" class="text-xs font-bold text-[#2c3856] hover:text-[#ff9c00] transition-colors border-b border-[#2c3856] hover:border-[#ff9c00] pb-0.5">
+                                Descargar Plantilla
+                            </a>
+                        </div>
+                        
+                        <form action="{{ route('wms.lpns.print-from-csv') }}" method="POST" enctype="multipart/form-data" target="_blank">
+                            @csrf
+                            <div class="mb-4">
+                                <label class="block w-full border-2 border-dashed border-gray-200 hover:border-green-500 hover:bg-green-50 rounded-xl p-4 transition-all cursor-pointer text-center group">
+                                    <div class="flex flex-col items-center justify-center">
+                                        <i class="fas fa-cloud-upload-alt text-2xl text-gray-300 group-hover:text-green-500 mb-2 transition-colors"></i>
+                                        <span class="text-sm font-bold text-gray-500 group-hover:text-green-600">Seleccionar Archivo CSV</span>
+                                    </div>
+                                    <input type="file" name="lpn_file" accept=".csv, .txt" required class="hidden">
+                                </label>
+                            </div>
+                            <div class="flex gap-4 items-end">
+                                <div class="w-1/3">
+                                    <label class="block text-xs font-bold text-[#666666] uppercase tracking-wider mb-2 ml-1">Copias</label>
+                                    <input type="number" name="quantity" value="1" min="1" max="50" required class="w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-green-500 focus:ring-green-500 transition-all font-bold text-center">
+                                </div>
+                                <button type="submit" class="w-2/3 px-8 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all shadow-md h-[50px]">
+                                    Procesar CSV
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>

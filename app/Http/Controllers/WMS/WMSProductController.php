@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Brand;
 use App\Models\ProductType;
+use App\Models\Area;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -16,7 +17,7 @@ class WMSProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with(['brand', 'productType'])->latest();
+        $query = Product::with(['brand', 'productType', 'area'])->latest();
 
         if ($request->filled('search')) {
             $searchTerm = $request->search;
@@ -35,19 +36,25 @@ class WMSProductController extends Controller
             $query->where('product_type_id', $request->product_type_id);
         }
 
+        if ($request->filled('area_id')) {
+            $query->where('area_id', $request->area_id);
+        }        
+
         $products = $query->paginate(15)->withQueryString();
 
         $brands = Brand::orderBy('name')->get();
         $productTypes = ProductType::orderBy('name')->get();
+        $areas = Area::orderBy('name')->get();
 
-        return view('wms.products.index', compact('products', 'brands', 'productTypes'));
+        return view('wms.products.index', compact('products', 'brands', 'productTypes', 'areas'));
     }
 
     public function create()
     {
         $brands = Brand::orderBy('name')->get();
         $productTypes = ProductType::orderBy('name')->get();
-        return view('wms.products.create', compact('brands', 'productTypes'));
+        $areas = Area::orderBy('name')->get();
+        return view('wms.products.create', compact('brands', 'productTypes', 'areas'));
     }
 
     public function store(Request $request)
@@ -58,6 +65,7 @@ class WMSProductController extends Controller
             'pieces_per_case' => 'nullable|integer|min:1',
             'brand_id' => 'nullable|exists:brands,id',
             'product_type_id' => 'nullable|exists:product_types,id',
+            'area_id' => 'required|exists:areas,id',
             'unit_of_measure' => 'required|string|max:50',
             'length' => 'nullable|numeric|min:0',
             'width' => 'nullable|numeric|min:0',
@@ -76,7 +84,8 @@ class WMSProductController extends Controller
     {
         $brands = Brand::orderBy('name')->get();
         $productTypes = ProductType::orderBy('name')->get();
-        return view('wms.products.edit', compact('product', 'brands', 'productTypes'));
+        $areas = Area::orderBy('name')->get();
+        return view('wms.products.edit', compact('product', 'brands', 'productTypes', 'areas'));
     }
 
     public function update(Request $request, Product $product)
@@ -87,6 +96,7 @@ class WMSProductController extends Controller
             'pieces_per_case' => 'nullable|integer|min:1',
             'brand_id' => 'nullable|exists:brands,id',
             'product_type_id' => 'nullable|exists:product_types,id',
+            'area_id' => 'required|exists:areas,id',
             'unit_of_measure' => 'required|string|max:50',
             'length' => 'nullable|numeric|min:0',
             'width' => 'nullable|numeric|min:0',
@@ -116,22 +126,31 @@ class WMSProductController extends Controller
     public function downloadTemplate()
     {
         $headers = [
-            'Content-type' => 'text/csv; charset=UTF-8',
+            'Content-type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename=plantilla_productos.csv',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
         ];
 
         $columns = [
-            'sku (requerido)', 'nombre_producto (requerido)', 'upc', 
-            'nombre_marca', 'nombre_tipo_producto', 
-            'unidad_de_empaque (ej: Caja, Pieza)', 'piezas_por_caja',
-            'largo_cm', 'ancho_cm', 'alto_cm', 'peso_kg'
+            'sku', 
+            'name', 
+            'description', 
+            'brand_name', 
+            'type_name', 
+            'unit_of_measure', 
+            'upc', 
+            'length', 
+            'width', 
+            'height', 
+            'weight', 
+            'pieces_per_case'
         ];
 
         $callback = function() use ($columns) {
             $file = fopen('php://output', 'w');
-            
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
             fputcsv($file, $columns);
             fclose($file);
         };
@@ -141,9 +160,13 @@ class WMSProductController extends Controller
 
     public function importCsv(Request $request)
     {
-        $request->validate(['file' => 'required|mimes:csv,txt']);
+        $request->validate([
+            'file' => 'required|mimes:csv,txt',
+            'area_id' => 'required|exists:areas,id',
+        ]);
 
         $file = $request->file('file');
+        $areaId = $request->input('area_id');
         
         $content = file_get_contents($file->getRealPath());
         $utf8Content = mb_convert_encoding($content, 'UTF-8', mb_detect_encoding($content, 'UTF-8, ISO-8859-1', true));
@@ -169,6 +192,7 @@ class WMSProductController extends Controller
         $countSuccess = 0;
         $errors = [];
         $warnings = [];
+        
         $existingSkus = Product::pluck('sku')->toArray();
         $skusInFile = []; 
 
@@ -235,12 +259,14 @@ class WMSProductController extends Controller
                     'upc' => $rowData['upc'] ?? null,
                     'brand_id' => $brand ? $brand->id : null,
                     'product_type_id' => $productType ? $productType->id : null,
+                    'area_id' => $areaId,
                     'unit_of_measure' => $rowData['unidad_de_empaque'] ?? 'Pieza',
                     'pieces_per_case' => (int)($rowData['piezas_por_caja'] ?? 1) ?: 1,
                     'length' => (float)($rowData['largo_cm'] ?? 0) ?: null,
                     'width' => (float)($rowData['ancho_cm'] ?? 0) ?: null,
                     'height' => (float)($rowData['alto_cm'] ?? 0) ?: null,
                     'weight' => (float)($rowData['peso_kg'] ?? 0) ?: null,
+                    'description' => $rowData['descripcion'] ?? null,
                 ]);
 
                 $existingSkus[] = $sku;
@@ -258,12 +284,12 @@ class WMSProductController extends Controller
 
             DB::commit();
             
-            $successMessage = "$countSuccess productos nuevos fueron importados exitosamente.";
+            $successMessage = "$countSuccess productos nuevos fueron importados exitosamente para el cliente seleccionado.";
 
             if (!empty($warnings)) {
                 return redirect()->route('wms.products.index')
                                 ->with('success', $successMessage)
-                                ->with('warning', "Se omitieron " . count($warnings) . " líneas por problemas de formato (ej. líneas en blanco al final).");
+                                ->with('warning', "Se omitieron " . count($warnings) . " líneas por problemas de formato.");
             }
             
             return redirect()->route('wms.products.index')
@@ -277,9 +303,7 @@ class WMSProductController extends Controller
 
     public function exportCsv(Request $request)
     {
-        $fileName = 'reporte_productos_' . date('Y-m-d') . '.csv';
-
-        $query = Product::with(['brand', 'productType'])->latest();
+        $query = Product::with(['brand', 'productType', 'area'])->latest();
 
         if ($request->filled('search')) {
             $searchTerm = $request->search;
@@ -289,45 +313,53 @@ class WMSProductController extends Controller
                   ->orWhere('upc', 'like', "%{$searchTerm}%");
             });
         }
+
         if ($request->filled('brand_id')) {
             $query->where('brand_id', $request->brand_id);
         }
+
         if ($request->filled('product_type_id')) {
             $query->where('product_type_id', $request->product_type_id);
+        }
+
+        if ($request->filled('area_id')) {
+            $query->where('area_id', $request->area_id);
         }
 
         $products = $query->get();
 
         $headers = [
-            'Content-type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=$fileName",
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=productos_export_' . date('Y-m-d') . '.csv',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
         ];
 
         $callback = function() use ($products) {
             $file = fopen('php://output', 'w');
-            
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             fputcsv($file, [
-                'SKU', 'Nombre', 'UPC', 'Marca', 'Tipo de Producto',
-                'Unidad de Empaque', 'Piezas por Caja',
-                'Largo (cm)', 'Ancho (cm)', 'Alto (cm)', 'Peso (kg)', 'Volumen (m³)'
+                'Area/Cliente', 'SKU', 'Nombre', 'Descripción', 'Marca', 'Tipo', 
+                'UPC', 'Unidad', 'Largo', 'Ancho', 'Alto', 'Peso', 'Piezas x Caja'
             ]);
 
             foreach ($products as $product) {
                 fputcsv($file, [
+                    $product->area->name ?? 'N/A',
                     $product->sku,
                     $product->name,
-                    $product->upc ?? '',
-                    $product->brand->name ?? 'N/A',
-                    $product->productType->name ?? 'N/A',
+                    $product->description,
+                    $product->brand->name ?? '',
+                    $product->productType->name ?? '',
+                    $product->upc,
                     $product->unit_of_measure,
-                    $product->pieces_per_case,
                     $product->length,
                     $product->width,
                     $product->height,
                     $product->weight,
-                    $product->volume
+                    $product->pieces_per_case
                 ]);
             }
             fclose($file);
@@ -335,5 +367,22 @@ class WMSProductController extends Controller
 
         return new StreamedResponse($callback, 200, $headers);
     }
+
+    public function getCatalogsByArea(Request $request)
+    {
+        $areaId = $request->area_id;
+        
+        if (!$areaId) {
+            return response()->json(['brands' => [], 'types' => []]);
+        }
+
+        $brands = Brand::where('area_id', $areaId)->orderBy('name')->get(['id', 'name']);
+        $types = ProductType::where('area_id', $areaId)->orderBy('name')->get(['id', 'name']);
+
+        return response()->json([
+            'brands' => $brands,
+            'types' => $types
+        ]);
+    }    
 
 }
