@@ -19,8 +19,12 @@ class WMSReceivingController extends Controller
 {
     public function showReceivingForm(PurchaseOrder $purchaseOrder)
     {
-        $purchaseOrder->load(['lines.product']);
-        $products = Product::orderBy('name')->get(['id', 'name', 'sku', 'upc']);
+        $purchaseOrder->load(['lines.product', 'area']);
+        
+        $products = Product::where('area_id', $purchaseOrder->area_id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'sku', 'upc']);
+            
         $qualities = Quality::orderBy('name')->get();
 
         $alreadyReceived = DB::table('pallet_items')
@@ -33,9 +37,12 @@ class WMSReceivingController extends Controller
         $receivingSummary = $purchaseOrder->lines->map(function ($line) use ($alreadyReceived) {
             $received = $alreadyReceived->get($line->product_id, 0);
             return [
-                'product_id' => $line->product_id, 'sku' => $line->product->sku,
-                'name' => $line->product->name, 'ordered' => $line->quantity_ordered,
-                'received' => $received, 'balance' => $line->quantity_ordered - $received,
+                'product_id' => $line->product_id, 
+                'sku' => $line->product->sku,
+                'name' => $line->product->name, 
+                'ordered' => $line->quantity_ordered,
+                'received' => $received, 
+                'balance' => $line->quantity_ordered - $received,
             ];
         });
 
@@ -63,6 +70,7 @@ class WMSReceivingController extends Controller
 
         $sanitizedLpn = preg_replace('/[^A-Z0-9]/', '', strtoupper($validated['lpn']));
         $pregeneratedLpn = PregeneratedLpn::where('lpn', $sanitizedLpn)->first();
+        
         if (!$pregeneratedLpn) {
             return response()->json(['error' => 'El LPN no existe o no fue pre-generado.'], 404);
         }
@@ -114,6 +122,7 @@ class WMSReceivingController extends Controller
         DB::beginTransaction();
         try {
             $purchaseOrderLine = $pallet->purchaseOrder->lines()->where('product_id', $validated['product_id'])->first();
+            
             if (!$purchaseOrderLine) {
                 return response()->json(['error' => 'Este producto no pertenece a la orden de compra.'], 422);
             }
@@ -271,5 +280,4 @@ class WMSReceivingController extends Controller
             return response()->json(['error' => 'Error al eliminar el item: ' . $e->getMessage()], 500);
         }
     }
-
 }

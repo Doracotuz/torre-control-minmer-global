@@ -148,7 +148,21 @@
                             <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 to-transparent"></div>
                             <div class="absolute bottom-5 left-8 text-white">
                                 <h3 class="text-2xl font-raleway font-black">Recepciones</h3>
-                                <p class="text-[#ff9c00] font-bold text-sm">{{ $receivingPOs->count() }} en Muelle</p>
+                                <p class="text-[#ff9c00] font-bold text-sm">{{ $poStats['receiving'] }} en Muelle</p>
+                            </div>
+                        </div>
+                        <div class="px-6 py-4 border-b border-gray-50 flex gap-2 justify-between bg-white text-xs font-bold uppercase tracking-wider">
+                            <div class="flex flex-col items-center w-1/3">
+                                <span class="text-yellow-600 bg-yellow-50 px-2 py-1 rounded-lg w-full text-center">Pendientes</span>
+                                <span class="text-lg text-[#2c3856] mt-1">{{ $poStats['pending'] }}</span>
+                            </div>
+                            <div class="flex flex-col items-center w-1/3 border-l border-gray-100">
+                                <span class="text-blue-600 bg-blue-50 px-2 py-1 rounded-lg w-full text-center">En Proceso</span>
+                                <span class="text-lg text-[#2c3856] mt-1">{{ $poStats['receiving'] }}</span>
+                            </div>
+                            <div class="flex flex-col items-center w-1/3 border-l border-gray-100">
+                                <span class="text-green-600 bg-green-50 px-2 py-1 rounded-lg w-full text-center">Listo (Hoy)</span>
+                                <span class="text-lg text-[#2c3856] mt-1">{{ $poStats['completed_today'] }}</span>
                             </div>
                         </div>
                         <div class="flex-1 overflow-y-auto hide-scroll p-6 space-y-3">
@@ -173,7 +187,21 @@
                             <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 to-transparent"></div>
                             <div class="absolute bottom-5 left-8 text-white">
                                 <h3 class="text-2xl font-raleway font-black">Despachos</h3>
-                                <p class="text-[#ff9c00] font-bold text-sm">{{ $pickingSOs->count() }} en Picking</p>
+                                <p class="text-[#ff9c00] font-bold text-sm">{{ $soStats['picking'] }} en Picking</p>
+                            </div>
+                        </div>
+                        <div class="px-6 py-4 border-b border-gray-50 flex gap-2 justify-between bg-white text-xs font-bold uppercase tracking-wider">
+                            <div class="flex flex-col items-center w-1/3">
+                                <span class="text-yellow-600 bg-yellow-50 px-2 py-1 rounded-lg w-full text-center">Pendientes</span>
+                                <span class="text-lg text-[#2c3856] mt-1">{{ $soStats['pending'] }}</span>
+                            </div>
+                            <div class="flex flex-col items-center w-1/3 border-l border-gray-100">
+                                <span class="text-blue-600 bg-blue-50 px-2 py-1 rounded-lg w-full text-center">Picking</span>
+                                <span class="text-lg text-[#2c3856] mt-1">{{ $soStats['picking'] }}</span>
+                            </div>
+                            <div class="flex flex-col items-center w-1/3 border-l border-gray-100">
+                                <span class="text-green-600 bg-green-50 px-2 py-1 rounded-lg w-full text-center">Salidas (Hoy)</span>
+                                <span class="text-lg text-[#2c3856] mt-1">{{ $soStats['completed_today'] }}</span>
                             </div>
                         </div>
                         <div class="flex-1 overflow-y-auto hide-scroll p-6 space-y-3">
@@ -240,7 +268,6 @@
 
             <div x-show="tab === 'inventario'" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0"
                  x-data="lpnSearch('{{ route('wms.api.find-lpn') }}')">
-                
                 <div class="relative h-[450px] rounded-[3rem] overflow-hidden bg-white shadow-soft border border-gray-100 mb-12 flex items-center">
                     <div class="w-full lg:w-1/2 p-12 lg:p-16 relative z-10">
                         <span class="inline-block px-3 py-1 bg-gray-100 text-[#2c3856] rounded-full text-xs font-bold uppercase tracking-wider mb-4">Herramienta de Búsqueda</span>
@@ -404,6 +431,27 @@
                     .finally(() => { this.loading = false; });
                 }
             }
+        }
+
+        function animateCountTo(el, target) {
+            let current = 0;
+            const duration = 1500; 
+            const step = Math.ceil(target / (duration / 16)); 
+            
+            if (target === 0) {
+                el.innerText = '0';
+                return;
+            }
+
+            const timer = setInterval(() => {
+                current += step;
+                if (current >= target) {
+                    el.innerText = new Intl.NumberFormat().format(target);
+                    clearInterval(timer);
+                } else {
+                    el.innerText = new Intl.NumberFormat().format(current);
+                }
+            }, 16);
         }
     </script>
 </x-app-layout>

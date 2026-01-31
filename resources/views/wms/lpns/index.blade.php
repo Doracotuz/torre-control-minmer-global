@@ -23,7 +23,10 @@
                     <p class="text-[#666666] text-lg font-medium">Gestión de Etiquetas de Tarima (License Plate Numbers)</p>
                 </div>
 
-                <div class="mt-6 xl:mt-0">
+                <div class="mt-6 xl:mt-0 flex gap-3">
+                    <a href="{{ route('wms.lpns.export-inventory') }}" class="flex items-center gap-2 px-5 py-2.5 bg-[#2c3856] text-white font-bold rounded-full shadow-sm hover:shadow-md hover:bg-[#1a253a] transition-all">
+                        <i class="fas fa-file-csv"></i> <span>Exportar Inventario</span>
+                    </a>
                     <a href="{{ route('wms.dashboard') }}" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-[#666666] font-bold rounded-full shadow-sm hover:shadow-md hover:border-[#2c3856] hover:text-[#2c3856] transition-all">
                         <i class="fas fa-arrow-left"></i> <span>Dashboard</span>
                     </a>
@@ -132,8 +135,8 @@
                             @csrf
                             <div class="mb-4">
                                 <label class="block text-xs font-bold text-[#666666] uppercase tracking-wider mb-2 ml-1">Lista de LPNs</label>
-                                <textarea name="lpns" rows="3" required placeholder="LPN-ABC123, LPN-DEF456..." class="w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff9c00] focus:ring-[#ff9c00] transition-all font-mono text-sm resize-none"></textarea>
-                                <p class="text-xs text-gray-400 mt-2 text-right">Separar por comas</p>
+                                <textarea name="lpns" rows="6" required placeholder="LPN-ABC123&#10;LPN-DEF456&#10;LPN-GHI789" class="w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff9c00] focus:ring-[#ff9c00] transition-all font-mono text-sm resize-none"></textarea>
+                                <p class="text-xs text-gray-400 mt-2 text-right">Un LPN por renglón (Copiar/Pegar desde Excel)</p>
                             </div>
                             <div class="flex gap-4 items-end">
                                 <div class="w-1/3">
@@ -189,4 +192,15 @@
             </div>
         </div>
     </div>
+
+    @if(session('new_batch_qty'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const qty = "{{ session('new_batch_qty') }}";
+                const url = "{{ route('wms.lpns.print') }}?quantity=" + qty;
+                window.open(url, '_blank');
+            });
+        </script>
+    @endif
+
 </x-app-layout>

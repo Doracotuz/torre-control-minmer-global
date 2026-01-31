@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\WMS;
 
 use App\Http\Controllers\Controller;
@@ -7,6 +8,7 @@ use App\Models\WMS\PhysicalCountTask;
 use App\Models\WMS\InventoryStock;
 use App\Models\Location;
 use App\Models\User;
+use App\Models\Area;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,12 +21,19 @@ class WMSPhysicalCountController extends Controller
     public function index(Request $request)
     {
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
+        
         $warehouses = Warehouse::orderBy('name')->get();
+        $areas = Area::orderBy('name')->get();
 
-        $query = PhysicalCountSession::with(['user', 'assignedUser', 'warehouse'])->latest();
+        $query = PhysicalCountSession::with(['user', 'assignedUser', 'warehouse', 'area'])->latest();
 
         if ($warehouseId) {
             $query->where('warehouse_id', $warehouseId);
+        }
+
+        if ($areaId) {
+            $query->where('area_id', $areaId);
         }
 
         if (!Auth::user()->isSuperAdmin()) {
@@ -35,20 +44,21 @@ class WMSPhysicalCountController extends Controller
         }
 
         $sessions = $query->paginate(15)->withQueryString();
-        return view('wms.physical-counts.index', compact('sessions', 'warehouses', 'warehouseId'));
+        return view('wms.physical-counts.index', compact('sessions', 'warehouses', 'areas', 'warehouseId', 'areaId'));
     }
 
     public function create()
     {
         $users = User::where('is_client', false)->orderBy('name')->get();
         $warehouses = Warehouse::orderBy('name')->get();
+        $areas = Area::orderBy('name')->get();
         $aisles = Location::select('aisle')
                             ->whereNotNull('aisle')
                             ->distinct()
                             ->orderBy('aisle')
                             ->pluck('aisle');
 
-        return view('wms.physical-counts.create', compact('users', 'warehouses', 'aisles'));
+        return view('wms.physical-counts.create', compact('users', 'warehouses', 'areas', 'aisles'));
     }
 
     public function store(Request $request)
@@ -58,6 +68,7 @@ class WMSPhysicalCountController extends Controller
             'type' => 'required|in:cycle,full,dirigido',
             'assigned_user_id' => 'required|exists:users,id',
             'warehouse_id' => 'required|exists:warehouses,id',
+            'area_id' => 'nullable|exists:areas,id',
             'locations_file' => 'required_if:type,dirigido|file|mimes:csv,txt',
             'aisle' => 'required_if:type,cycle|nullable|string',
         ]);
@@ -65,16 +76,17 @@ class WMSPhysicalCountController extends Controller
         DB::beginTransaction();
         try {
             $warehouseId = $validated['warehouse_id'];
+            $areaId = $validated['area_id'] ?? null;
             
             $session = PhysicalCountSession::create([
                 'name' => $validated['name'],
                 'type' => $validated['type'],
                 'assigned_user_id' => $validated['assigned_user_id'],
                 'warehouse_id' => $warehouseId,
+                'area_id' => $areaId,
                 'user_id' => Auth::id(),
                 'status' => 'Pending'
             ]);
-
 
             if ($validated['type'] === 'dirigido') {
                 $file = $request->file('locations_file');
@@ -88,7 +100,13 @@ class WMSPhysicalCountController extends Controller
 
                 $locations = Location::whereIn('code', $locationCodes)
                                      ->where('warehouse_id', $warehouseId)
-                                     ->with('pallets.items')
+                                     ->with(['pallets' => function($q) use ($areaId) {
+                                         if ($areaId) {
+                                             $q->whereHas('purchaseOrder', function($subQ) use ($areaId) {
+                                                 $subQ->where('area_id', $areaId);
+                                             });
+                                         }
+                                     }, 'pallets.items'])
                                      ->get();
 
                 if ($locations->isEmpty()) {
@@ -113,6 +131,9 @@ class WMSPhysicalCountController extends Controller
                                     $q->where('warehouse_id', $warehouseId)
                                       ->where('aisle', $validated['aisle']);
                                 })
+                                ->when($areaId, function($q) use ($areaId) {
+                                    $q->whereHas('purchaseOrder', fn($po) => $po->where('area_id', $areaId));
+                                })
                                 ->with('items')
                                 ->get();
                                 
@@ -129,6 +150,9 @@ class WMSPhysicalCountController extends Controller
                 $palletsToCount = \App\Models\WMS\Pallet::where('status', 'Finished')
                                 ->whereHas('items')
                                 ->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId))
+                                ->when($areaId, function($q) use ($areaId) {
+                                    $q->whereHas('purchaseOrder', fn($po) => $po->where('area_id', $areaId));
+                                })
                                 ->with('items')
                                 ->get();
                                 
@@ -143,7 +167,7 @@ class WMSPhysicalCountController extends Controller
             }
             
             if ($session->tasks()->count() === 0) {
-                 throw new \Exception("No se encontraron tareas para generar. Verifique el inventario o los filtros seleccionados (almacén, pasillo, etc.).");
+                 throw new \Exception("No se encontraron tareas para generar. Verifique el inventario o los filtros seleccionados (almacén, área, pasillo, etc.).");
             }
 
             DB::commit();
@@ -174,6 +198,7 @@ class WMSPhysicalCountController extends Controller
         $session = $physicalCount->load([
             'user', 
             'assignedUser',
+            'area',
             'tasks.product', 
             'tasks.location', 
             'tasks.pallet',
@@ -185,7 +210,7 @@ class WMSPhysicalCountController extends Controller
 
     public function showCountTask(PhysicalCountTask $task)
     {
-        $task->load(['product', 'location', 'pallet']); 
+        $task->load(['product', 'location', 'pallet.purchaseOrder.area']); 
         return view('wms.physical-counts.perform-task', compact('task'));
     }
 
@@ -301,8 +326,8 @@ class WMSPhysicalCountController extends Controller
             ->whereHas('pallet', fn($q) => $q->where('location_id', $task->location_id))
             ->with([
                 'pallet:id,lpn,purchase_order_id', 
-                
-                'pallet.purchaseOrder:id,pedimento_a4',
+                'pallet.purchaseOrder:id,pedimento_a4,area_id',
+                'pallet.purchaseOrder.area:id,name',
                 'quality:id,name'
             ])
             ->get();

@@ -1,56 +1,90 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Ejecutar Tarea de Conteo</h2>
-    </x-slot>
+    <x-slot name="header"></x-slot>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@800;900&display=swap');
+        
+        .font-raleway { font-family: 'Raleway', sans-serif; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        
+        .stagger-enter { opacity: 0; transform: translateY(20px); animation: enterUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes enterUp { to { opacity: 1; transform: translateY(0); } }
+        
+        .btn-nexus { 
+            background: #2c3856; color: white; border-radius: 1rem; font-weight: 700;
+            transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center;
+        }
+        .btn-nexus:hover { background: #1a253a; transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(44, 56, 86, 0.2); }
+        
+        .btn-ghost {
+            background: transparent; color: #2c3856; border: 2px solid #e5e7eb; border-radius: 1rem; font-weight: 700;
+        }
+        .btn-ghost:hover { border-color: #2c3856; background: #2c3856; color: white; }
+    </style>
 
-    <div class="py-6 sm:py-12">
-        <div class="max-w-lg mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+    <div class="min-h-screen bg-transparent text-[#2b2b2b] font-montserrat pb-20 relative overflow-hidden flex items-center justify-center">
+        
+        <div class="fixed inset-0 -z-10 pointer-events-none">
+            <div class="absolute top-0 left-0 w-[50vw] h-full bg-gradient-to-r from-[#f8fafc] to-transparent"></div>
+            <div class="absolute top-[-10%] right-[-10%] w-[30rem] h-[30rem] bg-[#2c3856]/5 rounded-full blur-[100px]"></div>
+        </div>
+
+        <div class="max-w-lg w-full px-6 relative z-10 stagger-enter">
+            
+            <div class="text-center mb-8">
+                <span class="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2">Tarea Activa</span>
+                <h1 class="text-3xl font-raleway font-black text-[#2c3856]">Conteo Físico</h1>
+            </div>
+
+            <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-[#2c3856]/10 border border-gray-100 overflow-hidden">
                 <form action="{{ route('wms.physical-counts.tasks.record', $task) }}" method="POST">
                     @csrf
                     
-                    <div class="p-6 bg-gray-800 text-white text-center rounded-t-lg">
-                        <p class="text-sm font-medium text-gray-300 uppercase">UBICACIÓN</p>
-                        <p class="text-4xl font-mono font-bold my-1">
+                    <div class="bg-[#2c3856] p-8 text-center text-white relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-[#ff9c00] rounded-full blur-3xl opacity-20 -mr-10 -mt-10"></div>
+                        <p class="text-[10px] font-bold opacity-60 uppercase tracking-widest mb-1">Ubicación</p>
+                        <p class="text-5xl font-mono font-black tracking-tight relative z-10">
                             {{ $task->location->aisle }}-{{ $task->location->rack }}-{{ $task->location->shelf }}-{{ $task->location->bin }}
                         </p>
                     </div>
                     
-                    <div class="p-6 space-y-5">
+                    <div class="p-8 space-y-8">
                         <div class="text-center">
-                            <p class="text-sm font-medium text-gray-500">TARIMA (LPN)</p>
-                            <p class="text-2xl font-mono font-bold text-indigo-600 my-1">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">LPN (Tarima)</p>
+                            <p class="text-2xl font-mono font-bold text-[#ff9c00]">
                                 {{ $task->pallet->lpn ?? 'N/A' }}
                             </p>
+                            @if($task->pallet && $task->pallet->purchaseOrder && $task->pallet->purchaseOrder->area)
+                                <p class="text-[10px] font-bold text-[#2c3856] mt-1 bg-blue-50 inline-block px-2 py-0.5 rounded">
+                                    {{ $task->pallet->purchaseOrder->area->name }}
+                                </p>
+                            @endif
+                        </div>
+
+                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-center">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Producto</p>
+                            <p class="font-bold text-lg text-[#2c3856] leading-tight mb-1">{{ $task->product->name }}</p>
+                            <p class="font-mono text-sm text-gray-500">{{ $task->product->sku }}</p>
                         </div>
 
                         <div>
-                            <p class="text-sm font-medium text-gray-500">PRODUCTO A CONTAR</p>
-                            <div class="mt-1 p-4 border rounded-lg bg-gray-50">
-                                <p class="font-bold text-lg text-gray-900">{{ $task->product->name }}</p>
-                                <p class="font-mono text-sm text-gray-600">{{ $task->product->sku }}</p>
-                            </div>
-                        </div>
-
-                        <div class="mt-6">
-                            <label for="counted_quantity" class="block text-center text-lg font-bold text-gray-800 mb-2">
-                                CANTIDAD CONTADA
+                            <label for="counted_quantity" class="block text-center text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+                                Cantidad Contada
                             </label>
                             <input type="number" name="counted_quantity" id="counted_quantity"
                                    min="0" required autofocus
-                                   pattern="[0-9]*" inputmode="numeric" {{-- Optimizado para teclado numérico móvil --}}
-                                   class="mt-1 block w-full text-center text-5xl font-bold rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3">
+                                   pattern="[0-9]*" inputmode="numeric"
+                                   class="block w-full text-center text-6xl font-black text-[#2c3856] border-b-4 border-gray-200 focus:border-[#ff9c00] focus:ring-0 bg-transparent py-4 transition-colors placeholder-gray-200"
+                                   placeholder="0">
                         </div>
                     </div>
 
-                    <div class="bg-gray-50 px-4 py-4 sm:px-6 grid grid-cols-2 gap-4 rounded-b-lg">
+                    <div class="bg-gray-50 px-8 py-6 grid grid-cols-2 gap-4 border-t border-gray-100">
                         <a href="{{ route('wms.physical-counts.show', $task->physical_count_session_id) }}" 
-                           class="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50">
+                           class="btn-ghost w-full py-4 text-xs uppercase tracking-widest text-center flex items-center justify-center">
                             Cancelar
                         </a>
-                        <button type="submit" 
-                                class="w-full inline-flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700">
-                            <i class="fas fa-check-circle mr-2"></i> Guardar Conteo
+                        <button type="submit" class="btn-nexus w-full py-4 text-xs uppercase tracking-widest">
+                            <i class="fas fa-check mr-2"></i> Confirmar
                         </button>
                     </div>
                 </form>

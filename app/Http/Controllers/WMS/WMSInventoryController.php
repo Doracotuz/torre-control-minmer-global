@@ -20,23 +20,31 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Models\WMS\StockMovement;
 use App\Models\Warehouse;
+use App\Models\Area;
 
 class WMSInventoryController extends Controller
 {
     public function index(Request $request)
     {
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
         $warehouses = Warehouse::orderBy('name')->get();
+        $areas = Area::orderBy('name')->get();
 
         $query = \App\Models\WMS\Pallet::query()
             ->with([
-                'purchaseOrder:id,po_number,container_number,operator_name,download_start_time,pedimento_a4,pedimento_g1',
+                'purchaseOrder:id,po_number,container_number,operator_name,download_start_time,pedimento_a4,pedimento_g1,area_id',
+                'purchaseOrder.area',
                 'location', 'user:id,name', 'items.product', 'items.quality'
             ])
             ->where('status', 'Finished');
 
         if ($warehouseId) {
             $query->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+        }
+
+        if ($areaId) {
+            $query->whereHas('purchaseOrder', fn($q) => $q->where('area_id', $areaId));
         }
 
         if ($request->filled('lpn')) { $query->where('lpn', 'like', '%' . $request->lpn . '%'); }
@@ -107,6 +115,11 @@ class WMSInventoryController extends Controller
             $kpiBaseLocation->where('warehouse_id', $warehouseId);
         }
 
+        if ($areaId) {
+            $kpiBasePallet->whereHas('purchaseOrder', fn($q) => $q->where('area_id', $areaId));
+            $kpiBaseStock->whereHas('product.area', fn($q) => $q->where('id', $areaId));
+        }
+
         $kpis = [
             'total_pallets' => (clone $kpiBasePallet)->count(),
             'total_units' => (clone $kpiBaseStock)->sum('quantity'),
@@ -116,7 +129,7 @@ class WMSInventoryController extends Controller
         
         $qualities = \App\Models\WMS\Quality::orderBy('name')->get();
 
-        return view('wms.inventory.index', compact('pallets', 'kpis', 'qualities', 'stockLedger', 'warehouses', 'warehouseId'));
+        return view('wms.inventory.index', compact('pallets', 'kpis', 'qualities', 'stockLedger', 'warehouses', 'warehouseId', 'areas', 'areaId'));
     }
 
     public function createTransfer()
@@ -224,6 +237,7 @@ class WMSInventoryController extends Controller
     {
         $fileName = 'reporte_inventario_lpn_' . date('Y-m-d') . '.csv';
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
 
         $headers = [
             "Content-type"        => "text/csv; charset=UTF-8",
@@ -233,12 +247,12 @@ class WMSInventoryController extends Controller
             "Expires"             => "0"
         ];
 
-        $callback = function() use ($request, $warehouseId) {
+        $callback = function() use ($request, $warehouseId, $areaId) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             fputcsv($file, [
-                'ID_Tarima', 'LPN', 'Estado_Tarima', 'Fecha_Recepcion', 'Usuario_Receptor',
+                'ID_Tarima', 'LPN', 'Area_Cliente', 'Estado_Tarima', 'Fecha_Recepcion', 'Usuario_Receptor',
                 'Ubicacion_Codigo', 'Ubicacion_Pasillo', 'Ubicacion_Rack', 'Ubicacion_Nivel', 'Ubicacion_Bin',
                 'N_Orden_Compra', 'Estado_Orden', 'Fecha_Esperada_Orden', 'Contenedor', 'Factura', 'Pedimento_A4', 'Pedimento_G1',
                 'Fecha_Arribo_Vehiculo', 'Fecha_Salida_Vehiculo', 'Operador_Vehiculo',
@@ -250,11 +264,15 @@ class WMSInventoryController extends Controller
             ]);
             
             $query = \App\Models\WMS\Pallet::query()
-                ->with(['purchaseOrder', 'location', 'user', 'items.product', 'items.quality'])
+                ->with(['purchaseOrder.area', 'location', 'user', 'items.product', 'items.quality'])
                 ->where('status', 'Finished');
 
             if ($warehouseId) {
                 $query->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+            }
+
+            if ($areaId) {
+                $query->whereHas('purchaseOrder', fn($q) => $q->where('area_id', $areaId));
             }
                 
             $query->when($request->filled('lpn'), fn($q) => $q->where('lpn', 'like', '%' . $request->lpn . '%'))
@@ -316,7 +334,7 @@ class WMSInventoryController extends Controller
                             $disponible = $stock['available'];
 
                             fputcsv($file, [
-                                $pallet->id, $pallet->lpn, $pallet->status, $pallet->updated_at->format('Y-m-d H:i:s'), $pallet->user->name ?? 'N/A',
+                                $pallet->id, $pallet->lpn, $pallet->purchaseOrder->area->name ?? 'N/A', $pallet->status, $pallet->updated_at->format('Y-m-d H:i:s'), $pallet->user->name ?? 'N/A',
                                 $pallet->location->code ?? 'N/A', $pallet->location->aisle ?? '', $pallet->location->rack ?? '', $pallet->location->shelf ?? '', $pallet->location->bin ?? '',
                                 $pallet->purchaseOrder->po_number ?? '', $pallet->purchaseOrder->status_in_spanish ?? '', $pallet->purchaseOrder->expected_date ?? '',
                                 $pallet->purchaseOrder->container_number ?? '', $pallet->purchaseOrder->document_invoice ?? '', $pallet->purchaseOrder->pedimento_a4 ?? '', $pallet->purchaseOrder->pedimento_g1 ?? '',

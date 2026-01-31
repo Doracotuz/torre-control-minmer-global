@@ -44,11 +44,36 @@ class WMSLocationController extends Controller
             'quality_control' => Location::where('type', 'quality_control')->count(),
         ];
 
+        $warehouses = Warehouse::orderBy('name')->get();
+        $aislesQuery = Location::select('aisle')->whereNotNull('aisle')->distinct();
+        if ($request->filled('warehouse_id')) {
+            $aislesQuery->where('warehouse_id', $request->warehouse_id);
+        }
+        $aisles = $aislesQuery->orderBy('aisle')->pluck('aisle');
+        $racksQuery = Location::select('rack')->whereNotNull('rack')->distinct();
+        if ($request->filled('warehouse_id')) {
+            $racksQuery->where('warehouse_id', $request->warehouse_id);
+        }
+        if ($request->filled('aisle')) {
+            $racksQuery->where('aisle', $request->aisle);
+        }
+        $racks = $racksQuery->orderBy('rack')->pluck('rack');
+        $shelvesQuery = Location::select('shelf')->whereNotNull('shelf')->distinct();
+        if ($request->filled('warehouse_id')) {
+            $shelvesQuery->where('warehouse_id', $request->warehouse_id);
+        }
+        if ($request->filled('aisle')) {
+            $shelvesQuery->where('aisle', $request->aisle);
+        }
+        if ($request->filled('rack')) {
+            $shelvesQuery->where('rack', $request->rack);
+        }
+        $shelves = $shelvesQuery->orderBy('shelf')->pluck('shelf');
         $filters = [
-            'warehouses' => Warehouse::orderBy('name')->get(),
-            'aisles' => Location::select('aisle')->whereNotNull('aisle')->distinct()->orderBy('aisle')->pluck('aisle'),
-            'racks' => Location::select('rack')->whereNotNull('rack')->distinct()->orderBy('rack')->pluck('rack'),
-            'shelves' => Location::select('shelf')->whereNotNull('shelf')->distinct()->orderBy('shelf')->pluck('shelf'),
+            'warehouses' => $warehouses,
+            'aisles' => $aisles,
+            'racks' => $racks,
+            'shelves' => $shelves,
         ];
 
         return view('wms.locations.index', compact('locations', 'kpis', 'filters'));

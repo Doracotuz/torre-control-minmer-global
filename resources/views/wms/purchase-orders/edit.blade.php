@@ -1,33 +1,47 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800">
-            Editar Orden de Compra: <span class="font-mono text-indigo-600">{{ $purchaseOrder->po_number }}</span>
+        <h2 class="font-bold text-3xl text-gray-800 leading-tight">
+            Editar PO: <span class="text-[#ff9c00] font-mono">{{ $purchaseOrder->po_number }}</span>
         </h2>
     </x-slot>
+
+    <script id="po-edit-data" type="application/json">
+    {
+        "apiSearchUrl": "{{ route('wms.api.search-products') }}",
+        "existingLines": @json($purchaseOrder->lines)
+    }
+    </script>
     
-    <div class="py-12" x-data="poForm({ lines: {{ $purchaseOrder->lines->toJson() }} })">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-12" x-data="poForm()" x-init="initData()">
+        <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
             <form action="{{ route('wms.purchase-orders.update', $purchaseOrder) }}" method="POST">
                 @csrf
                 @method('PUT')
                 
-                @if ($errors->any())<div class="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert"><ul class="list-disc list-inside">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+                @if ($errors->any())
+                    <div class="mb-6 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-xl shadow-sm">
+                        <ul class="list-disc list-inside text-sm">
+                            @foreach ($errors->all() as $error) <li>{{ $error }}</li> @endforeach
+                        </ul>
+                    </div>
+                @endif
                 
-                <div class="bg-white p-8 rounded-lg shadow-xl space-y-6">
+                <div class="bg-white rounded-[2rem] shadow-xl border border-gray-100 p-8 md:p-12">
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <h3 class="text-xl font-black text-[#2c3856] mb-6 border-b border-gray-100 pb-2">Información General</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         <div>
-                            <label for="po_number" class="block text-sm font-medium text-gray-700">Nº de PO</label>
-                            <input type="text" name="po_number" id="po_number" value="{{ old('po_number', $purchaseOrder->po_number) }}" required class="mt-1 block w-full rounded-md border-gray-300">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Nº de PO</label>
+                            <input type="text" name="po_number" value="{{ old('po_number', $purchaseOrder->po_number) }}" required class="w-full rounded-xl border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00] font-bold text-[#2c3856]">
                         </div>
                         <div>
-                            <label for="expected_date" class="block text-sm font-medium text-gray-700">Fecha Esperada</label>
-                            <input type="date" name="expected_date" id="expected_date" value="{{ old('expected_date', \Carbon\Carbon::parse($purchaseOrder->expected_date)->format('Y-m-d')) }}" required class="mt-1 block w-full rounded-md border-gray-300">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Fecha Esperada</label>
+                            <input type="date" name="expected_date" value="{{ old('expected_date', \Carbon\Carbon::parse($purchaseOrder->expected_date)->format('Y-m-d')) }}" required class="w-full rounded-xl border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00]">
                         </div>
-                        
                         <div>
-                            <label for="warehouse_id" class="block text-sm font-medium text-gray-700">Almacén de Arribo</label>
-                            <select name="warehouse_id" id="warehouse_id" required class="mt-1 block w-full rounded-md border-gray-300">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Almacén Arribo</label>
+                            <select name="warehouse_id" required class="w-full rounded-xl border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00]">
                                 <option value="">-- Seleccionar --</option>
                                 @foreach($warehouses as $warehouse)
                                     <option value="{{ $warehouse->id }}" @selected(old('warehouse_id', $purchaseOrder->warehouse_id) == $warehouse->id)>
@@ -36,52 +50,194 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div>
+                            <label class="block text-xs font-bold text-[#ff9c00] uppercase tracking-wide mb-1">Cliente / Área</label>
+                            <select name="area_id" x-model="areaId" required class="w-full rounded-xl border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00]">
+                                <option value="">-- Seleccionar --</option>
+                                @foreach($areas as $area)
+                                    <option value="{{ $area->id }}" @selected(old('area_id', $purchaseOrder->area_id) == $area->id)>
+                                        {{ $area->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div><label for="container_number" class="block text-sm font-medium text-gray-700">Contenedor</label><input type="text" name="container_number" id="container_number" value="{{ old('container_number', $purchaseOrder->container_number) }}" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                        <div><label for="document_invoice" class="block text-sm font-medium text-gray-700">Documento o Factura</label><input type="text" name="document_invoice" id="document_invoice" value="{{ old('document_invoice', $purchaseOrder->document_invoice) }}" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div><label for="pedimento_a4" class="block text-sm font-medium text-gray-700">Pedimento A4</label><input type="text" name="pedimento_a4" id="pedimento_a4" value="{{ old('pedimento_a4', $purchaseOrder->pedimento_a4) }}" class="mt-1 block w-full rounded-md border-gray-300"></div>
-                        <div><label for="pedimento_g1" class="block text-sm font-medium text-gray-700">Pedimento G1</label><input type="text" name="pedimento_g1" id="pedimento_g1" value="{{ old('pedimento_g1', $purchaseOrder->pedimento_g1) }}" class="mt-1 block w-full rounded-md border-gray-300"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Contenedor</label>
+                            <input type="text" name="container_number" value="{{ old('container_number', $purchaseOrder->container_number) }}" class="w-full rounded-xl border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Factura</label>
+                            <input type="text" name="document_invoice" value="{{ old('document_invoice', $purchaseOrder->document_invoice) }}" class="w-full rounded-xl border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Pedimento A4</label>
+                            <input type="text" name="pedimento_a4" value="{{ old('pedimento_a4', $purchaseOrder->pedimento_a4) }}" class="w-full rounded-xl border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Pedimento G1</label>
+                            <input type="text" name="pedimento_g1" value="{{ old('pedimento_g1', $purchaseOrder->pedimento_g1) }}" class="w-full rounded-xl border-gray-300 focus:border-[#ff9c00] focus:ring-[#ff9c00]">
+                        </div>
                     </div>
                     
-                    <div class="border-t pt-6">
-                        <h3 class="font-semibold text-lg">Productos</h3>
-                        <div class="space-y-3 mt-2"><template x-for="(line, index) in lines" :key="index"><div class="flex items-center space-x-3"><select :name="`lines[${index}][product_id]`" x-model.number="line.product_id" class="w-1/2 rounded-md border-gray-300"><option value="">Seleccione...</option>@foreach($products as $product)<option value="{{ $product->id }}">{{ $product->name }} ({{ $product->sku }})</option>@endforeach</select><input type="number" :name="`lines[${index}][quantity_ordered]`" x-model.number="line.quantity_ordered" placeholder="Cantidad" min="1" required class="w-1/4 rounded-md border-gray-300"><button type="button" @click="removeLine(index)" class="text-red-500 hover:text-red-700 p-2">&times; Quitar</button></div></template></div>
-                        <button type="button" @click="addLine()" class="mt-4 px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-md">+ Añadir Producto</button>
+                    <div class="border-t border-gray-100 pt-8">
+                        <h3 class="text-xl font-black text-[#2c3856] mb-6">Detalle de Productos</h3>
+                        
+                        <div x-show="!areaId" class="mb-4 p-4 bg-orange-50 text-orange-700 rounded-lg text-sm border border-orange-100">
+                            <i class="fas fa-exclamation-triangle mr-2"></i> Verifica el <strong>Cliente / Área</strong> para buscar los productos correctos.
+                        </div>
+
+                        <div class="space-y-4">
+                            <template x-for="(line, index) in lines" :key="index">
+                                <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                    
+                                    <div class="w-2/3 relative">
+                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Producto</label>
+                                        <input type="hidden" :name="`lines[${index}][product_id]`" x-model.number="line.product_id" required>
+                                        
+                                        <input type="text"
+                                               x-model="line.searchTerm"
+                                               @input.debounce.300ms="searchProducts(index)"
+                                               @keydown.enter.prevent="selectFirstProduct(index)"
+                                               @click.away="line.searchResults = []"
+                                               :placeholder="line.selectedProductName || 'Buscar SKU o Nombre...'"
+                                               :disabled="!areaId"
+                                               class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-[#2c3856] focus:ring-[#2c3856] disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                        
+                                        <div x-show="line.searchResults.length > 0" class="absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto">
+                                            <template x-for="(product, prodIndex) in line.searchResults" :key="product.id">
+                                                <div @click="selectProduct(index, prodIndex)" class="cursor-pointer p-3 hover:bg-blue-50 border-b border-gray-50 last:border-0 transition-colors">
+                                                    <div class="font-bold text-[#2c3856] text-sm" x-text="product.sku"></div>
+                                                    <p class="text-xs text-gray-500" x-text="product.name"></p>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="w-1/3">
+                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Cantidad</label>
+                                        <input type="number" :name="`lines[${index}][quantity_ordered]`" x-model.number="line.quantity_ordered" min="1" required class="w-full rounded-lg border-gray-300 shadow-sm text-sm font-bold text-center focus:border-[#2c3856] focus:ring-[#2c3856]">
+                                    </div>
+                                    
+                                    <div class="pt-5">
+                                        <button type="button" @click="removeLine(index)" class="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                        
+                        <button type="button" @click="addLine()" class="mt-6 px-6 py-3 bg-gray-100 text-[#2c3856] font-bold rounded-xl hover:bg-gray-200 transition-colors text-sm w-full border border-dashed border-gray-300">
+                            + Agregar Línea
+                        </button>
                     </div>
 
-                    <div class="mt-6 flex justify-end"><a href="{{ route('wms.purchase-orders.show', $purchaseOrder) }}" class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 mr-4">Cancelar</a><button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-md">Guardar Cambios</button></div>
+                    <div class="mt-10 flex justify-end gap-4">
+                        <a href="{{ route('wms.purchase-orders.show', $purchaseOrder) }}" class="px-8 py-3 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition-colors">
+                            Cancelar
+                        </a>
+                        <button type="submit" class="px-8 py-3 bg-[#2c3856] text-white font-bold rounded-xl shadow-lg hover:bg-[#1a253a] transition-transform hover:-translate-y-1">
+                            Guardar Cambios
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
+
     <script>
-        function poForm(data = {}) {
-            let initLines = data.lines.map(line => ({
-                product_id: Number(line.product_id),
-                quantity_ordered: Number(line.quantity_ordered)
-            }));
-
-            if (initLines.length === 0) {
-                initLines = [{ product_id: '', quantity_ordered: '' }];
-            }
-
+        function poForm() {
             return {
-                lines: initLines,
-                addLine() { this.lines.push({ product_id: '', quantity_ordered: '' }); },
-                removeLine(index) { 
+                areaId: '{{ old('area_id', $purchaseOrder->area_id) }}',
+                lines: [],
+                apiSearchUrl: '',
+
+                initData() {
+                    const data = JSON.parse(document.getElementById('po-edit-data').textContent);
+                    this.apiSearchUrl = data.apiSearchUrl;
+                    
+                    if (data.existingLines && data.existingLines.length > 0) {
+                        this.lines = data.existingLines.map(line => ({
+                            product_id: line.product_id,
+                            quantity_ordered: line.quantity_ordered,
+                            searchTerm: line.product ? `${line.product.sku} | ${line.product.name}` : '',
+                            selectedProductName: line.product ? `${line.product.sku} | ${line.product.name}` : '',
+                            searchResults: []
+                        }));
+                    } else {
+                        this.lines = [{ product_id: '', quantity_ordered: 1, searchTerm: '', selectedProductName: '', searchResults: [] }];
+                    }
+                },
+
+                createNewLine() {
+                    return { product_id: '', quantity_ordered: 1, searchTerm: '', selectedProductName: '', searchResults: [] };
+                },
+
+                addLine() {
+                    this.lines.push(this.createNewLine());
+                },
+
+                removeLine(index) {
                     if (this.lines.length > 1) {
-                        this.lines.splice(index, 1); 
+                        this.lines.splice(index, 1);
                     } else {
                         alert('La orden debe tener al menos un producto.');
+                    }
+                },
+
+                searchProducts(index) {
+                    const line = this.lines[index];
+                    line.product_id = '';
+                    line.selectedProductName = '';
+
+                    if (!this.areaId) {
+                        alert("Por favor verifica que el Cliente/Área esté seleccionado.");
+                        line.searchTerm = '';
+                        return;
+                    }
+
+                    if (line.searchTerm.length < 2) {
+                        line.searchResults = [];
+                        return;
+                    }
+
+                    fetch(`${this.apiSearchUrl}?query=${line.searchTerm}&area_id=${this.areaId}`, {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error("Error en el servidor");
+                        return response.json();
+                    })
+                    .then(data => {
+                        line.searchResults = data;
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        line.searchResults = [];
+                    });
+                },
+
+                selectProduct(lineIndex, resultIndex) {
+                    const line = this.lines[lineIndex];
+                    const product = line.searchResults[resultIndex];
+                    
+                    line.product_id = product.id;
+                    line.selectedProductName = `${product.sku} | ${product.name}`;
+                    line.searchTerm = `${product.sku} | ${product.name}`;
+                    line.searchResults = [];
+                },
+                
+                selectFirstProduct(index) {
+                    if (this.lines[index].searchResults.length > 0) {
+                        this.selectProduct(index, 0);
                     }
                 }
             }
         }
-
+        
         document.addEventListener('alpine:init', () => {
             Alpine.data('poForm', poForm);
         });

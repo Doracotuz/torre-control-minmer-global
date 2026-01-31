@@ -1,257 +1,369 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-            <h2 class="font-bold text-3xl text-gray-800 leading-tight tracking-tight">
-                Dashboard de Inventario
-            </h2>
-            <div class="flex items-center space-x-2">
-                <div x-data="{ open: false }" class="relative">
-                    <button @click="open = !open" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700 flex items-center">
-                        <i class="fas fa-cogs mr-2"></i> Acciones <i class="fas fa-chevron-down ml-2 text-xs"></i>
-                    </button>
-                    <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 border" style="display: none;">
-                        <a href="{{ route('wms.inventory.transfer.create') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><i class="fas fa-random fa-fw mr-2 text-gray-400"></i>Realizar Transferencia</a>
-                        <a href="{{ route('wms.inventory.split.create') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><i class="fas fa-cut fa-fw mr-2 text-gray-400"></i>Hacer Split de Tarima</a>
-                        <a href="{{ route('wms.inventory.pallet-info.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><i class="fas fa-search fa-fw mr-2 text-gray-400"></i>Consultar LPN</a>
-                        <a href="{{ route('wms.inventory.adjustments.log') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t"><i class="fas fa-history fa-fw mr-2 text-gray-400"></i>Registro de Ajustes</a>
-                    </div>
-                </div>
-                <a href="{{ route('wms.inventory.export-csv', request()->query()) }}" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-green-700">
-                    <i class="fas fa-file-excel mr-2"></i> Exportar a CSV
-                </a>
-            </div>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@800;900&display=swap');
+        
+        .font-raleway { font-family: 'Raleway', sans-serif; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        
+        /* Animaciones */
+        .stagger-enter { opacity: 0; transform: translateY(20px); animation: enterUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes enterUp { to { opacity: 1; transform: translateY(0); } }
+        
+        /* Inputs Arquitectónicos */
+        .input-arch {
+            background: transparent; border: none; border-bottom: 2px solid #e5e7eb; border-radius: 0;
+            padding: 0.5rem 0; font-family: 'Montserrat', sans-serif; font-weight: 600; color: #2c3856;
+            transition: all 0.3s ease; width: 100%;
+        }
+        .input-arch:focus { border-bottom-color: #ff9c00; box-shadow: none; outline: none; }
+        .input-arch-select { background-image: none; cursor: pointer; padding-right: 1.5rem; }
+
+        /* TABLA NEXUS */
+        .nexus-table { width: 100%; border-collapse: separate; border-spacing: 0 0.8rem; }
+        .nexus-table thead th {
+            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; font-weight: 800;
+            padding: 0 1.5rem 1rem 1.5rem; text-align: left;
+        }
+        .nexus-row {
+            background: white; transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .nexus-row td {
+            padding: 1.25rem 1.5rem; vertical-align: middle; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;
+        }
+        .nexus-row td:first-child { border-top-left-radius: 1rem; border-bottom-left-radius: 1rem; border-left: 1px solid #f3f4f6; }
+        .nexus-row td:last-child { border-top-right-radius: 1rem; border-bottom-right-radius: 1rem; border-right: 1px solid #f3f4f6; }
+        
+        .nexus-row:hover {
+            transform: scale(1.005); box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.08); z-index: 10; position: relative; border-color: transparent;
+        }
+
+        /* Botones */
+        .btn-nexus { background: #2c3856; color: white; border-radius: 0.8rem; font-weight: 700; transition: all 0.2s; }
+        .btn-nexus:hover { background: #1a253a; transform: translateY(-1px); }
+        .btn-ghost { background: transparent; color: #2c3856; border: 2px solid #e5e7eb; border-radius: 1rem; font-weight: 700; }
+        .btn-ghost:hover { border-color: #2c3856; background: #2c3856; color: white; }
+
+        [x-cloak] { display: none !important; }
+    </style>
+
+    <div class="min-h-screen bg-transparent text-[#2b2b2b] font-montserrat pb-20 relative overflow-hidden"
+         x-data="inventoryPage('{{ session('open_adjustment_modal_for_item') }}')">
+        
+        <div class="fixed inset-0 -z-10 pointer-events-none">
+            <div class="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10"></div>
+            <div class="absolute top-[-20%] right-[-10%] w-[50rem] h-[50rem] bg-gradient-to-b from-[#2c3856]/5 to-transparent rounded-full blur-[120px]"></div>
         </div>
-    </x-slot>
 
-    <div class="py-12" x-data="inventoryPage('{{ session('open_adjustment_modal_for_item') }}')">
-        <div class="max-w-screen-2xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-[1920px] mx-auto px-6 pt-10 relative z-10">
+            
+            <div class="flex flex-col xl:flex-row justify-between items-end mb-10 stagger-enter" style="animation-delay: 0.1s;">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="w-12 h-1 bg-[#ff9c00]"></span>
+                        <span class="text-sm font-bold text-[#2c3856] tracking-[0.3em] uppercase">Control de Stock</span>
+                    </div>
+                    <h1 class="text-5xl md:text-6xl font-raleway font-black text-[#2c3856] leading-none">
+                        MATRIZ <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-orange-600">INVENTARIO</span>
+                    </h1>
+                </div>
 
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-2xl shadow-lg border"><div><span class="text-sm font-medium text-gray-500">Tarimas Totales</span><p class="text-3xl font-bold text-gray-800">{{ number_format($kpis['total_pallets']) }}</p></div></div>
-                <div class="bg-white p-6 rounded-2xl shadow-lg border"><div><span class="text-sm font-medium text-gray-500">Unidades Totales</span><p class="text-3xl font-bold text-gray-800">{{ number_format($kpis['total_units']) }}</p></div></div>
-                <div class="bg-white p-6 rounded-2xl shadow-lg border"><div><span class="text-sm font-medium text-gray-500">SKUs Únicos</span><p class="text-3xl font-bold text-gray-800">{{ number_format($kpis['total_skus']) }}</p></div></div>
-                <div class="bg-white p-6 rounded-2xl shadow-lg border"><div><span class="text-sm font-medium text-gray-500">Ubic. Disponibles</span><p class="text-3xl font-bold text-gray-800">{{ number_format($kpis['available_locations']) }}</p></div></div>
+                <div class="flex flex-wrap gap-3 mt-6 xl:mt-0 items-center">
+                    <a href="{{ route('wms.dashboard') }}" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-[#666666] font-bold rounded-full shadow-sm hover:shadow-md hover:border-[#2c3856] hover:text-[#2c3856] transition-all">
+                        <i class="fas fa-arrow-left"></i> <span>Dashboard</span>
+                    </a>                    
+                    <div class="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-1">                    
+                        <a href="{{ route('wms.inventory.transfer.create') }}" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-50 text-gray-400 hover:text-[#2c3856] transition-colors" title="Transferencias"><i class="fas fa-random"></i></a>
+                        <a href="{{ route('wms.inventory.split.create') }}" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-50 text-gray-400 hover:text-[#2c3856] transition-colors" title="Split"><i class="fas fa-cut"></i></a>
+                        <a href="{{ route('wms.inventory.pallet-info.index') }}" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-50 text-gray-400 hover:text-[#2c3856] transition-colors" title="Buscar LPN"><i class="fas fa-search"></i></a>
+                        <a href="{{ route('wms.inventory.adjustments.log') }}" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-50 text-gray-400 hover:text-[#2c3856] transition-colors" title="Historial"><i class="fas fa-history"></i></a>
+                    </div>
+                    <a href="{{ route('wms.inventory.export-csv', request()->query()) }}" class="btn-ghost px-5 py-2.5 flex items-center gap-2 text-xs uppercase tracking-wider h-12">
+                        <i class="fas fa-file-csv"></i> Exportar
+                    </a>
+                </div>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl shadow-lg border mb-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 stagger-enter" style="animation-delay: 0.15s;">
+                <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Tarimas</p>
+                    <p class="text-3xl font-raleway font-black text-[#2c3856]">{{ number_format($kpis['total_pallets']) }}</p>
+                </div>
+                <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Unidades</p>
+                    <p class="text-3xl font-raleway font-black text-[#ff9c00]">{{ number_format($kpis['total_units']) }}</p>
+                </div>
+                <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">SKUs</p>
+                    <p class="text-3xl font-raleway font-black text-blue-600">{{ number_format($kpis['total_skus']) }}</p>
+                </div>
+                <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ubicaciones Libres</p>
+                    <p class="text-3xl font-raleway font-black text-green-600">{{ number_format($kpis['available_locations']) }}</p>
+                </div>
+            </div>
+
+            <div class="bg-white/80 backdrop-blur-xl rounded-[2rem] p-6 border border-gray-100 shadow-lg mb-8 stagger-enter" style="animation-delay: 0.2s;">
                 <form id="filters-form" action="{{ route('wms.inventory.index') }}" method="GET">
-                     <div class="flex flex-wrap gap-4 items-end">
-                        <div class="flex-grow min-w-[150px]">
-                            <label class="text-xs text-gray-500">Almacén</label>
-                            <select name="warehouse_id" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm">
-                                <option value="">Todos los Almacenes</option>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-end">
+                        <div>
+                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Almacén</label>
+                            <select name="warehouse_id" onchange="this.form.submit()" class="input-arch input-arch-select text-sm">
+                                <option value="">Global</option>
                                 @foreach($warehouses as $warehouse)
-                                    <option value="{{ $warehouse->id }}" @selected(request('warehouse_id') == $warehouse->id)>
-                                        {{ $warehouse->name }}
-                                    </option>
+                                    <option value="{{ $warehouse->id }}" @selected($warehouseId == $warehouse->id)>{{ $warehouse->name }}</option>
                                 @endforeach
                             </select>
-                        </div>                        
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">LPN</label><input type="text" name="lpn" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('lpn') }}"></div>
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Orden (PO)</label><input type="text" name="po_number" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('po_number') }}"></div>
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">SKU</label><input type="text" name="sku" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('sku') }}"></div>
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Pedimento A4</label><input type="text" name="pedimento_a4" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('pedimento_a4') }}"></div>
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Ubicación</label><input type="text" name="location" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('location') }}" placeholder="Código o A-01-.."></div>
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Calidad</label><select name="quality_id" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm"><option value="">Toda Calidad</option>@foreach($qualities as $quality)<option value="{{ $quality->id }}" @selected(request('quality_id') == $quality->id)>{{ $quality->name }}</option>@endforeach</select></div>
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Desde</label><input type="date" name="start_date" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('start_date') }}"></div>
-                        <div class="flex-grow min-w-[150px]"><label class="text-xs text-gray-500">Hasta</label><input type="date" name="end_date" onchange="this.form.submit()" class="w-full rounded-md border-gray-300 shadow-sm text-sm" value="{{ request('end_date') }}"></div>
-                        <div class="flex items-center space-x-2 pt-4"><a href="{{ route('wms.inventory.index') }}" class="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-center" title="Limpiar filtros">Limpiar</a></div>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-bold text-[#ff9c00] uppercase tracking-widest block mb-1">Cliente / Área</label>
+                            <select name="area_id" onchange="this.form.submit()" class="input-arch input-arch-select text-sm text-[#ff9c00]">
+                                <option value="">Todas</option>
+                                @foreach($areas as $area)
+                                    <option value="{{ $area->id }}" @selected($areaId == $area->id)>{{ $area->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-1">LPN / Ubicación</label>
+                            <input type="text" name="lpn" value="{{ request('lpn') ?? request('location') }}" class="input-arch text-sm font-mono" placeholder="Buscar..." onchange="this.form.submit()">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-1">SKU / Producto</label>
+                            <input type="text" name="sku" value="{{ request('sku') }}" class="input-arch text-sm" placeholder="SKU..." onchange="this.form.submit()">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Orden (PO)</label>
+                            <input type="text" name="po_number" value="{{ request('po_number') }}" class="input-arch text-sm" placeholder="PO-..." onchange="this.form.submit()">
+                        </div>
+                        <div>
+                            <a href="{{ route('wms.inventory.index') }}" class="flex items-center justify-center w-full py-2 text-[10px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-widest transition-colors">
+                                <i class="fas fa-undo mr-1"></i> Reset
+                            </a>
+                        </div>
                     </div>
                 </form>
             </div>
 
-            <div class="bg-white overflow-hidden rounded-2xl shadow-lg border">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">LPN / Ubicación</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Origen (PO) / Pedimento</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Contenido (SKU / Calidad)</th>
-                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Cant. (Pallet)</th>
-                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Comprometido (LPN)</th>
-                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Disponible (LPN)</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Recibido</th>
-                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Acción Pallet</th>
+            <div class="overflow-x-auto pb-12 stagger-enter" style="animation-delay: 0.3s;">
+                <table class="nexus-table">
+                    <thead>
+                        <tr>
+                            <th class="w-16">ID</th>
+                            <th>LPN (Identificador)</th>
+                            <th>Ubicación</th>
+                            <th>Contenido Principal</th>
+                            <th class="text-center">Stock</th>
+                            <th>Estado LPN</th>
+                            <th>Origen (PO)</th>
+                            <th class="text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($pallets as $pallet)
+                            <tr class="nexus-row group">
+                                <td class="text-center">
+                                    <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs mx-auto" title="{{ $pallet->purchaseOrder->area->name ?? 'N/A' }}">
+                                        {{ substr($pallet->purchaseOrder->area->name ?? 'G', 0, 1) }}
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="flex flex-col">
+                                        <span class="font-mono font-black text-lg text-[#2c3856] group-hover:text-[#ff9c00] transition-colors cursor-pointer" @click="openModal({{ json_encode($pallet) }})">
+                                            {{ $pallet->lpn }}
+                                        </span>
+                                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
+                                            {{ $pallet->updated_at->diffForHumans() }}
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    @if($pallet->location)
+                                        <div class="flex items-center gap-2">
+                                            @php
+                                                $locTypeColor = match($pallet->location->type) {
+                                                    'storage' => 'bg-blue-100 text-blue-700',
+                                                    'picking' => 'bg-green-100 text-green-700',
+                                                    default => 'bg-gray-100 text-gray-600'
+                                                };
+                                            @endphp
+                                            <span class="px-2 py-1 rounded text-[10px] font-bold uppercase {{ $locTypeColor }}">
+                                                {{ substr($pallet->location->translated_type, 0, 3) }}
+                                            </span>
+                                            <span class="font-bold text-[#2c3856] text-sm">
+                                                {{ $pallet->location->code }}
+                                            </span>
+                                        </div>
+                                        <div class="text-[10px] text-gray-400 font-mono mt-1">
+                                            {{ $pallet->location->aisle }}-{{ $pallet->location->rack }}-{{ $pallet->location->shelf }}-{{ $pallet->location->bin }}
+                                        </div>
+                                    @else
+                                        <span class="text-red-400 text-xs font-bold">SIN UBICACIÓN</span>
+                                    @endif
+                                </td>
+
+                                <td>
+                                    @if($pallet->items->count() > 0)
+                                        @php $mainItem = $pallet->items->first(); @endphp
+                                        <div class="font-bold text-sm text-gray-700 truncate max-w-[200px]" title="{{ $mainItem->product->name }}">
+                                            {{ $mainItem->product->name }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 font-mono flex items-center gap-2">
+                                            {{ $mainItem->product->sku }}
+                                            @if($pallet->items->count() > 1)
+                                                <span class="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold">
+                                                    +{{ $pallet->items->count() - 1 }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <span class="text-gray-400 italic text-sm">Vacío</span>
+                                    @endif
+                                </td>
+
+                                <td class="text-center w-32">
+                                    @php
+                                        $totalQty = $pallet->items->sum('quantity');
+                                        // Calcular comprometido dummy para visualización rápida (o real si tienes la lógica a mano)
+                                        $committed = $pallet->items->sum('committed_quantity') ?? 0;
+                                        $available = $totalQty - $committed;
+                                        $percent = $totalQty > 0 ? ($available / $totalQty) * 100 : 0;
+                                    @endphp
+                                    <div class="font-black text-lg text-[#2c3856]">{{ number_format($totalQty) }}</div>
+                                    <div class="w-full h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden flex">
+                                        <div class="h-full bg-green-400" style="width: {{ $percent }}%"></div>
+                                        <div class="h-full bg-red-400" style="width: {{ 100 - $percent }}%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-[8px] font-bold text-gray-400 mt-1">
+                                        <span>Disp: {{ $available }}</span>
+                                        <span class="text-red-300">Comp: {{ $committed }}</span>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                        {{ $pallet->status === 'Finished' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-800' }}">
+                                        {{ $pallet->status }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="text-xs font-bold text-[#2c3856]">{{ $pallet->purchaseOrder->po_number ?? 'N/A' }}</div>
+                                    <div class="text-[10px] text-gray-400">{{ $pallet->purchaseOrder->pedimento_a4 ?? '-' }}</div>
+                                </td>
+
+                                <td class="text-right">
+                                    <button @click="openModal({{ json_encode($pallet) }})" class="w-8 h-8 rounded-lg bg-gray-50 hover:bg-[#2c3856] hover:text-white text-gray-400 transition-all flex items-center justify-center shadow-sm">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            @forelse ($pallets as $pallet)
-                                <tr class="hover:bg-gray-50 group">
-                                    <td class="px-4 py-4 align-top whitespace-nowrap @if($pallet->items->count() > 1) border-b @endif" rowspan="{{ $pallet->items->count() }}">
-                                        <p class="font-mono font-bold text-indigo-600">{{ $pallet->lpn }}</p>
-                                        <p class="text-sm text-gray-800">
-                                            <i class="fas fa-map-marker-alt text-red-500 mr-1"></i>
-                                            {{ $pallet->location ? "{$pallet->location->aisle}-{$pallet->location->rack}-{$pallet->location->shelf}-{$pallet->location->bin}" : 'N/A' }}
-                                        </p>
-                                    </td>
-                                    <td class="px-4 py-4 align-top whitespace-nowrap @if($pallet->items->count() > 1) border-b @endif" rowspan="{{ $pallet->items->count() }}">
-                                        <p class="font-mono">{{ $pallet->purchaseOrder->po_number ?? 'N/A' }}</p>
-                                        <p class="text-xs text-gray-500 font-mono">{{ $pallet->purchaseOrder->pedimento_a4 ?? 'N/A' }}</p>
-                                    </td>
-
-                                    @php $firstItem = $pallet->items->first(); @endphp
-                                    <td class="px-4 py-4">
-                                        <p class="font-semibold text-gray-900 text-sm">{{ $firstItem->product->name ?? 'N/A' }}</p>
-                                        <p class="text-xs text-gray-500">
-                                            <span class="font-mono">{{ $firstItem->product->sku ?? '' }}</span> | {{ $firstItem->quality->name ?? '' }}
-                                        </p>
-                                    </td>
-                                    <td class="px-4 py-4 text-center text-lg font-bold text-gray-900">{{ $firstItem->quantity }}</td>
-
-                                    <td class="px-4 py-4 text-center whitespace-nowrap text-sm text-red-600">
-                                        {{ $firstItem->committed_quantity ?? 0 }}
-                                    </td>
-                                    <td class="px-4 py-4 text-center whitespace-nowrap text-sm font-bold text-green-700">
-                                        {{ ($firstItem->quantity ?? 0) - ($firstItem->committed_quantity ?? 0) }}
-                                    </td>
-                                    <td class="px-4 py-4 text-sm align-top whitespace-nowrap @if($pallet->items->count() > 1) border-b @endif" rowspan="{{ $pallet->items->count() }}">
-                                        <p>{{ $pallet->user->name ?? 'N/A' }}</p>
-                                        <p class="text-gray-500 text-xs">{{ $pallet->updated_at->format('d/m/Y H:i') }}</p>
-                                    </td>
-                                    <td class="px-4 py-4 text-center align-top @if($pallet->items->count() > 1) border-b @endif" rowspan="{{ $pallet->items->count() }}">
-                                        <button @click="openModal({{ json_encode($pallet) }})" class="text-indigo-600 hover:text-indigo-900" title="Ver Detalle Completo">
-                                            <i class="fas fa-eye fa-lg"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-
-                                @if($pallet->items->count() > 1)
-                                    @foreach($pallet->items->skip(1) as $item)
-                                        <tr class="hover:bg-gray-50 group">
-                                            <td class="px-4 py-4">
-                                                <p class="font-semibold text-gray-900 text-sm">{{ $item->product->name ?? 'N/A' }}</p>
-                                                <p class="text-xs text-gray-500">
-                                                    <span class="font-mono">{{ $item->product->sku ?? '' }}</span> | {{ $item->quality->name ?? '' }}
-                                                </p>
-                                            </td>
-                                            <td class="px-4 py-4 text-center text-lg font-bold text-gray-900">{{ $item->quantity }}</td>
-                                            <td class="px-4 py-4 text-center whitespace-nowrap text-sm text-red-600">
-                                                {{ $item->committed_quantity ?? 0 }}
-                                            </td>
-                                            <td class="px-4 py-4 text-center whitespace-nowrap text-sm font-bold text-green-700">
-                                                 {{ ($item->quantity ?? 0) - ($item->committed_quantity ?? 0) }}
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                @endif
-                            @empty
-                                <tr>
-                                    <td colspan="8" class="text-center text-gray-500 py-16">
-                                        <p>No se encontraron tarimas con los filtros aplicados.</p>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                <div class="p-6 border-t bg-gray-50">
-                    {{ $pallets->appends(request()->query())->links() }}
-                </div>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="text-center py-12">
+                                    <div class="inline-block p-4 rounded-full bg-gray-50 mb-3">
+                                        <i class="fas fa-search text-gray-300 text-2xl"></i>
+                                    </div>
+                                    <p class="text-gray-500 font-bold text-sm">No se encontraron registros.</p>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
+
+            <div class="pb-20 nexus-pagination">
+                {{ $pallets->appends(request()->query())->links() }}
+            </div>
+
         </div>
 
-        <div x-show="modalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60" style="display: none;">
-            <div @click.away="closeModal()" class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-                <template x-if="selectedPallet">
-                    <div class="flex flex-col h-full">
-                        <div class="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-2xl">
-                            <h2 class="text-2xl font-bold text-gray-800">Detalle de LPN: <span class="font-mono text-indigo-600" x-text="selectedPallet.lpn"></span></h2>
-                            <button @click="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-                        </div>
-                        <div class="p-8 overflow-y-auto flex-grow">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div>
-                                    <h3 class="font-bold text-lg text-gray-700 border-b pb-2 mb-3">Información del Arribo</h3>
-                                    <dl class="text-sm grid grid-cols-2 gap-x-4 gap-y-2">
-                                        <dt class="font-semibold text-gray-500">Orden de Compra:</dt><dd class="text-gray-800" x-text="selectedPallet.purchase_order?.po_number || 'N/A'"></dd>
-                                        <dt class="font-semibold text-gray-500">Contenedor:</dt><dd class="text-gray-800" x-text="selectedPallet.purchase_order?.container_number || 'N/A'"></dd>
-                                        <dt class="font-semibold text-gray-500">Pedimento A4:</dt><dd class="font-mono text-gray-800" x-text="selectedPallet.purchase_order?.pedimento_a4 || 'N/A'"></dd>
-                                        <dt class="font-semibold text-gray-500">Pedimento G1:</dt><dd class="font-mono text-gray-800" x-text="selectedPallet.purchase_order?.pedimento_g1 || 'N/A'"></dd>
-                                        <dt class="font-semibold text-gray-500">Operador:</dt><dd class="text-gray-800" x-text="selectedPallet.purchase_order?.operator_name || 'N/A'"></dd>
-                                    </dl>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-lg text-gray-700 border-b pb-2 mb-3">Información de la Tarima</h3>
-                                    <dl class="text-sm grid grid-cols-2 gap-x-4 gap-y-2">
-                                        <dt class="font-semibold text-gray-500">Ubicación Actual:</dt><dd class="text-gray-800 font-mono" x-text="selectedPallet.location ? `${selectedPallet.location.aisle}-${selectedPallet.location.rack}-${selectedPallet.location.shelf}-${selectedPallet.location.bin}` : 'N/A'"></dd>
-                                        <dt class="font-semibold text-gray-500">Última Interacción:</dt><dd class="font-bold text-gray-800" x-text="selectedPallet.last_action || 'N/A'"></dd>
-                                        <dt class="font-semibold text-gray-500">Realizada por:</dt><dd class="text-gray-800" x-text="selectedPallet.user?.name || 'N/A'"></dd>
-                                        <dt class="font-semibold text-gray-500">Fecha Interacción:</dt><dd class="text-gray-800" x-text="new Date(selectedPallet.updated_at).toLocaleString()"></dd>
-                                    </dl>
+        <div x-show="modalOpen" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" x-cloak>
+            <div class="fixed inset-0 bg-[#2c3856]/80 backdrop-blur-sm transition-opacity" @click="closeModal()"></div>
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div x-show="modalOpen" 
+                     x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0"
+                     class="relative w-full max-w-4xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden">
+                    
+                    <template x-if="selectedPallet">
+                        <div class="flex flex-col h-full max-h-[85vh]">
+                            <div class="bg-[#2c3856] p-8 text-white relative">
+                                <div class="absolute top-0 right-0 w-40 h-40 bg-[#ff9c00] rounded-full blur-[80px] opacity-20 -mr-10 -mt-10"></div>
+                                <div class="relative z-10 flex justify-between">
+                                    <div>
+                                        <p class="text-[#ff9c00] text-xs font-bold uppercase tracking-widest mb-1">Detalle de Inventario</p>
+                                        <h2 class="text-5xl font-mono font-black" x-text="selectedPallet.lpn"></h2>
+                                    </div>
+                                    <button @click="closeModal()" class="text-white/50 hover:text-white transition-colors"><i class="fas fa-times text-2xl"></i></button>
                                 </div>
                             </div>
-                            <div class="mt-8">
-                                <h3 class="font-bold text-lg text-gray-700 border-b pb-2 mb-3">Contenido de la Tarima</h3>
-                                <ul class="space-y-3">
+
+                            <div class="p-8 overflow-y-auto bg-white">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                                    <div class="bg-gray-50 rounded-2xl p-6">
+                                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Ubicación</h4>
+                                        <p class="text-3xl font-black text-[#2c3856]" x-text="selectedPallet.location ? selectedPallet.location.code : 'N/A'"></p>
+                                        <p class="text-sm text-gray-500 mt-1" x-text="selectedPallet.location ? `Pasillo ${selectedPallet.location.aisle} • Nivel ${selectedPallet.location.shelf}` : '-'"></p>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-2xl p-6">
+                                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Origen</h4>
+                                        <p class="text-xl font-bold text-[#2c3856]" x-text="selectedPallet.purchase_order?.po_number || 'N/A'"></p>
+                                        <p class="text-xs font-mono text-gray-500 mt-1">Pedimento: <span x-text="selectedPallet.purchase_order?.pedimento_a4 || '-'"></span></p>
+                                    </div>
+                                </div>
+
+                                <h4 class="text-sm font-bold text-[#2c3856] uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Contenido</h4>
+                                <div class="space-y-3">
                                     <template x-for="item in selectedPallet.items" :key="item.id">
-                                        <li class="p-4 bg-gray-50 rounded-lg border">
-                                            <div class="flex justify-between items-center">
-                                                <div>
-                                                    <p class="font-semibold text-gray-900" x-text="item.product.name"></p>
-                                                    <p class="text-xs text-gray-500">
-                                                        <span class="font-mono" x-text="item.product.sku"></span> | <strong class="text-indigo-700" x-text="item.quality.name"></strong>
-                                                    </p>
-                                                    <p class="text-xs mt-1">
-                                                        <span class="text-red-600">Comprometido: <span x-text="item.committed_quantity || 0"></span></span> | 
-                                                        <span class="font-bold text-green-700">Disponible: <span x-text="(item.quantity || 0) - (item.committed_quantity || 0)"></span></span>
-                                                    </p>
-                                                </div>
-                                                <div class="flex items-center gap-4">
-                                                    <p class="font-bold text-xl text-gray-800" x-text="`x${item.quantity}`"></p>
-                                                    @if(Auth::user()->isSuperAdmin())
-                                                    <button @click="openAdjustmentModal(item)" class="px-3 py-1 bg-yellow-500 text-white rounded-md text-xs font-semibold hover:bg-yellow-600">
-                                                        Ajustar
-                                                    </button>
-                                                    @endif
-                                                </div>
+                                        <div class="flex justify-between items-center p-4 rounded-xl border border-gray-100">
+                                            <div>
+                                                <p class="font-bold text-gray-800" x-text="item.product.name"></p>
+                                                <p class="text-xs text-gray-500 font-mono" x-text="item.product.sku"></p>
                                             </div>
-                                        </li>
+                                            <div class="flex items-center gap-6">
+                                                <span class="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded" x-text="item.quality.name"></span>
+                                                <span class="text-2xl font-black text-[#2c3856]" x-text="item.quantity"></span>
+                                                @if(Auth::user()->isSuperAdmin())
+                                                    <button @click="openAdjustmentModal(item)" class="text-gray-400 hover:text-[#ff9c00]"><i class="fas fa-cog"></i></button>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </template>
-                                </ul>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </template>
+                    </template>
+                </div>
             </div>
         </div>
 
-        <div x-show="adjustmentModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60" style="display: none;">
-            <div @click.away="closeAdjustmentModal()" @click.stop class="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+        <div x-show="adjustmentModalOpen" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style="display: none;" x-cloak>
+            <div @click.away="closeAdjustmentModal()" class="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
                 <template x-if="itemToAdjust">
                     <form :action="`/wms/inventory/pallet-items/${itemToAdjust.id}/adjust`" method="POST">
                         @csrf
-                        @if($errors->any() && session('open_adjustment_modal_for_item'))
-                            <div class="m-6 mb-0 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
-                                <strong class="font-bold">Error de validación:</strong>
-                                <ul class="list-disc list-inside text-sm mt-1">
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
+                        <h3 class="text-xl font-bold text-[#2c3856] mb-6">Ajuste Manual</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-400 uppercase">Cantidad Real</label>
+                                <input type="number" name="new_quantity" class="input-arch text-2xl" :value="itemToAdjust.quantity" required>
                             </div>
-                        @endif
-                        <div class="p-6">
-                            <h2 class="text-xl font-bold text-gray-800">Ajustar Cantidad</h2>
-                            <p class="text-sm text-gray-600 mt-2">Estás ajustando: <strong x-text="itemToAdjust.product.name"></strong> (<span class="font-mono" x-text="itemToAdjust.product.sku"></span>)</p>
-                            <p class="text-sm text-gray-600">Cantidad Actual: <strong x-text="itemToAdjust.quantity"></strong></p>
-                            <div class="mt-4">
-                                <label for="new_quantity" class="block font-medium text-sm text-gray-700">Nueva Cantidad</label>
-                                <input type="number" name="new_quantity" id="new_quantity" min="0" :value="itemToAdjust.quantity" class="w-full rounded-md border-gray-300 mt-1 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
-                            </div>
-                            <div class="mt-4">
-                                <label for="reason" class="block font-medium text-sm text-gray-700">Motivo del Ajuste</label>
-                                <textarea name="reason" id="reason" rows="3" class="w-full rounded-md border-gray-300 mt-1 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required placeholder="Ej: Conteo cíclico, producto dañado, etc.">{{ old('reason') }}</textarea>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-400 uppercase">Motivo</label>
+                                <textarea name="reason" rows="2" class="input-arch text-sm resize-none" required></textarea>
                             </div>
                         </div>
-                        <div class="px-6 py-4 bg-gray-50 flex justify-end gap-4 rounded-b-2xl border-t">
-                            <button type="button" @click="closeAdjustmentModal()" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 font-semibold rounded-lg shadow-sm hover:bg-gray-50">Cancelar</button>
-                            <button type="submit" class="px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg shadow-sm hover:bg-yellow-700">Guardar Ajuste</button>
+                        <div class="flex gap-3 mt-8">
+                            <button type="button" @click="closeAdjustmentModal()" class="flex-1 py-3 text-sm font-bold text-gray-500 hover:bg-gray-50 rounded-xl transition">Cancelar</button>
+                            <button type="submit" class="flex-1 py-3 text-sm font-bold bg-[#ff9c00] text-white rounded-xl hover:bg-orange-600 transition shadow-lg shadow-orange-200">Confirmar</button>
                         </div>
                     </form>
                 </template>
             </div>
         </div>
+
     </div>
     
     <script>
@@ -265,47 +377,26 @@
 
                 init() {
                     if (failedItemId) {
-                        let targetPallet = null;
-                        let targetItem = null;
+                        // Lógica de recuperación de error (igual que antes)
                         for (const pallet of this.palletsOnPage) {
                             if (pallet && pallet.items) {
                                 const foundItem = pallet.items.find(item => item.id == failedItemId);
                                 if (foundItem) {
-                                    targetPallet = pallet;
-                                    targetItem = foundItem;
+                                    this.openAdjustmentModal(foundItem);
                                     break;
                                 }
                             }
                         }
-                        if (targetPallet && targetItem) {
-                            //this.openModal(targetPallet); // Opcional: abre también el de detalle
-                            this.openAdjustmentModal(targetItem);
-                        }
                     }
                 },
                 
-                openModal(pallet) { 
-                    this.selectedPallet = pallet; 
-                    this.modalOpen = true; 
-                },
-                closeModal() { 
-                    this.modalOpen = false; 
-                    this.selectedPallet = null; 
-                },
+                openModal(pallet) { this.selectedPallet = pallet; this.modalOpen = true; },
+                closeModal() { this.modalOpen = false; this.selectedPallet = null; },
                 
-                openAdjustmentModal(item) { 
-                    this.itemToAdjust = item; 
-                    this.adjustmentModalOpen = true; 
-                    // this.modalOpen = false; // Comentado o eliminado
-                },
+                openAdjustmentModal(item) { this.itemToAdjust = item; this.adjustmentModalOpen = true; },
                 closeAdjustmentModal() { 
                     this.adjustmentModalOpen = false; 
                     this.itemToAdjust = null; 
-                    if (window.location.search.includes('open_adjustment_modal_for_item')) {
-                         const url = new URL(window.location);
-                         url.searchParams.delete('open_adjustment_modal_for_item');
-                         window.history.replaceState({}, document.title, url);
-                    }
                 },
             }
         }

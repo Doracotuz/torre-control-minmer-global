@@ -36,7 +36,9 @@ class WMSLpnController extends Controller
             $generatedCount++;
         }
 
-        return back()->with('success', $generatedCount . ' nuevos LPNs únicos han sido generados.');
+        return back()
+            ->with('success', $generatedCount . ' nuevos LPNs únicos han sido generados.')
+            ->with('new_batch_qty', $generatedCount);
     }
 
     public function printPdf(Request $request)
@@ -59,7 +61,7 @@ class WMSLpnController extends Controller
             'quantity' => 'required|integer|min:1|max:50',
         ]);
 
-        $lpnArray = array_filter(array_map('trim', explode(',', $validated['lpns'])));
+        $lpnArray = array_filter(array_map('trim', preg_split('/[\r\n,]+/', $validated['lpns'])));
 
         if (empty($lpnArray)) {
             return back()->with('error', 'No se ingresaron LPNs válidos.');
@@ -142,4 +144,38 @@ class WMSLpnController extends Controller
         return response()->stream($callback, 200, $headers);
     }    
 
+    public function exportInventory()
+    {
+        $fileName = 'inventario_total_lpns_' . date('Y-m-d_H-i') . '.csv';
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($file, ['ID', 'LPN', 'ESTADO', 'FECHA CREACION', 'ULTIMA ACTUALIZACION']);
+
+            PregeneratedLpn::orderBy('id')->chunk(5000, function($lpns) use ($file) {
+                foreach ($lpns as $lpn) {
+                    fputcsv($file, [
+                        $lpn->id,
+                        $lpn->lpn,
+                        $lpn->is_used ? 'EN USO' : 'DISPONIBLE',
+                        $lpn->created_at->format('Y-m-d H:i:s'),
+                        $lpn->updated_at->format('Y-m-d H:i:s'),
+                    ]);
+                }
+            });
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

@@ -135,11 +135,12 @@
         </table>
     </header>
 
-    <footer>Generado por Control Tower - Estrategias y Soluciones Minmer GLobal.</footer>
+    <footer>Generado por Control Tower - Estrategias y Soluciones Minmer Global.</footer>
 
     <main>
         <h2>Resumen General del Arribo</h2>
         <table class="info-table">
+            <tr><th>Cliente</th><td>{{ $purchaseOrder->area->name ?? 'N/A' }}</td></tr>
             <tr><th>Orden de Compra</th><td>{{ $purchaseOrder->po_number }}</td></tr>
             <tr><th>Estatus Final</th><td>{{ $purchaseOrder->status_in_spanish }}</td></tr>
             <tr><th>Contenedor / Factura</th><td>{{ $purchaseOrder->container_number ?? 'N/A' }} / {{ $purchaseOrder->document_invoice ?? 'N/A' }}</td></tr>

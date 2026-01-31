@@ -65,6 +65,7 @@ use App\Http\Controllers\FriendsAndFamily\FfAdministrationController;
 use App\Http\Controllers\FriendsAndFamily\FfOrderController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\ElectronicLabelController;
+use App\Http\Controllers\WMS\WMSApiController;
 
 Route::get('/terms-conditions', function () {
     return view('terms-conditions');
@@ -692,6 +693,7 @@ Route::middleware(['auth', 'module.access:wms'])->prefix('wms')->name('wms.')->g
     Route::post('lpns/reprint', [WMSLpnController::class, 'reprintPdf'])->name('lpns.reprint');
     Route::post('lpns/print-from-csv', [WMSLpnController::class, 'printFromCsv'])->name('lpns.print-from-csv');
     Route::get('lpns/template', [WMSLpnController::class, 'downloadTemplate'])->name('lpns.template');
+    Route::get('lpns/export-inventory', [WMSLpnController::class, 'exportInventory'])->name('lpns.export-inventory');
     Route::get('reports/stock-movements', [WMSReportController::class, 'showStockMovements'])->name('reports.stock-movements');
     Route::get('reports/stock-movements/export', [WMSReportController::class, 'exportStockMovements'])->name('reports.stock-movements.export');
     Route::get('reports/inventory-aging', [WMSReportController::class, 'showAgingReport'])->name('reports.inventory-aging');
@@ -702,6 +704,10 @@ Route::middleware(['auth', 'module.access:wms'])->prefix('wms')->name('wms.')->g
     Route::get('reports/abc-analysis/export', [WMSReportController::class, 'exportAbcAnalysis'])->name('reports.abc-analysis.export');
     Route::get('reports/slotting-heatmap', [WMSReportController::class, 'showSlottingHeatmap'])->name('reports.slotting-heatmap');
     Route::get('/api/search-products', [WMSProductController::class, 'apiSearchProducts'])->name('api.search-products');
+});
+
+Route::middleware(['auth'])->prefix('wms/api')->name('wms.api.')->group(function () {
+    Route::get('/search-products', [WMSApiController::class, 'searchProducts'])->name('search-products');
 });
 
 Route::middleware(['auth', 'module.access:electronic_label'])->prefix('marbete-electronico')->name('electronic-label.')->group(function () {

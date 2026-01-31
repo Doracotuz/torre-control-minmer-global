@@ -13,15 +13,19 @@ use App\Models\WMS\ReceiptEvidence;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Warehouse;
+use App\Models\Area;
 
 class WMSPurchaseOrderController extends Controller
 {
     public function index(Request $request)
     {
-        $warehouses = \App\Models\Warehouse::orderBy('name')->get();
+        $warehouses = Warehouse::orderBy('name')->get();
+        $areas = Area::orderBy('name')->get();
+        
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
 
-        $query = PurchaseOrder::with(['latestArrival', 'lines.product'])
+        $query = PurchaseOrder::with(['latestArrival', 'lines.product', 'area'])
             ->withCount(['pallets' => function($query) {
                 $query->where('status', 'Finished');
             }])
@@ -29,6 +33,10 @@ class WMSPurchaseOrderController extends Controller
 
         if ($warehouseId) {
             $query->where('warehouse_id', $warehouseId);
+        }
+
+        if ($areaId) {
+            $query->where('area_id', $areaId);
         }
 
         if ($request->filled('search')) {
@@ -54,6 +62,9 @@ class WMSPurchaseOrderController extends Controller
         if ($warehouseId) {
             $kpiQuery->where('warehouse_id', $warehouseId);
         }
+        if ($areaId) {
+            $kpiQuery->where('area_id', $areaId);
+        }
 
         $completedOrders = (clone $kpiQuery)->where('status', 'Completed')->whereNotNull(['download_start_time', 'download_end_time']);
         $totalSeconds = $completedOrders->get()->sum(function($order) {
@@ -64,16 +75,15 @@ class WMSPurchaseOrderController extends Controller
         $kpis = [
             'receiving' => (clone $kpiQuery)->where('status', 'Receiving')->count(),
             'arrivals_today' => DockArrival::whereDate('arrival_time', today())
-                                ->whereHas('purchaseOrder', function($q) use ($warehouseId) {
-                                    if ($warehouseId) {
-                                        $q->where('warehouse_id', $warehouseId);
-                                    }
+                                ->whereHas('purchaseOrder', function($q) use ($warehouseId, $areaId) {
+                                    if ($warehouseId) $q->where('warehouse_id', $warehouseId);
+                                    if ($areaId) $q->where('area_id', $areaId);
                                 })->count(),
             'pending' => (clone $kpiQuery)->where('status', 'Pending')->count(),
             'avg_unload_time' => round($avgTime),
         ];
 
-        return view('wms.purchase-orders.index', compact('purchaseOrders', 'kpis', 'warehouses', 'warehouseId'));
+        return view('wms.purchase-orders.index', compact('purchaseOrders', 'kpis', 'warehouses', 'warehouseId', 'areas', 'areaId'));
     }
 
 
@@ -81,14 +91,16 @@ class WMSPurchaseOrderController extends Controller
     {
         $products = Product::orderBy('sku')->get(['id', 'sku', 'name', 'upc']);
         $warehouses = Warehouse::orderBy('name')->get(['id', 'name']);
+        $areas = Area::orderBy('name')->get(['id', 'name']);
         
-        return view('wms.purchase-orders.create', compact('products', 'warehouses'));
+        return view('wms.purchase-orders.create', compact('products', 'warehouses', 'areas'));
     }
 
     public function store(Request $request)
     {
         $validatedData = $request->validate([
             'warehouse_id' => 'required|exists:warehouses,id',
+            'area_id' => 'required|exists:areas,id',
             'po_number' => 'required|string|max:255|unique:purchase_orders,po_number',
             'expected_date' => 'required|date',
             'document_invoice' => 'nullable|string|max:255',
@@ -104,6 +116,7 @@ class WMSPurchaseOrderController extends Controller
 
         $purchaseOrder = PurchaseOrder::create([
             'warehouse_id' => $validatedData['warehouse_id'],
+            'area_id' => $validatedData['area_id'],
             'po_number' => $validatedData['po_number'],
             'expected_date' => $validatedData['expected_date'],
             'document_invoice' => $validatedData['document_invoice'],
@@ -128,6 +141,7 @@ class WMSPurchaseOrderController extends Controller
         $purchaseOrder->load([
             'user', 
             'lines.product', 
+            'area',
             'pallets' => function ($query) {
                 $query->where('status', 'Finished')->latest();
             },
@@ -146,6 +160,7 @@ class WMSPurchaseOrderController extends Controller
             
             $validatedData = $request->validate([
                 'warehouse_id' => 'required|exists:warehouses,id',
+                'area_id' => 'required|exists:areas,id',
                 'po_number' => 'required|string|max:255|unique:purchase_orders,po_number,' . $purchaseOrder->id,
                 'expected_date' => 'required|date',
                 'container_number' => 'nullable|string|max:255',
@@ -160,7 +175,6 @@ class WMSPurchaseOrderController extends Controller
             $expected_bottles = collect($validatedData['lines'])->sum('quantity_ordered');
             
             $poData = $validatedData;
-            $poData['warehouse_id'] = $validatedData['warehouse_id'];
             $poData['expected_bottles'] = $expected_bottles;
 
             $purchaseOrder->update($poData);
@@ -240,10 +254,19 @@ class WMSPurchaseOrderController extends Controller
         $query = \App\Models\WMS\Pallet::where('status', 'Finished')
             ->with([
                 'purchaseOrder.latestArrival',
+                'purchaseOrder.area',
                 'user',
                 'items.product',
                 'items.quality'
             ]);
+
+        if ($request->filled('area_id')) {
+            $query->whereHas('purchaseOrder', fn($q) => $q->where('area_id', $request->area_id));
+        }
+
+        if ($request->filled('warehouse_id')) {
+            $query->whereHas('location', fn($q) => $q->where('warehouse_id', $request->warehouse_id));
+        }
 
         if ($request->filled('search')) {
             $searchTerm = $request->search;
@@ -278,6 +301,7 @@ class WMSPurchaseOrderController extends Controller
             fputcsv($file, [
                 'ID_Tarima',
                 'LPN',
+                'Area_Cliente',
                 'Fecha_Finalizacion_Tarima',
                 'Usuario_Receptor',
                 'N_Orden_Compra',
@@ -307,6 +331,7 @@ class WMSPurchaseOrderController extends Controller
                     fputcsv($file, [
                         $pallet->id,
                         $pallet->lpn,
+                        $pallet->purchaseOrder->area->name ?? 'N/A',
                         $pallet->updated_at->format('Y-m-d H:i:s'),
                         $pallet->user->name ?? 'N/A',
                         $pallet->purchaseOrder->po_number ?? '',
@@ -343,13 +368,13 @@ class WMSPurchaseOrderController extends Controller
 
     public function edit(PurchaseOrder $purchaseOrder)
     {
-        $purchaseOrder->load('lines.product');
+        $purchaseOrder->load(['lines.product', 'area']);
         
-        $products = \App\Models\Product::orderBy('name')->get(); 
-        
-        $warehouses = \App\Models\Warehouse::orderBy('name')->get();
+        $products = Product::orderBy('name')->get(); 
+        $warehouses = Warehouse::orderBy('name')->get();
+        $areas = Area::orderBy('name')->get();
 
-        return view('wms.purchase-orders.edit', compact('purchaseOrder', 'products', 'warehouses'));
+        return view('wms.purchase-orders.edit', compact('purchaseOrder', 'products', 'warehouses', 'areas'));
     }
 
     public function uploadEvidence(Request $request, PurchaseOrder $purchaseOrder)
@@ -398,7 +423,7 @@ class WMSPurchaseOrderController extends Controller
     public function generateArrivalReportPdf(PurchaseOrder $purchaseOrder)
     {
         $purchaseOrder->load([
-            'user', 'lines.product', 'latestArrival',
+            'user', 'lines.product', 'latestArrival', 'area',
             'pallets' => fn($q) => $q->where('status', 'Finished')->with(['user', 'items.product', 'items.quality']),
             'evidences'
         ]);
