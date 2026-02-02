@@ -360,7 +360,7 @@
                                     <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                                         <i class="fas fa-info-circle text-[#ff9c00]"></i> Detalles de Operación
                                     </h4>
-                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                         <div class="p-3 rounded-xl border border-gray-100 bg-gray-50/50">
                                             <p class="text-[9px] text-gray-400 uppercase font-bold mb-1">Área Propietaria</p>
                                             <p class="text-xs font-bold text-[#ff9c00]" x-text="selectedPallet.purchase_order?.area?.name || 'General'"></p>
@@ -376,6 +376,24 @@
                                         <div class="p-3 rounded-xl border border-gray-100 bg-gray-50/50">
                                             <p class="text-[9px] text-gray-400 uppercase font-bold mb-1">Fin Descarga</p>
                                             <p class="text-[10px] font-mono text-gray-600" x-text="selectedPallet.purchase_order?.download_end_time || '-'"></p>
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-4">
+                                        <h5 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                            <i class="fas fa-history"></i> Auditoría / Última Acción
+                                        </h5>
+                                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                                            <div>
+                                                <p class="text-sm font-bold text-[#2c3856]" x-text="selectedPallet.last_action || 'Sin registro'"></p>
+                                                <p class="text-[10px] text-gray-500">
+                                                    Realizado por: <span class="font-bold text-gray-700" x-text="selectedPallet.user?.name || 'Sistema/Usuario ' + (selectedPallet.user_id || '?')"></span>
+                                                </p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-xs font-mono font-bold text-blue-600" x-text="new Date(selectedPallet.updated_at).toLocaleString()"></p>
+                                                <p class="text-[9px] text-gray-400">Fecha de Actualización</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
