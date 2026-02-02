@@ -1,15 +1,14 @@
 <x-app-layout>
+    <x-slot name="header"></x-slot>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@800;900&display=swap');
         
         .font-raleway { font-family: 'Raleway', sans-serif; }
         .font-montserrat { font-family: 'Montserrat', sans-serif; }
         
-        /* Animaciones */
         .stagger-enter { opacity: 0; transform: translateY(20px); animation: enterUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
         @keyframes enterUp { to { opacity: 1; transform: translateY(0); } }
         
-        /* Inputs Arquitectónicos */
         .input-arch {
             background: transparent; border: none; border-bottom: 2px solid #e5e7eb; border-radius: 0;
             padding: 0.5rem 0; font-family: 'Montserrat', sans-serif; font-weight: 600; color: #2c3856;
@@ -18,10 +17,9 @@
         .input-arch:focus { border-bottom-color: #ff9c00; box-shadow: none; outline: none; }
         .input-arch-select { background-image: none; cursor: pointer; padding-right: 1.5rem; }
 
-        /* TABLA NEXUS */
         .nexus-table { width: 100%; border-collapse: separate; border-spacing: 0 0.8rem; }
         .nexus-table thead th {
-            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; font-weight: 800;
+            font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; font-weight: 800;
             padding: 0 1.5rem 1rem 1.5rem; text-align: left;
         }
         .nexus-row {
@@ -35,10 +33,9 @@
         .nexus-row td:last-child { border-top-right-radius: 1rem; border-bottom-right-radius: 1rem; border-right: 1px solid #f3f4f6; }
         
         .nexus-row:hover {
-            transform: scale(1.005); box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.08); z-index: 10; position: relative; border-color: transparent;
+            box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.08); z-index: 10; position: relative; border-color: transparent;
         }
 
-        /* Botones */
         .btn-nexus { background: #2c3856; color: white; border-radius: 0.8rem; font-weight: 700; transition: all 0.2s; }
         .btn-nexus:hover { background: #1a253a; transform: translateY(-1px); }
         .btn-ghost { background: transparent; color: #2c3856; border: 2px solid #e5e7eb; border-radius: 1rem; font-weight: 700; }
@@ -107,7 +104,7 @@
                 <form id="filters-form" action="{{ route('wms.inventory.index') }}" method="GET">
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-end">
                         <div>
-                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Almacén</label>
+                            <label class="text-[12px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Almacén</label>
                             <select name="warehouse_id" onchange="this.form.submit()" class="input-arch input-arch-select text-sm">
                                 <option value="">Global</option>
                                 @foreach($warehouses as $warehouse)
@@ -116,7 +113,7 @@
                             </select>
                         </div>
                         <div>
-                            <label class="text-[9px] font-bold text-[#ff9c00] uppercase tracking-widest block mb-1">Cliente / Área</label>
+                            <label class="text-[12px] font-bold text-[#ff9c00] uppercase tracking-widest block mb-1">Cliente / Área</label>
                             <select name="area_id" onchange="this.form.submit()" class="input-arch input-arch-select text-sm text-[#ff9c00]">
                                 <option value="">Todas</option>
                                 @foreach($areas as $area)
@@ -125,19 +122,19 @@
                             </select>
                         </div>
                         <div>
-                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-1">LPN / Ubicación</label>
+                            <label class="text-[12px] font-bold text-gray-400 uppercase tracking-widest block mb-1">LPN / Ubicación</label>
                             <input type="text" name="lpn" value="{{ request('lpn') ?? request('location') }}" class="input-arch text-sm font-mono" placeholder="Buscar..." onchange="this.form.submit()">
                         </div>
                         <div>
-                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-1">SKU / Producto</label>
+                            <label class="text-[12px] font-bold text-gray-400 uppercase tracking-widest block mb-1">SKU / Producto</label>
                             <input type="text" name="sku" value="{{ request('sku') }}" class="input-arch text-sm" placeholder="SKU..." onchange="this.form.submit()">
                         </div>
                         <div>
-                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Orden (PO)</label>
+                            <label class="text-[12px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Orden (PO)</label>
                             <input type="text" name="po_number" value="{{ request('po_number') }}" class="input-arch text-sm" placeholder="PO-..." onchange="this.form.submit()">
                         </div>
                         <div>
-                            <a href="{{ route('wms.inventory.index') }}" class="flex items-center justify-center w-full py-2 text-[10px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-widest transition-colors">
+                            <a href="{{ route('wms.inventory.index') }}" class="flex items-center justify-center w-full py-2 text-[12px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-widest transition-colors">
                                 <i class="fas fa-undo mr-1"></i> Reset
                             </a>
                         </div>
@@ -173,7 +170,7 @@
                                         <span class="font-mono font-black text-lg text-[#2c3856] group-hover:text-[#ff9c00] transition-colors cursor-pointer" @click="openModal({{ json_encode($pallet) }})">
                                             {{ $pallet->lpn }}
                                         </span>
-                                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
+                                        <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                                             {{ $pallet->updated_at->diffForHumans() }}
                                         </span>
                                     </div>
@@ -189,14 +186,14 @@
                                                     default => 'bg-gray-100 text-gray-600'
                                                 };
                                             @endphp
-                                            <span class="px-2 py-1 rounded text-[10px] font-bold uppercase {{ $locTypeColor }}">
+                                            <span class="px-2 py-1 rounded text-[11px] font-bold uppercase {{ $locTypeColor }}">
                                                 {{ substr($pallet->location->translated_type, 0, 3) }}
                                             </span>
-                                            <span class="font-bold text-[#2c3856] text-sm">
+                                            <span class="font-bold text-[#2c3856] text-md">
                                                 {{ $pallet->location->code }}
                                             </span>
                                         </div>
-                                        <div class="text-[10px] text-gray-400 font-mono mt-1">
+                                        <div class="text-[12px] text-gray-400 font-mono mt-1">
                                             {{ $pallet->location->aisle }}-{{ $pallet->location->rack }}-{{ $pallet->location->shelf }}-{{ $pallet->location->bin }}
                                         </div>
                                     @else
@@ -226,7 +223,6 @@
                                 <td class="text-center w-32">
                                     @php
                                         $totalQty = $pallet->items->sum('quantity');
-                                        // Calcular comprometido dummy para visualización rápida (o real si tienes la lógica a mano)
                                         $committed = $pallet->items->sum('committed_quantity') ?? 0;
                                         $available = $totalQty - $committed;
                                         $percent = $totalQty > 0 ? ($available / $totalQty) * 100 : 0;
@@ -236,8 +232,8 @@
                                         <div class="h-full bg-green-400" style="width: {{ $percent }}%"></div>
                                         <div class="h-full bg-red-400" style="width: {{ 100 - $percent }}%"></div>
                                     </div>
-                                    <div class="flex justify-between text-[8px] font-bold text-gray-400 mt-1">
-                                        <span>Disp: {{ $available }}</span>
+                                    <div class="flex justify-between text-[10px] font-bold text-gray-400 mt-1">
+                                        <span>Disp: {{ $available }}
                                         <span class="text-red-300">Comp: {{ $committed }}</span>
                                     </div>
                                 </td>
@@ -251,7 +247,7 @@
 
                                 <td>
                                     <div class="text-xs font-bold text-[#2c3856]">{{ $pallet->purchaseOrder->po_number ?? 'N/A' }}</div>
-                                    <div class="text-[10px] text-gray-400">{{ $pallet->purchaseOrder->pedimento_a4 ?? '-' }}</div>
+                                    <div class="text-[12px] text-gray-400">{{ $pallet->purchaseOrder->pedimento_a4 ?? '-' }}</div>
                                 </td>
 
                                 <td class="text-right">
@@ -377,7 +373,6 @@
 
                 init() {
                     if (failedItemId) {
-                        // Lógica de recuperación de error (igual que antes)
                         for (const pallet of this.palletsOnPage) {
                             if (pallet && pallet.items) {
                                 const foundItem = pallet.items.find(item => item.id == failedItemId);

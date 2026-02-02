@@ -19,20 +19,28 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Warehouse;
+use App\Models\Area;
 
 class WMSSalesOrderController extends Controller
 {
-public function index(Request $request)
+    public function index(Request $request)
     {
-        $warehouses = \App\Models\Warehouse::orderBy('name')->get();
+        $warehouses = Warehouse::orderBy('name')->get();
+        $areas = Area::orderBy('name')->get();
+        
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
 
-        $query = SalesOrder::with(['user'])
+        $query = SalesOrder::with(['user', 'area'])
             ->withCount('lines') 
             ->withSum('lines', 'quantity_ordered');
 
         if ($warehouseId) {
             $query->where('warehouse_id', $warehouseId);
+        }
+
+        if ($areaId) {
+            $query->where('area_id', $areaId);
         }
         
         if ($request->filled('so_number')) {
@@ -47,6 +55,9 @@ public function index(Request $request)
         $kpiQuery = SalesOrder::query();
         if ($warehouseId) {
             $kpiQuery->where('warehouse_id', $warehouseId);
+        }
+        if ($areaId) {
+            $kpiQuery->where('area_id', $areaId);
         }
 
         if ($request->filled('so_number')) { $kpiQuery->where('so_number', 'like', '%' . $request->so_number . '%'); }
@@ -63,7 +74,7 @@ public function index(Request $request)
             'packed' => (clone $kpiQuery)->where('status', 'Packed')->count(),
         ];
 
-        return view('wms.sales-orders.index', compact('salesOrders', 'kpis', 'warehouses', 'warehouseId'));
+        return view('wms.sales-orders.index', compact('salesOrders', 'kpis', 'warehouses', 'warehouseId', 'areas', 'areaId'));
     }
 
     public function create()
@@ -71,8 +82,9 @@ public function index(Request $request)
         $products = Product::orderBy('sku')->get(['id', 'sku', 'name', 'upc']);
         $qualities = Quality::orderBy('name')->get(['id', 'name']);
         $warehouses = Warehouse::orderBy('name')->get(['id', 'name']);
+        $areas = Area::orderBy('name')->get(['id', 'name']);
         
-        return view('wms.sales-orders.create', compact('products', 'qualities', 'warehouses'));
+        return view('wms.sales-orders.create', compact('products', 'qualities', 'warehouses', 'areas'));
     }
 
     public function store(Request $request)
@@ -83,6 +95,7 @@ public function index(Request $request)
             'customer_name' => 'required|string|max:255',
             'delivery_date' => 'required|date',
             'warehouse_id' => 'required|exists:warehouses,id',
+            'area_id' => 'nullable|exists:areas,id',
             'lines' => 'required|array|min:1',
             'lines.*.product_id' => 'required|exists:products,id',
             'lines.*.quality_id' => 'required|exists:qualities,id',
@@ -98,6 +111,7 @@ public function index(Request $request)
                 'customer_name' => $validated['customer_name'],
                 'order_date' => $validated['delivery_date'],
                 'warehouse_id' => $validated['warehouse_id'],
+                'area_id' => $validated['area_id'],
                 'user_id' => Auth::id(),
                 'status' => 'Pending',
             ]);
@@ -105,13 +119,18 @@ public function index(Request $request)
             foreach ($validated['lines'] as $line) {
                 $palletItemId = null;
                 if (!empty($line['lpn'])) {
-                    $palletItem = PalletItem::where('product_id', $line['product_id'])
+                    $query = PalletItem::where('product_id', $line['product_id'])
                         ->where('quality_id', $line['quality_id'])
-                        ->whereHas('pallet', fn($q) => $q->where('lpn', $line['lpn']))
-                        ->first();
+                        ->whereHas('pallet', fn($q) => $q->where('lpn', $line['lpn']));
+
+                    if (!empty($validated['area_id'])) {
+                        $query->whereHas('pallet.purchaseOrder', fn($q) => $q->where('area_id', $validated['area_id']));
+                    }
+
+                    $palletItem = $query->first();
                     
                     if (!$palletItem) {
-                        throw new \Exception("El LPN {$line['lpn']} no contiene el SKU/Calidad especificado.");
+                        throw new \Exception("El LPN {$line['lpn']} no contiene el SKU/Calidad especificado o no pertenece al área seleccionada.");
                     }
                     if (($palletItem->quantity - $palletItem->committed_quantity) < $line['quantity']) {
                          throw new \Exception("Stock insuficiente en LPN {$line['lpn']} para SKU {$palletItem->product->sku}.");
@@ -142,7 +161,7 @@ public function index(Request $request)
         $salesOrder->load([
             'user', 
             'warehouse',
-            
+            'area',
             'lines.product',
             'lines.quality',
             'lines.palletItem.pallet.location',
@@ -163,14 +182,31 @@ public function index(Request $request)
         }
 
         $salesOrder->load('lines.product', 'lines.quality', 'lines.palletItem.pallet');
+        
+        foreach ($salesOrder->lines as $line) {
+            $query = PalletItem::where('product_id', $line->product_id)
+                ->where('quality_id', $line->quality_id)
+                ->whereRaw('quantity > committed_quantity')
+                ->whereHas('pallet.location', function ($q) use ($salesOrder) {
+                    $q->where('warehouse_id', $salesOrder->warehouse_id);
+                });
+
+            if ($salesOrder->area_id) {
+                $query->whereHas('pallet.purchaseOrder', function ($q) use ($salesOrder) {
+                    $q->where('area_id', $salesOrder->area_id);
+                });
+            }
+
+            $line->calculated_available = $query->sum(DB::raw('quantity - committed_quantity'));
+        }
+
         $products = Product::orderBy('sku')->get(['id', 'sku', 'name', 'upc']);
         $qualities = Quality::orderBy('name')->get(['id', 'name']);
-        
         $warehouses = Warehouse::orderBy('name')->get(['id', 'name']);
+        $areas = Area::orderBy('name')->get(['id', 'name']);
             
-        return view('wms.sales-orders.edit', compact('salesOrder', 'products', 'qualities', 'warehouses'));
+        return view('wms.sales-orders.edit', compact('salesOrder', 'products', 'qualities', 'warehouses', 'areas'));
     }
-
 
     public function update(Request $request, SalesOrder $salesOrder)
     {
@@ -184,6 +220,7 @@ public function index(Request $request)
             'customer_name' => 'required|string|max:255',
             'delivery_date' => 'required|date',
             'warehouse_id' => 'required|exists:warehouses,id',
+            'area_id' => 'nullable|exists:areas,id',
             'lines' => 'required|array|min:1',
             'lines.*.product_id' => 'required|exists:products,id',
             'lines.*.quality_id' => 'required|exists:qualities,id',
@@ -201,18 +238,24 @@ public function index(Request $request)
                 'customer_name' => $validated['customer_name'],
                 'order_date' => $validated['delivery_date'],
                 'warehouse_id' => $validated['warehouse_id'],
+                'area_id' => $validated['area_id'],
             ]);
 
             foreach ($validated['lines'] as $line) {
                 $palletItemId = null;
                 if (!empty($line['lpn'])) {
-                    $palletItem = PalletItem::where('product_id', $line['product_id'])
+                    $query = PalletItem::where('product_id', $line['product_id'])
                         ->where('quality_id', $line['quality_id'])
-                        ->whereHas('pallet', fn($q) => $q->where('lpn', $line['lpn']))
-                        ->first();
+                        ->whereHas('pallet', fn($q) => $q->where('lpn', $line['lpn']));
+
+                    if (!empty($validated['area_id'])) {
+                        $query->whereHas('pallet.purchaseOrder', fn($q) => $q->where('area_id', $validated['area_id']));
+                    }
+
+                    $palletItem = $query->first();
                     
                     if (!$palletItem) {
-                        throw new \Exception("El LPN {$line['lpn']} no contiene el SKU/Calidad especificado.");
+                        throw new \Exception("El LPN {$line['lpn']} no contiene el SKU/Calidad especificado o no pertenece al área seleccionada.");
                     }
                     if (($palletItem->quantity - $palletItem->committed_quantity) < $line['quantity']) {
                          throw new \Exception("Stock insuficiente en LPN {$line['lpn']}.");
@@ -281,6 +324,8 @@ public function index(Request $request)
                 'N° Orden (SO)',
                 'N° Factura',
                 'Cliente',
+                'Área',
+                'Almacén',
                 'Fecha Orden/Entrega',
                 'Estatus Orden',
                 'Creado Por',
@@ -304,6 +349,8 @@ public function index(Request $request)
             $query = SalesOrder::query()
                 ->with([
                     'user',
+                    'warehouse',
+                    'area',
                     'lines.product',
                     'lines.palletItem.pallet.location',
                     'lines.palletItem.pallet.purchaseOrder',
@@ -311,6 +358,12 @@ public function index(Request $request)
                     'pickList.picker'
                 ]);
 
+            if ($request->filled('warehouse_id')) {
+                $query->where('warehouse_id', $request->warehouse_id);
+            }
+            if ($request->filled('area_id')) {
+                $query->where('area_id', $request->area_id);
+            }
             if ($request->filled('so_number')) {
                 $query->where('so_number', 'like', '%' . $request->so_number . '%');
             }
@@ -326,52 +379,46 @@ public function index(Request $request)
 
             $query->orderBy('created_at', 'desc')->chunk(200, function ($salesOrders) use ($file) {
                 foreach ($salesOrders as $so) {
+                    $commonData = [
+                        $so->id,
+                        $so->so_number,
+                        $so->invoice_number ?? '',
+                        $so->customer_name,
+                        $so->area?->name ?? 'N/A',
+                        $so->warehouse?->name ?? 'N/A',
+                        $so->order_date ? $so->order_date->format('Y-m-d') : '',
+                        $so->status,
+                        $so->user?->name ?? 'N/A',
+                        $so->created_at ? $so->created_at->format('Y-m-d H:i') : '',
+                    ];
+
                     if ($so->lines->isEmpty()) {
-                        fputcsv($file, [
-                            $so->id,
-                            $so->so_number,
-                            $so->invoice_number ?? '',
-                            $so->customer_name,
-                            $so->order_date ? $so->order_date->format('Y-m-d') : '',
-                            $so->status,
-                            $so->user->name ?? 'N/A',
-                            $so->created_at ? $so->created_at->format('Y-m-d H:i') : '',
-                            '', '', '', '', '', '', '', '', '', '',
-                            $so->pickList->id ?? '',
-                            $so->pickList->status ?? '',
-                            $so->pickList->picked_at ? $so->pickList->picked_at->format('Y-m-d H:i') : '',
-                            $so->pickList->picker->name ?? '',
-                        ]);
+                        fputcsv($file, array_merge($commonData, array_fill(0, 14, '')));
                     } else {
                         foreach ($so->lines as $line) {
-                            $location = $line->palletItem->pallet->location ?? null;
-                            $locationCode = $location->code ?? '';
+                            $palletItem = $line->palletItem;
+                            $pallet = $palletItem?->pallet;
+                            $location = $pallet?->location;
+                            
+                            $locationCode = $location?->code ?? '';
                             $locationPhysical = $location ? "{$location->aisle}-{$location->rack}-{$location->shelf}-{$location->bin}" : '';
                             
-                            fputcsv($file, [
-                                $so->id,
-                                $so->so_number,
-                                $so->invoice_number ?? '',
-                                $so->customer_name,
-                                $so->order_date ? $so->order_date->format('Y-m-d') : '',
-                                $so->status,
-                                $so->user->name ?? 'N/A',
-                                $so->created_at ? $so->created_at->format('Y-m-d H:i') : '',
+                            fputcsv($file, array_merge($commonData, [
                                 $line->id,
-                                $line->product->sku ?? 'N/A',
-                                $line->product->name ?? 'N/A',
+                                $line->product?->sku ?? 'N/A',
+                                $line->product?->name ?? 'N/A',
                                 $line->quantity_ordered,
-                                $line->palletItem->pallet->lpn ?? 'N/A',
+                                $pallet?->lpn ?? 'N/A',
                                 $locationCode,
                                 $locationPhysical,
-                                $line->palletItem->quality->name ?? 'N/A',
-                                $line->palletItem->pallet->purchaseOrder->po_number ?? 'N/A',
-                                $line->palletItem->pallet->purchaseOrder->pedimento_a4 ?? 'N/A',
-                                $so->pickList->id ?? '',
-                                $so->pickList->status ?? '',
-                                $so->pickList->picked_at ? $so->pickList->picked_at->format('Y-m-d H:i') : '',
-                                $so->pickList->picker->name ?? '',
-                            ]);
+                                $palletItem?->quality?->name ?? 'N/A',
+                                $pallet?->purchaseOrder?->po_number ?? 'N/A',
+                                $pallet?->purchaseOrder?->pedimento_a4 ?? 'N/A',
+                                $so->pickList?->id ?? '',
+                                $so->pickList?->status ?? '',
+                                $so->pickList?->picked_at ? $so->pickList->picked_at->format('Y-m-d H:i') : '',
+                                $so->pickList?->picker?->name ?? '',
+                            ]));
                         }
                     }
                 }
@@ -416,6 +463,8 @@ public function index(Request $request)
         if ($validator->fails()) {
             return back()->with('error', 'Se requiere un archivo CSV.');
         }
+
+        $contextAreaId = $request->input('area_id') ?? ($salesOrder->exists ? $salesOrder->area_id : null);
 
         $file = $request->file('file');
         $content = file_get_contents($file->getRealPath());
@@ -470,13 +519,18 @@ public function index(Request $request)
 
                 $palletItemId = null;
                 if (!empty($lpn)) {
-                    $palletItem = PalletItem::where('product_id', $product)
+                    $query = PalletItem::where('product_id', $product)
                         ->where('quality_id', $quality)
-                        ->whereHas('pallet', fn($q) => $q->where('lpn', $lpn))
-                        ->first();
+                        ->whereHas('pallet', fn($q) => $q->where('lpn', $lpn));
+                    
+                    if ($contextAreaId) {
+                        $query->whereHas('pallet.purchaseOrder', fn($q) => $q->where('area_id', $contextAreaId));
+                    }
+
+                    $palletItem = $query->first();
                     
                     if (!$palletItem) {
-                        $errors[] = "Línea $lineNumber: El LPN '$lpn' no contiene el SKU/Calidad especificado.";
+                        $errors[] = "Línea $lineNumber: El LPN '$lpn' no contiene el SKU/Calidad o no pertenece al área seleccionada.";
                         continue;
                     }
                     if (($palletItem->quantity - $palletItem->committed_quantity) < $quantity) {
@@ -530,23 +584,31 @@ public function index(Request $request)
             'query' => 'required|string|min:2',
             'warehouse_id' => 'required|exists:warehouses,id',
             'quality_id' => 'required|exists:qualities,id',
+            'area_id' => 'nullable|exists:areas,id',
         ]);
 
         $term = $validated['query'];
         $warehouseId = $validated['warehouse_id'];
         $qualityId = $validated['quality_id'];
+        $areaId = $validated['area_id'] ?? null;
 
-        $availableProductIds = \App\Models\WMS\PalletItem::query()
+        $palletItemQuery = PalletItem::query()
             ->where('quality_id', $qualityId)
             ->whereRaw('quantity > committed_quantity')
             ->whereHas('pallet.location', function ($q_location) use ($warehouseId) {
                 $q_location->where('warehouse_id', $warehouseId);
-            })
+            });
+
+        if ($areaId) {
+            $palletItemQuery->whereHas('pallet.purchaseOrder', fn($q) => $q->where('area_id', $areaId));
+        }
+
+        $availableProductIds = $palletItemQuery
             ->select('product_id')
             ->distinct()
             ->pluck('product_id');
 
-        $products = \App\Models\Product::whereIn('id', $availableProductIds)
+        $products = Product::whereIn('id', $availableProductIds)
             ->where(function($q) use ($term) {
                 $q->where('sku', 'LIKE', $term . '%')
                   ->orWhere('name', 'LIKE', '%' . $term . '%')
@@ -559,10 +621,16 @@ public function index(Request $request)
         if ($products->isNotEmpty()) {
             $productIds = $products->pluck('id');
             
-            $stockData = PalletItem::whereIn('product_id', $productIds)
+            $stockDataQuery = PalletItem::whereIn('product_id', $productIds)
                 ->where('quality_id', $qualityId)
                 ->whereRaw('quantity > committed_quantity')
-                ->whereHas('pallet.location', fn($q) => $q->where('warehouse_id', $warehouseId))
+                ->whereHas('pallet.location', fn($q) => $q->where('warehouse_id', $warehouseId));
+
+            if ($areaId) {
+                $stockDataQuery->whereHas('pallet.purchaseOrder', fn($q) => $q->where('area_id', $areaId));
+            }
+
+            $stockData = $stockDataQuery
                 ->select('product_id', DB::raw('SUM(quantity - committed_quantity) as total_available'))
                 ->groupBy('product_id')
                 ->get()
@@ -573,5 +641,33 @@ public function index(Request $request)
             });
         }
         return response()->json($products);
+    }
+
+    public function apiGetAvailableQualities(Request $request)
+    {
+        $request->validate([
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'area_id' => 'nullable|exists:areas,id',
+        ]);
+
+        $warehouseId = $request->warehouse_id;
+        $areaId = $request->area_id;
+
+        $query = PalletItem::whereHas('pallet.location', function ($q) use ($warehouseId) {
+                $q->where('warehouse_id', $warehouseId);
+            })
+            ->whereRaw('quantity > committed_quantity');
+
+        if ($areaId) {
+            $query->whereHas('pallet.purchaseOrder', function ($q) use ($areaId) {
+                $q->where('area_id', $areaId);
+            });
+        }
+
+        $qualityIds = $query->distinct()->pluck('quality_id');
+        
+        $qualities = Quality::whereIn('id', $qualityIds)->orderBy('name')->get(['id', 'name']);
+
+        return response()->json($qualities);
     }
 }

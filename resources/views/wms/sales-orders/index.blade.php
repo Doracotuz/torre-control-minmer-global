@@ -1,253 +1,424 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4"> {{-- Añadido gap-4 --}}
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Gestión de Órdenes de Venta
-            </h2>
-            <div class="flex items-center space-x-2 mt-4 md:mt-0">
-                <a href="{{ route('wms.sales-orders.export-csv', request()->query()) }}" {{-- Pasa los filtros actuales --}}
-                   class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Exportar CSV
-                </a>
-                <a href="{{ route('wms.sales-orders.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Crear Nueva SO
-                </a>
-            </div>
+    <x-slot name="header"></x-slot>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@800;900&display=swap');
+        
+        .font-raleway { font-family: 'Raleway', sans-serif; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        
+        .stagger-enter { opacity: 0; transform: translateY(20px); animation: enterUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes enterUp { to { opacity: 1; transform: translateY(0); } }
+        
+        .input-arch {
+            background: transparent; border: none; border-bottom: 2px solid #e5e7eb; border-radius: 0;
+            padding: 0.8rem 0; font-family: 'Montserrat', sans-serif; font-weight: 600; color: #2c3856;
+            transition: all 0.3s ease; width: 100%; font-size: 0.9rem;
+        }
+        .input-arch:focus { border-bottom-color: #ff9c00; box-shadow: none; outline: none; }
+        .input-arch-select { background-image: none; cursor: pointer; padding-right: 1.5rem; }
+
+        .btn-nexus { 
+            background: #2c3856; color: white; border-radius: 1rem; font-weight: 700;
+            transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center;
+        }
+        .btn-nexus:hover { background: #1a253a; transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(44, 56, 86, 0.2); }
+        
+        .btn-ghost {
+            background: transparent; color: #2c3856; border: 2px solid #e5e7eb; border-radius: 1rem; font-weight: 700;
+        }
+        .btn-ghost:hover { border-color: #2c3856; background: #2c3856; color: white; }
+
+        .nexus-table { width: 100%; border-collapse: separate; border-spacing: 0 0.8rem; }
+        .nexus-table thead th {
+            font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; font-weight: 800;
+            padding: 0 1.5rem 0.5rem 1.5rem; text-align: left;
+        }
+        .nexus-row {
+            background: white; transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .nexus-row td {
+            padding: 1rem 1.5rem; vertical-align: middle; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;
+            background-color: white; white-space: nowrap;
+        }
+        .nexus-row td:first-child { border-top-left-radius: 1rem; border-bottom-left-radius: 1rem; border-left: 1px solid #f3f4f6; }
+        .nexus-row td:last-child { border-top-right-radius: 1rem; border-bottom-right-radius: 1rem; border-right: 1px solid #f3f4f6; }
+        .nexus-row:hover { box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.05); z-index: 10; position: relative; }
+
+        .kpi-card {
+            border-radius: 2rem; padding: 1.5rem; position: relative; overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .kpi-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15); }
+        .kpi-icon-bg {
+            position: absolute; right: -20px; bottom: -20px; font-size: 8rem; opacity: 0.1;
+            transform: rotate(-15deg); transition: all 0.5s ease;
+        }
+        .kpi-card:hover .kpi-icon-bg { transform: rotate(0deg) scale(1.1); opacity: 0.15; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        [x-cloak] { display: none !important; }
+    </style>
+
+    <div class="min-h-screen text-[#2b2b2b] font-montserrat pb-20 relative overflow-x-hidden">
+        
+        <div class="fixed inset-0 -z-10 pointer-events-none">
+            <div class="absolute top-0 right-0 w-[60vw] h-[60vh] bg-gradient-to-bl from-[#e0e7ff] to-transparent opacity-50 blur-[100px]"></div>
+            <div class="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-[#fff7ed] rounded-full blur-[120px]"></div>
         </div>
-    </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-8xl mx-auto sm:px-6 lg:px-8">
-
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                
-                <div class="bg-white p-6 shadow-lg rounded-xl flex items-center space-x-4">
-                    <div class="flex-shrink-0 p-3 bg-indigo-100 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
+        <div class="max-w-[1920px] mx-auto px-4 md:px-8 pt-8 relative z-10">
+            
+            <div class="flex flex-col xl:flex-row justify-between items-end mb-12 stagger-enter" style="animation-delay: 0.1s;">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="w-12 h-1 bg-[#ff9c00] rounded-full"></span>
+                        <span class="text-xs font-bold text-[#2c3856] tracking-[0.3em] uppercase">Centro de Distribución</span>
                     </div>
-                    <div>
-                        <div class="text-sm font-medium text-gray-500 truncate">Total de Órdenes</div>
-                        <div class="mt-1 text-3xl font-semibold text-gray-900">{{ $kpis['total'] }}</div>
-                    </div>
+                    <h1 class="text-4xl md:text-6xl font-raleway font-black text-[#2c3856] leading-none">
+                        ÓRDENES DE <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-orange-500">VENTA</span>
+                    </h1>
                 </div>
 
-                <div class="bg-white p-6 shadow-lg rounded-xl flex items-center space-x-4">
-                    <div class="flex-shrink-0 p-3 bg-yellow-100 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="text-sm font-medium text-gray-500 truncate">Pendientes</div>
-                        <div class="mt-1 text-3xl font-semibold text-yellow-600">{{ $kpis['pending'] }}</div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 shadow-lg rounded-xl flex items-center space-x-4">
-                    <div class="flex-shrink-0 p-3 bg-blue-100 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="text-sm font-medium text-gray-500 truncate">En Surtido</div>
-                        <div class="mt-1 text-3xl font-semibold text-blue-600">{{ $kpis['picking'] }}</div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 shadow-lg rounded-xl flex items-center space-x-4">
-                    <div class="flex-shrink-0 p-3 bg-green-100 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="text-sm font-medium text-gray-500 truncate">Empacadas</div>
-                        <div class="mt-1 text-3xl font-semibold text-green-600">{{ $kpis['packed'] }}</div>
-                    </div>
+                <div class="flex flex-wrap gap-3 mt-6 xl:mt-0">
+                    <a href="{{ route('wms.dashboard') }}" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-[#666666] font-bold rounded-full shadow-sm hover:shadow-md hover:border-[#2c3856] hover:text-[#2c3856] transition-all">
+                        <i class="fas fa-arrow-left"></i> <span>Dashboard</span>
+                    </a>                          
+                    <a href="{{ route('wms.sales-orders.export-csv', request()->query()) }}" class="btn-ghost px-6 py-3 h-12 flex items-center gap-2 text-xs uppercase tracking-wider bg-white shadow-sm">
+                        <i class="fas fa-file-csv"></i> Exportar
+                    </a>
+                    <a href="{{ route('wms.sales-orders.create') }}" class="btn-nexus px-8 py-3 h-12 flex items-center gap-2 text-xs uppercase tracking-wider shadow-lg shadow-[#2c3856]/20">
+                        <i class="fas fa-plus"></i> Nueva Orden
+                    </a>
                 </div>
             </div>
 
-            <div class="bg-white p-4 rounded-xl shadow-md mb-6">
-                <form action="{{ route('wms.sales-orders.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
-                    <div>
-                        <label for="warehouse_id" class="block text-xs font-medium text-gray-500 mb-1">Almacén</label>
-                        <select name="warehouse_id" id="warehouse_id" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full" onchange="this.form.submit()">
-                            <option value="">-- Todos los Almacenes --</option>
-                            
-                            {{-- Estas variables ($warehouses y $warehouseId) las pasa el controlador actualizado --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 stagger-enter" style="animation-delay: 0.2s;">
+                
+                <div class="relative bg-[#2c3856] rounded-[2rem] p-8 overflow-hidden shadow-xl shadow-[#2c3856]/20 group transition-all duration-300 hover:-translate-y-2">
+                    <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500">
+                        <i class="fas fa-layer-group text-8xl text-white"></i>
+                    </div>
+                    <div class="relative z-10 flex flex-col h-full justify-between">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white backdrop-blur-sm border border-white/10">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                            <span class="text-xs font-bold text-gray-300 uppercase tracking-widest">Total Órdenes</span>
+                        </div>
+                        <div>
+                            <h3 class="text-5xl font-raleway font-black text-white tracking-tighter" x-data x-init="animateCountTo($el, {{ $kpis['total'] }})">0</h3>
+                            <div class="w-full bg-white/20 h-1 mt-4 rounded-full overflow-hidden">
+                                <div class="h-full bg-[#ff9c00] w-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative bg-white rounded-[2rem] p-8 overflow-hidden shadow-lg shadow-gray-100 border border-gray-100 group transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
+                    <div class="absolute -right-6 -top-6 w-32 h-32 bg-orange-50 rounded-full blur-2xl group-hover:bg-orange-100 transition-colors"></div>
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Requiere Atención</p>
+                                <h4 class="text-lg font-bold text-gray-700">Pendientes</h4>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-300">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <h3 class="text-4xl font-raleway font-black text-[#2c3856]" x-data x-init="animateCountTo($el, {{ $kpis['pending'] }})">0</h3>
+                            <span class="text-xs font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded-full">
+                                {{ $kpis['total'] > 0 ? round(($kpis['pending'] / $kpis['total']) * 100) : 0 }}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative bg-white rounded-[2rem] p-8 overflow-hidden shadow-lg shadow-gray-100 border border-gray-100 group transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
+                    <div class="absolute -right-6 -top-6 w-32 h-32 bg-blue-50 rounded-full blur-2xl group-hover:bg-blue-100 transition-colors"></div>
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">En Proceso</p>
+                                <h4 class="text-lg font-bold text-gray-700">Picking</h4>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-300">
+                                <i class="fas fa-dolly"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <h3 class="text-4xl font-raleway font-black text-[#2c3856]" x-data x-init="animateCountTo($el, {{ $kpis['picking'] }})">0</h3>
+                            <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                                {{ $kpis['total'] > 0 ? round(($kpis['picking'] / $kpis['total']) * 100) : 0 }}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative bg-white rounded-[2rem] p-8 overflow-hidden shadow-lg shadow-gray-100 border border-gray-100 group transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
+                    <div class="absolute -right-6 -top-6 w-32 h-32 bg-emerald-50 rounded-full blur-2xl group-hover:bg-emerald-100 transition-colors"></div>
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Finalizadas</p>
+                                <h4 class="text-lg font-bold text-gray-700">Empacadas</h4>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-300">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <h3 class="text-4xl font-raleway font-black text-[#2c3856]" x-data x-init="animateCountTo($el, {{ $kpis['packed'] }})">0</h3>
+                            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                                {{ $kpis['total'] > 0 ? round(($kpis['packed'] / $kpis['total']) * 100) : 0 }}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="glass-panel rounded-[2.5rem] p-8 mb-10 stagger-enter" style="animation-delay: 0.3s;">
+                <form method="GET" action="{{ route('wms.sales-orders.index') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-6 items-end">
+                    
+                    <div class="xl:col-span-1">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Almacén</label>
+                        <select name="warehouse_id" class="input-arch input-arch-select" onchange="this.form.submit()">
+                            <option value="">Todos</option>
                             @foreach($warehouses as $warehouse)
-                                <option value="{{ $warehouse->id }}" @if(request('warehouse_id') == $warehouse->id) selected @endif>
-                                    {{ $warehouse->name }}
-                                </option>
+                                <option value="{{ $warehouse->id }}" @selected($warehouseId == $warehouse->id)>{{ $warehouse->name }}</option>
                             @endforeach
                         </select>
-                    </div>                    
-                    <div>
-                        <label for="so_number" class="block text-xs font-medium text-gray-500 mb-1">SO</label>
-                        <input type="text" name="so_number" placeholder="Buscar por Nº SO..." value="{{ request('so_number') }}" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     </div>
-                    <div>
-                        <label for="invoice_number" class="block text-xs font-medium text-gray-500 mb-1">Factura</label>
-                        <input type="text" name="invoice_number" placeholder="Buscar por Nº Factura..." value="{{ request('invoice_number') }}" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+
+                    <div class="xl:col-span-1">
+                        <label class="block text-[10px] font-bold text-[#ff9c00] uppercase tracking-widest mb-1">Área / Cliente</label>
+                        <select name="area_id" class="input-arch input-arch-select text-[#ff9c00] font-bold" onchange="this.form.submit()">
+                            <option value="">Todas</option>
+                            @foreach($areas as $area)
+                                <option value="{{ $area->id }}" @selected($areaId == $area->id)>{{ $area->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
-                    <div>
-                        <label for="customer_name" class="block text-xs font-medium text-gray-500 mb-1">Cliente</label>
-                        <input type="text" name="customer_name" placeholder="Buscar por Cliente..." value="{{ request('customer_name') }}" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+
+                    <div class="xl:col-span-1">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Nº Orden</label>
+                        <input type="text" name="so_number" value="{{ request('so_number') }}" class="input-arch" placeholder="SO-...">
                     </div>
-                    <div>
-                        <label for="status" class="block text-xs font-medium text-gray-500 mb-1">Estatus</label>
-                        <select name="status" class="border-gray-200 rounded-lg shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                            <option value="">Todos los Estatus</option>
+
+                    <div class="xl:col-span-1">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Cliente</label>
+                        <input type="text" name="customer_name" value="{{ request('customer_name') }}" class="input-arch" placeholder="Nombre...">
+                    </div>
+
+                    <div class="xl:col-span-1">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Estatus</label>
+                        <select name="status" class="input-arch input-arch-select" onchange="this.form.submit()">
+                            <option value="">Todos</option>
                             <option value="Pending" @selected(request('status') == 'Pending')>Pendiente</option>
                             <option value="Picking" @selected(request('status') == 'Picking')>En Surtido</option>
                             <option value="Packed" @selected(request('status') == 'Packed')>Empacado</option>
                             <option value="Cancelled" @selected(request('status') == 'Cancelled')>Cancelado</option>
                         </select>
                     </div>
-                    <div>
-                        <label for="start_date" class="block text-xs font-medium text-gray-500 mb-1">Desde:</label>
-                        <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}" class="input-filter w-full">
+
+                    <div class="xl:col-span-1">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Desde</label>
+                        <input type="date" name="start_date" value="{{ request('start_date') }}" class="input-arch text-gray-500 text-xs">
                     </div>
-                    <div>
-                        <label for="end_date" class="block text-xs font-medium text-gray-500 mb-1">Hasta:</label>
-                        <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}" class="input-filter w-full">
-                    </div>                    
-                    <div class="flex items-center space-x-2">
-                        <button type="submit" class="w-full inline-flex justify-center px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
-                            Filtrar
-                        </button>
-                        <a href="{{ route('wms.sales-orders.index') }}" class="w-full text-center px-4 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
-                            Limpiar
-                        </a>
+
+                    <div class="xl:col-span-1">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Hasta</label>
+                        <input type="date" name="end_date" value="{{ request('end_date') }}" class="input-arch text-gray-500 text-xs">
+                    </div>
+
+                    <div class="xl:col-span-1 pb-1">
+                        <div class="flex gap-2">
+                            <button type="submit" class="btn-nexus w-full py-3 text-[10px] uppercase tracking-widest shadow-md">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <a href="{{ route('wms.sales-orders.index') }}" class="btn-ghost w-full py-3 text-[10px] uppercase tracking-widest flex items-center justify-center">
+                                <i class="fas fa-undo"></i>
+                            </a>
+                        </div>
                     </div>
                 </form>
             </div>
 
-            <div class="space-y-4">
-                @forelse ($salesOrders as $so)
-                    <a href="{{ route('wms.sales-orders.show', $so) }}" class="block bg-white p-6 rounded-xl shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow duration-200 group">
-                        <div class="flex justify-between items-start">
-                            
-                            <div class="flex-1">
-                                <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-2">
-                                    <span class="text-lg font-semibold text-indigo-700 group-hover:text-indigo-900 transition-colors">
-                                        {{ $so->so_number }}
+            <div class="stagger-enter" style="animation-delay: 0.4s;">
+                
+                <div class="grid grid-cols-1 gap-6 md:hidden">
+                    @forelse ($salesOrders as $so)
+                        <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 relative overflow-hidden">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <span class="inline-block px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider mb-2
+                                        @if($so->status == 'Pending') bg-yellow-100 text-yellow-700
+                                        @elseif($so->status == 'Picking') bg-blue-100 text-blue-700
+                                        @elseif($so->status == 'Packed') bg-green-100 text-green-700
+                                        @elseif($so->status == 'Cancelled') bg-red-100 text-red-700
+                                        @else bg-gray-100 text-gray-600 @endif">
+                                        {{ $so->status }}
                                     </span>
-                                    
-                                    @php
-                                        $statusLabel = match($so->status) {
-                                            'Pending' => 'Pendiente',
-                                            'Picking' => 'En Surtido',
-                                            'Packed' => 'Empacado',
-                                            'Cancelled' => 'Cancelado',
-                                            default => $so->status,
-                                        };
-                                    @endphp
-                                    <span @class([
-                                        'px-3 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full mt-2 sm:mt-0',
-                                        'bg-yellow-100 text-yellow-800' => $so->status == 'Pending',
-                                        'bg-blue-100 text-blue-800' => $so->status == 'Picking',
-                                        'bg-green-100 text-green-800' => $so->status == 'Packed',
-                                        'bg-red-100 text-red-800' => $so->status == 'Cancelled',
-                                        'bg-gray-100 text-gray-800' => !in_array($so->status, ['Pending', 'Picking', 'Packed', 'Cancelled']),
-                                    ])>
-                                        {{ $statusLabel }}
-                                    </span>
+                                    <h3 class="text-xl font-black text-[#2c3856]">{{ $so->so_number }}</h3>
+                                    <p class="text-xs text-gray-400 font-mono">{{ $so->invoice_number ?? 'Sin Factura' }}</p>
                                 </div>
-                                
-                                <p class="text-sm text-gray-700 font-medium">{{ $so->customer_name }}</p>
-                                <p class="text-sm text-gray-500">{{ $so->invoice_number ?? 'Sin Factura' }}</p>
-
-                                <div class="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mt-4">
-                                    <span class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                        </svg>
-                                        <strong class="text-gray-700 mr-1">{{ (int)$so->lines_sum_quantity_ordered }}</strong> Unidades
-                                    </span>
-                                    <span class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                        </svg>
-                                        {{ $so->lines_count }} Items
-                                    </span>
-                                    <span class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        {{ $so->order_date->format('d/m/Y') }}
-                                    </span>
-                                    <span class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                        {{ $so->user->name ?? 'N/A' }}
-                                    </span>
+                                <div class="text-right">
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase">Entrega</p>
+                                    <p class="font-bold text-[#2c3856]">{{ $so->order_date->format('d M') }}</p>
                                 </div>
                             </div>
                             
-                            <div class="pl-4 flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-300 group-hover:text-indigo-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                </svg>
+                            <div class="mb-4">
+                                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Cliente</p>
+                                <p class="font-bold text-gray-700">{{ Str::limit($so->customer_name, 30) }}</p>
+                                @if($so->area)
+                                    <span class="text-[10px] text-blue-500 font-bold bg-blue-50 px-2 py-0.5 rounded mt-1 inline-block">{{ $so->area->name }}</span>
+                                @endif
                             </div>
 
+                            <div class="flex justify-between items-center py-3 border-t border-b border-gray-50 mb-4">
+                                <div class="text-center">
+                                    <p class="text-lg font-black text-[#2c3856]">{{ $so->lines_count }}</p>
+                                    <p class="text-[10px] text-gray-400 uppercase">Líneas</p>
+                                </div>
+                                <div class="w-px h-8 bg-gray-100"></div>
+                                <div class="text-center">
+                                    <p class="text-lg font-black text-[#ff9c00]">{{ number_format($so->lines_sum_quantity_ordered) }}</p>
+                                    <p class="text-[10px] text-gray-400 uppercase">Unidades</p>
+                                </div>
+                            </div>
+
+                            <a href="{{ route('wms.sales-orders.show', $so) }}" class="btn-nexus w-full py-3 text-xs uppercase tracking-widest shadow-md">
+                                Gestionar Orden
+                            </a>
                         </div>
-                    </a>
-                @empty
-                    <div class="bg-white p-12 rounded-xl shadow-md text-center">
-                        <div class="flex flex-col items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z" />
-                            </svg>
-                            <p class="mt-3 font-semibold text-lg text-gray-700">No se encontraron órdenes de venta</p>
-                            <p class="text-sm text-gray-500">Intenta ajustar tus filtros o crea una nueva orden.</p>
+                    @empty
+                        <div class="text-center py-10">
+                            <p class="text-gray-400 text-sm">No se encontraron órdenes.</p>
                         </div>
-                    </div>
-                @endforelse
+                    @endforelse
+                </div>
+
+                <div class="hidden md:block overflow-x-auto custom-scrollbar pb-4">
+                    <table class="nexus-table min-w-full">
+                        <thead>
+                            <tr>
+                                <th>Orden</th>
+                                <th>Cliente</th>
+                                <th>Área</th>
+                                <th>Entrega</th>
+                                <th>Estatus</th>
+                                <th>Items / Unidades</th>
+                                <th class="text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($salesOrders as $so)
+                                <tr class="nexus-row group">
+                                    <td>
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md font-bold text-sm transition-transform group-hover:scale-110 shrink-0
+                                                @if($so->status == 'Pending') bg-yellow-500
+                                                @elseif($so->status == 'Picking') bg-blue-500
+                                                @elseif($so->status == 'Packed') bg-green-500
+                                                @elseif($so->status == 'Cancelled') bg-red-500
+                                                @else bg-gray-500 @endif">
+                                                SO
+                                            </div>
+                                            <div>
+                                                <p class="font-black text-[#2c3856] text-lg group-hover:text-[#ff9c00] transition-colors">{{ $so->so_number }}</p>
+                                                <p class="text-xs text-gray-400 font-mono">{{ $so->invoice_number ?? '-' }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <p class="text-sm font-bold text-gray-600 truncate max-w-[180px]">{{ $so->customer_name }}</p>
+                                    </td>
+                                    <td>
+                                        @if($so->area)
+                                            <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border border-blue-100 whitespace-nowrap">{{ $so->area->name }}</span>
+                                        @else
+                                            <span class="text-gray-300 text-xs italic">General</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="flex items-center gap-2 text-gray-500 text-sm font-mono font-bold whitespace-nowrap">
+                                            <i class="far fa-calendar-alt text-[#ff9c00]"></i>
+                                            {{ $so->order_date->format('d M Y') }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border whitespace-nowrap
+                                            @if($so->status == 'Pending') bg-yellow-50 text-yellow-700 border-yellow-100
+                                            @elseif($so->status == 'Picking') bg-blue-50 text-blue-700 border-blue-100
+                                            @elseif($so->status == 'Packed') bg-green-50 text-green-700 border-green-100
+                                            @elseif($so->status == 'Cancelled') bg-red-50 text-red-700 border-red-100
+                                            @else bg-gray-50 text-gray-600 border-gray-100 @endif">
+                                            {{ $so->status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="text-sm whitespace-nowrap">
+                                            <span class="font-black text-[#2c3856]">{{ $so->lines_count }}</span> líneas
+                                            <span class="text-gray-300 mx-1">|</span>
+                                            <span class="font-bold text-[#ff9c00]">{{ number_format($so->lines_sum_quantity_ordered) }}</span> pzas.
+                                        </div>
+                                    </td>
+                                    <td class="text-right">
+                                        <a href="{{ route('wms.sales-orders.show', $so) }}" class="btn-ghost px-5 py-2 text-xs uppercase tracking-widest border-indigo-100 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 whitespace-nowrap transition-colors">
+                                            Gestionar
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="text-center py-12">
+                                        <div class="flex flex-col items-center justify-center opacity-50">
+                                            <i class="fas fa-search text-5xl mb-4 text-gray-300"></i>
+                                            <p class="text-gray-500 font-medium text-base">No se encontraron órdenes con estos filtros.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
-
-            <div class="mt-8">
+            
+            <div class="mt-8 pb-8">
                 {{ $salesOrders->appends(request()->query())->links() }}
             </div>
         </div>
     </div>
-<style>
-    .input-filter {
-        border-color: #e5e7eb;
-        border-radius: 0.5rem;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        font-size: 0.875rem;
-        padding-top: 0.625rem;
-        padding-bottom: 0.625rem;
-    }
-    .input-filter:focus {
-        border-color: #a5b4fc;
-        --tw-ring-color: rgba(165, 180, 252, 0.5);
-        box-shadow: 0 0 0 3px var(--tw-ring-color);
-        outline: 2px solid transparent;
-        outline-offset: 2px;
-    }
-    .button-primary {
-        display: inline-flex; justify-content: center; padding: 0.625rem 1rem; background-color: #4f46e5;
-        color: white; font-weight: 500; border-radius: 0.5rem;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: background-color 150ms ease-in-out;
-    }
-    .button-primary:hover { background-color: #4338ca; }
-    .button-secondary {
-        display: inline-flex; justify-content: center; text-align: center; padding: 0.625rem 1rem; color: #374151;
-        background-color: white; border: 1px solid #d1d5db; font-weight: 500; border-radius: 0.5rem;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: background-color 150ms ease-in-out;
-    }
-    .button-secondary:hover { background-color: #f9fafb; }
-</style>    
+
+    <script>
+        function animateCountTo(el, target) {
+            let current = 0;
+            const duration = 1500; 
+            const step = Math.ceil(target / (duration / 16)); 
+            
+            if (target === 0) {
+                el.innerText = '0';
+                return;
+            }
+
+            const timer = setInterval(() => {
+                current += step;
+                if (current >= target) {
+                    el.innerText = new Intl.NumberFormat().format(target);
+                    clearInterval(timer);
+                } else {
+                    el.innerText = new Intl.NumberFormat().format(current);
+                }
+            }, 16);
+        }
+    </script>
 </x-app-layout>

@@ -36,17 +36,18 @@ class WMSPickingController extends Controller
             return back()->with('error', 'Esta orden ya está siendo procesada o ya tiene una Pick List.');
         }
 
-        $salesOrder->load('lines.product', 'lines.quality', 'warehouse');
+        $salesOrder->load('lines.product', 'lines.quality', 'warehouse', 'area');
         
         if (!$salesOrder->warehouse_id) {
             return back()->with('error', 'Error Crítico: La Orden de Venta no tiene un almacén de surtido asignado.');
         }
+
         $warehouseId = $salesOrder->warehouse_id;
+        $areaId = $salesOrder->area_id;
 
         DB::beginTransaction();
         try {
             $pickListItems = [];
-            $availableQualityId = Quality::where('name', 'Disponible')->first()->id ?? -1;
 
             foreach ($salesOrder->lines as $line) {
                 
@@ -57,23 +58,40 @@ class WMSPickingController extends Controller
                     $query->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
                 };
 
+                $areaFilter = function ($query) use ($areaId) {
+                    if ($areaId) {
+                        $query->whereHas('purchaseOrder', fn($q) => $q->where('area_id', $areaId));
+                    }
+                };
+
                 if ($line->pallet_item_id) {
-                    $palletItem = PalletItem::with('pallet.location', 'quality')
+                    $query = PalletItem::with('pallet.location', 'quality')
                                   ->where('id', $line->pallet_item_id)
                                   ->whereRaw('quantity - committed_quantity >= ?', [$quantityNeeded])
-                                  ->whereHas('pallet', $warehouseFilter)
-                                  ->first();
+                                  ->whereHas('pallet', $warehouseFilter);
+
+                    if ($areaId) {
+                        $query->whereHas('pallet', $areaFilter);
+                    }
+
+                    $palletItem = $query->first();
                     
                     if (!$palletItem) {
-                        throw new \Exception("El LPN/lote especificado para SKU {$line->product->sku} no tiene stock suficiente en este almacén.");
+                        throw new \Exception("El LPN asignado manualmente no tiene stock suficiente o no pertenece al área requerida.");
                     }
                 
                 } else {
-                    $palletItem = PalletItem::where('product_id', $line->product_id)
+                    $baseQuery = PalletItem::where('product_id', $line->product_id)
                         ->where('quality_id', $line->quality_id)
                         ->whereRaw('quantity - committed_quantity >= ?', [$quantityNeeded])
-                        ->whereHas('pallet', $warehouseFilter)
-                        ->whereHas('pallet.location', fn($q) => $q->where('type', 'picking'))
+                        ->whereHas('pallet', $warehouseFilter);
+
+                    if ($areaId) {
+                        $baseQuery->whereHas('pallet', $areaFilter);
+                    }
+
+                    $pickingQuery = clone $baseQuery;
+                    $palletItem = $pickingQuery->whereHas('pallet.location', fn($q) => $q->where('type', 'picking'))
                         ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
                         ->join('locations', 'pallets.location_id', '=', 'locations.id')
                         ->select('pallet_items.*')
@@ -82,11 +100,8 @@ class WMSPickingController extends Controller
                         ->first();
 
                     if (!$palletItem) {
-                        $palletItem = PalletItem::where('product_id', $line->product_id)
-                            ->where('quality_id', $line->quality_id)
-                            ->whereRaw('quantity - committed_quantity >= ?', [$quantityNeeded])
-                            ->whereHas('pallet', $warehouseFilter)
-                            ->whereHas('pallet.location', fn($q) => $q->where('type', 'storage'))
+                        $storageQuery = clone $baseQuery;
+                        $palletItem = $storageQuery->whereHas('pallet.location', fn($q) => $q->where('type', 'storage'))
                             ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
                             ->select('pallet_items.*')
                             ->orderBy('pallets.created_at', 'asc')
@@ -94,7 +109,20 @@ class WMSPickingController extends Controller
                     }
 
                     if (!$palletItem) {
-                        throw new \Exception("No hay stock automático disponible para el producto: {$line->product->sku} (Calidad: {$line->quality->name}) en este almacén.");
+                        $anyLocationQuery = clone $baseQuery;
+                        $palletItem = $anyLocationQuery
+                            ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
+                            ->select('pallet_items.*')
+                            ->orderBy('pallets.created_at', 'asc')
+                            ->first();
+                    }
+
+                    if (!$palletItem) {
+                        $msg = "No hay stock automático disponible para el producto: {$line->product->sku} (Calidad: {$line->quality->name})";
+                        if ($areaId) {
+                            $msg .= " que pertenezca al Área solicitada ({$salesOrder->area->name})";
+                        }
+                        throw new \Exception($msg . ". Verifica que el stock disponible tenga origen en una Orden de Compra de esta misma área.");
                     }
                     
                     $palletItem->load('pallet.location', 'quality');
@@ -111,7 +139,7 @@ class WMSPickingController extends Controller
                 ];
             }
 
-            $pickList = \App\Models\WMS\PickList::create([
+            $pickList = PickList::create([
                 'sales_order_id' => $salesOrder->id,
                 'user_id' => Auth::id(),
                 'status' => 'Generated',
@@ -141,7 +169,7 @@ class WMSPickingController extends Controller
     public function show(PickList $pickList)
     {
         $pickList->load([
-            'salesOrder', 
+            'salesOrder.area', 
             'items.product', 
             'items.location',
             'items.quality', 
@@ -218,7 +246,7 @@ class WMSPickingController extends Controller
                     ]);
                 }                
             } else {
-                 throw new \Exception("No se encontró el PalletItem correspondiente (PalletID: {$pickListItem->pallet_id}, ProdID: {$pickListItem->product_id}, QID: {$pickListItem->quality_id}). No se pudo descontar inventario.");
+                 throw new \Exception("No se encontró el PalletItem correspondiente. No se pudo descontar inventario.");
             }
 
             $generalStock = InventoryStock::where('product_id', $pickListItem->product_id)
@@ -228,7 +256,7 @@ class WMSPickingController extends Controller
 
             if ($generalStock) {
                 if ($generalStock->quantity < $pickListItem->quantity_to_pick) {
-                     Log::warning("Stock general ({$generalStock->quantity}) insuficiente para SKU {$pickListItem->product->sku} en ubicación {$pickListItem->location->code} al confirmar item de picking #{$pickListItem->pick_list_id}. Se necesitaban {$pickListItem->quantity_to_pick}.");
+                     Log::warning("Stock general ({$generalStock->quantity}) insuficiente para SKU {$pickListItem->product->sku} en ubicación {$pickListItem->location->code}.");
                 }
 
                 $newGeneralQuantity = max(0, $generalStock->quantity - $pickListItem->quantity_to_pick);
@@ -250,11 +278,11 @@ class WMSPickingController extends Controller
                     'quantity' => -$pickListItem->quantity_to_pick,
                     'movement_type' => 'SALIDA-PICKING',
                     'source_id' => $pickListItem->id,
-                    'source_type' => \App\Models\WMS\PickListItem::class,
+                    'source_type' => PickListItem::class,
                 ]);
 
             } else {
-                 Log::error("No se encontró registro de stock general para SKU {$pickListItem->product->sku} (ProdID: {$pickListItem->product_id}), LocID: {$pickListItem->location_id}, QID: {$pickListItem->quality_id} al confirmar item de picking #{$pickListItem->pick_list_id}.");
+                 Log::error("No se encontró registro de stock general para SKU {$pickListItem->product->sku} al confirmar item de picking #{$pickListItem->pick_list_id}.");
             }
 
             DB::commit();
@@ -263,7 +291,7 @@ class WMSPickingController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422); // 422 Unprocessable Entity
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
     }
 
@@ -307,7 +335,7 @@ class WMSPickingController extends Controller
     public function generatePickListPdf(PickList $pickList)
     {
         $pickList->load([
-            'salesOrder',
+            'salesOrder.area',
             'items.product',
             'items.location',
             'items.quality',
@@ -315,39 +343,44 @@ class WMSPickingController extends Controller
         ]);
 
         $qrCodeUrl = route('wms.picking.show', $pickList);
+        $qrCodeDataUri = null;
 
         try {
-        $builder = new Builder(
-            data: $qrCodeUrl,
-            writer: new PngWriter(),
-            writerOptions: [],
-            encoding: new Encoding('UTF-8'),
-            errorCorrectionLevel: ErrorCorrectionLevel::Low,
-            size: 100,
-            margin: 5,
-            roundBlockSizeMode: RoundBlockSizeMode::Margin,
-            validateResult: false
+            $builder = new Builder(
+                data: $qrCodeUrl,
+                writer: new PngWriter(),
+                writerOptions: [],
+                encoding: new Encoding('UTF-8'),
+                errorCorrectionLevel: ErrorCorrectionLevel::Low,
+                size: 100,
+                margin: 5,
+                roundBlockSizeMode: RoundBlockSizeMode::Margin,
+                validateResult: false
             );
 
             $qrResult = $builder->build();
-
             $qrCodeDataUri = $qrResult->getDataUri();
 
         } catch (\Exception $e) {
-            Log::error("Error generando QR Code v5 para PickList {$pickList->id}: " . $e->getMessage());
-            $qrCodeDataUri = null;
-        }
-        $logoBase64 = null;
-        $logoPath = 'LogoAzul.png'; $disk = 's3';
-         if (Storage::disk($disk)->exists($logoPath)) {
-             try {
-                 $logoContent = Storage::disk($disk)->get($logoPath);
-                 $mimeType = 'image/' . pathinfo($logoPath, PATHINFO_EXTENSION);
-                 if (pathinfo($logoPath, PATHINFO_EXTENSION) === 'svg') { $mimeType = 'image/svg+xml'; }
-                 $logoBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($logoContent);
-             } catch (\Exception $e) { Log::error("Error cargando logo PDF: ".$e->getMessage()); }
+            Log::error("Error generating QR Code: " . $e->getMessage());
         }
 
+        $disk = 's3';
+        $logoBase64 = null;
+        $logoPath = 'LogoAzul.png';
+
+        if (Storage::disk($disk)->exists($logoPath)) {
+            try {
+                $logoContent = Storage::disk($disk)->get($logoPath);
+                $mimeType = 'image/' . pathinfo($logoPath, PATHINFO_EXTENSION);
+                if (pathinfo($logoPath, PATHINFO_EXTENSION) === 'svg') {
+                    $mimeType = 'image/svg+xml';
+                }
+                $logoBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($logoContent);
+            } catch (\Exception $e) {
+                Log::error("Error loading logo: " . $e->getMessage());
+            }
+        }
 
         $data = [
             'pickList' => $pickList,

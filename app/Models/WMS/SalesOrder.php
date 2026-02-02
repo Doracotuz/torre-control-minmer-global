@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
 use App\Models\Warehouse;
-use App\Models\WMS\Area;
+use App\Models\Area;
 
 class SalesOrder extends Model
 {

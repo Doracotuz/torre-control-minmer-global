@@ -27,7 +27,7 @@
         .info-table strong { color: #555; }
 
         .details-table { margin-top: 5px; }
-        .details-table th, .details-table td { border: 1px solid #ccc; padding: 8px 10px; text-align: left; vertical-align: middle; /* Alineación vertical */ }
+        .details-table th, .details-table td { border: 1px solid #ccc; padding: 8px 10px; text-align: left; vertical-align: middle; }
         .details-table th { background-color: #e9ecef; font-weight: bold; font-size: 8pt; color: #495057; text-transform: uppercase; }
         .details-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
         .location-cell { font-size: 11pt; color: #D32F2F; }
@@ -56,6 +56,9 @@
             <td style="width: 40%;" class="header-info">
                 <p class="text-right"><strong>Orden de Venta:</strong> {{ $pickList->salesOrder->so_number }}</p>
                 <p class="text-right"><strong>Pick List ID:</strong> #{{ $pickList->id }}</p>
+                
+                <p class="text-right"><strong>Cliente:</strong> {{ $pickList->salesOrder->area->name ?? 'General' }}</p>
+                
                 <p class="text-right"><strong>Fecha Emisión:</strong> {{ now()->format('d/m/Y H:i') }}</p>
                 <div class="qr-code">
                     @if($qrCodeDataUri)
@@ -144,10 +147,10 @@
         if (isset($pdf)) {
             $text = "Página {PAGE_NUM} de {PAGE_COUNT}";
             $size = 8;
-            $font = $fontMetrics->getFont("Helvetica", "normal"); // Especifica normal
+            $font = $fontMetrics->getFont("Helvetica", "normal"); 
             $width = $fontMetrics->get_text_width($text, $font, $size);
             $x = ($pdf->get_width() - $width) / 2;
-            $y = $pdf->get_height() - $pdf->get_option('margin_bottom') + 10; // Ajusta +10 según necesites
+            $y = $pdf->get_height() - $pdf->get_option('margin_bottom') + 10;
             $pdf->page_text($x, $y, $text, $font, $size);
         }
     </script>

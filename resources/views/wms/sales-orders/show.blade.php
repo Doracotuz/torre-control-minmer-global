@@ -1,197 +1,239 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex flex-col md:flex-row justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Orden de Venta: <span class="text-indigo-600">{{ $salesOrder->so_number }}</span>
-            </h2>
-            <div class="mt-4 md:mt-0">
-                <a href="{{ route('wms.sales-orders.index') }}" class="text-gray-600 hover:text-indigo-600">
-                    &larr; Volver al Listado
-                </a>
-            </div>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@800;900&display=swap');
+        
+        .font-raleway { font-family: 'Raleway', sans-serif; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        
+        .stagger-enter { opacity: 0; transform: translateY(20px); animation: enterUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes enterUp { to { opacity: 1; transform: translateY(0); } }
+        
+        .btn-nexus { 
+            background: #2c3856; color: white; border-radius: 1rem; font-weight: 700;
+            transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center;
+        }
+        .btn-nexus:hover { background: #1a253a; transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(44, 56, 86, 0.2); }
+        
+        .btn-ghost {
+            background: transparent; color: #2c3856; border: 2px solid #e5e7eb; border-radius: 1rem; font-weight: 700;
+        }
+        .btn-ghost:hover { border-color: #2c3856; background: #2c3856; color: white; }
+
+        .nexus-table { width: 100%; border-collapse: separate; border-spacing: 0 0.8rem; }
+        .nexus-table thead th {
+            font-size: 0.9/8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; font-weight: 800;
+            padding: 0 1.5rem 0.5rem 1.5rem; text-align: left;
+        }
+        .nexus-row {
+            background: white; transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .nexus-row td {
+            padding: 1rem 1.5rem; vertical-align: middle; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;
+            background-color: white;
+        }
+        .nexus-row td:first-child { border-top-left-radius: 1rem; border-bottom-left-radius: 1rem; border-left: 1px solid #f3f4f6; }
+        .nexus-row td:last-child { border-top-right-radius: 1rem; border-bottom-right-radius: 1rem; border-right: 1px solid #f3f4f6; }
+        .nexus-row:hover { box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.05); z-index: 10; position: relative; }
+
+        [x-cloak] { display: none !important; }
+    </style>
+
+    <div class="min-h-screen bg-transparent text-[#2b2b2b] font-montserrat pb-20 relative overflow-hidden">
+        
+        <div class="fixed inset-0 -z-10 pointer-events-none">
+            <div class="absolute top-0 right-0 w-[50vw] h-full bg-gradient-to-l from-[#f8fafc] to-transparent"></div>
+            <div class="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-[#ff9c00]/5 rounded-full blur-[120px]"></div>
         </div>
-    </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-[1920px] mx-auto px-6 pt-10 relative z-10">
+            
+            <div class="flex flex-col xl:flex-row justify-between items-end mb-10 stagger-enter" style="animation-delay: 0.1s;">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="w-12 h-1 bg-[#ff9c00]"></span>
+                        <span class="text-sm font-bold text-[#2c3856] tracking-[0.3em] uppercase">Detalle de Operación</span>
+                    </div>
+                    <h1 class="text-5xl font-raleway font-black text-[#2c3856] leading-none">
+                        SO <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-orange-600">{{ $salesOrder->so_number }}</span>
+                    </h1>
+                </div>
 
-            @if (session('success'))
-                <div class="mb-4 p-4 text-sm text-green-700 bg-green-100 rounded-lg" role="alert">
-                    <span class="font-medium">Éxito:</span> {{ session('success') }}
+                <div class="flex gap-3 mt-6 xl:mt-0">
+                    <a href="{{ route('wms.sales-orders.index') }}" class="btn-ghost px-6 py-3 h-12 flex items-center gap-2 text-sm uppercase tracking-wider">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </a>
+                </div>
+            </div>
+
+            @if(session('success'))
+                <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-r-xl mb-8 font-bold flex items-center gap-3 stagger-enter">
+                    <i class="fas fa-check-circle text-xl"></i>
+                    {{ session('success') }}
                 </div>
             @endif
-            @if (session('error'))
-                <div class="mb-4 p-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
-                    <span class="font-medium">Error:</span> {{ session('error') }}
+            @if(session('error'))
+                <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-xl mb-8 font-bold flex items-center gap-3 stagger-enter">
+                    <i class="fas fa-exclamation-circle text-xl"></i>
+                    {{ session('error') }}
                 </div>
             @endif
 
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                <div class="p-6 sm:px-10 bg-white">
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                            <span class="text-sm font-medium text-gray-500">Cliente</span>
-                            <p class="text-lg font-semibold text-gray-900">{{ $salesOrder->customer_name }}</p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 stagger-enter" style="animation-delay: 0.2s;">
+                
+                <div class="lg:col-span-2 space-y-8">
+                    
+                    <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 overflow-hidden">
+                        <div class="bg-[#2c3856] p-8 text-white relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-64 h-64 bg-[#ff9c00] rounded-full blur-[100px] opacity-20 -mr-20 -mt-20"></div>
+                            <div class="relative z-10 flex justify-between items-center">
+                                <div>
+                                    <p class="text-[#ff9c00] font-bold text-xs uppercase tracking-[0.2em] mb-1">Cliente</p>
+                                    <h3 class="text-2xl font-bold">{{ $salesOrder->customer_name }}</h3>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs uppercase tracking-widest opacity-60 mb-1">Estado</p>
+                                    <span class="px-4 py-1.5 bg-white/10 border border-white/20 rounded-full font-bold text-sm">
+                                        {{ $salesOrder->status }}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <span class="text-sm font-medium text-gray-500">Fecha de Entrega</span>
-                            <p class="text-lg font-semibold text-gray-900">{{ $salesOrder->order_date->format('d/m/Y') }}</p>
-                        </div>
-                        <div>
-                            <span class="text-sm font-medium text-gray-500">Estado</span>
-                            <p class="text-lg font-bold">
-                                @if($salesOrder->status == 'Pending')
-                                    <span class="text-yellow-600">Pendiente</span>
-                                @elseif($salesOrder->status == 'Picking')
-                                    <span class="text-blue-600">En Surtido (Picking)</span>
-                                @elseif($salesOrder->status == 'Packed')
-                                    <span class="text-green-600">Empacado</span>
-                                @elseif($salesOrder->status == 'Cancelled')
-                                    <span class="text-red-600">Cancelado</span>
-                                @else
-                                    <span class="text-gray-600">{{ $salesOrder->status }}</span>
-                                @endif
-                            </p>
-                        </div>
-                        <div>
-                            <span class="text-sm font-medium text-gray-500">Nº Factura</span>
-                            <p class="text-lg text-gray-800">{{ $salesOrder->invoice_number ?? 'N/A' }}</p>
-                        </div>
-                        <div>
-                            <span class="text-sm font-medium text-gray-500">Creado por</span>
-                            <p class="text-lg text-gray-800">{{ $salesOrder->user->name ?? 'N/A' }}</p>
-                        </div>
-                    </div>
-
-                    <div class="mt-8 border-t border-gray-200 pt-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">
-                        Productos 
-                        @if($salesOrder->pickList)
-                            <span class="text-gray-500">(Surtidos desde Pick List #{{ $salesOrder->pickList->id }})</span>
-                        @else
-                            <span class="text-gray-500">(Ordenados)</span>
-                        @endif
-                    </h3>
-
-                    <div class="overflow-x-auto border rounded-lg">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU / Producto</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lote (LPN)</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Calidad</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pedimento</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                
-                                @if($salesOrder->pickList && $salesOrder->pickList->items->count() > 0)
-                                    
-                                    @foreach($salesOrder->pickList->items as $item)
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                <div class="font-medium text-gray-900">{{ $item->product->sku ?? 'N/A' }}</div>
-                                                <div class="text-gray-500">{{ $item->product->name ?? 'N/A' }}</div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-indigo-600">
-                                                {{ $item->pallet->lpn ?? 'N/A' }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-red-600">
-                                                {{ $item->pallet->location->code ?? 'N/A' }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                                {{ $item->quality->name ?? 'N/A' }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
-                                                {{ $item->pallet->purchaseOrder->pedimento_a4 ?? 'N/A' }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                                                {{ $item->quantity_picked ?? $item->quantity_to_pick }}
-                                            </td>
-                                        </tr>
-                                    @endforeach
-
-                                @else
-
-                                    @foreach($salesOrder->lines as $line)
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                <div class="font-medium text-gray-900">{{ $line->product->sku ?? 'N/A' }}</div>
-                                                <div class="text-gray-500">{{ $line->product->name ?? 'N/A' }}</div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 italic">
-                                                {{-- Si el LPN fue pre-asignado, muéstralo --}}
-                                                {{ $line->palletItem->pallet->lpn ?? 'N/A' }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 italic">
-                                                {{ $line->palletItem->pallet->location->code ?? 'N/A' }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 italic">
-                                                {{ $line->quality->name ?? 'N/A' }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 italic">
-                                                {{ $line->palletItem->pallet->purchaseOrder->pedimento_a4 ?? 'N/A' }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                                                {{ $line->quantity_ordered }}
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                    
-                                @endif
-
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="mt-8 border-t border-gray-200 pt-6">
-                        <div class="flex items-center justify-between">
-                            
-                            <div>
-                                <h3 class="text-lg font-medium text-gray-900">Estado de Surtido</h3>
-                                @if ($salesOrder->status == 'Pending')
-                                    <form action="{{ route('wms.picking.generate', $salesOrder) }}" method="POST" class="mt-2">
-                                        @csrf
-                                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700">
-                                            Generar Pick List
-                                        </button>
-                                    </form>
-                                @elseif ($salesOrder->pickList)
-                                    <div class="mt-2 text-sm text-gray-600">
-                                        <p>Pick List <strong>#{{ $salesOrder->pickList->id }}</strong> generada.</p>
-                                        <p>Estado: <span class="font-medium">{{ $salesOrder->pickList->status }}</span></p>
-                                        <div class="mt-2 space-x-4">
-                                            <a href="{{ route('wms.picking.show', $salesOrder->pickList) }}" class="text-indigo-600 hover:underline">Ver Tarea de Surtido</a>
-                                            <a href="{{ route('wms.picking.pdf', $salesOrder->pickList) }}" target="_blank" class="text-red-600 hover:underline">Descargar PDF</a>
-                                        </div>
-                                    </div>
-                                @elseif ($salesOrder->status == 'Cancelled')
-                                    <p class="mt-2 text-sm text-red-600">La orden está cancelada.</p>
-                                @else
-                                    <p class="mt-2 text-sm text-gray-500">La orden ha sido procesada.</p>
-                                @endif
+                        
+                        <div class="p-8">
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-8">
+                                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Almacén</p><p class="font-bold text-[#2c3856]">{{ $salesOrder->warehouse->name }}</p></div>
+                                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Área</p><p class="font-bold text-[#2c3856]">{{ $salesOrder->area->name ?? 'N/A' }}</p></div>
+                                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Fecha Entrega</p><p class="font-bold text-[#2c3856]">{{ $salesOrder->order_date->format('d M Y') }}</p></div>
+                                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Factura</p><p class="font-mono font-bold text-[#2c3856]">{{ $salesOrder->invoice_number ?? '-' }}</p></div>
+                                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Creado Por</p><p class="font-bold text-[#2c3856]">{{ $salesOrder->user->name }}</p></div>
                             </div>
 
-                            @if ($salesOrder->status == 'Pending')
-                                <div class="flex items-center gap-x-4">
-                                    <a href="{{ route('wms.sales-orders.edit', $salesOrder) }}" class="px-4 py-2 bg-yellow-500 text-white rounded-md shadow-sm hover:bg-yellow-600">
-                                        Editar Orden
+                            <div class="mt-8 flex gap-4 border-t pt-6">
+                                @if ($salesOrder->status == 'Pending')
+                                    <a href="{{ route('wms.sales-orders.edit', $salesOrder) }}" class="btn-ghost px-6 py-2 text-xs uppercase tracking-widest shadow-sm">
+                                        <i class="fas fa-pencil-alt mr-2"></i> Editar
                                     </a>
-                                    <form action="{{ route('wms.sales-orders.cancel', $salesOrder) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que quieres cancelar esta orden? Esta acción no se puede deshacer y liberará el inventario comprometido.');">
+                                    <form action="{{ route('wms.sales-orders.cancel', $salesOrder) }}" method="POST" onsubmit="return confirm('¿Confirmar cancelación?');">
                                         @csrf
-                                        <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md shadow-sm hover:bg-red-700">
-                                            Cancelar Orden
+                                        <button type="submit" class="btn-ghost px-6 py-2 text-xs uppercase tracking-widest text-red-600 border-red-200 hover:bg-red-50">
+                                            <i class="fas fa-ban mr-2"></i> Cancelar
                                         </button>
                                     </form>
-                                </div>
-                            @endif
+                                @endif
+                            </div>
                         </div>
                     </div>
+
+                    <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-8">
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
+                            <h4 class="text-lg font-raleway font-black text-[#2c3856]">
+                                @if($salesOrder->pickList)
+                                    Surtido (Pick List #{{ $salesOrder->pickList->id }})
+                                @else
+                                    Detalle de Orden
+                                @endif
+                            </h4>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="nexus-table">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Ubicación</th>
+                                        <th>LPN</th>
+                                        <th>Calidad</th>
+                                        <th>Pedimento</th>
+                                        <th class="text-right">Cantidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if($salesOrder->pickList && $salesOrder->pickList->items->count() > 0)
+                                        @foreach($salesOrder->pickList->items as $item)
+                                            <tr class="nexus-row">
+                                                <td>
+                                                    <p class="font-bold text-[#2c3856] text-xs">{{ $item->product->name }}</p>
+                                                    <p class="font-mono text-[10px] text-gray-400 mt-1">{{ $item->product->sku }}</p>
+                                                </td>
+                                                <td class="font-mono font-bold text-red-600 text-xs">{{ $item->pallet->location->code ?? 'N/A' }}</td>
+                                                <td class="font-mono font-bold text-indigo-600 text-xs">{{ $item->pallet->lpn ?? 'N/A' }}</td>
+                                                <td class="text-xs font-bold text-gray-600">{{ $item->quality->name ?? 'N/A' }}</td>
+                                                <td class="font-mono text-[10px] text-gray-500">{{ $item->pallet->purchaseOrder->pedimento_a4 ?? 'N/A' }}</td>
+                                                <td class="text-right font-black text-lg text-[#2c3856]">{{ $item->quantity_picked ?? $item->quantity_to_pick }}</td>
+                                            </tr>
+                                        @endforeach
+                                    @else
+                                        @foreach($salesOrder->lines as $line)
+                                            <tr class="nexus-row">
+                                                <td>
+                                                    <p class="font-bold text-[#2c3856] text-md">{{ $line->product->name }}</p>
+                                                    <p class="font-mono text-[12px] text-gray-400 mt-1">{{ $line->product->sku }}</p>
+                                                </td>
+                                                <td class="text-md text-gray-400 italic">{{ $line->palletItem->pallet->location->code ?? 'Pendiente' }}</td>
+                                                <td class="text-md text-gray-400 italic font-mono">{{ $line->palletItem->pallet->lpn ?? 'Automático' }}</td>
+                                                <td class="text-md font-bold text-gray-600">{{ $line->quality->name }}</td>
+                                                <td class="text-[12px] text-gray-400 italic font-mono">{{ $line->palletItem->pallet->purchaseOrder->pedimento_a4 ?? '-' }}</td>
+                                                <td class="text-right font-black text-lg text-[#2c3856]">{{ $line->quantity_ordered }}</td>
+                                            </tr>
+                                        @endforeach
+                                    @endif
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="space-y-8">
+                    
+                    <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-8 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                        <h4 class="text-lg font-raleway font-black text-[#2c3856] mb-6 relative z-10"><i class="fas fa-tasks mr-2"></i>Gestión de Surtido</h4>
+
+                        @if ($salesOrder->status == 'Pending')
+                            <form action="{{ route('wms.picking.generate', $salesOrder) }}" method="POST" class="relative z-10">
+                                @csrf
+                                <div class="p-4 bg-yellow-50 rounded-2xl border border-yellow-100 mb-4 text-xs text-yellow-800">
+                                    Al generar el Pick List, el sistema reservará el inventario automáticamente.
+                                </div>
+                                <button type="submit" class="btn-nexus w-full py-3 shadow-lg">
+                                    Generar Pick List
+                                </button>
+                            </form>
+                        @elseif ($salesOrder->pickList)
+                            <div class="space-y-4 relative z-10">
+                                <div class="p-4 bg-green-50 rounded-2xl border border-green-100">
+                                    <p class="text-[10px] font-bold text-green-600 uppercase">Pick List Generada</p>
+                                    <p class="font-mono font-bold text-[#2c3856] text-xl">#{{ $salesOrder->pickList->id }}</p>
+                                    <p class="text-xs text-gray-500 mt-1">Status: {{ $salesOrder->pickList->status }}</p>
+                                </div>
+                                
+                                @if($salesOrder->status === 'Pending' && !$salesOrder->pickList)
+                                    
+                                    <form action="{{ route('wms.picking.generate', $salesOrder) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="btn-nexus ...">
+                                            Ejecutar Surtido
+                                        </button>
+                                    </form>
+
+                                @endif
+                                
+                                <a href="{{ route('wms.picking.pdf', $salesOrder->pickList) }}" target="_blank" class="btn-ghost w-full py-3 flex items-center justify-center">
+                                    <i class="fas fa-file-pdf mr-2"></i> Descargar PDF
+                                </a>
+                            </div>
+                        @else
+                            <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-center text-gray-400 text-sm">
+                                Orden finalizada o cancelada.
+                            </div>
+                        @endif
+                    </div>
+
                 </div>
             </div>
+
         </div>
     </div>
 </x-app-layout>

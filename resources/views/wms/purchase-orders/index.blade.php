@@ -47,7 +47,7 @@
         
         .nexus-row-detail td { padding: 0; border: none; }
         .detail-content {
-            background: #f8fafc; margin: 0 1rem 1rem 1rem; border-radius: 1rem; padding: 2rem; /* Padding aumentado */
+            background: #f8fafc; margin: 0 1rem 1rem 1rem; border-radius: 1rem; padding: 2rem;
             border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         }
 

@@ -704,6 +704,7 @@ Route::middleware(['auth', 'module.access:wms'])->prefix('wms')->name('wms.')->g
     Route::get('reports/abc-analysis/export', [WMSReportController::class, 'exportAbcAnalysis'])->name('reports.abc-analysis.export');
     Route::get('reports/slotting-heatmap', [WMSReportController::class, 'showSlottingHeatmap'])->name('reports.slotting-heatmap');
     Route::get('/api/search-products', [WMSProductController::class, 'apiSearchProducts'])->name('api.search-products');
+    Route::get('/sales-orders/api/get-available-qualities', [WMSSalesOrderController::class, 'apiGetAvailableQualities'])->name('api.get-available-qualities');
 });
 
 Route::middleware(['auth'])->prefix('wms/api')->name('wms.api.')->group(function () {
