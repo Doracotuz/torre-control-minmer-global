@@ -1,144 +1,235 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center space-x-3">
-            <h2 class="font-bold text-3xl text-gray-800 leading-tight tracking-tight">
-                Central de Reportes WMS
-            </h2>
+    <x-slot name="header"></x-slot>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@800;900&display=swap');
+        
+        .font-raleway { font-family: 'Raleway', sans-serif; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        
+        .stagger-enter { opacity: 0; transform: translateY(20px); animation: enterUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes enterUp { to { opacity: 1; transform: translateY(0); } }
+        
+        .btn-nexus { 
+            background: #2c3856; color: white; border-radius: 1rem; font-weight: 700;
+            transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center;
+        }
+        .btn-nexus:hover { background: #1a253a; transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(44, 56, 86, 0.3); }
+        
+        .btn-ghost {
+            background: transparent; color: #2c3856; border: 2px solid #e5e7eb; border-radius: 1rem; font-weight: 700;
+        }
+        .btn-ghost:hover { border-color: #2c3856; background: #2c3856; color: white; }
+
+        .dashboard-card {
+            background: white; border-radius: 2rem; border: 1px solid #f3f4f6;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px -10px rgba(44, 56, 86, 0.1);
+            border-color: #e5e7eb;
+        }
+        
+        .icon-square {
+            width: 3.5rem; height: 3.5rem; border-radius: 1rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; margin-bottom: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+        .dashboard-card:hover .icon-square { transform: scale(1.1) rotate(-5deg); }
+
+        [x-cloak] { display: none !important; }
+    </style>
+
+    <div class="min-h-screen text-[#2b2b2b] font-montserrat pb-20 relative overflow-x-hidden" x-data="reportsMenu()">
+        
+        <div class="fixed inset-0 -z-10 pointer-events-none">
+            <div class="absolute top-0 right-0 w-[60vw] h-[60vh] bg-gradient-to-bl from-[#e0e7ff] to-transparent opacity-50 blur-[100px]"></div>
+            <div class="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-[#fff7ed] rounded-full blur-[120px]"></div>
         </div>
-    </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-screen-xl mx-auto sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-
-                <a href="{{ route('wms.reports.inventory') }}" 
-                   class="relative group block bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-blue-300 transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
-                    <div class="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-blue-100 rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                    <div class="mb-4 inline-block p-3 bg-blue-100 rounded-lg shadow-sm border border-blue-200">
-                        <svg class="w-8 h-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                           <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-                        </svg>
+        <div class="max-w-[1920px] mx-auto px-6 pt-12 relative z-10">
+            
+            <div class="flex flex-col xl:flex-row justify-between items-end mb-12 stagger-enter" style="animation-delay: 0.1s;">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="w-12 h-1 bg-[#ff9c00] rounded-full"></span>
+                        <span class="text-xs font-bold text-gray-400 tracking-[0.2em] uppercase">Business Intelligence</span>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-700 transition-colors duration-300">
-                        Dashboard de Inventario
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-4">
-                        Visión general del stock, productos top y antigüedad del inventario. 📈
-                    </p>
-                    <span class="absolute bottom-6 right-6 text-blue-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-transform duration-300">
-                        <i class="fas fa-arrow-right fa-lg"></i>
-                    </span>
-                </a>
+                    <h1 class="text-5xl md:text-6xl font-raleway font-black text-[#2c3856] leading-none">
+                        CENTRAL DE <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-orange-500">REPORTES</span>
+                    </h1>
+                </div>
 
-                <a href="{{ route('wms.reports.stock-movements') }}" 
-                   class="relative group block bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-indigo-300 transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
-                    <div class="absolute bottom-0 left-0 -mb-12 -ml-12 w-36 h-36 bg-indigo-100 rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                    <div class="mb-4 inline-block p-3 bg-indigo-100 rounded-lg shadow-sm border border-indigo-200">
-                        <svg class="w-8 h-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                           <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-indigo-700 transition-colors duration-300">
-                        Historial de Movimientos
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-4">
-                        Registro detallado de todas las entradas, salidas, ajustes y transferencias. 🔍
-                    </p>
-                    <span class="absolute bottom-6 right-6 text-indigo-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-transform duration-300">
-                        <i class="fas fa-arrow-right fa-lg"></i>
-                    </span>
-                </a>
-                
-                <a href="{{ route('wms.reports.inventory-aging') }}" 
-                   class="relative group block bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-yellow-300 transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
-                    <div class="absolute top-0 left-0 -mt-12 -ml-12 w-36 h-36 bg-yellow-100 rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                    <div class="mb-4 inline-block p-3 bg-yellow-100 rounded-lg shadow-sm border border-yellow-200">
-                        <svg class="w-8 h-8 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                           <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-yellow-700 transition-colors duration-300">
-                        Antigüedad de Inventario
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-4">
-                        Análisis de inventario por LPN y sus días en almacén. ⏳
-                    </p>
-                    <span class="absolute bottom-6 right-6 text-yellow-300 group-hover:text-yellow-500 group-hover:translate-x-1 transition-transform duration-300">
-                        <i class="fas fa-arrow-right fa-lg"></i>
-                    </span>
-                </a>
+                <div class="mt-8 xl:mt-0 flex gap-4">
+                    <a href="{{ route('wms.dashboard') }}" class="btn-ghost px-6 py-3 flex items-center gap-2 text-xs uppercase tracking-wider bg-white hover:shadow-md">
+                        <i class="fas fa-arrow-left"></i> Dashboard
+                    </a>
+                </div>
+            </div>
 
-                <a href="{{ route('wms.reports.non-available-inventory') }}" 
-                   class="relative group block bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-red-300 transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
-                    <div class="absolute bottom-0 right-0 -mb-10 -mr-10 w-32 h-32 bg-red-100 rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                   
-                    <div class="mb-4 inline-block p-3 bg-red-100 rounded-lg shadow-sm border border-red-200">
-                        <svg class="w-8 h-8 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                           <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
-                        </svg>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 stagger-enter" style="animation-delay: 0.2s;">
+
+                <a :href="getLink('{{ route('wms.reports.inventory') }}')" class="dashboard-card p-8 group">
+                    <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fas fa-chart-pie text-8xl text-blue-500"></i>
                     </div>
                     
-                    <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-red-700 transition-colors duration-300">
-                        Inventario No Disponible
-                    </h3>
-                    
-                    <p class="text-sm text-gray-600 mb-4">
-                        Stock dañado, en inspección o bloqueado que requiere acción. ⚠️
-                    </p>
-                    
-                    <span class="absolute bottom-6 right-6 text-red-300 group-hover:text-red-500 group-hover:translate-x-1 transition-transform duration-300">
-                        <i class="fas fa-arrow-right fa-lg"></i>
-                    </span>
-                </a>
-
-                <a href="{{ route('wms.reports.abc-analysis') }}" 
-                   class="relative group block bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-green-300 transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
-                    <div class="absolute top-0 right-0 -mt-12 -mr-12 w-36 h-36 bg-green-100 rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                   
-                    <div class="mb-4 inline-block p-3 bg-green-100 rounded-lg shadow-sm border border-green-200">
-                        <svg class="w-8 h-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                           <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1.125-1.5M13.5 16.5L12 15m1.5 1.5l1.125-1.5M13.5 16.5h-1.5m7.5 4.5v-1.5m0 1.5A2.25 2.25 0 0018 18.75h-2.25m-7.5 0h7.5m-7.5 0l-1.125 1.5M13.5 18.75L12 21m1.5-2.25l1.125 1.5M13.5 18.75h-1.5m-3-15.75v11.25c0 1.242.984 2.25 2.25 2.25h2.25c1.242 0 2.25-.984 2.25-2.25V3m-7.5 0h7.5" />
-                        </svg>
+                    <div class="icon-square bg-blue-50 text-blue-600">
+                        <i class="fas fa-chart-pie"></i>
                     </div>
                     
-                    <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-green-700 transition-colors duration-300">
+                    <h3 class="text-2xl font-raleway font-black text-[#2c3856] mb-2 group-hover:text-blue-600 transition-colors">
+                        Inventario General
+                    </h3>
+                    <p class="text-sm text-gray-500 font-medium leading-relaxed mb-6">
+                        KPIs en tiempo real, ocupación global y exactitud.
+                    </p>
+                    
+                    <div class="flex items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover:text-blue-600 transition-colors">
+                        <span>Ver Dashboard</span>
+                        <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </a>
+
+                <a :href="getLink('{{ route('wms.reports.stock-movements') }}')" class="dashboard-card p-8 group">
+                    <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fas fa-exchange-alt text-8xl text-purple-500"></i>
+                    </div>
+
+                    <div class="icon-square bg-purple-50 text-purple-600">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    
+                    <h3 class="text-2xl font-raleway font-black text-[#2c3856] mb-2 group-hover:text-purple-600 transition-colors">
+                        Historial Movimientos
+                    </h3>
+                    <p class="text-sm text-gray-500 font-medium leading-relaxed mb-6">
+                        Bitácora detallada de entradas, salidas y ajustes.
+                    </p>
+                    
+                    <div class="flex items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover:text-purple-600 transition-colors">
+                        <span>Consultar Trazabilidad</span>
+                        <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </a>
+
+                <a :href="getLink('{{ route('wms.reports.inventory-aging') }}')" class="dashboard-card p-8 group">
+                    <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fas fa-clock text-8xl text-amber-500"></i>
+                    </div>
+
+                    <div class="icon-square bg-amber-50 text-amber-600">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    
+                    <h3 class="text-2xl font-raleway font-black text-[#2c3856] mb-2 group-hover:text-amber-600 transition-colors">
+                        Antigüedad (Aging)
+                    </h3>
+                    <p class="text-sm text-gray-500 font-medium leading-relaxed mb-6">
+                        Análisis de rotación y permanencia de stock.
+                    </p>
+                    
+                    <div class="flex items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover:text-amber-600 transition-colors">
+                        <span>Analizar Días</span>
+                        <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </a>
+
+                <a :href="getLink('{{ route('wms.reports.non-available-inventory') }}')" class="dashboard-card p-8 group">
+                    <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fas fa-ban text-8xl text-red-500"></i>
+                    </div>
+
+                    <div class="icon-square bg-red-50 text-red-600">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                    
+                    <h3 class="text-2xl font-raleway font-black text-[#2c3856] mb-2 group-hover:text-red-600 transition-colors">
+                        Stock No Disponible
+                    </h3>
+                    <p class="text-sm text-gray-500 font-medium leading-relaxed mb-6">
+                        Inventario dañado, en cuarentena o bloqueado.
+                    </p>
+                    
+                    <div class="flex items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover:text-red-600 transition-colors">
+                        <span>Gestionar Calidad</span>
+                        <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </a>
+
+                <a :href="getLink('{{ route('wms.reports.abc-analysis') }}')" class="dashboard-card p-8 group">
+                    <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fas fa-layer-group text-8xl text-emerald-500"></i>
+                    </div>
+
+                    <div class="icon-square bg-emerald-50 text-emerald-600">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    
+                    <h3 class="text-2xl font-raleway font-black text-[#2c3856] mb-2 group-hover:text-emerald-600 transition-colors">
                         Análisis ABC-XYZ
                     </h3>
-                    
-                    <p class="text-sm text-gray-600 mb-4">
-                        Clasificación de productos por Valor (ABC) y Frecuencia (XYZ). 📊
+                    <p class="text-sm text-gray-500 font-medium leading-relaxed mb-6">
+                        Clasificación estratégica por volumen y frecuencia.
                     </p>
                     
-                    <span class="absolute bottom-6 right-6 text-green-300 group-hover:text-green-500 group-hover:translate-x-1 transition-transform duration-300">
-                        <i class="fas fa-arrow-right fa-lg"></i>
-                    </span>
-                </a>                
+                    <div class="flex items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover:text-emerald-600 transition-colors">
+                        <span>Ver Clasificación</span>
+                        <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </a>
 
-                <a href="{{ route('wms.reports.slotting-heatmap') }}" 
-                   class="relative group block bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-teal-300 transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
-                    <div class="absolute bottom-0 left-0 -mb-10 -ml-10 w-32 h-32 bg-teal-100 rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                   
-                    <div class="mb-4 inline-block p-3 bg-teal-100 rounded-lg shadow-sm border border-teal-200">
-                        <svg class="w-8 h-8 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                           <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                        </svg>
+                <a :href="getLink('{{ route('wms.reports.slotting-heatmap') }}')" class="dashboard-card p-8 group">
+                    <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fas fa-th text-8xl text-cyan-500"></i>
+                    </div>
+
+                    <div class="icon-square bg-cyan-50 text-cyan-600">
+                        <i class="fas fa-th"></i>
                     </div>
                     
-                    <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-teal-700 transition-colors duration-300">
-                        Mapa de Calor (Slotting)
+                    <h3 class="text-2xl font-raleway font-black text-[#2c3856] mb-2 group-hover:text-cyan-600 transition-colors">
+                        Heatmap Slotting
                     </h3>
-                    
-                    <p class="text-sm text-gray-600 mb-4">
-                        Visualización interactiva de la eficiencia de ubicaciones vs. productos. 🔥
+                    <p class="text-sm text-gray-500 font-medium leading-relaxed mb-6">
+                        Mapa visual de eficiencia de ubicaciones.
                     </p>
                     
-                    <span class="absolute bottom-6 right-6 text-teal-300 group-hover:text-teal-500 group-hover:translate-x-1 transition-transform duration-300">
-                        <i class="fas fa-arrow-right fa-lg"></i>
-                    </span>
+                    <div class="flex items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover:text-cyan-600 transition-colors">
+                        <span>Optimizar Layout</span>
+                        <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+                    </div>
                 </a>
 
             </div>
         </div>
     </div>
+
+    <script>
+        function reportsMenu() {
+            return {
+                warehouseId: '',
+                areaId: '',
+                
+                getLink(baseUrl) {
+                    const params = new URLSearchParams();
+                    if (this.warehouseId) params.append('warehouse_id', this.warehouseId);
+                    if (this.areaId) params.append('area_id', this.areaId);
+                    
+                    const queryString = params.toString();
+                    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+                },
+
+                updateLinks() {
+                    // Alpine.js reactivo actualiza automáticamente los href
+                }
+            }
+        }
+        
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('reportsMenu', reportsMenu);
+        });
+    </script>
 </x-app-layout>

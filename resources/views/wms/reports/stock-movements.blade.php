@@ -1,125 +1,238 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-y-4">
-            <div class="flex items-center space-x-3">
-                <h2 class="font-bold text-3xl text-gray-800 leading-tight tracking-tight">
-                    Historial de Movimientos
-                </h2>
+    <x-slot name="header"></x-slot>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@800;900&display=swap');
+        
+        .font-raleway { font-family: 'Raleway', sans-serif; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        
+        .stagger-enter { opacity: 0; transform: translateY(20px); animation: enterUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes enterUp { to { opacity: 1; transform: translateY(0); } }
+        
+        .input-arch {
+            background: transparent; border: none; border-bottom: 2px solid #e5e7eb; border-radius: 0;
+            padding: 0.5rem 0; font-family: 'Montserrat', sans-serif; font-weight: 600; color: #2c3856;
+            transition: all 0.3s ease; width: 100%; font-size: 0.9rem;
+        }
+        .input-arch:focus { border-bottom-color: #ff9c00; box-shadow: none; outline: none; }
+        .input-arch-select { background-image: none; cursor: pointer; padding-right: 1.5rem; }
+
+        .btn-nexus { background: #2c3856; color: white; border-radius: 0.8rem; font-weight: 700; transition: all 0.2s; }
+        .btn-nexus:hover { background: #1a253a; transform: translateY(-1px); }
+        
+        .btn-ghost { background: transparent; color: #2c3856; border: 2px solid #e5e7eb; border-radius: 1rem; font-weight: 700; }
+        .btn-ghost:hover { border-color: #2c3856; background: #2c3856; color: white; }
+
+        .nexus-table { width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; }
+        .nexus-table thead th {
+            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; font-weight: 800;
+            padding: 1rem; text-align: left;
+        }
+        .nexus-row { background: white; transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .nexus-row td { padding: 1rem; vertical-align: middle; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; }
+        .nexus-row td:first-child { border-top-left-radius: 1rem; border-bottom-left-radius: 1rem; border-left: 1px solid #f3f4f6; }
+        .nexus-row td:last-child { border-top-right-radius: 1rem; border-bottom-right-radius: 1rem; border-right: 1px solid #f3f4f6; }
+        .nexus-row:hover { box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.08); z-index: 10; position: relative; }
+
+        [x-cloak] { display: none !important; }
+    </style>
+
+    <div class="min-h-screen bg-transparent text-[#2b2b2b] font-montserrat pb-20 relative overflow-hidden">
+        
+        <div class="fixed inset-0 -z-10 pointer-events-none">
+            <div class="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10"></div>
+            <div class="absolute top-[-20%] right-[-10%] w-[50rem] h-[50rem] bg-gradient-to-b from-[#2c3856]/5 to-transparent rounded-full blur-[120px]"></div>
+        </div>
+
+        <div class="max-w-[1920px] mx-auto px-6 pt-10 relative z-10">
+            
+            <div class="flex flex-col xl:flex-row justify-between items-end mb-10 stagger-enter" style="animation-delay: 0.1s;">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="w-12 h-1 bg-[#ff9c00]"></span>
+                        <span class="text-sm font-bold text-[#2c3856] tracking-[0.3em] uppercase">Trazabilidad</span>
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-raleway font-black text-[#2c3856] leading-none">
+                        HISTORIAL <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-orange-600">MOVIMIENTOS</span>
+                    </h1>
+                </div>
+
+                <div class="flex flex-wrap gap-3 mt-6 xl:mt-0 items-center">
+                    <a href="{{ route('wms.reports.index') }}" class="flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 text-[#666666] font-bold rounded-xl shadow-sm hover:shadow-md hover:border-[#2c3856] hover:text-[#2c3856] transition-all text-sm uppercase tracking-wider">
+                        <i class="fas fa-arrow-left"></i> <span>Volver a Reportes</span>
+                    </a>
+                </div>
             </div>
 
-            <a href="{{ route('wms.reports.stock-movements.export', request()->query()) }}"
-               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-lg shadow-md hover:shadow-lg hover:from-emerald-600 hover:to-green-700 transition-all duration-300 ease-in-out transform hover:-translate-y-px">
-                <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                </svg>
-                <span class="text-sm font-semibold tracking-wide">Exportar a CSV</span>
-            </a>
-        </div>
-    </x-slot>
+            <div class="bg-white/80 backdrop-blur-xl rounded-[2rem] p-8 border border-gray-100 shadow-xl mb-10 stagger-enter" style="animation-delay: 0.2s;">
+                <form method="GET" action="{{ route('wms.reports.stock-movements') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-end">
+                    
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Almacén</label>
+                        <select name="warehouse_id" class="input-arch input-arch-select text-sm">
+                            <option value="">Todos</option>
+                            @foreach($warehouses as $warehouse)
+                                <option value="{{ $warehouse->id }}" @selected(request('warehouse_id') == $warehouse->id)>{{ $warehouse->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-    <div class="py-12">
-        <div class="max-w-screen-3xl mx-auto sm:px-6 lg:px-8 space-y-8">
+                    <div>
+                        <label class="text-[10px] font-bold text-[#ff9c00] uppercase tracking-widest block mb-1">Área / Cliente</label>
+                        <select name="area_id" class="input-arch input-arch-select text-sm text-[#ff9c00]">
+                            <option value="">Todas</option>
+                            @foreach($areas as $area)
+                                <option value="{{ $area->id }}" @selected(request('area_id') == $area->id)>{{ $area->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-            <div class="bg-gradient-to-br from-white to-gray-50 p-6 rounded-2xl shadow-lg border border-gray-200">
-                <form id="filters-form" action="{{ route('wms.reports.stock-movements') }}" method="GET">
-                     <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-x-6 gap-y-4 items-end">
+                    <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label for="warehouse_id" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Almacén</label>
-                            <select id="warehouse_id" name="warehouse_id" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3 appearance-none bg-white pr-8 bg-no-repeat" style="background-image: url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3E%3Cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3E%3C/svg%3E'); background-position: right 0.5rem center; background-size: 1.5em 1.5em;">
-                                <option value="">Todos</option>
-                                @foreach($warehouses as $warehouse)
-                                    <option value="{{ $warehouse->id }}" @selected(request('warehouse_id') == $warehouse->id)>
-                                        {{ $warehouse->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>                        
-                        <div><label for="start_date" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Desde</label><input type="date" id="start_date" name="start_date" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3" value="{{ request('start_date') }}"></div>
-                        <div><label for="end_date" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Hasta</label><input type="date" id="end_date" name="end_date" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3" value="{{ request('end_date') }}"></div>
-                        <div><label for="sku" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">SKU</label><input type="text" id="sku" name="sku" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3" placeholder="Buscar SKU..." value="{{ request('sku') }}"></div>
-                        <div><label for="lpn" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">LPN</label><input type="text" id="lpn" name="lpn" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3" placeholder="Buscar LPN..." value="{{ request('lpn') }}"></div>
-                        <div><label for="movement_type" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Tipo Movimiento</label><select id="movement_type" name="movement_type" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3 appearance-none bg-white pr-8 bg-no-repeat" style="background-image: url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3E%3Cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3E%3C/svg%3E'); background-position: right 0.5rem center; background-size: 1.5em 1.5em;"><option value="">Todos los Tipos</option>@foreach($movementTypes as $type)<option value="{{ $type }}" @selected(request('movement_type') == $type)>{{ Str::title(str_replace('-', ' ', $type)) }}</option>@endforeach</select></div>
-                        <div class="pt-5"><a href="{{ route('wms.reports.stock-movements') }}" class="w-full inline-flex justify-center items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg shadow-sm hover:bg-gray-300 text-sm font-semibold transition duration-150 ease-in-out" title="Limpiar filtros"><svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>Limpiar</a></div>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Desde</label>
+                            <input type="date" name="start_date" value="{{ request('start_date') }}" class="input-arch text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Hasta</label>
+                            <input type="date" name="end_date" value="{{ request('end_date') }}" class="input-arch text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Tipo Movimiento</label>
+                        <select name="movement_type" class="input-arch input-arch-select text-sm">
+                            <option value="">Todos</option>
+                            @foreach($movementTypes as $type)
+                                <option value="{{ $type }}" @selected(request('movement_type') == $type)>{{ Str::title(str_replace('-', ' ', $type)) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">SKU / Producto</label>
+                        <input type="text" name="sku" value="{{ request('sku') }}" class="input-arch text-sm" placeholder="Buscar SKU...">
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">LPN</label>
+                        <input type="text" name="lpn" value="{{ request('lpn') }}" class="input-arch text-sm font-mono" placeholder="Buscar LPN...">
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button type="submit" class="btn-nexus px-6 py-3 w-full shadow-lg uppercase tracking-wider text-xs">
+                            <i class="fas fa-filter mr-2"></i> Filtrar
+                        </button>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <a href="{{ route('wms.reports.stock-movements.export', request()->query()) }}" class="btn-ghost px-4 py-3 flex-1 flex items-center justify-center border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300">
+                            <i class="fas fa-file-csv text-lg"></i>
+                        </a>
+                        <a href="{{ route('wms.reports.stock-movements') }}" class="btn-ghost px-4 py-3 flex-1 flex items-center justify-center text-gray-400 hover:text-red-500">
+                            <i class="fas fa-undo"></i>
+                        </a>
                     </div>
                 </form>
             </div>
 
-            <div class="bg-white overflow-hidden rounded-2xl shadow-lg border border-gray-200">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha</th>
-                                <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Hora</th>
-                                <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Usuario</th>
-                                <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tipo</th>
-                                <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Producto</th>
-                                <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">LPN</th>
-                                <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Ubicación</th>
-                                <th scope="col" class="px-5 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Cantidad</th>
-                                <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">PO Origen</th>
-                                <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Pedimento</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @forelse ($movements as $mov)
-                                <tr class="hover:bg-gray-50 transition-colors duration-150">
-                                    <td class="px-5 py-4 whitespace-nowrap text-sm text-gray-700">{{ $mov->created_at->format('d/m/Y') }}</td>
-                                    <td class="px-5 py-4 whitespace-nowrap text-sm text-gray-500">{{ $mov->created_at->format('h:i A') }}</td>
-                                    <td class="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{{ $mov->user->name ?? 'Sistema' }}</td>
-                                    <td class="px-5 py-4 whitespace-nowrap">
-                                        @php
-                                            $isPositive = $mov->quantity > 0;
-                                            $tagColor = 'bg-blue-100 text-blue-800'; // Default: Ajuste
-                                            if (Str::contains($mov->movement_type, ['RECEPCION', 'TRANSFER-IN', 'SPLIT-IN'])) $tagColor = 'bg-green-100 text-green-800';
-                                            elseif (Str::contains($mov->movement_type, ['SALIDA', 'PICKING', 'TRANSFER-OUT', 'SPLIT-OUT'])) $tagColor = 'bg-red-100 text-red-800';
-                                            elseif (Str::contains($mov->movement_type, 'AJUSTE')) $tagColor = 'bg-yellow-100 text-yellow-800';
-                                        @endphp
-                                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $tagColor }}">
-                                            {{ Str::title(str_replace('-', ' ', $mov->movement_type)) }}
-                                        </span>
-                                    </td>
-                                    <td class="px-5 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">{{ $mov->product->name ?? 'N/A' }}</div>
-                                        <div class="text-xs text-gray-500 font-mono">{{ $mov->product->sku ?? 'N/A' }}</div>
-                                    </td>
-                                    <td class="px-5 py-4 whitespace-nowrap text-sm font-mono text-indigo-600 font-semibold">{{ $mov->palletItem->pallet->lpn ?? 'N/A' }}</td>
-                                    <td class="px-5 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        @if ($mov->location)
-                                            {{ $mov->location->aisle ?? '?' }}-{{ $mov->location->rack ?? '?' }}-{{ $mov->location->shelf ?? '?' }}-{{ $mov->location->bin ?? '?' }}
-                                            {{-- ({{ $mov->location->code }}) --}}
-                                        @else
-                                            N/A
-                                        @endif
-                                    </td>
-                                    <td class="px-5 py-4 whitespace-nowrap text-center">
-                                        <span class="text-lg font-bold {{ $mov->quantity > 0 ? 'text-green-600' : ($mov->quantity < 0 ? 'text-red-600' : 'text-gray-500') }}">
-                                            {{ $mov->quantity > 0 ? '+' : '' }}{{ number_format($mov->quantity) }}
-                                        </span>
-                                    </td>
-                                    <td class="px-5 py-4 whitespace-nowrap text-sm font-mono text-gray-600">{{ $mov->palletItem->pallet->purchaseOrder->po_number ?? 'N/A' }}</td>
-                                    <td class="px-5 py-4 whitespace-nowrap text-sm font-mono text-gray-600">{{ $mov->palletItem->pallet->purchaseOrder->pedimento_a4 ?? 'N/A' }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="10" class="text-center py-16 px-6">
-                                         <svg class="mx-auto h-12 w-12 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                                        </svg>
-                                        <h3 class="mt-2 text-lg font-semibold text-gray-800">No se encontraron movimientos</h3>
-                                        <p class="mt-1 text-sm text-gray-500">Intenta ajustar los filtros o verifica si se han registrado transacciones.</p>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+            <div class="overflow-x-auto pb-12 stagger-enter" style="animation-delay: 0.3s;">
+                <table class="nexus-table w-full">
+                    <thead>
+                        <tr>
+                            <th>Fecha / Hora</th>
+                            <th>Usuario</th>
+                            <th>Tipo</th>
+                            <th>Producto</th>
+                            <th>LPN / Ubicación</th>
+                            <th class="text-center">Cantidad</th>
+                            <th>Área</th>
+                            <th>Origen (PO/Ped)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($movements as $mov)
+                            <tr class="nexus-row group">
+                                <td>
+                                    <div class="font-bold text-[#2c3856] text-sm">{{ $mov->created_at->format('d/m/Y') }}</div>
+                                    <div class="text-xs text-gray-400 font-mono">{{ $mov->created_at->format('H:i A') }}</div>
+                                </td>
+                                
+                                <td>
+                                    <div class="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
+                                            {{ substr($mov->user->name ?? 'S', 0, 1) }}
+                                        </div>
+                                        {{ $mov->user->name ?? 'Sistema' }}
+                                    </div>
+                                </td>
 
-                @if ($movements->hasPages())
-                    <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                        {{ $movements->appends(request()->query())->links() }}
-                    </div>
-                @endif
+                                <td>
+                                    @php
+                                        $typeColor = 'bg-blue-100 text-blue-800';
+                                        if (Str::contains($mov->movement_type, ['RECEPCION', 'TRANSFER-IN', 'SPLIT-IN'])) $typeColor = 'bg-emerald-100 text-emerald-800';
+                                        elseif (Str::contains($mov->movement_type, ['SALIDA', 'PICKING', 'TRANSFER-OUT', 'SPLIT-OUT'])) $typeColor = 'bg-red-100 text-red-800';
+                                        elseif (Str::contains($mov->movement_type, 'AJUSTE')) $typeColor = 'bg-yellow-100 text-yellow-800';
+                                    @endphp
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider {{ $typeColor }}">
+                                        {{ Str::title(str_replace('-', ' ', $mov->movement_type)) }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="font-bold text-[#2c3856] text-sm truncate max-w-[200px]" title="{{ $mov->product->name ?? '' }}">
+                                        {{ $mov->product->name ?? 'N/A' }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 font-mono">{{ $mov->product->sku ?? 'N/A' }}</div>
+                                </td>
+
+                                <td>
+                                    <div class="font-mono text-xs font-bold text-indigo-600 mb-1">{{ $mov->palletItem->pallet->lpn ?? 'N/A' }}</div>
+                                    <div class="flex items-center gap-1">
+                                        <span class="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-bold font-mono">
+                                            @if ($mov->location)
+                                                {{ $mov->location->aisle }}-{{ $mov->location->rack }}-{{ $mov->location->shelf }}-{{ $mov->location->bin }}
+                                            @else
+                                                N/A
+                                            @endif
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td class="text-center">
+                                    <span class="text-lg font-black {{ $mov->quantity > 0 ? 'text-emerald-600' : ($mov->quantity < 0 ? 'text-red-500' : 'text-gray-400') }}">
+                                        {{ $mov->quantity > 0 ? '+' : '' }}{{ number_format($mov->quantity) }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @if($mov->palletItem && $mov->palletItem->pallet && $mov->palletItem->pallet->purchaseOrder && $mov->palletItem->pallet->purchaseOrder->area)
+                                        <span class="text-xs font-bold text-[#ff9c00]">{{ $mov->palletItem->pallet->purchaseOrder->area->name }}</span>
+                                    @else
+                                        <span class="text-xs text-gray-300 italic">General</span>
+                                    @endif
+                                </td>
+
+                                <td>
+                                    <div class="text-xs font-bold text-gray-600">{{ $mov->palletItem->pallet->purchaseOrder->po_number ?? 'N/A' }}</div>
+                                    <div class="text-[10px] text-gray-400 font-mono">{{ $mov->palletItem->pallet->purchaseOrder->pedimento_a4 ?? '-' }}</div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="text-center py-12">
+                                    <div class="inline-block p-4 rounded-full bg-gray-50 mb-3">
+                                        <i class="fas fa-exchange-alt text-gray-300 text-2xl"></i>
+                                    </div>
+                                    <p class="text-gray-500 font-bold text-sm">No se encontraron movimientos con los filtros seleccionados.</p>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pb-20 nexus-pagination">
+                {{ $movements->appends(request()->query())->links() }}
             </div>
 
         </div>

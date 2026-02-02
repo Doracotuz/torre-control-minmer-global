@@ -15,6 +15,7 @@ use App\Models\Location;
 use App\Models\Product;
 use App\Models\Warehouse;
 use App\Models\WMS\Quality;
+use App\Models\Area;
 use Carbon\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Log;
@@ -24,31 +25,48 @@ class WMSReportController extends Controller
     public function index()
     {
         $warehouses = Warehouse::orderBy('name')->get();
-        return view('wms.reports.index', compact('warehouses'));
+        $areas = Area::orderBy('name')->get();
+        return view('wms.reports.index', compact('warehouses', 'areas'));
     }
 
     public function inventoryDashboard(Request $request)
     {
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
+        
         $warehouses = Warehouse::orderBy('name')->get();
+        $areas = Area::orderBy('name')->get();
 
-        $baseStockQuery = InventoryStock::query();
+        $baseStockQuery = PalletItem::query()
+            ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
+            ->select('pallet_items.*');
+
         $basePalletItemQuery = PalletItem::query();
         $baseMovementQuery = StockMovement::query();
         $baseTaskQuery = PhysicalCountTask::query();
         $baseLocationQuery = Location::query();
 
         if ($warehouseId) {
-            $baseStockQuery->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+            $baseStockQuery->where('pallets.location_id', function($q) use ($warehouseId) {
+                $q->select('id')->from('locations')->where('warehouse_id', $warehouseId);
+            });
             $basePalletItemQuery->whereHas('pallet.location', fn($q) => $q->where('warehouse_id', $warehouseId));
             $baseMovementQuery->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
             $baseTaskQuery->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
             $baseLocationQuery->where('warehouse_id', $warehouseId);
         }
 
-        $totalUnits = (clone $baseStockQuery)->sum('quantity');
-        $skusWithStock = (clone $baseStockQuery)->where('quantity', '>', 0)->distinct('product_id')->count();
-        $locationsUsed = (clone $baseStockQuery)->where('quantity', '>', 0)->distinct('location_id')->count();
+        if ($areaId) {
+            $areaFilter = fn($q) => $q->where('area_id', $areaId);
+            
+            $baseStockQuery->whereHas('pallet.purchaseOrder', $areaFilter);
+            $basePalletItemQuery->whereHas('pallet.purchaseOrder', $areaFilter);
+            $baseMovementQuery->whereHas('palletItem.pallet.purchaseOrder', $areaFilter);
+        }
+
+        $totalUnits = (clone $baseStockQuery)->sum('pallet_items.quantity');
+        $skusWithStock = (clone $baseStockQuery)->where('pallet_items.quantity', '>', 0)->distinct('pallet_items.product_id')->count();
+        $locationsUsed = (clone $baseStockQuery)->where('pallet_items.quantity', '>', 0)->distinct('pallets.location_id')->count();
 
         $totalTasks = (clone $baseTaskQuery)->whereIn('status', ['resolved', 'discrepancy'])->count();
         $resolvedTasks = (clone $baseTaskQuery)->where('status', 'resolved')->count();
@@ -84,9 +102,9 @@ class WMSReportController extends Controller
         $outboundTrend = ['labels' => $trendLabels->toArray(), 'data' => $trendLabels->map(fn($month) => $outboundData->get($month, 0))->toArray()];
 
         $topProductsQtyData = (clone $baseStockQuery)->with('product:id,name')
-            ->select('product_id', DB::raw('SUM(quantity) as total_quantity'))
-            ->where('quantity', '>', 0)
-            ->groupBy('product_id')
+            ->select('pallet_items.product_id', DB::raw('SUM(pallet_items.quantity) as total_quantity'))
+            ->where('pallet_items.quantity', '>', 0)
+            ->groupBy('pallet_items.product_id')
             ->orderBy('total_quantity', 'desc')
             ->limit(10)
             ->get();
@@ -106,9 +124,9 @@ class WMSReportController extends Controller
             'frequencies' => $topProductsFreqData->pluck('movement_count')->toArray()
          ];
 
-         $productQuantities = (clone $baseStockQuery)->select('product_id', DB::raw('SUM(quantity) as total_quantity'))
-            ->where('quantity', '>', 0)
-            ->groupBy('product_id')
+         $productQuantities = (clone $baseStockQuery)->select('pallet_items.product_id', DB::raw('SUM(pallet_items.quantity) as total_quantity'))
+            ->where('pallet_items.quantity', '>', 0)
+            ->groupBy('pallet_items.product_id')
             ->orderBy('total_quantity', 'desc')
             ->get();
          $totalOverallQuantity = $productQuantities->sum('total_quantity');
@@ -161,11 +179,13 @@ class WMSReportController extends Controller
             'committed' => $availableCommittedData->pluck('total_committed')->toArray(),
         ];
 
-        $stockByLocationTypeData = (clone $baseStockQuery)->join('locations', 'inventory_stocks.location_id', '=', 'locations.id')
-            ->select('locations.type', DB::raw('SUM(inventory_stocks.quantity) as total_quantity'))
-            ->where('inventory_stocks.quantity', '>', 0)
+        $stockByLocationTypeData = (clone $baseStockQuery)
+            ->join('locations', 'pallets.location_id', '=', 'locations.id')
+            ->select('locations.type', DB::raw('SUM(pallet_items.quantity) as total_quantity'))
+            ->where('pallet_items.quantity', '>', 0)
             ->groupBy('locations.type')
             ->pluck('total_quantity', 'type');
+        
         $translatedStockByType = [];
         $tempLocation = new Location();
         foreach ($stockByLocationTypeData as $type => $qty) {
@@ -178,15 +198,16 @@ class WMSReportController extends Controller
         $occupiedStorageLocations = (clone $baseLocationQuery)->where('type', 'storage')->has('pallets')->count();
         $locationUtilization = [$occupiedStorageLocations, max(0, $totalStorageLocations - $occupiedStorageLocations)];
 
-        $topLocationsQtyData = (clone $baseStockQuery)->with('location:id,code')
-            ->select('location_id', DB::raw('SUM(quantity) as total_quantity'))
-            ->where('quantity', '>', 0)
-            ->groupBy('location_id')
+        $topLocationsQtyData = (clone $baseStockQuery)
+            ->join('locations', 'pallets.location_id', '=', 'locations.id')
+            ->select('pallets.location_id', 'locations.code', DB::raw('SUM(pallet_items.quantity) as total_quantity'))
+            ->where('pallet_items.quantity', '>', 0)
+            ->groupBy('pallets.location_id', 'locations.code')
             ->orderBy('total_quantity', 'desc')
             ->limit(10)
             ->get();
         $topLocationsQty = [
-            'codes' => $topLocationsQtyData->pluck('location.code')->toArray(),
+            'codes' => $topLocationsQtyData->pluck('code')->toArray(),
             'quantities' => $topLocationsQtyData->pluck('total_quantity')->toArray()
         ];
 
@@ -221,9 +242,9 @@ class WMSReportController extends Controller
         $pickingTrend = ['labels' => $pickingTrendLabels, 'data' => $pickingTrendValues];
 
         $topProductsVolData = (clone $baseStockQuery)->with('product')
-            ->select('product_id', DB::raw('SUM(quantity) as total_quantity'))
-            ->where('quantity', '>', 0)
-            ->groupBy('product_id')
+            ->select('pallet_items.product_id', DB::raw('SUM(pallet_items.quantity) as total_quantity'))
+            ->where('pallet_items.quantity', '>', 0)
+            ->groupBy('pallet_items.product_id')
             ->get()
             ->map(function ($item) {
                 $item->total_volume = $item->total_quantity * ($item->product->volume ?? 0);
@@ -238,19 +259,19 @@ class WMSReportController extends Controller
             'volumes' => $topProductsVolData->pluck('total_volume')->map(fn($v) => round($v, 2))->toArray()
         ];
 
-        $stockByBrandData = (clone $baseStockQuery)->join('products', 'inventory_stocks.product_id', '=', 'products.id')
+        $stockByBrandData = (clone $baseStockQuery)->join('products', 'pallet_items.product_id', '=', 'products.id')
             ->join('brands', 'products.brand_id', '=', 'brands.id')
-            ->select('brands.name as brand_name', DB::raw('SUM(inventory_stocks.quantity) as total_quantity'))
-            ->where('inventory_stocks.quantity', '>', 0)
+            ->select('brands.name as brand_name', DB::raw('SUM(pallet_items.quantity) as total_quantity'))
+            ->where('pallet_items.quantity', '>', 0)
             ->whereNotNull('products.brand_id')
             ->groupBy('brands.name')
             ->orderBy('total_quantity', 'desc')
             ->pluck('total_quantity', 'brand_name');
 
-        $stockWithoutBrand = (clone $baseStockQuery)->join('products', 'inventory_stocks.product_id', '=', 'products.id')
+        $stockWithoutBrand = (clone $baseStockQuery)->join('products', 'pallet_items.product_id', '=', 'products.id')
              ->whereNull('products.brand_id')
-             ->where('inventory_stocks.quantity', '>', 0)
-             ->sum('inventory_stocks.quantity');
+             ->where('pallet_items.quantity', '>', 0)
+             ->sum('pallet_items.quantity');
         if ($stockWithoutBrand > 0) {
             $stockByBrandData->put('Sin Marca', $stockWithoutBrand);
         }
@@ -281,25 +302,34 @@ class WMSReportController extends Controller
             'stockByBrandLabels' => $stockByBrandLabels,
         ];
 
-        return view('wms.reports.inventory', compact('kpis', 'warehouses', 'warehouseId'));
+        return view('wms.reports.inventory', compact('kpis', 'warehouses', 'warehouseId', 'areas', 'areaId'));
     }
 
     public function showStockMovements(Request $request)
     {
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
         $warehouses = Warehouse::orderBy('name')->get();
+        $areas = Area::orderBy('name')->get();
 
         $query = StockMovement::with([
             'user:id,name', 
             'product:id,sku,name', 
             'location:id,code,aisle,rack,shelf,bin,warehouse_id',
             'palletItem.pallet:id,lpn,purchase_order_id',
-            'palletItem.pallet.purchaseOrder:id,po_number,pedimento_a4'
+            'palletItem.pallet.purchaseOrder:id,po_number,pedimento_a4,area_id',
+            'palletItem.pallet.purchaseOrder.area:id,name'
         ])->latest();
 
         if ($warehouseId) {
             $query->whereHas('location', function ($q) use ($warehouseId) {
                 $q->where('warehouse_id', $warehouseId);
+            });
+        }
+
+        if ($areaId) {
+            $query->whereHas('palletItem.pallet.purchaseOrder', function($q) use ($areaId) {
+                $q->where('area_id', $areaId);
             });
         }
 
@@ -325,22 +355,23 @@ class WMSReportController extends Controller
 
         $movementTypes = StockMovement::select('movement_type')->distinct()->pluck('movement_type');
 
-        return view('wms.reports.stock-movements', compact('movements', 'movementTypes', 'warehouses', 'warehouseId'));
+        return view('wms.reports.stock-movements', compact('movements', 'movementTypes', 'warehouses', 'warehouseId', 'areas', 'areaId'));
     }
 
     public function exportStockMovements(Request $request)
     {
         $fileName = 'reporte_movimientos_inventario_' . date('Y-m-d') . '.csv';
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
 
-        $callback = function() use ($request, $warehouseId) {
+        $callback = function() use ($request, $warehouseId, $areaId) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             fputcsv($file, [
                 'Fecha', 'Hora', 'Usuario', 'Tipo Movimiento', 'SKU', 'Producto',
                 'LPN', 'Ubicacion Completa', 'Ubicacion Codigo',
-                'Cantidad', 'PO Origen', 'Pedimento A4', 'ID Documento Fuente'
+                'Cantidad', 'PO Origen', 'Area', 'Pedimento A4', 'ID Documento Fuente'
             ]);
 
             $query = StockMovement::with([
@@ -348,12 +379,19 @@ class WMSReportController extends Controller
                 'product:id,sku,name',
                 'location:id,code,aisle,rack,shelf,bin,warehouse_id',
                 'palletItem.pallet:id,lpn,purchase_order_id',
-                'palletItem.pallet.purchaseOrder:id,po_number,pedimento_a4'
+                'palletItem.pallet.purchaseOrder:id,po_number,pedimento_a4,area_id',
+                'palletItem.pallet.purchaseOrder.area:id,name'
             ])->latest();
 
             if ($warehouseId) {
                 $query->whereHas('location', function ($q) use ($warehouseId) {
                     $q->where('warehouse_id', $warehouseId);
+                });
+            }
+
+            if ($areaId) {
+                $query->whereHas('palletItem.pallet.purchaseOrder', function($q) use ($areaId) {
+                    $q->where('area_id', $areaId);
                 });
             }
 
@@ -385,6 +423,7 @@ class WMSReportController extends Controller
                         $mov->location->code ?? 'N/A',
                         $mov->quantity,
                         $mov->palletItem->pallet->purchaseOrder->po_number ?? 'N/A',
+                        $mov->palletItem->pallet->purchaseOrder->area->name ?? 'N/A',
                         $mov->palletItem->pallet->purchaseOrder->pedimento_a4 ?? 'N/A',
                         $mov->source_id,
                     ]);
@@ -408,14 +447,17 @@ class WMSReportController extends Controller
     public function showAgingReport(Request $request)
     {
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
         $warehouses = Warehouse::orderBy('name')->get();
+        $areas = Area::orderBy('name')->get();
 
         $query = PalletItem::where('quantity', '>', 0)
             ->with([
                 'product:id,sku,name',
                 'quality:id,name',
                 'pallet.location:id,code,warehouse_id',
-                'pallet.purchaseOrder:id,po_number'
+                'pallet.purchaseOrder:id,po_number,area_id',
+                'pallet.purchaseOrder.area:id,name'
             ])
             ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
             ->select('pallet_items.*', DB::raw('DATEDIFF(NOW(), pallets.created_at) as age_in_days'));
@@ -423,6 +465,12 @@ class WMSReportController extends Controller
         if ($warehouseId) {
             $query->whereHas('pallet.location', function ($q) use ($warehouseId) {
                 $q->where('warehouse_id', $warehouseId);
+            });
+        }
+
+        if ($areaId) {
+            $query->whereHas('pallet.purchaseOrder', function ($q) use ($areaId) {
+                $q->where('area_id', $areaId);
             });
         }
 
@@ -455,21 +503,22 @@ class WMSReportController extends Controller
                             ->paginate(50)
                             ->withQueryString();
 
-        return view('wms.reports.inventory-aging', compact('agingItems', 'warehouses', 'warehouseId'));
+        return view('wms.reports.inventory-aging', compact('agingItems', 'warehouses', 'warehouseId', 'areas', 'areaId'));
     }
 
     public function exportAgingReport(Request $request)
     {
         $fileName = 'reporte_antiguedad_inventario_' . date('Y-m-d') . '.csv';
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
 
-        $callback = function() use ($request, $warehouseId) {
+        $callback = function() use ($request, $warehouseId, $areaId) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             fputcsv($file, [
                 'LPN', 'SKU', 'Producto', 'Calidad', 'Cantidad',
-                'Ubicacion', 'PO Origen', 'Fecha Recepcion', 'Dias Antiguedad'
+                'Ubicacion', 'PO Origen', 'Area', 'Fecha Recepcion', 'Dias Antiguedad'
             ]);
 
             $query = PalletItem::where('quantity', '>', 0)
@@ -477,7 +526,8 @@ class WMSReportController extends Controller
                     'product:id,sku,name',
                     'quality:id,name',
                     'pallet.location:id,code,warehouse_id',
-                    'pallet.purchaseOrder:id,po_number'
+                    'pallet.purchaseOrder:id,po_number,area_id',
+                    'pallet.purchaseOrder.area:id,name'
                 ])
                 ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
                 ->select('pallet_items.*', DB::raw('DATEDIFF(NOW(), pallets.created_at) as age_in_days'));
@@ -485,6 +535,12 @@ class WMSReportController extends Controller
             if ($warehouseId) {
                 $query->whereHas('pallet.location', function ($q) use ($warehouseId) {
                     $q->where('warehouse_id', $warehouseId);
+                });
+            }
+
+            if ($areaId) {
+                $query->whereHas('pallet.purchaseOrder', function ($q) use ($areaId) {
+                    $q->where('area_id', $areaId);
                 });
             }
 
@@ -516,6 +572,7 @@ class WMSReportController extends Controller
                             $item->quantity,
                             $item->pallet->location->code ?? 'N/A',
                             $item->pallet->purchaseOrder->po_number ?? 'N/A',
+                            $item->pallet->purchaseOrder->area->name ?? 'N/A',
                             $item->pallet->created_at->format('Y-m-d'),
                             $item->age_in_days,
                         ]);
@@ -539,7 +596,9 @@ class WMSReportController extends Controller
     public function showNonAvailableReport(Request $request)
     {
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
         $warehouses = Warehouse::orderBy('name')->get();
+        $areas = Area::orderBy('name')->get();
         
         $availableQualityName = 'Disponible';
 
@@ -552,12 +611,19 @@ class WMSReportController extends Controller
                 'product:id,sku,name',
                 'quality:id,name',
                 'pallet.location:id,code,warehouse_id',
-                'pallet.purchaseOrder:id,po_number'
+                'pallet.purchaseOrder:id,po_number,area_id',
+                'pallet.purchaseOrder.area:id,name'
             ]);
 
         if ($warehouseId) {
             $query->whereHas('pallet.location', function ($q) use ($warehouseId) {
                 $q->where('warehouse_id', $warehouseId);
+            });
+        }
+
+        if ($areaId) {
+            $query->whereHas('pallet.purchaseOrder', function ($q) use ($areaId) {
+                $q->where('area_id', $areaId);
             });
         }
 
@@ -580,21 +646,22 @@ class WMSReportController extends Controller
 
         $qualities = Quality::where('name', '!=', $availableQualityName)->orderBy('name')->get();
 
-        return view('wms.reports.non-available-inventory', compact('nonAvailableItems', 'qualities', 'warehouses', 'warehouseId'));
+        return view('wms.reports.non-available-inventory', compact('nonAvailableItems', 'qualities', 'warehouses', 'warehouseId', 'areas', 'areaId'));
     }
 
     public function exportNonAvailableReport(Request $request)
     {
         $fileName = 'reporte_inventario_no_disponible_' . date('Y-m-d') . '.csv';
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
 
-        $callback = function() use ($request, $warehouseId) {
+        $callback = function() use ($request, $warehouseId, $areaId) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             fputcsv($file, [
                 'LPN', 'SKU', 'Producto', 'Calidad', 'Cantidad',
-                'Ubicacion', 'PO Origen', 'Fecha Recepcion', 'Ultima Actualizacion'
+                'Ubicacion', 'PO Origen', 'Area', 'Fecha Recepcion', 'Ultima Actualizacion'
             ]);
 
             $availableQualityName = 'Disponible';
@@ -607,12 +674,19 @@ class WMSReportController extends Controller
                     'product:id,sku,name',
                     'quality:id,name',
                     'pallet.location:id,code,warehouse_id',
-                    'pallet.purchaseOrder:id,po_number'
+                    'pallet.purchaseOrder:id,po_number,area_id',
+                    'pallet.purchaseOrder.area:id,name'
                 ]);
 
             if ($warehouseId) {
                 $query->whereHas('pallet.location', function ($q) use ($warehouseId) {
                     $q->where('warehouse_id', $warehouseId);
+                });
+            }
+
+            if ($areaId) {
+                $query->whereHas('pallet.purchaseOrder', function ($q) use ($areaId) {
+                    $q->where('area_id', $areaId);
                 });
             }
 
@@ -640,6 +714,7 @@ class WMSReportController extends Controller
                             $item->quantity,
                             $item->pallet->location->code ?? 'N/A',
                             $item->pallet->purchaseOrder->po_number ?? 'N/A',
+                            $item->pallet->purchaseOrder->area->name ?? 'N/A',
                             $item->pallet->created_at->format('Y-m-d'),
                             $item->updated_at->format('Y-m-d H:i'),
                         ]);
@@ -666,9 +741,11 @@ class WMSReportController extends Controller
         $startDate = Carbon::now()->subDays($days);
         
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
         $warehouses = Warehouse::orderBy('name')->get();
+        $areas = Area::orderBy('name')->get();
 
-        $analysisData = $this->getAbcAnalysisData($startDate, $warehouseId);
+        $analysisData = $this->getAbcAnalysisData($startDate, $warehouseId, $areaId);
 
         $matrix = [
             'AX' => $analysisData->where('volume_class', 'A')->where('freq_class', 'X')->count(),
@@ -687,7 +764,9 @@ class WMSReportController extends Controller
             'matrix' => $matrix,
             'days' => $days,
             'warehouses' => $warehouses,
-            'warehouseId' => $warehouseId
+            'warehouseId' => $warehouseId,
+            'areas' => $areas,
+            'areaId' => $areaId
         ]);
     }
 
@@ -698,8 +777,9 @@ class WMSReportController extends Controller
         $fileName = 'reporte_abc_xyz_' . date('Y-m-d') . '.csv';
         
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
         
-        $analysisData = $this->getAbcAnalysisData($startDate, $warehouseId);
+        $analysisData = $this->getAbcAnalysisData($startDate, $warehouseId, $areaId);
 
         $callback = function() use ($analysisData) {
             $file = fopen('php://output', 'w');
@@ -738,15 +818,21 @@ class WMSReportController extends Controller
         return new StreamedResponse($callback, 200, $headers);
     }
 
-    private function getAbcAnalysisData(Carbon $startDate, $warehouseId = null)
+    private function getAbcAnalysisData(Carbon $startDate, $warehouseId = null, $areaId = null)
     {
-        $volumeQuery = Product::join('inventory_stocks', 'products.id', '=', 'inventory_stocks.product_id')
-            ->join('locations', 'inventory_stocks.location_id', '=', 'locations.id')
-            ->select('products.id', 'products.sku', 'products.name', DB::raw('SUM(inventory_stocks.quantity) as total_volume'))
-            ->where('inventory_stocks.quantity', '>', 0);
+        $volumeQuery = Product::join('pallet_items', 'products.id', '=', 'pallet_items.product_id')
+            ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
+            ->join('locations', 'pallets.location_id', '=', 'locations.id')
+            ->select('products.id', 'products.sku', 'products.name', DB::raw('SUM(pallet_items.quantity) as total_volume'))
+            ->where('pallet_items.quantity', '>', 0);
         
         if ($warehouseId) {
             $volumeQuery->where('locations.warehouse_id', $warehouseId);
+        }
+
+        if ($areaId) {
+            $volumeQuery->join('purchase_orders', 'pallets.purchase_order_id', '=', 'purchase_orders.id')
+                        ->where('purchase_orders.area_id', $areaId);
         }
 
         $volumeData = $volumeQuery->groupBy('products.id', 'products.sku', 'products.name')
@@ -760,6 +846,10 @@ class WMSReportController extends Controller
 
         if ($warehouseId) {
             $frequencyQuery->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
+        }
+
+        if ($areaId) {
+            $frequencyQuery->whereHas('palletItem.pallet.purchaseOrder', fn($q) => $q->where('area_id', $areaId));
         }
 
         $frequencyData = $frequencyQuery->groupBy('product_id')
@@ -815,18 +905,26 @@ class WMSReportController extends Controller
         $startDate = Carbon::now()->subDays($days);
         
         $warehouseId = $request->input('warehouse_id');
+        $areaId = $request->input('area_id');
         $warehouses = Warehouse::orderBy('name')->get();
+        $areas = Area::orderBy('name')->get();
         
-        $abcData = $this->getAbcAnalysisData($startDate, $warehouseId)->keyBy('id');
+        $abcData = $this->getAbcAnalysisData($startDate, $warehouseId, $areaId)->keyBy('id');
 
         $locationPickFreqQuery = StockMovement::select('location_id', DB::raw('COUNT(id) as pick_frequency'))
             ->where('quantity', '<', 0)
             ->where('movement_type', 'SALIDA-PICKING')
             ->where('created_at', '>=', $startDate)
             ->whereNotNull('location_id');
+        
         if ($warehouseId) {
             $locationPickFreqQuery->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
         }
+        
+        if ($areaId) {
+            $locationPickFreqQuery->whereHas('palletItem.pallet.purchaseOrder', fn($q) => $q->where('area_id', $areaId));
+        }
+
         $locationPickFreq = $locationPickFreqQuery->groupBy('location_id')->get()->keyBy('location_id');
             
         $maxFreq = $locationPickFreq->max('pick_frequency') ?: 1;
@@ -838,9 +936,15 @@ class WMSReportController extends Controller
                 'pallet:id,lpn,location_id,created_at'
             ])
             ->whereHas('pallet.location', fn($q) => $q->whereIn('type', ['storage', 'picking']));
+        
         if ($warehouseId) {
             $stockInLocationsQuery->whereHas('pallet.location', fn($q) => $q->where('warehouse_id', $warehouseId));
         }
+
+        if ($areaId) {
+            $stockInLocationsQuery->whereHas('pallet.purchaseOrder', fn($q) => $q->where('area_id', $areaId));
+        }
+
         $stockInLocations = $stockInLocationsQuery->get()->groupBy('pallet.location_id');
 
         $locationsQuery = Location::whereIn('type', ['storage', 'picking']);
@@ -905,7 +1009,9 @@ class WMSReportController extends Controller
             'heatmapData' => $groupedHeatmapData,
             'days' => $days,
             'warehouses' => $warehouses,
-            'warehouseId' => $warehouseId
+            'warehouseId' => $warehouseId,
+            'areas' => $areas,
+            'areaId' => $areaId
         ]);
     }
 }

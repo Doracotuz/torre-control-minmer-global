@@ -1,19 +1,78 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-2xl text-[#2c3856] leading-tight">
-            {{ __('Reporte de Antigüedad de Inventario') }}
-        </h2>
-        <p class="text-gray-600 text-sm mt-1">Inventario detallado por LPN, ordenado del más antiguo al más nuevo.</p>
-    </x-slot>
+    <x-slot name="header"></x-slot>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@800;900&display=swap');
+        
+        .font-raleway { font-family: 'Raleway', sans-serif; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        
+        .stagger-enter { opacity: 0; transform: translateY(20px); animation: enterUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes enterUp { to { opacity: 1; transform: translateY(0); } }
+        
+        .input-arch {
+            background: transparent; border: none; border-bottom: 2px solid #e5e7eb; border-radius: 0;
+            padding: 0.5rem 0; font-family: 'Montserrat', sans-serif; font-weight: 600; color: #2c3856;
+            transition: all 0.3s ease; width: 100%; font-size: 0.9rem;
+        }
+        .input-arch:focus { border-bottom-color: #ff9c00; box-shadow: none; outline: none; }
+        .input-arch-select { background-image: none; cursor: pointer; padding-right: 1.5rem; }
 
-    <div class="py-6">
-        <div class="max-w-full mx-auto sm:px-6 lg:px-8">
+        .btn-nexus { background: #2c3856; color: white; border-radius: 0.8rem; font-weight: 700; transition: all 0.2s; }
+        .btn-nexus:hover { background: #1a253a; transform: translateY(-1px); }
+        
+        .btn-ghost { background: transparent; color: #2c3856; border: 2px solid #e5e7eb; border-radius: 1rem; font-weight: 700; }
+        .btn-ghost:hover { border-color: #2c3856; background: #2c3856; color: white; }
 
-            <div class="bg-white p-4 rounded-lg shadow-md mb-6">
-                <form method="GET" action="{{ route('wms.reports.inventory-aging') }}" class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        .nexus-table { width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; }
+        .nexus-table thead th {
+            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; font-weight: 800;
+            padding: 1rem; text-align: left;
+        }
+        .nexus-row { background: white; transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .nexus-row td { padding: 1rem; vertical-align: middle; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; }
+        .nexus-row td:first-child { border-top-left-radius: 1rem; border-bottom-left-radius: 1rem; border-left: 1px solid #f3f4f6; }
+        .nexus-row td:last-child { border-top-right-radius: 1rem; border-bottom-right-radius: 1rem; border-right: 1px solid #f3f4f6; }
+        .nexus-row:hover { box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.08); z-index: 10; position: relative; }
+
+        [x-cloak] { display: none !important; }
+    </style>
+
+    <div class="min-h-screen bg-transparent text-[#2b2b2b] font-montserrat pb-20 relative overflow-hidden">
+        
+        <div class="fixed inset-0 -z-10 pointer-events-none">
+            <div class="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10"></div>
+            <div class="absolute top-[-20%] right-[-10%] w-[50rem] h-[50rem] bg-gradient-to-b from-[#2c3856]/5 to-transparent rounded-full blur-[120px]"></div>
+        </div>
+
+        <div class="max-w-[1920px] mx-auto px-6 pt-10 relative z-10">
+            
+            <div class="flex flex-col xl:flex-row justify-between items-end mb-10 stagger-enter" style="animation-delay: 0.1s;">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="w-12 h-1 bg-[#ff9c00]"></span>
+                        <span class="text-sm font-bold text-[#2c3856] tracking-[0.3em] uppercase">Business Intelligence</span>
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-raleway font-black text-[#2c3856] leading-none">
+                        REPORTE DE <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-orange-600">ANTIGÜEDAD</span>
+                    </h1>
+                    <p class="text-gray-500 font-medium mt-2 text-sm max-w-2xl">
+                        Análisis detallado de stock por días de permanencia (Aging).
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap gap-3 mt-6 xl:mt-0 items-center">
+                    <a href="{{ route('wms.reports.index') }}" class="flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 text-[#666666] font-bold rounded-xl shadow-sm hover:shadow-md hover:border-[#2c3856] hover:text-[#2c3856] transition-all text-sm uppercase tracking-wider">
+                        <i class="fas fa-arrow-left"></i> <span>Volver a Reportes</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="bg-white/80 backdrop-blur-xl rounded-[2rem] p-8 border border-gray-100 shadow-xl mb-10 stagger-enter" style="animation-delay: 0.2s;">
+                <form method="GET" action="{{ route('wms.reports.inventory-aging') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 items-end">
+                    
                     <div>
-                        <label for="warehouse_id" class="block text-sm font-medium text-gray-700">Almacén</label>
-                        <select name="warehouse_id" id="warehouse_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Almacén</label>
+                        <select name="warehouse_id" class="input-arch input-arch-select text-sm">
                             <option value="">Todos</option>
                             @foreach($warehouses as $warehouse)
                                 <option value="{{ $warehouse->id }}" {{ request('warehouse_id') == $warehouse->id ? 'selected' : '' }}>
@@ -21,18 +80,33 @@
                                 </option>
                             @endforeach
                         </select>
-                    </div>                    
-                    <div>
-                        <label for="sku" class="block text-sm font-medium text-gray-700">SKU</label>
-                        <input type="text" name="sku" id="sku" value="{{ request('sku') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Buscar SKU...">
                     </div>
+
                     <div>
-                        <label for="lpn" class="block text-sm font-medium text-gray-700">LPN</label>
-                        <input type="text" name="lpn" id="lpn" value="{{ request('lpn') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Buscar LPN...">
+                        <label class="text-[10px] font-bold text-[#ff9c00] uppercase tracking-widest block mb-1">Área / Cliente</label>
+                        <select name="area_id" class="input-arch input-arch-select text-sm text-[#ff9c00]">
+                            <option value="">Todas</option>
+                            @foreach($areas as $area)
+                                <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
+                                    {{ $area->name }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
+
                     <div>
-                        <label for="age_bucket" class="block text-sm font-medium text-gray-700">Rango de Antigüedad</label>
-                        <select name="age_bucket" id="age_bucket" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">SKU</label>
+                        <input type="text" name="sku" value="{{ request('sku') }}" class="input-arch text-sm" placeholder="Buscar SKU...">
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">LPN</label>
+                        <input type="text" name="lpn" value="{{ request('lpn') }}" class="input-arch text-sm font-mono" placeholder="Buscar LPN...">
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Rango Antigüedad</label>
+                        <select name="age_bucket" class="input-arch input-arch-select text-sm">
                             <option value="">Todos</option>
                             <option value="0-30" {{ request('age_bucket') == '0-30' ? 'selected' : '' }}>0-30 días</option>
                             <option value="31-60" {{ request('age_bucket') == '31-60' ? 'selected' : '' }}>31-60 días</option>
@@ -40,85 +114,115 @@
                             <option value="90+" {{ request('age_bucket') == '90+' ? 'selected' : '' }}>90+ días</option>
                         </select>
                     </div>
-                    <div class="flex items-end space-x-2">
-                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#2c3856] hover:bg-[#1f2940]">
-                            Filtrar
+
+                    <div class="flex gap-3">
+                        <button type="submit" class="btn-nexus px-4 py-3 flex-1 flex items-center justify-center shadow-lg uppercase tracking-wider text-xs">
+                            <i class="fas fa-filter mr-2"></i> Filtrar
                         </button>
-                        <a href="{{ route('wms.reports.inventory-aging') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                            Limpiar
+                        <a href="{{ route('wms.reports.inventory-aging.export', request()->query()) }}" class="btn-ghost px-4 py-3 flex items-center justify-center border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300" title="Exportar CSV">
+                            <i class="fas fa-file-csv text-lg"></i>
                         </a>
-                    </div>
-                    <div class="flex items-end justify-end">
-                         <a href="{{ route('wms.reports.inventory-aging.export', request()->query()) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
-                            Exportar a CSV
+                        <a href="{{ route('wms.reports.inventory-aging') }}" class="btn-ghost px-3 py-3 flex items-center justify-center text-gray-400 hover:text-red-500" title="Limpiar">
+                            <i class="fas fa-undo"></i>
                         </a>
                     </div>
                 </form>
             </div>
 
-            <div class="bg-white overflow-hidden shadow-lg rounded-lg">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Antigüedad</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">LPN / Ubicación</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU / Producto</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Calidad</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PO Origen / Fecha Rec.</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @forelse($agingItems as $item)
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="flex items-center">
-                                            @php
-                                                $color = 'bg-green-100 text-green-800';
-                                                if ($item->age_in_days > 60) $color = 'bg-yellow-100 text-yellow-800';
-                                                if ($item->age_in_days > 90) $color = 'bg-red-100 text-red-800';
-                                            @endphp
-                                            <span class="px-3 py-1 inline-flex text-lg font-bold rounded-full {{ $color }}">
-                                                {{ $item->age_in_days }} días
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">{{ $item->pallet->lpn ?? 'N/A' }}</div>
-                                        <div class="text-sm text-gray-500">{{ $item->pallet->location->code ?? 'N/A' }}</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">{{ $item->product->sku ?? 'N/A' }}</div>
-                                        <div class="text-sm text-gray-500">{{ $item->product->name ?? 'N/A' }}</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                            {{ $item->quality->name ?? 'N/A' }}
+            <div class="overflow-x-auto pb-12 stagger-enter" style="animation-delay: 0.3s;">
+                <table class="nexus-table w-full">
+                    <thead>
+                        <tr>
+                            <th>Antigüedad</th>
+                            <th>LPN / Ubicación</th>
+                            <th>Producto</th>
+                            <th>Calidad</th>
+                            <th class="text-right">Cantidad</th>
+                            <th>Origen (PO / Área)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($agingItems as $item)
+                            <tr class="nexus-row group">
+                                <td>
+                                    @php
+                                        $ageColor = 'bg-emerald-100 text-emerald-800';
+                                        if ($item->age_in_days > 60) $ageColor = 'bg-amber-100 text-amber-800';
+                                        if ($item->age_in_days > 90) $ageColor = 'bg-rose-100 text-rose-800';
+                                    @endphp
+                                    <span class="px-4 py-1.5 inline-flex text-sm font-black rounded-xl shadow-sm {{ $ageColor }}">
+                                        {{ $item->age_in_days }} días
+                                    </span>
+                                    <div class="text-[10px] text-gray-400 mt-1 font-medium ml-1">
+                                        Desde {{ $item->pallet->created_at->format('d M Y') }}
+                                    </div>
+                                </td>
+                                
+                                <td>
+                                    <div class="font-mono text-sm font-bold text-[#2c3856] group-hover:text-[#ff9c00] transition-colors">
+                                        {{ $item->pallet->lpn ?? 'N/A' }}
+                                    </div>
+                                    <div class="flex items-center gap-1 mt-1">
+                                        <i class="fas fa-map-marker-alt text-gray-300 text-[10px]"></i>
+                                        <span class="text-xs font-bold text-gray-500">
+                                            {{ $item->pallet->location->code ?? 'SIN UBICACIÓN' }}
                                         </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-lg font-bold text-gray-900">
-                                        {{ $item->quantity }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <div>{{ $item->pallet->purchaseOrder->po_number ?? 'N/A' }}</div>
-                                        <div>{{ $item->pallet->created_at->format('Y-m-d') }}</div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                                        No se encontró inventario que coincida con los filtros seleccionados.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                                    </div>
+                                </td>
 
-                <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
-                    {{ $agingItems->links() }}
-                </div>
+                                <td>
+                                    <div class="font-bold text-gray-800 text-sm truncate max-w-xs" title="{{ $item->product->name ?? '' }}">
+                                        {{ $item->product->name ?? 'N/A' }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 font-mono mt-0.5">
+                                        {{ $item->product->sku ?? 'N/A' }}
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="px-3 py-1 inline-flex text-xs font-bold rounded-lg border border-blue-100 bg-blue-50 text-blue-700">
+                                        {{ $item->quality->name ?? 'N/A' }}
+                                    </span>
+                                </td>
+
+                                <td class="text-right">
+                                    <span class="text-lg font-black text-[#2c3856]">
+                                        {{ number_format($item->quantity) }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="flex flex-col gap-1">
+                                        <div class="text-xs font-bold text-gray-600 flex items-center gap-2">
+                                            <i class="fas fa-file-invoice text-gray-300"></i>
+                                            {{ $item->pallet->purchaseOrder->po_number ?? 'N/A' }}
+                                        </div>
+                                        @if($item->pallet->purchaseOrder && $item->pallet->purchaseOrder->area)
+                                            <span class="inline-flex text-[10px] font-bold text-[#ff9c00] bg-orange-50 px-2 py-0.5 rounded border border-orange-100 w-fit">
+                                                {{ $item->pallet->purchaseOrder->area->name }}
+                                            </span>
+                                        @else
+                                            <span class="text-[10px] text-gray-400 italic pl-5">General</span>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center py-12">
+                                    <div class="inline-block p-4 rounded-full bg-gray-50 mb-3">
+                                        <i class="fas fa-clock text-gray-300 text-2xl"></i>
+                                    </div>
+                                    <p class="text-gray-500 font-bold text-sm">No se encontraron registros para los filtros seleccionados.</p>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pb-20 nexus-pagination">
+                {{ $agingItems->appends(request()->query())->links() }}
             </div>
 
         </div>
