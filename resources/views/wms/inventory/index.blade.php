@@ -247,7 +247,10 @@
 
                                 <td>
                                     <div class="text-xs font-bold text-[#2c3856]">{{ $pallet->purchaseOrder->po_number ?? 'N/A' }}</div>
-                                    <div class="text-[12px] text-gray-400">{{ $pallet->purchaseOrder->pedimento_a4 ?? '-' }}</div>
+                                    <div class="text-[12px] text-gray-400">
+                                        {{-- Muestra el área también en la tabla --}}
+                                        <span class="text-[#ff9c00] font-bold">{{ $pallet->purchaseOrder->area->name ?? 'General' }}</span>
+                                    </div>
                                 </td>
 
                                 <td class="text-right">
@@ -281,48 +284,120 @@
             <div class="flex min-h-full items-center justify-center p-4">
                 <div x-show="modalOpen" 
                      x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0"
-                     class="relative w-full max-w-4xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden">
+                     class="relative w-full max-w-5xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden">
                     
                     <template x-if="selectedPallet">
-                        <div class="flex flex-col h-full max-h-[85vh]">
-                            <div class="bg-[#2c3856] p-8 text-white relative">
+                        <div class="flex flex-col h-full max-h-[90vh]">
+                            <div class="bg-[#2c3856] p-8 text-white relative overflow-hidden">
                                 <div class="absolute top-0 right-0 w-40 h-40 bg-[#ff9c00] rounded-full blur-[80px] opacity-20 -mr-10 -mt-10"></div>
                                 <div class="relative z-10 flex justify-between">
                                     <div>
                                         <p class="text-[#ff9c00] text-xs font-bold uppercase tracking-widest mb-1">Detalle de Inventario</p>
-                                        <h2 class="text-5xl font-mono font-black" x-text="selectedPallet.lpn"></h2>
+                                        <h2 class="text-4xl md:text-5xl font-mono font-black" x-text="selectedPallet.lpn"></h2>
+                                        
+                                        <div class="mt-3 inline-flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+                                            <i class="fas fa-building text-sm text-[#ff9c00]"></i>
+                                            <span class="text-sm font-bold" x-text="selectedPallet.purchase_order?.area?.name || 'General (Sin Área)'"></span>
+                                        </div>
                                     </div>
-                                    <button @click="closeModal()" class="text-white/50 hover:text-white transition-colors"><i class="fas fa-times text-2xl"></i></button>
+                                    <button @click="closeModal()" class="text-white/50 hover:text-white transition-colors bg-white/10 w-10 h-10 rounded-full flex items-center justify-center"><i class="fas fa-times text-xl"></i></button>
                                 </div>
                             </div>
 
-                            <div class="p-8 overflow-y-auto bg-white">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                                    <div class="bg-gray-50 rounded-2xl p-6">
-                                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Ubicación</h4>
-                                        <p class="text-3xl font-black text-[#2c3856]" x-text="selectedPallet.location ? selectedPallet.location.code : 'N/A'"></p>
-                                        <p class="text-sm text-gray-500 mt-1" x-text="selectedPallet.location ? `Pasillo ${selectedPallet.location.aisle} • Nivel ${selectedPallet.location.shelf}` : '-'"></p>
+                            <div class="p-8 overflow-y-auto bg-white custom-scrollbar">
+                                
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                                    
+                                    <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100 relative overflow-hidden group hover:border-blue-100 transition-colors">
+                                        <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <i class="fas fa-map-marker-alt text-4xl text-[#2c3856]"></i>
+                                        </div>
+                                        <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Ubicación Física</h4>
+                                        <p class="text-2xl font-black text-[#2c3856]" x-text="selectedPallet.location ? selectedPallet.location.code : 'SIN UBICACIÓN'"></p>
+                                        <p class="text-xs text-gray-500 mt-1 font-mono" x-text="selectedPallet.location ? `Pasillo ${selectedPallet.location.aisle} • Rack ${selectedPallet.location.rack} • Nivel ${selectedPallet.location.shelf}` : '-'"></p>
                                     </div>
-                                    <div class="bg-gray-50 rounded-2xl p-6">
-                                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Origen</h4>
-                                        <p class="text-xl font-bold text-[#2c3856]" x-text="selectedPallet.purchase_order?.po_number || 'N/A'"></p>
-                                        <p class="text-xs font-mono text-gray-500 mt-1">Pedimento: <span x-text="selectedPallet.purchase_order?.pedimento_a4 || '-'"></span></p>
+
+                                    <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100 relative overflow-hidden group hover:border-blue-100 transition-colors">
+                                        <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <i class="fas fa-file-invoice text-4xl text-blue-600"></i>
+                                        </div>
+                                        <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Orden de Compra (PO)</h4>
+                                        <div class="flex items-baseline gap-2 mb-3">
+                                            <p class="text-xl font-black text-blue-600" x-text="selectedPallet.purchase_order?.po_number || 'N/A'"></p>
+                                            <span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase" x-text="selectedPallet.purchase_order?.status || '-'"></span>
+                                        </div>
+                                        <div class="space-y-1">
+                                            <div class="flex justify-between text-xs border-b border-gray-200 pb-1">
+                                                <span class="text-gray-500">Factura:</span>
+                                                <span class="font-bold text-gray-700 font-mono" x-text="selectedPallet.purchase_order?.document_invoice || '-'"></span>
+                                            </div>
+                                            <div class="flex justify-between text-xs pt-1">
+                                                <span class="text-gray-500">Contenedor:</span>
+                                                <span class="font-bold text-gray-700 font-mono" x-text="selectedPallet.purchase_order?.container_number || '-'"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100 relative overflow-hidden group hover:border-blue-100 transition-colors">
+                                        <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <i class="fas fa-globe-americas text-4xl text-green-600"></i>
+                                        </div>
+                                        <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Importación / Aduana</h4>
+                                        <div class="space-y-2 mt-2">
+                                            <div class="flex justify-between items-center bg-white p-2 rounded-lg border border-gray-100">
+                                                <p class="text-[9px] text-gray-400 uppercase font-bold">Pedimento A4</p>
+                                                <p class="text-xs font-mono font-bold text-gray-700" x-text="selectedPallet.purchase_order?.pedimento_a4 || 'N/A'"></p>
+                                            </div>
+                                            <div class="flex justify-between items-center bg-white p-2 rounded-lg border border-gray-100">
+                                                <p class="text-[9px] text-gray-400 uppercase font-bold">Pedimento G1</p>
+                                                <p class="text-xs font-mono font-bold text-gray-700" x-text="selectedPallet.purchase_order?.pedimento_g1 || 'N/A'"></p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <h4 class="text-sm font-bold text-[#2c3856] uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Contenido</h4>
+                                <div class="mb-8 border-t border-gray-100 pt-6">
+                                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <i class="fas fa-info-circle text-[#ff9c00]"></i> Detalles de Operación
+                                    </h4>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div class="p-3 rounded-xl border border-gray-100 bg-gray-50/50">
+                                            <p class="text-[9px] text-gray-400 uppercase font-bold mb-1">Área Propietaria</p>
+                                            <p class="text-xs font-bold text-[#ff9c00]" x-text="selectedPallet.purchase_order?.area?.name || 'General'"></p>
+                                        </div>
+                                        <div class="p-3 rounded-xl border border-gray-100 bg-gray-50/50">
+                                            <p class="text-[9px] text-gray-400 uppercase font-bold mb-1">Operador Recibo</p>
+                                            <p class="text-xs font-bold text-gray-700 truncate" x-text="selectedPallet.purchase_order?.operator_name || 'N/A'"></p>
+                                        </div>
+                                        <div class="p-3 rounded-xl border border-gray-100 bg-gray-50/50">
+                                            <p class="text-[9px] text-gray-400 uppercase font-bold mb-1">Inicio Descarga</p>
+                                            <p class="text-[10px] font-mono text-gray-600" x-text="selectedPallet.purchase_order?.download_start_time || '-'"></p>
+                                        </div>
+                                        <div class="p-3 rounded-xl border border-gray-100 bg-gray-50/50">
+                                            <p class="text-[9px] text-gray-400 uppercase font-bold mb-1">Fin Descarga</p>
+                                            <p class="text-[10px] font-mono text-gray-600" x-text="selectedPallet.purchase_order?.download_end_time || '-'"></p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h4 class="text-sm font-bold text-[#2c3856] uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Contenido de la Tarima</h4>
                                 <div class="space-y-3">
                                     <template x-for="item in selectedPallet.items" :key="item.id">
-                                        <div class="flex justify-between items-center p-4 rounded-xl border border-gray-100">
+                                        <div class="flex justify-between items-center p-4 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
                                             <div>
                                                 <p class="font-bold text-gray-800" x-text="item.product.name"></p>
-                                                <p class="text-xs text-gray-500 font-mono" x-text="item.product.sku"></p>
+                                                <p class="text-xs text-gray-500 font-mono mt-0.5" x-text="item.product.sku"></p>
                                             </div>
                                             <div class="flex items-center gap-6">
-                                                <span class="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded" x-text="item.quality.name"></span>
-                                                <span class="text-2xl font-black text-[#2c3856]" x-text="item.quantity"></span>
+                                                <span class="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100" x-text="item.quality.name"></span>
+                                                <div class="text-right">
+                                                    <span class="block text-2xl font-black text-[#2c3856]" x-text="item.quantity"></span>
+                                                    <span class="text-[10px] text-gray-400 font-bold uppercase">Piezas</span>
+                                                </div>
                                                 @if(Auth::user()->isSuperAdmin())
-                                                    <button @click="openAdjustmentModal(item)" class="text-gray-400 hover:text-[#ff9c00]"><i class="fas fa-cog"></i></button>
+                                                    <button @click="openAdjustmentModal(item)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-400 hover:bg-[#ff9c00] hover:text-white transition-all" title="Ajustar Inventario">
+                                                        <i class="fas fa-cog"></i>
+                                                    </button>
                                                 @endif
                                             </div>
                                         </div>
