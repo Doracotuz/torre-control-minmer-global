@@ -34,7 +34,7 @@
         }
         .nexus-row td:first-child { border-top-left-radius: 1rem; border-bottom-left-radius: 1rem; border-left: 1px solid #f3f4f6; padding-left: 1.5rem; }
         .nexus-row td:last-child { border-top-right-radius: 1rem; border-bottom-right-radius: 1rem; border-right: 1px solid #f3f4f6; padding-right: 1.5rem; }
-        .nexus-row:hover { transform: scale(1.002); box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.05); z-index: 10; position: relative; }
+        .nexus-row:hover { box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.05); z-index: 10; position: relative; }
 
         [x-cloak] { display: none !important; }
     </style>
@@ -46,7 +46,7 @@
             <div class="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-[#ff9c00]/5 rounded-full blur-[120px]"></div>
         </div>
 
-        <div class="max-w-[1920px] mx-auto px-6 pt-10 relative z-10">
+        <div class="max-w-[1920px] mx-auto px-4 md:px-6 pt-10 relative z-10">
             
             <div class="flex flex-col xl:flex-row justify-between items-end mb-10 stagger-enter" style="animation-delay: 0.1s;">
                 <div>
@@ -54,40 +54,48 @@
                         <span class="w-12 h-1 bg-[#ff9c00]"></span>
                         <span class="text-sm font-bold text-[#2c3856] tracking-[0.3em] uppercase">Control de Auditoría</span>
                     </div>
-                    <h1 class="text-4xl md:text-5xl font-raleway font-black text-[#2c3856] leading-none">
+                    <h1 class="text-3xl md:text-5xl font-raleway font-black text-[#2c3856] leading-none mb-2">
                         {{ $session->name }}
                     </h1>
-                    <div class="flex flex-wrap gap-4 mt-4 text-sm font-medium text-gray-500">
-                        <span class="bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100">
+                    <div class="flex flex-wrap gap-2 text-xs md:text-sm font-medium text-gray-500">
+                        <span class="bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100 flex items-center">
                             <i class="fas fa-warehouse mr-1 text-[#ff9c00]"></i> {{ $session->warehouse->name ?? 'N/A' }}
                         </span>
-                        <span class="bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100">
-                            <i class="fas fa-user-shield mr-1 text-[#2c3856]"></i> {{ $session->assignedUser->name ?? 'N/A' }}
-                        </span>
                         @if($session->area)
-                        <span class="bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100">
+                        <span class="bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100 flex items-center">
                             <i class="fas fa-briefcase mr-1 text-blue-500"></i> {{ $session->area->name }}
                         </span>
                         @endif
                     </div>
                 </div>
 
-                <div class="mt-6 xl:mt-0">
-                    <a href="{{ route('wms.physical-counts.index') }}" class="btn-ghost px-6 py-3 text-sm uppercase tracking-wider">
+                <div class="mt-6 xl:mt-0 flex flex-col md:flex-row gap-3 w-full xl:w-auto">
+                    @php
+                        $nextTask = $session->tasks->whereIn('status', ['pending'])->first() ?? 
+                                    $session->tasks->where('status', 'discrepancy')->filter(fn($t) => $t->records->count() < 3)->first();
+                    @endphp
+                    
+                    @if($nextTask)
+                        <a href="{{ route('wms.physical-counts.tasks.perform', $nextTask) }}" class="btn-nexus w-full md:w-auto px-8 py-3 text-sm uppercase tracking-wider shadow-lg shadow-[#2c3856]/20 bg-green-600 hover:bg-green-700">
+                            <i class="fas fa-play mr-2"></i> Continuar Conteo
+                        </a>
+                    @endif
+
+                    <a href="{{ route('wms.physical-counts.index') }}" class="btn-ghost w-full md:w-auto px-6 py-3 text-sm uppercase tracking-wider text-center">
                         <i class="fas fa-arrow-left mr-2"></i> Volver
                     </a>
                 </div>
             </div>
 
             @if(session('success'))
-                <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-r-xl mb-8 font-bold flex items-center gap-3 stagger-enter">
-                    <i class="fas fa-check-circle text-xl"></i>
+                <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-r-xl mb-8 font-bold flex items-center gap-3 stagger-enter text-sm">
+                    <i class="fas fa-check-circle text-lg"></i>
                     {{ session('success') }}
                 </div>
             @endif
             @if(session('error'))
-                <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-xl mb-8 font-bold flex items-center gap-3 stagger-enter">
-                    <i class="fas fa-exclamation-circle text-xl"></i>
+                <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-xl mb-8 font-bold flex items-center gap-3 stagger-enter text-sm">
+                    <i class="fas fa-exclamation-circle text-lg"></i>
                     {{ session('error') }}
                 </div>
             @endif
@@ -100,44 +108,103 @@
                 $progress = $total > 0 ? (($resolved + $discrepancy) / $total) * 100 : 0;
             @endphp
 
-            <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-8 mb-8 stagger-enter" style="animation-delay: 0.2s;">
+            <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-6 md:p-8 mb-8 stagger-enter" style="animation-delay: 0.2s;">
                 <div class="flex justify-between items-end mb-4">
-                    <h3 class="text-lg font-raleway font-black text-[#2c3856]">Progreso de la Sesión</h3>
-                    <span class="text-2xl font-bold text-[#ff9c00]">{{ round($progress) }}%</span>
+                    <h3 class="text-sm md:text-lg font-raleway font-black text-[#2c3856]">Progreso de la Sesión</h3>
+                    <span class="text-xl md:text-2xl font-bold text-[#ff9c00]">{{ round($progress) }}%</span>
                 </div>
-                <div class="w-full bg-gray-100 rounded-full h-3 mb-8 overflow-hidden">
-                    <div class="bg-gradient-to-r from-[#2c3856] to-[#4f6494] h-3 rounded-full transition-all duration-1000" style="width: {{ $progress }}%"></div>
+                <div class="w-full bg-gray-100 rounded-full h-2 md:h-3 mb-6 overflow-hidden">
+                    <div class="bg-gradient-to-r from-[#2c3856] to-[#4f6494] h-2 md:h-3 rounded-full transition-all duration-1000" style="width: {{ $progress }}%"></div>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                    <div class="p-4 bg-gray-50 rounded-2xl">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total</p>
-                        <p class="text-3xl font-black text-[#2c3856]">{{ $total }}</p>
+                <div class="grid grid-cols-4 gap-2 md:gap-6 text-center">
+                    <div class="p-2 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl">
+                        <p class="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total</p>
+                        <p class="text-lg md:text-3xl font-black text-[#2c3856]">{{ $total }}</p>
                     </div>
-                    <div class="p-4 bg-blue-50 rounded-2xl">
-                        <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Pendientes</p>
-                        <p class="text-3xl font-black text-blue-600">{{ $pending }}</p>
+                    <div class="p-2 md:p-4 bg-blue-50 rounded-xl md:rounded-2xl">
+                        <p class="text-[8px] md:text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Pend</p>
+                        <p class="text-lg md:text-3xl font-black text-blue-600">{{ $pending }}</p>
                     </div>
-                    <div class="p-4 bg-red-50 rounded-2xl">
-                        <p class="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Discrepancias</p>
-                        <p class="text-3xl font-black text-red-600">{{ $discrepancy }}</p>
+                    <div class="p-2 md:p-4 bg-red-50 rounded-xl md:rounded-2xl">
+                        <p class="text-[8px] md:text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Dif</p>
+                        <p class="text-lg md:text-3xl font-black text-red-600">{{ $discrepancy }}</p>
                     </div>
-                    <div class="p-4 bg-green-50 rounded-2xl">
-                        <p class="text-[10px] font-bold text-green-400 uppercase tracking-widest mb-1">Resueltas</p>
-                        <p class="text-3xl font-black text-green-600">{{ $resolved }}</p>
+                    <div class="p-2 md:p-4 bg-green-50 rounded-xl md:rounded-2xl">
+                        <p class="text-[8px] md:text-[10px] font-bold text-green-400 uppercase tracking-widest mb-1">OK</p>
+                        <p class="text-lg md:text-3xl font-black text-green-600">{{ $resolved }}</p>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-8 stagger-enter" style="animation-delay: 0.3s;" x-data="{ filter: 'all' }">
+            <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-6 md:p-8 stagger-enter" style="animation-delay: 0.3s;" x-data="{ filter: 'all' }">
                 
-                <div class="flex flex-wrap gap-2 mb-8">
-                    <button @click="filter = 'all'" :class="filter === 'all' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">Todas</button>
-                    <button @click="filter = 'pending'" :class="filter === 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">Pendientes</button>
-                    <button @click="filter = 'discrepancy'" :class="filter === 'discrepancy' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">Discrepancias</button>
-                    <button @click="filter = 'resolved'" :class="filter === 'resolved' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">Resueltas</button>
+                <div class="flex flex-wrap gap-2 mb-6 overflow-x-auto pb-2">
+                    <button @click="filter = 'all'" :class="filter === 'all' ? 'bg-[#2c3856] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-4 py-2 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap">Todas</button>
+                    <button @click="filter = 'pending'" :class="filter === 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-4 py-2 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap">Pendientes</button>
+                    <button @click="filter = 'discrepancy'" :class="filter === 'discrepancy' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-4 py-2 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap">Discrepancias</button>
+                    <button @click="filter = 'resolved'" :class="filter === 'resolved' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-4 py-2 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap">Resueltas</button>
                 </div>
                 
-                <div class="overflow-x-auto">
+                <div class="grid grid-cols-1 gap-4 md:hidden">
+                    @foreach ($session->tasks as $task)
+                        @php
+                            $lastRecord = $task->records->last();
+                            $diff = $lastRecord ? ($lastRecord->counted_quantity - $task->expected_quantity) : 0;
+                        @endphp
+                        <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm relative overflow-hidden" x-show="filter === 'all' || filter === '{{ $task->status }}'" x-transition>
+                            <div class="absolute top-0 right-0 p-3">
+                                <span class="px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wide 
+                                    @if($task->status == 'discrepancy') bg-red-100 text-red-700 
+                                    @elseif($task->status == 'resolved') bg-green-100 text-green-700 
+                                    @else bg-gray-100 text-gray-600 @endif">
+                                    {{ $task->status_in_spanish }}
+                                </span>
+                            </div>
+
+                            <div class="pr-20 mb-2">
+                                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Ubicación</p>
+                                <p class="text-xl font-mono font-black text-[#2c3856]">
+                                    {{ $task->location ? "{$task->location->aisle}-{$task->location->rack}-{$task->location->shelf}-{$task->location->bin}" : 'N/A' }}
+                                </p>
+                            </div>
+
+                            <div class="mb-3 bg-gray-50 p-3 rounded-xl">
+                                <p class="text-xs font-bold text-[#2c3856]">{{ $task->product->name }}</p>
+                                <p class="text-[10px] text-gray-400 font-mono">{{ $task->product->sku }}</p>
+                                <p class="text-[10px] font-mono text-[#ff9c00] font-bold mt-1">{{ $task->pallet->lpn ?? 'N/A' }}</p>
+                            </div>
+
+                            <div class="flex justify-between items-center border-t border-gray-100 pt-3">
+                                <div>
+                                    <p class="text-[9px] text-gray-400 font-bold uppercase">Sistema</p>
+                                    <p class="font-black text-gray-600">{{ $task->expected_quantity }}</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-[9px] text-gray-400 font-bold uppercase">Último</p>
+                                    <p class="font-black text-[#2c3856]">{{ $lastRecord ? $lastRecord->counted_quantity : '-' }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-[9px] text-gray-400 font-bold uppercase">Dif</p>
+                                    <p class="font-black @if($lastRecord && $diff != 0) text-red-600 @elseif($lastRecord) text-green-600 @else text-gray-400 @endif">
+                                        {{ $lastRecord ? ($diff > 0 ? '+'.$diff : $diff) : '-' }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-gray-100">
+                                @if ($task->status == 'pending' || ($task->status == 'discrepancy' && $task->records->count() < 3))
+                                    <a href="{{ route('wms.physical-counts.tasks.perform', $task) }}" class="btn-nexus w-full py-3 text-[10px] uppercase tracking-widest shadow-sm">
+                                        {{ $task->records->count() > 0 ? 'Re-contar' : 'Contar' }}
+                                    </a>
+                                @elseif ($task->status == 'discrepancy')
+                                    <button @click="openModal({{ $task->id }})" type="button" class="btn-ghost w-full py-3 text-[10px] uppercase tracking-widest text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300">Resolver Discrepancia</button>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="hidden md:block overflow-x-auto">
                     <table class="nexus-table">
                         <thead>
                             <tr>

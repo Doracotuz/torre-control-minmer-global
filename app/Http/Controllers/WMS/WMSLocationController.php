@@ -187,9 +187,14 @@ class WMSLocationController extends Controller
 
     public function downloadTemplate()
     {
+        $fileName = 'plantilla_ubicaciones.csv';
+        
         $headers = [
-            'Content-type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename=plantilla_ubicaciones.csv',
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
         ];
         
         $columns = [
@@ -204,9 +209,11 @@ class WMSLocationController extends Controller
 
         $callback = function() use ($columns) {
             $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($file, $columns);
             fclose($file);
         };
+        
         return response()->stream($callback, 200, $headers);
     }
 
@@ -215,51 +222,67 @@ class WMSLocationController extends Controller
         $request->validate(['file' => 'required|mimes:csv,txt']);
         $file = $request->file('file');
         $path = $file->getRealPath();
-        $records = array_map('str_getcsv', file($path));
-        $headers = array_shift($records);
+        
+        $rows = array_map('str_getcsv', file($path));
+        $header = array_shift($rows);
+        $header[0] = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $header[0]);
+        $header = array_map('trim', $header);
+
+        if (!in_array('codigo_almacen', $header)) {
+            return back()->with('error', 'Error en el archivo: No se encontró la columna "codigo_almacen". Verifique la plantilla.');
+        }
 
         $lastCode = Location::max(DB::raw('CAST(code AS UNSIGNED)'));
         $nextCode = $lastCode ? $lastCode + 1 : 10001;
 
         $locationsToInsert = [];
         $now = now();
+        $importedCount = 0;
 
-        foreach ($records as $record) {
-            $data = array_combine($headers, $record);
+        foreach ($rows as $row) {
+            if (count($header) != count($row)) continue;
             
-            $warehouse = \App\Models\Warehouse::where('code', $data['codigo_almacen'])->first();
+            $data = array_combine($header, $row);
+            
+            $warehouse = \App\Models\Warehouse::where('code', trim($data['codigo_almacen']))->first();
 
             if ($warehouse) {
                 $exists = Location::where('warehouse_id', $warehouse->id)
-                    ->where('aisle', $data['pasillo'])
-                    ->where('rack', $data['rack'])
-                    ->where('shelf', $data['nivel'])
-                    ->where('bin', $data['bin'])
+                    ->where('aisle', trim($data['pasillo']))
+                    ->where('rack', trim($data['rack']))
+                    ->where('shelf', trim($data['nivel']))
+                    ->where('bin', trim($data['bin']))
                     ->exists();
 
                 if (!$exists) {
                     $locationsToInsert[] = [
                         'warehouse_id' => $warehouse->id,
                         'code' => $nextCode++,
-                        'type' => $data['tipo'],
-                        'aisle' => $data['pasillo'],
-                        'rack' => $data['rack'],
-                        'shelf' => $data['nivel'],
-                        'bin' => $data['bin'],
-                        'pick_sequence' => $data['secuencia_pick'] ?: null,
+                        'type' => strtolower(trim($data['tipo'])),
+                        'aisle' => trim($data['pasillo']),
+                        'rack' => trim($data['rack']),
+                        'shelf' => trim($data['nivel']),
+                        'bin' => trim($data['bin']),
+                        'pick_sequence' => !empty($data['secuencia_pick']) ? (int)$data['secuencia_pick'] : null,
                         'created_at' => $now,
                         'updated_at' => $now,
                     ];
+                    $importedCount++;
                 }
             }
         }
 
         if (!empty($locationsToInsert)) {
-            Location::insert($locationsToInsert);
+            foreach (array_chunk($locationsToInsert, 500) as $chunk) {
+                Location::insert($chunk);
+            }
         }
         
-        $count = count($locationsToInsert);
-        return redirect()->route('wms.locations.index')->with('success', "$count ubicaciones nuevas fueron importadas exitosamente.");
+        if ($importedCount == 0) {
+            return redirect()->route('wms.locations.index')->with('error', "No se importaron ubicaciones. Verifique que los códigos de almacén existan y que las ubicaciones no estén duplicadas.");
+        }
+
+        return redirect()->route('wms.locations.index')->with('success', "$importedCount ubicaciones nuevas fueron importadas exitosamente.");
     }
 
     public function printLabels(Request $request)

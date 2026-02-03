@@ -39,6 +39,7 @@ class WMSQualityController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'area_id' => 'required|exists:areas,id',
+            'is_available' => 'boolean',
         ]);
 
         $exists = Quality::where('name', $request->name)
@@ -49,7 +50,10 @@ class WMSQualityController extends Controller
             return back()->withErrors(['name' => 'Ya existe una calidad con este nombre para el cliente seleccionado.'])->withInput();
         }
 
-        Quality::create($request->all());
+        $data = $request->all();
+        $data['is_available'] = $request->boolean('is_available');
+
+        Quality::create($data);
 
         return redirect()->route('wms.qualities.index')
                          ->with('success', 'Calidad creada exitosamente.');
@@ -67,6 +71,7 @@ class WMSQualityController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'area_id' => 'required|exists:areas,id',
+            'is_available' => 'boolean',
         ]);
 
         $exists = Quality::where('name', $request->name)
@@ -78,7 +83,10 @@ class WMSQualityController extends Controller
             return back()->withErrors(['name' => 'Ya existe una calidad con este nombre para el cliente seleccionado.'])->withInput();
         }
 
-        $quality->update($request->all());
+        $data = $request->all();
+        $data['is_available'] = $request->boolean('is_available');
+
+        $quality->update($data);
 
         return redirect()->route('wms.qualities.index')
                          ->with('success', 'Calidad actualizada exitosamente.');

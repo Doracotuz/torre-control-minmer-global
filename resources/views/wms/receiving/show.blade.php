@@ -33,6 +33,7 @@
         }
         .progress-card-complete { border-color: #10b981; background: #ecfdf5; }
         .progress-card-pending { border-color: #fbbf24; background: #fffbeb; }
+        .progress-card-excess { border-color: #3b82f6; background: #eff6ff; }
 
         [x-cloak] { display: none !important; }
     </style>
@@ -72,10 +73,24 @@
                 <h3 class="text-lg font-raleway font-black text-[#2c3856] mb-4">Progreso de la Orden</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <template x-for="item in summary" :key="item.product_id">
-                        <div class="progress-card shadow-sm group hover:-translate-y-1 hover:shadow-md" :class="item.balance <= 0 ? 'progress-card-complete' : 'progress-card-pending'">
+                        <div class="progress-card shadow-sm group hover:-translate-y-1 hover:shadow-md" 
+                             :class="{
+                                'progress-card-complete': item.balance == 0,
+                                'progress-card-pending': item.balance > 0,
+                                'progress-card-excess': item.balance < 0
+                             }">
                             <div class="flex justify-between items-start mb-2">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg" :class="item.balance <= 0 ? 'bg-green-200 text-green-700' : 'bg-yellow-200 text-yellow-700'">
-                                    <i class="fas" :class="item.balance <= 0 ? 'fa-check' : 'fa-box-open'"></i>
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg" 
+                                     :class="{
+                                        'bg-green-200 text-green-700': item.balance == 0,
+                                        'bg-yellow-200 text-yellow-700': item.balance > 0,
+                                        'bg-blue-200 text-blue-700': item.balance < 0
+                                     }">
+                                    <i class="fas" :class="{
+                                        'fa-check': item.balance == 0,
+                                        'fa-box-open': item.balance > 0,
+                                        'fa-plus': item.balance < 0
+                                    }"></i>
                                 </div>
                                 <div class="text-right">
                                     <p class="text-2xl font-black text-[#2c3856]" x-text="item.received"></p>
@@ -87,8 +102,12 @@
                             
                             <div class="w-full bg-white/50 rounded-full h-1.5 mt-3 overflow-hidden">
                                 <div class="h-full transition-all duration-1000 ease-out" 
-                                     :class="item.balance <= 0 ? 'bg-green-500' : 'bg-yellow-500'" 
-                                     :style="`width: ${Math.min((item.received / item.ordered) * 100, 100)}%`"></div>
+                                     :class="{
+                                        'bg-green-500': item.balance == 0,
+                                        'bg-yellow-500': item.balance > 0,
+                                        'bg-blue-500': item.balance < 0
+                                     }" 
+                                     :style="`width: ${ item.ordered > 0 ? Math.min((item.received / item.ordered) * 100, 100) : 100 }%`"></div>
                             </div>
                         </div>
                     </template>
@@ -280,18 +299,24 @@
                                     
                                     <ul class="text-xs space-y-2 mb-3">
                                         <template x-for="item in pallet.items" :key="item.id">
-                                            <li class="flex justify-between items-center text-gray-600 border-b border-gray-50 pb-1 last:border-0">
-                                                <span>
-                                                    <span class="font-bold text-[#2c3856]" x-text="`x${item.quantity}`"></span>
-                                                    <span x-text="item.product.name"></span>
-                                                </span>
+                                            <li class="flex justify-between items-start border-b border-gray-50 pb-2 last:border-0 last:pb-0">
+                                                <div class="flex flex-col leading-tight pr-2">
+                                                    <span class="font-bold text-[#2c3856] text-sm" x-text="item.product.name"></span>
+                                                    <span class="inline-block mt-1 text-[9px] font-bold uppercase tracking-wide text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded w-fit" 
+                                                        x-text="item.quality ? item.quality.name : 'N/A'">
+                                                    </span>
+                                                </div>
+                                                <span class="font-black text-[#2c3856] bg-gray-100 px-2 py-1 rounded shrink-0" x-text="`x${item.quantity}`"></span>
                                             </li>
                                         </template>
                                     </ul>
                                     
-                                    <div class="text-[10px] text-gray-400 text-right font-mono mt-2">
-                                        <i class="fas fa-clock mr-1"></i>
-                                        <span x-text="new Date(pallet.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
+                                    <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-50">
+                                        <p class="text-[10px] text-gray-400 font-bold uppercase" x-text="pallet.user ? pallet.user.name : 'Sistema'"></p>
+                                        <div class="text-[10px] text-gray-400 font-mono">
+                                            <i class="fas fa-clock mr-1"></i>
+                                            <span x-text="new Date(pallet.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
+                                        </div>
                                     </div>
                                 </div>
                             </template>
@@ -404,10 +429,20 @@
                         this.newItem = { product_id: '', quantity: 1, quality_id: '' };
                         this.clearSearch();
 
-                        const summaryItem = this.summary.find(s => s.product_id == productId);
+                        let summaryItem = this.summary.find(s => s.product_id == productId);
                         if(summaryItem) {
                             summaryItem.received = parseInt(summaryItem.received) + addedQty;
                             summaryItem.balance = summaryItem.ordered - summaryItem.received;
+                        } else {
+                            const productInfo = this.allProducts.find(p => p.id == productId);
+                            this.summary.push({
+                                product_id: productId,
+                                sku: productInfo ? productInfo.sku : 'N/A',
+                                name: productInfo ? productInfo.name : 'Excedente',
+                                ordered: 0,
+                                received: addedQty,
+                                balance: -addedQty
+                            });
                         }
 
                     } catch (error) {
@@ -490,6 +525,11 @@
                 async deleteItem(itemId) {
                     if (!confirm('¿Eliminar producto de la tarima?')) return;
                     
+                    const itemToDelete = this.currentPallet.items.find(i => i.id === itemId);
+                    if (!itemToDelete) return;
+                    const qtyToRemove = parseInt(itemToDelete.quantity);
+                    const prodIdToRemove = itemToDelete.product_id;
+
                     this.loading = true;
                     try {
                         const response = await fetch(`/wms/receiving/pallet-items/${itemId}`, {
@@ -499,7 +539,24 @@
                         const data = await response.json();
                         if (!response.ok) throw new Error(data.error);
 
-                        this.currentPallet = data;
+                        if (data.pallet_deleted) {
+                            this.currentPallet = null;
+                            this.step = 'start';
+                            alert('La tarima ha quedado vacía y se ha eliminado de la orden.');
+                        } else {
+                            this.currentPallet = data;
+                        }
+
+                        const summaryIndex = this.summary.findIndex(s => s.product_id == prodIdToRemove);
+                        if (summaryIndex !== -1) {
+                            this.summary[summaryIndex].received -= qtyToRemove;
+                            this.summary[summaryIndex].balance = this.summary[summaryIndex].ordered - this.summary[summaryIndex].received;
+
+                            if (this.summary[summaryIndex].ordered == 0 && this.summary[summaryIndex].received <= 0) {
+                                this.summary.splice(summaryIndex, 1);
+                            }
+                        }
+
                     } catch (error) {
                         alert(`Error: ${error.message}`);
                     } finally {

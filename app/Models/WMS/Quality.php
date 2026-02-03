@@ -13,7 +13,8 @@ class Quality extends Model
     protected $fillable = [
         'name', 
         'description',
-        'area_id'
+        'area_id',
+        'is_available',
     ];
 
     public function area()

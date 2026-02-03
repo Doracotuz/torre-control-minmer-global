@@ -101,59 +101,82 @@
                         <div>
                             <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">LPN Identificado</p>
                             <h2 class="text-3xl font-mono font-black text-[#2c3856]" x-text="palletData?.lpn"></h2>
+                            <p class="text-xs text-gray-500 mt-1" x-show="palletData?.purchase_order">
+                                Origen: <span class="font-bold" x-text="palletData?.purchase_order?.po_number"></span>
+                            </p>
                         </div>
                         <button @click="reset()" class="text-xs font-bold text-gray-400 hover:text-[#ff9c00] uppercase tracking-widest transition-colors flex items-center gap-2">
                             <i class="fas fa-undo"></i> Cancelar
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        
-                        <div class="space-y-8">
-                            <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ubicación Actual</p>
-                                <div class="flex items-center gap-3">
-                                    <i class="fas fa-map-marker-alt text-[#ff9c00]"></i>
-                                    <span class="text-xl font-bold text-[#2c3856]" x-text="palletData ? `${palletData.location.aisle}-${palletData.location.rack}-${palletData.location.shelf}-${palletData.location.bin}` : 'N/A'"></span>
-                                    <span class="px-2 py-1 bg-white rounded text-[10px] font-bold text-gray-500 border border-gray-200 uppercase" x-text="palletData?.location.type"></span>
+                    <template x-if="!palletData?.items || palletData.items.length === 0">
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-r-xl">
+                            <div class="flex items-start gap-4">
+                                <i class="fas fa-exclamation-triangle text-3xl text-yellow-500"></i>
+                                <div>
+                                    <h3 class="text-lg font-bold text-yellow-700">Tarima sin Existencias</h3>
+                                    <p class="text-yellow-600 text-sm mt-1">
+                                        Este LPN existe en el sistema y está vinculado a la ubicación 
+                                        <strong x-text="palletData?.location?.code"></strong>, 
+                                        pero no contiene productos físicos actualmente.
+                                    </p>
+                                    <p class="text-yellow-600 text-sm mt-2 font-bold">
+                                        Acción bloqueada: No se pueden realizar transferencias de tarimas vacías.
+                                    </p>
                                 </div>
                             </div>
+                        </div>
+                    </template>
 
-                            <div>
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Contenido</p>
-                                <div class="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                                    <template x-for="item in palletData?.items" :key="item.id">
-                                        <div class="flex justify-between items-center p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
-                                            <div>
-                                                <p class="font-bold text-sm text-[#2c3856]" x-text="item.product.name"></p>
-                                                <p class="text-[10px] text-gray-400 font-mono">
-                                                    <span x-text="item.product.sku"></span> • <span x-text="item.quality.name" class="text-[#ff9c00]"></span>
-                                                </p>
+                    <template x-if="palletData?.items && palletData.items.length > 0">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                            
+                            <div class="space-y-8">
+                                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ubicación Actual</p>
+                                    <div class="flex items-center gap-3">
+                                        <i class="fas fa-map-marker-alt text-[#ff9c00]"></i>
+                                        <span class="text-xl font-bold text-[#2c3856]" x-text="palletData ? `${palletData.location.aisle}-${palletData.location.rack}-${palletData.location.shelf}-${palletData.location.bin}` : 'N/A'"></span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Contenido</p>
+                                    <div class="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                        <template x-for="item in palletData?.items" :key="item.id">
+                                            <div class="flex justify-between items-center p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
+                                                <div>
+                                                    <p class="font-bold text-sm text-[#2c3856]" x-text="item.product.name"></p>
+                                                    <p class="text-[10px] text-gray-400 font-mono">
+                                                        <span x-text="item.product.sku"></span>
+                                                    </p>
+                                                </div>
+                                                <span class="font-black text-lg text-[#2c3856]" x-text="item.quantity"></span>
                                             </div>
-                                            <span class="font-black text-lg text-[#2c3856]" x-text="item.quantity"></span>
-                                        </div>
-                                    </template>
+                                        </template>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="flex flex-col justify-center">
-                            <form action="{{ route('wms.inventory.transfer.store') }}" method="POST">
-                                @csrf
-                                <input type="hidden" name="pallet_id" :value="palletData?.id">
-                                
-                                <div class="mb-10">
-                                    <label for="destination_location_code" class="text-xs font-bold text-[#ff9c00] uppercase tracking-widest block mb-4 text-center">Escanear Destino</label>
-                                    <input type="text" id="destination_location_code" name="destination_location_code" x-model="locationInput" class="input-arch text-3xl uppercase font-mono tracking-widest" placeholder="UBICACIÓN" required>
-                                </div>
-                                
-                                <button type="submit" :disabled="!locationInput" class="btn-nexus w-full py-5 text-sm uppercase tracking-widest shadow-xl shadow-[#2c3856]/20 disabled:opacity-50 hover:bg-green-600">
-                                    <i class="fas fa-exchange-alt mr-3"></i> Confirmar Movimiento
-                                </button>
-                            </form>
-                        </div>
+                            <div class="flex flex-col justify-center">
+                                <form action="{{ route('wms.inventory.transfer.store') }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="pallet_id" :value="palletData?.id">
+                                    
+                                    <div class="mb-10">
+                                        <label for="destination_location_code" class="text-xs font-bold text-[#ff9c00] uppercase tracking-widest block mb-4 text-center">Escanear Destino</label>
+                                        <input type="text" id="destination_location_code" name="destination_location_code" x-model="locationInput" class="input-arch text-3xl uppercase font-mono tracking-widest" placeholder="UBICACIÓN" required>
+                                    </div>
+                                    
+                                    <button type="submit" :disabled="!locationInput" class="btn-nexus w-full py-5 text-sm uppercase tracking-widest shadow-xl shadow-[#2c3856]/20 disabled:opacity-50 hover:bg-green-600">
+                                        <i class="fas fa-exchange-alt mr-3"></i> Confirmar Movimiento
+                                    </button>
+                                </form>
+                            </div>
 
-                    </div>
+                        </div>
+                    </template>
                 </div>
 
             </div>

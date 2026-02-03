@@ -192,6 +192,60 @@
                         </div>
 
                     </div>
+
+                    <div class="mt-12">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-8 border-b border-gray-100 pb-2">Historial de Movimientos</h4>
+                        <div class="relative border-l-2 border-gray-100 ml-3 space-y-8">
+                            @forelse($history as $move)
+                                <div class="relative pl-8 group">
+                                    <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white shadow-sm transition-colors
+                                        {{ $move->quantity > 0 ? 'bg-green-500' : ($move->quantity < 0 ? 'bg-red-500' : 'bg-blue-500') }}">
+                                    </div>
+
+                                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                                        <div>
+                                            <p class="font-bold text-[#2c3856] text-sm uppercase tracking-wide">
+                                                {{ $move->movement_type }}
+                                            </p>
+                                            
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                @if($move->quantity > 0)
+                                                    <span class="text-green-600 font-bold">Entrada:</span>
+                                                @elseif($move->quantity < 0)
+                                                    <span class="text-red-500 font-bold">Salida:</span>
+                                                @else
+                                                    <span class="text-blue-500 font-bold">Registro:</span>
+                                                @endif
+                                                
+                                                {{ abs($move->quantity) }} pzs de 
+                                                <span class="font-bold text-[#2c3856]">{{ $move->product->sku ?? 'N/A' }}</span>
+                                            </p>
+
+                                            @if($move->location)
+                                                <p class="text-[10px] text-gray-400 mt-1">
+                                                    <i class="fas fa-map-marker-alt mr-1 text-[#ff9c00]"></i> {{ $move->location->code }}
+                                                </p>
+                                            @endif
+                                        </div>
+
+                                        <div class="text-right">
+                                            <p class="font-mono text-xs font-bold text-[#2c3856]">
+                                                {{ $move->created_at->format('d/m/Y H:i') }}
+                                            </p>
+                                            <p class="text-[10px] text-gray-400 uppercase">
+                                                <i class="fas fa-user-circle mr-1"></i> {{ $move->user->name ?? 'Sistema' }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="pl-8 text-gray-400 text-sm italic">
+                                    No hay movimientos registrados para este LPN.
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+
                 </div>
             </div>
             @endif

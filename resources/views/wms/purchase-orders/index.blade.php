@@ -299,7 +299,10 @@
                                                             <span class="block font-mono font-bold text-[#2c3856] text-sm">{{ $line->product->sku }}</span>
                                                             <span class="block text-gray-500 truncate text-xs mt-1" title="{{ $line->product->name }}">{{ $line->product->name }}</span>
                                                         </div>
-                                                        <span class="ml-3 font-bold bg-blue-50 text-blue-700 px-3 py-1.5 rounded text-sm">x{{ $line->quantity_ordered }}</span>
+                                                        <div class="text-right">
+                                                            <span class="text-[10px] text-gray-400 uppercase font-bold block mb-0.5">Ordenado</span>
+                                                            <span class="font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded text-sm">x{{ $line->quantity_ordered }}</span>
+                                                        </div>
                                                     </div>
                                                 @endforeach
                                             </div>
@@ -390,7 +393,10 @@
                                                 <span class="block font-mono font-bold text-[#2c3856]">{{ $line->product->sku }}</span>
                                                 <span class="block text-gray-500 truncate text-xs">{{ $line->product->name }}</span>
                                             </div>
-                                            <span class="text-gray-600 font-bold whitespace-nowrap bg-white px-2 py-1 rounded border border-gray-200">x{{ $line->quantity_ordered }}</span>
+                                            <div class="text-right">
+                                                <span class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Ord</span>
+                                                <span class="text-gray-600 font-bold whitespace-nowrap bg-white px-2 py-1 rounded border border-gray-200">x{{ $line->quantity_ordered }}</span>
+                                            </div>
                                         </li>
                                     @endforeach
                                 </ul>

@@ -1,4 +1,5 @@
 <x-app-layout>
+    <x-slot name="header"></x-slot>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@700;800;900&display=swap');
         .font-raleway { font-family: 'Raleway', sans-serif; }
@@ -80,6 +81,7 @@
                             <tr>
                                 <th class="px-6 py-4 text-left text-xs font-bold text-[#666666] uppercase tracking-wider">Cliente</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold text-[#666666] uppercase tracking-wider">Nombre</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-[#666666] uppercase tracking-wider">Estatus</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold text-[#666666] uppercase tracking-wider">Descripción</th>
                                 <th class="px-6 py-4 text-right text-xs font-bold text-[#666666] uppercase tracking-wider">Acciones</th>
                             </tr>
@@ -93,6 +95,17 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap font-medium text-[#2c3856]">{{ $quality->name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if($quality->is_available)
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                                                <i class="fas fa-check-circle text-[10px]"></i> Disponible
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                                                <i class="fas fa-ban text-[10px]"></i> Bloqueado
+                                            </span>
+                                        @endif
+                                    </td>
                                     <td class="px-6 py-4 text-sm text-gray-500">{{ $quality->description }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <a href="{{ route('wms.qualities.edit', $quality) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-[#ff9c00] hover:border-[#ff9c00] transition-all shadow-sm mr-2">
@@ -108,7 +121,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-6 py-12 text-center text-gray-400">
+                                    <td colspan="5" class="px-6 py-12 text-center text-gray-400">
                                         <div class="flex flex-col items-center justify-center">
                                             <i class="fas fa-certificate text-4xl mb-3 opacity-50"></i>
                                             <p class="text-sm font-medium">No hay calidades registradas.</p>

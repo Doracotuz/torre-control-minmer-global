@@ -80,10 +80,7 @@
             </div>
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-                
-                <button @click="tab = 'mando'" 
-                    class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500"
-                    :class="tab === 'mando' ? 'ring-4 ring-[#ff9c00]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
+                <button @click="tab = 'mando'" class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'mando' ? 'ring-4 ring-[#ff9c00]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
                     <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
                     <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
                     <div class="absolute bottom-5 left-6 text-left">
@@ -91,10 +88,7 @@
                         <p class="text-2xl font-raleway font-black text-white">Dashboard</p>
                     </div>
                 </button>
-
-                <button @click="tab = 'inventario'" 
-                    class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500"
-                    :class="tab === 'inventario' ? 'ring-4 ring-[#2c3856]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
+                <button @click="tab = 'inventario'" class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'inventario' ? 'ring-4 ring-[#2c3856]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
                     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRJZdguUbIDEdJl_gQot6lco0c45KS0fCuBag&s" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
                     <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
                     <div class="absolute bottom-5 left-6 text-left">
@@ -102,10 +96,7 @@
                         <p class="text-2xl font-raleway font-black text-white">Inventario</p>
                     </div>
                 </button>
-
-                <button @click="tab = 'catalogos'" 
-                    class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500"
-                    :class="tab === 'catalogos' ? 'ring-4 ring-[#666666]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
+                <button @click="tab = 'catalogos'" class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'catalogos' ? 'ring-4 ring-[#666666]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
                     <img src="https://images.unsplash.com/photo-1553413077-190dd305871c?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
                     <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
                     <div class="absolute bottom-5 left-6 text-left">
@@ -113,10 +104,7 @@
                         <p class="text-2xl font-raleway font-black text-white">Catálogos</p>
                     </div>
                 </button>
-
-                <button @click="tab = 'reportes'" 
-                    class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500"
-                    :class="tab === 'reportes' ? 'ring-4 ring-[#2c3856]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
+                <button @click="tab = 'reportes'" class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'reportes' ? 'ring-4 ring-[#2c3856]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
                     <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
                     <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
                     <div class="absolute bottom-5 left-6 text-left">
@@ -133,7 +121,8 @@
                     <div class="bg-white p-8 rounded-3xl shadow-soft border border-gray-100 group hover:-translate-y-1 transition-transform duration-300">
                         <p class="text-[#666666] text-xs font-bold uppercase tracking-widest mb-3">{{ $kpi['label'] }}</p>
                         <div class="flex items-baseline gap-2">
-                            <span class="text-5xl font-raleway font-black text-[#2c3856] tracking-tighter" x-data x-init="animateCountTo($el, {{ $kpi['value'] }})">0</span>
+                            <span class="text-5xl font-raleway font-black text-[#2c3856] tracking-tighter" 
+                                  x-data x-init="animateCountTo($el, {{ $kpi['value'] }}, '{{ $kpi['format'] }}')">0</span>
                             @if($kpi['format'] === 'percent')<span class="text-xl text-[#ff9c00] font-bold">%</span>@endif
                         </div>
                     </div>
@@ -141,14 +130,13 @@
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[650px]">
-                    
                     <div class="bg-white rounded-[2.5rem] shadow-soft border border-gray-100 overflow-hidden flex flex-col h-full group hover:shadow-xl transition-shadow duration-500">
                         <div class="relative h-40 overflow-hidden shrink-0 img-placeholder">
                             <img src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 to-transparent"></div>
                             <div class="absolute bottom-5 left-8 text-white">
                                 <h3 class="text-2xl font-raleway font-black">Recepciones</h3>
-                                <p class="text-[#ff9c00] font-bold text-sm">{{ $poStats['receiving'] }} en Muelle</p>
+                                <p class="text-[#ff9c00] font-bold text-sm">Últimos 5 Creados</p>
                             </div>
                         </div>
                         <div class="px-6 py-4 border-b border-gray-50 flex gap-2 justify-between bg-white text-xs font-bold uppercase tracking-wider">
@@ -161,33 +149,44 @@
                                 <span class="text-lg text-[#2c3856] mt-1">{{ $poStats['receiving'] }}</span>
                             </div>
                             <div class="flex flex-col items-center w-1/3 border-l border-gray-100">
-                                <span class="text-green-600 bg-green-50 px-2 py-1 rounded-lg w-full text-center">Listo (Hoy)</span>
+                                <span class="text-green-600 bg-green-50 px-2 py-1 rounded-lg w-full text-center">Hoy</span>
                                 <span class="text-lg text-[#2c3856] mt-1">{{ $poStats['completed_today'] }}</span>
                             </div>
                         </div>
                         <div class="flex-1 overflow-y-auto hide-scroll p-6 space-y-3">
-                            @forelse($receivingPOs as $po)
-                                <a href="{{ route('wms.receiving.show', $po) }}" class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-blue-50 hover:border-blue-100 transition-colors">
-                                    <div>
-                                        <p class="font-bold text-[#2c3856] text-lg">{{ $po->po_number }}</p>
-                                        <p class="text-xs text-[#666666] uppercase font-bold tracking-wider mt-1">{{ $po->latestArrival->driver_name ?? 'N/A' }}</p>
+                            @foreach($recentPOs as $po)
+                                <a href="{{ route('wms.purchase-orders.show', $po) }}" class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-blue-50 hover:border-blue-100 transition-colors">
+                                    <div class="min-w-0 flex-1 pr-2">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <p class="font-bold text-[#2c3856] text-sm">{{ $po->po_number }}</p>
+                                            <span class="text-[9px] px-2 py-0.5 rounded uppercase font-bold
+                                                {{ $po->status == 'Completed' ? 'bg-green-100 text-green-700' : 
+                                                  ($po->status == 'Receiving' ? 'bg-blue-100 text-blue-700' : 
+                                                  ($po->status == 'Pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700')) }}">
+                                                {{ $po->status }}
+                                            </span>
+                                        </div>
+                                        <p class="text-[10px] text-[#666666] font-medium mt-0.5 flex items-center gap-1 truncate">
+                                            <i class="far fa-user"></i> {{ $po->user->name ?? 'Sistema' }} • <i class="far fa-clock"></i> {{ $po->created_at->diffForHumans() }}
+                                        </p>
                                     </div>
-                                    <div class="w-10 h-10 rounded-full bg-white text-[#2c3856] flex items-center justify-center shadow-sm">➔</div>
+                                    <div class="text-right">
+                                        <p class="text-sm font-black text-blue-600">{{ number_format($po->lines_sum_quantity_ordered) }}</p>
+                                        <p class="text-[8px] text-gray-400 uppercase font-bold">Unidades</p>
+                                    </div>
                                 </a>
-                            @empty
-                                <div class="h-full flex items-center justify-center text-gray-400 font-bold">Muelle libre</div>
-                            @endforelse
+                            @endforeach
                         </div>
                         <div class="p-6 border-t border-gray-50"><a href="{{ route('wms.purchase-orders.index') }}" class="block w-full py-4 text-center bg-[#2c3856] hover:bg-[#1a253a] text-white font-bold rounded-2xl shadow-lg">Ver Todas</a></div>
                     </div>
 
                     <div class="bg-white rounded-[2.5rem] shadow-soft border border-gray-100 overflow-hidden flex flex-col h-full group hover:shadow-xl transition-shadow duration-500">
                         <div class="relative h-40 overflow-hidden shrink-0 img-placeholder">
-                            <img src="https://images.unsplash.com/photo-1532635042-a6f6ad4745f9?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                            <img src="https://images.unsplash.com/photo-1532635042-a6f6ad4745f9?q=80&w=1170&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 to-transparent"></div>
                             <div class="absolute bottom-5 left-8 text-white">
                                 <h3 class="text-2xl font-raleway font-black">Despachos</h3>
-                                <p class="text-[#ff9c00] font-bold text-sm">{{ $soStats['picking'] }} en Picking</p>
+                                <p class="text-[#ff9c00] font-bold text-sm">Últimos 5 Creados</p>
                             </div>
                         </div>
                         <div class="px-6 py-4 border-b border-gray-50 flex gap-2 justify-between bg-white text-xs font-bold uppercase tracking-wider">
@@ -200,29 +199,40 @@
                                 <span class="text-lg text-[#2c3856] mt-1">{{ $soStats['picking'] }}</span>
                             </div>
                             <div class="flex flex-col items-center w-1/3 border-l border-gray-100">
-                                <span class="text-green-600 bg-green-50 px-2 py-1 rounded-lg w-full text-center">Salidas (Hoy)</span>
+                                <span class="text-green-600 bg-green-50 px-2 py-1 rounded-lg w-full text-center">Hoy</span>
                                 <span class="text-lg text-[#2c3856] mt-1">{{ $soStats['completed_today'] }}</span>
                             </div>
                         </div>
                         <div class="flex-1 overflow-y-auto hide-scroll p-6 space-y-3">
-                            @forelse($pickingSOs as $so)
-                                <a href="{{ route('wms.picking.show', $so->pickList) }}" class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-green-50 hover:border-green-100 transition-colors">
-                                    <div>
-                                        <p class="font-bold text-[#2c3856] text-lg">{{ $so->so_number }}</p>
-                                        <p class="text-xs text-[#666666] uppercase font-bold tracking-wider mt-1 truncate w-32">{{ $so->customer_name }}</p>
+                            @foreach($recentSOs as $so)
+                                <a href="{{ route('wms.sales-orders.show', $so) }}" class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-green-50 hover:border-green-100 transition-colors">
+                                    <div class="min-w-0 flex-1 pr-2">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <p class="font-bold text-[#2c3856] text-sm">{{ $so->so_number }}</p>
+                                            <span class="text-[9px] px-2 py-0.5 rounded uppercase font-bold
+                                                {{ in_array($so->status, ['Shipped', 'Completed']) ? 'bg-green-100 text-green-700' : 
+                                                  ($so->status == 'Picking' ? 'bg-blue-100 text-blue-700' : 
+                                                  ($so->status == 'Pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700')) }}">
+                                                {{ $so->status }}
+                                            </span>
+                                        </div>
+                                        <p class="text-[10px] text-[#666666] font-medium mt-0.5 flex items-center gap-1 truncate">
+                                            <i class="far fa-user"></i> {{ $so->user->name ?? 'Sistema' }} • <i class="far fa-clock"></i> {{ $so->created_at->diffForHumans() }}
+                                        </p>
                                     </div>
-                                    <span class="px-3 py-1 rounded-full bg-[#e6fffa] text-[#2c3856] text-xs font-bold border border-[#2c3856]/10">PICKING</span>
+                                    <div class="text-right">
+                                        <p class="text-sm font-black text-green-600">{{ number_format($so->lines_sum_quantity_ordered) }}</p>
+                                        <p class="text-[8px] text-gray-400 uppercase font-bold">Unidades</p>
+                                    </div>
                                 </a>
-                            @empty
-                                <div class="h-full flex items-center justify-center text-gray-400 font-bold">Todo despachado</div>
-                            @endforelse
+                            @endforeach
                         </div>
                         <div class="p-6 border-t border-gray-50"><a href="{{ route('wms.sales-orders.index') }}" class="block w-full py-4 text-center bg-[#2c3856] hover:bg-[#1a253a] text-white font-bold rounded-2xl shadow-lg">Ver Todos</a></div>
                     </div>
 
                     <div class="bg-white rounded-[2.5rem] shadow-soft border border-gray-100 overflow-hidden flex flex-col h-full group hover:shadow-xl transition-shadow duration-500">
                         <div class="relative h-40 overflow-hidden shrink-0 img-placeholder">
-                            <img src="https://images.unsplash.com/photo-1572670014853-1d3a3f22b40f?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                            <img src="https://images.unsplash.com/photo-1572670014853-1d3a3f22b40f?q=80&w=1171&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-red-900/80 to-transparent mix-blend-multiply"></div>
                             <div class="absolute bottom-5 left-8 text-white">
                                 <h3 class="text-2xl font-raleway font-black">Acciones Req.</h3>
@@ -268,7 +278,9 @@
 
             <div x-show="tab === 'inventario'" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0"
                  x-data="lpnSearch('{{ route('wms.api.find-lpn') }}')">
-                <div class="relative h-[450px] rounded-[3rem] overflow-hidden bg-white shadow-soft border border-gray-100 mb-12 flex items-center">
+                
+                <div class="relative h-[450px] rounded-[3rem] bg-white shadow-soft border border-gray-100 mb-12 flex items-center z-20">
+                    
                     <div class="w-full lg:w-1/2 p-12 lg:p-16 relative z-10">
                         <span class="inline-block px-3 py-1 bg-gray-100 text-[#2c3856] rounded-full text-xs font-bold uppercase tracking-wider mb-4">Herramienta de Búsqueda</span>
                         <h2 class="text-5xl font-raleway font-black text-[#2c3856] mb-4">Scanner LPN</h2>
@@ -284,19 +296,36 @@
                                 <span x-show="loading" class="animate-spin">⟳</span>
                             </button>
 
-                            <div x-show="pallet" @click.away="pallet = null; error = ''" class="absolute top-full left-0 w-full mt-4 bg-white border border-gray-100 rounded-2xl p-6 shadow-2xl z-50">
+                            <div x-show="pallet" @click.away="pallet = null; error = ''" 
+                                 class="absolute top-full left-0 w-full mt-4 bg-white border border-gray-100 rounded-2xl p-6 shadow-2xl z-50">
                                 <template x-if="pallet">
                                     <div>
-                                        <div class="flex justify-between items-center border-b border-gray-100 pb-4 mb-4">
+                                        <div class="flex justify-between items-start border-b border-gray-100 pb-4 mb-4">
                                             <div>
                                                 <p class="text-xs text-gray-400 uppercase tracking-widest">Código</p>
                                                 <p class="text-2xl font-mono text-[#2c3856] font-black" x-text="pallet.lpn"></p>
+                                                
+                                                <div class="mt-2 flex gap-6">
+                                                    <div>
+                                                        <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-0.5">Orden Origen</p>
+                                                        <p class="text-xs font-bold text-[#2c3856]" x-text="pallet.purchase_order ? pallet.purchase_order.po_number : 'N/A'"></p>
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-0.5">Estatus</p>
+                                                        <span class="inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-gray-100 text-gray-600" x-text="pallet.status"></span>
+                                                    </div>
+                                                </div>
                                             </div>
+                                            
                                             <div class="text-right">
-                                                <p class="text-xs text-gray-400 uppercase tracking-widest">Ubicación</p>
-                                                <div class="bg-blue-50 text-[#2c3856] px-4 py-1 rounded-lg text-lg font-bold font-mono" x-text="pallet.location.code"></div>
+                                                <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Ubicación</p>
+                                                <div class="px-4 py-2 rounded-lg text-lg font-bold font-mono border"
+                                                     :class="pallet.location ? 'bg-blue-50 text-[#2c3856] border-blue-100' : 'bg-red-50 text-red-500 border-red-100'" 
+                                                     x-text="pallet.location ? pallet.location.code : 'SIN UBICACIÓN'">
+                                                </div>
                                             </div>
                                         </div>
+
                                         <div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
                                             <template x-for="item in pallet.items" :key="item.id">
                                                 <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
@@ -314,10 +343,11 @@
                                     </div>
                                 </template>
                             </div>
-                            <div x-show="error" class="absolute top-full left-0 w-full mt-4 bg-red-50 text-red-600 font-bold p-4 rounded-xl text-center border border-red-100" x-text="error"></div>
+                            <div x-show="error" class="absolute top-full left-0 w-full mt-4 bg-red-50 text-red-600 font-bold p-4 rounded-xl text-center border border-red-100 z-50" x-text="error"></div>
                         </div>
                     </div>
-                    <div class="absolute right-0 top-0 w-1/2 h-full hidden lg:block img-placeholder">
+                    
+                    <div class="absolute right-0 top-0 w-1/2 h-full hidden lg:block img-placeholder rounded-r-[3rem] overflow-hidden">
                         <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover">
                         <div class="absolute inset-0 bg-gradient-to-r from-white via-white/20 to-transparent"></div>
                     </div>
@@ -433,23 +463,29 @@
             }
         }
 
-        function animateCountTo(el, target) {
+        function animateCountTo(el, target, format = 'number') {
             let current = 0;
             const duration = 1500; 
-            const step = Math.ceil(target / (duration / 16)); 
+            const step = target / (duration / 16);
             
             if (target === 0) {
                 el.innerText = '0';
                 return;
             }
 
+            const isPercent = format === 'percent';
+            const formatter = new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: isPercent ? 2 : 0,
+                maximumFractionDigits: isPercent ? 2 : 0
+            });
+
             const timer = setInterval(() => {
                 current += step;
                 if (current >= target) {
-                    el.innerText = new Intl.NumberFormat().format(target);
+                    el.innerText = formatter.format(target);
                     clearInterval(timer);
                 } else {
-                    el.innerText = new Intl.NumberFormat().format(current);
+                    el.innerText = formatter.format(current);
                 }
             }, 16);
         }

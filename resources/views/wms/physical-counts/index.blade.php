@@ -42,7 +42,7 @@
         }
         .nexus-row td:first-child { border-top-left-radius: 1rem; border-bottom-left-radius: 1rem; border-left: 1px solid #f3f4f6; }
         .nexus-row td:last-child { border-top-right-radius: 1rem; border-bottom-right-radius: 1rem; border-right: 1px solid #f3f4f6; }
-        .nexus-row:hover { transform: scale(1.002); box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.05); z-index: 10; position: relative; }
+        .nexus-row:hover { box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.05); z-index: 10; position: relative; }
 
         [x-cloak] { display: none !important; }
     </style>
@@ -54,7 +54,7 @@
             <div class="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-[#ff9c00]/5 rounded-full blur-[120px]"></div>
         </div>
 
-        <div class="max-w-[1920px] mx-auto px-6 pt-10 relative z-10">
+        <div class="max-w-[1920px] mx-auto px-4 md:px-6 pt-10 relative z-10">
             
             <div class="flex flex-col xl:flex-row justify-between items-end mb-10 stagger-enter" style="animation-delay: 0.1s;">
                 <div>
@@ -67,14 +67,14 @@
                     </h1>
                 </div>
 
-                <div class="mt-6 xl:mt-0">
-                    <a href="{{ route('wms.physical-counts.create') }}" class="btn-nexus px-8 py-3 text-sm uppercase tracking-wider shadow-lg shadow-[#2c3856]/20">
+                <div class="mt-6 xl:mt-0 w-full xl:w-auto">
+                    <a href="{{ route('wms.physical-counts.create') }}" class="btn-nexus w-full xl:w-auto px-8 py-3 text-sm uppercase tracking-wider shadow-lg shadow-[#2c3856]/20">
                         <i class="fas fa-plus mr-2"></i> Nueva Sesión
                     </a>
                 </div>
             </div>
 
-            <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-8 mb-8 stagger-enter" style="animation-delay: 0.2s;">
+            <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-6 md:p-8 mb-8 stagger-enter" style="animation-delay: 0.2s;">
                 <form method="GET" action="{{ route('wms.physical-counts.index') }}" class="flex flex-col md:flex-row gap-8 items-end w-full">
                     <div class="w-full md:w-1/3">
                         <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Filtrar por Almacén</label>
@@ -94,45 +94,62 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="pb-2">
-                        <a href="{{ route('wms.physical-counts.index') }}" class="btn-ghost px-6 py-2 text-[10px] uppercase tracking-widest">
+                    <div class="pb-2 w-full md:w-auto">
+                        <a href="{{ route('wms.physical-counts.index') }}" class="btn-ghost w-full md:w-auto px-6 py-2 text-[10px] uppercase tracking-widest text-center block">
                             <i class="fas fa-undo mr-2"></i> Limpiar
                         </a>
                     </div>
                 </form>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 stagger-enter" style="animation-delay: 0.3s;">
-                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between">
-                    <div>
-                        <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Activas</p>
-                        <p class="text-3xl font-black text-[#2c3856]">{{ $sessions->where('status', 'Pending')->count() }}</p>
+            <div class="grid grid-cols-1 gap-6 md:hidden stagger-enter" style="animation-delay: 0.4s;">
+                @forelse ($sessions as $session)
+                    @php
+                        $totalTasks = $session->tasks_count;
+                        $resolvedTasks = $session->tasks->where('status', 'resolved')->count();
+                        $progress = $totalTasks > 0 ? ($resolvedTasks / $totalTasks) * 100 : 0;
+                    @endphp
+                    <div class="bg-white rounded-[2rem] p-6 shadow-md border border-gray-100 relative overflow-hidden">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-bold text-[#2c3856] text-lg leading-tight">{{ $session->name }}</h3>
+                                <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mt-1">{{ $session->warehouse->name ?? 'N/A' }}</p>
+                            </div>
+                            @if($session->area)
+                                <span class="bg-blue-50 text-blue-600 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">{{ substr($session->area->name, 0, 10) }}...</span>
+                            @else
+                                <span class="text-gray-300 text-xs"><i class="fas fa-globe"></i></span>
+                            @endif
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
+                                <span>Progreso</span>
+                                <span>{{ number_format($progress, 0) }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full" style="width: {{ $progress }}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center text-xs text-gray-500 mb-6 font-medium">
+                            <div><i class="fas fa-user-tag mr-1"></i> {{ $session->assignedUser->name ?? 'N/A' }}</div>
+                            <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-[10px] uppercase font-bold">{{ Str::title($session->type) }}</span>
+                        </div>
+
+                        <a href="{{ route('wms.physical-counts.show', $session) }}" class="btn-nexus w-full py-3 text-xs uppercase tracking-widest">
+                            Monitorear / Contar
+                        </a>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500">
-                        <i class="fas fa-tasks text-xl"></i>
+                @empty
+                    <div class="text-center py-10 bg-white rounded-[2rem] shadow-sm">
+                        <i class="fas fa-clipboard-list text-4xl mb-3 text-gray-300"></i>
+                        <p class="text-gray-500 font-medium">No se encontraron sesiones.</p>
                     </div>
-                </div>
-                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between">
-                    <div>
-                        <p class="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Discrepancias</p>
-                        <p class="text-3xl font-black text-[#2c3856]">{{ $sessions->sum(fn($s) => $s->tasks->where('status', 'discrepancy')->count()) }}</p>
-                    </div>
-                    <div class="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center text-red-500">
-                        <i class="fas fa-exclamation-triangle text-xl"></i>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between">
-                    <div>
-                        <p class="text-[10px] font-bold text-green-400 uppercase tracking-widest mb-1">Resueltas</p>
-                        <p class="text-3xl font-black text-[#2c3856]">{{ $sessions->sum(fn($s) => $s->tasks->where('status', 'resolved')->count()) }}</p>
-                    </div>
-                    <div class="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-green-500">
-                        <i class="fas fa-check-circle text-xl"></i>
-                    </div>
-                </div>
+                @endforelse
             </div>
 
-            <div class="overflow-x-auto stagger-enter" style="animation-delay: 0.4s;">
+            <div class="hidden md:block overflow-x-auto stagger-enter" style="animation-delay: 0.4s;">
                 <table class="nexus-table">
                     <thead>
                         <tr>
@@ -201,7 +218,7 @@
                 </table>
             </div>
             
-            <div class="mt-8">
+            <div class="mt-8 mb-20">
                 {{ $sessions->links() }}
             </div>
         </div>

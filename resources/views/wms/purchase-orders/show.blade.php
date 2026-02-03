@@ -30,18 +30,18 @@
         .nexus-table { width: 100%; border-collapse: separate; border-spacing: 0 0.8rem; }
         .nexus-table thead th {
             font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; font-weight: 800;
-            padding: 0 1.5rem 0.5rem 1.5rem; text-align: left;
+            padding: 0 1.5rem 0.5rem 1.5rem; text-align: left; white-space: nowrap;
         }
         .nexus-row {
             background: white; transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
         }
         .nexus-row td {
             padding: 1rem 1.5rem; vertical-align: middle; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;
-            background-color: white;
+            background-color: white; white-space: nowrap;
         }
         .nexus-row td:first-child { border-top-left-radius: 1rem; border-bottom-left-radius: 1rem; border-left: 1px solid #f3f4f6; }
         .nexus-row td:last-child { border-top-right-radius: 1rem; border-bottom-right-radius: 1rem; border-right: 1px solid #f3f4f6; }
-        .nexus-row:hover { transform: scale(1.002); box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.05); z-index: 10; position: relative; }
+        .nexus-row:hover { box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.05); z-index: 10; position: relative; }
 
         .upload-card {
             position: relative; border: 2px dashed #e5e7eb; border-radius: 1rem; padding: 1rem;
@@ -54,81 +54,84 @@
         }
 
         [x-cloak] { display: none !important; }
+        
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #e5e7eb; border-radius: 99px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background-color: transparent; }
     </style>
 
-    <div class="min-h-screen bg-transparent text-[#2b2b2b] font-montserrat pb-20 relative overflow-hidden" x-data="evidenceHandler()">
+    <div class="min-h-screen bg-transparent text-[#2b2b2b] font-montserrat pb-20 relative overflow-x-hidden" x-data="evidenceHandler()">
         
         <div class="fixed inset-0 -z-10 pointer-events-none">
             <div class="absolute top-0 right-0 w-[60vw] h-full bg-gradient-to-l from-[#f8fafc] to-transparent"></div>
             <div class="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-[#ff9c00]/5 rounded-full blur-[120px]"></div>
         </div>
 
-        <div class="max-w-[1920px] mx-auto px-6 pt-10 relative z-10">
+        <div class="max-w-[1920px] mx-auto px-4 md:px-6 pt-6 md:pt-10 relative z-10">
             
-            <div class="flex flex-col xl:flex-row justify-between items-end mb-10 stagger-enter" style="animation-delay: 0.1s;">
-                <div>
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-10 gap-4 stagger-enter" style="animation-delay: 0.1s;">
+                <div class="w-full md:w-auto">
                     <div class="flex items-center gap-3 mb-2">
-                        <span class="w-12 h-1 bg-[#ff9c00]"></span>
-                        <span class="text-sm font-bold text-[#2c3856] tracking-[0.3em] uppercase">Detalle de Operación</span>
+                        <span class="w-8 md:w-12 h-1 bg-[#ff9c00]"></span>
+                        <span class="text-xs md:text-sm font-bold text-[#2c3856] tracking-[0.3em] uppercase">Detalle de Operación</span>
                     </div>
-                    <h1 class="text-5xl font-raleway font-black text-[#2c3856] leading-none">
+                    <h1 class="text-3xl md:text-5xl font-raleway font-black text-[#2c3856] leading-none break-all">
                         PO <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-orange-600">{{ $purchaseOrder->po_number }}</span>
                     </h1>
                 </div>
 
-                <div class="flex gap-3 mt-6 xl:mt-0">
-                    <a href="{{ route('wms.purchase-orders.index') }}" class="btn-ghost px-6 py-3 h-12 flex items-center gap-2 text-sm uppercase tracking-wider">
+                <div class="w-full md:w-auto flex gap-3 mt-2 md:mt-0">
+                    <a href="{{ route('wms.purchase-orders.index') }}" class="btn-ghost w-full md:w-auto px-6 py-3 h-12 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
                         <i class="fas fa-arrow-left"></i> Volver
                     </a>
                 </div>
             </div>
 
             @if(session('success'))
-                <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-r-xl mb-8 font-bold flex items-center gap-3 stagger-enter">
-                    <i class="fas fa-check-circle text-xl"></i>
+                <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-r-xl mb-8 font-bold flex items-center gap-3 stagger-enter text-sm md:text-base">
+                    <i class="fas fa-check-circle text-xl flex-shrink-0"></i>
                     {{ session('success') }}
                 </div>
             @endif
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 stagger-enter" style="animation-delay: 0.2s;">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 stagger-enter" style="animation-delay: 0.2s;">
                 
-                <div class="lg:col-span-2 space-y-8">
+                <div class="lg:col-span-2 space-y-6 md:space-y-8">
                     
-                    <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 overflow-hidden">
-                        <div class="bg-[#2c3856] p-8 text-white relative overflow-hidden">
+                    <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 overflow-hidden">
+                        <div class="bg-[#2c3856] p-6 md:p-8 text-white relative overflow-hidden">
                             <div class="absolute top-0 right-0 w-64 h-64 bg-[#ff9c00] rounded-full blur-[100px] opacity-20 -mr-20 -mt-20"></div>
-                            <div class="relative z-10 flex justify-between items-center">
+                            <div class="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div>
-                                    <p class="text-[#ff9c00] font-bold text-xs uppercase tracking-[0.2em] mb-1">Cliente / Área</p>
-                                    <h3 class="text-2xl font-bold">{{ $purchaseOrder->area->name ?? 'N/A' }}</h3>
+                                    <p class="text-[#ff9c00] font-bold text-[10px] md:text-xs uppercase tracking-[0.2em] mb-1">Cliente / Área</p>
+                                    <h3 class="text-xl md:text-2xl font-bold leading-tight">{{ $purchaseOrder->area->name ?? 'N/A' }}</h3>
                                 </div>
-                                <div class="text-right">
-                                    <p class="text-xs uppercase tracking-widest opacity-60 mb-1">Estado</p>
-                                    <span class="px-4 py-1.5 bg-white/10 border border-white/20 rounded-full font-bold text-sm">
+                                <div class="self-start sm:self-auto">
+                                    <span class="inline-block px-3 py-1 bg-white/10 border border-white/20 rounded-full font-bold text-xs md:text-sm">
                                         {{ $purchaseOrder->status_in_spanish }}
                                     </span>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="p-8">
-                            <div class="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-8">
-                                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Almacén</p><p class="font-bold text-[#2c3856]">{{ $purchaseOrder->warehouse->name }}</p></div>
-                                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Fecha Esperada</p><p class="font-bold text-[#2c3856]">{{ \Carbon\Carbon::parse($purchaseOrder->expected_date)->format('d M Y') }}</p></div>
-                                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Contenedor</p><p class="font-mono font-bold text-[#2c3856]">{{ $purchaseOrder->container_number ?? '-' }}</p></div>
-                                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Factura</p><p class="font-mono font-bold text-[#2c3856]">{{ $purchaseOrder->document_invoice ?? '-' }}</p></div>
-                                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Pedimento A4</p><p class="font-mono font-bold text-[#2c3856]">{{ $purchaseOrder->pedimento_a4 ?? '-' }}</p></div>
-                                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Pedimento G1</p><p class="font-mono font-bold text-[#2c3856]">{{ $purchaseOrder->pedimento_g1 ?? '-' }}</p></div>
+                        <div class="p-6 md:p-8">
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4 md:gap-x-8">
+                                <div><p class="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase">Almacén</p><p class="font-bold text-[#2c3856] text-sm md:text-base">{{ $purchaseOrder->warehouse->name }}</p></div>
+                                <div><p class="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase">Fecha Esperada</p><p class="font-bold text-[#2c3856] text-sm md:text-base">{{ \Carbon\Carbon::parse($purchaseOrder->expected_date)->format('d M Y') }}</p></div>
+                                <div><p class="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase">Contenedor</p><p class="font-mono font-bold text-[#2c3856] text-sm md:text-base break-words">{{ $purchaseOrder->container_number ?? '-' }}</p></div>
+                                <div><p class="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase">Factura</p><p class="font-mono font-bold text-[#2c3856] text-sm md:text-base break-words">{{ $purchaseOrder->document_invoice ?? '-' }}</p></div>
+                                <div><p class="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase">Pedimento A4</p><p class="font-mono font-bold text-[#2c3856] text-sm md:text-base break-words">{{ $purchaseOrder->pedimento_a4 ?? '-' }}</p></div>
+                                <div><p class="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase">Pedimento G1</p><p class="font-mono font-bold text-[#2c3856] text-sm md:text-base break-words">{{ $purchaseOrder->pedimento_g1 ?? '-' }}</p></div>
                             </div>
 
-                            <div class="mt-8 flex gap-4 border-t pt-6">
+                            <div class="mt-8 flex flex-col sm:flex-row gap-4 border-t border-gray-100 pt-6">
                                 @if ($purchaseOrder->status != 'Completed')
-                                    <a href="{{ route('wms.purchase-orders.edit', $purchaseOrder) }}" class="btn-ghost px-6 py-2 text-xs uppercase tracking-widest shadow-sm">
+                                    <a href="{{ route('wms.purchase-orders.edit', $purchaseOrder) }}" class="btn-ghost w-full sm:w-auto px-6 py-3 text-xs uppercase tracking-widest shadow-sm flex justify-center">
                                         <i class="fas fa-pencil-alt mr-2"></i> Editar
                                     </a>
                                 @endif
                                 @if ($purchaseOrder->status == 'Completed')
-                                    <a href="{{ route('wms.purchase-orders.arrival-report-pdf', $purchaseOrder) }}" target="_blank" class="btn-nexus px-6 py-2 text-xs uppercase tracking-widest shadow-lg">
+                                    <a href="{{ route('wms.purchase-orders.arrival-report-pdf', $purchaseOrder) }}" target="_blank" class="btn-nexus w-full sm:w-auto px-6 py-3 text-xs uppercase tracking-widest shadow-lg flex justify-center">
                                         <i class="fas fa-file-pdf mr-2"></i> Reporte PDF
                                     </a>
                                 @endif
@@ -136,40 +139,73 @@
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-8">
+                    <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-6 md:p-8">
                         <div class="flex items-center gap-3 mb-6">
                             <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
                             <h4 class="text-lg font-raleway font-black text-[#2c3856]">Resumen de Recepción</h4>
                         </div>
                         
-                        @php $summary = $purchaseOrder->getReceiptSummary(); @endphp
+                        @php 
+                            $summary = $purchaseOrder->getReceiptSummary(); 
+                            $hasExcess = $summary->contains(function($line) {
+                                return ($line->quantity_received - $line->quantity_ordered) > 0;
+                            });
+                        @endphp
+
+                        @if($hasExcess)
+                            <div class="mb-6 bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-xl flex items-start gap-4 animate-pulse-once">
+                                <div class="bg-orange-100 p-2 rounded-full text-orange-600 shrink-0">
+                                    <i class="fas fa-exclamation-triangle text-xl"></i>
+                                </div>
+                                <div>
+                                    <h5 class="font-bold text-orange-800 text-sm uppercase tracking-wide">Exceso de Inventario Detectado</h5>
+                                    <p class="text-xs text-orange-700 mt-1">Se han recibido más unidades de las solicitadas en una o más líneas. Las filas con excedente están resaltadas.</p>
+                                </div>
+                            </div>
+                        @endif
                         
-                        <div class="overflow-x-auto">
-                            <table class="nexus-table">
+                        <div class="overflow-x-auto custom-scrollbar pb-2">
+                            <table class="nexus-table min-w-full">
                                 <thead>
                                     <tr>
-                                        <th>Producto</th>
-                                        <th class="text-right">Ordenado</th>
-                                        <th class="text-right">Recibido</th>
-                                        <th class="text-right">Cajas</th>
-                                        <th class="text-right">Pallets</th>
-                                        <th class="text-right">Dif</th>
+                                        <th class="pl-4">Producto</th>
+                                        <th class="text-center">Ordenado</th>
+                                        <th class="text-center">Recibido</th>
+                                        <th class="text-center">Cajas</th>
+                                        <th class="text-center">Pallets</th>
+                                        <th class="text-center">Dif</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($summary as $line)
-                                        @php $diff = $line->quantity_received - $line->quantity_ordered; @endphp
-                                        <tr class="nexus-row">
-                                            <td>
-                                                <p class="font-bold text-[#2c3856] text-xs">{{ $line->product_name }}</p>
+                                        @php 
+                                            $diff = $line->quantity_received - $line->quantity_ordered; 
+                                            $isExcess = $diff > 0;
+                                        @endphp
+                                        
+                                        <tr class="nexus-row {{ $isExcess ? 'bg-orange-50/60' : '' }}">
+                                            <td class="{{ $isExcess ? 'border-l-4 border-l-orange-400' : '' }} pl-4">
+                                                <p class="font-bold text-[#2c3856] text-xs max-w-[120px] md:max-w-xs truncate" title="{{ $line->product_name }}">{{ $line->product_name }}</p>
                                                 <p class="font-mono text-[10px] text-gray-400 mt-1">{{ $line->sku }}</p>
+                                                @if($line->is_extra ?? false)
+                                                    <span class="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold uppercase">No Planeado</span>
+                                                @endif
                                             </td>
-                                            <td class="text-right font-medium text-gray-600">{{ number_format($line->quantity_ordered) }}</td>
-                                            <td class="text-right font-black text-lg text-[#2c3856]">{{ number_format($line->quantity_received) }}</td>
-                                            <td class="text-right font-bold text-blue-600">{{ $line->cases_received }}</td>
-                                            <td class="text-right font-medium text-gray-600">{{ $line->pallet_count }}</td>
-                                            <td class="text-right font-bold {{ $diff == 0 && $line->quantity_received > 0 ? 'text-green-500' : ($diff != 0 ? 'text-red-500' : 'text-gray-400') }}">
-                                                {{ $diff > 0 ? '+' : '' }}{{ number_format($diff) }}
+                                            <td class="text-center font-medium text-gray-600 text-xs md:text-sm">{{ number_format($line->quantity_ordered) }}</td>
+                                            <td class="text-center font-black text-sm md:text-lg text-[#2c3856]">{{ number_format($line->quantity_received) }}</td>
+                                            <td class="text-center font-bold text-blue-600 text-xs md:text-sm">{{ $line->cases_received }}</td>
+                                            <td class="text-center font-medium text-gray-600 text-xs md:text-sm">{{ $line->pallet_count }}</td>
+                                            
+                                            <td class="text-center font-bold text-xs md:text-sm">
+                                                @if($isExcess)
+                                                    <span class="text-orange-600 bg-orange-100 px-2 py-1 rounded-lg">
+                                                        +{{ number_format($diff) }}
+                                                    </span>
+                                                @elseif($diff < 0)
+                                                    <span class="text-red-500">{{ number_format($diff) }}</span>
+                                                @else
+                                                    <span class="text-green-500"><i class="fas fa-check"></i></span>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach
@@ -178,7 +214,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-8">
+                    <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-6 md:p-8">
                         <div class="flex items-center gap-3 mb-6">
                             <span class="w-1 h-6 bg-[#ff9c00] rounded-full"></span>
                             <h4 class="text-lg font-raleway font-black text-[#2c3856]">Historial de Tarimas</h4>
@@ -190,35 +226,35 @@
                                     <div>
                                         <div class="flex items-center gap-2">
                                             <i class="fas fa-pallet text-gray-300"></i>
-                                            <p class="font-mono font-bold text-[#2c3856] text-lg">{{ $pallet->lpn }}</p>
+                                            <p class="font-mono font-bold text-[#2c3856] text-base md:text-lg">{{ $pallet->lpn }}</p>
                                         </div>
-                                        <div class="text-xs text-gray-500 mt-1 pl-6">
+                                        <div class="text-[10px] md:text-xs text-gray-500 mt-1 pl-6">
                                             <i class="fas fa-user mr-1 text-[#ff9c00]"></i> {{ $pallet->user->name }} • 
                                             <span class="ml-1">{{ $pallet->updated_at->format('d/M H:i') }}</span>
                                         </div>
                                     </div>
-                                    <div class="flex-1 pl-6 md:pl-0">
-                                        <ul class="text-xs space-y-2">
+                                    <div class="flex-1 md:pl-0 pl-6 border-l-2 md:border-l-0 border-gray-200 md:border-transparent">
+                                        <ul class="text-xs space-y-2 pl-2 md:pl-0">
                                             @foreach($pallet->items as $item)
                                                 <li class="flex justify-between border-b border-gray-200 pb-1 last:border-0 last:pb-0">
-                                                    <span class="text-gray-600">{{ $item->product->name }} <strong class="text-blue-600">[{{ $item->quality->name }}]</strong></span>
-                                                    <span class="font-bold bg-white px-2 py-0.5 rounded border border-gray-200">x{{ $item->quantity }}</span>
+                                                    <span class="text-gray-600 truncate max-w-[150px] md:max-w-none">{{ $item->product->name }} <strong class="text-blue-600">[{{ $item->quality->name }}]</strong></span>
+                                                    <span class="font-bold bg-white px-2 py-0.5 rounded border border-gray-200 shrink-0">x{{ $item->quantity }}</span>
                                                 </li>
                                             @endforeach
                                         </ul>
                                     </div>
                                 </div>
                             @empty
-                                <p class="text-center text-gray-400 italic py-4">No hay tarimas registradas.</p>
+                                <p class="text-center text-gray-400 italic py-4 text-sm">No hay tarimas registradas.</p>
                             @endforelse
                         </div>
                     </div>
 
                 </div>
 
-                <div class="space-y-8">
+                <div class="space-y-6 md:space-y-8">
                     
-                    <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-8 relative overflow-hidden">
+                    <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-6 md:p-8 relative overflow-hidden">
                         <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-10 -mt-10"></div>
                         <h4 class="text-lg font-raleway font-black text-[#2c3856] mb-6 relative z-10"><i class="fas fa-truck mr-2"></i>Gestión de Patio</h4>
 
@@ -233,15 +269,15 @@
                                     <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Operador</label>
                                     <input type="text" name="driver_name" required class="input-arch" placeholder="Nombre completo">
                                 </div>
-                                <button type="submit" class="btn-nexus w-full py-3 mt-2 shadow-lg">Registrar Llegada</button>
+                                <button type="submit" class="btn-nexus w-full py-3 mt-2 shadow-lg text-sm uppercase tracking-widest">Registrar Llegada</button>
                             </form>
                         @else
                             <div class="space-y-4 relative z-10">
                                 <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                                     <p class="text-[10px] font-bold text-gray-400 uppercase">Operador</p>
-                                    <p class="font-bold text-[#2c3856]">{{ $purchaseOrder->operator_name }}</p>
+                                    <p class="font-bold text-[#2c3856] text-sm">{{ $purchaseOrder->operator_name }}</p>
                                     <p class="text-[10px] font-bold text-gray-400 uppercase mt-2">Placas</p>
-                                    <p class="font-mono font-bold text-[#2c3856]">{{ $purchaseOrder->latestArrival->truck_plate ?? 'N/A' }}</p>
+                                    <p class="font-mono font-bold text-[#2c3856] text-sm">{{ $purchaseOrder->latestArrival->truck_plate ?? 'N/A' }}</p>
                                 </div>
                                 <div>
                                     <p class="text-[10px] font-bold text-gray-400 uppercase">Entrada</p>
@@ -253,10 +289,11 @@
                                         <p class="font-mono text-sm">{{ \Carbon\Carbon::parse($purchaseOrder->download_end_time)->format('d/m/Y H:i') }}</p>
                                     </div>
                                 @else
-                                    <form action="{{ route('wms.purchase-orders.register-departure', $purchaseOrder) }}" method="POST">
+                                    <form action="{{ route('wms.purchase-orders.register-departure', $purchaseOrder) }}" method="POST"
+                                          onsubmit="return confirm('ADVERTENCIA DE CIERRE \n\nAl registrar la salida del operador:\n1. La Orden de Compra se marcará como COMPLETADA.\n2. Ya no podrás modificar el inventario de esta recepción.\n\n¿Estás seguro de que deseas finalizar?');">
                                         @csrf
-                                        <button type="submit" class="w-full py-3 rounded-xl bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-colors border border-red-100">
-                                            Registrar Salida
+                                        <button type="submit" class="w-full py-3 rounded-xl bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-colors border border-red-100 text-sm uppercase tracking-widest flex items-center justify-center gap-2">
+                                            <i class="fas fa-sign-out-alt"></i> Registrar Salida y Finalizar
                                         </button>
                                     </form>
                                 @endif
@@ -265,20 +302,20 @@
                     </div>
 
                     @if ($purchaseOrder->status != 'Completed')
-                        <div class="bg-gradient-to-br from-green-500 to-emerald-600 p-8 rounded-[2.5rem] shadow-xl text-center text-white relative overflow-hidden group">
+                        <div class="bg-gradient-to-br from-green-500 to-emerald-600 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-xl text-center text-white relative overflow-hidden group">
                             <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none"></div>
                             
                             <h3 class="font-bold text-xl mb-2 relative z-10">Continuar Proceso</h3>
                             <p class="text-green-100 text-sm mb-6 relative z-10">Registra los productos físicos en la interfaz de recepción.</p>
                             
-                            <a href="{{ route('wms.receiving.show', $purchaseOrder) }}" class="relative z-10 inline-block px-8 py-3 bg-white text-green-600 font-bold rounded-xl shadow-lg hover:scale-105 transition-transform">
+                            <a href="{{ route('wms.receiving.show', $purchaseOrder) }}" class="relative z-10 block w-full py-3 bg-white text-green-600 font-bold rounded-xl shadow-lg hover:scale-[1.02] transition-transform">
                                 <i class="fas fa-dolly mr-2"></i> Ir a Recepción
                             </a>
                         </div>
                     @endif
 
                     @if ($purchaseOrder->status == 'Receiving')
-                        <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-100">
+                        <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-xl border border-gray-100">
                             <h4 class="text-lg font-raleway font-black text-[#2c3856] mb-4">Cierre de Orden</h4>
                             <p class="text-xs text-gray-500 mb-6">Al cerrar la orden, el inventario se consolida y no se podrán agregar más tarimas.</p>
                             
@@ -286,26 +323,26 @@
                                 @csrf
                                 @if ($purchaseOrder->received_bottles < $purchaseOrder->expected_bottles)
                                     <div class="mb-4 p-3 bg-yellow-50 text-yellow-700 text-xs rounded-xl border border-yellow-100 font-medium">
-                                        <i class="fas fa-exclamation-triangle mr-1"></i> Recepción parcial detectada.
+                                        <i class="fas fa-exclamation-triangle mr-1"></i> Recepción parcial.
                                     </div>
                                 @endif
-                                <button type="submit" class="w-full py-3 bg-[#2c3856] text-white font-bold rounded-xl hover:bg-[#1a253a] shadow-lg transition-all">
+                                <button type="submit" class="w-full py-3 bg-[#2c3856] text-white font-bold rounded-xl hover:bg-[#1a253a] shadow-lg transition-all text-sm uppercase tracking-widest">
                                     <i class="fas fa-lock mr-2"></i> Cerrar Orden
                                 </button>
                             </form>
                         </div>
                     @endif
 
-                    <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-100">
+                    <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-xl border border-gray-100">
                         <h4 class="text-lg font-raleway font-black text-[#2c3856] mb-6">Evidencias</h4>
                         
-                        <form action="{{ route('wms.purchase-orders.upload-evidence', $purchaseOrder) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                        <form action="{{ route('wms.purchase-orders.upload-evidence', $purchaseOrder) }}" method="POST" enctype="multipart/form-data" class="space-y-4 md:space-y-6">
                             @csrf
                             
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-2 gap-3 md:gap-4">
                                 <div x-data="fileInput('marchamo')" class="upload-card">
                                     <input type="file" name="marchamo" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" @change="updatePreview">
-                                    <div x-show="!preview">
+                                    <div x-show="!preview" class="flex flex-col items-center justify-center h-full">
                                         <i class="fas fa-stamp text-gray-300 text-2xl mb-1"></i>
                                         <p class="text-[9px] font-bold text-gray-400 uppercase">Marchamo</p>
                                     </div>
@@ -314,16 +351,16 @@
 
                                 <div x-data="fileInput('puerta_cerrada')" class="upload-card">
                                     <input type="file" name="puerta_cerrada" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" @change="updatePreview">
-                                    <div x-show="!preview">
+                                    <div x-show="!preview" class="flex flex-col items-center justify-center h-full">
                                         <i class="fas fa-door-closed text-gray-300 text-2xl mb-1"></i>
-                                        <p class="text-[9px] font-bold text-gray-400 uppercase">Puerta Cerrada</p>
+                                        <p class="text-[9px] font-bold text-gray-400 uppercase">Cerrada</p>
                                     </div>
                                     <img x-show="preview" :src="preview">
                                 </div>
 
                                 <div x-data="fileInput('apertura_puertas')" class="upload-card">
                                     <input type="file" name="apertura_puertas" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" @change="updatePreview">
-                                    <div x-show="!preview">
+                                    <div x-show="!preview" class="flex flex-col items-center justify-center h-full">
                                         <i class="fas fa-door-open text-gray-300 text-2xl mb-1"></i>
                                         <p class="text-[9px] font-bold text-gray-400 uppercase">Apertura</p>
                                     </div>
@@ -332,9 +369,9 @@
 
                                 <div x-data="fileInput('caja_vacia')" class="upload-card">
                                     <input type="file" name="caja_vacia" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" @change="updatePreview">
-                                    <div x-show="!preview">
+                                    <div x-show="!preview" class="flex flex-col items-center justify-center h-full">
                                         <i class="fas fa-box-open text-gray-300 text-2xl mb-1"></i>
-                                        <p class="text-[9px] font-bold text-gray-400 uppercase">Caja Vacía</p>
+                                        <p class="text-[9px] font-bold text-gray-400 uppercase">Vacía</p>
                                     </div>
                                     <img x-show="preview" :src="preview">
                                 </div>
@@ -342,16 +379,20 @@
 
                             <div x-data="multiFileInput('proceso_descarga')" class="upload-card h-auto py-4">
                                 <input type="file" name="proceso_descarga[]" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" @change="updateText">
-                                <i class="fas fa-people-carry text-gray-300 text-2xl mb-1"></i>
-                                <p class="text-[9px] font-bold text-gray-400 uppercase">Proceso Descarga</p>
-                                <p class="text-xs text-blue-500 font-bold mt-1" x-text="fileText"></p>
+                                <div class="flex flex-col items-center justify-center">
+                                    <i class="fas fa-people-carry text-gray-300 text-2xl mb-1"></i>
+                                    <p class="text-[9px] font-bold text-gray-400 uppercase">Proceso Descarga</p>
+                                    <p class="text-xs text-blue-500 font-bold mt-1" x-text="fileText"></p>
+                                </div>
                             </div>
 
                             <div x-data="multiFileInput('producto_danado')" class="upload-card h-auto py-4 border-red-200 hover:border-red-400 hover:bg-red-50">
                                 <input type="file" name="producto_danado[]" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" @change="updateText">
-                                <i class="fas fa-exclamation-triangle text-red-300 text-2xl mb-1"></i>
-                                <p class="text-[9px] font-bold text-red-400 uppercase">Daños (Opcional)</p>
-                                <p class="text-xs text-red-500 font-bold mt-1" x-text="fileText"></p>
+                                <div class="flex flex-col items-center justify-center">
+                                    <i class="fas fa-exclamation-triangle text-red-300 text-2xl mb-1"></i>
+                                    <p class="text-[9px] font-bold text-red-400 uppercase">Daños (Opcional)</p>
+                                    <p class="text-xs text-red-500 font-bold mt-1" x-text="fileText"></p>
+                                </div>
                             </div>
 
                             <button type="submit" class="btn-ghost w-full py-3 text-xs uppercase tracking-widest font-bold">
@@ -391,7 +432,7 @@
                 
                 <div class="relative z-10 max-w-4xl w-full">
                     <img :src="modalImage" class="max-w-full max-h-[85vh] rounded-2xl shadow-2xl mx-auto">
-                    <button @click="closeModal()" class="absolute -top-10 right-0 text-white hover:text-[#ff9c00] transition-colors">
+                    <button @click="closeModal()" class="absolute -top-10 right-0 text-white hover:text-[#ff9c00] transition-colors p-2">
                         <i class="fas fa-times text-2xl"></i>
                     </button>
                 </div>

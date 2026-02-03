@@ -13,7 +13,12 @@
         [x-cloak] { display: none !important; }
     </style>
 
-    <div class="min-h-screen text-[#2b2b2b] font-montserrat pb-20 relative" x-data="{ showImportModal: false }">
+    <div class="min-h-screen text-[#2b2b2b] font-montserrat pb-20 relative" 
+         x-data="{ 
+            showImportModal: false, 
+            showDetailModal: false, 
+            detailProduct: null 
+         }">
         
         <div class="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
             <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-[#2c3856] rounded-full blur-[150px] opacity-5"></div>
@@ -139,9 +144,14 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->productType->name ?? '-' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->unit_of_measure }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <a href="{{ route('wms.products.edit', $product) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-[#ff9c00] hover:border-[#ff9c00] transition-all shadow-sm">
-                                            <i class="fas fa-pencil-alt"></i>
-                                        </a>
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button @click='detailProduct = {!! json_encode($product) !!}; showDetailModal = true' class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-blue-600 hover:border-blue-600 transition-all shadow-sm" title="Ver Detalles">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <a href="{{ route('wms.products.edit', $product) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-[#ff9c00] hover:border-[#ff9c00] transition-all shadow-sm" title="Editar">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
@@ -174,7 +184,6 @@
                             <div class="sm:flex sm:items-start">
                                 <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
                                     <h3 class="text-2xl leading-6 font-raleway font-black text-[#2c3856] mb-6" id="modal-title">Importar Masivo</h3>
-                                    
                                     <div class="space-y-6">
                                         <div>
                                             <label class="block text-sm font-bold text-[#666666] mb-2 uppercase tracking-wide">1. Cliente (Dueño)</label>
@@ -216,5 +225,101 @@
                 </div>
             </div>
         </div>
+
+        <div x-show="showDetailModal" x-cloak style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="detail-modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div x-show="showDetailModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-[#2c3856] bg-opacity-75 transition-opacity" aria-hidden="true" @click="showDetailModal = false"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div x-show="showDetailModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-white rounded-[2rem] text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-100 relative z-50">
+                    
+                    <div class="bg-white">
+                        <div class="bg-[#2c3856] px-8 py-6 flex justify-between items-start relative overflow-hidden">
+                            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-[#ff9c00] rounded-full opacity-20"></div>
+                            <div class="relative z-10">
+                                <p class="text-[#ff9c00] font-bold text-xs uppercase tracking-[0.2em] mb-1">Detalles del Producto</p>
+                                <h3 class="text-2xl font-raleway font-black text-white" x-text="detailProduct?.name"></h3>
+                                <p class="text-white/60 font-mono text-sm mt-1" x-text="detailProduct?.sku"></p>
+                            </div>
+                            <button @click="showDetailModal = false" class="relative z-10 text-white/50 hover:text-white transition-colors">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+
+                        <div class="px-8 py-8">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                                <div>
+                                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Información General</h4>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <p class="text-[10px] text-gray-400 uppercase font-bold">Cliente</p>
+                                            <p class="font-bold text-[#2c3856]" x-text="detailProduct?.area?.name || 'N/A'"></p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[10px] text-gray-400 uppercase font-bold">Marca</p>
+                                            <p class="font-bold text-[#2c3856]" x-text="detailProduct?.brand?.name || 'N/A'"></p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[10px] text-gray-400 uppercase font-bold">Tipo</p>
+                                            <p class="font-bold text-[#2c3856]" x-text="detailProduct?.product_type?.name || 'N/A'"></p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[10px] text-gray-400 uppercase font-bold">UPC / Código Barras</p>
+                                            <p class="font-mono text-gray-600" x-text="detailProduct?.upc || '-'"></p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Logística</h4>
+                                    <div class="space-y-4">
+                                        <div class="flex justify-between">
+                                            <div>
+                                                <p class="text-[10px] text-gray-400 uppercase font-bold">Unidad Base</p>
+                                                <p class="font-bold text-[#2c3856]" x-text="detailProduct?.unit_of_measure"></p>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] text-gray-400 uppercase font-bold">Piezas / Caja</p>
+                                                <p class="font-bold text-[#2c3856]" x-text="detailProduct?.pieces_per_case"></p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                            <p class="text-[10px] text-gray-400 uppercase font-bold mb-2 text-center">Dimensiones y Peso</p>
+                                            <div class="grid grid-cols-2 gap-4 text-center">
+                                                <div>
+                                                    <span class="block text-lg font-black text-[#2c3856]" x-text="detailProduct?.weight || 0"></span>
+                                                    <span class="text-[9px] text-gray-400 font-bold uppercase">KG</span>
+                                                </div>
+                                                <div>
+                                                    <span class="block text-sm font-bold text-[#2c3856]">
+                                                        <span x-text="detailProduct?.length || 0"></span> x 
+                                                        <span x-text="detailProduct?.width || 0"></span> x 
+                                                        <span x-text="detailProduct?.height || 0"></span>
+                                                    </span>
+                                                    <span class="text-[9px] text-gray-400 font-bold uppercase">CM (L x A x A)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-8 pt-6 border-t border-gray-100">
+                                <p class="text-[10px] text-gray-400 uppercase font-bold mb-2">Descripción Detallada</p>
+                                <p class="text-sm text-gray-600 leading-relaxed" x-text="detailProduct?.description || 'Sin descripción disponible.'"></p>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 px-8 py-4 flex justify-end">
+                            <button type="button" @click="showDetailModal = false" class="px-6 py-2 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl shadow-sm hover:bg-gray-50 transition-all text-sm">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
     </div>
 </x-app-layout>

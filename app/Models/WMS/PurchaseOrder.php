@@ -65,7 +65,7 @@ class PurchaseOrder extends Model
             $receivedData = $receivedItemsByProduct->get($line->product_id);
             
             $quantity_received = $receivedData ? $receivedData->total_received : 0;
-            $pieces_per_case = $line->product->pieces_per_case > 0 ? $line->product->pieces_per_case : 1;
+            $pieces_per_case = ($line->product && $line->product->pieces_per_case > 0) ? $line->product->pieces_per_case : 1;
             
             return (object) [
                 'sku' => $line->product->sku,
@@ -74,6 +74,7 @@ class PurchaseOrder extends Model
                 'quantity_received' => $quantity_received,
                 'pallet_count' => $receivedData ? $receivedData->pallet_count : 0,                
                 'cases_received' => ceil($quantity_received / $pieces_per_case),
+                'is_extra' => $line->quantity_ordered == 0
             ];
         });
     }

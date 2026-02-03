@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\WMS\StockMovement;
+use App\Models\WMS\PurchaseOrderLine;
 
 class WMSReceivingController extends Controller
 {
@@ -121,26 +122,14 @@ class WMSReceivingController extends Controller
 
         DB::beginTransaction();
         try {
-            $purchaseOrderLine = $pallet->purchaseOrder->lines()->where('product_id', $validated['product_id'])->first();
-            
-            if (!$purchaseOrderLine) {
-                return response()->json(['error' => 'Este producto no pertenece a la orden de compra.'], 422);
-            }
+            PurchaseOrderLine::firstOrCreate(
+                [
+                    'purchase_order_id' => $pallet->purchase_order_id,
+                    'product_id' => $validated['product_id']
+                ],
+                ['quantity_ordered' => 0]
+            );
 
-            $totalAlreadyReceived = DB::table('pallet_items')
-                ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
-                ->where('pallets.purchase_order_id', $pallet->purchase_order_id)
-                ->where('pallet_items.product_id', $validated['product_id'])
-                ->sum('pallet_items.quantity');
-            
-            $quantityOrdered = $purchaseOrderLine->quantity_ordered;
-
-            if (($totalAlreadyReceived + $validated['quantity']) > $quantityOrdered) {
-                return response()->json([
-                    'error' => 'La cantidad a recibir excede lo ordenado. Total ordenado: ' . $quantityOrdered
-                ], 422);
-            }
-            
             $palletItem = $pallet->items()->firstOrCreate(
                 [
                     'product_id' => $validated['product_id'],
@@ -253,31 +242,61 @@ class WMSReceivingController extends Controller
         DB::beginTransaction();
         try {
             $pallet = $palletItem->pallet;
-
-            $stock = InventoryStock::where('product_id', $palletItem->product_id)
+            $productId = $palletItem->product_id;
+            $poId = $pallet->purchase_order_id;
+            $stock = InventoryStock::where('product_id', $productId)
                 ->where('location_id', $pallet->location_id)
                 ->where('quality_id', $palletItem->quality_id)->first();
-            if ($stock) $stock->decrement('quantity', $palletItem->quantity);
+            
+            if ($stock) {
+                if($stock->quantity >= $palletItem->quantity) {
+                    $stock->decrement('quantity', $palletItem->quantity);
+                } else {
+                    $stock->update(['quantity' => 0]);
+                }
+            }
+
+            StockMovement::where('pallet_item_id', $palletItem->id)->update(['pallet_item_id' => null]);
 
             StockMovement::create([
                 'user_id' => Auth::id(),
-                'product_id' => $palletItem->product_id,
+                'product_id' => $productId,
                 'location_id' => $pallet->location_id,
-                'pallet_item_id' => $palletItem->id,
+                'pallet_item_id' => null,
                 'quantity' => -$palletItem->quantity,
                 'movement_type' => 'RECEPCION-REVERSA',
-                'source_id' => $palletItem->id,
-                'source_type' => \App\Models\WMS\PalletItem::class,
+                'source_id' => $pallet->id,
+                'source_type' => \App\Models\WMS\Pallet::class,
             ]);          
             
             $palletItem->delete();
+
+            $poLine = PurchaseOrderLine::where('purchase_order_id', $poId)
+                        ->where('product_id', $productId)->first();
+
+            if ($poLine && $poLine->quantity_ordered == 0) {
+                $remainingQty = DB::table('pallet_items')
+                    ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
+                    ->where('pallets.purchase_order_id', $poId)
+                    ->where('pallet_items.product_id', $productId)
+                    ->sum('pallet_items.quantity');
+
+                if ($remainingQty == 0) $poLine->delete();
+            }
+
+            if ($pallet->items()->count() === 0) {
+                $pallet->delete();
+                
+                DB::commit();
+                return response()->json(['pallet_deleted' => true]); 
+            }
 
             DB::commit();
             return response()->json($pallet->load('items.product', 'items.quality'));
             
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => 'Error al eliminar el item: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'Error: ' . $e->getMessage()], 500);
         }
     }
 }

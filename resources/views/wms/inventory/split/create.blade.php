@@ -80,6 +80,22 @@
                 </div>
             @endif
 
+            @if ($errors->any())
+                <div class="mb-8 bg-red-50 border-l-4 border-red-500 text-red-700 p-6 rounded-r-xl shadow-sm">
+                    <div class="flex items-center gap-4 mb-2">
+                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <p class="font-bold text-sm uppercase tracking-wider">Errores de Validación</p>
+                    </div>
+                    <ul class="list-disc list-inside text-sm ml-14">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif            
+
             <div class="bg-white rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 overflow-hidden relative min-h-[400px]">
                 
                 <div x-show="step === 1" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-10" x-transition:enter-end="opacity-100 translate-x-0" class="p-10 md:p-16 flex flex-col items-center justify-center h-full text-center">
@@ -114,70 +130,105 @@
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
-                        <div class="space-y-4">
-                            <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ubicación</p>
-                                <div class="flex items-center gap-3">
-                                    <i class="fas fa-map-marker-alt text-[#ff9c00]"></i>
-                                    <span class="text-xl font-bold text-[#2c3856]" x-text="palletData ? `${palletData.location.aisle}-${palletData.location.rack}-${palletData.location.shelf}-${palletData.location.bin}` : 'N/A'"></span>
+                    <template x-if="!palletData?.items || palletData.items.length === 0">
+                        <div class="text-center py-10 bg-gray-50 rounded-2xl">
+                            <i class="fas fa-box-open text-4xl text-gray-300 mb-4"></i>
+                            <h3 class="text-lg font-bold text-[#2c3856]">LPN Vacío</h3>
+                            <p class="text-sm text-gray-500 max-w-xs mx-auto mt-2">
+                                Esta tarima existe históricamente (PO: <span x-text="palletData?.purchase_order?.po_number"></span>), 
+                                pero no tiene productos para dividir.
+                            </p>
+                        </div>
+                    </template>
+
+                    <template x-if="palletData?.items && palletData.items.length > 0">
+                        <div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
+                                <div class="space-y-4">
+                                    <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ubicación</p>
+                                        <span class="text-xl font-bold text-[#2c3856]" x-text="palletData ? `${palletData.location.aisle}-${palletData.location.rack}-${palletData.location.shelf}-${palletData.location.bin}` : 'N/A'"></span>
+                                    </div>
+                                    </div>
+                                <div class="flex flex-col justify-center">
+                                    <label for="new_lpn" class="text-xs font-bold text-[#ff9c00] uppercase tracking-widest block mb-4 text-center">Escanear Nuevo LPN (Destino)</label>
+                                    <input type="text" id="new_lpn" name="new_lpn" form="splitForm" class="input-arch text-3xl uppercase font-mono tracking-widest mb-4" placeholder="NUEVO LPN..." required>
                                 </div>
                             </div>
-                            <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Orden de Compra</p>
-                                <div class="flex items-center gap-3">
-                                    <i class="fas fa-file-invoice text-[#2c3856]"></i>
-                                    <span class="text-lg font-bold text-[#2c3856]" x-text="palletData?.purchase_order.po_number"></span>
+
+                            <form id="splitForm" action="{{ route('wms.inventory.split.store') }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="source_pallet_id" :value="palletData?.id">
+                                
+                                <h4 class="text-sm font-bold text-[#2c3856] uppercase tracking-widest mb-6 border-b border-gray-100 pb-2">Seleccionar Cantidades a Mover</h4>
+                                
+                                <div class="space-y-4 mb-10">
+                                    <template x-for="(item, index) in palletData?.items" :key="item.id">
+                                        <div x-data="{ moveQty: '' }" 
+                                            class="flex flex-col md:flex-row md:items-center justify-between p-5 rounded-2xl border transition-all duration-300 bg-white shadow-sm"
+                                            :class="parseInt(moveQty) > item.quantity ? 'border-red-500 bg-red-50' : 'border-gray-100 hover:border-[#ff9c00]'">
+                                            
+                                            <div class="flex-1 mb-4 md:mb-0">
+                                                <div class="flex items-start justify-between">
+                                                    <div>
+                                                        <p class="font-black text-[#2c3856] text-xl" x-text="item.product.name"></p>
+                                                        <div class="flex flex-wrap items-center gap-2 mt-2">
+                                                            <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-mono font-bold border border-gray-200" x-text="item.product.sku"></span>
+                                                            <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide" x-text="item.quality.name"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="flex items-center gap-6 border-t md:border-t-0 border-gray-100 pt-4 md:pt-0">
+                                                <div class="text-right">
+                                                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">En Tarima</p>
+                                                    <p class="text-3xl font-black text-[#2c3856]" x-text="item.quantity"></p>
+                                                </div>
+                                                
+                                                <i class="fas fa-chevron-right text-gray-300 hidden md:block"></i>
+
+                                                <div class="w-40 relative">
+                                                    <p class="text-[9px] font-bold uppercase tracking-widest mb-1 text-center"
+                                                    :class="parseInt(moveQty) > item.quantity ? 'text-red-600' : 'text-[#ff9c00]'">
+                                                        A Mover
+                                                    </p>
+                                                    
+                                                    <input type="hidden" :name="`items_to_split[${index}][item_id]`" :value="item.id">
+                                                    
+                                                    <input type="number" 
+                                                        :name="`items_to_split[${index}][quantity]`" 
+                                                        x-model="moveQty"
+                                                        min="0" 
+                                                        :max="item.quantity" 
+                                                        class="input-qty w-full text-center font-bold text-xl py-2 rounded-lg border-b-2 focus:ring-0 transition-colors bg-transparent"
+                                                        :class="parseInt(moveQty) > item.quantity ? 'border-red-500 text-red-600' : 'border-gray-200 focus:border-[#ff9c00] text-[#2c3856]'"
+                                                        placeholder="0">
+
+                                                    <div class="absolute top-full left-0 w-full text-center mt-1">
+                                                        <template x-if="parseInt(moveQty) > item.quantity">
+                                                            <span class="text-[10px] font-bold text-red-600 animate-pulse">¡Excede Existencia!</span>
+                                                        </template>
+                                                        <template x-if="moveQty && parseInt(moveQty) <= item.quantity">
+                                                            <span class="text-[10px] font-bold text-gray-400">
+                                                                Quedarán: <span x-text="item.quantity - parseInt(moveQty)"></span>
+                                                            </span>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
-                            </div>
-                        </div>
 
-                        <div class="flex flex-col justify-center">
-                            <label for="new_lpn" class="text-xs font-bold text-[#ff9c00] uppercase tracking-widest block mb-4 text-center">Escanear Nuevo LPN (Destino)</label>
-                            <input type="text" id="new_lpn" name="new_lpn" form="splitForm" class="input-arch text-3xl uppercase font-mono tracking-widest mb-4" placeholder="NUEVO LPN..." required>
-                            <p class="text-xs text-gray-400 text-center">Este será el identificador de la nueva tarima creada.</p>
-                        </div>
-                    </div>
-
-                    <form id="splitForm" action="{{ route('wms.inventory.split.store') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="source_pallet_id" :value="palletData?.id">
-                        
-                        <h4 class="text-sm font-bold text-[#2c3856] uppercase tracking-widest mb-6 border-b border-gray-100 pb-2">Seleccionar Cantidades a Mover</h4>
-                        
-                        <div class="space-y-4 mb-10">
-                            <template x-for="(item, index) in palletData?.items" :key="item.id">
-                                <div class="flex items-center justify-between p-4 rounded-2xl border border-gray-100 hover:border-[#ff9c00] transition-colors bg-white">
-                                    <div class="flex-1">
-                                        <p class="font-bold text-[#2c3856] text-lg" x-text="item.product.name"></p>
-                                        <div class="flex items-center gap-4 mt-1 text-xs text-gray-500 font-mono">
-                                            <span x-text="item.product.sku"></span>
-                                            <span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold" x-text="item.quality.name"></span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="flex items-center gap-6">
-                                        <div class="text-right">
-                                            <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Disponible</p>
-                                            <p class="text-xl font-bold text-gray-300" x-text="item.quantity"></p>
-                                        </div>
-                                        
-                                        <div class="w-32">
-                                            <p class="text-[9px] font-bold text-[#ff9c00] uppercase tracking-widest mb-1 text-center">Mover</p>
-                                            <input type="hidden" :name="`items_to_split[${index}][item_id]`" :value="item.id">
-                                            <input type="number" :name="`items_to_split[${index}][quantity]`" value="0" min="0" :max="item.quantity" class="input-qty" placeholder="0">
-                                        </div>
-                                    </div>
+                                <div class="text-right">
+                                    <button type="submit" class="btn-nexus px-10 py-4 text-sm uppercase tracking-widest shadow-xl shadow-[#2c3856]/20 hover:bg-green-600">
+                                        <i class="fas fa-check-circle mr-3"></i> Confirmar Split
+                                    </button>
                                 </div>
-                            </template>
+                            </form>
                         </div>
-
-                        <div class="text-right">
-                            <button type="submit" class="btn-nexus px-10 py-4 text-sm uppercase tracking-widest shadow-xl shadow-[#2c3856]/20 hover:bg-green-600">
-                                <i class="fas fa-check-circle mr-3"></i> Confirmar Split
-                            </button>
-                        </div>
-                    </form>
+                    </template>
                 </div>
 
             </div>

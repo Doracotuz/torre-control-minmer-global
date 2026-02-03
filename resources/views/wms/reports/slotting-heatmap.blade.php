@@ -133,71 +133,110 @@
                                 class="flex-1 lg:flex-none px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all">
                             Clase ABC
                         </button>
+                        
+                        <button @click="viewMode = 'occupancy'" 
+                                :class="viewMode === 'occupancy' ? 'bg-white text-[#2c3856] shadow-sm' : 'text-gray-500 hover:text-[#2c3856]'"
+                                class="flex-1 lg:flex-none px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all">
+                            Ocupación
+                        </button>
                     </div>
                 </div>
             </div>
 
             <div class="flex flex-col lg:flex-row gap-8 stagger-enter" style="animation-delay: 0.3s;">
 
-                <div class="w-full lg:w-3/4 bg-white rounded-[2.5rem] shadow-xl p-8 border border-gray-100 overflow-hidden">
-                    <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 border-b border-gray-100 pb-4">Mapa del Almacén</h3>
-                    <div class="overflow-x-auto pb-4 custom-scrollbar">
-                        <div class="flex gap-3">
+                <div class="w-full lg:w-3/4 bg-white rounded-[2.5rem] shadow-xl p-8 border border-gray-100 overflow-hidden flex flex-col h-[800px]"> <div class="flex justify-between items-end border-b border-gray-100 pb-4 mb-4 shrink-0">
+                        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest">Mapa del Almacén</h3>
+                        <p class="text-[10px] text-gray-400">
+                            Mostrando <span class="font-bold text-[#2c3856]">{{ count($heatmapData) }}</span> Pasillos
+                        </p>
+                    </div>
+
+                    <div class="overflow-y-auto pr-2 custom-scrollbar flex-grow">
+                        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                            
                             @foreach($heatmapData as $aisle => $locations)
-                                <div class="flex flex-col gap-1.5" style="min-width: 100px;">
-                                    <div class="bg-[#2c3856] text-white text-center font-black py-2 rounded-lg text-xs shadow-md tracking-widest">
+                                @php
+                                    $aisleHasOccupancy = $locations->contains(function($loc) {
+                                        return !empty($loc->stock_items) && $loc->stock_items->count() > 0;
+                                    });
+                                @endphp
+
+                                <div class="flex flex-col gap-1.5 bg-gray-50/50 p-2 rounded-xl border border-gray-100 h-fit"
+                                    x-show="viewMode !== 'occupancy' || {{ $aisleHasOccupancy ? 'true' : 'false' }}">
+                                    
+                                    <div class="bg-[#2c3856] text-white text-center font-black py-2 rounded-lg text-xs shadow-md tracking-widest sticky top-0 z-10">
                                         PASILLO {{ $aisle }}
                                     </div>
-                                    @foreach($locations as $loc)
-                                        @php
-                                            $bgColor = 'bg-gray-50';
-                                            if(!empty($loc->stock_items) && $loc->stock_items->count() > 0) $bgColor = 'bg-gray-200';
 
-                                            if($loc->mismatch_score == 10) $mismatchColor = 'bg-emerald-500 text-white border-emerald-600';
-                                            elseif($loc->mismatch_score == 5) $mismatchColor = 'bg-emerald-200 text-emerald-900 border-emerald-300';
-                                            elseif($loc->mismatch_score == -5) $mismatchColor = 'bg-amber-300 text-amber-900 border-amber-400';
-                                            elseif($loc->mismatch_score == -10) $mismatchColor = 'bg-red-500 text-white border-red-600';
-                                            else $mismatchColor = $bgColor . ' text-gray-400';
+                                    <div class="flex flex-col gap-1">
+                                        @foreach($locations as $loc)
+                                            @php
+                                                $isOccupied = !empty($loc->stock_items) && $loc->stock_items->count() > 0;
+                                                $bgColor = $isOccupied ? 'bg-gray-200' : 'bg-white';
 
-                                            $freqIntensity = $loc->pick_intensity;
-                                            if($freqIntensity > 80) $freqColor = 'bg-purple-600 text-white border-purple-700';
-                                            elseif($freqIntensity > 60) $freqColor = 'bg-purple-400 text-white border-purple-500';
-                                            elseif($freqIntensity > 40) $freqColor = 'bg-indigo-300 text-indigo-900 border-indigo-400';
-                                            elseif($freqIntensity > 20) $freqColor = 'bg-indigo-100 text-indigo-800 border-indigo-200';
-                                            elseif($freqIntensity > 0) $freqColor = 'bg-blue-50 text-blue-600 border-blue-100';
-                                            else $freqColor = 'bg-gray-50 text-gray-300';
+                                                if($loc->mismatch_score == 10) $mismatchColor = 'bg-emerald-500 text-white border-emerald-600';
+                                                elseif($loc->mismatch_score == 5) $mismatchColor = 'bg-emerald-200 text-emerald-900 border-emerald-300';
+                                                elseif($loc->mismatch_score == -5) $mismatchColor = 'bg-amber-300 text-amber-900 border-amber-400';
+                                                elseif($loc->mismatch_score == -10) $mismatchColor = 'bg-red-500 text-white border-red-600';
+                                                else $mismatchColor = $bgColor . ' text-gray-400 border-gray-200';
 
-                                            $abcClass = $loc->product_class;
-                                            if(str_contains($abcClass, 'A')) $abcColor = 'bg-blue-600 text-white border-blue-700';
-                                            elseif(str_contains($abcClass, 'B')) $abcColor = 'bg-blue-300 text-blue-900 border-blue-400';
-                                            elseif(str_contains($abcClass, 'C')) $abcColor = 'bg-blue-50 text-blue-600 border-blue-100';
-                                            else $abcColor = 'bg-gray-50 text-gray-300';
-                                        @endphp
-                                        <div 
-                                             class="heatmap-cell flex flex-col justify-center text-center p-1"
-                                             @click="selectedLocation = {{ json_encode($loc) }}"
-                                             :class="{
-                                                'active-cell': selectedLocation && selectedLocation.id === {{ $loc->id }},
-                                                '{{ $mismatchColor }}': viewMode === 'mismatch',
-                                                '{{ $freqColor }}': viewMode === 'frequency',
-                                                '{{ $abcColor }}': viewMode === 'abc'
-                                             }">
+                                                $freqIntensity = $loc->pick_intensity;
+                                                if($freqIntensity > 80) $freqColor = 'bg-purple-600 text-white border-purple-700';
+                                                elseif($freqIntensity > 60) $freqColor = 'bg-purple-400 text-white border-purple-500';
+                                                elseif($freqIntensity > 40) $freqColor = 'bg-indigo-300 text-indigo-900 border-indigo-400';
+                                                elseif($freqIntensity > 20) $freqColor = 'bg-indigo-100 text-indigo-800 border-indigo-200';
+                                                elseif($freqIntensity > 0) $freqColor = 'bg-blue-50 text-blue-600 border-blue-100';
+                                                else $freqColor = 'bg-white text-gray-300 border-gray-100';
+
+                                                $abcClass = $loc->product_class;
+                                                if(str_contains($abcClass, 'A')) $abcColor = 'bg-blue-600 text-white border-blue-700';
+                                                elseif(str_contains($abcClass, 'B')) $abcColor = 'bg-blue-300 text-blue-900 border-blue-400';
+                                                elseif(str_contains($abcClass, 'C')) $abcColor = 'bg-blue-50 text-blue-600 border-blue-100';
+                                                else $abcColor = 'bg-white text-gray-300 border-gray-100';
+
+                                                if($isOccupied) {
+                                                    $occupancyColor = 'bg-blue-600 text-white border-blue-700';
+                                                } else {
+                                                    $occupancyColor = 'bg-gray-50 text-gray-300 border-gray-100';
+                                                }
+                                            @endphp
                                             
-                                            <div class="font-black text-[10px] tracking-tight">{{ $loc->full_location }}</div>
-                                            
-                                            <div x-show="viewMode === 'mismatch'" class="font-medium text-[8px] truncate mt-0.5 opacity-90">
-                                                {{ $loc->stock_items->first()->product->sku ?? '-' }}
+                                            <div class="heatmap-cell flex flex-col justify-center text-center p-1 border"
+                                                @click="selectedLocation = {{ json_encode($loc) }}"
+                                                x-show="viewMode !== 'occupancy' || {{ $isOccupied ? 'true' : 'false' }}"
+                                                :class="{
+                                                    'active-cell': selectedLocation && selectedLocation.id === {{ $loc->id }},
+                                                    '{{ $mismatchColor }}': viewMode === 'mismatch',
+                                                    '{{ $freqColor }}': viewMode === 'frequency',
+                                                    '{{ $abcColor }}': viewMode === 'abc',
+                                                    '{{ $occupancyColor }}': viewMode === 'occupancy'
+                                                }">
+                                                
+                                                <div class="font-black text-[9px] tracking-tight">{{ $loc->code }}</div>
+                                                
+                                                <div x-show="viewMode === 'mismatch'" class="font-medium text-[8px] truncate mt-0.5 opacity-90">
+                                                    {{ $loc->stock_items->first()->product->sku ?? '-' }}
+                                                </div>
+                                                
+                                                <div x-show="viewMode === 'frequency'" class="font-bold text-[8px] mt-0.5">
+                                                    {{ $loc->pick_frequency }}
+                                                </div>
+                                                
+                                                <div x-show="viewMode === 'abc'" class="font-black text-[9px] mt-0.5">
+                                                    {{ $loc->product_class ?? '-' }}
+                                                </div>
+
+                                                <div x-show="viewMode === 'occupancy'" class="font-bold text-[8px] mt-0.5 uppercase tracking-wider">
+                                                    @if($isOccupied)
+                                                        <i class="fas fa-box"></i> LLENO
+                                                    @else
+                                                        VACÍO
+                                                    @endif
+                                                </div>
                                             </div>
-                                            
-                                            <div x-show="viewMode === 'frequency'" class="font-bold text-[9px] mt-0.5">
-                                                {{ $loc->pick_frequency }} <span class="font-normal text-[7px] opacity-70">picks</span>
-                                            </div>
-                                            
-                                            <div x-show="viewMode === 'abc'" class="font-black text-[10px] mt-0.5">
-                                                {{ $loc->product_class ?? '-' }}
-                                            </div>
-                                        </div>
-                                    @endforeach
+                                        @endforeach
+                                    </div>
                                 </div>
                             @endforeach
                         </div>

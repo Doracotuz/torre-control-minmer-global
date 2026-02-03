@@ -1,4 +1,5 @@
 <x-app-layout>
+    <x-slot name="header"></x-slot>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@700;800;900&display=swap');
         .font-raleway { font-family: 'Raleway', sans-serif; }
@@ -45,6 +46,19 @@
                         <label for="description" class="block text-xs font-bold text-[#666666] uppercase tracking-wider mb-2 ml-1">Descripción</label>
                         <textarea name="description" id="description" rows="3" class="w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-[#2c3856] focus:ring-[#2c3856] transition-all resize-none shadow-inner">{{ old('description', $quality->description) }}</textarea>
                     </div>
+
+                    <div class="mb-8 flex items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <div class="flex items-center h-5">
+                            <input type="hidden" name="is_available" value="0">
+                            <input id="is_available" name="is_available" type="checkbox" value="1" 
+                                {{ old('is_available', $quality->is_available) ? 'checked' : '' }}
+                                class="w-6 h-6 text-[#2c3856] border-gray-300 rounded focus:ring-[#2c3856] cursor-pointer">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="is_available" class="font-bold text-[#2c3856] uppercase tracking-wide cursor-pointer">Disponible para Inventario</label>
+                            <p class="text-gray-500 text-xs">Si se desmarca, el stock con esta calidad aparecerá bloqueado (Acciones Req.)</p>
+                        </div>
+                    </div>                    
 
                     <div class="mt-12 flex justify-end items-center gap-4">
                         <a href="{{ route('wms.qualities.index') }}" class="px-8 py-3 rounded-xl border border-gray-200 text-[#666666] font-bold hover:bg-gray-50 transition-all">Cancelar</a>

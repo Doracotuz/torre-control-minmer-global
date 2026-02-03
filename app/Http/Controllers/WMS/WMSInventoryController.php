@@ -137,14 +137,14 @@ class WMSInventoryController extends Controller
         return view('wms.inventory.transfer.create');
     }
 
-    public function findLpnForTransfer(Request $request)
+public function findLpnForTransfer(Request $request)
     {
         $request->validate(['lpn' => 'required|string']);
 
         $sanitizedLpn = preg_replace('/[^A-Z0-9]/', '', strtoupper($request->lpn));
 
         $pallet = Pallet::where('lpn', $sanitizedLpn)
-            ->with(['location', 'items.product', 'items.quality'])
+            ->with(['location', 'items.product', 'items.quality', 'purchaseOrder'])
             ->first();
 
         if (!$pallet) {
@@ -152,7 +152,7 @@ class WMSInventoryController extends Controller
         }
 
         return response()->json($pallet);
-    }    
+    }
 
     public function storeTransfer(Request $request)
     {
@@ -164,6 +164,11 @@ class WMSInventoryController extends Controller
         DB::beginTransaction();
         try {
             $pallet = Pallet::with(['items', 'location.warehouse'])->findOrFail($validated['pallet_id']);
+
+            if ($pallet->items->isEmpty() || $pallet->items->sum('quantity') <= 0) {
+                throw new \Exception("La tarima {$pallet->lpn} está vacía. No se pueden transferir tarimas sin inventario físico.");
+            }
+
             $originLocation = $pallet->location;
 
             if (!$originLocation || !$originLocation->warehouse_id) {
@@ -366,7 +371,7 @@ class WMSInventoryController extends Controller
     {
         $validated = $request->validate([
             'source_pallet_id' => 'required|exists:pallets,id',
-            'new_lpn' => 'required|string|unique:pallets,lpn',
+            'new_lpn' => 'required|string',
             'items_to_split' => 'required|array|min:1',
             'items_to_split.*.item_id' => 'required|exists:pallet_items,id',
             'items_to_split.*.quantity' => 'required|integer|min:1',
@@ -375,21 +380,40 @@ class WMSInventoryController extends Controller
         DB::beginTransaction();
         try {
             $sourcePallet = Pallet::findOrFail($validated['source_pallet_id']);
-            $pregeneratedLpn = \App\Models\WMS\PregeneratedLpn::where('lpn', $validated['new_lpn'])->first();
+            $newLpnCode = $validated['new_lpn'];
 
-            if (!$pregeneratedLpn || $pregeneratedLpn->is_used) {
-                throw new \Exception("El nuevo LPN es inválido o ya está en uso.");
+            if ($sourcePallet->lpn === $newLpnCode) {
+                throw new \Exception("El LPN de destino no puede ser igual al de origen.");
             }
 
-            $newPallet = Pallet::create([
-                'lpn' => $validated['new_lpn'], 'purchase_order_id' => $sourcePallet->purchase_order_id,
-                'status' => 'Finished', 'location_id' => $sourcePallet->location_id,
-                'user_id' => Auth::id(),
-                'last_action' => 'Creado desde Split de ' . $sourcePallet->lpn
-            ]);
+            $newPallet = Pallet::where('lpn', $newLpnCode)->first();
+
+            if ($newPallet) {
+                $newPallet->update([
+                    'last_action' => 'Fusión (Merge) desde ' . $sourcePallet->lpn,
+                    'user_id' => Auth::id()
+                ]);
+            } else {
+                $pregeneratedLpn = \App\Models\WMS\PregeneratedLpn::where('lpn', $newLpnCode)->first();
+
+                if (!$pregeneratedLpn || $pregeneratedLpn->is_used) {
+                    throw new \Exception("El nuevo LPN no existe en el sistema o ya fue usado previamente.");
+                }
+
+                $newPallet = Pallet::create([
+                    'lpn' => $newLpnCode, 
+                    'purchase_order_id' => $sourcePallet->purchase_order_id,
+                    'status' => 'Finished', 
+                    'location_id' => $sourcePallet->location_id,
+                    'user_id' => Auth::id(),
+                    'last_action' => 'Creado desde Split de ' . $sourcePallet->lpn
+                ]);
+
+                $pregeneratedLpn->update(['is_used' => true]);
+            }
             
             foreach ($validated['items_to_split'] as $splitData) {
-                $sourceItem = \App\Models\WMS\PalletItem::findOrFail($splitData['item_id']);
+                $sourceItem = PalletItem::findOrFail($splitData['item_id']);
                 $splitQuantity = $splitData['quantity'];
 
                 if ($splitQuantity > $sourceItem->quantity) {
@@ -398,11 +422,22 @@ class WMSInventoryController extends Controller
 
                 $sourceItem->decrement('quantity', $splitQuantity);
 
-                $newItem = $newPallet->items()->create([
-                    'product_id' => $sourceItem->product_id, 
-                    'quality_id' => $sourceItem->quality_id, 
-                    'quantity' => $splitQuantity
-                ]);
+                $destItem = PalletItem::where('pallet_id', $newPallet->id)
+                                    ->where('product_id', $sourceItem->product_id)
+                                    ->where('quality_id', $sourceItem->quality_id)
+                                    ->first();
+
+                if ($destItem) {
+                    $destItem->increment('quantity', $splitQuantity);
+                    $newItemId = $destItem->id;
+                } else {
+                    $newItem = $newPallet->items()->create([
+                        'product_id' => $sourceItem->product_id, 
+                        'quality_id' => $sourceItem->quality_id, 
+                        'quantity' => $splitQuantity
+                    ]);
+                    $newItemId = $newItem->id;
+                }
 
                 StockMovement::create([
                     'user_id' => Auth::id(),
@@ -417,17 +452,15 @@ class WMSInventoryController extends Controller
 
                 StockMovement::create([
                     'user_id' => Auth::id(),
-                    'product_id' => $newItem->product_id,
+                    'product_id' => $sourceItem->product_id,
                     'location_id' => $newPallet->location_id,
-                    'pallet_item_id' => $newItem->id,
+                    'pallet_item_id' => $newItemId,
                     'quantity' => $splitQuantity,
                     'movement_type' => 'SPLIT-IN',
                     'source_id' => $sourcePallet->id,
                     'source_type' => Pallet::class,
                 ]);
             }
-
-            $pregeneratedLpn->update(['is_used' => true]);
 
             $sourcePallet->user_id = Auth::id(); 
             $sourcePallet->last_action = 'Split (Origen)';
@@ -441,11 +474,14 @@ class WMSInventoryController extends Controller
             }
             
             DB::commit();
-            return redirect()->route('wms.inventory.index')->with('success', "Split completado. Se creó la nueva tarima {$newPallet->lpn}.");
+            
+            $msgType = $newPallet->wasRecentlyCreated ? 'Split creado' : 'Fusión completada';
+            return redirect()->route('wms.inventory.index')
+                           ->with('success', "$msgType. Mercancía movida a {$newPallet->lpn}.");
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Error al procesar el split: ' . $e->getMessage())->withInput();
+            return back()->with('error', 'Error al procesar: ' . $e->getMessage())->withInput();
         }
     }
     
@@ -472,8 +508,19 @@ class WMSInventoryController extends Controller
         if (!$pallet) {
             return back()->with('error', 'LPN no encontrado.');
         }
+
+        $history = StockMovement::with(['user', 'product', 'location'])
+            ->where(function($q) use ($pallet) {
+                $q->where('source_id', $pallet->id)
+                  ->where('source_type', Pallet::class);
+            })
+            ->orWhere(function($q) use ($pallet) {
+                $q->whereHas('palletItem', fn($sq) => $sq->where('pallet_id', $pallet->id));
+            })
+            ->latest()
+            ->get();
         
-        return view('wms.inventory.pallet-info.index', compact('pallet'));
+        return view('wms.inventory.pallet-info.index', compact('pallet', 'history'));
     }
 
     public function adjustItemQuantity(Request $request, PalletItem $palletItem)

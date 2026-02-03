@@ -26,7 +26,7 @@ class WMSPhysicalCountController extends Controller
         $warehouses = Warehouse::orderBy('name')->get();
         $areas = Area::orderBy('name')->get();
 
-        $query = PhysicalCountSession::with(['user', 'assignedUser', 'warehouse', 'area'])->latest();
+        $query = PhysicalCountSession::with(['user', 'assignedUser', 'warehouse', 'area', 'tasks'])->latest();
 
         if ($warehouseId) {
             $query->where('warehouse_id', $warehouseId);
@@ -238,8 +238,26 @@ class WMSPhysicalCountController extends Controller
             $task->save();
 
             DB::commit();
+
+            $nextTask = PhysicalCountTask::where('physical_count_session_id', $task->physical_count_session_id)
+                ->where('id', '!=', $task->id)
+                ->where(function($q) {
+                    $q->where('status', 'pending')
+                      ->orWhere(function($subQ) {
+                          $subQ->where('status', 'discrepancy')->has('records', '<', 3);
+                      });
+                })
+                ->orderBy('location_id', 'asc')
+                ->orderBy('id', 'asc')
+                ->first();
+
+            if ($nextTask) {
+                return redirect()->route('wms.physical-counts.tasks.perform', $nextTask)
+                                 ->with('success', 'Conteo guardado. Continuando con siguiente ubicación: ' . ($nextTask->location->code ?? 'N/A'));
+            }
+
             return redirect()->route('wms.physical-counts.show', $task->physical_count_session_id)
-                             ->with('success', 'Conteo para la ubicación ' . $task->location->code . ' registrado exitosamente.');
+                             ->with('success', '¡Excelente! Has completado todas las tareas pendientes de esta sesión.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -262,25 +280,39 @@ class WMSPhysicalCountController extends Controller
             $quantityBefore = $task->expected_quantity;
             $quantityAfter = $lastRecord->counted_quantity;
             $difference = $quantityAfter - $quantityBefore;
+            $palletItemId = $request->input('pallet_item_id');
+            
+            if($palletItemId) {
+                $palletItem = \App\Models\WMS\PalletItem::findOrFail($palletItemId);
+            } else {
+                $palletItemsToAdjust = \App\Models\WMS\PalletItem::where('product_id', $task->product_id)
+                    ->whereHas('pallet', fn($q) => $q->where('location_id', $task->location_id))
+                    ->get();
 
-            $palletItemsToAdjust = \App\Models\WMS\PalletItem::where('product_id', $task->product_id)
-                ->whereHas('pallet', fn($q) => $q->where('location_id', $task->location_id))
-                ->get();
-
-            if ($palletItemsToAdjust->count() > 1) {
-                throw new \Exception("Existen múltiples LPNs con este producto en la misma ubicación. Realice un Ajuste Manual por LPN desde el módulo de inventario para especificar cuál tarima ajustar.");
+                if ($palletItemsToAdjust->count() > 1) {
+                    throw new \Exception("Existen múltiples LPNs. Por favor seleccione el LPN específico en el modal.");
+                }
+                if ($palletItemsToAdjust->isEmpty()) {
+                    throw new \Exception("No se encontró el LPN correspondiente.");
+                }
+                $palletItem = $palletItemsToAdjust->first();
             }
-            if ($palletItemsToAdjust->isEmpty()) {
-                throw new \Exception("No se encontró el LPN correspondiente en la ubicación para ajustar la cantidad.");
-            }
 
-            $palletItem = $palletItemsToAdjust->first();
             $palletItem->quantity = $quantityAfter;
             $palletItem->save();
 
             $stock = InventoryStock::where('product_id', $task->product_id)
                                 ->where('location_id', $task->location_id)
-                                ->firstOrFail();
+                                ->first();
+            
+            if(!$stock) {
+                 $stock = InventoryStock::create([
+                     'product_id' => $task->product_id,
+                     'location_id' => $task->location_id,
+                     'quality_id' => $palletItem->quality_id,
+                     'quantity' => 0
+                 ]);
+            }
             $stock->quantity = $quantityAfter;
             $stock->save();
 
@@ -292,7 +324,7 @@ class WMSPhysicalCountController extends Controller
                 'quantity_before' => $quantityBefore,
                 'quantity_after' => $quantityAfter,
                 'quantity_difference' => $difference,
-                'reason' => 'Ajuste por Conteo Cíclico Físico.',
+                'reason' => $request->input('reason', 'Ajuste por Conteo Cíclico.'),
                 'user_id' => Auth::id(),
                 'source' => 'Conteo Cíclico',
             ]);
@@ -312,7 +344,7 @@ class WMSPhysicalCountController extends Controller
 
             DB::commit();
             return redirect()->route('wms.physical-counts.show', $task->physical_count_session_id)
-                            ->with('success', 'Inventario ajustado correctamente en el LPN y en el stock general.');
+                            ->with('success', 'Inventario ajustado correctamente.');
 
         } catch (\Exception $e) {
             DB::rollBack();

@@ -62,6 +62,7 @@ class WMSProductController extends Controller
         $validatedData = $request->validate([
             'sku' => 'required|string|max:255|unique:products,sku',
             'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'pieces_per_case' => 'nullable|integer|min:1',
             'brand_id' => 'nullable|exists:brands,id',
             'product_type_id' => 'nullable|exists:product_types,id',
@@ -93,6 +94,7 @@ class WMSProductController extends Controller
         $validatedData = $request->validate([
             'sku' => 'required|string|max:255|unique:products,sku,' . $product->id,
             'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'pieces_per_case' => 'nullable|integer|min:1',
             'brand_id' => 'nullable|exists:brands,id',
             'product_type_id' => 'nullable|exists:product_types,id',

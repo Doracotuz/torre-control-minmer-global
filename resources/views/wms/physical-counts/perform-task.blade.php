@@ -31,8 +31,37 @@
         <div class="max-w-lg w-full px-6 relative z-10 stagger-enter">
             
             <div class="text-center mb-8">
-                <span class="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2">Tarea Activa</span>
-                <h1 class="text-3xl font-raleway font-black text-[#2c3856]">Conteo Físico</h1>
+                <div class="flex justify-center items-center gap-3 mb-4">
+                    <span class="inline-flex items-center px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                        <i class="fas fa-circle text-[6px] mr-2 animate-pulse"></i> Tarea Activa
+                    </span>
+                    
+                    @php
+                        $countNumber = $task->records->count() + 1;
+                        $countLabel = match($countNumber) {
+                            1 => '1er Conteo',
+                            2 => '2do Conteo',
+                            3 => '3er Conteo',
+                            default => $countNumber . '° Conteo'
+                        };
+                        
+                        // Color dinámico según el intento (Azul -> Naranja -> Rojo)
+                        $badgeColor = match($countNumber) {
+                            1 => 'from-blue-500 to-blue-600 shadow-blue-500/30',
+                            2 => 'from-orange-400 to-orange-600 shadow-orange-500/30',
+                            default => 'from-red-500 to-red-700 shadow-red-500/30'
+                        };
+                    @endphp
+                    
+                    <span class="inline-flex items-center px-4 py-1 bg-gradient-to-r {{ $badgeColor }} text-white rounded-full text-xs font-black uppercase tracking-widest shadow-lg transform hover:scale-105 transition-transform duration-300">
+                        <i class="fas fa-layer-group mr-2 text-[10px] opacity-80"></i>
+                        {{ $countLabel }}
+                    </span>
+                </div>
+                
+                <h1 class="text-4xl font-raleway font-black text-[#2c3856] leading-tight">
+                    Conteo <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff9c00] to-orange-600">Físico</span>
+                </h1>
             </div>
 
             <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-[#2c3856]/10 border border-gray-100 overflow-hidden">
@@ -42,15 +71,21 @@
                     <div class="bg-[#2c3856] p-8 text-center text-white relative overflow-hidden">
                         <div class="absolute top-0 right-0 w-32 h-32 bg-[#ff9c00] rounded-full blur-3xl opacity-20 -mr-10 -mt-10"></div>
                         <p class="text-[10px] font-bold opacity-60 uppercase tracking-widest mb-1">Ubicación</p>
-                        <p class="text-5xl font-mono font-black tracking-tight relative z-10">
+                        <p class="text-4xl md:text-5xl font-mono font-black tracking-tight relative z-10 break-all">
                             {{ $task->location->aisle }}-{{ $task->location->rack }}-{{ $task->location->shelf }}-{{ $task->location->bin }}
                         </p>
                     </div>
                     
                     <div class="p-8 space-y-8">
+                        @if(session('success'))
+                            <div class="bg-green-50 text-green-700 p-3 rounded-xl text-center text-sm font-bold">
+                                {{ session('success') }}
+                            </div>
+                        @endif
+
                         <div class="text-center">
                             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">LPN (Tarima)</p>
-                            <p class="text-2xl font-mono font-bold text-[#ff9c00]">
+                            <p class="text-xl md:text-2xl font-mono font-bold text-[#ff9c00]">
                                 {{ $task->pallet->lpn ?? 'N/A' }}
                             </p>
                             @if($task->pallet && $task->pallet->purchaseOrder && $task->pallet->purchaseOrder->area)
