@@ -39,6 +39,17 @@
                     console.error('Error:', error);
                     alert('Ocurrió un error de conexión al intentar surtir.');
                 }
+            },
+
+            openResolveModal(product) {
+                this.resolveProduct = {
+                    id: product.id,
+                    desc: product.description,
+                    sku: product.sku,
+                    debt: product.total_debt
+                };
+                this.resolveAction = '{{ route('ff.inventory.resolveBackorder', ':id') }}'.replace(':id', product.id);
+                this.showResolveModal = true;
             }
          }">
         
@@ -120,6 +131,19 @@
                                 <i class="fas fa-warehouse text-xs"></i>
                             </div>
                         </div>
+
+                        <div class="relative group h-full">
+                            <select name="quality_id" onchange="this.form.submit()" class="appearance-none h-full pl-5 pr-10 py-4 bg-white border border-slate-100 rounded-[2rem] text-sm font-bold text-[#2c3856] focus:ring-2 focus:ring-[#ff9c00] focus:border-transparent cursor-pointer shadow-[0_10px_40px_rgba(0,0,0,0.03)] outline-none hover:-translate-y-1 transition-transform duration-300">
+                                <option value="">Todas las Calidades</option>
+                                @foreach($qualities as $quality)
+                                    <option value="{{ $quality->id }}" {{ request('quality_id') == $quality->id ? 'selected' : '' }}>{{ $quality->name }}</option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+                                <i class="fas fa-medal text-xs"></i>
+                            </div>
+                        </div>
+
                     </form>
 
                     <div class="bg-white px-6 py-4 rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-slate-100 flex items-center gap-4 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
@@ -191,13 +215,12 @@
 
                                     <div class="flex items-center gap-12 w-full md:w-auto justify-between md:justify-end pr-4">
                                         <button @click.stop="
-                                                    resolveProduct = { 
-                                                        desc: '{{ addslashes($product->description) }}', 
-                                                        sku: '{{ $product->sku }}', 
-                                                        debt: {{ $product->total_debt }} 
-                                                    };
-                                                    resolveAction = '{{ route('inventory.resolveBackorder', $product->id) }}';
-                                                    showResolveModal = true;
+                                                    openResolveModal({
+                                                        id: {{ $product->id }},
+                                                        description: '{{ addslashes($product->description) }}',
+                                                        sku: '{{ $product->sku }}',
+                                                        total_debt: {{ $product->total_debt }}
+                                                    })
                                                 "
                                                 class="hidden md:flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm group/btn">
                                             <i class="fas fa-plus text-xs"></i>
@@ -240,6 +263,7 @@
                                                 <tr>
                                                     <th class="px-6 py-4">Folio</th>
                                                     <th class="px-6 py-4">Almacén</th>
+                                                    <th class="px-6 py-4">Calidad</th>
                                                     <th class="px-6 py-4">Cliente / Empresa</th>
                                                     <th class="px-6 py-4">Vendedor</th>
                                                     <th class="px-6 py-4 text-center">Fecha</th>
@@ -260,6 +284,17 @@
                                                                     {{ $mov->warehouse ? $mov->warehouse->description : 'Global' }}
                                                                 </span>
                                                             </td>
+                                                            
+                                                            <td class="px-6 py-4">
+                                                                @if($mov->quality)
+                                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg border text-[10px] font-bold uppercase tracking-wide bg-purple-50 text-purple-700 border-purple-100">
+                                                                        {{ $mov->quality->name }}
+                                                                    </span>
+                                                                @else
+                                                                    <span class="text-slate-400 text-[10px] italic">Estándar</span>
+                                                                @endif
+                                                            </td>
+
                                                             <td class="px-6 py-4">
                                                                 <p class="font-bold text-slate-700">{{ $mov->client_name }}</p>
                                                                 <p class="text-[10px] text-slate-400 uppercase">{{ $mov->company_name }}</p>
@@ -360,7 +395,7 @@
                             <div>
                                 <label class="block text-xs font-bold text-[#2c3856] uppercase tracking-wider mb-2">Almacén de Ingreso</label>
                                 <div class="relative">
-                                    <select name="warehouse_id" required class="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all">
+                                    <select name="warehouse_id" required class="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all cursor-pointer">
                                         <option value="" disabled selected>Selecciona un almacén</option>
                                         @foreach($warehouses as $wh)
                                             <option value="{{ $wh->id }}">{{ $wh->description }} ({{ $wh->code }})</option>
@@ -370,6 +405,24 @@
                                         <i class="fas fa-chevron-down text-xs"></i>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-[#2c3856] uppercase tracking-wider mb-2">Calidad (Opcional)</label>
+                                <div class="relative">
+                                    <select name="ff_quality_id" class="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all cursor-pointer">
+                                        <option value="">Estándar / Sin Especificar</option>
+                                        @foreach($qualities as $quality)
+                                            <option value="{{ $quality->id }}">{{ $quality->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400">
+                                        <i class="fas fa-medal text-xs"></i>
+                                    </div>
+                                </div>
+                                <p class="text-[10px] text-slate-400 mt-2 leading-relaxed">
+                                    * Si seleccionas una calidad, se priorizará saldar deudas de esa calidad específica.
+                                </p>
                             </div>
 
                             <div>

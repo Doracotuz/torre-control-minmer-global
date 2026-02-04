@@ -13,7 +13,7 @@
 
 <x-app-layout>
     <div x-data="inventoryManager()" 
-         x-init="init(@js($products), @js($jsAllWarehouses), @js($jsAllAreas))" 
+         x-init="init(@js($products), @js($jsAllWarehouses), @js($jsAllAreas), @js($qualities))" 
          class="font-sans text-slate-600">
 
         <x-slot name="header">
@@ -390,7 +390,7 @@
                                     <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Área (Cliente)</label>
                                     <div class="relative">
                                         <select x-model="form.area_id" 
-                                                @change="updateAvailableWarehouses()"
+                                                @change="updateResources()"
                                                 class="block w-full px-5 py-4 bg-slate-50 border-2 border-transparent focus:border-[#2c3856] rounded-2xl text-slate-700 focus:bg-white transition-all text-base font-bold appearance-none cursor-pointer">
                                             <template x-for="area in allAreas" :key="area.id">
                                                 <option :value="area.id" x-text="area.name"></option>
@@ -421,6 +421,22 @@
                                         <span class="text-xs font-bold text-[#2c3856] bg-blue-50 px-2 py-1 rounded-lg">
                                             Existencia actual: <span x-text="currentWarehouseStock"></span>
                                         </span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Calidad</label>
+                                    <div class="relative">
+                                        <select x-model="form.ff_quality_id"
+                                                class="block w-full px-5 py-4 bg-slate-50 border-2 border-transparent focus:border-[#2c3856] rounded-2xl text-slate-700 focus:bg-white transition-all text-base font-bold appearance-none cursor-pointer">
+                                            <option value="">Estándar / Sin Especificar</option>
+                                            <template x-for="quality in availableQualities" :key="quality.id">
+                                                <option :value="quality.id" x-text="quality.name"></option>
+                                            </template>
+                                        </select>
+                                        <div class="absolute inset-y-0 right-0 flex items-center px-5 pointer-events-none text-slate-400">
+                                            <i class="fas fa-medal text-xs"></i>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -559,7 +575,9 @@
                 products: [],
                 allWarehouses: [],
                 allAreas: [],
+                allQualities: [],
                 availableWarehouses: [],
+                availableQualities: [],
                 
                 filter: '',
                 filterBrand: '',
@@ -579,11 +597,12 @@
                     quantity_raw: '',
                     reason: '',
                     warehouse_id: '',
+                    ff_quality_id: '',
                     area_id: '',
                     stocks: {} 
                 },
 
-                init(productsData, warehousesData, areasData) {
+                init(productsData, warehousesData, areasData, qualitiesData) {
                     this.products = Array.isArray(productsData) ? productsData.map(p => ({
                         ...p,
                         movements_sum_quantity: p.movements_sum_quantity ? parseInt(p.movements_sum_quantity, 10) : 0,
@@ -592,8 +611,10 @@
 
                     this.allWarehouses = warehousesData || [];
                     this.allAreas = areasData || [];
+                    this.allQualities = qualitiesData || [];
                     
                     this.availableWarehouses = this.allWarehouses;
+                    this.availableQualities = this.allQualities;
 
                     const params = new URLSearchParams(window.location.search);
                     this.filterArea = params.get('area_id') || '';
@@ -645,11 +666,12 @@
                     this.form.type = type;
                     this.form.quantity_raw = ''; 
                     this.form.reason = '';
+                    this.form.ff_quality_id = '';
                     this.form.stocks = product.warehouse_stocks || {};
                     
                     this.form.area_id = product.area_id; 
                     
-                    this.updateAvailableWarehouses();
+                    this.updateResources();
 
                     const currentFilterWh = '{{ $currentWarehouseId }}';
                     if (currentFilterWh && this.availableWarehouses.some(w => w.id == currentFilterWh)) {
@@ -664,11 +686,13 @@
                     });
                 },
 
-                updateAvailableWarehouses() {
+                updateResources() {
                     if (this.form.area_id) {
                         this.availableWarehouses = this.allWarehouses.filter(w => w.area_id == this.form.area_id);
+                        this.availableQualities = this.allQualities.filter(q => q.area_id == this.form.area_id);
                     } else {
                         this.availableWarehouses = this.allWarehouses;
+                        this.availableQualities = this.allQualities;
                     }
                     if (!this.availableWarehouses.some(w => w.id == this.form.warehouse_id)) {
                         this.form.warehouse_id = '';
@@ -719,7 +743,8 @@
                                 quantity: finalQuantity,
                                 reason: this.form.reason,
                                 warehouse_id: this.form.warehouse_id,
-                                area_id: this.form.area_id
+                                area_id: this.form.area_id,
+                                ff_quality_id: this.form.ff_quality_id
                             }),
                             headers: {
                                 'X-CSRF-TOKEN': csrfToken,

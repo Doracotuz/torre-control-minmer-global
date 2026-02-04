@@ -120,7 +120,7 @@
                 </a>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 
                 <a href="{{ route('ff.admin.show', 'clients') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.1s;">
                     <div class="card-img-container absolute inset-0 z-0 h-full w-full">
@@ -267,6 +267,37 @@
                             <h3 class="font-montserrat font-bold text-3xl mb-3 leading-none group-hover:text-[#ff9c00] transition-colors">Almacenes</h3>
                             <p class="text-gray-300 text-sm font-light leading-relaxed mb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500 absolute group-hover:relative">
                                 Gestión de centros de distribución, bodegas y puntos de almacenamiento físico.
+                            </p>
+                            
+                            <div class="action-arrow flex items-center gap-2 text-[#ff9c00] font-bold text-sm uppercase tracking-wide">
+                                <span>Gestionar</span>
+                                <i class="fas fa-long-arrow-alt-right"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>  
+                
+                <a href="{{ route('ff.admin.show', 'qualities') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.6s;">
+                    <div class="card-img-container absolute inset-0 z-0 h-full w-full">
+                        <img src="https://iliiet.com/wp-content/uploads/2020/09/Inspector-de-Control-de-Calidad-Industrial-e1610242729851.jpg" 
+                            class="card-bg-img w-full h-full object-cover" alt="Calidades">
+                    </div>
+
+                    <div class="relative z-10 h-full flex flex-col justify-between p-8 text-white">
+                        <div class="flex justify-between items-start">
+                            <div class="glass-icon w-16 h-16 rounded-2xl flex items-center justify-center text-3xl">
+                                <i class="fas fa-medal"></i>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex items-center gap-2 mb-3 opacity-80">
+                                <span class="h-px w-6 bg-[#ff9c00]"></span>
+                                <span class="text-xs font-bold uppercase tracking-wider">Estándares</span>
+                            </div>
+                            <h3 class="font-montserrat font-bold text-3xl mb-3 leading-none group-hover:text-[#ff9c00] transition-colors">Calidades</h3>
+                            <p class="text-gray-300 text-sm font-light leading-relaxed mb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500 absolute group-hover:relative">
+                                Define los niveles de clasificación (A, B, C, Dañado) para el control de inventario.
                             </p>
                             
                             <div class="action-arrow flex items-center gap-2 text-[#ff9c00] font-bold text-sm uppercase tracking-wide">

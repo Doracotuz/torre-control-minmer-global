@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ffInventoryMovement;
 use App\Models\ffProduct;
 use App\Models\FfWarehouse;
+use App\Models\FfQuality;
 use App\Models\Area;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -63,22 +64,25 @@ class FfInventoryController extends Controller
 
         $brandsQuery = ffProduct::whereNotNull('brand')->where('brand', '!=', '');
         $typesQuery = ffProduct::whereNotNull('type')->where('type', '!=', '');
-        
         $warehousesQuery = FfWarehouse::where('is_active', true);
+        $qualitiesQuery = FfQuality::where('is_active', true)->orderBy('name');
 
         if (!Auth::user()->isSuperAdmin()) {
             $brandsQuery->where('area_id', Auth::user()->area_id);
             $typesQuery->where('area_id', Auth::user()->area_id);
             $warehousesQuery->where('area_id', Auth::user()->area_id);
+            $qualitiesQuery->where('area_id', Auth::user()->area_id);
         }
 
         if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
             $warehousesQuery->where('area_id', $request->input('area_id'));
+            $qualitiesQuery->where('area_id', $request->input('area_id'));
         }
 
         $brands = $brandsQuery->distinct()->orderBy('brand')->pluck('brand');
         $types = $typesQuery->distinct()->orderBy('type')->pluck('type');
         $warehouses = $warehousesQuery->orderBy('description')->get();
+        $qualities = $qualitiesQuery->get();
         
         $allAreas = [];
         $allWarehouses = [];
@@ -87,7 +91,7 @@ class FfInventoryController extends Controller
             $allWarehouses = FfWarehouse::where('is_active', true)->orderBy('description')->get(['id', 'description', 'code', 'area_id']);
         }
 
-        return view('friends-and-family.inventory.index', compact('products', 'brands', 'types', 'warehouses', 'allAreas', 'allWarehouses'));
+        return view('friends-and-family.inventory.index', compact('products', 'brands', 'types', 'warehouses', 'qualities', 'allAreas', 'allWarehouses'));
     }
 
     public function storeMovement(Request $request)
@@ -107,10 +111,8 @@ class FfInventoryController extends Controller
             'quantity' => 'required|integer|not_in:0',
             'reason' => 'required|string|max:255',
             'area_id' => Auth::user()->isSuperAdmin() ? 'required|exists:areas,id' : 'nullable',
-            'warehouse_id' => [
-                'required',
-                Rule::exists('ff_warehouses', 'id')
-            ],
+            'warehouse_id' => ['required', Rule::exists('ff_warehouses', 'id')],
+            'ff_quality_id' => 'nullable|exists:ff_qualities,id',
         ]);
 
         $product = ffProduct::findOrFail($request->product_id);
@@ -129,6 +131,7 @@ class FfInventoryController extends Controller
             'quantity' => $request->quantity,
             'reason' => $request->reason,
             'ff_warehouse_id' => $request->input('warehouse_id'),
+            'ff_quality_id' => $request->input('ff_quality_id'),
             'folio' => $newFolio, 
             'order_type' => $tipoOrden, 
             'client_name' => 'Ajuste de Inventario', 
@@ -156,11 +159,12 @@ class FfInventoryController extends Controller
 
     public function logIndex(Request $request)
     {
-        $query = ffInventoryMovement::with(['product', 'user', 'warehouse'])->orderBy('created_at', 'desc');
+        $query = ffInventoryMovement::with(['product', 'user', 'warehouse', 'quality'])->orderBy('created_at', 'desc');
         
         $areas = [];
         $currentArea = '';
         $warehousesQuery = FfWarehouse::where('is_active', true);
+        $qualitiesQuery = FfQuality::where('is_active', true);
 
         if (Auth::user()->isSuperAdmin()) {
             $areas = Area::all(); 
@@ -168,21 +172,28 @@ class FfInventoryController extends Controller
             if ($request->filled('area_id')) {
                 $query->where('area_id', $request->area_id);
                 $warehousesQuery->where('area_id', $request->area_id);
+                $qualitiesQuery->where('area_id', $request->area_id);
                 $currentArea = $request->area_id;
             }
         } else {
             $query->where('area_id', Auth::user()->area_id);
             $warehousesQuery->where('area_id', Auth::user()->area_id);
+            $qualitiesQuery->where('area_id', Auth::user()->area_id);
         }
 
         if ($request->filled('warehouse_id')) {
             $query->where('ff_warehouse_id', $request->warehouse_id);
         }
 
+        if ($request->filled('quality_id')) {
+            $query->where('ff_quality_id', $request->quality_id);
+        }
+
         $warehouses = $warehousesQuery->orderBy('description')->get();
+        $qualities = $qualitiesQuery->orderBy('name')->get();
         $movements = $query->paginate(50);
         
-        return view('friends-and-family.inventory.log', compact('movements', 'areas', 'currentArea', 'warehouses'));
+        return view('friends-and-family.inventory.log', compact('movements', 'areas', 'currentArea', 'warehouses', 'qualities'));
     }
 
     public function exportCsv(Request $request)
@@ -252,7 +263,7 @@ class FfInventoryController extends Controller
 
     public function exportLogCsv(Request $request)
     {
-        $query = ffInventoryMovement::with(['product', 'user', 'warehouse'])->orderBy('created_at', 'desc');
+        $query = ffInventoryMovement::with(['product', 'user', 'warehouse', 'quality'])->orderBy('created_at', 'desc');
 
         if (!Auth::user()->isSuperAdmin()) {
             $query->where('area_id', Auth::user()->area_id);
@@ -260,6 +271,10 @@ class FfInventoryController extends Controller
 
         if ($request->filled('warehouse_id')) {
             $query->where('ff_warehouse_id', $request->input('warehouse_id'));
+        }
+
+        if ($request->filled('quality_id')) {
+            $query->where('ff_quality_id', $request->input('quality_id'));
         }
 
         $movements = $query->get();
@@ -272,12 +287,13 @@ class FfInventoryController extends Controller
         $callback = function() use ($movements) {
             $file = fopen('php://output', 'w');
             fputs($file, "\xEF\xBB\xBF");
-            fputcsv($file, ['Fecha', 'Usuario', 'Almacen', 'SKU', 'Producto', 'Movimiento', 'Motivo']);
+            fputcsv($file, ['Fecha', 'Usuario', 'Almacen', 'Calidad', 'SKU', 'Producto', 'Movimiento', 'Motivo']);
             foreach ($movements as $mov) {
                 fputcsv($file, [
                     $mov->created_at->format('Y-m-d H:i:s'),
                     $mov->user ? $mov->user->name : 'N/A',
                     $mov->warehouse ? ($mov->warehouse->code . ' - ' . $mov->warehouse->description) : 'General',
+                    $mov->quality ? $mov->quality->name : 'Estándar',
                     $mov->product ? $mov->product->sku : 'N/A',
                     $mov->product ? $mov->product->description : 'N/A',
                     $mov->quantity,
@@ -328,6 +344,7 @@ class FfInventoryController extends Controller
                 $quantity = mb_convert_encoding(trim($row[1] ?? ''), 'UTF-8', 'ISO-8859-1');
                 $reason = mb_convert_encoding(trim($row[2] ?? ''), 'UTF-8', 'ISO-8859-1');
                 $warehouseCode = mb_convert_encoding(trim($row[4] ?? ''), 'UTF-8', 'ISO-8859-1');
+                $qualityName = isset($row[5]) ? mb_convert_encoding(trim($row[5]), 'UTF-8', 'ISO-8859-1') : null;
 
                 if (empty($sku) && empty($quantity) && empty($reason)) {
                     continue;
@@ -349,26 +366,37 @@ class FfInventoryController extends Controller
                     continue;
                 }
                 
-                
                 if (empty($warehouseCode)) {
-                    $errors[] = "Línea $rowNumber: El código de almacén es obligatorio para evitar stock global.";
+                    $errors[] = "Línea $rowNumber: El código de almacén es obligatorio.";
                     continue;
                 }
 
                 $warehouseId = null;
-                if (!empty($warehouseCode)) {
-                    $searchAreaId = (Auth::user()->isSuperAdmin() && !$request->filled('area_id')) 
-                                    ? $product->area_id 
-                                    : $targetAreaId;
+                $searchAreaId = (Auth::user()->isSuperAdmin() && !$request->filled('area_id')) 
+                                ? $product->area_id 
+                                : $targetAreaId;
 
-                    $warehouse = FfWarehouse::where('code', $warehouseCode)
+                $warehouse = FfWarehouse::where('code', $warehouseCode)
+                    ->where('area_id', $searchAreaId)
+                    ->first();
+                
+                if ($warehouse) {
+                    $warehouseId = $warehouse->id;
+                } else {
+                    $errors[] = "Línea $rowNumber: El almacén '$warehouseCode' no existe.";
+                    continue;
+                }
+
+                $qualityId = null;
+                if (!empty($qualityName)) {
+                    $quality = FfQuality::where('name', $qualityName)
                         ->where('area_id', $searchAreaId)
                         ->first();
                     
-                    if ($warehouse) {
-                        $warehouseId = $warehouse->id;
+                    if ($quality) {
+                        $qualityId = $quality->id;
                     } else {
-                        $errors[] = "Línea $rowNumber: El almacén '$warehouseCode' no existe.";
+                        $errors[] = "Línea $rowNumber: La calidad '$qualityName' no existe.";
                         continue;
                     }
                 }
@@ -382,6 +410,7 @@ class FfInventoryController extends Controller
                     'quantity' => (int)$quantity,
                     'reason' => $reason . " (Importación CSV)",
                     'ff_warehouse_id' => $warehouseId,
+                    'ff_quality_id' => $qualityId,
                     'folio' => $batchFolio,
                     'order_type' => $tipoOrden,
                     'client_name' => 'Carga Masiva Inventario',
@@ -452,7 +481,7 @@ class FfInventoryController extends Controller
             $file = fopen('php://output', 'w');
             fputs($file, "\xEF\xBB\xBF");
             
-            fputcsv($file, ['SKU', 'Quantity', 'Reason', 'Description (Reference)', 'Warehouse Code (Optional)']);
+            fputcsv($file, ['SKU', 'Quantity', 'Reason', 'Description (Reference)', 'Warehouse Code (Optional)', 'Quality Name (Optional)']);
             
             if ($products->isEmpty()) {
                 fputcsv($file, [
@@ -460,14 +489,16 @@ class FfInventoryController extends Controller
                     '10', 
                     'Ajuste de stock inicial',
                     'Ejemplo de entrada',
-                    'ALM-01'
+                    'ALM-01',
+                    'Clase A'
                 ]);
                 fputcsv($file, [
                     'SKU-EJEMPLO-2', 
                     '-2', 
                     'Producto dañado',
                     'Ejemplo de salida',
-                    ''
+                    '',
+                    'Dañado'
                 ]);
             } else {
                 foreach ($products as $product) {
@@ -476,6 +507,7 @@ class FfInventoryController extends Controller
                         '',
                         '',
                         $product->description,
+                        '',
                         ''
                     ]);
                 }
@@ -503,18 +535,22 @@ class FfInventoryController extends Controller
             $query->where('ff_warehouse_id', $request->input('warehouse_id'));
         }
 
-        $backorders = $query->with(['product', 'user', 'warehouse']) 
+        $backorders = $query->with(['product', 'user', 'warehouse', 'quality']) 
             ->orderBy('created_at', 'asc') 
             ->get()
             ->groupBy('ff_product_id');
 
         $warehousesQuery = FfWarehouse::where('is_active', true);
+        $qualitiesQuery = FfQuality::where('is_active', true);
+
         if (!Auth::user()->isSuperAdmin()) {
             $warehousesQuery->where('area_id', Auth::user()->area_id);
+            $qualitiesQuery->where('area_id', Auth::user()->area_id);
         }
         $warehouses = $warehousesQuery->orderBy('description')->get();
+        $qualities = $qualitiesQuery->orderBy('name')->get();
             
-        return view('friends-and-family.inventory.backorders', compact('backorders', 'warehouses'));
+        return view('friends-and-family.inventory.backorders', compact('backorders', 'warehouses', 'qualities'));
     }
 
     public function fulfillBackorder(Request $request)
@@ -533,6 +569,12 @@ class FfInventoryController extends Controller
         if ($movement->ff_warehouse_id) {
             $stockQuery->where('ff_warehouse_id', $movement->ff_warehouse_id);
         }
+        
+        if ($movement->ff_quality_id) {
+            $stockQuery->where('ff_quality_id', $movement->ff_quality_id);
+        } else {
+            $stockQuery->whereNull('ff_quality_id');
+        }
 
         $currentStock = $stockQuery->sum('quantity');
         $required = abs($movement->quantity);
@@ -542,6 +584,10 @@ class FfInventoryController extends Controller
             if ($movement->ff_warehouse_id) {
                 $wh = FfWarehouse::find($movement->ff_warehouse_id);
                 $msg .= " en almacén " . ($wh ? $wh->code : 'Desconocido');
+            }
+            if ($movement->ff_quality_id) {
+                $qName = FfQuality::find($movement->ff_quality_id)->name ?? 'Indefinida';
+                $msg .= " (Calidad: $qName)";
             }
             return response()->json(['message' => "$msg. Tienes $currentStock, necesitas $required."], 422);
         }
@@ -608,6 +654,7 @@ class FfInventoryController extends Controller
         ->with(['movements' => function($q) use ($warehouseId) {
             $q->where('is_backorder', true)
               ->where('backorder_fulfilled', false)
+              ->with('quality')
               ->orderBy('created_at', 'asc');
             
             if ($warehouseId) {
@@ -621,12 +668,16 @@ class FfInventoryController extends Controller
         });
 
         $warehousesQuery = FfWarehouse::where('is_active', true);
+        $qualitiesQuery = FfQuality::where('is_active', true);
+        
         if (!Auth::user()->isSuperAdmin()) {
             $warehousesQuery->where('area_id', Auth::user()->area_id);
+            $qualitiesQuery->where('area_id', Auth::user()->area_id);
         }
         $warehouses = $warehousesQuery->orderBy('description')->get();
+        $qualities = $qualitiesQuery->orderBy('name')->get();
 
-        return view('friends-and-family.inventory.backorder-relations', compact('products', 'warehouses'));
+        return view('friends-and-family.inventory.backorder-relations', compact('products', 'warehouses', 'qualities'));
     }
 
     public function resolveBackorder(Request $request, $id)
@@ -634,6 +685,7 @@ class FfInventoryController extends Controller
         $request->validate([
             'quantity' => 'required|numeric|min:1',
             'warehouse_id' => 'required|exists:ff_warehouses,id',
+            'ff_quality_id' => 'nullable|exists:ff_qualities,id',
         ]);
 
         try {
@@ -647,6 +699,7 @@ class FfInventoryController extends Controller
                     'ff_product_id' => $product->id,
                     'user_id' => Auth::id(),
                     'ff_warehouse_id' => $request->warehouse_id,
+                    'ff_quality_id' => $request->ff_quality_id,
                     'area_id' => $product->area_id,
                     'quantity' => $quantityAvailable,
                     'reason' => 'Resolución de Backorder (Ingreso Directo)',
@@ -655,11 +708,17 @@ class FfInventoryController extends Controller
                     'client_name' => 'Ajuste de Inventario',
                 ]);
 
-                $pendingBackorders = ffInventoryMovement::where('ff_product_id', $product->id)
+                $pendingBackordersQuery = ffInventoryMovement::where('ff_product_id', $product->id)
                     ->where('is_backorder', true)
-                    ->where('backorder_fulfilled', false)
-                    ->orderBy('created_at', 'asc')
-                    ->get();
+                    ->where('backorder_fulfilled', false);
+
+                if ($request->ff_quality_id) {
+                    $pendingBackordersQuery->where('ff_quality_id', $request->ff_quality_id);
+                } else {
+                    $pendingBackordersQuery->whereNull('ff_quality_id');
+                }
+
+                $pendingBackorders = $pendingBackordersQuery->orderBy('created_at', 'asc')->get();
 
                 foreach ($pendingBackorders as $backorder) {
                     if ($quantityAvailable <= 0) break;
@@ -693,7 +752,7 @@ class FfInventoryController extends Controller
                 }
             });
 
-            return redirect()->back()->with('success', 'Mercancía ingresada. Las deudas se han ajustado y recalculado correctamente.');
+            return redirect()->back()->with('success', 'Mercancía ingresada. Las deudas de la misma calidad se han ajustado correctamente.');
 
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Error al procesar el ingreso: ' . $e->getMessage());

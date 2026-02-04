@@ -62,9 +62,9 @@
                 
                 <div class="p-6 border-b border-gray-100 flex flex-col lg:flex-row gap-4 justify-between items-center bg-white">
                     
-                    <form action="{{ request()->url() }}" method="GET" class="flex flex-col md:flex-row gap-4 w-full lg:w-2/3">
+                    <form action="{{ request()->url() }}" method="GET" class="flex flex-col md:flex-row gap-4 w-full lg:w-4/5">
                         @if(Auth::user()->isSuperAdmin())
-                        <div class="relative w-full md:w-1/3 group">
+                        <div class="relative w-full md:w-1/4 group">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                 <i class="fas fa-building text-gray-300 group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
                             </div>
@@ -83,7 +83,7 @@
                         </div>
                         @endif
 
-                        <div class="relative w-full md:w-1/3 group">
+                        <div class="relative w-full md:w-1/4 group">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                 <i class="fas fa-warehouse text-gray-300 group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
                             </div>
@@ -101,7 +101,25 @@
                             </div>
                         </div>
 
-                        <div class="relative w-full md:w-1/3 group">
+                        <div class="relative w-full md:w-1/4 group">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fas fa-medal text-gray-300 group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
+                            </div>
+                            <select name="quality_id" onchange="this.form.submit()" 
+                                    class="block w-full pl-11 pr-10 py-3 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all duration-200 font-[Montserrat] text-sm appearance-none cursor-pointer font-bold">
+                                <option value="">Todas las Calidades</option>
+                                @foreach($qualities as $quality)
+                                    <option value="{{ $quality->id }}" {{ request('quality_id') == $quality->id ? 'selected' : '' }}>
+                                        {{ $quality->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </div>
+                        </div>
+
+                        <div class="relative w-full md:w-1/4 group">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                 <i class="fas fa-search text-gray-300 group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
                             </div>
@@ -144,6 +162,7 @@
                             <tr class="bg-[#F9FAFB] border-b border-gray-100">
                                 <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider font-[Montserrat]">Producto</th>
                                 <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider font-[Montserrat]">Almacén</th>
+                                <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider font-[Montserrat]">Calidad</th>
                                 <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider font-[Montserrat]">Usuario</th>
                                 <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider text-center font-[Montserrat]">Movimiento</th>
                                 <th class="px-6 py-4 text-sm font-bold text-gray-500 uppercase tracking-wider font-[Montserrat]">Motivo</th>
@@ -178,9 +197,17 @@
 
                                     <td class="px-6 py-4">
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border" 
-                                              :class="mov.warehouse ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-gray-50 text-gray-500 border-gray-200'">
+                                            :class="mov.warehouse ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-gray-50 text-gray-500 border-gray-200'">
                                             <i class="fas fa-warehouse mr-1.5 text-[10px]"></i>
                                             <span x-text="mov.warehouse ? mov.warehouse.description : 'Global'"></span>
+                                        </span>
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border"
+                                            :class="mov.quality ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-gray-50 text-gray-400 border-gray-200'">
+                                            <i class="fas fa-medal mr-1.5 text-[10px]"></i>
+                                            <span x-text="mov.quality ? mov.quality.name : 'Estándar'"></span>
                                         </span>
                                     </td>
 
@@ -195,7 +222,7 @@
 
                                     <td class="px-6 py-4 text-center">
                                         <div class="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-bold border transition-all duration-300"
-                                             :class="mov.quantity > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'">
+                                            :class="mov.quantity > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'">
                                             <i class="fas mr-1.5" :class="mov.quantity > 0 ? 'fa-arrow-down' : 'fa-arrow-up'"></i>
                                             <span x-text="(mov.quantity > 0 ? '+' : '') + mov.quantity"></span>
                                         </div>
@@ -216,7 +243,7 @@
 
                             <template x-if="filteredMovements.length === 0">
                                 <tr>
-                                    <td colspan="6" class="px-6 py-16 text-center">
+                                    <td colspan="7" class="px-6 py-16 text-center">
                                         <div class="flex flex-col items-center justify-center">
                                             <div class="bg-gray-50 rounded-full p-6 mb-4 shadow-inner">
                                                 <i class="fas fa-clipboard-list text-gray-300 text-3xl"></i>
@@ -269,12 +296,14 @@
                             const userName = mov.user ? mov.user.name.toLowerCase() : '';
                             const reason = mov.reason.toLowerCase();
                             const warehouse = mov.warehouse ? mov.warehouse.description.toLowerCase() : 'global';
+                            const quality = mov.quality ? mov.quality.name.toLowerCase() : 'estándar';
                             
                             return productName.includes(searchLower) || 
                                    productSku.includes(searchLower) || 
                                    userName.includes(searchLower) || 
                                    reason.includes(searchLower) ||
-                                   warehouse.includes(searchLower);
+                                   warehouse.includes(searchLower) ||
+                                   quality.includes(searchLower);
                         }
                         return true;
                     });

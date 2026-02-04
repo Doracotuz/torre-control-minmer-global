@@ -112,6 +112,11 @@ class ffInventoryMovement extends Model
     public function evidences()
     {
         return $this->hasMany(FfOrderEvidence::class, 'folio', 'folio');
+    }
+
+    public function quality()
+    {
+        return $this->belongsTo(FfQuality::class, 'ff_quality_id');
     }    
     
 }

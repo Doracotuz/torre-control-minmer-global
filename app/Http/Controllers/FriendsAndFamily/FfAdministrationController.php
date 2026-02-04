@@ -17,6 +17,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Area;
+use App\Models\FfQuality;
 
 class FfAdministrationController extends Controller
 {
@@ -46,6 +47,11 @@ class FfAdministrationController extends Controller
             'title' => 'Almacenes',
             'icon' => 'fa-warehouse'
         ],
+        'qualities' => [
+            'model' => FfQuality::class,
+            'title' => 'Calidades',
+            'icon' => 'fa-medal'
+        ],        
     ];
 
     public function index()

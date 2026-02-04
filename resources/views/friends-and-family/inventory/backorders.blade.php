@@ -46,6 +46,21 @@
                                 <i class="fas fa-warehouse text-xs"></i>
                             </div>
                         </div>
+
+                        <div class="relative group">
+                            <select name="quality_id" onchange="this.form.submit()" class="appearance-none pl-5 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 focus:outline-none focus:border-[#ff9c00] focus:ring-1 focus:ring-[#ff9c00] transition-all cursor-pointer shadow-sm hover:shadow-md">
+                                <option value="">Todas las Calidades</option>
+                                @foreach($qualities as $quality)
+                                    <option value="{{ $quality->id }}" {{ request('quality_id') == $quality->id ? 'selected' : '' }}>
+                                        {{ $quality->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400">
+                                <i class="fas fa-medal text-[10px]"></i>
+                            </div>
+                        </div>
+
                     </form>
 
                     <a href="{{ route('ff.inventory.index') }}" class="group flex items-center gap-3 px-5 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-[#2c3856] transition-all duration-300">
@@ -130,6 +145,12 @@
                                                 Folio #{{ $movement->folio }}
                                             </a>
                                         </div>
+                                        @if($movement->quality)
+                                            <span class="px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-100 text-xs font-bold flex items-center gap-2">
+                                                <i class="fas fa-medal text-[10px]"></i>
+                                                {{ $movement->quality->name }}
+                                            </span>
+                                        @endif                                        
                                         <div class="text-right">
                                             <span class="block text-lg font-black text-rose-500">-{{ abs($movement->quantity) }}</span>
                                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded border 
