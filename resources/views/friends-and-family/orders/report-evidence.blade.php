@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Entregable Ejecutivo</title>
+    <title>Entregable de Proyecto</title>
     <style>
         @page {
             margin: 0;
@@ -322,7 +322,7 @@
 
         <div class="content" style="top: 140px;">
             <h2>Reporte de Servicio</h2>
-            <h1>Entregable<br>Ejecutivo</h1>
+            <h1>Entregable<br>de proyecto</h1>
             <div style="font-size: 22px; color: #4a5568; margin-top: 15px; font-weight: 300;">{{ $header->company_name }}</div>
 
             <div class="folio-badge">
