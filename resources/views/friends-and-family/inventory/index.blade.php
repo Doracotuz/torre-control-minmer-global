@@ -7,7 +7,7 @@
     $currentWarehouseId = request('warehouse_id'); 
     $currentWarehouseName = $warehouses->where('id', $currentWarehouseId)->first()->description ?? 'Global';
     
-    $jsAllWarehouses = isset($allWarehouses) ? $allWarehouses : $warehouses;
+    $jsAllWarehouses = (isset($allWarehouses) && count($allWarehouses) > 0) ? $allWarehouses : $warehouses;
     $jsAllAreas = isset($allAreas) ? $allAreas : [];
 @endphp
 
