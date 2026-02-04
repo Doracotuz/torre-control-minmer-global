@@ -81,6 +81,10 @@ class FfSalesController extends Controller
             $productsQuery->where('area_id', $user->area_id);
         }
 
+        elseif ($user->isSuperAdmin() && $request->filled('area_id')) {
+            $productsQuery->where('area_id', $request->input('area_id'));
+        }        
+
         $areas = [];
         if ($user->isSuperAdmin()) {
             $areas = Area::all();
@@ -546,7 +550,6 @@ class FfSalesController extends Controller
                     'ff_product_id' => $product->id,
                     'user_id' => $user->id,
                     'area_id' => $targetAreaId,
-                    'area_id' => $user->area_id, 
                     'quantity' => -$quantity,
                     'reason' => ucfirst($orderType) . ' Venta Folio ' . $ventaFolio,
                     'client_name' => $request->client_name,
@@ -615,10 +618,12 @@ class FfSalesController extends Controller
             return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
         }
 
-        $logoUrl = $this->getLogoUrl($user->area);
+        $targetAreaModel = \App\Models\Area::find($targetAreaId);
+        $logoUrl = $this->getLogoUrl($targetAreaModel);
+        
         $logoBase64 = null;
         try {
-            $logoKey = $user->area->icon_path ?? 'LogoAzulm.PNG'; 
+            $logoKey = $targetAreaModel->icon_path ?? 'LogoAzulm.PNG'; 
             
             if (Storage::disk('s3')->exists($logoKey)) {
                 $imageContent = Storage::disk('s3')->get($logoKey);
@@ -629,7 +634,7 @@ class FfSalesController extends Controller
             $logoBase64 = $logoUrl; 
         }
 
-        $companyInfo = $this->getCompanyInfo($user->area_id);
+        $companyInfo = $this->getCompanyInfo($targetAreaId);
 
         $warehouseName = 'N/A';
         if ($request->ff_warehouse_id) {
@@ -668,7 +673,7 @@ class FfSalesController extends Controller
 
         try {
             $admins = \App\Models\User::where('is_area_admin', true)
-                ->where('area_id', $user->area_id)
+                ->where('area_id', $targetAreaId)
                 ->get(); 
             
             if ($admins->isNotEmpty()) {
@@ -683,7 +688,7 @@ class FfSalesController extends Controller
                     'surtidor_name' => $request->surtidor_name,
                     'order_type' => $orderType,
                     'user_name' => $user->name,
-                    'user_area' => $user->area->name ?? 'N/A',
+                    'user_area' => $targetAreaModel->name ?? 'N/A',
                     'grandTotal' => $grandTotal,
                     'items' => $pdfItems,
                     'logo_url' => $logoUrl,
@@ -700,7 +705,7 @@ class FfSalesController extends Controller
                     ));
                 }
             } else {
-                Log::warning("Pedido #{$ventaFolio} creado en área {$user->area_id} sin administradores para notificar.");
+                Log::warning("Pedido #{$ventaFolio} creado en área {$targetAreaId} sin administradores para notificar.");
             }
 
         } catch (\Exception $e) {

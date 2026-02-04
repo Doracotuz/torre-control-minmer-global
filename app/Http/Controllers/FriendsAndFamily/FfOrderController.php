@@ -23,10 +23,11 @@ use App\Models\FfWarehouse;
 
 class FfOrderController extends Controller
 {
-    public function index(Request $request)
+public function index(Request $request)
     {
         $query = ffInventoryMovement::query()
-            ->where('quantity', '<', 0);
+            ->where('quantity', '<', 0)
+            ->whereIn('order_type', ['normal', 'remision', 'prestamo']); 
 
         if (!Auth::user()->isSuperAdmin()) {
             $query->where('area_id', Auth::user()->area_id);

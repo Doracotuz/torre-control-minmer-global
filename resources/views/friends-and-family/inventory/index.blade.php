@@ -6,10 +6,15 @@
 
     $currentWarehouseId = request('warehouse_id'); 
     $currentWarehouseName = $warehouses->where('id', $currentWarehouseId)->first()->description ?? 'Global';
+    
+    $jsAllWarehouses = isset($allWarehouses) ? $allWarehouses : $warehouses;
+    $jsAllAreas = isset($allAreas) ? $allAreas : [];
 @endphp
 
 <x-app-layout>
-    <div x-data="inventoryManager()" x-init="init(@js($products))" class="font-sans text-slate-600">
+    <div x-data="inventoryManager()" 
+         x-init="init(@js($products), @js($jsAllWarehouses), @js($jsAllAreas))" 
+         class="font-sans text-slate-600">
 
         <x-slot name="header">
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -208,6 +213,11 @@
                                 <option value="{{ $type }}">{{ $type }}</option>
                             @endforeach
                         </select>
+
+                        <label class="flex items-center gap-2 px-4 py-3 bg-white border-2 border-slate-200 rounded-xl cursor-pointer hover:border-slate-300 transition-all select-none shadow-sm h-[50px]">
+                            <input type="checkbox" x-model="filterStock" class="w-5 h-5 text-[#ff9c00] border-gray-300 rounded focus:ring-[#ff9c00] focus:ring-offset-0">
+                            <span class="text-sm font-bold text-slate-600 uppercase tracking-wide">Solo con Stock</span>
+                        </label>                        
                         
                         <div class="h-10 w-px bg-slate-200 mx-2 hidden md:block"></div>
 
@@ -223,7 +233,7 @@
                             <i class="fas fa-file-download text-xl"></i>
                         </button>
 
-                        <button @click="resetFilters()" x-show="filter || filterBrand || filterType" x-transition 
+                        <button @click="resetFilters()" x-show="filter || filterBrand || filterType || filterStock" x-transition 
                                 class="ml-2 px-4 py-2 text-rose-500 bg-rose-50 hover:bg-rose-100 rounded-xl text-xs font-black transition-all shadow-sm border border-rose-100" 
                                 title="Limpiar Filtros">
                             <i class="fas fa-times mr-1"></i> LIMPIAR
@@ -347,9 +357,7 @@
             style="display: none;" x-cloak>
             <div class="flex items-center justify-center min-h-screen p-4 text-center sm:block sm:p-0">
                 
-                <div x-show="isModalOpen" 
-                    x-transition.opacity.duration.300ms
-                    class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div x-show="isModalOpen" x-transition.opacity class="fixed inset-0 transition-opacity" aria-hidden="true">
                     <div class="absolute inset-0 bg-[#2c3856] opacity-70 backdrop-blur-md"></div>
                 </div>
 
@@ -358,16 +366,11 @@
                 <div x-show="isModalOpen" 
                     @click.outside="closeModal()"
                     x-transition:enter="ease-out duration-300" 
-                    x-transition:enter-start="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95" 
-                    x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
-                    x-transition:leave="ease-in duration-200" 
-                    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
-                    x-transition:leave-end="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95" 
                     class="inline-block align-bottom bg-white rounded-[2rem] text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-slate-100">
                     
                     <form @submit.prevent="submitMovement">
                         <div class="bg-white px-8 pt-8 pb-6 relative">
-                            <button type="button" @click="closeModal()" class="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+                            <button type="button" @click="closeModal()" class="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 transition-colors">
                                 <i class="fas fa-times"></i>
                             </button>
                             
@@ -381,19 +384,43 @@
                             </div>
 
                             <div class="space-y-6">
+                                
+                                @if(Auth::user()->isSuperAdmin())
+                                <div>
+                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Área (Cliente)</label>
+                                    <div class="relative">
+                                        <select x-model="form.area_id" 
+                                                @change="updateAvailableWarehouses()"
+                                                class="block w-full px-5 py-4 bg-slate-50 border-2 border-transparent focus:border-[#2c3856] rounded-2xl text-slate-700 focus:bg-white transition-all text-base font-bold appearance-none cursor-pointer">
+                                            <template x-for="area in allAreas" :key="area.id">
+                                                <option :value="area.id" x-text="area.name"></option>
+                                            </template>
+                                        </select>
+                                        <div class="absolute inset-y-0 right-0 flex items-center px-5 pointer-events-none text-slate-400">
+                                            <i class="fas fa-chevron-down text-xs"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endif
+
                                 <div>
                                     <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Almacén Afectado</label>
                                     <div class="relative">
                                         <select x-model="form.warehouse_id" required 
                                                 class="block w-full px-5 py-4 bg-slate-50 border-2 border-transparent focus:border-[#2c3856] rounded-2xl text-slate-700 focus:bg-white transition-all text-base font-bold appearance-none cursor-pointer">
                                             <option value="">Seleccione un Almacén</option>
-                                            @foreach($warehouses as $wh)
-                                                <option value="{{ $wh->id }}">{{ $wh->description }} ({{ $wh->code }})</option>
-                                            @endforeach
+                                            <template x-for="wh in availableWarehouses" :key="wh.id">
+                                                <option :value="wh.id" x-text="wh.description + ' (' + wh.code + ')'"></option>
+                                            </template>
                                         </select>
                                         <div class="absolute inset-y-0 right-0 flex items-center px-5 pointer-events-none text-slate-400">
                                             <i class="fas fa-chevron-down text-xs"></i>
                                         </div>
+                                    </div>
+                                    <div x-show="form.warehouse_id" class="mt-2 text-right">
+                                        <span class="text-xs font-bold text-[#2c3856] bg-blue-50 px-2 py-1 rounded-lg">
+                                            Existencia actual: <span x-text="currentWarehouseStock"></span>
+                                        </span>
                                     </div>
                                 </div>
 
@@ -419,14 +446,14 @@
                         </div>
 
                         <div class="bg-slate-50 px-8 py-6 flex gap-4 border-t border-slate-100">
-                            <button type="button" @click="closeModal()" class="flex-1 py-3.5 rounded-xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-100 hover:border-slate-300 transition-all uppercase tracking-wide">
+                            <button type="button" @click="closeModal()" class="flex-1 py-3.5 rounded-xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all uppercase tracking-wide">
                                 Cancelar
                             </button>
                             <button type="submit" 
                                     :disabled="isSaving"
                                     class="flex-1 py-3.5 rounded-xl border-2 border-transparent shadow-xl text-sm font-bold text-white transition-all transform hover:-translate-y-1 uppercase flex items-center justify-center tracking-wide"
-                                    :class="form.type === 'add' ? 'bg-[#2c3856] hover:bg-[#1e273d] shadow-blue-900/20' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/30'">
-                                <span x-text="isSaving ? 'Procesando...' : 'Confirmar Movimiento'"></span>
+                                    :class="form.type === 'add' ? 'bg-[#2c3856] hover:bg-[#1e273d]' : 'bg-rose-500 hover:bg-rose-600'">
+                                <span x-text="isSaving ? 'Procesando...' : 'Confirmar'"></span>
                             </button>
                         </div>
                     </form>
@@ -445,16 +472,35 @@
                 <div x-show="isImportModalOpen" 
                     @click.outside="closeImportModal()"
                     x-transition:enter="ease-out duration-300"
-                    x-transition:enter-start="opacity-0 scale-95"
-                    x-transition:enter-end="opacity-100 scale-100"
                     class="inline-block align-bottom bg-white rounded-[2rem] text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl w-full border border-slate-100">
                     
                     <form action="{{ route('ff.inventory.import') }}" method="POST" enctype="multipart/form-data">
                         @csrf
+                        
                         @if(Auth::user()->isSuperAdmin())
-                            <input type="hidden" name="area_id" :value="filterArea">
+                            <div class="bg-blue-50/50 px-8 py-4 border-b border-slate-100">
+                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">
+                                    ¿A qué Área (Cliente) pertenece esta carga?
+                                </label>
+                                <div class="relative">
+                                    <select name="area_id" x-model="filterArea"
+                                            class="block w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-700 focus:border-[#ff9c00] focus:ring-0 transition-all font-bold appearance-none cursor-pointer">
+                                        <option value="">-- Detectar Automáticamente --</option>
+                                        <template x-for="area in allAreas" :key="area.id">
+                                            <option :value="area.id" x-text="area.name"></option>
+                                        </template>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+                                        <i class="fas fa-chevron-down text-xs"></i>
+                                    </div>
+                                </div>
+                                <p class="text-[10px] text-blue-600 mt-2 font-medium">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Esto validará que los productos y almacenes del CSV pertenezcan al cliente seleccionado.
+                                </p>
+                            </div>
                         @endif
-                        <div class="bg-white px-8 pt-8 pb-6 relative">
+                        <div class="bg-white px-8 pt-6 pb-6 relative">
                             <button type="button" @click="closeImportModal()" class="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
                                 <i class="fas fa-times"></i>
                             </button>
@@ -511,30 +557,48 @@
         function inventoryManager() {
             return {
                 products: [],
+                allWarehouses: [],
+                allAreas: [],
+                availableWarehouses: [],
+                
                 filter: '',
                 filterBrand: '',
                 filterType: '',
                 filterArea: '',
+                filterStock: false,
+                
                 isModalOpen: false,
                 isImportModalOpen: false,
                 isSaving: false,
                 errorMessage: '',
+                
                 form: {
                     product_id: null,
                     product_name: '',
                     type: 'add',
                     quantity_raw: '',
                     reason: '',
-                    warehouse_id: '{{ $currentWarehouseId }}'
+                    warehouse_id: '',
+                    area_id: '',
+                    stocks: {} 
                 },
 
-                init(data) {
-                    let productsArray = Array.isArray(data) ? data : [];
-                    this.products = productsArray.map(p => ({
+                init(productsData, warehousesData, areasData) {
+                    this.products = Array.isArray(productsData) ? productsData.map(p => ({
                         ...p,
                         movements_sum_quantity: p.movements_sum_quantity ? parseInt(p.movements_sum_quantity, 10) : 0,
                         unit_price: parseFloat(p.unit_price) || 0
-                    }));
+                    })) : [];
+
+                    this.allWarehouses = warehousesData || [];
+                    this.allAreas = areasData || [];
+                    
+                    this.availableWarehouses = this.allWarehouses;
+
+                    const params = new URLSearchParams(window.location.search);
+                    this.filterArea = params.get('area_id') || '';
+                    this.filterBrand = params.get('brand') || '';
+                    this.filterType = params.get('type') || '';
                 },
 
                 get filteredProducts() {
@@ -544,6 +608,8 @@
                         if (this.filterType && p.type !== this.filterType) return false;
                         if (this.filterArea && p.area_id != this.filterArea) return false;
                         
+                        if (this.filterStock && (p.movements_sum_quantity || 0) <= 0) return false;
+
                         if (search) {
                             return p.sku.toLowerCase().includes(search) || 
                                 p.description.toLowerCase().includes(search) ||
@@ -561,6 +627,11 @@
                     return this.filteredProducts.reduce((acc, p) => acc + ((p.unit_price || 0) * (Math.max(0, p.movements_sum_quantity))), 0);
                 },
 
+                get currentWarehouseStock() {
+                    if (!this.form.warehouse_id || !this.form.stocks) return 0;
+                    return this.form.stocks[this.form.warehouse_id] || 0;
+                },
+
                 formatMoney(amount) {
                     return '$' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
                 },
@@ -568,35 +639,54 @@
                 openModal(product, type) {
                     this.isModalOpen = true;
                     this.errorMessage = '';
+                    
                     this.form.product_id = product.id;
                     this.form.product_name = product.description;
                     this.form.type = type;
                     this.form.quantity_raw = ''; 
                     this.form.reason = '';
-                    this.form.warehouse_id = '{{ $currentWarehouseId }}';
+                    this.form.stocks = product.warehouse_stocks || {};
+                    
+                    this.form.area_id = product.area_id; 
+                    
+                    this.updateAvailableWarehouses();
+
+                    const currentFilterWh = '{{ $currentWarehouseId }}';
+                    if (currentFilterWh && this.availableWarehouses.some(w => w.id == currentFilterWh)) {
+                        this.form.warehouse_id = currentFilterWh;
+                    } else {
+                        this.form.warehouse_id = '';
+                    }
+
                     this.$nextTick(() => {
                         const input = document.querySelector('input[type="number"]');
                         if(input) input.focus();
                     });
+                },
+
+                updateAvailableWarehouses() {
+                    if (this.form.area_id) {
+                        this.availableWarehouses = this.allWarehouses.filter(w => w.area_id == this.form.area_id);
+                    } else {
+                        this.availableWarehouses = this.allWarehouses;
+                    }
+                    if (!this.availableWarehouses.some(w => w.id == this.form.warehouse_id)) {
+                        this.form.warehouse_id = '';
+                    }
                 },
                 
                 closeModal() {
                     this.isModalOpen = false;
                 },
 
-                openImportModal() {
-                    this.isImportModalOpen = true;
-                },
-                
-                closeImportModal() {
-                    this.isImportModalOpen = false;
-                },
+                openImportModal() { this.isImportModalOpen = true; },
+                closeImportModal() { this.isImportModalOpen = false; },
                 
                 resetFilters() {
                     this.filter = '';
                     this.filterBrand = '';
                     this.filterType = '';
-                    
+                    this.filterStock = false;
                     const urlParams = new URLSearchParams(window.location.search);
                     if (urlParams.has('warehouse_id') || urlParams.has('area_id')) {
                         window.location.href = "{{ route('ff.inventory.index') }}";
@@ -605,13 +695,8 @@
 
                 async submitMovement() {
                     if (this.isSaving) return;
-                    
                     if (!this.form.quantity_raw || this.form.quantity_raw <= 0) {
                         this.errorMessage = "La cantidad debe ser mayor a 0.";
-                        return;
-                    }
-                    if (!this.form.reason.trim()) {
-                        this.errorMessage = "El motivo es obligatorio.";
                         return;
                     }
                     if (!this.form.warehouse_id) {
@@ -622,9 +707,7 @@
                     this.isSaving = true;
                     this.errorMessage = '';
 
-                    const finalQuantity = this.form.type === 'add' 
-                        ? this.form.quantity_raw 
-                        : -this.form.quantity_raw;
+                    const finalQuantity = this.form.type === 'add' ? this.form.quantity_raw : -this.form.quantity_raw;
 
                     try {
                         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -635,7 +718,8 @@
                                 product_id: this.form.product_id,
                                 quantity: finalQuantity,
                                 reason: this.form.reason,
-                                warehouse_id: this.form.warehouse_id
+                                warehouse_id: this.form.warehouse_id,
+                                area_id: this.form.area_id
                             }),
                             headers: {
                                 'X-CSRF-TOKEN': csrfToken,
@@ -645,25 +729,25 @@
                         });
 
                         const data = await response.json();
-
                         if (!response.ok) throw new Error(data.message || 'Error desconocido');
 
-                        const currentFilterWh = '{{ $currentWarehouseId }}';
-                        
-                        if (!currentFilterWh || currentFilterWh == this.form.warehouse_id) {
-                            const productIndex = this.products.findIndex(p => p.id === data.product_id);
-                            if (productIndex > -1) {
-                                this.products[productIndex].movements_sum_quantity = parseInt(data.new_total, 10);
-                                this.products = [...this.products]; 
+                        const product = this.products.find(p => p.id === data.product_id);
+                        if (product) {
+                            const currentTableWh = '{{ $currentWarehouseId }}';
+                            if (currentTableWh && currentTableWh == data.warehouse_id) {
+                                product.movements_sum_quantity = parseInt(data.new_warehouse_stock, 10);
+                            } else if (!currentTableWh) {
+                                product.movements_sum_quantity = parseInt(data.new_global_stock, 10);
                             }
-                        } else {
+                            
+                            if(!product.warehouse_stocks) product.warehouse_stocks = {};
+                            product.warehouse_stocks[data.warehouse_id] = parseInt(data.new_warehouse_stock, 10);
                         }
                         
                         this.closeModal();
 
                     } catch (error) {
-                        console.error(error);
-                        this.errorMessage = error.message || 'No se pudo conectar con el servidor.';
+                        this.errorMessage = error.message || 'Error de conexión.';
                     } finally {
                         this.isSaving = false;
                     }
@@ -678,7 +762,6 @@
                     if (this.filterArea) params.append('area_id', this.filterArea);
                     window.location.href = `${baseUrl}?${params.toString()}`;
                 },
-
                 downloadFilteredTemplate() {
                     const baseUrl = "{{ route('ff.inventory.movementsTemplate') }}";
                     const params = new URLSearchParams(window.location.search);

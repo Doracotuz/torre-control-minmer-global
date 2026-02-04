@@ -76,7 +76,8 @@
                                 <div x-show="isSuperAdmin" class="relative group mb-3">
                                     <label class="block text-[10px] uppercase font-bold text-gray-400 mb-1 ml-1">Área Asignada</label>
                                     <div class="relative">
-                                        <select x-model="form.area_id" 
+                                        <select x-model="form.area_id"
+                                                @change="window.location.search = 'area_id=' + $event.target.value"
                                                 class="w-full text-sm rounded-lg py-2.5 px-3 font-semibold bg-gray-50 border-gray-200 text-[#2c3856] focus:ring-2 focus:ring-[#2c3856]/20">
                                             <option value="">Selecciona Área</option>
                                             <template x-for="area in catalogs.areas" :key="area.id">
@@ -124,34 +125,42 @@
                             
                             <div class="w-full grid grid-cols-1 md:grid-cols-12 gap-3">
                                 
-                                <div class="md:col-span-4 lg:col-span-5 relative">
+                                <div class="md:col-span-4 lg:col-span-4 relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <i class="fas fa-search text-gray-400"></i>
                                     </div>
-                                    <input type="text" x-model="filters.search" 
-                                        class="block w-full pl-10 pr-4 py-2 bg-gray-50 border-gray-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-[#2c3856]/20 focus:border-[#2c3856] transition-all placeholder-gray-400" 
+                                    <input type="text" x-model="search" 
+                                        class="block w-full max-w-md pl-10 pr-4 py-2.5 bg-gray-50 border-gray-200 rounded-lg text-xs font-bold focus:bg-white focus:ring-2 focus:ring-[#2c3856]/20 focus:border-[#2c3856] transition-all placeholder-gray-400" 
                                         placeholder="Buscar por SKU o descripción...">
                                 </div>
 
                                 <div class="md:col-span-2 lg:col-span-2">
-                                    <select x-model="filters.brand" class="w-full bg-white border-gray-200 text-gray-600 text-xs rounded-lg focus:ring-[#2c3856] focus:border-[#2c3856] py-2.5">
+                                    <select x-model="brand" class="w-full bg-white border-gray-200 text-gray-600 text-xs rounded-lg focus:ring-[#2c3856] focus:border-[#2c3856] py-2.5 font-bold cursor-pointer">
                                         <option value="">Marca: Todas</option>
-                                        <template x-for="brand in uniqueBrands" :key="brand">
-                                            <option :value="brand" x-text="brand"></option>
+                                        <template x-for="b in uniqueBrands" :key="b">
+                                            <option :value="b" x-text="b"></option>
                                         </template>
                                     </select>
                                 </div>
 
                                 <div class="md:col-span-2 lg:col-span-2">
-                                    <select x-model="filters.type" class="w-full bg-white border-gray-200 text-gray-600 text-xs rounded-lg focus:ring-[#2c3856] focus:border-[#2c3856] py-2.5">
+                                    <select x-model="type" class="w-full bg-white border-gray-200 text-gray-600 text-xs rounded-lg focus:ring-[#2c3856] focus:border-[#2c3856] py-2.5 font-bold cursor-pointer">
                                         <option value="">Tipo: Todos</option>
-                                        <template x-for="type in uniqueTypes" :key="type">
-                                            <option :value="type" x-text="type"></option>
+                                        <template x-for="t in uniqueTypes" :key="t">
+                                            <option :value="t" x-text="t"></option>
                                         </template>
                                     </select>
                                 </div>
 
-                                <div class="md:col-span-4 lg:col-span-3 flex justify-end gap-2">
+                                <div class="md:col-span-2 lg:col-span-1">
+                                    <label class="h-full w-full flex items-center justify-center gap-2 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-[#2c3856] hover:text-[#2c3856] transition-all px-1 select-none"
+                                        :class="filterStock ? 'border-[#2c3856] bg-blue-50/50 text-[#2c3856]' : 'text-gray-500'">
+                                        <input type="checkbox" x-model="filterStock" class="w-4 h-4 text-[#2c3856] border-gray-300 rounded focus:ring-[#2c3856] focus:ring-offset-0 cursor-pointer">
+                                        <span class="text-[10px] font-black uppercase tracking-wide">Stock</span>
+                                    </label>
+                                </div>
+
+                                <div class="md:col-span-2 lg:col-span-3 flex justify-end gap-2">
                                     <div class="flex bg-gray-100 p-1 rounded-lg mr-2">
                                         <button @click="toggleLayout()" :class="layoutMode === 'sidebar' ? 'text-gray-400' : 'bg-white text-[#2c3856] shadow-sm'" class="px-2 py-1 rounded transition-all"><i class="fas" :class="layoutMode === 'sidebar' ? 'fa-columns' : 'fa-window-maximize'"></i></button>
                                         <div class="w-px bg-gray-300 mx-1 my-1"></div>
@@ -173,7 +182,6 @@
                                     </button>
                                 </div>
                             </div>
-
                         </div>
                     </div>
 
@@ -788,11 +796,10 @@
                 currentPage: 1,
                 itemsPerPage: 20,                
                 
-                filters: {
                     search: '',
                     brand: '',
-                    type: ''
-                },
+                    type: '',
+                    filterStock: false,
                 
                 isSaving: false,
                 isPrinting: false,
@@ -827,9 +834,10 @@
                 pdfModalUrl: '',
 
                 init(initialProducts, nextFolio, clients, channels, transports, payments, warehouses, editFolio = null, areas = [], isSuperAdmin = false) {
+                    
                     const productsArray = Array.isArray(initialProducts) ? initialProducts : [];
                     this.isSuperAdmin = isSuperAdmin;
-                    this.catalogs.areas = areas;                    
+                    this.catalogs.areas = areas || [];
                     this.form.folio = nextFolio;            
                     this.catalogs.clients = clients || [];
                     this.catalogs.channels = channels || [];
@@ -837,13 +845,18 @@
                     this.catalogs.payments = payments || [];
                     this.catalogs.warehouses = warehouses || [];
 
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.has('area_id')) {
+                        this.form.area_id = parseInt(params.get('area_id')); 
+                    }
+
                     const savedEmails = localStorage.getItem('ff_email_recipients');
                     if (savedEmails) this.form.email_recipients = savedEmails;
 
                     this.$watch('form.email_recipients', (value) => localStorage.setItem('ff_email_recipients', value));
 
                     this.products = productsArray.map((p, index) => {
-                        const myCartItem = p.cart_items.find(item => item.user_id === {{ Auth::id() }});
+                    const myCartItem = p.cart_items.find(item => item.user_id === {{ Auth::id() }});
                         if (myCartItem) {
                             this.localCart.set(myCartItem.ff_product_id, myCartItem.quantity);
                         }
@@ -878,13 +891,13 @@
                         }
                     });
 
-                    this.$watch('filters', () => {
-                        this.currentPage = 1;
-                    });
+                    this.$watch('search', () => this.currentPage = 1);
+                    this.$watch('brand', () => this.currentPage = 1);
+                    this.$watch('type', () => this.currentPage = 1);
+                    this.$watch('filterStock', () => this.currentPage = 1);
                     this.$watch('form.ff_sales_channel_id', () => {
                         this.currentPage = 1;
                     });
-
                 },
 
                 onWarehouseChangeConfirm() {
@@ -983,30 +996,41 @@
                 },
 
                 get filteredProducts() {
-                    let result = this.products;
+                    const term = this.search.toLowerCase();
                     
-                    const search = this.filters.search.toLowerCase();
-                    if (search) {
-                        result = result.filter(p => p.sku.toLowerCase().includes(search) || p.description.toLowerCase().includes(search));
-                    }
-                    
-                    if (this.filters.brand) {
-                        result = result.filter(p => p.brand === this.filters.brand);
-                    }
-                    
-                    if (this.filters.type) {
-                        result = result.filter(p => p.type === this.filters.type);
-                    }
+                    return this.products.filter(p => {
+                        if (this.brand && p.brand !== this.brand) return false;
+                        if (this.type && p.type !== this.type) return false;
+                        
+                        if (this.form.ff_sales_channel_id) {
+                            const selectedChannel = parseInt(this.form.ff_sales_channel_id);
+                            if (!p.allowed_channels.includes(selectedChannel)) {
+                                return false;
+                            }
+                        }
 
-                    if (this.form.ff_sales_channel_id) {
-                        const selectedChannelId = parseInt(this.form.ff_sales_channel_id);
-                        result = result.filter(p => {
-                            if (p.allowed_channels.length === 0) return true; 
-                            return p.allowed_channels.includes(selectedChannelId);
-                        });
-                    }
+                        if (this.filterStock) {
+                            let available = 0;
+                            
+                            if (this.form.ff_warehouse_id) {
+                                available = this.getAvailableStock(p);
+                            } else {
+                                if (p.stocks_by_warehouse) {
+                                    Object.values(p.stocks_by_warehouse).forEach(qty => available += parseInt(qty || 0));
+                                }
+                                available = Math.max(0, available - (p.reserved_by_others || 0));
+                            }
+                            
+                            if (available <= 0) return false;
+                        }
 
-                    return result;
+                        if (term) {
+                            const sku = (p.sku || '').toLowerCase();
+                            const desc = (p.description || '').toLowerCase();
+                            return sku.includes(term) || desc.includes(term);
+                        }
+                        return true;
+                    });
                 },
 
                 getProduct(id) {
@@ -1124,9 +1148,10 @@
                 },
 
                 resetFilters() {
-                    this.filters.search = '';
-                    this.filters.brand = '';
-                    this.filters.type = '';
+                    this.search = '';
+                    this.brand = '';
+                    this.type = '';
+                    this.filterStock = false;
                 },
 
                 setViewMode(mode) {
@@ -1142,11 +1167,17 @@
                 getAvailableStock(product) {
                     const warehouseId = this.form.ff_warehouse_id;
                     
-                    if (!warehouseId) return 0;
+                    if (!warehouseId) {
+                        let total = 0;
+                        if (product.stocks_by_warehouse) {
+                            Object.values(product.stocks_by_warehouse).forEach(qty => total += parseInt(qty || 0));
+                        }
+                        return Math.max(0, total - (product.reserved_by_others || 0));
+                    }
 
                     const specificStock = parseInt(product.stocks_by_warehouse[warehouseId]) || 0;
                     
-                    return Math.max(0, specificStock - (product.reserved_by_others || 0));
+                    return Math.max(0, specificStock); 
                 },
 
                 getProductInCart(productId) { return this.localCart.get(productId); },
@@ -1211,9 +1242,10 @@
                 downloadTemplate() {
                     let url = "{{ route('ff.sales.downloadTemplate') }}";
                     const params = new URLSearchParams();
-                    if(this.filters.brand) params.append('brand', this.filters.brand);
-                    if(this.filters.type) params.append('type', this.filters.type);
-                    if(this.filters.search) params.append('search', this.filters.search);
+                    
+                    if(this.brand) params.append('brand', this.brand);
+                    if(this.type) params.append('type', this.type);
+                    if(this.search) params.append('search', this.search);
                     
                     window.location.href = url + '?' + params.toString();
                 },
