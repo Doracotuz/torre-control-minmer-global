@@ -471,9 +471,11 @@
                         <x-responsive-nav-link :href="route('area_admin.dashboard')" :active="request()->routeIs('area_admin.dashboard')" class="mobile-menu-link">
                             {{ __('Panel de Área') }}
                         </x-responsive-nav-link>
-                        <x-responsive-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.*')" class="mobile-menu-link">
-                            {{ __('Gestión de Usuarios') }}
-                        </x-responsive-nav-link>
+                        @if (Auth::user()->isSuperAdmin())
+                            <x-responsive-nav-link :href="route('area_admin.users.index')" :active="request()->routeIs('area_admin.users.*')" class="mobile-menu-link">
+                                {{ __('Gestión de Usuarios') }}
+                            </x-responsive-nav-link>
+                        @endif
                         <x-responsive-nav-link :href="route('area_admin.folder_permissions.index')" :active="request()->routeIs('area_admin.folder_permissions.*')" class="mobile-menu-link">
                             {{ __('Permisos de Carpetas') }}
                         </x-responsive-nav-link>
