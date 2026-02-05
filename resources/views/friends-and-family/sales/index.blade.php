@@ -21,7 +21,7 @@
     </style>
 
     <div x-data="salesManager()" 
-    x-init='init(@json($products), {{ $nextFolio }}, @json($clients), @json($channels), @json($transports), @json($payments), @json($warehouses), {{ $editFolio ?? "null" }}, @json($areas ?? []), {{ Auth::user()->isSuperAdmin() ? "true" : "false" }})'
+    x-init='init(@json($products), {{ $nextFolio }}, @json($clients), @json($channels), @json($transports), @json($payments), @json($warehouses), {{ $editFolio ?? "null" }}, @json($areas ?? []), {{ Auth::user()->isSuperAdmin() ? "true" : "false" }}, @json($qualities))'
     class="bg-[#E8ECF7] font-sans text-gray-800 min-h-screen pb-12">
         
         <div x-show="flashMessage" x-cloak 
@@ -71,7 +71,7 @@
                                 <p x-show="!editMode" class="text-xs text-gray-500 mt-0.5 ml-8">Creación de nueva venta</p>
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto lg:min-w-[500px]">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full lg:w-auto lg:min-w-[600px]">
 
                                 <div x-show="isSuperAdmin" class="relative group mb-3">
                                     <label class="block text-[10px] uppercase font-bold text-gray-400 mb-1 ml-1">Área Asignada</label>
@@ -118,6 +118,20 @@
                                         </select>
                                     </div>
                                 </div>
+
+                                <div class="relative group">
+                                    <label class="block text-[10px] uppercase font-bold text-gray-400 mb-1 ml-1">Calidad</label>
+                                    <div class="relative">
+                                        <select x-model="form.ff_quality_id" 
+                                                class="w-full text-sm rounded-lg py-2.5 px-3 font-semibold transition-all focus:ring-2 focus:ring-[#2c3856]/20 focus:border-[#2c3856] bg-gray-50 border-gray-200 text-[#2c3856]">
+                                            <option value="">Estándar</option>
+                                            <template x-for="q in catalogs.qualities" :key="q.id">
+                                                <option :value="q.id" x-text="q.name"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
 
@@ -655,37 +669,6 @@
                                             </div>
                                         </div>
 
-                                        <!-- <div class="pt-2">
-                                            <div class="flex items-center text-[#2c3856] font-bold text-xs uppercase tracking-wider mb-2 pb-1 border-b border-gray-100">
-                                                <i class="fas fa-camera mr-2 text-[#ff9c00]"></i> Evidencias
-                                            </div>
-                                            
-                                            <div class="space-y-1.5">
-                                                <template x-for="i in 3">
-                                                    <div class="bg-gray-50 px-2 py-1.5 rounded border border-gray-200 flex items-center justify-between">
-                                                        <span class="text-[9px] font-bold text-gray-400 uppercase" x-text="'Evidencia ' + i"></span>
-                                                        
-                                                        <div class="flex items-center gap-2">
-                                                            <template x-if="getExistingEvidence(i)">
-                                                                <a :href="getExistingEvidence(i)" target="_blank" class="text-[9px] text-white bg-green-500 hover:bg-green-600 px-1.5 py-0.5 rounded transition-colors" title="Ver actual">
-                                                                    <i class="fas fa-eye"></i>
-                                                                </a>
-                                                            </template>
-
-                                                            <label class="cursor-pointer group flex items-center">
-                                                                <input type="file" @change="handleEvidenceUpload($event, i)" accept="image/*,.pdf" class="hidden">
-                                                                <div class="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded border transition-all"
-                                                                     :class="evidenceFiles[i] ? 'bg-[#2c3856] text-white border-[#2c3856]' : 'bg-white text-gray-500 border-gray-300 group-hover:border-[#2c3856] group-hover:text-[#2c3856]'">
-                                                                    <i class="fas" :class="evidenceFiles[i] ? 'fa-check' : 'fa-upload'"></i>
-                                                                    <span x-text="evidenceFiles[i] ? 'Listo' : 'Subir'"></span>
-                                                                </div>
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                </template>
-                                            </div>
-                                        </div> -->
-
                                         <div x-show="editMode && form.order_type === 'prestamo' && !form.is_loan_returned" class="pt-2">
                                             <button @click="returnLoan()" class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded text-[10px] uppercase shadow-sm transition-colors flex items-center justify-center">
                                                 <i class="fas fa-undo mr-1"></i> Devolución
@@ -783,7 +766,8 @@
                     channels: [],
                     transports: [],
                     payments: [],
-                    warehouses: []
+                    warehouses: [],
+                    qualities: []
                 },
                 availableBranches: [],
                 viewMode: localStorage.getItem('ff_view_mode') || 'grid',
@@ -817,6 +801,7 @@
                     ff_client_id: '', ff_client_branch_id: '',
                     ff_sales_channel_id: '', ff_transport_line_id: '', ff_payment_condition_id: '',
                     ff_warehouse_id: '',
+                    ff_quality_id: '', // Nuevo campo para Calidad
                     order_type: 'normal',
                     lastValidWarehouseId: '',
                     lastValidChannelId: '',
@@ -833,11 +818,12 @@
                 pdfModalOpen: false,
                 pdfModalUrl: '',
 
-                init(initialProducts, nextFolio, clients, channels, transports, payments, warehouses, editFolio = null, areas = [], isSuperAdmin = false) {
+                init(initialProducts, nextFolio, clients, channels, transports, payments, warehouses, editFolio = null, areas = [], isSuperAdmin = false, qualities = []) {
                     
                     const productsArray = Array.isArray(initialProducts) ? initialProducts : [];
                     this.isSuperAdmin = isSuperAdmin;
                     this.catalogs.areas = areas || [];
+                    this.catalogs.qualities = qualities || [];
                     this.form.folio = nextFolio;            
                     this.catalogs.clients = clients || [];
                     this.catalogs.channels = channels || [];
@@ -1224,6 +1210,7 @@
                                 product_id: product.id, 
                                 quantity: newQuantity,
                                 warehouse_id: this.form.ff_warehouse_id,
+                                ff_quality_id: this.form.ff_quality_id, // ENVIAR CALIDAD
                                 folio: this.editMode ? this.form.folio : null 
                             }),
                             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json', 'Content-Type': 'application/json' }

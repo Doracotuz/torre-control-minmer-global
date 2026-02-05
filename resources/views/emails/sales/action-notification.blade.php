@@ -164,6 +164,7 @@
                                     <tr bgcolor="#2c3856">
                                         <th align="left" style="padding: 10px; color: #ffffff; font-size: 11px; font-family: Helvetica, Arial, sans-serif;">SKU</th>
                                         <th align="left" style="padding: 10px; color: #ffffff; font-size: 11px; font-family: Helvetica, Arial, sans-serif;">Descripción</th>
+                                        <th align="center" style="padding: 10px; color: #ffffff; font-size: 11px; font-family: Helvetica, Arial, sans-serif;">Calidad</th>
                                         <th align="center" style="padding: 10px; color: #ffffff; font-size: 11px; font-family: Helvetica, Arial, sans-serif;">Cant.</th>
                                         @if(($data['order_type'] ?? 'normal') === 'normal' && $type != 'backorder_filled')
                                             <th align="right" style="padding: 10px; color: #ffffff; font-size: 11px; font-family: Helvetica, Arial, sans-serif;">P. Lista</th>
@@ -189,6 +190,11 @@
                                                 </div>
                                             @endif
                                         </td>
+                                        <td align="center" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px; vertical-align: top;">
+                                            <span style="color: #6b21a8; font-weight: bold; background-color: #f3e8ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #d8b4fe;">
+                                                {{ $item['quality'] ?? 'Estándar' }}
+                                            </span>
+                                        </td>                                        
                                         <td align="center" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px; font-weight: bold; vertical-align: top;">
                                             {{ $item['quantity'] }}
                                         </td>

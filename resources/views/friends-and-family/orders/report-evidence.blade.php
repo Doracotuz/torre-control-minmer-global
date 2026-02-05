@@ -379,8 +379,9 @@
                 <thead>
                     <tr>
                         <th width="15%">SKU</th>
-                        <th width="50%">Descripción</th>
+                        <th width="40%">Descripción</th>
                         <th width="15%">Almacén</th>
+                        <th width="10%">Calidad</th>
                         <th width="10%" style="text-align: center;">Cant.</th>
                         <th width="10%" style="text-align: center;">Estado</th>
                     </tr>
@@ -392,6 +393,13 @@
                         <td>{{ $item->product->description }}</td>
                         <td>{{ $item->warehouse ? $item->warehouse->code : 'General' }}</td>
                         <td style="text-align: center; font-weight: bold;">{{ abs($item->quantity) }}</td>
+                        <td>
+                            @if($item->quality)
+                                <span style="color: #6b21a8; font-weight: bold;">{{ $item->quality->name }}</span>
+                            @else
+                                <span style="color: #94a3b8; font-style: italic;">Estándar</span>
+                            @endif
+                        </td>                        
                         <td style="text-align: center;">
                             <span style="color: #2c3856; font-weight: bold; font-size: 9px;">ENTREGADO</span>
                         </td>

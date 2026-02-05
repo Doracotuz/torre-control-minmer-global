@@ -20,10 +20,11 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\FriendsAndFamily\FfAdministrationController;
 use App\Models\Area;
 use App\Models\FfWarehouse;
+use App\Models\FfQuality;
 
 class FfOrderController extends Controller
 {
-public function index(Request $request)
+    public function index(Request $request)
     {
         $query = ffInventoryMovement::query()
             ->where('quantity', '<', 0)
@@ -39,6 +40,10 @@ public function index(Request $request)
 
         if ($request->filled('warehouse_id')) {
             $query->where('ff_warehouse_id', $request->input('warehouse_id'));
+        }
+
+        if ($request->filled('quality_id')) {
+            $query->where('ff_quality_id', $request->input('quality_id'));
         }
 
         if ($request->filled('client')) {
@@ -104,19 +109,27 @@ public function index(Request $request)
             ->withQueryString();
             
         $warehousesQuery = FfWarehouse::where('is_active', true);
+        $qualitiesQuery = FfQuality::where('is_active', true)->orderBy('name');
+
         if (!Auth::user()->isSuperAdmin()) {
             $warehousesQuery->where('area_id', Auth::user()->area_id);
+            $qualitiesQuery->where('area_id', Auth::user()->area_id);
+        } elseif (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
+            $warehousesQuery->where('area_id', $request->input('area_id'));
+            $qualitiesQuery->where('area_id', $request->input('area_id'));
         }
-        $warehouses = $warehousesQuery->orderBy('description')->get();
 
-        return view('friends-and-family.orders.index', compact('orders', 'warehouses'));
+        $warehouses = $warehousesQuery->orderBy('description')->get();
+        $qualities = $qualitiesQuery->get();
+
+        return view('friends-and-family.orders.index', compact('orders', 'warehouses', 'qualities'));
     }
 
     public function show($folio)
     {
         $movements = ffInventoryMovement::where('folio', $folio)
             ->where('quantity', '<', 0)
-            ->with(['product', 'user', 'approver', 'warehouse'])
+            ->with(['product', 'user', 'approver', 'warehouse', 'quality'])
             ->get();
 
         if ($movements->isEmpty()) {
@@ -209,7 +222,7 @@ public function index(Request $request)
 
         $movements = ffInventoryMovement::where('folio', $folio)
             ->where('quantity', '<', 0)
-            ->with(['product', 'user'])
+            ->with(['product', 'user', 'quality'])
             ->get();
 
         if ($movements->isNotEmpty()) {
@@ -251,6 +264,7 @@ public function index(Request $request)
                         $pdfItems[] = [
                             'sku' => $m->product->sku,
                             'description' => $m->product->description,
+                            'quality' => $m->quality ? $m->quality->name : 'Estándar',
                             'quantity' => abs($m->quantity),
                             'base_price' => $basePrice,
                             'discount_percentage' => $discountPercent,
@@ -291,9 +305,9 @@ public function index(Request $request)
                     $pdfContent = $dompdf->output();
 
                     $stream = fopen('php://temp', 'r+');
-                    fputcsv($stream, ['SKU', 'Descripcion', 'Cantidad', 'Precio Unitario', 'Total']);
+                    fputcsv($stream, ['SKU', 'Descripcion', 'Calidad', 'Cantidad', 'Precio Unitario', 'Total']);
                     foreach ($pdfItems as $row) {
-                        fputcsv($stream, [$row['sku'], $row['description'], $row['quantity'], $row['unit_price'], $row['total_price']]);
+                        fputcsv($stream, [$row['sku'], $row['description'], $row['quality'], $row['quantity'], $row['unit_price'], $row['total_price']]);
                     }
                     rewind($stream);
                     $csvContent = stream_get_contents($stream);
@@ -388,6 +402,7 @@ public function index(Request $request)
                     'client_name' => $mov->client_name,
                     'ff_client_id' => $mov->ff_client_id,
                     'ff_warehouse_id' => $mov->ff_warehouse_id,
+                    'ff_quality_id' => $mov->ff_quality_id,
                 ]);
             }
 
@@ -452,7 +467,7 @@ public function index(Request $request)
             
             $movements = ffInventoryMovement::where('folio', $folio)
                 ->where('quantity', '<', 0)
-                ->with('product')
+                ->with(['product', 'quality'])
                 ->get();
 
             if ($movements->isNotEmpty() && !empty($header->notification_emails)) {
@@ -486,6 +501,7 @@ public function index(Request $request)
                     $pdfItems[] = [
                         'sku' => $m->product->sku,
                         'description' => $m->product->description,
+                        'quality' => $m->quality ? $m->quality->name : 'Estándar',
                         'quantity' => abs($m->quantity),
                         'base_price' => $basePrice,
                         'discount_percentage' => $discountPercent,
@@ -524,9 +540,9 @@ public function index(Request $request)
                 $pdfContent = $dompdf->output();
 
                 $stream = fopen('php://temp', 'r+');
-                fputcsv($stream, ['SKU', 'Descripcion', 'Cantidad', 'Precio Unitario', 'Total']);
+                fputcsv($stream, ['SKU', 'Descripcion', 'Calidad', 'Cantidad', 'Precio Unitario', 'Total']);
                 foreach ($pdfItems as $row) {
-                    fputcsv($stream, [$row['sku'], $row['description'], $row['quantity'], $row['unit_price'], $row['total_price']]);
+                    fputcsv($stream, [$row['sku'], $row['description'], $row['quality'], $row['quantity'], $row['unit_price'], $row['total_price']]);
                 }
                 rewind($stream);
                 $csvContent = stream_get_contents($stream);
@@ -644,6 +660,7 @@ public function index(Request $request)
                     'status' => 'rejected',
                     'client_name' => $mov->client_name,
                     'order_type' => $mov->order_type,
+                    'ff_quality_id' => $mov->ff_quality_id,
                 ]);
             }
 
@@ -762,7 +779,7 @@ public function index(Request $request)
 
         $movements = ffInventoryMovement::where('folio', $folio)
             ->where('quantity', '<', 0)
-            ->with(['product', 'warehouse'])
+            ->with(['product', 'warehouse', 'quality'])
             ->get();
 
         if ($movements->isEmpty()) return redirect()->back()->with('error', 'Pedido no encontrado.');

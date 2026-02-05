@@ -30,7 +30,7 @@
                 </div>
             </div>
 
-<div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-5 mb-8">
+            <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-5 mb-8">
                 <form method="GET" action="{{ route('ff.orders.index') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 xl:grid-cols-12 gap-3 items-end">
                     
                     <div class="sm:col-span-2 lg:col-span-3 {{ Auth::user()->isSuperAdmin() ? 'xl:col-span-2' : 'xl:col-span-3' }} relative group">
@@ -79,6 +79,22 @@
                         </div>
                     </div>
 
+                    <div class="lg:col-span-2 xl:col-span-2">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Calidad</label>
+                        <div class="relative">
+                            <select name="quality_id" class="block w-full pl-3 pr-8 py-2.5 bg-[#F3F4F6] border-none text-gray-700 rounded-xl focus:ring-2 focus:ring-[#ff9c00] focus:bg-white transition-all text-xs font-semibold appearance-none">
+                                <option value="">Todas</option>
+                                @foreach($qualities as $quality)
+                                    <option value="{{ $quality->id }}" {{ request('quality_id') == $quality->id ? 'selected' : '' }}>
+                                        {{ $quality->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                <i class="fas fa-medal text-[10px]"></i>
+                            </div>
+                        </div>
+                    </div>
                     <div class="lg:col-span-2 {{ Auth::user()->isSuperAdmin() ? 'xl:col-span-1' : 'xl:col-span-2' }}">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Estatus</label>
                         <div class="relative">

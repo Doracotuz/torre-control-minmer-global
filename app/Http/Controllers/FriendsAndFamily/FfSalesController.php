@@ -26,6 +26,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use App\Models\Area;
 use App\Models\FfWarehouse;
+use App\Models\FfQuality;
 
 class FfSalesController extends Controller
 {
@@ -136,6 +137,7 @@ class FfSalesController extends Controller
         $transportsQuery = FfTransportLine::where('is_active', true);
         $paymentsQuery = FfPaymentCondition::where('is_active', true);
         $warehousesQuery = FfWarehouse::where('is_active', true);
+        $qualitiesQuery = FfQuality::where('is_active', true);
         
         if (!$user->isSuperAdmin()) {
             $clientsQuery->where('area_id', $user->area_id);
@@ -143,6 +145,7 @@ class FfSalesController extends Controller
             $transportsQuery->where('area_id', $user->area_id);
             $paymentsQuery->where('area_id', $user->area_id);
             $warehousesQuery->where('area_id', $user->area_id);
+            $qualitiesQuery->where('area_id', $user->area_id);
         }
 
         $clients = $clientsQuery->orderBy('name')->get();
@@ -150,12 +153,13 @@ class FfSalesController extends Controller
         $transports = $transportsQuery->orderBy('name')->get();
         $payments = $paymentsQuery->orderBy('name')->get();
         $warehouses = $warehousesQuery->orderBy('description')->get();        
+        $qualities = $qualitiesQuery->orderBy('name')->get();
 
         $nextFolio = $this->getNextFolio();            
         
         return view('friends-and-family.sales.index', compact(
             'products', 'nextFolio', 'clients', 'channels', 
-            'transports', 'payments', 'editFolio', 'warehouses','areas'
+            'transports', 'payments', 'editFolio', 'warehouses', 'areas', 'qualities'
         ));
     }
 
@@ -179,25 +183,39 @@ class FfSalesController extends Controller
                     }
                 })
             ],
+            'ff_quality_id' => 'nullable|exists:ff_qualities,id'
         ]);
 
         $productId = $request->product_id;
         $warehouseId = $request->warehouse_id;
+        $qualityId = $request->ff_quality_id;
         $quantity = $request->quantity;
         $userId = Auth::id();
 
         if ($quantity <= 0) {
-            ffCartItem::where('user_id', $userId)
+            $query = ffCartItem::where('user_id', $userId)
                     ->where('ff_product_id', $productId)
-                    ->delete();
+                    ->where('ff_warehouse_id', $warehouseId);
+            
+            if ($qualityId) {
+                $query->where('ff_quality_id', $qualityId);
+            } else {
+                $query->whereNull('ff_quality_id');
+            }
+            
+            $query->delete();
             return response()->json(['message' => 'Producto liberado']);
         }
 
         ffCartItem::updateOrCreate(
-            ['user_id' => $userId, 'ff_product_id' => $productId],
             [
-                'quantity' => $quantity,
-                'ff_warehouse_id' => $warehouseId
+                'user_id' => $userId, 
+                'ff_product_id' => $productId,
+                'ff_warehouse_id' => $warehouseId,
+                'ff_quality_id' => $qualityId
+            ],
+            [
+                'quantity' => $quantity
             ]
         );
 
@@ -253,26 +271,26 @@ class FfSalesController extends Controller
         $cartItemsData = [];
         $discountsData = [];
 
-        $groupedProducts = $movements->groupBy('ff_product_id');
-
-        foreach($groupedProducts as $productId => $productMovements) {
-            $netQuantity = $productMovements->sum('quantity');
-
-            if ($netQuantity < 0) {
-                $finalQty = abs($netQuantity);
-                
+        foreach($movements as $mov) {
+            $finalQty = abs($mov->quantity);
+            
+            if ($finalQty > 0) {
                 ffCartItem::create([
                     'user_id' => $user->id,
-                    'ff_product_id' => $productId,
+                    'ff_product_id' => $mov->ff_product_id,
+                    'ff_warehouse_id' => $mov->ff_warehouse_id,
+                    'ff_quality_id' => $mov->ff_quality_id,
                     'quantity' => $finalQty
                 ]);
 
                 $cartItemsData[] = [
-                    'product_id' => $productId,
-                    'quantity' => $finalQty
+                    'product_id' => $mov->ff_product_id,
+                    'quantity' => $finalQty,
+                    'warehouse_id' => $mov->ff_warehouse_id,
+                    'quality_id' => $mov->ff_quality_id
                 ];
                 
-                $discountsData[$productId] = $productMovements->first()->discount_percentage;
+                $discountsData[$mov->ff_product_id] = $mov->discount_percentage;
             }
         }
 
@@ -381,26 +399,11 @@ class FfSalesController extends Controller
                     'ff_sales_channel_id' => $mov->ff_sales_channel_id,
                     'ff_transport_line_id' => $mov->ff_transport_line_id,
                     'ff_payment_condition_id' => $mov->ff_payment_condition_id,
+                    'ff_quality_id' => $mov->ff_quality_id,
                 ]);
             }
 
             DB::commit();
-
-            if (!empty($emailRecipients)) {
-                $mailData = [
-                    'folio' => $folio,
-                    'client_name' => $header->client_name,
-                    'company_name' => $header->company_name,
-                    'delivery_date' => $header->delivery_date,
-                    'surtidor_name' => $header->surtidor_name,
-                    'cancel_reason' => $request->reason,
-                    'items' => []
-                ];
-                
-                try {
-                    Mail::to($emailRecipients)->send(new OrderActionMail($mailData, 'cancel'));
-                } catch (\Exception $e) { Log::error("Error mail cancel: ".$e->getMessage()); }
-            }
 
             return response()->json(['message' => 'Pedido cancelado y stock restaurado.']);
 
@@ -481,7 +484,7 @@ class FfSalesController extends Controller
             ],
         ]);
 
-        $cartItems = ffCartItem::where('user_id', $user->id)->with('product')->get();
+        $cartItems = ffCartItem::where('user_id', $user->id)->with(['product', 'warehouse'])->get();
 
         if ($cartItems->isEmpty()) {
             return response()->json(['message' => 'El carrito está vacío.'], 400);
@@ -520,6 +523,8 @@ class FfSalesController extends Controller
                 }
 
                 $quantity = $item->quantity;
+                $warehouseId = $item->ff_warehouse_id ?? $request->ff_warehouse_id;
+                $qualityId = $item->ff_quality_id;
                 
                 $basePrice = $product->unit_price ?? 0;
                 $discountPercent = 0;
@@ -537,9 +542,17 @@ class FfSalesController extends Controller
                 }
 
                 $totalLine = $quantity * $finalPrice;
-                $currentStock = $product->movements()
-                    ->where('ff_warehouse_id', $request->ff_warehouse_id)
-                    ->sum('quantity');
+                
+                $currentStockQuery = $product->movements()
+                    ->where('ff_warehouse_id', $warehouseId);
+                
+                if ($qualityId) {
+                    $currentStockQuery->where('ff_quality_id', $qualityId);
+                } else {
+                    $currentStockQuery->whereNull('ff_quality_id');
+                }
+
+                $currentStock = $currentStockQuery->sum('quantity');
                 $isBackorder = ($currentStock - $quantity) < 0;
                 
                 if ($isBackorder) {
@@ -574,14 +587,22 @@ class FfSalesController extends Controller
                     'ff_client_id' => $request->ff_client_id,
                     'ff_client_branch_id' => $request->ff_client_branch_id,
                     'ff_sales_channel_id' => $request->ff_sales_channel_id,
-                    'ff_warehouse_id' => $request->ff_warehouse_id, 
+                    'ff_warehouse_id' => $warehouseId, 
+                    'ff_quality_id' => $qualityId,
                     'ff_transport_line_id' => $request->ff_transport_line_id,
                     'ff_payment_condition_id' => $request->ff_payment_condition_id,
                 ]);
 
+                $qualityName = 'Estándar';
+                if ($qualityId) {
+                    $q = FfQuality::find($qualityId);
+                    if ($q) $qualityName = $q->name;
+                }
+
                 $pdfItems[] = [
                     'sku' => $product->sku,
                     'description' => $product->description,
+                    'quality' => $qualityName,
                     'quantity' => $quantity,
                     'base_price' => $basePrice,
                     'discount_percentage' => $discountPercent,
@@ -921,6 +942,8 @@ class FfSalesController extends Controller
                     'is_loan_returned' => true,
                     'loan_returned_at' => now(),
                     'client_name' => $mov->client_name, 
+                    'ff_warehouse_id' => $mov->ff_warehouse_id,
+                    'ff_quality_id' => $mov->ff_quality_id,
                 ]);
 
                 ffInventoryMovement::where('id', $mov->id)->update([

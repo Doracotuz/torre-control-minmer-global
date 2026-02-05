@@ -484,6 +484,11 @@
                                                 <p class="font-bold text-slate-700 text-sm leading-tight mb-1">{{ $item->product->description }}</p>
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <span class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{{ $item->product->sku }}</span>
+                                                    @if($item->quality)
+                                                        <span class="text-[9px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200 flex items-center gap-1">
+                                                            <i class="fas fa-medal text-[8px]"></i> {{ $item->quality->name }}
+                                                        </span>
+                                                    @endif                                                    
                                                     @if($item->is_backorder)
                                                         <span class="text-[9px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200">
                                                             <i class="fas fa-history text-[8px]"></i> BACKORDER
@@ -569,6 +574,11 @@
                                                         </span>
                                                         <div class="flex items-center gap-2 mt-1">
                                                             <span class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{{ $item->product->sku }}</span>
+                                                            @if($item->quality)
+                                                                <span class="text-[9px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200 flex items-center gap-1">
+                                                                    <i class="fas fa-medal text-[8px]"></i> {{ $item->quality->name }}
+                                                                </span>
+                                                            @endif                                                            
                                                             
                                                             @if($badge)
                                                                 {!! $badge !!}
