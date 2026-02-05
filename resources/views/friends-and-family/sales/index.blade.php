@@ -846,8 +846,8 @@
                         return {
                             ...p,
                             originalIndex: index + 1,
-                            photo_url: p.photo_url, 
-                            stocks_by_warehouse: p.stocks_by_warehouse || {}, 
+                            photo_url: p.photo_url,
+                            stock_map: p.stock_map || {},
                             reserved_by_others: p.reserved_by_others ? parseInt(p.reserved_by_others) : 0,
                             unit_price: parseFloat(p.unit_price) || 0,
                             brand: p.brand || 'Sin Marca',
@@ -868,6 +868,7 @@
                     
                     ['search', 'brand', 'type', 'filterStock'].forEach(prop => this.$watch(prop, () => this.currentPage = 1));
                     this.$watch('form.ff_sales_channel_id', () => this.currentPage = 1);
+                    this.$watch('form.ff_quality_id', () => this.currentPage = 1);
                 },
 
                 getProductInCart(productId) { 
@@ -1229,18 +1230,25 @@
                 
                 getAvailableStock(product) {
                     const warehouseId = this.form.ff_warehouse_id;
+                    const qualityId = this.form.ff_quality_id || 'std'; 
                     
                     if (!warehouseId) {
                         let total = 0;
-                        if (product.stocks_by_warehouse) {
-                            Object.values(product.stocks_by_warehouse).forEach(qty => total += parseInt(qty || 0));
+                        if (product.stock_map) {
+                            Object.entries(product.stock_map).forEach(([key, qty]) => {
+                                const parts = key.split('_');
+                                const q = parts[1];
+                                
+                                if (q == qualityId) {
+                                    total += qty;
+                                }
+                            });
                         }
-                        return Math.max(0, total - (product.reserved_by_others || 0));
+                        return total;
                     }
 
-                    const specificStock = parseInt(product.stocks_by_warehouse[warehouseId]) || 0;
-                    
-                    return Math.max(0, specificStock); 
+                    const key = warehouseId + '_' + qualityId;
+                    return product.stock_map ? (product.stock_map[key] || 0) : 0; 
                 },
 
                 downloadTemplate() {

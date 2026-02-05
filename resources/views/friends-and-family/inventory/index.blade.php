@@ -7,6 +7,9 @@
     $currentWarehouseId = request('warehouse_id'); 
     $currentWarehouseName = $warehouses->where('id', $currentWarehouseId)->first()->description ?? 'Global';
     
+    $currentQualityId = request('quality_id');
+    $currentQualityName = $qualities->where('id', $currentQualityId)->first()->name ?? 'Mixta / Global';
+    
     $jsAllWarehouses = (isset($allWarehouses) && count($allWarehouses) > 0) ? $allWarehouses : $warehouses;
     $jsAllAreas = isset($allAreas) ? $allAreas : [];
 @endphp
@@ -165,12 +168,12 @@
                 
                 <div class="p-8 border-b border-slate-100 flex flex-col lg:flex-row gap-6 justify-between items-center bg-white">
                     
-                    <div class="relative w-full lg:w-1/3 group">
+                    <div class="relative w-full lg:w-1/6 group">
                         <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                             <i class="fas fa-search text-slate-300 text-lg group-focus-within:text-[#ff9c00] transition-colors duration-300"></i>
                         </div>
                         <input type="text" x-model="filter" 
-                            class="block w-full pl-12 pr-5 py-4 bg-slate-50 border-2 border-transparent text-slate-700 rounded-2xl focus:ring-0 focus:border-[#ff9c00] focus:bg-white transition-all duration-300 placeholder-slate-400 font-bold text-base shadow-inner" 
+                            class="block w-full pl-12 pr-5 py-4 bg-slate-50 border-2 border-transparent text-slate-700 rounded-2xl focus:ring-0 focus:border-[#ff9c00] focus:bg-white transition-all duration-300 placeholder-slate-400 font-bold text-xs shadow-inner" 
                             placeholder="Buscar por SKU, nombre, UPC...">
                     </div>
 
@@ -198,6 +201,17 @@
                                 @endforeach
                             </select>
                             <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400"><i class="fas fa-warehouse text-xs"></i></div>
+                        </div>
+
+                        <div class="relative">
+                            <select name="quality_id" onchange="const params = new URLSearchParams(window.location.search); params.set('quality_id', this.value); window.location.search = params.toString();"
+                                    class="pl-4 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-0 focus:border-[#ff9c00] cursor-pointer hover:border-slate-300 transition-all uppercase tracking-wide shadow-sm appearance-none">
+                                <option value="">Todas las Calidades</option>
+                                @foreach($qualities as $q)
+                                    <option value="{{ $q->id }}" {{ request('quality_id') == $q->id ? 'selected' : '' }}>{{ $q->name }}</option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400"><i class="fas fa-medal text-xs"></i></div>
                         </div>
 
                         <select x-model="filterBrand" class="pl-4 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-0 focus:border-[#ff9c00] cursor-pointer hover:border-slate-300 transition-all uppercase tracking-wide shadow-sm">
@@ -233,7 +247,7 @@
                             <i class="fas fa-file-download text-xl"></i>
                         </button>
 
-                        <button @click="resetFilters()" x-show="filter || filterBrand || filterType || filterStock" x-transition 
+                        <button @click="resetFilters()" x-show="filter || filterBrand || filterType || filterStock || '{{ request('quality_id') }}'" x-transition 
                                 class="ml-2 px-4 py-2 text-rose-500 bg-rose-50 hover:bg-rose-100 rounded-xl text-xs font-black transition-all shadow-sm border border-rose-100" 
                                 title="Limpiar Filtros">
                             <i class="fas fa-times mr-1"></i> LIMPIAR
@@ -247,6 +261,7 @@
                             <tr class="bg-slate-50 border-b border-slate-100">
                                 <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest font-[Montserrat]">Producto</th>
                                 <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest font-[Montserrat]">Almacén</th>
+                                <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest font-[Montserrat]">Calidad</th>
                                 <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest font-[Montserrat]">Categoría</th>
                                 <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right font-[Montserrat]">Precio</th>
                                 <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center font-[Montserrat]">Stock Actual</th>
@@ -256,19 +271,19 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 bg-white">
-                            <template x-for="product in filteredProducts" :key="product.id">
+                            <template x-for="row in paginatedProducts" :key="row.row_key">
                                 <tr class="hover:bg-blue-50/30 transition-colors duration-200 group">
                                     
                                     <td class="px-8 py-5">
                                         <div class="flex items-center">
                                             <div class="h-16 w-16 flex-shrink-0 rounded-xl border border-slate-100 overflow-hidden p-2 bg-white shadow-sm group-hover:scale-110 transition-transform duration-300">
-                                                <img class="h-full w-full object-contain mix-blend-multiply" :src="product.photo_url" :alt="product.sku">
+                                                <img class="h-full w-full object-contain mix-blend-multiply" :src="row.photo_url" :alt="row.sku">
                                             </div>
                                             <div class="ml-6">
-                                                <div class="text-base font-bold text-[#2c3856]" x-text="product.description"></div>
+                                                <div class="text-base font-bold text-[#2c3856]" x-text="row.description"></div>
                                                 <div class="flex items-center gap-3 mt-1.5">
-                                                    <div class="text-xs text-slate-500 font-mono bg-slate-100 inline-block px-2 py-1 rounded-md border border-slate-200 font-bold" x-text="product.sku"></div>
-                                                    <div x-show="product.upc" class="text-xs text-slate-400 font-mono" x-text="'UPC: ' + product.upc"></div>
+                                                    <div class="text-xs text-slate-500 font-mono bg-slate-100 inline-block px-2 py-1 rounded-md border border-slate-200 font-bold" x-text="row.sku"></div>
+                                                    <div x-show="row.upc" class="text-xs text-slate-400 font-mono" x-text="'UPC: ' + row.upc"></div>
                                                 </div>
                                             </div>
                                         </div>
@@ -283,25 +298,33 @@
                                     </td>
 
                                     <td class="px-8 py-5">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border" 
+                                            :class="row.display_quality !== 'Estándar' && row.display_quality !== 'Sin Stock' ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-slate-50 text-slate-500 border-slate-200'">
+                                            <i class="fas fa-medal mr-1.5 text-[10px]"></i>
+                                            <span x-text="row.display_quality"></span>
+                                        </span>
+                                    </td>
+
+                                    <td class="px-8 py-5">
                                         <div class="flex flex-col gap-1.5">
                                             <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 w-fit uppercase tracking-wide border border-slate-200" 
-                                                x-text="product.brand || 'N/A'"></span>
-                                            <span class="text-xs text-slate-400 font-medium pl-1" x-text="product.type"></span>
+                                                x-text="row.brand || 'N/A'"></span>
+                                            <span class="text-xs text-slate-400 font-medium pl-1" x-text="row.type"></span>
                                         </div>
                                     </td>
 
                                     <td class="px-8 py-5 text-right">
-                                        <div class="text-base font-black text-[#2c3856] font-mono tracking-tight" x-text="formatMoney(product.unit_price)"></div>
+                                        <div class="text-base font-black text-[#2c3856] font-mono tracking-tight" x-text="formatMoney(row.unit_price)"></div>
                                     </td>
 
                                     <td class="px-8 py-5 text-center">
                                         <div class="inline-flex items-center justify-center px-5 py-2 rounded-xl text-sm font-black shadow-sm border transition-all duration-300 min-w-[80px]"
                                             :class="{
-                                                'bg-emerald-50 text-emerald-700 border-emerald-200': (product.movements_sum_quantity || 0) > 5,
-                                                'bg-amber-50 text-amber-700 border-amber-200': (product.movements_sum_quantity || 0) > 0 && (product.movements_sum_quantity || 0) <= 5,
-                                                'bg-red-50 text-red-700 border-red-200': (product.movements_sum_quantity || 0) <= 0
+                                                'bg-emerald-50 text-emerald-700 border-emerald-200': row.display_stock > 5,
+                                                'bg-amber-50 text-amber-700 border-amber-200': row.display_stock > 0 && row.display_stock <= 5,
+                                                'bg-red-50 text-red-700 border-red-200': row.display_stock <= 0
                                             }">
-                                            <span x-text="product.movements_sum_quantity || 0"></span>
+                                            <span x-text="row.display_stock"></span>
                                             <span class="text-[10px] ml-1.5 opacity-70 uppercase">pzas</span>
                                         </div>
                                     </td>
@@ -309,12 +332,12 @@
                                     @if(Auth::user()->isSuperAdmin() || Auth::user()->is_area_admin)
                                     <td class="px-8 py-5 text-right">
                                         <div class="flex justify-end gap-3 opacity-80 group-hover:opacity-100 transition-opacity duration-200">
-                                            <button @click="openModal(product, 'add')" 
+                                            <button @click="openModal(row, 'add', row.display_quality_id)" 
                                                     class="h-10 w-10 flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all shadow-sm transform hover:-translate-y-1" 
                                                     title="Registrar Entrada">
                                                 <i class="fas fa-plus"></i>
                                             </button>
-                                            <button @click="openModal(product, 'remove')" 
+                                            <button @click="openModal(row, 'remove', row.display_quality_id)" 
                                                     class="h-10 w-10 flex items-center justify-center rounded-xl bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all shadow-sm transform hover:-translate-y-1" 
                                                     title="Registrar Salida">
                                                 <i class="fas fa-minus"></i>
@@ -325,9 +348,9 @@
                                 </tr>
                             </template>
                             
-                            <template x-if="filteredProducts.length === 0">
+                            <template x-if="flattenedRows.length === 0">
                                 <tr>
-                                    <td colspan="6" class="px-8 py-24 text-center">
+                                    <td colspan="7" class="px-8 py-24 text-center">
                                         <div class="flex flex-col items-center justify-center">
                                             <div class="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-sm border border-slate-100">
                                                 <i class="fas fa-search text-slate-300 text-4xl"></i>
@@ -585,6 +608,9 @@
                 filterArea: '',
                 filterStock: false,
                 
+                currentPage: 1,
+                itemsPerPage: 50,
+
                 isModalOpen: false,
                 isImportModalOpen: false,
                 isSaving: false,
@@ -620,6 +646,11 @@
                     this.filterArea = params.get('area_id') || '';
                     this.filterBrand = params.get('brand') || '';
                     this.filterType = params.get('type') || '';
+
+                    this.$watch('filter', () => this.currentPage = 1);
+                    this.$watch('filterBrand', () => this.currentPage = 1);
+                    this.$watch('filterType', () => this.currentPage = 1);
+                    this.$watch('filterStock', () => this.currentPage = 1);
                 },
 
                 get filteredProducts() {
@@ -640,6 +671,95 @@
                     });
                 },
 
+                get flattenedRows() {
+                    const rows = [];
+                    
+                    this.filteredProducts.forEach(p => {
+                        if (p.quality_stocks && p.quality_stocks.length > 0) {
+                            let variants = p.quality_stocks.filter(q => q.qty !== 0);
+                            
+                            if (variants.length > 0) {
+                                variants.forEach(q => {
+                                    rows.push({
+                                        ...p, 
+                                        display_quality: q.name,
+                                        display_quality_id: q.id,
+                                        display_stock: q.qty,
+                                        row_key: `${p.id}_${q.id}`
+                                    });
+                                });
+                            } else if (!this.filterStock) {
+                                rows.push({
+                                    ...p,
+                                    display_quality: 'Sin Stock',
+                                    display_quality_id: '',
+                                    display_stock: 0,
+                                    row_key: `${p.id}_empty`
+                                });
+                            }
+                        } else {
+                            if (!this.filterStock || (p.movements_sum_quantity > 0)) {
+                                rows.push({
+                                    ...p,
+                                    display_quality: 'Estándar',
+                                    display_quality_id: '',
+                                    display_stock: p.movements_sum_quantity,
+                                    row_key: `${p.id}_std`
+                                });
+                            }
+                        }
+                    });
+                    
+                    return rows;
+                },
+
+                get paginatedProducts() {
+                    const start = (this.currentPage - 1) * this.itemsPerPage;
+                    const end = start + this.itemsPerPage;
+                    return this.flattenedRows.slice(start, end);
+                },
+
+                get totalPages() {
+                    return Math.ceil(this.flattenedRows.length / this.itemsPerPage);
+                },
+
+                changePage(page) {
+                    if (page >= 1 && page <= this.totalPages) {
+                        this.currentPage = page;
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                },
+
+                getPageRange() {
+                    let current = this.currentPage;
+                    let last = this.totalPages;
+                    let delta = 2;
+                    let left = current - delta;
+                    let right = current + delta + 1;
+                    let range = [];
+                    let rangeWithDots = [];
+                    let l;
+
+                    for (let i = 1; i <= last; i++) {
+                        if (i == 1 || i == last || i >= left && i < right) {
+                            range.push(i);
+                        }
+                    }
+
+                    for (let i of range) {
+                        if (l) {
+                            if (i - l === 2) {
+                                rangeWithDots.push(l + 1);
+                            } else if (i - l !== 1) {
+                                rangeWithDots.push('...');
+                            }
+                        }
+                        rangeWithDots.push(i);
+                        l = i;
+                    }
+                    return rangeWithDots;
+                },
+
                 get totalStock() {
                     return this.filteredProducts.reduce((acc, p) => acc + (p.movements_sum_quantity || 0), 0);
                 },
@@ -657,7 +777,7 @@
                     return '$' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
                 },
 
-                openModal(product, type) {
+                openModal(product, type, qualityId = '') {
                     this.isModalOpen = true;
                     this.errorMessage = '';
                     
@@ -666,14 +786,16 @@
                     this.form.type = type;
                     this.form.quantity_raw = ''; 
                     this.form.reason = '';
-                    this.form.ff_quality_id = '';
+                    this.form.ff_quality_id = qualityId || '';
                     this.form.stocks = product.warehouse_stocks || {};
                     
                     this.form.area_id = product.area_id; 
                     
                     this.updateResources();
 
-                    const currentFilterWh = '{{ $currentWarehouseId }}';
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const currentFilterWh = urlParams.get('warehouse_id');
+
                     if (currentFilterWh && this.availableWarehouses.some(w => w.id == currentFilterWh)) {
                         this.form.warehouse_id = currentFilterWh;
                     } else {
@@ -712,7 +834,7 @@
                     this.filterType = '';
                     this.filterStock = false;
                     const urlParams = new URLSearchParams(window.location.search);
-                    if (urlParams.has('warehouse_id') || urlParams.has('area_id')) {
+                    if (urlParams.has('warehouse_id') || urlParams.has('area_id') || urlParams.has('quality_id')) {
                         window.location.href = "{{ route('ff.inventory.index') }}";
                     }
                 },
@@ -756,24 +878,10 @@
                         const data = await response.json();
                         if (!response.ok) throw new Error(data.message || 'Error desconocido');
 
-                        const product = this.products.find(p => p.id === data.product_id);
-                        if (product) {
-                            const currentTableWh = '{{ $currentWarehouseId }}';
-                            if (currentTableWh && currentTableWh == data.warehouse_id) {
-                                product.movements_sum_quantity = parseInt(data.new_warehouse_stock, 10);
-                            } else if (!currentTableWh) {
-                                product.movements_sum_quantity = parseInt(data.new_global_stock, 10);
-                            }
-                            
-                            if(!product.warehouse_stocks) product.warehouse_stocks = {};
-                            product.warehouse_stocks[data.warehouse_id] = parseInt(data.new_warehouse_stock, 10);
-                        }
-                        
-                        this.closeModal();
+                        window.location.reload();
 
                     } catch (error) {
                         this.errorMessage = error.message || 'Error de conexión.';
-                    } finally {
                         this.isSaving = false;
                     }
                 },

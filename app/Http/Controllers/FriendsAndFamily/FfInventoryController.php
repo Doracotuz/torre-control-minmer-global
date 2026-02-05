@@ -40,26 +40,57 @@ class FfInventoryController extends Controller
         }
 
         $warehouseId = $request->input('warehouse_id');
+        $qualityId = $request->input('quality_id');
 
-        $products = $query->withSum(['movements' => function ($q) use ($warehouseId) {
-            if ($warehouseId) {
+        if ($warehouseId) {
+            $query->whereHas('movements', function($q) use ($warehouseId) {
                 $q->where('ff_warehouse_id', $warehouseId);
-            }
+            });
+        }
+
+        if ($qualityId) {
+            $query->whereHas('movements', function($q) use ($qualityId) {
+                $q->where('ff_quality_id', $qualityId);
+            });
+        }
+
+        $products = $query->withSum(['movements' => function ($q) use ($warehouseId, $qualityId) {
+            if ($warehouseId) $q->where('ff_warehouse_id', $warehouseId);
+            if ($qualityId) $q->where('ff_quality_id', $qualityId);
         }], 'quantity')
         ->orderBy('description')
         ->get();
         
         $inventoryBreakdown = ffInventoryMovement::selectRaw('ff_product_id, ff_warehouse_id, SUM(quantity) as current_stock')
             ->whereIn('ff_product_id', $products->pluck('id'))
+            ->when($warehouseId, fn($q) => $q->where('ff_warehouse_id', $warehouseId))
             ->groupBy('ff_product_id', 'ff_warehouse_id')
             ->get();
 
-        $products->each(function ($product) use ($inventoryBreakdown) {
+        $qualityBreakdown = ffInventoryMovement::selectRaw('ff_product_id, ff_quality_id, SUM(quantity) as current_stock')
+            ->whereIn('ff_product_id', $products->pluck('id'))
+            ->when($warehouseId, fn($q) => $q->where('ff_warehouse_id', $warehouseId))
+            ->when($qualityId, fn($q) => $q->where('ff_quality_id', $qualityId))
+            ->groupBy('ff_product_id', 'ff_quality_id')
+            ->with('quality')
+            ->get();
+
+        $products->each(function ($product) use ($inventoryBreakdown, $qualityBreakdown) {
             $product->description = str_replace(["\n", "\r", "\t"], ' ', $product->description);
             
             $product->warehouse_stocks = $inventoryBreakdown
                 ->where('ff_product_id', $product->id)
                 ->pluck('current_stock', 'ff_warehouse_id');
+
+            $product->quality_stocks = $qualityBreakdown
+                ->where('ff_product_id', $product->id)
+                ->map(function($item) {
+                    return [
+                        'id' => $item->ff_quality_id,
+                        'name' => $item->quality->name ?? 'Estándar',
+                        'qty' => (int)$item->current_stock
+                    ];
+                })->values();
         });
 
         $brandsQuery = ffProduct::whereNotNull('brand')->where('brand', '!=', '');
@@ -68,15 +99,17 @@ class FfInventoryController extends Controller
         $qualitiesQuery = FfQuality::where('is_active', true)->orderBy('name');
 
         if (!Auth::user()->isSuperAdmin()) {
-            $brandsQuery->where('area_id', Auth::user()->area_id);
-            $typesQuery->where('area_id', Auth::user()->area_id);
-            $warehousesQuery->where('area_id', Auth::user()->area_id);
-            $qualitiesQuery->where('area_id', Auth::user()->area_id);
+            $areaId = Auth::user()->area_id;
+            $brandsQuery->where('area_id', $areaId);
+            $typesQuery->where('area_id', $areaId);
+            $warehousesQuery->where('area_id', $areaId);
+            $qualitiesQuery->where('area_id', $areaId);
         }
 
         if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
-            $warehousesQuery->where('area_id', $request->input('area_id'));
-            $qualitiesQuery->where('area_id', $request->input('area_id'));
+            $aid = $request->input('area_id');
+            $warehousesQuery->where('area_id', $aid);
+            $qualitiesQuery->where('area_id', $aid);
         }
 
         $brands = $brandsQuery->distinct()->orderBy('brand')->pluck('brand');
@@ -124,6 +157,11 @@ class FfInventoryController extends Controller
         $newFolio = $this->getNextFolio();
         $tipoOrden = $request->quantity < 0 ? 'ajuste_salida' : 'ajuste_entrada';
 
+        $qualityId = $request->input('ff_quality_id');
+        if ($qualityId === '' || $qualityId === 'null') {
+            $qualityId = null;
+        }
+
         $movement = ffInventoryMovement::create([
             'ff_product_id' => $product->id,
             'user_id' => Auth::id(),
@@ -131,7 +169,7 @@ class FfInventoryController extends Controller
             'quantity' => $request->quantity,
             'reason' => $request->reason,
             'ff_warehouse_id' => $request->input('warehouse_id'),
-            'ff_quality_id' => $request->input('ff_quality_id'),
+            'ff_quality_id' => $qualityId, 
             'folio' => $newFolio, 
             'order_type' => $tipoOrden, 
             'client_name' => 'Ajuste de Inventario', 
@@ -199,21 +237,17 @@ class FfInventoryController extends Controller
     public function exportCsv(Request $request)
     {
         $warehouseId = $request->input('warehouse_id');
+        $qualityId = $request->input('quality_id');
 
-        $query = ffProduct::withSum(['movements' => function ($q) use ($warehouseId) {
-            if ($warehouseId) {
-                $q->where('ff_warehouse_id', $warehouseId);
-            }
-        }], 'quantity');
+        $query = ffProduct::query();
 
         if (!Auth::user()->isSuperAdmin()) {
             $query->where('area_id', Auth::user()->area_id);
         }
-
         if (Auth::user()->isSuperAdmin() && $request->filled('area_id')) {
             $query->where('area_id', $request->input('area_id'));
         }        
-
+        
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function($q) use ($search) {
@@ -221,40 +255,69 @@ class FfInventoryController extends Controller
                   ->orWhere('description', 'like', '%' . $search . '%');
             });
         }
+        if ($request->filled('brand')) $query->where('brand', $request->input('brand'));
+        if ($request->filled('type')) $query->where('type', $request->input('type'));
 
-        if ($request->filled('brand')) {
-            $query->where('brand', $request->input('brand'));
-        }
-
-        if ($request->filled('type')) {
-            $query->where('type', $request->input('type'));
+        if ($warehouseId || $qualityId) {
+            $query->whereHas('movements', function($q) use ($warehouseId, $qualityId) {
+                if ($warehouseId) $q->where('ff_warehouse_id', $warehouseId);
+                if ($qualityId) $q->where('ff_quality_id', $qualityId);
+            });
         }
 
         $products = $query->orderBy('description')->get();
-        
-        $warehouseName = $warehouseId ? (FfWarehouse::find($warehouseId)->description ?? 'Almacen_Desconocido') : 'Global';
-        $filename = 'ff_inventario_' . $warehouseName . '_' . date('Y-m-d') . '.csv';
+
+        $breakdownQuery = ffInventoryMovement::selectRaw('ff_product_id, ff_quality_id, SUM(quantity) as qty')
+            ->whereIn('ff_product_id', $products->pluck('id'))
+            ->groupBy('ff_product_id', 'ff_quality_id')
+            ->with('quality');
+
+        if ($warehouseId) $breakdownQuery->where('ff_warehouse_id', $warehouseId);
+        if ($qualityId) $breakdownQuery->where('ff_quality_id', $qualityId);
+
+        $stockData = $breakdownQuery->get()->groupBy('ff_product_id');
+
+        $warehouseName = $warehouseId ? (FfWarehouse::find($warehouseId)->description ?? 'Almacen') : 'Global';
+        $filename = 'inventario_desglosado_' . $warehouseName . '_' . date('Y-m-d') . '.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
 
-        $callback = function() use ($products) {
+        $callback = function() use ($products, $stockData) {
             $file = fopen('php://output', 'w');
             fputs($file, "\xEF\xBB\xBF");
-            fputcsv($file, ['SKU', 'UPC', 'Descripcion', 'Marca', 'Tipo', 'Precio Unitario', 'Pzas/Caja', 'Cantidad Actual']);
+            
+            fputcsv($file, ['SKU', 'UPC', 'Descripcion', 'Marca', 'Tipo', 'Precio Unitario', 'Pzas/Caja', 'Calidad', 'Cantidad']);
+            
             foreach ($products as $product) {
-                fputcsv($file, [
-                    $product->sku,
-                    $product->upc,
-                    $product->description,
-                    $product->brand,
-                    $product->type,
-                    $product->unit_price,
-                    $product->pieces_per_box,
-                    $product->movements_sum_quantity ?? 0,
-                ]);
+                $variants = $stockData->get($product->id);
+
+                if ($variants && $variants->count() > 0) {
+                    foreach ($variants as $variant) {
+                        if ($variant->qty == 0) continue;
+
+                        $qualityName = $variant->quality ? $variant->quality->name : 'Estándar';
+                        
+                        fputcsv($file, [
+                            $product->sku,
+                            $product->upc,
+                            $product->description,
+                            $product->brand,
+                            $product->type,
+                            $product->unit_price,
+                            $product->pieces_per_box,
+                            $qualityName,
+                            $variant->qty
+                        ]);
+                    }
+                } else {
+                    fputcsv($file, [
+                        $product->sku, $product->upc, $product->description, $product->brand, $product->type, 
+                        $product->unit_price, $product->pieces_per_box, 'Sin Stock', 0
+                    ]);
+                }
             }
             fclose($file);
         };

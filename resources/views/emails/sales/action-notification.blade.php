@@ -192,13 +192,11 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        <td align="center" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px; vertical-align: top;">
+                                        <td style="text-align: center;">
                                             @if(isset($item['quality']) && $item['quality'] !== 'Estándar')
-                                                <span style="color: #6b21a8; font-weight: bold; background-color: #f3e8ff; padding: 3px 8px; border-radius: 12px; border: 1px solid #d8b4fe; font-size: 10px;">
-                                                    {{ $item['quality'] }}
-                                                </span>
+                                                <span style="color: purple; font-weight: bold;">{{ $item['quality'] }}</span>
                                             @else
-                                                <span style="color: #94a3b8; font-style: italic;">Estándar</span>
+                                                <span style="color: #999;">Estándar</span>
                                             @endif
                                         </td>
                                         <td align="center" style="padding: 10px; border-bottom: 1px solid #eeeeee; font-size: 11px; font-weight: bold; vertical-align: top;">

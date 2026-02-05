@@ -30,6 +30,7 @@ class ffInventoryMovement extends Model
         'ff_transport_line_id',
         'ff_payment_condition_id',
         'ff_warehouse_id',
+        'ff_quality_id',
         'order_type',
         'discount_percentage',
         'is_loan_returned',

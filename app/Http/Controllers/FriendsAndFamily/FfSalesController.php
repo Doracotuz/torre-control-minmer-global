@@ -98,36 +98,42 @@ class FfSalesController extends Controller
             ->orderBy('description')
             ->get();
 
-        $inventoryBreakdown = ffInventoryMovement::selectRaw('ff_product_id, ff_warehouse_id, SUM(quantity) as total_stock')
+        $inventoryBreakdown = ffInventoryMovement::selectRaw('ff_product_id, ff_warehouse_id, ff_quality_id, SUM(quantity) as total_stock')
             ->whereIn('ff_product_id', $products->pluck('id'))
-            ->groupBy('ff_product_id', 'ff_warehouse_id')
+            ->groupBy('ff_product_id', 'ff_warehouse_id', 'ff_quality_id')
             ->get();
 
-        $reservationsBreakdown = ffCartItem::selectRaw('ff_product_id, ff_warehouse_id, SUM(quantity) as reserved_qty')
+        $reservationsBreakdown = ffCartItem::selectRaw('ff_product_id, ff_warehouse_id, ff_quality_id, SUM(quantity) as reserved_qty')
             ->where('user_id', '!=', $userId)
             ->whereIn('ff_product_id', $products->pluck('id'))
             ->whereNotNull('ff_warehouse_id')
-            ->groupBy('ff_product_id', 'ff_warehouse_id')
+            ->groupBy('ff_product_id', 'ff_warehouse_id', 'ff_quality_id')
             ->get();
 
         $products->each(function($product) use ($inventoryBreakdown, $reservationsBreakdown) {
             
-            $physicalStocks = $inventoryBreakdown
-                ->where('ff_product_id', $product->id)
-                ->mapWithKeys(fn($item) => [$item->ff_warehouse_id => (int)$item->total_stock]);
+            $stockMap = [];
 
-            $reservedStocks = $reservationsBreakdown
-                ->where('ff_product_id', $product->id)
-                ->mapWithKeys(fn($item) => [$item->ff_warehouse_id => (int)$item->reserved_qty]);
+            $pMoves = $inventoryBreakdown->where('ff_product_id', $product->id);
+            $pRes = $reservationsBreakdown->where('ff_product_id', $product->id);
 
-            $netStocks = [];
-            
-            foreach ($physicalStocks as $whId => $qty) {
-                $reserved = $reservedStocks[$whId] ?? 0;
-                $netStocks[$whId] = max(0, $qty - $reserved);
+            foreach($pMoves as $move) {
+                $key = $move->ff_warehouse_id . '_' . ($move->ff_quality_id ?? 'std');
+                $stockMap[$key] = (int)$move->total_stock;
             }
 
-            $product->setAttribute('stocks_by_warehouse', $netStocks);
+            foreach($pRes as $res) {
+                $key = $res->ff_warehouse_id . '_' . ($res->ff_quality_id ?? 'std');
+                if(isset($stockMap[$key])) {
+                    $stockMap[$key] -= (int)$res->reserved_qty;
+                } else {
+                    $stockMap[$key] = -((int)$res->reserved_qty);
+                }
+            }
+
+            array_walk($stockMap, function(&$val) { $val = max(0, $val); });
+
+            $product->setAttribute('stock_map', $stockMap);
             $product->setAttribute('reserved_by_others', 0);
         });
 
