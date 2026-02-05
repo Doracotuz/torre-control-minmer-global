@@ -151,6 +151,14 @@ class FfSalesController extends Controller
             $paymentsQuery->where('area_id', $user->area_id);
             $warehousesQuery->where('area_id', $user->area_id);
             $qualitiesQuery->where('area_id', $user->area_id);
+        } elseif ($user->isSuperAdmin() && $request->filled('area_id')) {
+            $areaId = $request->input('area_id');
+            $clientsQuery->where('area_id', $areaId);
+            $channelsQuery->where('area_id', $areaId);
+            $transportsQuery->where('area_id', $areaId);
+            $paymentsQuery->where('area_id', $areaId);
+            $warehousesQuery->where('area_id', $areaId);
+            $qualitiesQuery->where('area_id', $areaId);
         }
 
         $clients = $clientsQuery->orderBy('name')->get();
