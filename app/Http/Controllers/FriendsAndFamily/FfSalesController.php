@@ -128,7 +128,6 @@ class FfSalesController extends Controller
             }
 
             $product->setAttribute('stocks_by_warehouse', $netStocks);
-            
             $product->setAttribute('reserved_by_others', 0);
         });
 
@@ -211,11 +210,11 @@ class FfSalesController extends Controller
             [
                 'user_id' => $userId, 
                 'ff_product_id' => $productId,
-                'ff_warehouse_id' => $warehouseId,
                 'ff_quality_id' => $qualityId
             ],
             [
-                'quantity' => $quantity
+                'quantity' => $quantity,
+                'ff_warehouse_id' => $warehouseId
             ]
         );
 
@@ -274,7 +273,7 @@ class FfSalesController extends Controller
         foreach($movements as $mov) {
             $finalQty = abs($mov->quantity);
             
-            if ($finalQty > 0) {
+            if ($mov->quantity < 0) {
                 ffCartItem::create([
                     'user_id' => $user->id,
                     'ff_product_id' => $mov->ff_product_id,
@@ -338,6 +337,7 @@ class FfSalesController extends Controller
                 'ff_transport_line_id' => $header->ff_transport_line_id,
                 'ff_payment_condition_id' => $header->ff_payment_condition_id,
                 'ff_warehouse_id' => $header->ff_warehouse_id,
+                'ff_quality_id' => $header->ff_quality_id,
             ],
             'cart_items' => $cartItemsData,
             'discounts' => $discountsData,

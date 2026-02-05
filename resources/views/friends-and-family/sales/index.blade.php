@@ -513,24 +513,32 @@
                                     </div>
 
                                     <div x-show="localCart.size > 0" class="flex-1 overflow-y-auto custom-scroll p-3 space-y-2 h-0 min-h-[200px]">
-                                        <template x-for="[id, qty] in cartList" :key="id">
+                                        <template x-for="[key, qty] in cartList" :key="key">
                                             <div class="bg-white p-2 rounded-lg border border-gray-100 shadow-sm relative group hover:border-gray-300 transition-colors">
                                                 
-                                                <button @click="updateQuantity(getProduct(id), -qty)" 
+                                                <button @click="onQuantityChange(0, getProduct(parseKey(key).id), parseKey(key).qualityId)" 
                                                         class="absolute -top-1.5 -right-1.5 bg-red-50 text-red-500 rounded-full w-5 h-5 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all z-10 hover:bg-red-500 hover:text-white">
                                                     <i class="fas fa-times text-[9px]"></i>
                                                 </button>
 
                                                 <div class="flex gap-3">
                                                     <div class="w-10 h-10 bg-gray-50 rounded border border-gray-100 flex-shrink-0 flex items-center justify-center">
-                                                        <img :src="getProduct(id).photo_url" class="max-w-full max-h-full p-0.5 mix-blend-multiply object-contain">
+                                                        <img :src="getProduct(parseKey(key).id).photo_url" class="max-w-full max-h-full p-0.5 mix-blend-multiply object-contain">
                                                     </div>
 
-                                                    <div class="flex-1 min-w-0"> <div class="flex justify-between items-start">
-                                                            <span class="text-[10px] font-bold text-[#2c3856] truncate pr-1" x-text="getProduct(id).sku" :title="getProduct(id).sku"></span>
+                                                    <div class="flex-1 min-w-0"> 
+                                                        <div class="flex justify-between items-start">
+                                                            <span class="text-[10px] font-bold text-[#2c3856] truncate pr-1" x-text="getProduct(parseKey(key).id).sku" :title="getProduct(parseKey(key).id).sku"></span>
                                                             <span class="text-[10px] font-bold bg-gray-100 px-1.5 rounded text-gray-600 flex-shrink-0" x-text="qty + ' pz'"></span>
                                                         </div>
-                                                        <div class="text-[9px] text-gray-500 truncate leading-tight mt-0.5" x-text="getProduct(id).description" :title="getProduct(id).description"></div>
+                                                        <div class="text-[9px] text-gray-500 truncate leading-tight mt-0.5" x-text="getProduct(parseKey(key).id).description" :title="getProduct(parseKey(key).id).description"></div>
+                                                        
+                                                        <template x-if="parseKey(key).qualityId">
+                                                            <div class="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-purple-100 bg-purple-50">
+                                                                <i class="fas fa-medal text-[8px] text-purple-500"></i>
+                                                                <span class="text-[9px] font-bold text-purple-700" x-text="getQualityName(parseKey(key).qualityId)"></span>
+                                                            </div>
+                                                        </template>
                                                     </div>
                                                 </div>
                                                 
@@ -538,7 +546,7 @@
                                                     <label class="text-[9px] font-bold text-gray-400 uppercase">Dcto. Extra</label>
                                                     
                                                     <div class="flex items-center bg-gray-50 rounded border border-gray-200 px-1.5 h-6 w-20 focus-within:ring-1 focus-within:ring-[#ff9c00] focus-within:border-[#ff9c00] transition-all">
-                                                        <input type="number" x-model="productDiscounts[id]" placeholder="0"
+                                                        <input type="number" x-model="productDiscounts[parseKey(key).id]" placeholder="0"
                                                             class="w-full bg-transparent border-none text-[10px] font-bold text-right text-gray-700 p-0 focus:ring-0 h-full"
                                                             @click="$event.target.select()">
                                                         <span class="text-[9px] text-gray-400 ml-1">%</span>
@@ -761,39 +769,22 @@
             return {
                 products: [],
                 isSuperAdmin: false,
-                catalogs: {
-                    clients: [],
-                    channels: [],
-                    transports: [],
-                    payments: [],
-                    warehouses: [],
-                    qualities: []
-                },
+                catalogs: { clients: [], channels: [], transports: [], payments: [], warehouses: [], qualities: [] },
                 availableBranches: [],
                 viewMode: localStorage.getItem('ff_view_mode') || 'grid',
                 layoutMode: localStorage.getItem('ff_layout_mode') || 'sidebar',
-                localCart: new Map(),
+                
+                localCart: new Map(), 
+                
                 productDiscounts: {},
                 existingEvidences: [],
                 evidenceFiles: {},
                 globalDiscount: '',
                 currentPage: 1,
                 itemsPerPage: 20,                
-                
-                    search: '',
-                    brand: '',
-                    type: '',
-                    filterStock: false,
-                
-                isSaving: false,
-                isPrinting: false,
-                isSearching: false,
-                searchModalOpen: false,
-                searchFolio: '',
-                editMode: false,
-                globalError: '',
-                pollingInterval: null,
-                
+                search: '', brand: '', type: '', filterStock: false,
+                isSaving: false, isPrinting: false, isSearching: false,
+                searchModalOpen: false, searchFolio: '', editMode: false, globalError: '', pollingInterval: null,
                 form: {
                     folio: '', client_name: '', company_name: '', client_phone: '',
                     address: '', locality: '', delivery_date: '', surtidor_name: '',
@@ -801,51 +792,57 @@
                     ff_client_id: '', ff_client_branch_id: '',
                     ff_sales_channel_id: '', ff_transport_line_id: '', ff_payment_condition_id: '',
                     ff_warehouse_id: '',
-                    ff_quality_id: '', // Nuevo campo para Calidad
+                    ff_quality_id: '', 
                     order_type: 'normal',
                     lastValidWarehouseId: '',
                     lastValidChannelId: '',
                     is_loan_returned: false,
                     area_id: '',
                 },
-                
-                flashMessage: '',
-                flashType: 'info',
-                flashTimeout: null,
+                flashMessage: '', flashType: 'info', flashTimeout: null,
+                newFiles: [], currentDocs: [], pdfModalOpen: false, pdfModalUrl: '',
 
-                newFiles: [],
-                currentDocs: [],
-                pdfModalOpen: false,
-                pdfModalUrl: '',
+                makeKey(productId, qualityId) {
+                    return `${productId}_${qualityId || 'std'}`;
+                },
+
+                parseKey(key) {
+                    const parts = key.toString().split('_');
+                    return { 
+                        id: parseInt(parts[0]), 
+                        qualityId: parts[1] === 'std' ? null : parseInt(parts[1]) 
+                    };
+                },
+
+                getQualityName(qualityId) {
+                    if (!qualityId) return 'Estándar';
+                    const q = this.catalogs.qualities.find(x => x.id == qualityId);
+                    return q ? q.name : 'Estándar';
+                },
 
                 init(initialProducts, nextFolio, clients, channels, transports, payments, warehouses, editFolio = null, areas = [], isSuperAdmin = false, qualities = []) {
-                    
                     const productsArray = Array.isArray(initialProducts) ? initialProducts : [];
                     this.isSuperAdmin = isSuperAdmin;
-                    this.catalogs.areas = areas || [];
-                    this.catalogs.qualities = qualities || [];
+                    this.catalogs = { clients, channels, transports, payments, warehouses, qualities: qualities || [], areas: areas || [] };
                     this.form.folio = nextFolio;            
-                    this.catalogs.clients = clients || [];
-                    this.catalogs.channels = channels || [];
-                    this.catalogs.transports = transports || [];
-                    this.catalogs.payments = payments || [];
-                    this.catalogs.warehouses = warehouses || [];
-
+                    
                     const params = new URLSearchParams(window.location.search);
-                    if (params.has('area_id')) {
-                        this.form.area_id = parseInt(params.get('area_id')); 
-                    }
+                    if (params.has('area_id')) this.form.area_id = parseInt(params.get('area_id')); 
 
                     const savedEmails = localStorage.getItem('ff_email_recipients');
                     if (savedEmails) this.form.email_recipients = savedEmails;
-
                     this.$watch('form.email_recipients', (value) => localStorage.setItem('ff_email_recipients', value));
 
                     this.products = productsArray.map((p, index) => {
-                    const myCartItem = p.cart_items.find(item => item.user_id === {{ Auth::id() }});
-                        if (myCartItem) {
-                            this.localCart.set(myCartItem.ff_product_id, myCartItem.quantity);
+                        if (p.cart_items && p.cart_items.length > 0) {
+                            p.cart_items.forEach(item => {
+                                if (item.user_id === {{ Auth::id() }}) {
+                                    const key = this.makeKey(item.ff_product_id, item.ff_quality_id);
+                                    this.localCart.set(key, item.quantity);
+                                }
+                            });
                         }
+                        
                         return {
                             ...p,
                             originalIndex: index + 1,
@@ -863,27 +860,128 @@
                     
                     if (editFolio) {
                         this.searchFolio = editFolio;
-                        setTimeout(() => {
-                            this.loadOrderToEdit();
-                            window.history.replaceState({}, document.title, window.location.pathname);
-                        }, 100);
+                        setTimeout(() => { this.loadOrderToEdit(); window.history.replaceState({}, document.title, window.location.pathname); }, 100);
                     }
                     
                     this.pollingInterval = setInterval(() => this.pollReservations(), 10000);
+                    window.addEventListener('beforeunload', () => { if (!this.isSaving) this.releaseStockOnExit(); });
+                    
+                    ['search', 'brand', 'type', 'filterStock'].forEach(prop => this.$watch(prop, () => this.currentPage = 1));
+                    this.$watch('form.ff_sales_channel_id', () => this.currentPage = 1);
+                },
 
-                    window.addEventListener('beforeunload', () => {
-                        if (!this.isSaving) {
-                            this.releaseStockOnExit();
+                getProductInCart(productId) { 
+                    const key = this.makeKey(productId, this.form.ff_quality_id);
+                    return this.localCart.get(key); 
+                },
+
+                validateInput(event, product) {
+                    let value = parseInt(event.target.value);
+                    if (isNaN(value) || value < 0) value = 0;
+                    event.target.value = value;
+                    this.onQuantityChange(value, product, this.form.ff_quality_id);
+                },
+
+                updateQuantity(product, change) {
+                    const key = this.makeKey(product.id, this.form.ff_quality_id);
+                    const currentQty = this.localCart.get(key) || 0;
+                    const newQty = currentQty + change;
+                    this.onQuantityChange(newQty, product, this.form.ff_quality_id);
+                },
+
+                async onQuantityChange(newQuantity, product, qualityId) {
+                    if (newQuantity > 0 && !this.form.ff_warehouse_id) {
+                        alert("Por favor selecciona un Almacén de Salida antes de agregar productos.");
+                        const key = this.makeKey(product.id, qualityId);
+                        this.localCart.delete(key);
+                        return; 
+                    }
+
+                    if (newQuantity < 0) newQuantity = 0;
+                    const key = this.makeKey(product.id, qualityId);
+                    
+                    if (newQuantity === 0) { 
+                        this.localCart.delete(key); 
+                    } 
+                    else { 
+                        this.localCart.set(key, newQuantity);
+                        if(this.globalDiscount && !this.productDiscounts[product.id]) {
+                            this.productDiscounts[product.id] = this.globalDiscount;
+                        }
+                    }
+
+                    try {
+                        const response = await fetch("{{ route('ff.sales.cart.update') }}", {
+                            method: 'POST',
+                            body: JSON.stringify({ 
+                                product_id: product.id, 
+                                quantity: newQuantity,
+                                warehouse_id: this.form.ff_warehouse_id,
+                                ff_quality_id: qualityId, 
+                                folio: this.editMode ? this.form.folio : null 
+                            }),
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json', 'Content-Type': 'application/json' }
+                        });
+                        const data = await response.json();
+                        if (!response.ok) {
+                            this.showFlashMessage(data.message, 'danger');
+                            if (data.new_quantity === 0 || data.new_quantity === undefined) this.localCart.delete(key);
+                            else this.localCart.set(key, data.new_quantity);
+                        }
+                    } catch (e) {
+                        this.showFlashMessage('Error de conexión.', 'danger');
+                    }
+                },
+
+                get cartList() {
+                    return Array.from(this.localCart.entries());
+                },
+
+                get totalVenta() {
+                    let total = 0;
+                    this.localCart.forEach((qty, key) => {
+                        const { id } = this.parseKey(key);
+                        const product = this.getProduct(id);
+                        if (product) {
+                            total += this.calculateItemPrice(product) * qty;
                         }
                     });
+                    return total;
+                },
 
-                    this.$watch('search', () => this.currentPage = 1);
-                    this.$watch('brand', () => this.currentPage = 1);
-                    this.$watch('type', () => this.currentPage = 1);
-                    this.$watch('filterStock', () => this.currentPage = 1);
-                    this.$watch('form.ff_sales_channel_id', () => {
-                        this.currentPage = 1;
-                    });
+                get totalPiezas() { let t=0; this.localCart.forEach(q=>t+=q); return t; },
+
+                async loadOrderToEdit() {
+                    if (!this.searchFolio) return;
+                    this.isSearching = true;
+                    try {
+                        const response = await fetch("{{ route('ff.sales.searchOrder') }}?folio=" + this.searchFolio);
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.message);
+                        
+                        this.form = { ...this.form, ...data.client_data };
+                        this.form.ff_warehouse_id = data.client_data.ff_warehouse_id || '';
+                        this.form.ff_quality_id = ''; 
+                        
+                        this.localCart.clear();
+                        if (data.cart_items) {
+                            data.cart_items.forEach(item => {
+                                const key = this.makeKey(item.product_id, item.quality_id);
+                                this.localCart.set(key, item.quantity);
+                            });
+                        }
+                        this.productDiscounts = data.discounts || {};
+                        this.existingEvidences = data.evidences || [];
+                        this.currentDocs = data.documents || [];
+                        this.newFiles = [];
+                        if (this.form.ff_client_id) {
+                            const client = this.catalogs.clients.find(c => c.id == this.form.ff_client_id);
+                            if(client) this.availableBranches = client.branches || [];
+                        }
+                        this.editMode = true;
+                        this.searchModalOpen = false;
+                        this.showFlashMessage('Pedido cargado.', 'success');
+                    } catch (e) { alert(e.message || 'Error.'); } finally { this.isSearching = false; }
                 },
 
                 onWarehouseChangeConfirm() {
@@ -969,10 +1067,6 @@
                     localStorage.setItem('ff_layout_mode', this.layoutMode);
                 },
 
-                get cartList() {
-                    return Array.from(this.localCart.entries());
-                },
-
                 get uniqueBrands() {
                     return [...new Set(this.products.map(p => p.brand).filter(b => b))].sort();
                 },
@@ -1040,23 +1134,6 @@
 
                     navigator.sendBeacon(url, data);
                 },                
-
-                get totalVenta() {
-                    let total = 0;
-                    this.localCart.forEach((qty, id) => {
-                        const product = this.getProduct(id);
-                        if (product) {
-                            total += this.calculateItemPrice(product) * qty;
-                        }
-                    });
-                    return total;
-                },
-
-                get totalPiezas() {
-                    let total = 0;
-                    this.localCart.forEach((qty) => total += qty);
-                    return total;
-                },
 
                 get isFormValid() {
                     return this.form.folio && this.form.client_name && this.form.company_name;
@@ -1166,66 +1243,6 @@
                     return Math.max(0, specificStock); 
                 },
 
-                getProductInCart(productId) { return this.localCart.get(productId); },
-
-                validateInput(event, product) {
-                    let value = parseInt(event.target.value);
-                    if (isNaN(value) || value < 0) value = 0;
-                    
-                    event.target.value = value;
-                    
-                    this.onQuantityChange(value, product);
-                },
-
-                updateQuantity(product, change) {
-                    const currentQty = this.getProductInCart(product.id) || 0;
-                    const newQty = currentQty + change;
-                    this.onQuantityChange(newQty, product);
-                },
-
-                async onQuantityChange(newQuantity, product) {
-                    if (newQuantity > 0 && !this.form.ff_warehouse_id) {
-                        alert("Por favor selecciona un Almacén de Salida antes de agregar productos.");
-                        this.localCart.delete(product.id);
-                        return; 
-                    }
-
-                    if (newQuantity < 0) newQuantity = 0;
-                    
-                    if (newQuantity === 0) { 
-                        this.localCart.delete(product.id); 
-                        delete this.productDiscounts[product.id];
-                    } 
-                    else { 
-                        this.localCart.set(product.id, newQuantity);
-                        if(this.globalDiscount && !this.productDiscounts[product.id]) {
-                                this.productDiscounts[product.id] = this.globalDiscount;
-                        }
-                    }
-
-                    try {
-                        const response = await fetch("{{ route('ff.sales.cart.update') }}", {
-                            method: 'POST',
-                            body: JSON.stringify({ 
-                                product_id: product.id, 
-                                quantity: newQuantity,
-                                warehouse_id: this.form.ff_warehouse_id,
-                                ff_quality_id: this.form.ff_quality_id, // ENVIAR CALIDAD
-                                folio: this.editMode ? this.form.folio : null 
-                            }),
-                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json', 'Content-Type': 'application/json' }
-                        });
-                        const data = await response.json();
-                        if (!response.ok) {
-                            this.showFlashMessage(data.message, 'danger');
-                            if (data.new_quantity === 0 || data.new_quantity === undefined) this.localCart.delete(product.id);
-                            else this.localCart.set(product.id, data.new_quantity);
-                        }
-                    } catch (e) {
-                        this.showFlashMessage('Error de conexión.', 'danger');
-                    }
-                },
-
                 downloadTemplate() {
                     let url = "{{ route('ff.sales.downloadTemplate') }}";
                     const params = new URLSearchParams();
@@ -1290,45 +1307,6 @@
                 
                 openSearchModal() { this.searchFolio = ''; this.searchModalOpen = true; },
                 
-                async loadOrderToEdit() {
-                    if (!this.searchFolio) return;
-                    this.isSearching = true;
-                    
-                    try {
-                        const response = await fetch("{{ route('ff.sales.searchOrder') }}?folio=" + this.searchFolio);
-                        const data = await response.json();
-                        
-                        if (!response.ok) throw new Error(data.message);
-                        
-                        this.form = { ...this.form, ...data.client_data };
-                        this.form.ff_warehouse_id = data.client_data.ff_warehouse_id || '';
-                        this.lastValidWarehouseId = this.form.ff_warehouse_id;
-                        this.lastValidChannelId = this.form.ff_sales_channel_id || '';
-                        this.localCart.clear();
-                        if (data.cart_items) {
-                            data.cart_items.forEach(item => this.localCart.set(item.product_id, item.quantity));
-                        }
-                        this.productDiscounts = data.discounts || {};
-                        this.existingEvidences = data.evidences || [];
-                        this.currentDocs = data.documents || [];
-                        this.newFiles = [];
-                        if (this.form.ff_client_id) {
-                            const client = this.catalogs.clients.find(c => c.id == this.form.ff_client_id);
-                            if(client) {
-                                this.availableBranches = client.branches || [];
-                            }
-                        }
-                        this.editMode = true;
-                        this.searchModalOpen = false;
-                        this.showFlashMessage('Pedido cargado. Puede editar.', 'success');
-
-                    } catch (e) { 
-                        alert(e.message || 'Error al buscar.'); 
-                    } finally { 
-                        this.isSearching = false; 
-                    }
-                },
-
                 cancelEditMode() {
                     if(confirm('¿Salir del modo edición?')) window.location.href = "{{ route('ff.sales.index') }}"; 
                 },
