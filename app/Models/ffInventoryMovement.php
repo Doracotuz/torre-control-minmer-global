@@ -46,7 +46,8 @@ class ffInventoryMovement extends Model
         'is_backorder',
         'area_id',
         'backorder_fulfilled',
-        'was_edited',    
+        'was_edited',
+        'returned_quantity',
     ];
 
     protected $casts = [

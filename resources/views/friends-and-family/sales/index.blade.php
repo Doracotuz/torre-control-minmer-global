@@ -678,8 +678,9 @@
                                         </div>
 
                                         <div x-show="editMode && form.order_type === 'prestamo' && !form.is_loan_returned" class="pt-2">
-                                            <button @click="returnLoan()" class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded text-[10px] uppercase shadow-sm transition-colors flex items-center justify-center">
-                                                <i class="fas fa-undo mr-1"></i> Devolución
+                                            <button @click="openReturnModal()" 
+                                                    class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded text-[10px] uppercase shadow-sm transition-colors flex items-center justify-center gap-2">
+                                                <i class="fas fa-boxes-packing"></i> Gestionar Devolución
                                             </button>
                                         </div>
                                         <div x-show="editMode && form.is_loan_returned" class="p-2 bg-green-50 text-green-700 rounded border border-green-200 text-center text-[10px] font-bold">
@@ -738,6 +739,73 @@
                 </div>
             </div>
         </div>
+
+        <div x-show="returnLoanModalOpen" x-cloak class="fixed inset-0 z-[80] overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen px-4 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 transition-opacity bg-gray-900/80 backdrop-blur-sm" @click="returnLoanModalOpen = false"></div>
+
+                <div class="inline-block w-full max-w-2xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-2xl border border-gray-100">
+                    
+                    <div class="bg-purple-50 px-6 py-4 border-b border-purple-100 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-black text-purple-800">Devolución de Préstamo</h3>
+                            <p class="text-xs text-purple-600 font-bold">Folio #<span x-text="form.folio"></span></p>
+                        </div>
+                        <button @click="returnLoanModalOpen = false" class="text-purple-400 hover:text-purple-700"><i class="fas fa-times text-xl"></i></button>
+                    </div>
+
+                    <div class="p-6 max-h-[60vh] overflow-y-auto custom-scroll">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 text-[10px] uppercase text-gray-500 font-black">
+                                <tr>
+                                    <th class="p-3">Producto</th>
+                                    <th class="p-3 text-center">Calidad</th>
+                                    <th class="p-3 text-center">Prestado</th>
+                                    <th class="p-3 text-center">Pendiente</th>
+                                    <th class="p-3 text-center w-32">Devolver Ahora</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-xs">
+                                <template x-for="item in loanItems" :key="item.movement_id">
+                                    <tr>
+                                        <td class="p-3">
+                                            <div class="font-bold text-[#2c3856]" x-text="item.sku"></div>
+                                            <div class="text-[10px] text-gray-400 truncate max-w-[150px]" x-text="item.description"></div>
+                                        </td>
+                                        <td class="p-3 text-center">
+                                            <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold text-[9px]" x-text="item.quality_name"></span>
+                                        </td>
+                                        <td class="p-3 text-center font-bold text-gray-400" x-text="item.original_qty"></td>
+                                        <td class="p-3 text-center font-black text-rose-600" x-text="item.remaining_qty"></td>
+                                        <td class="p-3">
+                                            <input type="number" x-model="item.return_now" min="0" :max="item.remaining_qty"
+                                                class="w-full text-center font-bold border-gray-200 rounded focus:ring-purple-500 focus:border-purple-500 text-sm">
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="bg-gray-50 px-6 py-4 border-t border-gray-100">
+                        <label class="flex items-center gap-3 p-3 border border-orange-200 bg-orange-50 rounded-lg cursor-pointer mb-4 hover:bg-orange-100 transition-colors">
+                            <input type="checkbox" x-model="closeLoanForce" class="w-5 h-5 text-orange-600 border-gray-300 rounded focus:ring-orange-500">
+                            <div>
+                                <div class="text-xs font-black text-orange-800 uppercase">Liquidar Préstamo (Cerrar Folio)</div>
+                                <div class="text-[10px] text-orange-700 leading-tight">Marcar esta casilla si el saldo restante se considera perdido, vendido o no será devuelto.</div>
+                            </div>
+                        </label>
+
+                        <div class="flex gap-3">
+                            <button @click="returnLoanModalOpen = false" class="flex-1 py-3 bg-white border border-gray-300 text-gray-600 rounded-xl font-bold text-xs uppercase hover:bg-gray-50">Cancelar</button>
+                            <button @click="submitLoanReturn()" class="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-purple-700 transition-transform active:scale-95">
+                                Confirmar Devolución
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>        
 
         <div x-show="pdfModalOpen" x-cloak class="fixed inset-0 z-[80] overflow-y-auto">
             <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
@@ -801,6 +869,9 @@
                 },
                 flashMessage: '', flashType: 'info', flashTimeout: null,
                 newFiles: [], currentDocs: [], pdfModalOpen: false, pdfModalUrl: '',
+                returnLoanModalOpen: false,
+                loanItems: [],
+                closeLoanForce: false,                
 
                 makeKey(productId, qualityId) {
                     return `${productId}_${qualityId || 'std'}`;
@@ -1437,7 +1508,62 @@
                             window.open(window.URL.createObjectURL(await response.blob()));
                         }
                     } catch (e) { this.showFlashMessage('Error al imprimir.', 'danger'); } finally { this.isPrinting = false; }
+                },
+
+                async openReturnModal() {
+                    if (!this.form.folio) return;
+                    this.isSearching = true;
+                    try {
+                        const response = await fetch("{{ route('ff.sales.getLoanDetails') }}?folio=" + this.form.folio);
+                        const data = await response.json();
+                        
+                        this.loanItems = data.items.filter(i => i.remaining_qty > 0);
+                        
+                        if (this.loanItems.length === 0) {
+                            alert("Este préstamo ya no tiene partidas pendientes o ya fue devuelto.");
+                        } else {
+                            this.returnLoanModalOpen = true;
+                            this.closeLoanForce = false;
+                        }
+                    } catch (e) {
+                        alert("Error cargando detalles del préstamo.");
+                    } finally {
+                        this.isSearching = false;
+                    }
+                },
+
+                async submitLoanReturn() {
+                    if (!confirm("¿Confirmar devolución?")) return;
+                    
+                    this.isSaving = true;
+                    try {
+                        const response = await fetch("{{ route('ff.sales.processLoanReturn') }}", {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                folio: this.form.folio,
+                                items: this.loanItems, 
+                                close_loan: this.closeLoanForce
+                            }),
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        });
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                            alert(data.message);
+                            window.location.reload();
+                        } else {
+                            alert(data.message);
+                        }
+                    } catch (e) {
+                        alert("Error de conexión");
+                    } finally {
+                        this.isSaving = false;
+                    }
                 }
+
             }
         }
     </script>

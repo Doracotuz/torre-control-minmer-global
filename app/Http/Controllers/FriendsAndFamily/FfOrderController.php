@@ -56,7 +56,15 @@ class FfOrderController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
+            $status = $request->input('status');
+
+            if ($status === 'loan_pending') {
+                $query->where('order_type', 'prestamo')
+                      ->where('status', 'approved')
+                      ->where('is_loan_returned', false);
+            } else {
+                $query->where('status', $status);
+            }
         }
 
         if ($request->filled('type')) {
@@ -81,6 +89,7 @@ class FfOrderController extends Controller
                 'user_id',
                 'area_id',
                 'ff_warehouse_id',
+                'is_loan_returned',
                 DB::raw('SUM(ABS(quantity)) as total_items'),
                 DB::raw('MAX(id) as id'),
                 DB::raw('MAX(CASE WHEN status != "cancelled" AND is_backorder = 1 AND backorder_fulfilled = 0 THEN 1 ELSE 0 END) as has_active_backorder'),
@@ -96,7 +105,8 @@ class FfOrderController extends Controller
                 'created_at', 
                 'user_id',
                 'area_id',
-                'ff_warehouse_id'
+                'ff_warehouse_id',
+                'is_loan_returned'
             );
 
         if ($request->boolean('show_backorders')) {

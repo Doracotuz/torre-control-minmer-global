@@ -350,7 +350,9 @@ class FfInventoryController extends Controller
         $callback = function() use ($movements) {
             $file = fopen('php://output', 'w');
             fputs($file, "\xEF\xBB\xBF");
-            fputcsv($file, ['Fecha', 'Usuario', 'Almacen', 'Calidad', 'SKU', 'Producto', 'Movimiento', 'Motivo']);
+            
+            fputcsv($file, ['Fecha', 'Usuario', 'Almacen', 'Calidad', 'SKU', 'Producto', 'Movimiento', 'Motivo', 'Devuelto (Préstamos)']);
+            
             foreach ($movements as $mov) {
                 fputcsv($file, [
                     $mov->created_at->format('Y-m-d H:i:s'),
@@ -361,6 +363,7 @@ class FfInventoryController extends Controller
                     $mov->product ? $mov->product->description : 'N/A',
                     $mov->quantity,
                     $mov->reason,
+                    $mov->returned_quantity
                 ]);
             }
             fclose($file);

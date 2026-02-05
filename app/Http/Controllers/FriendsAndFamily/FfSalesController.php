@@ -913,53 +913,100 @@ class FfSalesController extends Controller
         ]);
     }
 
-    public function returnLoan(Request $request)
+    public function getLoanDetails(Request $request)
     {
         $request->validate(['folio' => 'required|integer']);
-        $folio = $request->folio;
+
+        $loanItems = ffInventoryMovement::where('folio', $request->folio)
+            ->where('order_type', 'prestamo')
+            ->where('quantity', '<', 0)
+            ->with(['product', 'quality', 'warehouse'])
+            ->get()
+            ->map(function($item) {
+                $originalQty = abs($item->quantity);
+                $returnedSoFar = $item->returned_quantity ?? 0;
+                $remaining = $originalQty - $returnedSoFar;
+
+                return [
+                    'movement_id' => $item->id,
+                    'sku' => $item->product->sku,
+                    'description' => $item->product->description,
+                    'quality_name' => $item->quality->name ?? 'Estándar',
+                    'original_qty' => $originalQty,
+                    'returned_so_far' => $returnedSoFar,
+                    'remaining_qty' => $remaining,
+                    'return_now' => 0,
+                    'warehouse_name' => $item->warehouse->code ?? 'N/A'
+                ];
+            });
+
+        return response()->json(['items' => $loanItems]);
+    }
+
+    public function processLoanReturn(Request $request)
+    {
+        $request->validate([
+            'folio' => 'required|integer',
+            'items' => 'required|array',
+            'close_loan' => 'boolean'
+        ]);
+
         $user = Auth::user();
-
         DB::beginTransaction();
+
         try {
-            $loanMovements = ffInventoryMovement::where('folio', $folio)
-                ->where('order_type', 'prestamo')
-                ->where('is_loan_returned', false)
-                ->where('quantity', '<', 0)
-                ->get();
+            $allFullyReturned = true;
 
-            if ($loanMovements->isEmpty()) {
-                throw new \Exception("Este folio no es un préstamo activo o ya fue devuelto.");
-            }
+            foreach ($request->items as $row) {
+                $qtyToReturn = intval($row['return_now']);
+                
+                if ($qtyToReturn <= 0) continue;
 
-            $header = $loanMovements->first();
-            if (!$user->isSuperAdmin() && $header->area_id !== $user->area_id) {
-                throw new \Exception("No tienes permiso para gestionar este préstamo.");
-            }
+                $originalMov = ffInventoryMovement::lockForUpdate()->find($row['movement_id']);
+                
+                $maxReturnable = abs($originalMov->quantity) - $originalMov->returned_quantity;
 
-            foreach($loanMovements as $mov) {
+                if ($qtyToReturn > $maxReturnable) {
+                    throw new \Exception("Error: Intentas devolver $qtyToReturn del SKU {$originalMov->product->sku}, pero solo quedan $maxReturnable pendientes.");
+                }
+
                 ffInventoryMovement::create([
-                    'ff_product_id' => $mov->ff_product_id,
+                    'ff_product_id' => $originalMov->ff_product_id,
                     'user_id' => $user->id,
-                    'area_id' => $mov->area_id, 
-                    'quantity' => abs($mov->quantity),
-                    'reason' => 'DEVOLUCIÓN Préstamo Folio ' . $folio,
-                    'folio' => $folio,
+                    'area_id' => $originalMov->area_id,
+                    'quantity' => $qtyToReturn,
+                    'reason' => 'ABONO a Préstamo Folio ' . $request->folio,
+                    'folio' => $request->folio,
                     'order_type' => 'prestamo',
-                    'is_loan_returned' => true,
-                    'loan_returned_at' => now(),
-                    'client_name' => $mov->client_name, 
-                    'ff_warehouse_id' => $mov->ff_warehouse_id,
-                    'ff_quality_id' => $mov->ff_quality_id,
+                    'client_name' => $originalMov->client_name,
+                    'ff_warehouse_id' => $originalMov->ff_warehouse_id,
+                    'ff_quality_id' => $originalMov->ff_quality_id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
 
-                ffInventoryMovement::where('id', $mov->id)->update([
-                    'is_loan_returned' => true,
-                    'loan_returned_at' => now()
-                ]);
+                $originalMov->returned_quantity += $qtyToReturn;
+                $originalMov->save();
+
+                if (abs($originalMov->quantity) > $originalMov->returned_quantity) {
+                    $allFullyReturned = false; // Aún debe de este producto
+                }
+            }
+
+            if ($request->close_loan || $allFullyReturned) {
+                ffInventoryMovement::where('folio', $request->folio)
+                    ->where('order_type', 'prestamo')
+                    ->update(['is_loan_returned' => true, 'loan_returned_at' => now()]);
+                
+                $msg = $request->close_loan 
+                    ? "Devolución registrada y Préstamo LIQUIDADO (Cierre forzoso)."
+                    : "Devolución completa registrada. Préstamo cerrado.";
+            } else {
+                $msg = "Devolución parcial registrada. El préstamo sigue ABIERTO.";
             }
 
             DB::commit();
-            return response()->json(['message' => 'Préstamo marcado como devuelto e inventario restaurado.']);
+            return response()->json(['message' => $msg]);
 
         } catch (\Exception $e) {
             DB::rollBack();

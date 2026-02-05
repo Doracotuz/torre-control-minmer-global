@@ -754,6 +754,8 @@ Route::middleware(['auth', 'ff.access', 'module.access:orders'])->prefix('ff')->
     Route::post('/sales/import', [FfSalesController::class, 'importOrder'])->name('sales.importOrder');
     Route::post('/sales/return-loan', [FfSalesController::class, 'returnLoan'])->name('sales.returnLoan');
     Route::post('/sales/cart/clear', [FfSalesController::class, 'clearCart'])->name('sales.cart.clear');
+    Route::get('/sales/loan-details', [FfSalesController::class, 'getLoanDetails'])->name('sales.getLoanDetails');
+    Route::post('/sales/loan-return', [FfSalesController::class, 'processLoanReturn'])->name('sales.processLoanReturn');    
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [FfReportController::class, 'index'])->name('index');
         Route::get('/transactions', [FfReportController::class, 'transactions'])->name('transactions');

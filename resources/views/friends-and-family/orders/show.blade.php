@@ -140,6 +140,14 @@
             $backorderCount = $movements->filter(function ($value, $key) {
                 return $value->is_backorder == true && $value->backorder_fulfilled == false;
             })->sum(fn($m) => abs($m->quantity));
+            $loanPendingCount = 0;
+            if ($header->order_type === 'prestamo' && $isActive) {
+                $loanPendingCount = $movements->filter(function ($m) {
+                    return $m->quantity < 0;
+                })->sum(function($m) {
+                    return abs($m->quantity) - ($m->returned_quantity ?? 0);
+                });
+            }            
         @endphp
 
         <div x-show="previewModalOpen" 
@@ -282,6 +290,22 @@
                                 <i class="fas fa-history"></i> Backorder Activo
                             </span>
                         @endif
+                        @if($loanPendingCount > 0)
+                        <div class="bg-indigo-50 rounded-2xl p-6 border border-indigo-100 flex items-start gap-4 shadow-sm relative overflow-hidden mt-4">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-200 rounded-full blur-[50px] opacity-20 -mr-10 -mt-10"></div>
+                            
+                            <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0 text-lg">
+                                <i class="fas fa-hand-holding-box"></i>
+                            </div>
+                            
+                            <div class="relative z-10">
+                                <h3 class="text-indigo-900 font-bold text-sm uppercase tracking-wide mb-1">Devolución Pendiente</h3>
+                                <p class="text-indigo-700 text-sm">
+                                    Este préstamo aún tiene <strong class="text-indigo-900 text-base">{{ $loanPendingCount }} unidades</strong> en poder del cliente que no han sido devueltas.
+                                </p>
+                            </div>
+                        </div>
+                        @endif                        
                     </div>
                 </div>
 
@@ -797,6 +821,12 @@
                             <i class="fas fa-ban mr-2"></i> Edición Bloqueada ({{ ucfirst($header->status) }})
                         </div>
                     @endif
+                    @if($header->order_type === 'prestamo' && !$header->is_loan_returned && !in_array($header->status, ['cancelled', 'rejected']))
+                        <a href="{{ route('ff.sales.index', ['edit_folio' => $header->folio]) }}" 
+                        class="block w-full bg-purple-600 border border-purple-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all text-sm text-center mb-3">
+                            <i class="fas fa-boxes-packing mr-2"></i> Registrar Devolución
+                        </a>
+                    @endif                    
 
                 </div>
             </div>

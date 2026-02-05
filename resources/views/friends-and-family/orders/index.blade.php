@@ -104,6 +104,7 @@
                                 <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Aprobado</option>
                                 <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rechazado</option>
                                 <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelado</option>
+                                <option value="loan_pending" {{ request('status') == 'loan_pending' ? 'selected' : '' }}>Por Devolver</option>
                             </select>
                             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
                                 <i class="fas fa-chevron-down text-[10px]"></i>
@@ -181,6 +182,11 @@
                                     <i class="fas fa-ban mr-1.5"></i> Cancelado
                                 </span>
                             @endif
+                            @if($order->order_type == 'prestamo' && $order->status == 'approved' && !$order->is_loan_returned)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200 mt-1 w-fit animate-pulse">
+                                    <i class="fas fa-exchange-alt mr-1"></i> Por Devolver
+                                </span>
+                            @endif                            
                         </div>
 
                         <div class="mb-4">
@@ -312,6 +318,11 @@
                                                     <i class="fas fa-history mr-1"></i> En Backorder
                                                 </span>
                                             @endif
+                                            @if($order->order_type == 'prestamo' && $order->status == 'approved' && !$order->is_loan_returned)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200 mt-1 w-fit">
+                                                    <i class="fas fa-clock mr-1"></i> Por Devolver
+                                                </span>
+                                            @endif                                            
                                         </div>
                                     </td>
 
