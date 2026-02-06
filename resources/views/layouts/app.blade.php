@@ -755,12 +755,68 @@
                             @endif
 
                             @if(Auth::user()->hasModuleAccess('orders'))
-                                <x-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="nav-link-custom {{ request()->routeIs('ff.*') ? 'active-link' : '' }}">
-                                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                                    </svg>
-                                    <span class="nav-text">{{ __('Pedidos') }}</span>
-                                </x-nav-link>
+                                <div x-data="{ isFnFMenuOpen: {{ request()->routeIs('ff.*') ? 'true' : 'false' }} }">
+                                    <div class="nav-link-custom w-full flex items-center justify-between group p-0"
+                                        :class="isFnFMenuOpen || {{ request()->routeIs('ff.*') ? 'true' : 'false' }} ? 'bg-[rgba(255,255,255,0.05)] text-[#ff9c00]' : ''"
+                                        style="padding: 0;">
+                                        
+                                        <a href="{{ route('ff.dashboard.index') }}" 
+                                           class="flex items-center flex-grow py-3 pl-4 h-full text-inherit hover:text-[#ff9c00] transition-colors">
+                                            <svg class="nav-icon" :class="isFnFMenuOpen || {{ request()->routeIs('ff.*') ? 'true' : 'false' }} ? 'text-[#ff9c00]' : ''" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                            </svg>
+                                            <span class="nav-text font-medium" :class="isFnFMenuOpen ? 'text-[#ff9c00]' : ''">{{ __('Operaciones') }}</span>
+                                        </a>
+
+                                        <button @click.prevent.stop="isFnFMenuOpen = !isFnFMenuOpen" 
+                                            class="p-3 h-full hover:bg-[rgba(255,255,255,0.1)] transition-colors rounded-r-md">
+                                            <svg class="w-4 h-4 transition-transform duration-200" :class="isFnFMenuOpen ? 'rotate-180 text-[#ff9c00]' : ''" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <div x-show="isFnFMenuOpen" 
+                                        x-collapse
+                                        x-cloak
+                                        class="space-y-1 mt-1 bg-black/10 rounded-lg overflow-hidden">
+                                        
+                                        @if(Auth::user()->canSeeFfTile('orders'))
+                                        <a href="{{ route('ff.orders.index') }}" 
+                                           class="flex items-center pl-11 pr-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors {{ request()->routeIs('ff.orders.*') ? 'text-[#ff9c00] font-semibold' : '' }}">
+                                            <span>{{ __('Pedidos') }}</span>
+                                        </a>
+                                        @endif
+
+                                        @if(Auth::user()->canSeeFfTile('inventory'))
+                                        <a href="{{ route('ff.inventory.index') }}" 
+                                           class="flex items-center pl-11 pr-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors {{ request()->routeIs('ff.inventory.*') ? 'text-[#ff9c00] font-semibold' : '' }}">
+                                            <span>{{ __('Inventario') }}</span>
+                                        </a>
+                                        @endif
+
+                                        @if(Auth::user()->canSeeFfTile('catalog'))
+                                        <a href="{{ route('ff.catalog.index') }}" 
+                                           class="flex items-center pl-11 pr-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors {{ request()->routeIs('ff.catalog.*') ? 'text-[#ff9c00] font-semibold' : '' }}">
+                                            <span>{{ __('Catálogo') }}</span>
+                                        </a>
+                                        @endif
+
+                                        @if(Auth::user()->canSeeFfTile('reports'))
+                                        <a href="{{ route('ff.reports.index') }}" 
+                                           class="flex items-center pl-11 pr-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors {{ request()->routeIs('ff.reports.*') ? 'text-[#ff9c00] font-semibold' : '' }}">
+                                            <span>{{ __('Reportes') }}</span>
+                                        </a>
+                                        @endif
+
+                                        @if(Auth::user()->canSeeFfTile('admin'))
+                                        <a href="{{ route('ff.admin.index') }}" 
+                                           class="flex items-center pl-11 pr-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors {{ request()->routeIs('ff.admin.*') ? 'text-[#ff9c00] font-semibold' : '' }}">
+                                            <span>{{ __('Administración') }}</span>
+                                        </a>
+                                        @endif
+                                    </div>
+                                </div>
                             @endif
 
                             @if(Auth::user()->hasModuleAccess('organigram'))
