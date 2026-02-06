@@ -15,6 +15,7 @@
 @endphp
 
 <x-app-layout>
+    <x-slot name="header"></x-slot>
     <div x-data="inventoryManager()" 
          x-init="init(@js($products), @js($jsAllWarehouses), @js($jsAllAreas), @js($qualities))" 
          class="font-sans text-slate-600">

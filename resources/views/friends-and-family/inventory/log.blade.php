@@ -1,4 +1,5 @@
 <x-app-layout>
+    <x-slot name="header"></x-slot>
     <div x-data="logManager()" x-init="init(@js($movements->items()))" class="font-sans text-gray-800">
         
         <x-slot name="header">

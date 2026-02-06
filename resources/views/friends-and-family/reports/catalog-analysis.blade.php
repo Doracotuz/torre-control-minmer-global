@@ -1,4 +1,5 @@
 <x-app-layout>
+    <x-slot name="header"></x-slot>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@700;800;900&display=swap');
 
