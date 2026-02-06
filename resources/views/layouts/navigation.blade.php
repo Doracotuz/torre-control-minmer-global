@@ -355,9 +355,13 @@
             @endif
 
             @if(Auth::user()->hasModuleAccess('orders'))
-                <div x-data="{ isFnFMenuOpen: {{ request()->routeIs('ff.*') ? 'true' : 'false' }} }" class="pt-1 pb-1">
+                <div x-data="{ 
+                    isFnFMenuOpen: localStorage.getItem('isFnFMenuMobileOpen') !== null ? JSON.parse(localStorage.getItem('isFnFMenuMobileOpen')) : {{ request()->routeIs('ff.*') ? 'true' : 'false' }} 
+                }" 
+                x-init="$watch('isFnFMenuOpen', value => localStorage.setItem('isFnFMenuMobileOpen', value))"
+                class="pt-1 pb-1">
                     <div class="flex items-center justify-between w-full px-4 text-white hover:bg-gray-700 transition duration-150 ease-in-out"
-                        :class="isFnFMenuOpen || {{ request()->routeIs('ff.*') ? 'true' : 'false' }} ? 'text-[#ff9c00] bg-gray-700' : ''">
+                        :class="isFnFMenuOpen ? 'text-[#ff9c00] bg-gray-700' : ''">
                         
                         <a href="{{ route('ff.dashboard.index') }}" 
                            class="flex-grow py-2 text-base font-medium text-inherit hover:text-[#ff9c00] transition-colors">
@@ -374,31 +378,31 @@
 
                     <div x-show="isFnFMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4 bg-black/10 rounded-r-lg">
                         @if(Auth::user()->canSeeFfTile('orders'))
-                        <x-responsive-nav-link :href="route('ff.orders.index')" :active="request()->routeIs('ff.orders.*')" class="mobile-menu-link {{ request()->routeIs('ff.orders.*') ? 'text-[#ff9c00]' : '' }}">
+                        <x-responsive-nav-link :href="route('ff.orders.index')" :active="request()->routeIs('ff.orders.*')" class="mobile-menu-link {{ request()->routeIs('ff.orders.*') ? 'text-[#ff9c00] bg-white/10' : '' }}">
                             {{ __('Pedidos') }}
                         </x-responsive-nav-link>
                         @endif
 
                         @if(Auth::user()->canSeeFfTile('inventory'))
-                        <x-responsive-nav-link :href="route('ff.inventory.index')" :active="request()->routeIs('ff.inventory.*')" class="mobile-menu-link {{ request()->routeIs('ff.inventory.*') ? 'text-[#ff9c00]' : '' }}">
+                        <x-responsive-nav-link :href="route('ff.inventory.index')" :active="request()->routeIs('ff.inventory.*')" class="mobile-menu-link {{ request()->routeIs('ff.inventory.*') ? 'text-[#ff9c00] bg-white/10' : '' }}">
                             {{ __('Inventario') }}
                         </x-responsive-nav-link>
                         @endif
 
                         @if(Auth::user()->canSeeFfTile('catalog'))
-                        <x-responsive-nav-link :href="route('ff.catalog.index')" :active="request()->routeIs('ff.catalog.*')" class="mobile-menu-link {{ request()->routeIs('ff.catalog.*') ? 'text-[#ff9c00]' : '' }}">
+                        <x-responsive-nav-link :href="route('ff.catalog.index')" :active="request()->routeIs('ff.catalog.*')" class="mobile-menu-link {{ request()->routeIs('ff.catalog.*') ? 'text-[#ff9c00] bg-white/10' : '' }}">
                             {{ __('Catálogo') }}
                         </x-responsive-nav-link>
                         @endif
 
                         @if(Auth::user()->canSeeFfTile('reports'))
-                        <x-responsive-nav-link :href="route('ff.reports.index')" :active="request()->routeIs('ff.reports.*')" class="mobile-menu-link {{ request()->routeIs('ff.reports.*') ? 'text-[#ff9c00]' : '' }}">
+                        <x-responsive-nav-link :href="route('ff.reports.index')" :active="request()->routeIs('ff.reports.*')" class="mobile-menu-link {{ request()->routeIs('ff.reports.*') ? 'text-[#ff9c00] bg-white/10' : '' }}">
                             {{ __('Reportes') }}
                         </x-responsive-nav-link>
                         @endif
 
                         @if(Auth::user()->canSeeFfTile('admin'))
-                        <x-responsive-nav-link :href="route('ff.admin.index')" :active="request()->routeIs('ff.admin.*')" class="mobile-menu-link {{ request()->routeIs('ff.admin.*') ? 'text-[#ff9c00]' : '' }}">
+                        <x-responsive-nav-link :href="route('ff.admin.index')" :active="request()->routeIs('ff.admin.*')" class="mobile-menu-link {{ request()->routeIs('ff.admin.*') ? 'text-[#ff9c00] bg-white/10' : '' }}">
                             {{ __('Administración') }}
                         </x-responsive-nav-link>
                         @endif
