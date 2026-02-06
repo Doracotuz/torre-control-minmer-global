@@ -480,6 +480,7 @@
                                                         <div><label class="block text-[10px] font-bold text-gray-500">Largo</label><input type="number" step="0.01" x-model="form.length" class="block w-full rounded-md border-blue-200 shadow-sm text-xs"></div>
                                                         <div><label class="block text-[10px] font-bold text-gray-500">Ancho</label><input type="number" step="0.01" x-model="form.width" class="block w-full rounded-md border-blue-200 shadow-sm text-xs"></div>
                                                         <div><label class="block text-[10px] font-bold text-gray-500">Alto</label><input type="number" step="0.01" x-model="form.height" class="block w-full rounded-md border-blue-200 shadow-sm text-xs"></div>
+                                                        <div><label class="block text-[10px] font-bold text-gray-500">Peso Caja M.</label><input type="number" step="0.001" x-model="form.master_box_weight" class="block w-full rounded-md border-blue-200 shadow-sm text-xs" placeholder="kg"></div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -687,7 +688,7 @@
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div><label class="block text-sm font-bold text-gray-700">Vol. Alcohol</label><input type="text" name="alcohol_vol" class="w-full rounded-lg border-gray-300"></div>
-                                    <div><label class="block text-sm font-bold text-gray-700 mb-1">Peso Caja Master</label><input type="text" name="master_box_weight" class="w-full rounded-lg border-gray-300 focus:ring-[#2c3856] focus:border-[#2c3856] text-sm"></div>
+                                    <div><label class="block text-sm font-bold text-gray-700 mb-1">Peso Caja Master</label><input type="text" name="master_box_weight" x-model="sheetProduct.master_box_weight" class="w-full rounded-lg border-gray-300 focus:ring-[#2c3856] focus:border-[#2c3856] text-sm"></div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div><label class="block text-sm font-bold text-gray-700">Cajas/Cama</label><input type="number" name="boxes_per_layer" class="w-full rounded-lg border-gray-300"></div>
@@ -782,7 +783,7 @@
                 filters: { search: '', brand: '', type: '', status: 'all', channel: '', area_id: '' },
                 searchTimeout: null,
                 isSaving: false, photoPreview: null,
-                form: { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, upc: '', photo: null, photo_url: null, delete_photo: false, is_active: true, channels: [], area_id: {{ Auth::user()->area_id }} },
+                form: { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, master_box_weight: null, upc: '', photo: null, photo_url: null, delete_photo: false, is_active: true, channels: [], area_id: {{ Auth::user()->area_id }} },
                 isUploadModalOpen: false, uploadMessage: '', uploadSuccess: false,
                 isPdfModalOpen: false, pdfPercentage: 0,
                 isDetailModalOpen: false, detailProduct: {}, isSheetModalOpen: false, sheetProduct: {},
@@ -796,6 +797,8 @@
                         this.pagination.current_page = 1;
                         this.debouncedFetch();
                     });
+                    this.$watch('sheetPrimaryColor', (val) => localStorage.setItem('ff_sheet_primary', val));
+                    this.$watch('sheetAccentColor', (val) => localStorage.setItem('ff_sheet_accent', val));
                 },
 
                 debouncedFetch() {
@@ -856,7 +859,7 @@
                 selectNewProduct() { this.resetForm(); this.isEditorOpen = true; },
                 editProduct(product) { const channelIds = product.channels ? product.channels.map(c => c.id) : []; this.form = { ...product, photo: null, channels: channelIds, area_id: product.area_id}; this.photoPreview = null; this.isEditorOpen = true; },
                 closeEditor() { this.isEditorOpen = false; setTimeout(() => this.resetForm(), 300); },
-                resetForm() { this.form = { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, upc: '', photo: null, photo_url: null, is_active: true, channels: [], area_id: {{ Auth::user()->area_id }} }; this.photoPreview = null; },
+                resetForm() { this.form = { id: null, sku: '', description: '', type: '', brand: '', unit_price: 0.00, pieces_per_box: null, length: null, width: null, height: null, master_box_weight: null, upc: '', photo: null, photo_url: null, is_active: true, channels: [], area_id: {{ Auth::user()->area_id }} }; this.photoPreview = null; },
                 previewPhoto(event) { const file = event.target.files[0]; if (file) { this.form.photo = file; const reader = new FileReader(); reader.onload = (e) => { this.photoPreview = e.target.result; }; reader.readAsDataURL(file); } },
                 removePhoto() {
                     this.photoPreview = null;
@@ -945,11 +948,10 @@
                 },
                 openDetailModal(product) { this.detailProduct = product; this.isDetailModalOpen = true; },
                 openSheetModal(product) {
-                    this.sheetProduct = product; 
+                    this.sheetProduct = { ...product }; 
                     this.isSheetModalOpen = true; 
-                    this.sheetPrimaryColor = '#00683f';
-                    this.sheetAccentColor = '#f77b33';
-                    this.isSheetModalOpen = true;
+                    this.sheetPrimaryColor = localStorage.getItem('ff_sheet_primary') || '#00683f';
+                    this.sheetAccentColor = localStorage.getItem('ff_sheet_accent') || '#f77b33';
                 },
                 closeDetailAndEdit(product) { this.isDetailModalOpen = false; setTimeout(() => { this.editProduct(product); }, 300); },
                 generateUrl(baseUrl) {

@@ -33,7 +33,7 @@ class WMSInventoryController extends Controller
 
         $query = \App\Models\WMS\Pallet::query()
             ->with([
-                'purchaseOrder:id,po_number,container_number,operator_name,download_start_time,pedimento_a4,pedimento_g1,area_id',
+                'purchaseOrder:id,po_number,container_number,operator_name,download_start_time,download_end_time,document_invoice,pedimento_a4,pedimento_g1,area_id',
                 'purchaseOrder.area',
                 'location', 'user:id,name', 'items.product', 'items.quality'
             ])

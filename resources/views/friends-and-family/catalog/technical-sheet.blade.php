@@ -255,7 +255,7 @@
                         <td class="metric-card">
                             <div class="metric-label">Configuración Caja</div>
                             <div class="metric-number">{{ $product->pieces_per_box }} <span style="font-size:12px;">Pzas</span></div>
-                            <div class="metric-sub">Peso Master: {{ $extra['master_box_weight'] ?? '-' }}</div>
+                            <div class="metric-sub">Peso Master: {{ !empty($extra['master_box_weight']) ? $extra['master_box_weight'] : ($product->master_box_weight ?? '-') }} kg</div>
                         </td>
 
                         <td class="metric-card">

@@ -132,6 +132,7 @@ class FfProductController extends Controller
             'length' => 'nullable|numeric|min:0',
             'width' => 'nullable|numeric|min:0',
             'height' => 'nullable|numeric|min:0',
+            'master_box_weight' => 'nullable|numeric|min:0',
             'upc' => 'nullable|string|max:255',
             'channels' => 'nullable|array',
             'channels.*' => [
@@ -197,6 +198,7 @@ class FfProductController extends Controller
             'length' => 'nullable|numeric|min:0',
             'width' => 'nullable|numeric|min:0',
             'height' => 'nullable|numeric|min:0',
+            'master_box_weight' => 'nullable|numeric|min:0',
             'upc' => 'nullable|string|max:255',
             'channels' => 'nullable|array',
             'channels.*' => [
@@ -276,7 +278,7 @@ class FfProductController extends Controller
             
             fputcsv($file, [
                 'SKU (No cambiar)', 'Descripción', 'Precio Unitario', 'Marca', 'Tipo', 
-                'Piezas por Caja', 'Largo', 'Ancho', 'Alto', 'UPC', 
+                'Piezas por Caja', 'Largo', 'Ancho', 'Alto', 'Peso Caja Master', 'UPC', 
                 'Nombre Archivo Foto', 'Canales de Venta (Separar con |)'
             ]);
 
@@ -293,6 +295,7 @@ class FfProductController extends Controller
                     $product->length,
                     $product->width,
                     $product->height,
+                    $product->master_box_weight,
                     $product->upc,
                     '',
                     $channelsStr
@@ -353,7 +356,7 @@ class FfProductController extends Controller
                 $sku = $this->cleanCsvValue($row[0] ?? '');
                 if (empty($sku)) continue;
 
-                $channelsStr = $this->cleanCsvValue($row[11] ?? '');
+                $channelsStr = $this->cleanCsvValue($row[12] ?? '');
                 $channelIds = [];
                 if (!empty($channelsStr)) {
                     $channelNames = preg_split('/[,|]/', $channelsStr); 
@@ -378,12 +381,13 @@ class FfProductController extends Controller
                     'length'         => !empty($row[6]) ? (float)$row[6] : null,
                     'width'          => !empty($row[7]) ? (float)$row[7] : null,
                     'height'         => !empty($row[8]) ? (float)$row[8] : null,
-                    'upc'            => $this->cleanCsvValue($row[9] ?? ''),
+                    'master_box_weight' => !empty($row[9]) ? (float)$row[9] : null,
+                    'upc'            => $this->cleanCsvValue($row[10] ?? ''),
                     'is_active'      => true,
                     'area_id'        => $targetAreaId
                 ];
 
-                $photoFilename = trim($row[10] ?? '');
+                $photoFilename = trim($row[11] ?? '');
                 if (!empty($photoFilename) && $tempZipDir) {
                     $foundPath = $this->findFileRecursively($tempZipDir, $photoFilename);
                     if ($foundPath) {
@@ -510,7 +514,7 @@ class FfProductController extends Controller
             $file = fopen('php://output', 'w');
             fputs($file, "\xEF\xBB\xBF");
             
-            fputcsv($file, ['SKU', 'Descripción', 'Precio Unitario', 'Marca', 'Tipo', 'Pzas/Caja', 'Largo', 'Ancho', 'Alto', 'UPC', 'Canales', 'Estado', 'URL Imagen']);
+            fputcsv($file, ['SKU', 'Descripción', 'Precio Unitario', 'Marca', 'Tipo', 'Pzas/Caja', 'Largo', 'Ancho', 'Alto', 'Peso Caja Master', 'UPC', 'Canales', 'Estado', 'URL Imagen']);
 
             foreach ($products as $product) {
                 $channelsStr = $product->channels->pluck('name')->implode(', ');
@@ -525,6 +529,7 @@ class FfProductController extends Controller
                     $product->length,
                     $product->width,
                     $product->height,
+                    $product->master_box_weight,
                     $product->upc,
                     $channelsStr,
                     $product->is_active ? 'Activo' : 'Inactivo',

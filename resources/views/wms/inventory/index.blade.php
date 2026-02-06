@@ -146,10 +146,11 @@
                 <table class="nexus-table">
                     <thead>
                         <tr>
-                            <th class="w-16">ID</th>
+                            <th>Área</th>
                             <th>LPN (Identificador)</th>
                             <th>Ubicación</th>
                             <th>Contenido Principal</th>
+                            <th>Calidad</th>
                             <th class="text-center">Stock</th>
                             <th>Estado LPN</th>
                             <th>Origen (PO)</th>
@@ -160,9 +161,9 @@
                         @forelse ($pallets as $pallet)
                             <tr class="nexus-row group">
                                 <td class="text-center">
-                                    <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs mx-auto" title="{{ $pallet->purchaseOrder->area->name ?? 'N/A' }}">
-                                        {{ substr($pallet->purchaseOrder->area->name ?? 'G', 0, 1) }}
-                                    </div>
+                                    <span class="text-xs font-bold text-blue-600">
+                                        {{ $pallet->purchaseOrder->area->name ?? 'General' }}
+                                    </span>
                                 </td>
 
                                 <td>
@@ -217,6 +218,38 @@
                                         </div>
                                     @else
                                         <span class="text-gray-400 italic text-sm">Vacío</span>
+                                    @endif
+                                </td>
+
+                                <td class="text-center">
+                                    @if($pallet->items->count() > 0)
+                                        @php 
+                                            $uniqueQualities = $pallet->items->pluck('quality.name')->unique();
+                                        @endphp
+                                        
+                                        @if($uniqueQualities->count() > 1)
+                                            <div class="flex flex-col gap-1.5 items-start justify-center p-1">
+                                                @foreach($pallet->items->take(3) as $item)
+                                                    <div class="flex items-center gap-2 w-full">
+                                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-100 min-w-[25px] text-center">
+                                                            {{ $item->quality->name }}
+                                                        </span>
+                                                        <span class="text-[10px] text-gray-600 font-mono truncate max-w-[80px]" title="{{ $item->product->name }}">
+                                                            {{ $item->product->sku }}
+                                                        </span>
+                                                    </div>
+                                                @endforeach
+                                                @if($pallet->items->count() > 3)
+                                                    <span class="text-[9px] text-gray-400 pl-1">+{{ $pallet->items->count() - 3 }} más</span>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <span class="px-2 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-100">
+                                                {{ $uniqueQualities->first() ?? 'N/A' }}
+                                            </span>
+                                        @endif
+                                    @else
+                                        <span class="text-gray-400 text-xs">-</span>
                                     @endif
                                 </td>
 
