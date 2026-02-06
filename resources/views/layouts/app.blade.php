@@ -718,11 +718,11 @@
             >
                 <div class="overflow-hidden transition-opacity duration-200" :class="isSidebarOpen ? 'opacity-100' : 'opacity-0'">
                     <div class="p-6 text-center">
-                            <div class="logo-container py-4">
+                            <a href="{{ route('dashboard') }}" class="logo-container py-4 block">
                                 <img src="{{ Storage::disk('s3')->url('escudoMinmerGlobal.png') }}" alt="Minmer Global Logo" class="h-20 mx-auto mb-3">
                                 <span class="text-xl font-extrabold text-white tracking-wide logo-text">CONTROL TOWER</span>
                                 <span class="text-xs text-gray-300 mt-1 block logo-subtitle">MINMER GLOBAL</span>
-                            </div>
+                            </a>
                         </div>
 
                         <nav class="flex-1 px-4 py-6 space-y-2">
