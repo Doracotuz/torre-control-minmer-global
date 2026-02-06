@@ -17,7 +17,7 @@ class FfInventoryMovementObserver
     public function updated(ffInventoryMovement $movement)
     {
         // Check if just authorized/approved
-        if ($movement->isDirty('status') && $movement->status === 'authorized') {
+        if ($movement->isDirty('status') && in_array($movement->status, ['authorized', 'approved'])) {
             $this->syncService->createOutboundOrder($movement);
         }
         

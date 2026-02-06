@@ -212,7 +212,7 @@ class FfOrderController extends Controller
         return Storage::disk('s3')->url('LogoAzulm.PNG');
     }  
 
-    public function approve($folio)
+    public function approve($folio, \App\Services\Sync\FnFToWmsService $syncService)
     {
         if (method_exists($this, 'authorizeAdmin')) {
             $this->authorizeAdmin();
@@ -229,11 +229,16 @@ class FfOrderController extends Controller
             'approved_by' => Auth::id(),
             'approved_at' => now(),
         ]);
+        
+        // Trigger WMS Sync
+        $syncService->syncOutboundOrderFromFolio($folio);
 
         $movements = ffInventoryMovement::where('folio', $folio)
             ->where('quantity', '<', 0)
             ->with(['product', 'user', 'quality'])
             ->get();
+            
+        // ... (rest of the method)
 
         if ($movements->isNotEmpty()) {
             $header = $movements->first();
@@ -454,7 +459,7 @@ class FfOrderController extends Controller
         }
     }
 
-    public function emailApprove($folio, $adminId)
+    public function emailApprove($folio, $adminId, \App\Services\Sync\FnFToWmsService $syncService)
     {
         if (!request()->hasValidSignature()) {
             return view('friends-and-family.orders.email-response', ['status' => 'error', 'message' => 'Enlace expirado o inválido.']);
@@ -474,6 +479,9 @@ class FfOrderController extends Controller
                 'approved_by' => $adminId,
                 'approved_at' => now(),
             ]);
+            
+            // Trigger WMS Sync
+            $syncService->syncOutboundOrderFromFolio($folio);
             
             $movements = ffInventoryMovement::where('folio', $folio)
                 ->where('quantity', '<', 0)

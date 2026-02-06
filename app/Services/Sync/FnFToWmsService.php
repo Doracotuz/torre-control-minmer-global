@@ -129,43 +129,146 @@ class FnFToWmsService
     public function createOutboundOrder(ffInventoryMovement $movement)
     {
         // Logic: Create a SalesOrder in WMS for the team to pick
-        // Do NOT execute picking yet.
+        // We only sync negative movements (Sales/Transfers out)
+        if ($movement->quantity >= 0) return;
+
         try {
             DB::beginTransaction();
 
             // Find WMS Product
             $product = Product::where('sku', $movement->product->sku)->first();
             if (!$product) {
-                throw new \Exception("Product SKU {$movement->product->sku} not found in WMS");
+                $this->logError('Outbound Sync Error', "Product SKU {$movement->product->sku} not found in WMS", ['movement_id' => $movement->id]);
+                // Non-blocking, just log and skip
+                DB::commit(); 
+                return;
             }
             
-            // Create Sales Order or Pick Request
-            // For simplicity, let's assume SalesOrder structure
-            /*
+            // Resolve Warehouse
+            $wmsWarehouseId = $this->resolveWarehouseId($movement->ff_warehouse_id);
+            if (!$wmsWarehouseId) {
+                 // Fallback to default or area default?
+                 // For now, if no warehouse sync, we can't create WMS order correctly.
+                 // Maybe default to first warehouse of area?
+                 $wh = Warehouse::where('area_id', $movement->area_id)->first();
+                 $wmsWarehouseId = $wh ? $wh->id : 1; 
+            }
+
+            // Create Sales Order in WMS
             $so = \App\Models\WMS\SalesOrder::create([
-                'order_number' => $movement->folio ?? 'FNF-' . $movement->id,
+                'so_number' => $movement->folio, // Use same folio
                 'customer_name' => $movement->client_name ?? 'Friends & Family',
-                'warehouse_id' => $this->resolveWarehouseId($movement->ff_warehouse_id),
-                'status' => 'pending', 
-                // ... other fields
+                'warehouse_id' => $wmsWarehouseId,
+                'area_id' => $movement->area_id,
+                'user_id' => $movement->user_id,
+                'status' => 'Pending', 
+                'order_date' => now(),
+                'notes' => 'Generado desde FnF. Motivo: ' . $movement->reason
             ]);
             
+            // Resolve Quality
+            $wmsQualityId = null;
+            if ($movement->ff_quality_id && $movement->quality) {
+                 $wmsQuality = \App\Models\WMS\Quality::where('name', $movement->quality->name)
+                                    ->where('area_id', $movement->area_id)
+                                    ->first();
+                 $wmsQualityId = $wmsQuality ? $wmsQuality->id : null;
+            }
+
+            // Create Line
             $so->lines()->create([
                 'product_id' => $product->id,
-                'quantity' => $movement->quantity,
-                // ...
+                'quantity_ordered' => abs($movement->quantity),
+                'quality_id' => $wmsQualityId
             ]);
-            */
             
-            // NOTE: Check if WMS SalesOrder implementation exists or if we should use PickList directly.
-            // Using placeholder logic for now.
-
             DB::commit();
-            $this->logTransaction('Outbound Order Sync Success', "FnF Movement {$movement->id} synced to WMS Sales Order", ['movement_id' => $movement->id]);
+            $this->logTransaction('Outbound Order Sync Success', "FnF Movement {$movement->folio} synced to WMS SO #{$so->id}", ['movement_id' => $movement->id, 'so_id' => $so->id]);
 
         } catch (\Exception $e) {
             DB::rollBack();
             $this->logError('FnF Outbound Sync Error', $e->getMessage(), ['movement_id' => $movement->id]);
+        }
+    }
+
+    public function syncOutboundOrderFromFolio($folio)
+    {
+        $movements = ffInventoryMovement::where('folio', $folio)
+            ->where('quantity', '<', 0)
+            ->get();
+
+        if ($movements->isEmpty()) return;
+
+        try {
+            DB::beginTransaction();
+            
+            $first = $movements->first();
+            
+            // Resolve Warehouse (use first movement's warehouse)
+            $wmsWarehouseId = $this->resolveWarehouseId($first->ff_warehouse_id);
+            if (!$wmsWarehouseId) {
+                 $wh = Warehouse::where('area_id', $first->area_id)->first();
+                 $wmsWarehouseId = $wh ? $wh->id : 1; 
+            }
+
+            // 1. Create OR Find Sales Order Header
+            $so = \App\Models\WMS\SalesOrder::firstOrCreate(
+                ['so_number' => $folio],
+                [
+                    'customer_name' => $first->client_name ?? 'Friends & Family',
+                    'warehouse_id' => $wmsWarehouseId,
+                    'area_id' => $first->area_id,
+                    'user_id' => $first->user_id,
+                    'status' => 'Pending', 
+                    'order_date' => now(),
+                    'notes' => 'Generado desde FnF. Motivo: ' . $first->reason
+                ]
+            );
+
+            // 2. Sync Lines
+            foreach ($movements as $movement) {
+                $product = Product::where('sku', $movement->product->sku)->first();
+                if (!$product) {
+                    $this->logError('Outbound Sync Warning', "Product {$movement->product->sku} not found for SO #$folio", ['folio' => $folio]);
+                    continue;
+                }
+
+                $wmsQualityId = null;
+                if ($movement->quality) {
+                     $wmsQuality = \App\Models\WMS\Quality::where('name', $movement->quality->name)
+                                        ->where('area_id', $movement->area_id)
+                                        ->first();
+                     $wmsQualityId = $wmsQuality ? $wmsQuality->id : null;
+                }
+
+                // Update or Create Line
+                // Check if line exists for this product & quality to avoid duplicates if re-synced
+                $line = $so->lines()->where('product_id', $product->id)
+                           ->where('quality_id', $wmsQualityId)
+                           ->first();
+                
+                if ($line) {
+                    // Start fresh or accumulate? For simplicity, update quantity to match current movement
+                    // Assumption: One movement per product/quality combo in FnF Order. 
+                    // If multiple lines in FnF for same product, we should sum them or match by unique ID if available. 
+                    // FnF doesn't seem to have unique line IDs that persist well for mapping, so we'll sum or update.
+                    $line->quantity_ordered = abs($movement->quantity);
+                    $line->save();
+                } else {
+                    $so->lines()->create([
+                        'product_id' => $product->id,
+                        'quantity_ordered' => abs($movement->quantity),
+                        'quality_id' => $wmsQualityId
+                    ]);
+                }
+            }
+
+            DB::commit();
+            $this->logTransaction('Outbound Order Sync Success', "FnF Folio $folio synced to WMS SO #{$so->id}", ['folio' => $folio]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->logError('FnF Outbound Sync Error', $e->getMessage(), ['folio' => $folio]);
         }
     }
 
