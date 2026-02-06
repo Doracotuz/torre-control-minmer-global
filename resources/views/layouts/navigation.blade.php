@@ -355,9 +355,59 @@
             @endif
 
             @if(Auth::user()->hasModuleAccess('orders'))
-                <x-responsive-nav-link :href="route('ff.dashboard.index')" :active="request()->routeIs('ff.*')" class="mobile-menu-link">
-                    {{ __('Pedidos') }}
-                </x-responsive-nav-link>
+                <div x-data="{ 
+                    isFnFMenuOpen: localStorage.getItem('isFnFMenuMobileOpen') !== null ? JSON.parse(localStorage.getItem('isFnFMenuMobileOpen')) : {{ request()->routeIs('ff.*') ? 'true' : 'false' }} 
+                }" 
+                x-init="$watch('isFnFMenuOpen', value => localStorage.setItem('isFnFMenuMobileOpen', value))"
+                class="pt-1 pb-1">
+                    <div class="flex items-center justify-between w-full px-4 text-white hover:bg-gray-700 transition duration-150 ease-in-out"
+                        :class="isFnFMenuOpen ? 'text-[#ff9c00] bg-gray-700' : ''">
+                        
+                        <a href="{{ route('ff.dashboard.index') }}" 
+                           class="flex-grow py-2 text-base font-medium text-inherit hover:text-[#ff9c00] transition-colors">
+                            {{ __('Operaciones') }}
+                        </a>
+
+                        <button @click.prevent.stop="isFnFMenuOpen = !isFnFMenuOpen" 
+                                class="p-2 -mr-2 hover:bg-white/10 rounded-full transition-colors focus:outline-none">
+                            <svg class="h-5 w-5 transform transition-transform" :class="{'rotate-180': isFnFMenuOpen}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div x-show="isFnFMenuOpen" x-transition class="mt-2 space-y-1 pl-4 border-l-2 border-[#ff9c00] ml-4 bg-black/10 rounded-r-lg">
+                        @if(Auth::user()->canSeeFfTile('orders'))
+                        <x-responsive-nav-link :href="route('ff.orders.index')" :active="request()->routeIs('ff.orders.*')" class="mobile-menu-link {{ request()->routeIs('ff.orders.*') ? 'text-[#ff9c00] bg-white/10' : '' }}">
+                            {{ __('Pedidos') }}
+                        </x-responsive-nav-link>
+                        @endif
+
+                        @if(Auth::user()->canSeeFfTile('inventory'))
+                        <x-responsive-nav-link :href="route('ff.inventory.index')" :active="request()->routeIs('ff.inventory.*')" class="mobile-menu-link {{ request()->routeIs('ff.inventory.*') ? 'text-[#ff9c00] bg-white/10' : '' }}">
+                            {{ __('Inventario') }}
+                        </x-responsive-nav-link>
+                        @endif
+
+                        @if(Auth::user()->canSeeFfTile('catalog'))
+                        <x-responsive-nav-link :href="route('ff.catalog.index')" :active="request()->routeIs('ff.catalog.*')" class="mobile-menu-link {{ request()->routeIs('ff.catalog.*') ? 'text-[#ff9c00] bg-white/10' : '' }}">
+                            {{ __('Catálogo') }}
+                        </x-responsive-nav-link>
+                        @endif
+
+                        @if(Auth::user()->canSeeFfTile('reports'))
+                        <x-responsive-nav-link :href="route('ff.reports.index')" :active="request()->routeIs('ff.reports.*')" class="mobile-menu-link {{ request()->routeIs('ff.reports.*') ? 'text-[#ff9c00] bg-white/10' : '' }}">
+                            {{ __('Reportes') }}
+                        </x-responsive-nav-link>
+                        @endif
+
+                        @if(Auth::user()->canSeeFfTile('admin'))
+                        <x-responsive-nav-link :href="route('ff.admin.index')" :active="request()->routeIs('ff.admin.*')" class="mobile-menu-link {{ request()->routeIs('ff.admin.*') ? 'text-[#ff9c00] bg-white/10' : '' }}">
+                            {{ __('Administración') }}
+                        </x-responsive-nav-link>
+                        @endif
+                    </div>
+                </div>
             @endif
 
             @if(Auth::user()->hasModuleAccess('organigram'))
