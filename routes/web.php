@@ -265,6 +265,11 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
     Route::post('/users/bulk-delete', [AdminUserController::class, 'bulkDelete'])->name('users.bulk_delete');
     Route::post('/users/bulk-resend-welcome', [AdminUserController::class, 'bulkResendWelcome'])->name('users.bulk_resend_welcome');
 
+    // Sync Notifications
+    Route::get('/sync-notifications', [App\Http\Controllers\Admin\SyncNotificationController::class, 'index'])->name('sync-notifications.index');
+    Route::patch('/sync-notifications/{id}/resolve', [App\Http\Controllers\Admin\SyncNotificationController::class, 'resolve'])->name('sync-notifications.resolve');
+    Route::delete('/sync-notifications/{id}', [App\Http\Controllers\Admin\SyncNotificationController::class, 'destroy'])->name('sync-notifications.destroy');
+
     Route::get('/areas', [AreaController::class, 'index'])->name('areas.index');
     Route::get('/areas/create', [AreaController::class, 'create'])->name('areas.create');
     Route::post('/areas', [AreaController::class, 'store'])->name('areas.store');

@@ -26,7 +26,7 @@ class WMSReceivingController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'sku', 'upc']);
             
-        $qualities = Quality::orderBy('name')->get();
+        $qualities = Quality::where('area_id', $purchaseOrder->area_id)->orderBy('name')->get();
 
         $alreadyReceived = DB::table('pallet_items')
             ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')

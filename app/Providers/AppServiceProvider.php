@@ -26,6 +26,19 @@ class AppServiceProvider extends ServiceProvider
         ActivityLog::observe(ActivityLogObserver::class);
         CsOrder::observe(CsOrderObserver::class);
         CsPlanning::observe(CsPlanningObserver::class);
+
+        // WMS <-> FnF Observers
+        \App\Models\Product::observe(\App\Observers\ProductObserver::class);
+        \App\Models\ffProduct::observe(\App\Observers\FfProductObserver::class);
+        \App\Models\WMS\Quality::observe(\App\Observers\QualityObserver::class);
+        \App\Models\FfQuality::observe(\App\Observers\FfQualityObserver::class);
+        \App\Models\Warehouse::observe(\App\Observers\WarehouseObserver::class);
+        \App\Models\FfWarehouse::observe(\App\Observers\FfWarehouseObserver::class);
+
+        // Transaction Observers
+        \App\Models\WMS\PurchaseOrder::observe(\App\Observers\PurchaseOrderObserver::class);
+        \App\Models\WMS\InventoryAdjustment::observe(\App\Observers\InventoryAdjustmentObserver::class);
+        \App\Models\ffInventoryMovement::observe(\App\Observers\FfInventoryMovementObserver::class);
     }
 
     protected $listen = [

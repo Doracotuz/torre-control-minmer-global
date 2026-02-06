@@ -75,6 +75,7 @@ class WMSProductController extends Controller
             'upc' => 'nullable|string|max:255|unique:products,upc',
         ]);
 
+        $validatedData['pieces_per_case'] = $validatedData['pieces_per_case'] ?? 1;
         Product::create($validatedData);
 
         return redirect()->route('wms.products.index')
@@ -107,6 +108,7 @@ class WMSProductController extends Controller
             'upc' => 'nullable|string|max:255|unique:products,upc,' . $product->id,
         ]);
 
+        $validatedData['pieces_per_case'] = $validatedData['pieces_per_case'] ?? 1;
         $product->update($validatedData);
 
         return redirect()->route('wms.products.index')
