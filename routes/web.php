@@ -659,6 +659,8 @@ Route::middleware(['auth', 'module.access:wms'])->prefix('wms')->name('wms.')->g
     Route::post('inventory/split', [WMSInventoryController::class, 'storeSplit'])->name('inventory.split.store');
     Route::get('inventory/pallet-info', [WMSInventoryController::class, 'showPalletInfoForm'])->name('inventory.pallet-info.index');
     Route::post('inventory/pallet-info', [WMSInventoryController::class, 'findPalletInfo'])->name('inventory.pallet-info.find');
+    Route::get('inventory/location-info', [WMSInventoryController::class, 'showLocationInfoForm'])->name('inventory.location-info.index');
+    Route::post('inventory/location-info', [WMSInventoryController::class, 'findLocationInfo'])->name('inventory.location-info.find');
     Route::get('inventory/export-csv', [WMSInventoryController::class, 'exportCsv'])->name('inventory.export-csv');
     Route::post('inventory/pallet-items/{palletItem}/adjust', [WMSInventoryController::class, 'adjustItemQuantity'])->name('inventory.item.adjust');
     Route::get('inventory/adjustments', [WMSInventoryController::class, 'showAdjustmentsLog'])->name('inventory.adjustments.log');

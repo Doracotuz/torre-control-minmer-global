@@ -362,7 +362,8 @@
                             ['route' => 'wms.inventory.split.create', 'title' => 'Split (Dividir)', 'desc' => 'Separar pallets', 'img' => 'https://img1.wsimg.com/isteam/ip/2fa41b42-239e-4744-a6f7-1f8a6642ec41/0c955f09-8ae0-4fac-9a5f-3d9257bc05e4.png'],
                             ['route' => 'wms.physical-counts.index', 'title' => 'Conteos Cíclicos', 'desc' => 'Auditorías', 'img' => 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=500&auto=format&fit=crop'],
                             ['route' => 'wms.inventory.adjustments.log', 'title' => 'Bitácora Ajustes', 'desc' => 'Historial de cambios', 'img' => 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=500&auto=format&fit=crop'],
-                            ['route' => 'wms.inventory.pallet-info.index', 'title' => 'Consulta Manual', 'desc' => 'Búsqueda detallada', 'img' => 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=500&auto=format&fit=crop'],
+                            ['route' => 'wms.inventory.pallet-info.index', 'title' => 'Consulta Pallet', 'desc' => 'Búsqueda por LPN', 'img' => 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=500&auto=format&fit=crop'],
+                            ['route' => 'wms.inventory.location-info.index', 'title' => 'Contenido Ubicación', 'desc' => 'Ver stock en ubicación', 'img' => 'https://images.unsplash.com/photo-1590247813693-5541d1c609fd?q=80&w=500&auto=format&fit=crop'],
                         ];
                     @endphp
                     @foreach($ops as $op)

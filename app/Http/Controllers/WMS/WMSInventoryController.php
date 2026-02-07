@@ -523,6 +523,33 @@ public function findLpnForTransfer(Request $request)
         return view('wms.inventory.pallet-info.index', compact('pallet', 'history'));
     }
 
+    public function showLocationInfoForm()
+    {
+        return view('wms.inventory.location-info.index', ['location' => null, 'pallets' => collect()]);
+    }
+
+    public function findLocationInfo(Request $request)
+    {
+        $request->validate(['location_code' => 'required|string']);
+        $locationCode = strtoupper(trim($request->location_code));
+
+        $location = Location::where('code', $locationCode)
+            ->orWhere(DB::raw("CONCAT(aisle,'-',rack,'-',shelf,'-',bin)"), $locationCode)
+            ->with(['warehouse', 'area'])
+            ->first();
+
+        if (!$location) {
+            return back()->with('error', 'Ubicación no encontrada.');
+        }
+
+        $pallets = Pallet::where('location_id', $location->id)
+            ->where('status', 'Finished')
+            ->with(['items.product', 'items.quality', 'purchaseOrder.area'])
+            ->get();
+
+        return view('wms.inventory.location-info.index', compact('location', 'pallets'));
+    }
+
     public function adjustItemQuantity(Request $request, PalletItem $palletItem)
     {
         if (!Auth::user()->isSuperAdmin()) {
