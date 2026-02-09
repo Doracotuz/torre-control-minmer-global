@@ -220,13 +220,13 @@
                         </label>                        
                         
                         <div class="h-10 w-px bg-slate-200 mx-2 hidden md:block"></div>
-
+                        @if(Auth::user()->isSuperAdmin())
                         <button @click="openImportModal()" 
                                 class="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-[#2c3856] hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200" 
                                 title="Importar CSV">
                             <i class="fas fa-file-upload text-xl"></i>
                         </button>
-                        
+                        @endif
                         <button @click="exportFilteredCsv()" 
                                 class="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-[#2c3856] hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200" 
                                 title="Exportar CSV">
