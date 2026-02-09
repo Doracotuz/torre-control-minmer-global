@@ -23,10 +23,12 @@
                 </div>
                 
                 <div class="flex gap-3 w-full md:w-auto">
+                    @if(Auth::user()->hasFfPermission('sales.view'))
                     <a href="{{ route('ff.sales.index') }}" 
                        class="inline-flex justify-center items-center px-6 py-3 bg-[#ff9c00] text-white rounded-2xl text-sm font-bold shadow-lg hover:bg-orange-600 hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 w-full md:w-auto">
                         <i class="fas fa-plus mr-2"></i> Crear Pedido
                     </a>
+                    @endif
                 </div>
             </div>
 
@@ -216,9 +218,11 @@
                             </div>
                         </div>
 
+                        @if(Auth::user()->hasFfPermission('orders.details'))
                         <a href="{{ route('ff.orders.show', $order->folio) }}" class="block w-full py-2.5 text-center bg-[#2c3856] text-white rounded-xl text-xs font-bold shadow hover:bg-[#1e273d] transition-colors">
                             Ver Detalles
                         </a>
+                        @endif
                     </div>
                 @empty
                     <div class="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-100">
@@ -360,7 +364,7 @@
                                     <td class="px-6 py-4 text-right">
                                         <div class="flex items-center justify-end gap-2">
                                             
-                                            @if($order->evidences_count > 0)
+                                            @if($order->evidences_count > 0 && Auth::user()->hasFfPermission('orders.report'))
                                                 <a href="{{ route('ff.orders.downloadReport', $order->folio) }}" 
                                                 class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-orange-50 border border-orange-200 text-[#ff9c00] hover:bg-[#ff9c00] hover:text-white transition-all shadow-sm group/pdf"
                                                 title="Descargar Reporte de Evidencias">
@@ -368,11 +372,13 @@
                                                 </a>
                                             @endif
 
+                                            @if(Auth::user()->hasFfPermission('orders.details'))
                                             <a href="{{ route('ff.orders.show', $order->folio) }}" 
                                             class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-[#2c3856] hover:border-[#2c3856] hover:bg-gray-50 transition-all shadow-sm group-hover:scale-105"
                                             title="Ver Detalle">
                                                 <i class="fas fa-eye"></i>
                                             </a>
+                                            @endif
 
                                         </div>
                                     </td>

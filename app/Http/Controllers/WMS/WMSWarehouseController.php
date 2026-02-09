@@ -5,9 +5,20 @@ namespace App\Http\Controllers\WMS;
 use App\Http\Controllers\Controller;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class WMSWarehouseController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!Auth::user()->hasFfPermission('wms.warehouses')) {
+                abort(403, 'No tienes permiso para gestionar almacenes.');
+            }
+            return $next($request);
+        });
+    }
+
     public function index()
     {
         $warehouses = Warehouse::latest()->paginate(15);

@@ -23,6 +23,40 @@ use App\Models\Area;
 
 class WMSSalesOrderController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = Auth::user();
+
+            if ($request->routeIs('wms.sales-orders.index') || $request->routeIs('wms.sales-orders.show') || $request->routeIs('wms.sales-orders.export') || $request->routeIs('wms.sales-orders.template') || $request->routeIs('wms.sales-orders.api.stock') || $request->routeIs('wms.sales-orders.api.qualities')) {
+                if (!$user->hasFfPermission('wms.sales_orders.view')) {
+                    abort(403, 'No tienes permiso para ver órdenes de venta.');
+                }
+            } elseif ($request->routeIs('wms.sales-orders.create') || $request->routeIs('wms.sales-orders.store')) {
+                if (!$user->hasFfPermission('wms.sales_orders.create')) {
+                    abort(403, 'No tienes permiso para crear órdenes de venta.');
+                }
+            } elseif ($request->routeIs('wms.sales-orders.edit') || $request->routeIs('wms.sales-orders.update') || $request->routeIs('wms.sales-orders.cancel')) {
+                if (!$user->hasFfPermission('wms.sales_orders.edit')) {
+                    abort(403, 'No tienes permiso para editar órdenes de venta.');
+                }
+            } elseif ($request->routeIs('wms.sales-orders.import')) {
+                $salesOrder = $request->route('sales_order');
+                if ($salesOrder && $salesOrder->exists) {
+                    if (!$user->hasFfPermission('wms.sales_orders.edit')) {
+                        abort(403, 'No tienes permiso para editar órdenes de venta (importación).');
+                    }
+                } else {
+                    if (!$user->hasFfPermission('wms.sales_orders.create')) {
+                        abort(403, 'No tienes permiso para crear órdenes de venta (importación).');
+                    }
+                }
+            }
+
+            return $next($request);
+        });
+    }
+
     public function index(Request $request)
     {
         $warehouses = Warehouse::orderBy('name')->get();

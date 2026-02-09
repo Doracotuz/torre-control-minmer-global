@@ -678,6 +678,7 @@
                         </div>
                     </div>
 
+                    @if(Auth::user()->hasFfPermission('orders.evidence'))
                     <div class="bg-white rounded-[2rem] p-8 shadow-[0_2px_20px_rgba(0,0,0,0.02)] border border-slate-100">
 
                         <div class="flex justify-between items-center mb-6">
@@ -810,22 +811,27 @@
                             </div>
                         </form>
                     </div>
+                    @endif
 
                     @if(!in_array($header->status, ['cancelled', 'rejected']))
+                        @if(Auth::user()->hasFfPermission('sales.checkout'))
                         <a href="{{ route('ff.sales.index', ['edit_folio' => $header->folio]) }}" 
                            class="block w-full bg-white border border-slate-200 text-slate-600 font-bold py-4 rounded-xl shadow-sm hover:bg-slate-50 hover:text-[#2c3856] hover:border-[#2c3856] transition-all text-sm text-center">
                             <i class="fas fa-pencil-alt mr-2"></i> Editar Pedido
                         </a>
+                        @endif
                     @else
                         <div class="block w-full bg-slate-100 border border-slate-200 text-slate-400 font-bold py-4 rounded-xl text-sm text-center cursor-not-allowed">
                             <i class="fas fa-ban mr-2"></i> Edición Bloqueada ({{ ucfirst($header->status) }})
                         </div>
                     @endif
                     @if($header->order_type === 'prestamo' && !$header->is_loan_returned && !in_array($header->status, ['cancelled', 'rejected']))
+                        @if(Auth::user()->hasFfPermission('sales.loans'))
                         <a href="{{ route('ff.sales.index', ['edit_folio' => $header->folio]) }}" 
                         class="block w-full bg-purple-600 border border-purple-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all text-sm text-center mb-3">
                             <i class="fas fa-boxes-packing mr-2"></i> Registrar Devolución
                         </a>
+                        @endif
                     @endif                    
 
                 </div>

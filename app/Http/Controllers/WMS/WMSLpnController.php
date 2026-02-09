@@ -5,9 +5,20 @@ use App\Http\Controllers\Controller;
 use App\Models\WMS\PregeneratedLpn;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
 
 class WMSLpnController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!Auth::user()->hasFfPermission('wms.lpns')) {
+                abort(403, 'No tienes permiso para gestionar LPNs.');
+            }
+            return $next($request);
+        });
+    }
+
     public function index()
     {
         $totalLpns = PregeneratedLpn::count();

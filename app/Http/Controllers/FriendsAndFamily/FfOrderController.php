@@ -26,6 +26,10 @@ class FfOrderController extends Controller
 {
     public function index(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('orders.view')) {
+            abort(403, 'No tienes permiso para ver el listado de pedidos.');
+        }
+
         $query = ffInventoryMovement::query()
             ->where('quantity', '<', 0)
             ->whereIn('order_type', ['normal', 'remision', 'prestamo']); 
@@ -137,6 +141,10 @@ class FfOrderController extends Controller
 
     public function show($folio)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('orders.details')) {
+            abort(403, 'No tienes permiso para ver los detalles del pedido.');
+        }
+
         $movements = ffInventoryMovement::where('folio', $folio)
             ->where('quantity', '<', 0)
             ->with(['product', 'user', 'approver', 'warehouse', 'quality'])
@@ -700,6 +708,10 @@ class FfOrderController extends Controller
 
     public function uploadBatchEvidences(Request $request, $folio)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('orders.evidence')) {
+            abort(403, 'No tienes permiso para cargar evidencias.');
+        }
+
         $check = ffInventoryMovement::where('folio', $folio)->firstOrFail();
         
         if (!Auth::user()->isSuperAdmin() && $check->area_id !== Auth::user()->area_id) {
@@ -734,6 +746,10 @@ class FfOrderController extends Controller
 
     public function deleteEvidence($id)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('orders.evidence')) {
+            abort(403, 'No tienes permiso para gestionar evidencias.');
+        }
+
         $evidence = \App\Models\FfOrderEvidence::findOrFail($id);
         
         $movement = ffInventoryMovement::where('folio', $evidence->folio)->first();
@@ -752,6 +768,10 @@ class FfOrderController extends Controller
 
     public function downloadEvidence(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('orders.evidence')) {
+            abort(403, 'No tienes permiso para ver evidencias.');
+        }
+
         $path = $request->query('path');
         
         if (!$path) {
@@ -792,6 +812,10 @@ class FfOrderController extends Controller
 
     public function downloadReport($folio)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('orders.report')) {
+            abort(403, 'No tienes permiso para descargar reportes.');
+        }
+
         set_time_limit(300);
         ini_set('memory_limit', '512M');
 

@@ -30,12 +30,14 @@
                         <span class="hidden sm:inline">Panel</span>
                     </a>
                     
+                    @if(Auth::user()->hasFfPermission('catalog.import'))
                     <button @click="openUploadModal()" 
                         class="inline-flex items-center px-5 py-2.5 rounded-xl bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-50 transition-all font-medium">
                         <i class="fas fa-cloud-upload-alt mr-2 text-gray-500"></i> <span class="hidden sm:inline">Importar</span>
                     </button>
+                    @endif
 
-                    @if(Auth::user()->isSuperAdmin())
+                    @if(Auth::user()->isSuperAdmin() || Auth::user()->hasFfPermission('catalog.delete'))
                         <button x-show="selectedProducts.length > 0" 
                                 @click="deleteSelected()"
                                 x-transition
@@ -45,10 +47,12 @@
                         </button>
                     @endif
 
+                    @if(Auth::user()->hasFfPermission('catalog.create'))
                     <button @click="selectNewProduct()" 
                         class="inline-flex items-center px-5 py-2.5 rounded-xl bg-[#2c3856] text-white shadow-md hover:bg-[#1a233a] transition-all hover:-translate-y-0.5 font-bold">
                         <i class="fas fa-plus mr-2"></i> Nuevo
                     </button>
+                    @endif
                 </div>
             </div>
 
@@ -150,20 +154,26 @@
 
                         <div class="hidden md:block h-8 w-px bg-gray-300 mx-2"></div>
 
+                        @if(Auth::user()->hasFfPermission('catalog.export'))
                         <a :href="generateUrl('{{ route('ff.catalog.exportInventoryPdf') }}')" target="_blank" 
                         class="px-3 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold shadow-sm flex items-center justify-center w-full sm:w-auto" title="Inventario">
                             <i class="fas fa-clipboard-list mr-2 text-gray-400"></i> <span class="truncate">Inventario</span>
                         </a>
+                        @endif
                         
+                        @if(Auth::user()->hasFfPermission('catalog.technical_sheet'))
                         <button @click="openPdfModal()" 
                                 class="px-3 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold shadow-sm flex items-center justify-center w-full sm:w-auto">
                             <i class="fas fa-file-pdf mr-2 text-gray-400"></i> PDF
                         </button>
+                        @endif
                         
+                        @if(Auth::user()->hasFfPermission('catalog.export'))
                         <a :href="generateUrl('{{ route('ff.catalog.exportCsv') }}')" target="_blank" 
                         class="col-span-2 sm:col-span-1 px-3 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold shadow-sm flex items-center justify-center w-full sm:w-auto">
                             <i class="fas fa-file-csv mr-2 text-gray-400"></i> CSV
                         </a>
+                        @endif
                     </div>
                 </div>
 
@@ -247,7 +257,7 @@
                 <div x-show="!loading && viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <template x-for="product in products" :key="product.id">
                         <div class="group relative bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer">
-                            @if(Auth::user()->isSuperAdmin())   
+                            @if(Auth::user()->isSuperAdmin() || Auth::user()->hasFfPermission('catalog.delete'))   
                                 <div class="absolute top-12 left-0 z-30 p-2" @click.stop>
                                     <input type="checkbox" 
                                         :value="product.id" 
@@ -272,11 +282,13 @@
                                     <span class="bg-gray-800/80 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest backdrop-blur-sm transform -rotate-12">Inactivo</span>
                                 </div>
                                 <button @click.stop="openDetailModal(product)" class="absolute top-0 left-0 bg-white/90 backdrop-blur text-gray-500 p-2 rounded-br-xl shadow-sm hover:bg-[#2c3856] hover:text-white transition-colors border-r border-b border-gray-100 z-20" title="Ver Detalle"><i class="fas fa-eye"></i></button>
+                                @if(Auth::user()->hasFfPermission('catalog.edit'))
                                 <div class="absolute inset-0 bg-[#2c3856]/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]" @click="editProduct(product)">
                                     <span class="bg-white text-[#2c3856] px-5 py-2 rounded-full font-bold text-sm shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all"><i class="fas fa-pen mr-2"></i> Editar</span>
                                 </div>
+                                @endif
                             </div>
-                            <div class="p-5" @click="editProduct(product)">
+                            <div class="p-5" {{ Auth::user()->hasFfPermission('catalog.edit') ? '@click="editProduct(product)"' : '' }}>
                                 <div class="flex justify-between items-start mb-2">
                                     <p class="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded border border-gray-200" x-text="product.sku"></p>
                                     <p class="text-xs font-bold text-[#2c3856] uppercase tracking-wider" x-text="product.brand || 'Genérico'"></p>
@@ -296,7 +308,7 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    @if(Auth::user()->isSuperAdmin())
+                                    @if(Auth::user()->isSuperAdmin() || Auth::user()->hasFfPermission('catalog.delete'))
                                         <th class="px-4 py-4 w-10">
                                             <input type="checkbox" @change="toggleAll($event)" class="rounded border-gray-300 text-[#2c3856] focus:ring-[#2c3856]">
                                         </th>
@@ -312,8 +324,8 @@
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <template x-for="product in products" :key="product.id">
-                                    <tr class="hover:bg-gray-50 transition-colors cursor-pointer group" @click="editProduct(product)">
-                                        @if(Auth::user()->isSuperAdmin())
+                                    <tr class="hover:bg-gray-50 transition-colors cursor-pointer group" {{ Auth::user()->hasFfPermission('catalog.edit') ? '@click="editProduct(product)"' : '' }}>
+                                        @if(Auth::user()->isSuperAdmin() || Auth::user()->hasFfPermission('catalog.delete'))
                                             <td class="px-4 py-4 whitespace-nowrap" @click.stop>
                                                 <input type="checkbox" :value="product.id" x-model="selectedProducts" class="rounded border-gray-300 text-[#2c3856] focus:ring-[#2c3856]">
                                             </td>
@@ -361,9 +373,11 @@
                                                 <button @click.stop="openDetailModal(product)" class="p-2 text-gray-400 hover:text-[#2c3856] hover:bg-gray-100 rounded-lg transition-colors" title="Ver Detalle">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
+                                                @if(Auth::user()->hasFfPermission('catalog.edit'))
                                                 <button @click.stop="editProduct(product)" class="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
                                                     <i class="fas fa-pen"></i>
                                                 </button>
+                                                @endif
                                             </div>
                                         </td>
                                     </tr>
@@ -488,7 +502,7 @@
                                     </div>
                                 </div>
                                 <div class="flex justify-start gap-3 px-4 py-4 bg-gray-50 border-t border-gray-200">
-                                    @if(Auth::user()->isSuperAdmin())
+                                    @if(Auth::user()->isSuperAdmin() || Auth::user()->hasFfPermission('catalog.delete'))
                                         <button type="button" 
                                                 @click="deleteProduct(form)" 
                                                 x-show="form.id" 
@@ -624,11 +638,13 @@
                                 <span class="relative z-10 text-sm md:text-base">Generar Ficha</span>
                             </button>
                             
+                            @if(Auth::user()->hasFfPermission('catalog.edit'))
                             <button @click="closeDetailAndEdit(detailProduct)" 
                                     class="px-6 md:px-8 py-3 md:py-4 bg-white text-[#2c3856] border-2 border-gray-100 rounded-xl md:rounded-2xl font-bold hover:border-[#2c3856] hover:bg-gray-50 transition-all duration-300 flex items-center justify-center gap-2 group text-sm md:text-base">
                                 <span>Editar</span>
                                 <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
                             </button>
+                            @endif
                         </div>
 
                     </div>

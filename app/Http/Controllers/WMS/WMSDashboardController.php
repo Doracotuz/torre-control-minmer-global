@@ -13,11 +13,16 @@ use App\Models\WMS\Quality;
 use App\Models\Warehouse;
 use App\Models\Area;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class WMSDashboardController extends Controller
 {
     public function index(Request $request)
     {
+        if (!Auth::user()->hasFfPermission('wms.dashboard')) {
+            abort(403, 'No tienes permiso para ver el Dashboard WMS.');
+        }
+
         $warehouseId = $request->input('warehouse_id');
         $areaId = $request->input('area_id');
 

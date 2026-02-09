@@ -6,9 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Area;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class WMSBrandController extends Controller 
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!Auth::user()->hasFfPermission('wms.products')) {
+                abort(403, 'No tienes permiso para gestionar marcas.');
+            }
+            return $next($request);
+        });
+    }
+
     public function index(Request $request)
     {
         $query = Brand::with('area')->latest();

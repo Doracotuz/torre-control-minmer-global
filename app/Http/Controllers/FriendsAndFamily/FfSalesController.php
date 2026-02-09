@@ -74,6 +74,10 @@ class FfSalesController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        if (!$user->isSuperAdmin() && !$user->hasFfPermission('sales.view')) {
+            abort(403, 'No tienes permiso para ver el módulo de ventas.');
+        }
+
         $userId = $user->id;
         $editFolio = $request->input('edit_folio');
         $productsQuery = ffProduct::where('is_active', true);
@@ -178,6 +182,10 @@ class FfSalesController extends Controller
 
     public function updateCartItem(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('sales.checkout')) {
+            return response()->json(['message' => 'No tienes permiso para realizar ventas.'], 403);
+        }
+
         $request->validate([
             'product_id' => [
                 'required',
@@ -237,6 +245,10 @@ class FfSalesController extends Controller
 
     public function getReservations()
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('sales.view')) {
+            return response()->json(['message' => 'Sin permisos.'], 403);
+        }
+
         $userId = Auth::id();
         
         $query = ffCartItem::where('user_id', '!=', $userId);
@@ -256,6 +268,10 @@ class FfSalesController extends Controller
 
     public function searchOrder(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('sales.checkout')) {
+            return response()->json(['message' => 'No tienes permiso para editar pedidos.'], 403);
+        }
+
         $request->validate(['folio' => 'required|integer']);
         
         $movements = ffInventoryMovement::where('folio', $request->folio)
@@ -363,6 +379,10 @@ class FfSalesController extends Controller
 
     public function cancelOrder(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('sales.cancel')) {
+            return response()->json(['message' => 'No tienes permiso para cancelar pedidos.'], 403);
+        }
+
         $request->validate([
             'folio' => 'required|integer|exists:ff_inventory_movements,folio',
             'reason' => 'required|string'
@@ -429,6 +449,10 @@ class FfSalesController extends Controller
 
     public function checkout(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('sales.checkout')) {
+            return response()->json(['message' => 'No tienes permiso para realizar el checkout.'], 403);
+        }
+
         $user = Auth::user();
 
         $targetAreaId = $user->area_id;
@@ -752,6 +776,10 @@ class FfSalesController extends Controller
 
     public function printList(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('sales.view')) {
+            abort(403, 'Sin permisos.');
+        }
+
         $data = $request->validate([
             'products' => 'required|array',
             'numSets'  => 'required|integer|min:1',
@@ -787,6 +815,10 @@ class FfSalesController extends Controller
 
     public function downloadTemplate(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('sales.import')) {
+            abort(403, 'Sin permisos de importación.');
+        }
+
         $query = ffProduct::where('is_active', true);
 
         if (!Auth::user()->isSuperAdmin()) {
@@ -846,6 +878,10 @@ class FfSalesController extends Controller
 
     public function importOrder(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('sales.import')) {
+            return response()->json(['message' => 'No tienes permiso para importar pedidos.'], 403);
+        }
+
         $request->validate([
             'order_csv' => 'required|file|mimes:csv,txt'
         ]);
@@ -923,6 +959,10 @@ class FfSalesController extends Controller
 
     public function getLoanDetails(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('sales.loans')) {
+            return response()->json(['message' => 'Sin permisos para gestionar préstamos.'], 403);
+        }
+
         $request->validate(['folio' => 'required|integer']);
 
         $loanItems = ffInventoryMovement::where('folio', $request->folio)
@@ -953,6 +993,10 @@ class FfSalesController extends Controller
 
     public function processLoanReturn(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('sales.loans')) {
+            return response()->json(['message' => 'Sin permisos para gestionar devoluciones.'], 403);
+        }
+
         $request->validate([
             'folio' => 'required|integer',
             'items' => 'required|array',

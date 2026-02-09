@@ -324,26 +324,28 @@
         <div class="grid grid-cols-2 md:grid-cols-6 gap-4 animate-enter" style="animation-delay: 0.6s;">
             @php
                 $tools = [
-                    ['route' => 'ff.reports.transactions', 'icon' => 'fa-receipt', 'title' => 'TRANSACCIONES', 'sub' => 'Historial Completo', 'bg' => 'from-blue-500 to-blue-600'],
-                    ['route' => 'ff.reports.inventoryAnalysis', 'icon' => 'fa-dolly-flatbed', 'title' => 'MOVIMIENTOS', 'sub' => 'Entradas/Salidas', 'bg' => 'from-indigo-500 to-indigo-600'],
-                    ['route' => 'ff.reports.stockAvailability', 'icon' => 'fa-warehouse', 'title' => 'DISPONIBILIDAD', 'sub' => 'Auditoría Stock', 'bg' => 'from-amber-500 to-amber-600'],
-                    ['route' => 'ff.reports.catalogAnalysis', 'icon' => 'fa-tags', 'title' => 'CATÁLOGO', 'sub' => 'Precios & SKUs', 'bg' => 'from-teal-500 to-teal-600'],
-                    ['route' => 'ff.reports.clientAnalysis', 'icon' => 'fa-address-card', 'title' => 'CLIENTES', 'sub' => 'Análisis Cartera', 'bg' => 'from-cyan-500 to-cyan-600'],
-                    ['route' => 'ff.reports.sellerPerformance', 'icon' => 'fa-users', 'title' => 'DESEMPEÑO', 'sub' => 'Ranking Ventas', 'bg' => 'from-pink-500 to-pink-600'],
+                    ['route' => 'ff.reports.transactions', 'permission' => 'reports.transactions', 'icon' => 'fa-receipt', 'title' => 'TRANSACCIONES', 'sub' => 'Historial Completo', 'bg' => 'from-blue-500 to-blue-600'],
+                    ['route' => 'ff.reports.inventoryAnalysis', 'permission' => 'reports.inventory_analysis', 'icon' => 'fa-dolly-flatbed', 'title' => 'MOVIMIENTOS', 'sub' => 'Entradas/Salidas', 'bg' => 'from-indigo-500 to-indigo-600'],
+                    ['route' => 'ff.reports.stockAvailability', 'permission' => 'reports.stock_availability', 'icon' => 'fa-warehouse', 'title' => 'DISPONIBILIDAD', 'sub' => 'Auditoría Stock', 'bg' => 'from-amber-500 to-amber-600'],
+                    ['route' => 'ff.reports.catalogAnalysis', 'permission' => 'reports.catalog_analysis', 'icon' => 'fa-tags', 'title' => 'CATÁLOGO', 'sub' => 'Precios & SKUs', 'bg' => 'from-teal-500 to-teal-600'],
+                    ['route' => 'ff.reports.clientAnalysis', 'permission' => 'reports.client_analysis', 'icon' => 'fa-address-card', 'title' => 'CLIENTES', 'sub' => 'Análisis Cartera', 'bg' => 'from-cyan-500 to-cyan-600'],
+                    ['route' => 'ff.reports.sellerPerformance', 'permission' => 'reports.seller_performance', 'icon' => 'fa-users', 'title' => 'DESEMPEÑO', 'sub' => 'Ranking Ventas', 'bg' => 'from-pink-500 to-pink-600'],
                 ];
             @endphp
 
             @foreach($tools as $tool)
-            <a href="{{ route($tool['route']) }}" class="card-complex p-4 flex flex-row items-center gap-4 group hover:-translate-y-2 transition-transform duration-300">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br {{ $tool['bg'] }} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-                    <i class="fas {{ $tool['icon'] }} text-lg"></i>
-                </div>
-                <div class="flex flex-col">
-                    <span class="text-xs font-black text-[#2c3856] group-hover:text-[#ff9c00] transition-colors">{{ $tool['title'] }}</span>
-                    <span class="text-[9px] font-bold text-slate-400 uppercase">{{ $tool['sub'] }}</span>
-                    <div class="h-0.5 w-0 bg-[#ff9c00] mt-1 group-hover:w-full transition-all duration-300"></div>
-                </div>
-            </a>
+                @if(Auth::user()->hasFfPermission($tool['permission']))
+                <a href="{{ route($tool['route']) }}" class="card-complex p-4 flex flex-row items-center gap-4 group hover:-translate-y-2 transition-transform duration-300">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br {{ $tool['bg'] }} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                        <i class="fas {{ $tool['icon'] }} text-lg"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-xs font-black text-[#2c3856] group-hover:text-[#ff9c00] transition-colors">{{ $tool['title'] }}</span>
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">{{ $tool['sub'] }}</span>
+                        <div class="h-0.5 w-0 bg-[#ff9c00] mt-1 group-hover:w-full transition-all duration-300"></div>
+                    </div>
+                </a>
+                @endif
             @endforeach
         </div>
 
@@ -439,9 +441,11 @@
                         </div>
                         <h5 class="text-xl font-black text-[#2c3856] mb-2">Alerta de Stock</h5>
                         <p class="text-sm text-slate-600 mb-6">Se han detectado <strong>${stockAgotadoCount} productos</strong> con inventario en cero. Se requiere reposición inmediata.</p>
+                        @if(Auth::user()->hasFfPermission('reports.stock_availability'))
                         <a href="{{ route('ff.reports.stockAvailability') }}" class="inline-flex items-center px-6 py-3 bg-[#2c3856] hover:bg-rose-600 text-white text-xs font-bold uppercase rounded-lg transition-colors shadow-lg">
                             <i class="fas fa-clipboard-list mr-2"></i> Gestionar Inventario
                         </a>
+                        @endif
                     </div>`;
                 return;
             }

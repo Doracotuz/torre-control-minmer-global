@@ -52,6 +52,9 @@
             photoName: null,
             isClient: {{ old('is_client', 'false') ? 'true' : 'false' }},
             selectedFolderIds: @json(old('accessible_folder_ids', [])),
+            selectedPermissions: @json(old('ff_granular_permissions', [])),
+            roles: @json($roles),
+            selectedRoleId: '',
             folders: [],
             loadingFolders: true,
             
@@ -107,6 +110,14 @@
                 if(this.isClient && document.getElementById('area_id')) {
                     document.getElementById('area_id').disabled = true;
                 }
+                this.$watch('selectedRoleId', (value) => {
+                    const role = this.roles.find(r => r.id == value);
+                    if (role) {
+                        document.getElementById('ff_role_name').value = role.name;
+                        // permissions is json/array in DB, so it comes as array here
+                        this.selectedPermissions = role.permissions || [];
+                    }
+                });
             }
         }" class="flex-1 flex flex-col relative z-10 h-full max-h-screen">
 
@@ -366,7 +377,74 @@
                                         </label>
                                     @endforeach
                                 </div>
-                            </div>                            
+                            </div>  
+
+                            <div class="mt-10 pt-8 border-t border-gray-200">
+                                <div class="text-center mb-8">
+                                    <h3 class="text-xl font-bold text-[#ff9c00]">Permisos Granulares Friends & Family</h3>
+                                    <p class="text-gray-400 text-sm">Defina el rol y permisos específicos</p>
+                                </div>
+
+                                <div class="max-w-md mx-auto mb-6">
+                                    <div class="input-group relative">
+                                        <select id="role_id" name="role_id" x-model="selectedRoleId" class="block w-full px-0 py-2 bg-transparent border-0 border-b-2 border-gray-300 focus:ring-0 focus:border-[#ff9c00] transition-colors text-[#2c3856] font-semibold text-lg">
+                                            <option value="">Personalizado / Ninguno</option>
+                                            <template x-for="role in roles" :key="role.id">
+                                                <option :value="role.id" x-text="role.name"></option>
+                                            </template>
+                                        </select>
+                                        <label for="role_id" class="absolute left-0 top-2 text-gray-500 pointer-events-none transform -translate-y-6 scale-75">Seleccionar Rol (Plantilla)</label>
+                                    </div>
+                                </div>
+
+                                <div class="max-w-md mx-auto mb-8">
+                                    <div class="input-group relative">
+                                        <input type="text" name="ff_role_name" id="ff_role_name" placeholder=" " class="block w-full px-0 py-2 bg-transparent border-0 border-b-2 border-gray-300 focus:ring-0 focus:border-[#ff9c00] transition-colors text-[#2c3856] font-semibold text-lg" value="{{ old('ff_role_name') }}">
+                                        <label for="ff_role_name" class="absolute left-0 top-2 text-gray-500 pointer-events-none">Nombre del Rol F&F (Opcional)</label>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-6">
+                                    @foreach(\App\Models\User::getGroupedPermissions() as $moduleName => $subGroups)
+                                        <div x-data="{ open: false }" class="border border-gray-200 rounded-2xl bg-white overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md">
+                                            <button type="button" @click="open = !open" class="w-full flex items-center justify-between p-5 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-2 h-8 rounded-full {{ $moduleName === 'WMS' ? 'bg-[#ff9c00]' : 'bg-[#2c3856]' }}"></div>
+                                                    <h3 class="text-lg font-bold text-[#2c3856] uppercase tracking-wide">{{ $moduleName }}</h3>
+                                                </div>
+                                                <svg class="w-5 h-5 text-gray-400 transform transition-transform duration-300" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                            
+                                            <div x-show="open" x-collapse>
+                                                <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                                                    @foreach($subGroups as $groupName => $permissions)
+                                                        <div class="bg-white border border-gray-100 rounded-xl p-0 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                                            <div class="bg-gray-50/50 px-4 py-2 border-b border-gray-100 flex items-center justify-between">
+                                                                <h4 class="font-bold text-xs uppercase tracking-widest text-[#2c3856]">{{ $groupName }}</h4>
+                                                                <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-full">{{ count($permissions) }} Permisos</span>
+                                                            </div>
+                                                            <div class="p-4 space-y-3">
+                                                                @foreach($permissions as $key => $label)
+                                                                    <label class="flex items-start cursor-pointer group">
+                                                                        <div class="relative flex items-start mt-0.5">
+                                                                            <input type="checkbox" name="ff_granular_permissions[]" value="{{ $key }}" class="peer sr-only" 
+                                                                                x-model="selectedPermissions">
+                                                                            <div class="w-4 h-4 border-2 border-gray-300 rounded bg-white peer-checked:bg-[#ff9c00] peer-checked:border-[#ff9c00] flex items-center justify-center transition-all">
+                                                                                <svg class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                                                            </div>
+                                                                        </div>
+                                                                        <span class="ml-3 text-sm text-gray-600 group-hover:text-[#2c3856] transition-colors leading-tight select-none">{{ $label }}</span>
+                                                                    </label>
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>                          
                         </div>
 
                     </div>

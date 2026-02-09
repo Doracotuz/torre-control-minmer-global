@@ -20,6 +20,10 @@ class FfProductController extends Controller
 {
     public function index()
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.view')) {
+            abort(403, 'No tienes permiso para ver el catálogo.');
+        }
+
         $channelsQuery = FfSalesChannel::where('is_active', true)->orderBy('name');
         $productQuery = ffProduct::query();
         
@@ -108,6 +112,10 @@ class FfProductController extends Controller
 
     public function store(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.create')) {
+            return response()->json(['message' => 'No tienes permiso para crear productos.'], 403);
+        }
+
         $user = Auth::user();
         
         $targetAreaId = $user->area_id;
@@ -170,6 +178,10 @@ class FfProductController extends Controller
 
     public function update(Request $request, ffProduct $catalog)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.edit')) {
+            return response()->json(['message' => 'No tienes permiso para editar productos.'], 403);
+        }
+
         $user = Auth::user();
 
         if (!$user->isSuperAdmin() && $catalog->area_id !== $user->area_id) {
@@ -248,6 +260,10 @@ class FfProductController extends Controller
 
     public function destroy(ffProduct $catalog)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.delete')) {
+            return response()->json(['message' => 'No tienes permiso para eliminar productos.'], 403);
+        }
+
         if (!Auth::user()->isSuperAdmin() && $catalog->area_id !== Auth::user()->area_id) {
             abort(403, 'No tienes permiso para eliminar este producto.');
         }
@@ -259,6 +275,10 @@ class FfProductController extends Controller
 
     public function downloadTemplate()
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.import')) {
+            abort(403, 'No tienes permiso para importar/descargar plantilla.');
+        }
+
         $query = ffProduct::orderBy('sku')->with('channels');
 
         if (!Auth::user()->isSuperAdmin()) {
@@ -309,6 +329,10 @@ class FfProductController extends Controller
 
     public function import(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.import')) {
+            return response()->json(['message' => 'No tienes permiso para importar productos.'], 403);
+        }
+
         $request->validate([
             'product_file' => 'required|file|mimes:csv,txt',
             'image_zip'    => 'nullable|file|mimetypes:application/zip,application/x-zip-compressed,application/x-zip,application/octet-stream,multipart/x-zip',
@@ -453,6 +477,10 @@ class FfProductController extends Controller
 
     public function bulkDestroy(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.delete')) {
+            return response()->json(['message' => 'No tienes permiso para eliminar productos.'], 403);
+        }
+
         if (!Auth::user()->isSuperAdmin()) {
             abort(403, 'No tienes permiso para realizar esta acción.');
         }
@@ -493,6 +521,10 @@ class FfProductController extends Controller
 
     public function exportCsv(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.export')) {
+            abort(403, 'No tienes permiso para exportar el catálogo.');
+        }
+
         $query = ffProduct::with('channels')->orderBy('brand')->orderBy('description');
 
         $query = $this->applyFilters($query, $request);
@@ -544,6 +576,10 @@ class FfProductController extends Controller
 
     public function exportPdf(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.export')) {
+            abort(403, 'No tienes permiso para exportar el catálogo.');
+        }
+
         set_time_limit(0);
         ini_set('memory_limit', '1024M');
 
@@ -658,6 +694,10 @@ class FfProductController extends Controller
 
     public function generateTechnicalSheet(Request $request, ffProduct $product)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.technical_sheet')) {
+            abort(403, 'No tienes permiso para generar ficha técnica.');
+        }
+
         if (!Auth::user()->isSuperAdmin() && $product->area_id !== Auth::user()->area_id) {
             abort(403);
         }
@@ -698,6 +738,10 @@ class FfProductController extends Controller
 
     public function exportInventoryPdf(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.export')) {
+            abort(403, 'No tienes permiso para exportar el catálogo/inventario.');
+        }
+
         set_time_limit(0); 
         ini_set('max_execution_time', 600);
         ini_set('memory_limit', '1024M');

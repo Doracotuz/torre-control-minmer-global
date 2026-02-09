@@ -30,10 +30,12 @@
                 </div>
                 
                 <div class="flex flex-wrap items-center gap-4">
+                    @if(Auth::user()->hasFfPermission('inventory.log'))
                     <a href="{{ route('ff.inventory.log') }}" 
                     class="inline-flex items-center px-6 py-3 bg-white text-[#2c3856] border-2 border-slate-200 rounded-2xl text-sm font-bold uppercase tracking-wider shadow-sm hover:bg-slate-50 hover:border-[#ff9c00] hover:text-[#ff9c00] transition-all duration-300 transform hover:-translate-y-0.5">
                         <i class="fas fa-history mr-2"></i> Historial
                     </a>
+                    @endif
 
                     <a href="{{ route('ff.dashboard.index') }}" 
                     class="inline-flex items-center px-6 py-3 bg-[#2c3856] text-white rounded-2xl text-sm font-bold uppercase tracking-wider shadow-lg hover:bg-[#1e273d] hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300">
@@ -49,6 +51,7 @@
 
                 <div class="xl:col-span-5 flex flex-col md:flex-row gap-4 h-full">
                     
+                    @if(Auth::user()->hasFfPermission('inventory.backorders'))
                     <a href="{{ route('ff.inventory.backorders') }}" 
                     class="relative overflow-hidden w-full md:w-3/5 rounded-[2rem] bg-gradient-to-br from-[#2c3856] to-[#1e273d] p-6 text-white shadow-xl shadow-blue-900/20 group hover:shadow-2xl hover:shadow-blue-900/30 transition-all duration-300 transform hover:-translate-y-1">
                         
@@ -73,6 +76,7 @@
                             </div>
                         </div>
                     </a>
+                    @endif
 
                     <a href="{{ route('ff.inventory.backorder_relations') }}" 
                     class="relative w-full md:w-2/5 rounded-[2rem] bg-white p-6 shadow-sm border border-slate-100 group hover:border-rose-200 transition-all duration-300 flex flex-col justify-between hover:shadow-lg hover:shadow-rose-500/10">
@@ -236,17 +240,21 @@
                         
                         <div class="h-10 w-px bg-slate-200 mx-2 hidden md:block"></div>
 
+                        @if(Auth::user()->hasFfPermission('inventory.import'))
                         <button @click="openImportModal()" 
                                 class="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-[#2c3856] hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200" 
                                 title="Importar CSV">
                             <i class="fas fa-file-upload text-xl"></i>
                         </button>
+                        @endif
                         
+                        @if(Auth::user()->hasFfPermission('inventory.export'))
                         <button @click="exportFilteredCsv()" 
                                 class="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-[#2c3856] hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200" 
                                 title="Exportar CSV">
                             <i class="fas fa-file-download text-xl"></i>
                         </button>
+                        @endif
 
                         <button @click="resetFilters()" x-show="filter || filterBrand || filterType || filterStock || '{{ request('quality_id') }}'" x-transition 
                                 class="ml-2 px-4 py-2 text-rose-500 bg-rose-50 hover:bg-rose-100 rounded-xl text-xs font-black transition-all shadow-sm border border-rose-100" 
@@ -266,7 +274,7 @@
                                 <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest font-[Montserrat]">Categoría</th>
                                 <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right font-[Montserrat]">Precio</th>
                                 <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center font-[Montserrat]">Stock Actual</th>
-                                @if(Auth::user()->isSuperAdmin() || Auth::user()->is_area_admin)
+                                @if(Auth::user()->isSuperAdmin() || Auth::user()->hasFfPermission('inventory.move'))
                                 <th class="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right font-[Montserrat]">Acciones Rápidas</th>
                                 @endif
                             </tr>
@@ -330,7 +338,7 @@
                                         </div>
                                     </td>
 
-                                    @if(Auth::user()->isSuperAdmin() || Auth::user()->is_area_admin)
+                                    @if(Auth::user()->isSuperAdmin() || Auth::user()->hasFfPermission('inventory.move'))
                                     <td class="px-8 py-5 text-right">
                                         <div class="flex justify-end gap-3 opacity-80 group-hover:opacity-100 transition-opacity duration-200">
                                             <button @click="openModal(row, 'add', row.display_quality_id)" 

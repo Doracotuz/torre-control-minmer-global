@@ -110,7 +110,7 @@
                             </div>
 
                             <div class="mt-8 flex gap-4 border-t pt-6">
-                                @if ($salesOrder->status == 'Pending')
+                                @if ($salesOrder->status == 'Pending' && Auth::user()->hasFfPermission('wms.sales_orders.edit'))
                                     <a href="{{ route('wms.sales-orders.edit', $salesOrder) }}" class="btn-ghost px-6 py-2 text-xs uppercase tracking-widest shadow-sm">
                                         <i class="fas fa-pencil-alt mr-2"></i> Editar
                                     </a>
@@ -192,7 +192,7 @@
                         <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-10 -mt-10"></div>
                         <h4 class="text-lg font-raleway font-black text-[#2c3856] mb-6 relative z-10"><i class="fas fa-tasks mr-2"></i>Gestión de Surtido</h4>
 
-                        @if ($salesOrder->status == 'Pending')
+                        @if ($salesOrder->status == 'Pending' && Auth::user()->hasFfPermission('wms.picking'))
                             <form action="{{ route('wms.picking.generate', $salesOrder) }}" method="POST" class="relative z-10">
                                 @csrf
                                 <div class="p-4 bg-yellow-50 rounded-2xl border border-yellow-100 mb-4 text-xs text-yellow-800">
@@ -221,9 +221,11 @@
 
                                 @endif
                                 
+                                @if(Auth::user()->hasFfPermission('wms.picking'))
                                 <a href="{{ route('wms.picking.pdf', $salesOrder->pickList) }}" target="_blank" class="btn-ghost w-full py-3 flex items-center justify-center">
                                     <i class="fas fa-file-pdf mr-2"></i> Descargar PDF
                                 </a>
+                                @endif
                             </div>
                         @else
                             <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-center text-gray-400 text-sm">

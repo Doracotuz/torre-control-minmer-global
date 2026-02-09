@@ -56,11 +56,19 @@ class FfAdministrationController extends Controller
 
     public function index()
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.view')) {
+            abort(403, 'No tienes permiso para acceder a la administración.');
+        }
+
         return view('friends-and-family.admin.index');
     }
 
     public function show($type)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.view')) {
+            abort(403, 'No tienes permiso para ver catálogos.');
+        }
+
         if (!array_key_exists($type, $this->catalogs)) {
             abort(404);
         }
@@ -90,6 +98,22 @@ class FfAdministrationController extends Controller
     {
         if (!array_key_exists($type, $this->catalogs)) {
             abort(404);
+        }
+
+        $permissionMap = [
+            'clients' => 'admin.manage_clients',
+            'channels' => 'admin.manage_channels',
+            'warehouses' => 'admin.manage_warehouses',
+            'qualities' => 'admin.manage_qualities',
+        ];
+
+        if (isset($permissionMap[$type])) {
+            if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission($permissionMap[$type])) {
+                abort(403, 'No tienes permiso para gestionar ' . $type);
+            }
+        } elseif (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.view')) {
+             // Fallback for others (transport/payment) if strict check not defined, assumes basic admin right + area check logic below
+             abort(403, 'No tienes permiso para gestionar este catálogo.');
         }
 
         $modelClass = $this->catalogs[$type]['model'];
@@ -144,6 +168,21 @@ class FfAdministrationController extends Controller
     {
         if (!array_key_exists($type, $this->catalogs)) {
             abort(404);
+        }
+
+        $permissionMap = [
+            'clients' => 'admin.manage_clients',
+            'channels' => 'admin.manage_channels',
+            'warehouses' => 'admin.manage_warehouses',
+            'qualities' => 'admin.manage_qualities',
+        ];
+
+        if (isset($permissionMap[$type])) {
+            if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission($permissionMap[$type])) {
+                abort(403, 'No tienes permiso para gestionar ' . $type);
+            }
+        } elseif (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.view')) {
+             abort(403, 'No tienes permiso para gestionar este catálogo.');
         }
 
         $modelClass = $this->catalogs[$type]['model'];
@@ -206,6 +245,21 @@ class FfAdministrationController extends Controller
             abort(404);
         }
 
+        $permissionMap = [
+            'clients' => 'admin.manage_clients',
+            'channels' => 'admin.manage_channels',
+            'warehouses' => 'admin.manage_warehouses',
+            'qualities' => 'admin.manage_qualities',
+        ];
+
+        if (isset($permissionMap[$type])) {
+            if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission($permissionMap[$type])) {
+                abort(403, 'No tienes permiso para eliminar en ' . $type);
+            }
+        } elseif (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.view')) {
+             abort(403, 'No tienes permiso para eliminar este registro.');
+        }
+
         $modelClass = $this->catalogs[$type]['model'];
         $item = $modelClass::findOrFail($id);
 
@@ -220,6 +274,9 @@ class FfAdministrationController extends Controller
 
     public function branchesIndex(FfClient $client)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.manage_branches')) {
+            abort(403, 'No tienes permiso para ver sucursales.');
+        }
         if (!Auth::user()->isSuperAdmin() && $client->area_id !== Auth::user()->area_id) {
             abort(403);
         }
@@ -229,6 +286,9 @@ class FfAdministrationController extends Controller
 
     public function branchesStore(Request $request, FfClient $client)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.manage_branches')) {
+            abort(403, 'No tienes permiso para crear sucursales.');
+        }
         if (!Auth::user()->isSuperAdmin() && $client->area_id !== Auth::user()->area_id) {
             abort(403);
         }
@@ -246,6 +306,9 @@ class FfAdministrationController extends Controller
 
     public function branchesUpdate(Request $request, FfClientBranch $branch)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.manage_branches')) {
+            abort(403, 'No tienes permiso para editar sucursales.');
+        }
         if (!Auth::user()->isSuperAdmin() && $branch->client->area_id !== Auth::user()->area_id) {
             abort(403);
         }
@@ -263,6 +326,9 @@ class FfAdministrationController extends Controller
 
     public function branchesDestroy(FfClientBranch $branch)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.manage_branches')) {
+            abort(403, 'No tienes permiso para eliminar sucursales.');
+        }
         if (!Auth::user()->isSuperAdmin() && $branch->client->area_id !== Auth::user()->area_id) {
             abort(403);
         }
@@ -272,6 +338,9 @@ class FfAdministrationController extends Controller
 
     public function conditionsEdit(FfClient $client)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.manage_clients')) {
+            abort(403, 'No tienes permiso para gestionar condiciones de clientes.');
+        }
         if (!Auth::user()->isSuperAdmin() && $client->area_id !== Auth::user()->area_id) {
             abort(403);
         }
@@ -282,6 +351,9 @@ class FfAdministrationController extends Controller
 
     public function conditionsUpdate(Request $request, FfClient $client)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.manage_clients')) {
+            abort(403, 'No tienes permiso para gestionar condiciones de clientes.');
+        }
         if (!Auth::user()->isSuperAdmin() && $client->area_id !== Auth::user()->area_id) {
             abort(403);
         }
@@ -332,6 +404,9 @@ class FfAdministrationController extends Controller
 
     public function exportConditionsPdf(FfClient $client)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.manage_clients')) {
+            abort(403, 'No tienes permiso para ver/exportar condiciones.');
+        }
         if (!Auth::user()->isSuperAdmin() && $client->area_id !== Auth::user()->area_id) {
             abort(403);
         }
@@ -427,6 +502,10 @@ class FfAdministrationController extends Controller
         $client = $condition->client; 
         if (!Auth::user()->isSuperAdmin() && $client && $client->area_id !== Auth::user()->area_id) {
             abort(403);
+        }
+
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.manage_clients')) {
+            abort(403, 'No tienes permiso para eliminar imágenes de condiciones.');
         }
 
         if ($condition->$field) {

@@ -28,6 +28,9 @@ class User extends Authenticatable
         'profile_photo_path',
         'area_id',
         'is_active',
+        'ff_role_name',
+        'ff_granular_permissions',
+        'role_id',
     ];
 
     /**
@@ -51,6 +54,7 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'visible_modules' => 'array',
             'ff_visible_tiles' => 'array',
+            'ff_granular_permissions' => 'array',
         ];
     }
 
@@ -113,6 +117,11 @@ class User extends Authenticatable
         return $this->hasMany(ffInventoryMovement::class, 'user_id');
     }
 
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
+
     public static function availableModules(): array
     {
         return [
@@ -159,11 +168,143 @@ class User extends Authenticatable
 
     public function canSeeFfTile(string $tileKey): bool
     {
-        if (is_null($this->ff_visible_tiles)) {
-            return false; 
+        $permissionMap = [
+            'orders'    => 'orders.view',
+            'inventory' => 'inventory.view',
+            'catalog'   => 'catalog.view',
+            'reports'   => 'reports.view',
+            'admin'     => 'admin.view',
+        ];
+
+        if (array_key_exists($tileKey, $permissionMap)) {
+            return $this->hasFfPermission($permissionMap[$tileKey]);
         }
 
-        return in_array($tileKey, $this->ff_visible_tiles);
-    }    
+        return false;
+    }
 
+    public static function availableFfPermissions(): array
+    {
+        // Provide a flattened version for backward compatibility if needed, 
+        // or just return the groups flattened. 
+        // However, for the new UI we will use getGroupedPermissions.
+        // This method will return the formatted groups as expected by the *old* views 
+        // until we update them, OR we can just update the views to use the new method.
+        // To be safe, let's keep this returning a simple array of groups 
+        // but looking at our new structure.
+        
+        $grouped = self::getGroupedPermissions();
+        $flat = [];
+        foreach ($grouped as $module => $subgroups) {
+            foreach ($subgroups as $groupName => $perms) {
+                $flat["$module: $groupName"] = $perms;
+            }
+        }
+        return $flat;
+    }
+
+    public static function getGroupedPermissions(): array
+    {
+        return [
+            'Friends & Family' => [
+                'Catálogo' => [
+                    'catalog.view' => 'Ver Catálogo',
+                    'catalog.create' => 'Crear Ficha Técnica',
+                    'catalog.edit' => 'Editar Producto',
+                    'catalog.delete' => 'Eliminar Producto',
+                    'catalog.import' => 'Importar Productos',
+                    'catalog.export' => 'Exportar Catálogo & Inventario',
+                    'catalog.technical_sheet' => 'Generar Ficha Técnica (PDF)',
+                ],
+                'Inventario' => [
+                    'inventory.view' => 'Ver Inventario',
+                    'inventory.move' => 'Realizar Movimientos (Entrada/Salida)',
+                    'inventory.import' => 'Importar Movimientos',
+                    'inventory.log' => 'Ver Bitácora de Movimientos',
+                    'inventory.backorders' => 'Gestionar Backorders',
+                ],
+                'Ventas' => [
+                    'sales.view' => 'Ver Módulo de Ventas',
+                    'sales.checkout' => 'Realizar Venta / Checkout',
+                    'sales.reservations' => 'Ver Reservas',
+                    'sales.cancel' => 'Cancelar Pedidos',
+                    'sales.import' => 'Importar Pedidos',
+                    'sales.loans' => 'Gestionar Préstamos y Devoluciones',
+                ],
+                'Pedidos' => [
+                    'orders.view' => 'Ver Pedidos',
+                    'orders.details' => 'Ver Detalle de Pedido',
+                    'orders.evidence' => 'Cargar/Ver Evidencias',
+                    'orders.report' => 'Descargar Reporte de Pedido',
+                ],
+                'Reportes' => [
+                    'reports.view' => 'Ver Módulo de Reportes',
+                    'reports.transactions' => 'Reporte de Transacciones',
+                    'reports.inventory_analysis' => 'Análisis de Inventario',
+                    'reports.stock_availability' => 'Disponibilidad de Stock',
+                    'reports.catalog_analysis' => 'Análisis de Catálogo',
+                    'reports.seller_performance' => 'Performance de Vendedores',
+                    'reports.client_analysis' => 'Análisis de Clientes',
+                ],
+                'Administración' => [
+                    'admin.view' => 'Ver Panel de Administración',
+                    'admin.clients' => 'Gestionar Clientes',
+                    'admin.branches' => 'Gestionar Sucursales',
+                    'admin.conditions' => 'Gestionar Condiciones Comerciales',
+                ],
+            ],
+            'WMS' => [
+                'Dashboard & BI' => [
+                    'wms.dashboard' => 'Visualizar Dashboard Principal',
+                    'wms.reports' => 'Acceso a Reportes Inteligentes (BI)',
+                ],
+                'Operaciones de Entrada (Inbound)' => [
+                    'wms.purchase_orders.view' => 'Ver Órdenes de Compra',
+                    'wms.purchase_orders.create' => 'Crear Órdenes de Compra',
+                    'wms.purchase_orders.edit' => 'Editar Órdenes de Compra',
+                    'wms.purchase_orders.delete' => 'Eliminar Órdenes de Compra',
+                    'wms.receiving' => 'Ejecutar Recepción (Descarga, Validación, Cierre)',
+                    'wms.quality' => 'Control de Calidad (Estados y Bloqueos)',
+                ],
+                'Gestión de Inventario' => [
+                    'wms.inventory' => 'Consultar Inventario (Matrix, Ubicaciones)',
+                    'wms.inventory_move' => 'Movimientos Internos (Transferencias, Splits)',
+                    'wms.inventory_adjust' => 'Ajustes de Inventario (Conteos, Mermas)',
+                    'wms.lpns' => 'Gestión de LPNs (Etiquetas de Pallet)',
+                    'wms.physical_counts' => 'Conteos Cíclicos y Auditorías',
+                ],
+                'Operaciones de Salida (Outbound)' => [
+                    'wms.sales_orders.view' => 'Ver Órdenes de Venta',
+                    'wms.sales_orders.create' => 'Crear Órdenes de Venta',
+                    'wms.sales_orders.edit' => 'Editar Órdenes de Venta',
+                    'wms.sales_orders.delete' => 'Eliminar Órdenes de Venta',
+                    'wms.picking' => 'Ejecutar Picking (Generación de Listas, Surtido)',
+                    'wms.dispatch' => 'Despacho y Embarques',
+                ],
+                'Maestros y Configuración' => [
+                    'wms.products.view' => 'Ver Productos WMS',
+                    'wms.products.create' => 'Crear Productos WMS',
+                    'wms.products.edit' => 'Editar Productos WMS',
+                    'wms.products.delete' => 'Eliminar Productos WMS',
+                    'wms.warehouses' => 'Configuración de Almacenes',
+                    'wms.locations.view' => 'Ver Ubicaciones',
+                    'wms.locations.manage' => 'Gestionar Ubicaciones (Crear/Editar/Eliminar)',
+                    'wms.locations.print' => 'Imprimir Etiquetas de Ubicación',
+                ],
+            ],
+        ];
+    }
+
+    public function hasFfPermission(string $permission): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if (is_null($this->ff_granular_permissions)) {
+            return false;
+        }
+
+        return in_array($permission, $this->ff_granular_permissions);
+    }
 }

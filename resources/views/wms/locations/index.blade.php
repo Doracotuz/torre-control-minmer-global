@@ -55,16 +55,21 @@
 
                     <div class="h-8 w-px bg-gray-300 mx-1 hidden md:block"></div>
 
+                    @if(Auth::user()->hasFfPermission('wms.locations.manage'))
                     <button @click="importModalOpen = true" class="btn-toolbar btn-white text-blue-600 border-blue-100 hover:border-blue-300">
                         <i class="fas fa-file-import mr-2"></i> Importar Masivamente
                     </button>
+                    @endif
 
+                    @if(Auth::user()->hasFfPermission('wms.locations.view'))
                     <a href="{{ route('wms.locations.export-csv', request()->query()) }}" class="btn-toolbar btn-white" title="Exportar Todo">
                         <i class="fas fa-download mr-2 text-gray-500"></i> Exportar
                     </a>
+                    @endif
 
                     <div class="h-8 w-px bg-gray-300 mx-1 hidden md:block"></div>
 
+                    @if(Auth::user()->hasFfPermission('wms.locations.print'))
                     <form action="{{ route('wms.locations.print-labels') }}" method="POST" target="_blank" class="m-0">
                         @csrf
                         <template x-for="id in $store.selection.ids" :key="id"><input type="hidden" name="ids[]" :value="id"></template>
@@ -73,10 +78,13 @@
                             Labels <span x-show="$store.selection.ids.length > 0" class="ml-1 bg-[#2c3856] text-white text-[9px] px-1.5 py-0.5 rounded-full" x-text="$store.selection.ids.length"></span>
                         </button>
                     </form>
+                    @endif
 
+                    @if(Auth::user()->hasFfPermission('wms.locations.manage'))
                     <a href="{{ route('wms.locations.create') }}" class="btn-toolbar btn-primary">
                         <i class="fas fa-plus mr-2"></i> Nueva Ubicación
                     </a>
+                    @endif
                 </div>
             </div>
 
@@ -122,6 +130,7 @@
                         <div>
                             <label class="block text-xs font-bold text-[#666666] uppercase tracking-wider mb-2 ml-2">Almacén</label>
                             <select name="warehouse_id" onchange="this.form.submit()" class="w-full pl-4 pr-4 py-2.5 rounded-xl border-gray-200 bg-white text-[#2c3856] font-bold focus:border-[#ff9c00] focus:ring-[#ff9c00] transition-all cursor-pointer text-sm">
+                                <option value="">Todos</option>
                                 <option value="">Todos</option>
                                 @foreach($filters['warehouses'] as $w)
                                     <option value="{{ $w->id }}" {{ request('warehouse_id') == $w->id ? 'selected' : '' }}>{{ $w->name }}</option>
@@ -214,9 +223,11 @@
                                     </td>
                                     <td class="px-6 py-4 text-center font-bold text-gray-400">{{ $location->pick_sequence ?? '-' }}</td>
                                     <td class="px-6 py-4 text-right text-sm font-medium">
+                                        @if(Auth::user()->hasFfPermission('wms.locations.manage'))
                                         <a href="{{ route('wms.locations.edit', $location) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-[#ff9c00] hover:border-[#ff9c00] transition-all shadow-sm">
                                             <i class="fas fa-pencil-alt"></i>
                                         </a>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty

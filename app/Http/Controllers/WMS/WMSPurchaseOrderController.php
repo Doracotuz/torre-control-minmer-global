@@ -17,6 +17,33 @@ use App\Models\Area;
 
 class WMSPurchaseOrderController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = Auth::user();
+
+            if ($request->routeIs('wms.purchase-orders.index') || $request->routeIs('wms.purchase-orders.show') || $request->routeIs('wms.purchase-orders.export') || $request->routeIs('wms.purchase-orders.pdf')) {
+                if (!$user->hasFfPermission('wms.purchase_orders.view')) {
+                    abort(403, 'No tienes permiso para ver órdenes de compra.');
+                }
+            } elseif ($request->routeIs('wms.purchase-orders.create') || $request->routeIs('wms.purchase-orders.store')) {
+                if (!$user->hasFfPermission('wms.purchase_orders.create')) {
+                    abort(403, 'No tienes permiso para crear órdenes de compra.');
+                }
+            } elseif ($request->routeIs('wms.purchase-orders.edit') || $request->routeIs('wms.purchase-orders.update') || $request->routeIs('wms.purchase-orders.upload-evidence') || $request->routeIs('wms.purchase-orders.destroy-evidence')) {
+                if (!$user->hasFfPermission('wms.purchase_orders.edit')) {
+                    abort(403, 'No tienes permiso para editar órdenes de compra.');
+                }
+            } elseif ($request->routeIs('wms.purchase-orders.register-arrival') || $request->routeIs('wms.purchase-orders.register-departure') || $request->routeIs('wms.purchase-orders.complete-receipt')) {
+                if (!$user->hasFfPermission('wms.receiving')) {
+                    abort(403, 'No tienes permiso para recibir mercancía.');
+                }
+            }
+
+            return $next($request);
+        });
+    }
+
     public function index(Request $request)
     {
         $warehouses = Warehouse::orderBy('name')->get();

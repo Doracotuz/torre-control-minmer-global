@@ -12,9 +12,38 @@ use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class WMSProductController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = Auth::user();
+            $routeName = $request->route()->getName();
+
+            if ($request->routeIs('wms.products.index') || $request->routeIs('wms.products.export') || $request->routeIs('wms.products.template') || $request->routeIs('wms.products.catalogs')) {
+                if (!$user->hasFfPermission('wms.products.view')) {
+                    abort(403, 'No tienes permiso para ver productos WMS.');
+                }
+            } elseif ($request->routeIs('wms.products.create') || $request->routeIs('wms.products.store') || $request->routeIs('wms.products.import')) {
+                if (!$user->hasFfPermission('wms.products.create')) {
+                    abort(403, 'No tienes permiso para crear productos WMS.');
+                }
+            } elseif ($request->routeIs('wms.products.edit') || $request->routeIs('wms.products.update')) {
+                if (!$user->hasFfPermission('wms.products.edit')) {
+                    abort(403, 'No tienes permiso para editar productos WMS.');
+                }
+            } elseif ($request->routeIs('wms.products.destroy')) {
+                if (!$user->hasFfPermission('wms.products.delete')) {
+                    abort(403, 'No tienes permiso para eliminar productos WMS.');
+                }
+            }
+
+            return $next($request);
+        });
+    }
+
     public function index(Request $request)
     {
         $query = Product::with(['brand', 'productType', 'area'])->latest();

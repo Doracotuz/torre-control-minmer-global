@@ -19,9 +19,20 @@ use App\Models\Area;
 use Carbon\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class WMSReportController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!Auth::user()->hasFfPermission('wms.reports')) {
+                abort(403, 'No tienes permiso para ver reportes WMS.');
+            }
+            return $next($request);
+        });
+    }
+
     public function index()
     {
         $warehouses = Warehouse::orderBy('name')->get();

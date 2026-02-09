@@ -96,6 +96,7 @@
                         <p class="text-2xl font-raleway font-black text-white">Inventario</p>
                     </div>
                 </button>
+                @if(Auth::user()->hasFfPermission('wms.products') || Auth::user()->hasFfPermission('wms.locations'))
                 <button @click="tab = 'catalogos'" class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'catalogos' ? 'ring-4 ring-[#666666]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
                     <img src="https://images.unsplash.com/photo-1553413077-190dd305871c?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
                     <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
@@ -104,6 +105,8 @@
                         <p class="text-2xl font-raleway font-black text-white">Catálogos</p>
                     </div>
                 </button>
+                @endif
+                @if(Auth::user()->hasFfPermission('wms.reports'))
                 <button @click="tab = 'reportes'" class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'reportes' ? 'ring-4 ring-[#2c3856]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
                     <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
                     <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
@@ -112,6 +115,7 @@
                         <p class="text-2xl font-raleway font-black text-white">Reportes</p>
                     </div>
                 </button>
+                @endif
             </div>
 
             <div x-show="tab === 'mando'" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0">
@@ -357,16 +361,17 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     @php
                         $ops = [
-                            ['route' => 'wms.inventory.index', 'title' => 'Inventario General', 'desc' => 'Vista tabular de todo el stock', 'img' => 'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?q=80&w=500&auto=format&fit=crop'],
-                            ['route' => 'wms.inventory.transfer.create', 'title' => 'Transferencias', 'desc' => 'Reubicar mercancía', 'img' => 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=500&auto=format&fit=crop'],
-                            ['route' => 'wms.inventory.split.create', 'title' => 'Split (Dividir)', 'desc' => 'Separar pallets', 'img' => 'https://img1.wsimg.com/isteam/ip/2fa41b42-239e-4744-a6f7-1f8a6642ec41/0c955f09-8ae0-4fac-9a5f-3d9257bc05e4.png'],
-                            ['route' => 'wms.physical-counts.index', 'title' => 'Conteos Cíclicos', 'desc' => 'Auditorías', 'img' => 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=500&auto=format&fit=crop'],
-                            ['route' => 'wms.inventory.adjustments.log', 'title' => 'Bitácora Ajustes', 'desc' => 'Historial de cambios', 'img' => 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=500&auto=format&fit=crop'],
-                            ['route' => 'wms.inventory.pallet-info.index', 'title' => 'Consulta Pallet', 'desc' => 'Búsqueda por LPN', 'img' => 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=500&auto=format&fit=crop'],
-                            ['route' => 'wms.inventory.location-info.index', 'title' => 'Contenido Ubicación', 'desc' => 'Ver stock en ubicación', 'img' => 'https://images.unsplash.com/photo-1590247813693-5541d1c609fd?q=80&w=500&auto=format&fit=crop'],
+                            ['route' => 'wms.inventory.index', 'title' => 'Inventario General', 'desc' => 'Vista tabular de todo el stock', 'img' => 'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.inventory'],
+                            ['route' => 'wms.inventory.transfer.create', 'title' => 'Transferencias', 'desc' => 'Reubicar mercancía', 'img' => 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.inventory_move'],
+                            ['route' => 'wms.inventory.split.create', 'title' => 'Split (Dividir)', 'desc' => 'Separar pallets', 'img' => 'https://img1.wsimg.com/isteam/ip/2fa41b42-239e-4744-a6f7-1f8a6642ec41/0c955f09-8ae0-4fac-9a5f-3d9257bc05e4.png', 'perm' => 'wms.inventory_move'],
+                            ['route' => 'wms.physical-counts.index', 'title' => 'Conteos Cíclicos', 'desc' => 'Auditorías', 'img' => 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.inventory_adjust'],
+                            ['route' => 'wms.inventory.adjustments.log', 'title' => 'Bitácora Ajustes', 'desc' => 'Historial de cambios', 'img' => 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.inventory'],
+                            ['route' => 'wms.inventory.pallet-info.index', 'title' => 'Consulta Pallet', 'desc' => 'Búsqueda por LPN', 'img' => 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.inventory'],
+                            ['route' => 'wms.inventory.location-info.index', 'title' => 'Contenido Ubicación', 'desc' => 'Ver stock en ubicación', 'img' => 'https://images.unsplash.com/photo-1590247813693-5541d1c609fd?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.inventory'],
                         ];
                     @endphp
                     @foreach($ops as $op)
+                    @if(Auth::user()->hasFfPermission($op['perm']))
                     <a href="{{ route($op['route']) }}" class="group relative h-48 rounded-[2rem] overflow-hidden shadow-soft hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 img-placeholder">
                         <img src="{{ $op['img'] }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100">
                         <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/40 to-transparent"></div>
@@ -376,6 +381,7 @@
                             <div class="h-1 w-10 bg-[#ff9c00] mt-3 group-hover:w-20 transition-all duration-300"></div>
                         </div>
                     </a>
+                    @endif
                     @endforeach
                 </div>
             </div>
@@ -384,16 +390,17 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                     @php
                         $catalogs = [
-                            ['r' => 'wms.products.index', 't' => 'Productos', 'img' => 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?q=80&w=500&auto=format&fit=crop'],
-                            ['r' => 'wms.locations.index', 't' => 'Ubicaciones', 'img' => 'https://images.unsplash.com/photo-1590247813693-5541d1c609fd?q=80&w=500&auto=format&fit=crop'],
-                            ['r' => 'wms.warehouses.index', 't' => 'Almacenes', 'img' => 'https://images.unsplash.com/photo-1644079446600-219068676743?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'],
-                            ['r' => 'wms.brands.index', 't' => 'Marcas', 'img' => 'https://www.headsem.com/wp-content/uploads/2015/11/ver-las-propiedades-de-hardware-de-mi-pc-en-windows.jpg'],
-                            ['r' => 'wms.product-types.index', 't' => 'Tipos', 'img' => 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTgJ4DjVBL8UI8GkgNeVWaBcZSHa_ANC8OEcQ&s'],
-                            ['r' => 'wms.qualities.index', 't' => 'Calidades', 'img' => 'https://img.freepik.com/fotos-premium/botella-rota-aislada-sobre-fondo-blanco_51524-17283.jpg'],
-                            ['r' => 'wms.lpns.index', 't' => 'Generar LPNs', 'img' => 'https://infraon.io/blog/wp-content/uploads/2023/01/BARSCANNERBLOGFinal.png'],
+                            ['r' => 'wms.products.index', 't' => 'Productos', 'img' => 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.products'],
+                            ['r' => 'wms.locations.index', 't' => 'Ubicaciones', 'img' => 'https://images.unsplash.com/photo-1590247813693-5541d1c609fd?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.locations'],
+                            ['r' => 'wms.warehouses.index', 't' => 'Almacenes', 'img' => 'https://images.unsplash.com/photo-1644079446600-219068676743?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', 'perm' => 'wms.warehouses'],
+                            ['r' => 'wms.brands.index', 't' => 'Marcas', 'img' => 'https://www.headsem.com/wp-content/uploads/2015/11/ver-las-propiedades-de-hardware-de-mi-pc-en-windows.jpg', 'perm' => 'wms.products'],
+                            ['r' => 'wms.product-types.index', 't' => 'Tipos', 'img' => 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTgJ4DjVBL8UI8GkgNeVWaBcZSHa_ANC8OEcQ&s', 'perm' => 'wms.products'],
+                            ['r' => 'wms.qualities.index', 't' => 'Calidades', 'img' => 'https://img.freepik.com/fotos-premium/botella-rota-aislada-sobre-fondo-blanco_51524-17283.jpg', 'perm' => 'wms.quality'],
+                            ['r' => 'wms.lpns.index', 't' => 'Generar LPNs', 'img' => 'https://infraon.io/blog/wp-content/uploads/2023/01/BARSCANNERBLOGFinal.png', 'perm' => 'wms.lpns'],
                         ];
                     @endphp
                     @foreach($catalogs as $cat)
+                    @if(Auth::user()->hasFfPermission($cat['perm']))
                     <a href="{{ route($cat['r']) }}" class="group relative aspect-square rounded-[2rem] overflow-hidden shadow-soft hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 img-placeholder">
                         <img src="{{ $cat['img'] }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
                         <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/80 via-transparent to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
@@ -401,6 +408,7 @@
                             <h3 class="text-lg font-raleway font-black text-white uppercase tracking-widest">{{ $cat['t'] }}</h3>
                         </div>
                     </a>
+                    @endif
                     @endforeach
                 </div>
             </div>

@@ -29,6 +29,10 @@ class FfInventoryController extends Controller
 
     public function index(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.view')) {
+            abort(403, 'No tienes permiso para ver el inventario.');
+        }
+
         $query = ffProduct::query();
 
         if (!Auth::user()->isSuperAdmin()) {
@@ -129,7 +133,11 @@ class FfInventoryController extends Controller
 
     public function storeMovement(Request $request)
     {
-        if (!Auth::user()->isSuperAdmin() && !Auth::user()->is_area_admin) {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.move')) {
+            return response()->json(['message' => 'No tienes permiso para realizar movimientos.'], 403);
+        }
+
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->is_area_admin && !Auth::user()->hasFfPermission('inventory.move')) {
             abort(403, 'Acción no autorizada.');
         }
 
@@ -197,6 +205,10 @@ class FfInventoryController extends Controller
 
     public function logIndex(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.log')) {
+            abort(403, 'No tienes permiso para ver la bitácora.');
+        }
+
         $query = ffInventoryMovement::with(['product', 'user', 'warehouse', 'quality'])->orderBy('created_at', 'desc');
         
         $areas = [];
@@ -236,6 +248,10 @@ class FfInventoryController extends Controller
 
     public function exportCsv(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.export')) {
+            abort(403, 'No tienes permiso para exportar el inventario.');
+        }
+
         $warehouseId = $request->input('warehouse_id');
         $qualityId = $request->input('quality_id');
 
@@ -326,6 +342,10 @@ class FfInventoryController extends Controller
 
     public function exportLogCsv(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.log')) {
+            abort(403, 'No tienes permiso para exportar la bitácora.');
+        }
+
         $query = ffInventoryMovement::with(['product', 'user', 'warehouse', 'quality'])->orderBy('created_at', 'desc');
 
         if (!Auth::user()->isSuperAdmin()) {
@@ -373,7 +393,11 @@ class FfInventoryController extends Controller
 
     public function importMovements(Request $request)
     {
-        if (!Auth::user()->isSuperAdmin() && !Auth::user()?->is_area_admin) {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.import')) {
+            abort(403, 'No tienes permiso para importar movimientos.');
+        }
+
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()?->is_area_admin && !Auth::user()->hasFfPermission('inventory.import')) {
             abort(403, 'Acción no autorizada.');
         }
 
@@ -510,6 +534,10 @@ class FfInventoryController extends Controller
 
     public function downloadMovementTemplate(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.import')) {
+            abort(403, 'No tienes permiso para importar movimientos.');
+        }
+
         $query = ffProduct::query();
 
         if (!Auth::user()->isSuperAdmin()) {
@@ -586,6 +614,10 @@ class FfInventoryController extends Controller
 
     public function backorders(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.backorders')) {
+            abort(403, 'No tienes permiso para gestionar backorders.');
+        }
+
         $query = ffInventoryMovement::where('is_backorder', true)
             ->where('backorder_fulfilled', false);
 
@@ -621,6 +653,10 @@ class FfInventoryController extends Controller
 
     public function fulfillBackorder(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.backorders')) {
+            return response()->json(['message' => 'No tienes permiso.'], 403);
+        }
+
         $request->validate(['movement_id' => 'required|exists:ff_inventory_movements,id']);
         
         $movement = ffInventoryMovement::with(['product', 'user'])->find($request->movement_id);
@@ -697,6 +733,10 @@ class FfInventoryController extends Controller
 
     public function backorderRelations(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.backorders')) {
+            abort(403, 'No tienes permiso para ver relaciones de backorders.');
+        }
+
         $productsQuery = ffProduct::query();
 
         if (!Auth::user()->isSuperAdmin()) {
@@ -748,6 +788,10 @@ class FfInventoryController extends Controller
 
     public function resolveBackorder(Request $request, $id)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.backorders')) {
+            return response()->json(['message' => 'No tienes permiso.'], 403);
+        }
+
         $request->validate([
             'quantity' => 'required|numeric|min:1',
             'warehouse_id' => 'required|exists:ff_warehouses,id',

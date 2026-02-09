@@ -18,6 +18,16 @@ use App\Models\Warehouse;
 
 class WMSPhysicalCountController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!Auth::user()->hasFfPermission('wms.physical_counts')) {
+                abort(403, 'No tienes permiso para realizar conteos físicos/ajustes.');
+            }
+            return $next($request);
+        });
+    }
+
     public function index(Request $request)
     {
         $warehouseId = $request->input('warehouse_id');

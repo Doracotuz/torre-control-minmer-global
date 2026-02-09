@@ -6,9 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\ProductType;
 use App\Models\Area;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class WMSProductTypeController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!Auth::user()->hasFfPermission('wms.products')) {
+                abort(403, 'No tienes permiso para gestionar tipos de producto.');
+            }
+            return $next($request);
+        });
+    }
+
     public function index(Request $request)
     {
         $query = ProductType::with('area')->latest();

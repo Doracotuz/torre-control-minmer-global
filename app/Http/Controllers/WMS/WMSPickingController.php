@@ -30,6 +30,16 @@ use App\Models\WMS\Quality;
 
 class WMSPickingController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!Auth::user()->hasFfPermission('wms.picking')) {
+                abort(403, 'No tienes permiso para realizar picking.');
+            }
+            return $next($request);
+        });
+    }
+
     public function generate(SalesOrder $salesOrder)
     {
         if ($salesOrder->status !== 'Pending') {

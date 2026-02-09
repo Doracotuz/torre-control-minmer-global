@@ -83,12 +83,16 @@
                     <a href="{{ route('wms.dashboard') }}" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-[#666666] font-bold rounded-full shadow-sm hover:shadow-md hover:border-[#2c3856] hover:text-[#2c3856] transition-all">
                         <i class="fas fa-arrow-left"></i> <span>Dashboard</span>
                     </a>                    
+                    @if(Auth::user()->hasFfPermission('wms.purchase_orders.create'))
                     <a href="{{ route('wms.purchase-orders.create') }}" class="btn-nexus px-8 py-4 h-14 shadow-lg shadow-[#2c3856]/20 text-base">
                         <i class="fas fa-plus-circle mr-2"></i> Nueva Orden
                     </a>
+                    @endif
+                    @if(Auth::user()->hasFfPermission('wms.purchase_orders.view'))
                     <a href="{{ route('wms.purchase-orders.export-csv', request()->query()) }}" class="btn-ghost px-6 py-3 h-14 flex items-center gap-2 text-sm uppercase tracking-wider font-bold">
                         <i class="fas fa-file-excel"></i> Exportar
                     </a>
+                    @endif
                 </div>
             </div>
 

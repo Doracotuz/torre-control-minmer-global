@@ -70,8 +70,10 @@
                         <i class="fas fa-arrow-left"></i> <span>Dashboard</span>
                     </a>                    
                     <div class="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-1">                    
+                        @if(Auth::user()->hasFfPermission('wms.inventory_move'))
                         <a href="{{ route('wms.inventory.transfer.create') }}" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-50 text-gray-400 hover:text-[#2c3856] transition-colors" title="Transferencias"><i class="fas fa-random"></i></a>
                         <a href="{{ route('wms.inventory.split.create') }}" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-50 text-gray-400 hover:text-[#2c3856] transition-colors" title="Split"><i class="fas fa-cut"></i></a>
+                        @endif
                         <a href="{{ route('wms.inventory.pallet-info.index') }}" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-50 text-gray-400 hover:text-[#2c3856] transition-colors" title="Buscar LPN"><i class="fas fa-search"></i></a>
                         <a href="{{ route('wms.inventory.adjustments.log') }}" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-50 text-gray-400 hover:text-[#2c3856] transition-colors" title="Historial"><i class="fas fa-history"></i></a>
                     </div>
@@ -445,7 +447,7 @@
                                                     <span class="block text-2xl font-black text-[#2c3856]" x-text="item.quantity"></span>
                                                     <span class="text-[10px] text-gray-400 font-bold uppercase">Piezas</span>
                                                 </div>
-                                                @if(Auth::user()->isSuperAdmin())
+                                                @if(Auth::user()->hasFfPermission('wms.inventory_adjust'))
                                                     <button @click="openAdjustmentModal(item)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-400 hover:bg-[#ff9c00] hover:text-white transition-all" title="Ajustar Inventario">
                                                         <i class="fas fa-cog"></i>
                                                     </button>

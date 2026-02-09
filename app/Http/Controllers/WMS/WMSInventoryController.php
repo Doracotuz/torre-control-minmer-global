@@ -24,6 +24,29 @@ use App\Models\Area;
 
 class WMSInventoryController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = Auth::user();
+
+            if ($request->route()->getActionMethod() === 'adjustItemQuantity') {
+                if (!$user->hasFfPermission('wms.inventory_adjust')) {
+                    abort(403, 'No tienes permiso para ajustar inventario.');
+                }
+            } elseif (in_array($request->route()->getActionMethod(), ['createTransfer', 'storeTransfer', 'createSplit', 'storeSplit'])) {
+                if (!$user->hasFfPermission('wms.inventory_move')) {
+                    abort(403, 'No tienes permiso para mover/transferir inventario.');
+                }
+            } else {
+                if (!$user->hasFfPermission('wms.inventory')) {
+                    abort(403, 'No tienes permiso para ver el inventario WMS.');
+                }
+            }
+
+            return $next($request);
+        });
+    }
+
     public function index(Request $request)
     {
         $warehouseId = $request->input('warehouse_id');
@@ -552,9 +575,7 @@ public function findLpnForTransfer(Request $request)
 
     public function adjustItemQuantity(Request $request, PalletItem $palletItem)
     {
-        if (!Auth::user()->isSuperAdmin()) {
-            return back()->with('error', 'No tienes permisos para realizar ajustes.');
-        }
+        // Permission check handled by middleware
 
         $validator = Validator::make($request->all(), [
             'new_quantity' => 'required|integer|min:0',

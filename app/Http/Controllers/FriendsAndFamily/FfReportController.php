@@ -22,6 +22,10 @@ class FfReportController extends Controller
 {
     public function index(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('reports.view')) {
+            abort(403, 'No tienes permiso para ver el dashboard de reportes.');
+        }
+
         $userIdFilter = $request->input('user_id');
 
         $areas = [];
@@ -166,6 +170,10 @@ class FfReportController extends Controller
 
     public function transactions(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('reports.transactions')) {
+            abort(403, 'No tienes permiso para ver transacciones.');
+        }
+
         $vendedoresQuery = User::whereHas('movements', function ($query) use ($request) {
             $query->where('quantity', '<', 0);
             if (!Auth::user()->isSuperAdmin()) {
@@ -282,6 +290,10 @@ class FfReportController extends Controller
     
     public function reprintReceipt(ffInventoryMovement $movement)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('reports.transactions')) {
+            abort(403, 'No tienes permiso para reimprimir recibos.');
+        }
+
         if (!Auth::user()->isSuperAdmin() && $movement->area_id !== Auth::user()->area_id) {
             abort(403);
         }
@@ -370,6 +382,10 @@ class FfReportController extends Controller
     
     public function inventoryAnalysis(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('reports.inventory_analysis')) {
+            abort(403, 'No tienes permiso para ver análisis de inventario.');
+        }
+
         $movementQuery = ffInventoryMovement::query();
         
         if (!Auth::user()->isSuperAdmin()) {
@@ -465,6 +481,10 @@ class FfReportController extends Controller
 
     public function stockAvailability(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('reports.stock_availability')) {
+            abort(403, 'No tienes permiso para ver disponibilidad de stock.');
+        }
+
         $search = $request->input('search');
         $warehouseId = $request->input('warehouse_id');
 
@@ -559,6 +579,10 @@ class FfReportController extends Controller
 
     public function catalogAnalysis(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('reports.catalog_analysis')) {
+            abort(403, 'No tienes permiso para ver análisis de catálogo.');
+        }
+
         $query = ffProduct::select('unit_price', 'brand', 'type', 'is_active');
 
         if (!Auth::user()->isSuperAdmin()) {
@@ -622,6 +646,10 @@ class FfReportController extends Controller
 
     public function sellerPerformance(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('reports.seller_performance')) {
+            abort(403, 'No tienes permiso para ver desempeño de vendedores.');
+        }
+
         $vendedoresQuery = User::select('id', 'name')->where(function($q) use ($request) {
             $q->whereHas('cartItems', function($query) use ($request) {
                 if (!Auth::user()->isSuperAdmin()) {
@@ -727,6 +755,10 @@ class FfReportController extends Controller
 
     public function apiGetRecentMovements(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('reports.view')) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
         $userId = $request->input('user_id');
         $limit = $request->input('limit', 10);
 
@@ -781,6 +813,10 @@ class FfReportController extends Controller
 
     public function apiGetSaleDetails(Request $request, $folio)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('reports.transactions')) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
         $query = ffInventoryMovement::where('folio', $folio)
             ->where('quantity', '<', 0);
 
@@ -820,6 +856,10 @@ class FfReportController extends Controller
 
     public function generateExecutiveReport(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('reports.executive')) {
+            abort(403, 'No tienes permiso para generar reporte ejecutivo.');
+        }
+
         $userIdFilter = $request->input('user_id');
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
@@ -1169,6 +1209,10 @@ class FfReportController extends Controller
 
     public function clientAnalysis(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('reports.client_analysis')) {
+            abort(403, 'No tienes permiso para ver análisis de clientes.');
+        }
+
         $search = $request->input('search');
         $areaId = $request->input('area_id');
         $warehouseId = $request->input('warehouse_id');
@@ -1332,6 +1376,10 @@ class FfReportController extends Controller
 
     public function generateClientPdf(Request $request)
     {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('reports.client_analysis')) {
+            abort(403, 'No tienes permiso para generar PDF de clientes.');
+        }
+
         Carbon::setLocale('es');
         $search = $request->input('search');
         $startDate = $request->input('start_date');

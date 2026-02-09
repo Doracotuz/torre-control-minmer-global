@@ -42,18 +42,24 @@
                     <a href="{{ route('wms.dashboard') }}" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-[#666666] font-bold rounded-full shadow-sm hover:shadow-md hover:border-[#2c3856] hover:text-[#2c3856] transition-all">
                         <i class="fas fa-arrow-left"></i> <span>Dashboard</span>
                     </a>
+                    @if(Auth::user()->hasFfPermission('wms.products.create'))
                     <a href="{{ route('wms.products.template') }}" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-[#666666] font-bold rounded-full shadow-sm hover:shadow-md hover:text-[#ff9c00] transition-all">
                         <i class="fas fa-download"></i> <span>Plantilla</span>
                     </a>
                     <button @click="showImportModal = true" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-[#666666] font-bold rounded-full shadow-sm hover:shadow-md hover:text-green-600 transition-all">
                         <i class="fas fa-upload"></i> <span>Importar</span>
                     </button>
+                    @endif
+                    @if(Auth::user()->hasFfPermission('wms.products.view'))
                     <a href="{{ route('wms.products.export-csv', request()->query()) }}" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-[#666666] font-bold rounded-full shadow-sm hover:shadow-md hover:text-blue-600 transition-all">
                         <i class="fas fa-file-csv"></i> <span>Exportar</span>
                     </a>
+                    @endif
+                    @if(Auth::user()->hasFfPermission('wms.products.create'))
                     <a href="{{ route('wms.products.create') }}" class="flex items-center gap-2 px-6 py-2.5 bg-[#2c3856] text-white font-bold rounded-full shadow-lg shadow-[#2c3856]/20 hover:bg-[#1a253a] hover:-translate-y-0.5 transition-all">
                         <i class="fas fa-plus"></i> <span>Nuevo</span>
                     </a>
+                    @endif
                 </div>
             </div>
 
@@ -148,9 +154,11 @@
                                             <button @click='detailProduct = {!! json_encode($product) !!}; showDetailModal = true' class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-blue-600 hover:border-blue-600 transition-all shadow-sm" title="Ver Detalles">
                                                 <i class="fas fa-eye"></i>
                                             </button>
+                                            @if(Auth::user()->hasFfPermission('wms.products.edit'))
                                             <a href="{{ route('wms.products.edit', $product) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-[#ff9c00] hover:border-[#ff9c00] transition-all shadow-sm" title="Editar">
                                                 <i class="fas fa-pencil-alt"></i>
                                             </a>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>

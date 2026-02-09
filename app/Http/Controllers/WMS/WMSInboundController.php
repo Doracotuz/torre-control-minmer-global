@@ -10,6 +10,16 @@ use Illuminate\Support\Facades\DB;
 
 class WMSInboundController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!Auth::user()->hasFfPermission('wms.receiving')) {
+                abort(403, 'No tienes permiso para procesar recibos (Inbound).');
+            }
+            return $next($request);
+        });
+    }
+
     public function storeReceipt(Request $request, PurchaseOrder $purchaseOrder)
     {
         $validated = $request->validate([

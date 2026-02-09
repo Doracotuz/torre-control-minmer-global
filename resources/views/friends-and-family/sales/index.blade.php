@@ -186,10 +186,12 @@
                                         <i class="fas fa-file-download"></i>
                                     </button>
                                     
+                                    @if(Auth::user()->hasFfPermission('sales.import'))
                                     <button @click="$refs.csvImportInput.click()" class="w-9 h-9 flex items-center justify-center bg-white border border-gray-200 text-gray-500 rounded-lg hover:border-[#2c3856] hover:text-[#2c3856] transition-colors" title="Importar CSV">
                                         <i class="fas fa-file-upload"></i>
                                     </button>
                                     <input type="file" x-ref="csvImportInput" class="hidden" accept=".csv" @change="importCsvOrder($event)">
+                                    @endif
 
                                     <button @click="openSearchModal()" class="px-4 py-2 bg-[#2c3856] text-white hover:bg-[#1e273d] rounded-lg font-bold text-xs transition-all shadow-md flex items-center gap-2">
                                         <i class="fas fa-history"></i> <span class="hidden lg:inline">Historial</span>
@@ -464,7 +466,9 @@
                                     <select x-model="form.order_type" class="w-full bg-white/20 border-none text-white text-xs font-bold rounded focus:ring-0 cursor-pointer shadow-sm hover:bg-white/30 transition-colors">
                                         <option value="normal" class="text-gray-800">Pedido Normal (Venta)</option>
                                         <option value="remision" class="text-gray-800">Remisión ($0.00)</option>
+                                        @if(Auth::user()->hasFfPermission('sales.loans'))
                                         <option value="prestamo" class="text-gray-800">Préstamo ($0.00)</option>
+                                        @endif
                                     </select>
                                 </div>
 
@@ -677,12 +681,14 @@
                                             </div>
                                         </div>
 
+                                        @if(Auth::user()->hasFfPermission('sales.loans'))
                                         <div x-show="editMode && form.order_type === 'prestamo' && !form.is_loan_returned" class="pt-2">
                                             <button @click="openReturnModal()" 
                                                     class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded text-[10px] uppercase shadow-sm transition-colors flex items-center justify-center gap-2">
                                                 <i class="fas fa-boxes-packing"></i> Gestionar Devolución
                                             </button>
                                         </div>
+                                        @endif
                                         <div x-show="editMode && form.is_loan_returned" class="p-2 bg-green-50 text-green-700 rounded border border-green-200 text-center text-[10px] font-bold">
                                             <i class="fas fa-check-double mr-1"></i> Devuelto
                                         </div>
@@ -692,6 +698,7 @@
                                     <div class="mt-3 pt-3 border-t border-gray-100 space-y-2 flex-shrink-0">
                                         <div x-show="globalError" class="text-[10px] text-red-500 font-bold text-center mb-1 leading-tight" x-text="globalError"></div>
                                         
+                                        @if(Auth::user()->hasFfPermission('sales.checkout'))
                                         <button @click="submitCheckout()"
                                                 :disabled="isSaving || isPrinting || localCart.size === 0 || !isFormValid"
                                                 class="w-full py-3 rounded-lg text-white font-bold text-xs uppercase tracking-wide shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
@@ -699,9 +706,12 @@
                                             <span x-show="!isSaving" x-text="editMode ? 'Actualizar Pedido' : 'Generar Venta'"></span>
                                             <span x-show="isSaving"><i class="fas fa-circle-notch fa-spin"></i></span>
                                         </button>
+                                        @endif
 
                                         <div class="flex gap-2">
+                                            @if(Auth::user()->hasFfPermission('sales.cancel'))
                                             <button x-show="editMode" @click="confirmCancelOrder()" class="flex-1 py-2 bg-white border border-red-200 text-red-600 rounded-lg text-[10px] font-bold uppercase hover:bg-red-50">Cancelar</button>
+                                            @endif
                                             <button x-show="!editMode" @click="printProductList()" class="flex-1 py-2 bg-white border border-gray-300 text-gray-500 rounded-lg text-[10px] font-bold uppercase hover:bg-gray-100">Picking</button>
                                         </div>
                                     </div>

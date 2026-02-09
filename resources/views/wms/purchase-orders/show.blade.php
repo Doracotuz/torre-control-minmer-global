@@ -125,7 +125,7 @@
                             </div>
 
                             <div class="mt-8 flex flex-col sm:flex-row gap-4 border-t border-gray-100 pt-6">
-                                @if ($purchaseOrder->status != 'Completed')
+                                @if ($purchaseOrder->status != 'Completed' && Auth::user()->hasFfPermission('wms.purchase_orders.edit'))
                                     <a href="{{ route('wms.purchase-orders.edit', $purchaseOrder) }}" class="btn-ghost w-full sm:w-auto px-6 py-3 text-xs uppercase tracking-widest shadow-sm flex justify-center">
                                         <i class="fas fa-pencil-alt mr-2"></i> Editar
                                     </a>
@@ -259,6 +259,7 @@
                         <h4 class="text-lg font-raleway font-black text-[#2c3856] mb-6 relative z-10"><i class="fas fa-truck mr-2"></i>Gestión de Patio</h4>
 
                         @if(!$purchaseOrder->download_start_time)
+                            @if(Auth::user()->hasFfPermission('wms.receiving'))
                             <form action="{{ route('wms.purchase-orders.register-arrival', $purchaseOrder) }}" method="POST" class="space-y-4 relative z-10">
                                 @csrf
                                 <div>
@@ -271,6 +272,11 @@
                                 </div>
                                 <button type="submit" class="btn-nexus w-full py-3 mt-2 shadow-lg text-sm uppercase tracking-widest">Registrar Llegada</button>
                             </form>
+                            @else
+                            <div class="p-4 bg-gray-50 rounded-xl text-center text-gray-500 text-sm">
+                                No tienes permisos para registrar llegadas.
+                            </div>
+                            @endif
                         @else
                             <div class="space-y-4 relative z-10">
                                 <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
@@ -289,6 +295,7 @@
                                         <p class="font-mono text-sm">{{ \Carbon\Carbon::parse($purchaseOrder->download_end_time)->format('d/m/Y H:i') }}</p>
                                     </div>
                                 @else
+                                    @if(Auth::user()->hasFfPermission('wms.receiving'))
                                     <form action="{{ route('wms.purchase-orders.register-departure', $purchaseOrder) }}" method="POST"
                                           onsubmit="return confirm('ADVERTENCIA DE CIERRE \n\nAl registrar la salida del operador:\n1. La Orden de Compra se marcará como COMPLETADA.\n2. Ya no podrás modificar el inventario de esta recepción.\n\n¿Estás seguro de que deseas finalizar?');">
                                         @csrf
@@ -296,12 +303,13 @@
                                             <i class="fas fa-sign-out-alt"></i> Registrar Salida y Finalizar
                                         </button>
                                     </form>
+                                    @endif
                                 @endif
                             </div>
                         @endif
                     </div>
 
-                    @if ($purchaseOrder->status != 'Completed')
+                    @if ($purchaseOrder->status != 'Completed' && Auth::user()->hasFfPermission('wms.receiving'))
                         <div class="bg-gradient-to-br from-green-500 to-emerald-600 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-xl text-center text-white relative overflow-hidden group">
                             <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none"></div>
                             
@@ -314,7 +322,7 @@
                         </div>
                     @endif
 
-                    @if ($purchaseOrder->status == 'Receiving')
+                    @if ($purchaseOrder->status == 'Receiving' && Auth::user()->hasFfPermission('wms.receiving'))
                         <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-xl border border-gray-100">
                             <h4 class="text-lg font-raleway font-black text-[#2c3856] mb-4">Cierre de Orden</h4>
                             <p class="text-xs text-gray-500 mb-6">Al cerrar la orden, el inventario se consolida y no se podrán agregar más tarimas.</p>
@@ -395,9 +403,11 @@
                                 </div>
                             </div>
 
+                            @if(Auth::user()->hasFfPermission('wms.receiving'))
                             <button type="submit" class="btn-ghost w-full py-3 text-xs uppercase tracking-widest font-bold">
                                 <i class="fas fa-cloud-upload-alt mr-2"></i> Subir Fotos
                             </button>
+                            @endif
                         </form>
 
                         @if($purchaseOrder->evidences->isNotEmpty())
@@ -411,7 +421,9 @@
                                         </div>
                                         <form action="{{ route('wms.purchase-orders.destroy-evidence', $evidence) }}" method="POST" class="absolute top-1 right-1 z-20" onsubmit="return confirm('Eliminar?')">
                                             @csrf @method('DELETE')
+                                            @if(Auth::user()->hasFfPermission('wms.receiving'))
                                             <button type="submit" class="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-times text-xs"></i></button>
+                                            @endif
                                         </form>
                                     </div>
                                 @endforeach

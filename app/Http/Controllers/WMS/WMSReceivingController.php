@@ -18,6 +18,16 @@ use App\Models\WMS\PurchaseOrderLine;
 
 class WMSReceivingController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!Auth::user()->hasFfPermission('wms.receiving')) {
+                abort(403, 'No tienes permiso para procesar recibos.');
+            }
+            return $next($request);
+        });
+    }
+
     public function showReceivingForm(PurchaseOrder $purchaseOrder)
     {
         $purchaseOrder->load(['lines.product', 'area']);

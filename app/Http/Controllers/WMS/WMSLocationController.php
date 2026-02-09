@@ -9,9 +9,33 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Facades\Auth;
 
 class WMSLocationController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = Auth::user();
+
+            if ($request->routeIs('wms.locations.index') || $request->routeIs('wms.locations.show') || $request->routeIs('wms.locations.export') || $request->routeIs('wms.locations.filter')) {
+                if (!$user->hasFfPermission('wms.locations.view')) {
+                    abort(403, 'No tienes permiso para ver ubicaciones.');
+                }
+            } elseif ($request->routeIs('wms.locations.create') || $request->routeIs('wms.locations.store') || $request->routeIs('wms.locations.edit') || $request->routeIs('wms.locations.update') || $request->routeIs('wms.locations.destroy') || $request->routeIs('wms.locations.import') || $request->routeIs('wms.locations.template')) {
+                if (!$user->hasFfPermission('wms.locations.manage')) {
+                    abort(403, 'No tienes permiso para gestionar ubicaciones.');
+                }
+            } elseif ($request->routeIs('wms.locations.print')) {
+                if (!$user->hasFfPermission('wms.locations.print')) {
+                    abort(403, 'No tienes permiso para imprimir etiquetas de ubicación.');
+                }
+            }
+
+            return $next($request);
+        });
+    }
+
     public function index(Request $request)
     {
         $query = Location::with('warehouse')->latest();

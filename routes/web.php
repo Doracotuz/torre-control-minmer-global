@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AreaController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AreaAdmin\UserController as AreaAdminUserController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\AreaAdmin\FolderPermissionController;
 use App\Http\Controllers\Admin\OrganigramController;
 use Illuminate\Support\Facades\Auth;
@@ -277,6 +278,7 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
     Route::put('/areas/{area}', [AreaController::class, 'update'])->name('areas.update');
     Route::delete('/areas/{area}', [AreaController::class, 'destroy'])->name('areas.destroy');
 
+    Route::resource('roles', RoleController::class);
     Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
     Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
     Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');

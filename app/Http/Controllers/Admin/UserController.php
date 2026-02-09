@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Role;
 use App\Models\Area;
 use App\Models\Folder;
 use Illuminate\Http\Request;
@@ -71,8 +72,9 @@ class UserController extends Controller
         $areas = Area::orderBy('name')->get();
         $positions = OrganigramPosition::orderBy('name')->get();
         $availableModules = User::availableModules();
+        $roles = Role::orderBy('name')->get();
 
-        return view('admin.users.create', compact('areas', 'positions', 'availableModules'));
+        return view('admin.users.create', compact('areas', 'positions', 'availableModules', 'roles'));
     }
 
     public function store(Request $request)
@@ -89,7 +91,10 @@ class UserController extends Controller
             'visible_modules' => 'nullable|array',
             'visible_modules.*' => 'string',
             'ff_visible_tiles' => 'nullable|array',
-            'ff_visible_tiles.*' => 'string',            
+            'ff_visible_tiles.*' => 'string',
+            'ff_role_name' => 'nullable|string|max:255',
+            'ff_granular_permissions' => 'nullable|array',
+            'role_id' => 'nullable|exists:roles,id',            
         ];
 
         if (!$request->has('is_client') || !$request->input('is_client')) {
@@ -123,6 +128,9 @@ class UserController extends Controller
         $user->is_client = $request->has('is_client');
         $user->visible_modules = $request->input('visible_modules', []);
         $user->ff_visible_tiles = $request->input('ff_visible_tiles', []);
+        $user->ff_role_name = $request->input('ff_role_name');
+        $user->ff_granular_permissions = $request->input('ff_granular_permissions', []);
+        $user->role_id = $request->input('role_id');
 
         if ($request->hasFile('profile_photo')) {
             $user->profile_photo_path = $request->file('profile_photo')->store('profile_photos', 's3');
@@ -160,8 +168,9 @@ class UserController extends Controller
         $accessibleFolderIds = $user->accessibleFolders->pluck('id')->toArray();
         $userAccessibleAreaIds = $user->accessibleAreas->pluck('id')->toArray();
         $availableModules = User::availableModules();
+        $roles = Role::orderBy('name')->get();
 
-        return view('admin.users.edit', compact('user', 'areas', 'accessibleFolderIds', 'positions', 'userAccessibleAreaIds', 'availableModules')); 
+        return view('admin.users.edit', compact('user', 'areas', 'accessibleFolderIds', 'positions', 'userAccessibleAreaIds', 'availableModules', 'roles')); 
     }
 
     public function update(Request $request, User $user)
@@ -187,7 +196,10 @@ class UserController extends Controller
             'visible_modules' => 'nullable|array',
             'visible_modules.*' => 'string',
             'ff_visible_tiles' => 'nullable|array',
-            'ff_visible_tiles.*' => 'string',                     
+            'ff_visible_tiles.*' => 'string',
+            'ff_role_name' => 'nullable|string|max:255',
+            'ff_granular_permissions' => 'nullable|array',
+            'role_id' => 'nullable|exists:roles,id',                     
         ];
 
         if (!$request->has('is_client') || !$request->input('is_client')) {
@@ -219,6 +231,9 @@ class UserController extends Controller
         $user->is_client = $request->has('is_client');
         $user->visible_modules = $request->input('visible_modules', []);
         $user->ff_visible_tiles = $request->input('ff_visible_tiles', []);
+        $user->ff_role_name = $request->input('ff_role_name');
+        $user->ff_granular_permissions = $request->input('ff_granular_permissions', []);
+        $user->role_id = $request->input('role_id');
 
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);

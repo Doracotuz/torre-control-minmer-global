@@ -6,9 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\WMS\Quality;
 use App\Models\Area;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class WMSQualityController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!Auth::user()->hasFfPermission('wms.quality')) {
+                abort(403, 'No tienes permiso para gestionar calidad.');
+            }
+            return $next($request);
+        });
+    }
+
     public function index(Request $request)
     {
         $query = Quality::with('area')->latest();
