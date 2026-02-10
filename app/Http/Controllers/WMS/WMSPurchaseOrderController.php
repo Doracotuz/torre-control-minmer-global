@@ -175,10 +175,13 @@ class WMSPurchaseOrderController extends Controller
             'pallets.items.product',
             'pallets.items.quality',
             'pallets.user',
-            'evidences'
+            'evidences',
+            'valueAddedServices.service'
         ]);
         
-        return view('wms.purchase-orders.show', compact('purchaseOrder'));
+        $services = \App\Models\WMS\ValueAddedService::orderBy('description')->get();
+
+        return view('wms.purchase-orders.show', compact('purchaseOrder', 'services'));
     }
 
     public function update(Request $request, PurchaseOrder $purchaseOrder)

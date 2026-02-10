@@ -40,6 +40,13 @@
                                     </label>
                                     <p class="text-xs text-gray-500 mt-1 ml-6">Marcar si esta área representa a un cliente externo.</p>
                                 </div>
+                                
+                                <div>
+                                    <x-input-label for="storage_rate" :value="__('Tarifa de Almacenaje (Diaria)')" class="font-semibold" />
+                                    <x-text-input id="storage_rate" class="block mt-1 w-full" type="number" step="0.01" name="storage_rate" :value="old('storage_rate', $area->storage_rate)" placeholder="15.00" />
+                                    <x-input-error :messages="$errors->get('storage_rate')" class="mt-2" />
+                                    <p class="text-xs text-gray-500 mt-1">Costo por pallet por día.</p>
+                                </div>
 
                                 <div class="mt-4">
                                     <x-input-label for="emitter_name" :value="__('Razón Social')" />

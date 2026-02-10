@@ -94,6 +94,10 @@ class PurchaseOrder extends Model
     public function warehouse()
     {
         return $this->belongsTo(\App\Models\Warehouse::class);
-    }    
+    }
 
+    public function valueAddedServices()
+    {
+        return $this->morphMany(ValueAddedServiceAssignment::class, 'assignable');
+    }
 }

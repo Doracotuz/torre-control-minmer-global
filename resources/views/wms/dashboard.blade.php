@@ -54,6 +54,10 @@
                 </div>
 
                 <div class="bg-white shadow-soft border border-gray-100 rounded-full p-2 flex items-center gap-2 mt-8 xl:mt-0 transition-shadow hover:shadow-lg">
+                    <a href="{{ route('wms.service-requests.index') }}" class="flex items-center gap-2 bg-[#2c3856] text-white px-5 py-3 rounded-full font-bold text-sm hover:bg-[#1a253a] transition-all shadow-md hover:shadow-lg" title="Solicitudes de Servicio">
+                        <i class="fas fa-concierge-bell"></i>
+                        <span class="hidden md:inline">Solicitudes</span>
+                    </a>
                     <form action="{{ route('wms.dashboard') }}" method="GET" class="flex gap-2">
                         <div class="relative group">
                             <select name="warehouse_id" onchange="this.form.submit()" class="appearance-none bg-gray-50 hover:bg-gray-100 text-[#2c3856] font-bold text-sm py-3 pl-6 pr-10 rounded-full border-none focus:ring-0 transition-colors cursor-pointer min-w-[200px]">
@@ -397,8 +401,10 @@
                             ['r' => 'wms.product-types.index', 't' => 'Tipos', 'img' => 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTgJ4DjVBL8UI8GkgNeVWaBcZSHa_ANC8OEcQ&s', 'perm' => 'wms.product_types'],
                             ['r' => 'wms.qualities.index', 't' => 'Calidades', 'img' => 'https://img.freepik.com/fotos-premium/botella-rota-aislada-sobre-fondo-blanco_51524-17283.jpg', 'perm' => 'wms.quality'],
                             ['r' => 'wms.lpns.index', 't' => 'Generar LPNs', 'img' => 'https://infraon.io/blog/wp-content/uploads/2023/01/BARSCANNERBLOGFinal.png', 'perm' => 'wms.lpns'],
+                            ['r' => 'wms.value-added-services.index', 't' => 'Catálogo Serv.', 'img' => 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.products.view'],
                         ];
                     @endphp
+
                     @foreach($catalogs as $cat)
                     @if(Auth::user()->hasFfPermission($cat['perm']))
                     <a href="{{ route($cat['r']) }}" class="group relative aspect-square rounded-[2rem] overflow-hidden shadow-soft hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 img-placeholder">
@@ -418,6 +424,7 @@
                     @php
                         $reports = [
                             ['r' => 'wms.reports.inventory', 't' => 'Dashboard Inventario', 'd' => 'Stock global y valores.', 'img' => 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop'],
+                            ['r' => 'wms.reports.billing.index', 't' => 'Facturación', 'd' => 'Costos de servicios y almacenaje.', 'img' => 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=800&auto=format&fit=crop'],
                             ['r' => 'wms.reports.stock-movements', 't' => 'Kardex Movimientos', 'd' => 'Entradas, salidas y ajustes.', 'img' => 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800&auto=format&fit=crop'],
                             ['r' => 'wms.reports.slotting-heatmap', 't' => 'Mapa de Calor', 'd' => 'Eficiencia de ubicaciones.', 'img' => 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?q=80&w=800&auto=format&fit=crop'],
                             ['r' => 'wms.reports.non-available-inventory', 't' => 'Stock No Disponible', 'd' => 'Cuarentenas y daños.', 'img' => 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS7Uet4FxXLOk_9sb00Im42tkm1Hn7LlH3Ajw&s'],

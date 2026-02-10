@@ -4,54 +4,47 @@ namespace App\Models\WMS;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\User;
+use Illuminate\Database\Eloquent\ForceDelete;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Area; // Cliente
 use App\Models\Warehouse;
-use App\Models\Area;
+use App\Models\User;
+use App\Models\WMS\ValueAddedServiceAssignment;
 
-class SalesOrder extends Model
+class ServiceRequest extends Model
 {
-    use HasFactory;
-    
+    use HasFactory, SoftDeletes;
+
+    protected $table = 'wms_service_requests';
+
     protected $fillable = [
-        'so_number', 
-        'invoice_number', 
-        'customer_name', 
-        'user_id',
+        'folio',
         'area_id',
         'warehouse_id',
-        'order_date', 
-        'status', 
-        'notes'
+        'user_id',
+        'status',
+        'requested_at',
+        'completed_at',
     ];
 
     protected $casts = [
-        'order_date' => 'datetime',
+        'requested_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
-
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
 
     public function area()
     {
         return $this->belongsTo(Area::class);
-    }    
-
-    public function lines()
-    {
-        return $this->hasMany(SalesOrderLine::class);
-    }
-    
-    public function pickList()
-    {
-        return $this->hasOne(PickList::class);
     }
 
     public function warehouse()
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function valueAddedServices()

@@ -42,7 +42,8 @@ class AreaController extends Controller
             'emitter_address' => 'nullable|string|max:255',
             'emitter_colonia' => 'nullable|string|max:255',
             'emitter_cp' => 'nullable|string|max:10',
-            'is_client' => 'boolean',            
+            'is_client' => 'boolean',
+            'storage_rate' => 'nullable|numeric|min:0',
         ]);
 
         $data = $request->all();
@@ -89,6 +90,7 @@ class AreaController extends Controller
             'emitter_colonia' => 'nullable|string|max:255',
             'emitter_cp' => 'nullable|string|max:10',
             'is_client' => 'boolean',            
+            'storage_rate' => 'nullable|numeric|min:0',
         ]);
 
         $data = $request->all();

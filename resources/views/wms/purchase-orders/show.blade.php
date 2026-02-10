@@ -214,6 +214,109 @@
                         </div>
                     </div>
 
+                    <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-6 md:p-8" x-data="{ showVasModal: false }">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-3">
+                                <span class="w-1 h-6 bg-purple-500 rounded-full"></span>
+                                <h4 class="text-lg font-raleway font-black text-[#2c3856]">Valor Agregado</h4>
+                            </div>
+                            @if(Auth::user()->hasFfPermission('wms.receiving'))
+                            <button @click="showVasModal = true" class="btn-ghost px-4 py-2 text-xs uppercase tracking-widest flex items-center gap-2">
+                                <i class="fas fa-plus"></i> Agregar
+                            </button>
+                            @endif
+                        </div>
+
+                        <div class="overflow-x-auto custom-scrollbar pb-2">
+                            <table class="nexus-table min-w-full">
+                                <thead>
+                                    <tr>
+                                        <th class="pl-4">Servicio / Consumible</th>
+                                        <th class="text-center">Cant.</th>
+                                        <th class="text-right">Costo Unit.</th>
+                                        <th class="text-right">Total</th>
+                                        <th class="text-right"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($purchaseOrder->valueAddedServices as $assignment)
+                                        <tr class="nexus-row">
+                                            <td class="pl-4">
+                                                <p class="font-bold text-[#2c3856] text-xs">{{ $assignment->service->description }}</p>
+                                                <p class="font-mono text-[10px] text-gray-400 mt-1">{{ $assignment->service->code }}</p>
+                                                <span class="inline-block mt-1 px-2 py-0.5 rounded text-[9px] font-bold uppercase {{ $assignment->service->type == 'service' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700' }}">
+                                                    {{ $assignment->service->type == 'service' ? 'Servicio' : 'Consumible' }}
+                                                </span>
+                                            </td>
+                                            <td class="text-center font-bold text-[#2c3856] text-sm">{{ $assignment->quantity }}</td>
+                                            <td class="text-right font-mono text-gray-600 text-xs">${{ number_format($assignment->cost_snapshot, 2) }}</td>
+                                            <td class="text-right font-bold text-[#2c3856] text-sm">${{ number_format($assignment->quantity * $assignment->cost_snapshot, 2) }}</td>
+                                            <td class="text-right pr-4">
+                                                @if(Auth::user()->hasFfPermission('wms.receiving'))
+                                                <form action="{{ route('wms.value-added-services.detach', $assignment) }}" method="POST" onsubmit="return confirm('¿Quitar servicio?');">
+                                                    @csrf @method('DELETE')
+                                                    <button type="submit" class="text-red-400 hover:text-red-600 transition-colors"><i class="fas fa-times"></i></button>
+                                                </form>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" class="text-center py-4 text-gray-400 italic text-xs">No hay servicios agregados.</td>
+                                        </tr>
+                                    @endforelse
+                                    @if($purchaseOrder->valueAddedServices->isNotEmpty())
+                                        <tr class="nexus-row bg-gray-50/50">
+                                            <td colspan="3" class="text-right font-bold text-gray-500 text-xs uppercase pr-4 py-3">Total Valor Agregado:</td>
+                                            <td class="text-right font-black text-[#2c3856] text-lg py-3">${{ number_format($purchaseOrder->valueAddedServices->sum(fn($a) => $a->quantity * $a->cost_snapshot), 2) }}</td>
+                                            <td></td>
+                                        </tr>
+                                    @endif
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Modal -->
+                        <div x-show="showVasModal" x-cloak style="display: none;" class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+                            <div class="fixed inset-0 bg-[#2c3856]/80 backdrop-blur-sm transition-opacity" @click="showVasModal = false"></div>
+                            
+                            <div class="relative z-10 bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform transition-all">
+                                <div class="bg-[#2c3856] px-6 py-4 flex justify-between items-center">
+                                    <h3 class="text-white font-raleway font-bold">Agregar Servicio</h3>
+                                    <button @click="showVasModal = false" class="text-white/70 hover:text-white"><i class="fas fa-times"></i></button>
+                                </div>
+                                <form action="{{ route('wms.value-added-services.assign') }}" method="POST" class="p-6 space-y-4">
+                                    @csrf
+                                    <input type="hidden" name="assignable_type" value="purchase_order">
+                                    <input type="hidden" name="assignable_id" value="{{ $purchaseOrder->id }}">
+                                    
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Servicio / Consumible</label>
+                                        <select name="value_added_service_id" required class="w-full rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500 text-sm">
+                                            <option value="">-- Seleccionar --</option>
+                                            @foreach($services as $service)
+                                                <option value="{{ $service->id }}">
+                                                    {{ $service->description }} (${{ number_format($service->cost, 2) }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Cantidad</label>
+                                        <input type="number" name="quantity" value="1" min="1" required class="w-full rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500 text-sm font-bold">
+                                    </div>
+
+                                    <div class="pt-2">
+                                        <button type="submit" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-lg shadow-purple-500/30 transition-all uppercase tracking-widest text-xs">
+                                            Asignar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-xl shadow-[#2c3856]/5 border border-gray-100 p-6 md:p-8">
                         <div class="flex items-center gap-3 mb-6">
                             <span class="w-1 h-6 bg-[#ff9c00] rounded-full"></span>

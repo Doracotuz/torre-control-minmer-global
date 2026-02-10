@@ -203,10 +203,13 @@ class WMSSalesOrderController extends Controller
             'pickList.items.product',
             'pickList.items.quality',
             'pickList.items.pallet.location',
-            'pickList.items.pallet.purchaseOrder'
+            'pickList.items.pallet.purchaseOrder',
+            'valueAddedServices.service'
         ]);
 
-        return view('wms.sales-orders.show', compact('salesOrder'));
+        $services = \App\Models\WMS\ValueAddedService::orderBy('description')->get();
+
+        return view('wms.sales-orders.show', compact('salesOrder', 'services'));
     }
 
     public function edit(SalesOrder $salesOrder)

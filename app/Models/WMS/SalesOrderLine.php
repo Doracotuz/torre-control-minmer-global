@@ -17,4 +17,9 @@ class SalesOrderLine extends Model {
     public function product() { return $this->belongsTo(\App\Models\Product::class); }
     public function quality() { return $this->belongsTo(Quality::class); }
     public function palletItem() { return $this->belongsTo(PalletItem::class); }
+    
+    public function salesOrder()
+    {
+        return $this->belongsTo(SalesOrder::class);
+    }
 }
