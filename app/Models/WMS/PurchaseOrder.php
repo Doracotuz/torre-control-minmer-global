@@ -35,6 +35,8 @@ class PurchaseOrder extends Model
 
     public function pallets() { return $this->hasMany(Pallet::class); }
 
+
+
     public function getStatusInSpanishAttribute(): string
     {
         return match ($this->status) {

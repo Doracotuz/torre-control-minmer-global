@@ -159,8 +159,9 @@ class WMSPurchaseOrderController extends Controller
             $purchaseOrder->lines()->create($line);
         }
 
-        return redirect()->route('wms.purchase-orders.show', $purchaseOrder)
-                        ->with('success', 'Orden de Compra creada exitosamente.');
+        return redirect()->route('wms.purchase-orders.create')
+                    ->with('success', 'Orden de Compra creada exitosamente.')
+                    ->with('created_po_number', $purchaseOrder->po_number);
     }
 
     public function show(PurchaseOrder $purchaseOrder)
@@ -267,8 +268,6 @@ class WMSPurchaseOrderController extends Controller
 
         $purchaseOrder->update(['download_end_time' => now()]);
         
-        $purchaseOrder->update(['status' => 'Completed']);
-
         return back()->with('success', 'Salida del vehículo registrada exitosamente.');
     }
 

@@ -70,14 +70,48 @@
                     <div class="h-8 w-px bg-gray-300 mx-1 hidden md:block"></div>
 
                     @if(Auth::user()->hasFfPermission('wms.locations.print'))
-                    <form action="{{ route('wms.locations.print-labels') }}" method="POST" target="_blank" class="m-0">
-                        @csrf
-                        <template x-for="id in $store.selection.ids" :key="id"><input type="hidden" name="ids[]" :value="id"></template>
-                        <button type="submit" :disabled="$store.selection.ids.length === 0" class="btn-toolbar btn-white disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div x-data="{ labelMenuOpen: false }" class="relative">
+                        <button @click="labelMenuOpen = !labelMenuOpen" class="btn-toolbar btn-white">
                             <i class="fas fa-print mr-2 text-[#2c3856]"></i> 
                             Labels <span x-show="$store.selection.ids.length > 0" class="ml-1 bg-[#2c3856] text-white text-[9px] px-1.5 py-0.5 rounded-full" x-text="$store.selection.ids.length"></span>
+                            <i class="fas fa-chevron-down ml-2 text-[9px] text-gray-400"></i>
                         </button>
-                    </form>
+                        <div x-show="labelMenuOpen" @click.away="labelMenuOpen = false" x-cloak
+                             x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                             class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                            
+                            {{-- Option 1: Print selected --}}
+                            <form action="{{ route('wms.locations.print-labels') }}" method="POST" target="_blank" class="m-0">
+                                @csrf
+                                <template x-for="id in $store.selection.ids" :key="id"><input type="hidden" name="ids[]" :value="id"></template>
+                                <button type="submit" :disabled="$store.selection.ids.length === 0" @click="labelMenuOpen = false"
+                                        class="w-full px-4 py-3 text-left text-sm font-bold text-[#2c3856] hover:bg-blue-50 transition-colors flex items-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed border-b border-gray-50">
+                                    <i class="fas fa-check-square text-[#ff9c00] w-5 text-center"></i>
+                                    <div>
+                                        <span>Seleccionados</span>
+                                        <span x-show="$store.selection.ids.length > 0" class="ml-1 text-xs text-gray-400" x-text="'(' + $store.selection.ids.length + ')'"></span>
+                                        <p class="text-[10px] text-gray-400 font-normal mt-0.5">Solo los marcados con checkbox</p>
+                                    </div>
+                                </button>
+                            </form>
+
+                            {{-- Option 2: Print all filtered --}}
+                            <button @click="
+                                const params = new URLSearchParams(window.location.search);
+                                const url = '{{ route('wms.locations.print-filtered-labels') }}?' + params.toString();
+                                window.open(url, '_blank');
+                                labelMenuOpen = false;
+                            " class="w-full px-4 py-3 text-left text-sm font-bold text-[#2c3856] hover:bg-orange-50 transition-colors flex items-center gap-3">
+                                <i class="fas fa-filter text-[#2c3856] w-5 text-center"></i>
+                                <div>
+                                    <span>Todos los Filtrados</span>
+                                    <span class="ml-1 text-xs text-gray-400">({{ $locations->total() }})</span>
+                                    <p class="text-[10px] text-gray-400 font-normal mt-0.5">Todas las ubicaciones que coinciden</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
                     @endif
 
                     @if(Auth::user()->hasFfPermission('wms.locations.manage'))

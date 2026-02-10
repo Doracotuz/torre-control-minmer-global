@@ -41,50 +41,50 @@
 
         <div class="max-w-[1800px] mx-auto px-6 pt-10 relative z-10">
             
-            <div class="flex flex-col xl:flex-row justify-between items-end mb-10 border-b border-gray-200 pb-6">
+            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-end mb-10 border-b border-gray-200 pb-6 gap-6">
                 <div>
                     <div class="flex items-center gap-3 mb-1">
                         <div class="h-1 w-8 bg-[#ff9c00]"></div>
                         <p class="text-xs font-bold text-[#666666] uppercase tracking-[0.2em]">Centro de Operaciones</p>
                     </div>
-                    <h1 class="text-5xl md:text-6xl font-raleway font-black text-[#2c3856] mb-1 leading-none">
+                    <h1 class="text-3xl sm:text-5xl md:text-6xl font-raleway font-black text-[#2c3856] mb-1 leading-none">
                         MINMER <span class="text-[#ff9c00]">WMS</span>
                     </h1>
-                    <p class="text-[#666666] text-lg font-medium">Panel de control logístico global</p>
+                    <p class="text-[#666666] text-sm sm:text-lg font-medium">Panel de control logístico global</p>
                 </div>
 
-                <div class="bg-white shadow-soft border border-gray-100 rounded-full p-2 flex items-center gap-2 mt-8 xl:mt-0 transition-shadow hover:shadow-lg">
-                    <a href="{{ route('wms.service-requests.index') }}" class="flex items-center gap-2 bg-[#2c3856] text-white px-5 py-3 rounded-full font-bold text-sm hover:bg-[#1a253a] transition-all shadow-md hover:shadow-lg" title="Solicitudes de Servicio">
+                <div class="bg-white shadow-soft border border-gray-100 rounded-2xl sm:rounded-full p-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full xl:w-auto transition-shadow hover:shadow-lg">
+                    <a href="{{ route('wms.service-requests.index') }}" class="flex items-center justify-center gap-2 bg-[#2c3856] text-white px-5 py-3 rounded-xl sm:rounded-full font-bold text-sm hover:bg-[#1a253a] transition-all shadow-md hover:shadow-lg" title="Solicitudes de Servicio">
                         <i class="fas fa-concierge-bell"></i>
-                        <span class="hidden md:inline">Solicitudes</span>
+                        <span>Solicitudes</span>
                     </a>
-                    <form action="{{ route('wms.dashboard') }}" method="GET" class="flex gap-2">
+                    <form action="{{ route('wms.dashboard') }}" method="GET" class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                         <div class="relative group">
-                            <select name="warehouse_id" onchange="this.form.submit()" class="appearance-none bg-gray-50 hover:bg-gray-100 text-[#2c3856] font-bold text-sm py-3 pl-6 pr-10 rounded-full border-none focus:ring-0 transition-colors cursor-pointer min-w-[200px]">
+                            <select name="warehouse_id" onchange="this.form.submit()" class="appearance-none bg-gray-50 hover:bg-gray-100 text-[#2c3856] font-bold text-sm py-3 pl-6 pr-10 rounded-xl sm:rounded-full border-none focus:ring-0 transition-colors cursor-pointer w-full sm:min-w-[200px]">
                                 <option value="">Todas las Ubicaciones</option>
                                 @foreach($warehouses as $w)
                                     <option value="{{ $w->id }}" {{ (isset($warehouseId) && $warehouseId == $w->id) ? 'selected' : '' }}>{{ $w->name }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="h-8 w-px bg-gray-200 my-auto"></div>
+                        <div class="hidden sm:block h-8 w-px bg-gray-200 my-auto"></div>
                         <div class="relative group">
-                            <select name="area_id" onchange="this.form.submit()" class="appearance-none bg-gray-50 hover:bg-gray-100 text-[#ff9c00] font-bold text-sm py-3 pl-6 pr-10 rounded-full border-none focus:ring-0 transition-colors cursor-pointer min-w-[200px]">
+                            <select name="area_id" onchange="this.form.submit()" class="appearance-none bg-gray-50 hover:bg-gray-100 text-[#ff9c00] font-bold text-sm py-3 pl-6 pr-10 rounded-xl sm:rounded-full border-none focus:ring-0 transition-colors cursor-pointer w-full sm:min-w-[200px]">
                                 <option value="">Todos los Clientes</option>
                                 @foreach($areas as $area)
                                     <option value="{{ $area->id }}" {{ (isset($areaId) && $areaId == $area->id) ? 'selected' : '' }}>{{ $area->name }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <a href="{{ route('wms.dashboard') }}" class="w-11 h-11 rounded-full bg-[#2c3856] hover:bg-[#1a253a] flex items-center justify-center text-white transition-all hover:rotate-180 shadow-md">
+                        <a href="{{ route('wms.dashboard') }}" class="w-full sm:w-11 h-11 rounded-xl sm:rounded-full bg-[#2c3856] hover:bg-[#1a253a] flex items-center justify-center text-white transition-all hover:rotate-180 shadow-md">
                             ⟳
                         </a>
                     </form>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-                <button @click="tab = 'mando'" class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'mando' ? 'ring-4 ring-[#ff9c00]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-12">
+                <button @click="tab = 'mando'" class="group relative h-28 sm:h-40 rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'mando' ? 'ring-4 ring-[#ff9c00]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
                     <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
                     <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
                     <div class="absolute bottom-5 left-6 text-left">
@@ -92,7 +92,7 @@
                         <p class="text-2xl font-raleway font-black text-white">Dashboard</p>
                     </div>
                 </button>
-                <button @click="tab = 'inventario'" class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'inventario' ? 'ring-4 ring-[#2c3856]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
+                <button @click="tab = 'inventario'" class="group relative h-28 sm:h-40 rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'inventario' ? 'ring-4 ring-[#2c3856]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
                     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRJZdguUbIDEdJl_gQot6lco0c45KS0fCuBag&s" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
                     <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
                     <div class="absolute bottom-5 left-6 text-left">
@@ -101,7 +101,7 @@
                     </div>
                 </button>
                 @if(Auth::user()->hasFfPermission('wms.products.view') || Auth::user()->hasFfPermission('wms.locations.view'))
-                <button @click="tab = 'catalogos'" class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'catalogos' ? 'ring-4 ring-[#666666]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
+                <button @click="tab = 'catalogos'" class="group relative h-28 sm:h-40 rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'catalogos' ? 'ring-4 ring-[#666666]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
                     <img src="https://images.unsplash.com/photo-1553413077-190dd305871c?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
                     <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
                     <div class="absolute bottom-5 left-6 text-left">
@@ -111,7 +111,7 @@
                 </button>
                 @endif
                 @if(Auth::user()->hasFfPermission('wms.reports'))
-                <button @click="tab = 'reportes'" class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'reportes' ? 'ring-4 ring-[#2c3856]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
+                <button @click="tab = 'reportes'" class="group relative h-28 sm:h-40 rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'reportes' ? 'ring-4 ring-[#2c3856]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
                     <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
                     <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
                     <div class="absolute bottom-5 left-6 text-left">
@@ -124,30 +124,30 @@
 
             <div x-show="tab === 'mando'" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0">
                 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-10">
                     @foreach($kpis as $kpi)
-                    <div class="bg-white p-8 rounded-3xl shadow-soft border border-gray-100 group hover:-translate-y-1 transition-transform duration-300">
-                        <p class="text-[#666666] text-xs font-bold uppercase tracking-widest mb-3">{{ $kpi['label'] }}</p>
+                    <div class="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-soft border border-gray-100 group hover:-translate-y-1 transition-transform duration-300">
+                        <p class="text-[#666666] text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-2 sm:mb-3">{{ $kpi['label'] }}</p>
                         <div class="flex items-baseline gap-2">
-                            <span class="text-5xl font-raleway font-black text-[#2c3856] tracking-tighter" 
+                            <span class="text-3xl sm:text-5xl font-raleway font-black text-[#2c3856] tracking-tighter" 
                                   x-data x-init="animateCountTo($el, {{ $kpi['value'] }}, '{{ $kpi['format'] }}')">0</span>
-                            @if($kpi['format'] === 'percent')<span class="text-xl text-[#ff9c00] font-bold">%</span>@endif
+                            @if($kpi['format'] === 'percent')<span class="text-lg sm:text-xl text-[#ff9c00] font-bold">%</span>@endif
                         </div>
                     </div>
                     @endforeach
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[650px]">
-                    <div class="bg-white rounded-[2.5rem] shadow-soft border border-gray-100 overflow-hidden flex flex-col h-full group hover:shadow-xl transition-shadow duration-500">
-                        <div class="relative h-40 overflow-hidden shrink-0 img-placeholder">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 lg:h-[650px]">
+                    <div class="bg-white rounded-2xl sm:rounded-[2.5rem] shadow-soft border border-gray-100 overflow-hidden flex flex-col h-auto lg:h-full group hover:shadow-xl transition-shadow duration-500">
+                        <a href="{{ route('wms.purchase-orders.index') }}" class="relative h-32 sm:h-40 overflow-hidden shrink-0 img-placeholder block cursor-pointer">
                             <img src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 to-transparent"></div>
                             <div class="absolute bottom-5 left-8 text-white">
                                 <h3 class="text-2xl font-raleway font-black">Recepciones</h3>
                                 <p class="text-[#ff9c00] font-bold text-sm">Últimos 5 Creados</p>
                             </div>
-                        </div>
-                        <div class="px-6 py-4 border-b border-gray-50 flex gap-2 justify-between bg-white text-xs font-bold uppercase tracking-wider">
+                        </a>
+                        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-50 flex gap-1 sm:gap-2 justify-between bg-white text-[10px] sm:text-xs font-bold uppercase tracking-wider">
                             <div class="flex flex-col items-center w-1/3">
                                 <span class="text-yellow-600 bg-yellow-50 px-2 py-1 rounded-lg w-full text-center">Pendientes</span>
                                 <span class="text-lg text-[#2c3856] mt-1">{{ $poStats['pending'] }}</span>
@@ -161,7 +161,7 @@
                                 <span class="text-lg text-[#2c3856] mt-1">{{ $poStats['completed_today'] }}</span>
                             </div>
                         </div>
-                        <div class="flex-1 overflow-y-auto hide-scroll p-6 space-y-3">
+                        <div class="flex-1 overflow-y-auto hide-scroll p-4 sm:p-6 space-y-3 max-h-[300px] lg:max-h-none">
                             @foreach($recentPOs as $po)
                                 <a href="{{ route('wms.purchase-orders.show', $po) }}" class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-blue-50 hover:border-blue-100 transition-colors">
                                     <div class="min-w-0 flex-1 pr-2">
@@ -185,19 +185,19 @@
                                 </a>
                             @endforeach
                         </div>
-                        <div class="p-6 border-t border-gray-50"><a href="{{ route('wms.purchase-orders.index') }}" class="block w-full py-4 text-center bg-[#2c3856] hover:bg-[#1a253a] text-white font-bold rounded-2xl shadow-lg">Ver Todas</a></div>
+                        <div class="p-4 sm:p-6 border-t border-gray-50"><a href="{{ route('wms.purchase-orders.index') }}" class="block w-full py-3 sm:py-4 text-center bg-[#2c3856] hover:bg-[#1a253a] text-white font-bold rounded-xl sm:rounded-2xl shadow-lg text-sm">Ver Todas</a></div>
                     </div>
 
-                    <div class="bg-white rounded-[2.5rem] shadow-soft border border-gray-100 overflow-hidden flex flex-col h-full group hover:shadow-xl transition-shadow duration-500">
-                        <div class="relative h-40 overflow-hidden shrink-0 img-placeholder">
+                    <div class="bg-white rounded-2xl sm:rounded-[2.5rem] shadow-soft border border-gray-100 overflow-hidden flex flex-col h-auto lg:h-full group hover:shadow-xl transition-shadow duration-500">
+                        <a href="{{ route('wms.sales-orders.index') }}" class="relative h-32 sm:h-40 overflow-hidden shrink-0 img-placeholder block cursor-pointer">
                             <img src="https://images.unsplash.com/photo-1532635042-a6f6ad4745f9?q=80&w=1170&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 to-transparent"></div>
                             <div class="absolute bottom-5 left-8 text-white">
                                 <h3 class="text-2xl font-raleway font-black">Despachos</h3>
                                 <p class="text-[#ff9c00] font-bold text-sm">Últimos 5 Creados</p>
                             </div>
-                        </div>
-                        <div class="px-6 py-4 border-b border-gray-50 flex gap-2 justify-between bg-white text-xs font-bold uppercase tracking-wider">
+                        </a>
+                        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-50 flex gap-1 sm:gap-2 justify-between bg-white text-[10px] sm:text-xs font-bold uppercase tracking-wider">
                             <div class="flex flex-col items-center w-1/3">
                                 <span class="text-yellow-600 bg-yellow-50 px-2 py-1 rounded-lg w-full text-center">Pendientes</span>
                                 <span class="text-lg text-[#2c3856] mt-1">{{ $soStats['pending'] }}</span>
@@ -211,7 +211,7 @@
                                 <span class="text-lg text-[#2c3856] mt-1">{{ $soStats['completed_today'] }}</span>
                             </div>
                         </div>
-                        <div class="flex-1 overflow-y-auto hide-scroll p-6 space-y-3">
+                        <div class="flex-1 overflow-y-auto hide-scroll p-4 sm:p-6 space-y-3 max-h-[300px] lg:max-h-none">
                             @foreach($recentSOs as $so)
                                 <a href="{{ route('wms.sales-orders.show', $so) }}" class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-green-50 hover:border-green-100 transition-colors">
                                     <div class="min-w-0 flex-1 pr-2">
@@ -235,11 +235,11 @@
                                 </a>
                             @endforeach
                         </div>
-                        <div class="p-6 border-t border-gray-50"><a href="{{ route('wms.sales-orders.index') }}" class="block w-full py-4 text-center bg-[#2c3856] hover:bg-[#1a253a] text-white font-bold rounded-2xl shadow-lg">Ver Todos</a></div>
+                        <div class="p-4 sm:p-6 border-t border-gray-50"><a href="{{ route('wms.sales-orders.index') }}" class="block w-full py-3 sm:py-4 text-center bg-[#2c3856] hover:bg-[#1a253a] text-white font-bold rounded-xl sm:rounded-2xl shadow-lg text-sm">Ver Todos</a></div>
                     </div>
 
-                    <div class="bg-white rounded-[2.5rem] shadow-soft border border-gray-100 overflow-hidden flex flex-col h-full group hover:shadow-xl transition-shadow duration-500">
-                        <div class="relative h-40 overflow-hidden shrink-0 img-placeholder">
+                    <div class="bg-white rounded-2xl sm:rounded-[2.5rem] shadow-soft border border-gray-100 overflow-hidden flex flex-col h-auto lg:h-full group hover:shadow-xl transition-shadow duration-500">
+                        <div class="relative h-32 sm:h-40 overflow-hidden shrink-0 img-placeholder">
                             <img src="https://images.unsplash.com/photo-1572670014853-1d3a3f22b40f?q=80&w=1171&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-red-900/80 to-transparent mix-blend-multiply"></div>
                             <div class="absolute bottom-5 left-8 text-white">
@@ -248,7 +248,7 @@
                             </div>
                         </div>
                         
-                        <div class="flex-1 overflow-y-auto hide-scroll p-6 space-y-3">
+                        <div class="flex-1 overflow-y-auto hide-scroll p-4 sm:p-6 space-y-3 max-h-[300px] lg:max-h-none">
                             
                             @if($discrepancyTasks->isEmpty() && $nonAvailableStock->isEmpty())
                                 <div class="h-full flex flex-col items-center justify-center text-gray-400">
@@ -287,19 +287,19 @@
             <div x-show="tab === 'inventario'" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0"
                  x-data="lpnSearch('{{ route('wms.api.find-lpn') }}')">
                 
-                <div class="relative h-[450px] rounded-[3rem] bg-white shadow-soft border border-gray-100 mb-12 flex items-center z-20">
+                <div class="relative min-h-[280px] sm:min-h-[350px] lg:h-[450px] rounded-2xl sm:rounded-[3rem] bg-white shadow-soft border border-gray-100 mb-12 flex items-center z-20">
                     
-                    <div class="w-full lg:w-1/2 p-12 lg:p-16 relative z-10">
-                        <span class="inline-block px-3 py-1 bg-gray-100 text-[#2c3856] rounded-full text-xs font-bold uppercase tracking-wider mb-4">Herramienta de Búsqueda</span>
-                        <h2 class="text-5xl font-raleway font-black text-[#2c3856] mb-4">Scanner LPN</h2>
-                        <p class="text-[#666666] text-lg mb-8">Localiza cualquier unidad logística. Ingresa el código de etiqueta.</p>
+                    <div class="w-full lg:w-1/2 p-6 sm:p-10 lg:p-16 relative z-10">
+                        <span class="inline-block px-3 py-1 bg-gray-100 text-[#2c3856] rounded-full text-xs font-bold uppercase tracking-wider mb-3 sm:mb-4">Herramienta de Búsqueda</span>
+                        <h2 class="text-3xl sm:text-5xl font-raleway font-black text-[#2c3856] mb-3 sm:mb-4">Scanner LPN</h2>
+                        <p class="text-[#666666] text-sm sm:text-lg mb-6 sm:mb-8">Localiza cualquier unidad logística. Ingresa el código de etiqueta.</p>
                         
                         <div class="relative max-w-lg">
                             <input type="text" x-model="lpn" @keydown.enter.prevent="findLpn" 
-                                class="w-full h-16 pl-6 pr-32 bg-gray-50 border-2 border-gray-100 rounded-2xl text-xl text-[#2c3856] placeholder-gray-400 focus:ring-0 focus:border-[#ff9c00] transition-all font-mono uppercase tracking-widest"
+                                class="w-full h-12 sm:h-16 pl-4 sm:pl-6 pr-20 sm:pr-32 bg-gray-50 border-2 border-gray-100 rounded-xl sm:rounded-2xl text-base sm:text-xl text-[#2c3856] placeholder-gray-400 focus:ring-0 focus:border-[#ff9c00] transition-all font-mono uppercase tracking-widest"
                                 placeholder="LPN-XXXXXX">
                             
-                            <button @click="findLpn" class="absolute right-2 top-2 bottom-2 px-6 bg-[#ff9c00] hover:bg-orange-600 text-white font-bold rounded-xl transition-all flex items-center justify-center shadow-lg" :disabled="loading">
+                            <button @click="findLpn" class="absolute right-2 top-2 bottom-2 px-4 sm:px-6 bg-[#ff9c00] hover:bg-orange-600 text-white font-bold rounded-lg sm:rounded-xl transition-all flex items-center justify-center shadow-lg text-sm sm:text-base" :disabled="loading">
                                 <span x-show="!loading">IR</span>
                                 <span x-show="loading" class="animate-spin">⟳</span>
                             </button>
@@ -355,14 +355,14 @@
                         </div>
                     </div>
                     
-                    <div class="absolute right-0 top-0 w-1/2 h-full hidden lg:block img-placeholder rounded-r-[3rem] overflow-hidden">
+                    <div class="absolute right-0 top-0 w-1/2 h-full hidden lg:block img-placeholder rounded-r-[3rem] overflow-hidden" aria-hidden="true">
                         <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover">
                         <div class="absolute inset-0 bg-gradient-to-r from-white via-white/20 to-transparent"></div>
                     </div>
                 </div>
 
                 <h3 class="text-2xl font-raleway font-black text-[#2c3856] mb-6">Acciones Operativas</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                     @php
                         $ops = [
                             ['route' => 'wms.inventory.index', 'title' => 'Inventario General', 'desc' => 'Vista tabular de todo el stock', 'img' => 'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.inventory'],
@@ -391,7 +391,7 @@
             </div>
 
             <div x-show="tab === 'catalogos'" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
                     @php
                         $catalogs = [
                             ['r' => 'wms.products.index', 't' => 'Productos', 'img' => 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.products.view'],
@@ -401,7 +401,7 @@
                             ['r' => 'wms.product-types.index', 't' => 'Tipos', 'img' => 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTgJ4DjVBL8UI8GkgNeVWaBcZSHa_ANC8OEcQ&s', 'perm' => 'wms.product_types'],
                             ['r' => 'wms.qualities.index', 't' => 'Calidades', 'img' => 'https://img.freepik.com/fotos-premium/botella-rota-aislada-sobre-fondo-blanco_51524-17283.jpg', 'perm' => 'wms.quality'],
                             ['r' => 'wms.lpns.index', 't' => 'Generar LPNs', 'img' => 'https://infraon.io/blog/wp-content/uploads/2023/01/BARSCANNERBLOGFinal.png', 'perm' => 'wms.lpns'],
-                            ['r' => 'wms.value-added-services.index', 't' => 'Catálogo Serv.', 'img' => 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.products.view'],
+                            ['r' => 'wms.value-added-services.index', 't' => 'Catálogo Serv.', 'img' => 'https://coditekecuador.com/wp-content/uploads/2023/12/Sistemas-de-Etiquetado-1024x683-1.jpg', 'perm' => 'wms.products.view'],
                         ];
                     @endphp
 
@@ -420,7 +420,7 @@
             </div>
 
             <div x-show="tab === 'reportes'" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
                     @php
                         $reports = [
                             ['r' => 'wms.reports.inventory', 't' => 'Dashboard Inventario', 'd' => 'Stock global y valores.', 'img' => 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop'],

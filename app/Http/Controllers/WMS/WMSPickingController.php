@@ -127,12 +127,14 @@ class WMSPickingController extends Controller
                         ->orderBy('pallets.created_at', 'asc')
                         ->first();
 
-                    // Priority 2: Storage Locations (FIFO)
+                    // Priority 2: Storage Locations (pick_sequence, then FIFO)
                     if (!$palletItem) {
                         $storageQuery = clone $baseQuery;
                         $palletItem = $storageQuery->whereHas('pallet.location', fn($q) => $q->where('type', 'storage'))
                             ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
+                            ->join('locations', 'pallets.location_id', '=', 'locations.id')
                             ->select('pallet_items.*')
+                            ->orderBy('locations.pick_sequence', 'asc')
                             ->orderBy('pallets.created_at', 'asc')
                             ->first();
                     }

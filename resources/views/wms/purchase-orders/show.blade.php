@@ -27,26 +27,36 @@
         }
         .btn-ghost:hover { border-color: #2c3856; background: #2c3856; color: white; }
 
-        .nexus-table { width: 100%; border-collapse: separate; border-spacing: 0 0.8rem; }
+        .nexus-table { width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; }
         .nexus-table thead th {
-            font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; font-weight: 800;
-            padding: 0 1.5rem 0.5rem 1.5rem; text-align: left; white-space: nowrap;
+            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; font-weight: 800;
+            padding: 0 0.75rem 0.5rem 0.75rem; text-align: left; white-space: nowrap;
         }
         .nexus-row {
             background: white; transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
         }
         .nexus-row td {
-            padding: 1rem 1.5rem; vertical-align: middle; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;
-            background-color: white; white-space: nowrap;
+            padding: 0.75rem; vertical-align: middle; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;
+            background-color: white;
         }
         .nexus-row td:first-child { border-top-left-radius: 1rem; border-bottom-left-radius: 1rem; border-left: 1px solid #f3f4f6; }
         .nexus-row td:last-child { border-top-right-radius: 1rem; border-bottom-right-radius: 1rem; border-right: 1px solid #f3f4f6; }
         .nexus-row:hover { box-shadow: 0 10px 30px -10px rgba(44, 56, 86, 0.05); z-index: 10; position: relative; }
 
+        @media (min-width: 768px) {
+            .nexus-table { border-spacing: 0 0.8rem; }
+            .nexus-table thead th { font-size: 0.7rem; padding: 0 1.5rem 0.5rem 1.5rem; }
+            .nexus-row td { padding: 1rem 1.5rem; white-space: nowrap; }
+        }
+
         .upload-card {
-            position: relative; border: 2px dashed #e5e7eb; border-radius: 1rem; padding: 1rem;
-            transition: all 0.3s; text-align: center; cursor: pointer; height: 140px;
+            position: relative; border: 2px dashed #e5e7eb; border-radius: 1rem; padding: 0.75rem;
+            transition: all 0.3s; text-align: center; cursor: pointer; height: 110px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        @media (min-width: 768px) {
+            .upload-card { height: 140px; padding: 1rem; }
         }
         .upload-card:hover { border-color: #3b82f6; background-color: #eff6ff; }
         .upload-card img {
@@ -184,8 +194,8 @@
                                         @endphp
                                         
                                         <tr class="nexus-row {{ $isExcess ? 'bg-orange-50/60' : '' }}">
-                                            <td class="{{ $isExcess ? 'border-l-4 border-l-orange-400' : '' }} pl-4">
-                                                <p class="font-bold text-[#2c3856] text-xs max-w-[120px] md:max-w-xs truncate" title="{{ $line->product_name }}">{{ $line->product_name }}</p>
+                                            <td class="{{ $isExcess ? 'border-l-4 border-l-orange-400' : '' }} pl-3 md:pl-4">
+                                                <p class="font-bold text-[#2c3856] text-xs max-w-[100px] sm:max-w-[150px] md:max-w-xs truncate" title="{{ $line->product_name }}">{{ $line->product_name }}</p>
                                                 <p class="font-mono text-[10px] text-gray-400 mt-1">{{ $line->sku }}</p>
                                                 @if($line->is_extra ?? false)
                                                     <span class="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold uppercase">No Planeado</span>
@@ -388,22 +398,48 @@
                                     <p class="text-[10px] font-bold text-gray-400 uppercase mt-2">Placas</p>
                                     <p class="font-mono font-bold text-[#2c3856] text-sm">{{ $purchaseOrder->latestArrival->truck_plate ?? 'N/A' }}</p>
                                 </div>
-                                <div>
-                                    <p class="text-[10px] font-bold text-gray-400 uppercase">Entrada</p>
-                                    <p class="font-mono text-sm">{{ \Carbon\Carbon::parse($purchaseOrder->download_start_time)->format('d/m/Y H:i') }}</p>
+                                <div x-data="{ editingEntry: false }">
+                                    <div class="flex items-center gap-2">
+                                        <p class="text-[10px] font-bold text-gray-400 uppercase">Entrada</p>
+                                        @if($purchaseOrder->status != 'Completed' && Auth::user()->hasFfPermission('wms.receiving'))
+                                        <button @click="editingEntry = !editingEntry" class="text-gray-300 hover:text-[#ff9c00] transition-colors" title="Editar">
+                                            <i class="fas fa-pencil-alt text-[10px]"></i>
+                                        </button>
+                                        @endif
+                                    </div>
+                                    <p x-show="!editingEntry" class="font-mono text-sm">{{ \Carbon\Carbon::parse($purchaseOrder->download_start_time)->format('d/m/Y H:i') }}</p>
+                                    <form x-show="editingEntry" x-cloak action="{{ route('wms.purchase-orders.update', $purchaseOrder) }}" method="POST" class="flex items-center gap-2 mt-1">
+                                        @csrf @method('PUT')
+                                        <input type="datetime-local" name="download_start_time" value="{{ \Carbon\Carbon::parse($purchaseOrder->download_start_time)->format('Y-m-d\TH:i') }}" class="text-sm font-mono border border-gray-200 rounded-lg px-2 py-1 focus:ring-0 focus:border-[#ff9c00] w-full">
+                                        <button type="submit" class="shrink-0 w-8 h-8 bg-[#ff9c00] text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center justify-center text-xs"><i class="fas fa-check"></i></button>
+                                        <button type="button" @click="editingEntry = false" class="shrink-0 w-8 h-8 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center text-xs"><i class="fas fa-times"></i></button>
+                                    </form>
                                 </div>
                                 @if($purchaseOrder->download_end_time)
-                                    <div>
-                                        <p class="text-[10px] font-bold text-gray-400 uppercase">Salida</p>
-                                        <p class="font-mono text-sm">{{ \Carbon\Carbon::parse($purchaseOrder->download_end_time)->format('d/m/Y H:i') }}</p>
+                                    <div x-data="{ editingExit: false }">
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-[10px] font-bold text-gray-400 uppercase">Salida</p>
+                                            @if($purchaseOrder->status != 'Completed' && Auth::user()->hasFfPermission('wms.receiving'))
+                                            <button @click="editingExit = !editingExit" class="text-gray-300 hover:text-[#ff9c00] transition-colors" title="Editar">
+                                                <i class="fas fa-pencil-alt text-[10px]"></i>
+                                            </button>
+                                            @endif
+                                        </div>
+                                        <p x-show="!editingExit" class="font-mono text-sm">{{ \Carbon\Carbon::parse($purchaseOrder->download_end_time)->format('d/m/Y H:i') }}</p>
+                                        <form x-show="editingExit" x-cloak action="{{ route('wms.purchase-orders.update', $purchaseOrder) }}" method="POST" class="flex items-center gap-2 mt-1">
+                                            @csrf @method('PUT')
+                                            <input type="datetime-local" name="download_end_time" value="{{ \Carbon\Carbon::parse($purchaseOrder->download_end_time)->format('Y-m-d\TH:i') }}" class="text-sm font-mono border border-gray-200 rounded-lg px-2 py-1 focus:ring-0 focus:border-[#ff9c00] w-full">
+                                            <button type="submit" class="shrink-0 w-8 h-8 bg-[#ff9c00] text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center justify-center text-xs"><i class="fas fa-check"></i></button>
+                                            <button type="button" @click="editingExit = false" class="shrink-0 w-8 h-8 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center text-xs"><i class="fas fa-times"></i></button>
+                                        </form>
                                     </div>
                                 @else
                                     @if(Auth::user()->hasFfPermission('wms.receiving'))
                                     <form action="{{ route('wms.purchase-orders.register-departure', $purchaseOrder) }}" method="POST"
-                                          onsubmit="return confirm('ADVERTENCIA DE CIERRE \n\nAl registrar la salida del operador:\n1. La Orden de Compra se marcará como COMPLETADA.\n2. Ya no podrás modificar el inventario de esta recepción.\n\n¿Estás seguro de que deseas finalizar?');">
+                                          onsubmit="return confirm('¿Registrar la salida del vehículo?');">
                                         @csrf
-                                        <button type="submit" class="w-full py-3 rounded-xl bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-colors border border-red-100 text-sm uppercase tracking-widest flex items-center justify-center gap-2">
-                                            <i class="fas fa-sign-out-alt"></i> Registrar Salida y Finalizar
+                                        <button type="submit" class="w-full py-3 rounded-xl bg-blue-50 text-blue-600 font-bold hover:bg-blue-100 transition-colors border border-blue-100 text-sm uppercase tracking-widest flex items-center justify-center gap-2">
+                                            <i class="fas fa-sign-out-alt"></i> Registrar Salida
                                         </button>
                                     </form>
                                     @endif
@@ -425,22 +461,110 @@
                         </div>
                     @endif
 
-                    @if ($purchaseOrder->status == 'Receiving' && Auth::user()->hasFfPermission('wms.receiving'))
-                        <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-xl border border-gray-100">
+                    @if ($purchaseOrder->status != 'Completed' && Auth::user()->hasFfPermission('wms.receiving'))
+                        <div x-data="{ showCloseModal: false }" class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-xl border border-gray-100">
                             <h4 class="text-lg font-raleway font-black text-[#2c3856] mb-4">Cierre de Orden</h4>
                             <p class="text-xs text-gray-500 mb-6">Al cerrar la orden, el inventario se consolida y no se podrán agregar más tarimas.</p>
                             
-                            <form action="{{ route('wms.purchase-orders.complete', $purchaseOrder) }}" method="POST" onsubmit="return confirm('¿Confirmar cierre de orden?');">
-                                @csrf
-                                @if ($purchaseOrder->received_bottles < $purchaseOrder->expected_bottles)
-                                    <div class="mb-4 p-3 bg-yellow-50 text-yellow-700 text-xs rounded-xl border border-yellow-100 font-medium">
-                                        <i class="fas fa-exclamation-triangle mr-1"></i> Recepción parcial.
+                            <button @click="showCloseModal = true" class="w-full py-3 bg-[#2c3856] text-white font-bold rounded-xl hover:bg-[#1a253a] shadow-lg transition-all text-sm uppercase tracking-widest">
+                                <i class="fas fa-lock mr-2"></i> Cerrar Orden
+                            </button>
+
+                            {{-- Confirmation Modal --}}
+                            <div x-show="showCloseModal" x-cloak
+                                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2c3856]/80 backdrop-blur-sm">
+                                <div @click.away="showCloseModal = false" x-show="showCloseModal"
+                                     x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100"
+                                     class="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden">
+                                    
+                                    <div class="p-6 md:p-8 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                                        <div>
+                                            <h3 class="text-xl font-raleway font-black text-[#2c3856]">Confirmar Cierre</h3>
+                                            <p class="text-xs text-gray-500 mt-1">PO {{ $purchaseOrder->po_number }}</p>
+                                        </div>
+                                        <button @click="showCloseModal = false" class="w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-red-500 flex items-center justify-center transition-colors text-xl shadow-sm">&times;</button>
                                     </div>
-                                @endif
-                                <button type="submit" class="w-full py-3 bg-[#2c3856] text-white font-bold rounded-xl hover:bg-[#1a253a] shadow-lg transition-all text-sm uppercase tracking-widest">
-                                    <i class="fas fa-lock mr-2"></i> Cerrar Orden
-                                </button>
-                            </form>
+
+                                    <div class="p-6 md:p-8 max-h-[60vh] overflow-y-auto">
+                                        @php 
+                                            $closeSummary = $purchaseOrder->getReceiptSummary();
+                                            $totalExpected = $closeSummary->sum('quantity_ordered');
+                                            $totalReceived = $closeSummary->sum('quantity_received');
+                                            $hasDifferences = $closeSummary->contains(fn($l) => $l->quantity_received != $l->quantity_ordered);
+                                        @endphp
+
+                                        @if($hasDifferences)
+                                        <div class="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl">
+                                            <div class="flex items-center gap-2 mb-2">
+                                                <i class="fas fa-exclamation-triangle text-red-500"></i>
+                                                <p class="font-bold text-red-700 text-sm">Existen Diferencias</p>
+                                            </div>
+                                            <p class="text-xs text-red-600">Las cantidades recibidas no coinciden con las esperadas. Revisa el detalle abajo antes de confirmar.</p>
+                                        </div>
+                                        @else
+                                        <div class="mb-6 p-4 bg-green-50 border border-green-100 rounded-xl">
+                                            <div class="flex items-center gap-2">
+                                                <i class="fas fa-check-circle text-green-500"></i>
+                                                <p class="font-bold text-green-700 text-sm">Recepción completa — sin diferencias.</p>
+                                            </div>
+                                        </div>
+                                        @endif
+
+                                        <div class="space-y-2">
+                                            @foreach($closeSummary as $line)
+                                            @php
+                                                $diff = $line->quantity_received - $line->quantity_ordered;
+                                                $isShort = $diff < 0;
+                                                $isExcess = $diff > 0;
+                                            @endphp
+                                            <div class="flex items-center justify-between p-3 rounded-xl border {{ $isShort ? 'bg-red-50 border-red-100' : ($isExcess ? 'bg-orange-50 border-orange-100' : 'bg-gray-50 border-gray-100') }}">
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="font-bold text-[#2c3856] text-sm truncate">{{ $line->sku }}</p>
+                                                    <p class="text-[10px] text-gray-400 truncate">{{ $line->product_name }}</p>
+                                                </div>
+                                                <div class="flex items-center gap-3 text-sm shrink-0">
+                                                    <div class="text-center">
+                                                        <p class="text-[9px] text-gray-400 uppercase font-bold">Esp.</p>
+                                                        <p class="font-bold text-gray-600">{{ number_format($line->quantity_ordered) }}</p>
+                                                    </div>
+                                                    <div class="text-gray-300"><i class="fas fa-arrow-right text-[10px]"></i></div>
+                                                    <div class="text-center">
+                                                        <p class="text-[9px] text-gray-400 uppercase font-bold">Rec.</p>
+                                                        <p class="font-bold {{ $isShort ? 'text-red-600' : ($isExcess ? 'text-orange-600' : 'text-green-600') }}">{{ number_format($line->quantity_received) }}</p>
+                                                    </div>
+                                                    @if($diff != 0)
+                                                    <div class="text-center">
+                                                        <p class="text-[9px] uppercase font-bold {{ $isShort ? 'text-red-400' : 'text-orange-400' }}">Dif.</p>
+                                                        <p class="font-bold text-xs {{ $isShort ? 'text-red-600' : 'text-orange-600' }}">{{ ($diff > 0 ? '+' : '') . number_format($diff) }}</p>
+                                                    </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            @endforeach
+                                        </div>
+
+                                        <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
+                                            <span class="font-bold text-[#2c3856] text-sm">Total</span>
+                                            <div class="flex items-center gap-4 text-sm">
+                                                <span class="text-gray-500">Esperado: <strong>{{ number_format($totalExpected) }}</strong></span>
+                                                <span class="{{ $totalReceived < $totalExpected ? 'text-red-600' : ($totalReceived > $totalExpected ? 'text-orange-600' : 'text-green-600') }} font-bold">Recibido: {{ number_format($totalReceived) }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-gray-50 px-6 md:px-8 py-5 flex flex-col sm:flex-row gap-3 border-t border-gray-100">
+                                        <button @click="showCloseModal = false" type="button" class="flex-1 px-6 py-3 bg-white border border-gray-200 text-[#2c3856] font-bold rounded-xl hover:bg-gray-50 transition-all text-sm">
+                                            Cancelar
+                                        </button>
+                                        <form action="{{ route('wms.purchase-orders.complete', $purchaseOrder) }}" method="POST" class="flex-1">
+                                            @csrf
+                                            <button type="submit" class="w-full px-6 py-3 {{ $hasDifferences ? 'bg-red-600 hover:bg-red-700' : 'bg-[#2c3856] hover:bg-[#1a253a]' }} text-white font-bold rounded-xl shadow-lg transition-all text-sm uppercase tracking-widest">
+                                                <i class="fas fa-lock mr-2"></i> {{ $hasDifferences ? 'Cerrar con Diferencias' : 'Confirmar Cierre' }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     @endif
 
@@ -514,7 +638,7 @@
                         </form>
 
                         @if($purchaseOrder->evidences->isNotEmpty())
-                            <div class="mt-8 grid grid-cols-3 gap-2">
+                            <div class="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 @foreach($purchaseOrder->evidences as $evidence)
                                     <div class="aspect-square rounded-lg overflow-hidden relative group cursor-pointer border border-gray-200" @click="openModal('{{ Storage::url($evidence->file_path) }}')">
                                         <img src="{{ Storage::url($evidence->file_path) }}" class="w-full h-full object-cover">

@@ -179,7 +179,7 @@ class WmsToFnFService
                     'ff_product_id' => $ffProduct->id,
                     'quantity' => $item->quantity,
                     'reason' => 'Compra / Entrada WMS - Folio: ' . $po->po_number,
-                    'folio' => $po->po_number,
+                    'folio' => $po->id,
                     'ff_warehouse_id' => $ffWarehouse ? $ffWarehouse->id : null,
                     'ff_quality_id' => $ffQuality ? $ffQuality->id : null, // Save Quality!
                     'order_type' => 'Purchase', 

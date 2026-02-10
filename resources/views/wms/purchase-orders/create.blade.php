@@ -13,6 +13,36 @@
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
             <form action="{{ route('wms.purchase-orders.store') }}" method="POST">
                 @csrf
+
+                {{-- Success Modal --}}
+                @if(session('success'))
+                <div x-data="{ showSuccess: true }" x-show="showSuccess" x-cloak
+                     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2c3856]/80 backdrop-blur-sm">
+                    <div x-show="showSuccess" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100"
+                         class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden text-center">
+                        <div class="p-10">
+                            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fas fa-check-circle text-green-500 text-4xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-black text-[#2c3856] mb-2">¡Orden Creada!</h3>
+                            <p class="text-gray-500 mb-1">La Orden de Compra ha sido creada exitosamente.</p>
+                            @if(session('created_po_number'))
+                            <p class="text-lg font-bold text-[#ff9c00] font-mono">{{ session('created_po_number') }}</p>
+                            @endif
+                        </div>
+                        <div class="bg-gray-50 px-8 py-5 flex flex-col sm:flex-row gap-3">
+                            <button type="button" @click="showSuccess = false"
+                                    class="flex-1 px-6 py-3 bg-white border border-gray-200 text-[#2c3856] font-bold rounded-xl hover:bg-gray-50 transition-all text-sm">
+                                <i class="fas fa-plus mr-2"></i> Crear Otra Orden
+                            </button>
+                            <a href="{{ route('wms.purchase-orders.index') }}"
+                               class="flex-1 px-6 py-3 bg-[#2c3856] text-white font-bold rounded-xl hover:bg-[#1a253a] transition-all text-sm text-center shadow-lg">
+                                <i class="fas fa-list mr-2"></i> Ir a Órdenes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                @endif
                 
                 @if ($errors->any())
                     <div class="mb-6 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-xl shadow-sm">

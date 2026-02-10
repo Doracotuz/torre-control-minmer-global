@@ -320,6 +320,26 @@ class WMSLocationController extends Controller
         return $pdf->stream('etiquetas-ubicaciones.pdf');
     }
 
+    public function printFilteredLabels(Request $request)
+    {
+        $query = Location::query();
+
+        if ($request->filled('warehouse_id')) { $query->where('warehouse_id', $request->warehouse_id); }
+        if ($request->filled('aisle')) { $query->where('aisle', $request->aisle); }
+        if ($request->filled('rack')) { $query->where('rack', $request->rack); }
+        if ($request->filled('shelf')) { $query->where('shelf', $request->shelf); }
+        if ($request->filled('type')) { $query->where('type', $request->type); }
+
+        $locations = $query->orderBy('pick_sequence')->get();
+
+        if ($locations->isEmpty()) {
+            return back()->with('error', 'No se encontraron ubicaciones con los filtros aplicados.');
+        }
+
+        $pdf = Pdf::loadView('wms.locations.pdf', compact('locations'));
+        return $pdf->stream('etiquetas-ubicaciones-filtradas.pdf');
+    }
+
     public function exportCsv(Request $request)
     {
         $fileName = 'reporte_ubicaciones_' . date('Y-m-d') . '.csv';

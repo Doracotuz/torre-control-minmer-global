@@ -104,7 +104,7 @@
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-8">
                                 <div><p class="text-[10px] font-bold text-gray-400 uppercase">Almacén</p><p class="font-bold text-[#2c3856]">{{ $salesOrder->warehouse->name }}</p></div>
                                 <div><p class="text-[10px] font-bold text-gray-400 uppercase">Área</p><p class="font-bold text-[#2c3856]">{{ $salesOrder->area->name ?? 'N/A' }}</p></div>
-                                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Fecha Entrega</p><p class="font-bold text-[#2c3856]">{{ $salesOrder->order_date->format('d M Y') }}</p></div>
+                                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Fecha y hora de entrega</p><p class="font-bold text-[#2c3856]">{{ ($salesOrder->ff_delivery_date ?? $salesOrder->order_date)->format('d M Y h:i A') }}</p></div>
                                 <div><p class="text-[10px] font-bold text-gray-400 uppercase">Factura</p><p class="font-mono font-bold text-[#2c3856]">{{ $salesOrder->invoice_number ?? '-' }}</p></div>
                                 <div><p class="text-[10px] font-bold text-gray-400 uppercase">Creado Por</p><p class="font-bold text-[#2c3856]">{{ $salesOrder->user->name }}</p></div>
                             </div>

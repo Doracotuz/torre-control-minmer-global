@@ -263,6 +263,18 @@
                         </div>
 
                         <div class="px-8 py-8">
+                            <!-- Product Photo -->
+                            <div x-show="detailProduct?.ff_photo_url" class="mb-6 flex justify-center">
+                                <div class="w-48 h-48 rounded-2xl overflow-hidden border-2 border-gray-100 shadow-md bg-white">
+                                    <img :src="detailProduct?.ff_photo_url" :alt="detailProduct?.name" class="w-full h-full object-contain p-2" />
+                                </div>
+                            </div>
+                            <div x-show="!detailProduct?.ff_photo_url" class="mb-6 flex justify-center">
+                                <div class="w-32 h-32 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center">
+                                    <i class="fas fa-box-open text-3xl text-gray-300"></i>
+                                </div>
+                            </div>
+
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                                 <div>
                                     <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Información General</h4>

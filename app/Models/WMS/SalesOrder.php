@@ -58,4 +58,13 @@ class SalesOrder extends Model
     {
         return $this->morphMany(ValueAddedServiceAssignment::class, 'assignable');
     }
+
+    public function getFfDeliveryDateAttribute()
+    {
+        $movement = \App\Models\ffInventoryMovement::where('folio', $this->so_number)->first();
+        if ($movement && $movement->delivery_date) {
+            return \Carbon\Carbon::parse($movement->delivery_date);
+        }
+        return null;
+    }
 }

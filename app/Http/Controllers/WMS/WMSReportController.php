@@ -205,8 +205,8 @@ class WMSReportController extends Controller
         }
         $stockByLocationType = ['data' => $translatedStockByType];
 
-        $totalStorageLocations = (clone $baseLocationQuery)->where('type', 'storage')->count();
-        $occupiedStorageLocations = (clone $baseLocationQuery)->where('type', 'storage')->has('pallets')->count();
+        $totalStorageLocations = (clone $baseLocationQuery)->count();
+        $occupiedStorageLocations = (clone $baseLocationQuery)->has('pallets')->count();
         $locationUtilization = [$occupiedStorageLocations, max(0, $totalStorageLocations - $occupiedStorageLocations)];
 
         $topLocationsQtyData = (clone $baseStockQuery)
@@ -946,7 +946,7 @@ class WMSReportController extends Controller
                 'quality:id,name',
                 'pallet:id,lpn,location_id,created_at'
             ])
-            ->whereHas('pallet.location', fn($q) => $q->whereIn('type', ['storage', 'picking']));
+            ->whereHas('pallet.location', fn($q) => $q->whereIn('type', ['storage', 'picking', 'receiving', 'shipping', 'quality_control']));
         
         if ($warehouseId) {
             $stockInLocationsQuery->whereHas('pallet.location', fn($q) => $q->where('warehouse_id', $warehouseId));
@@ -958,7 +958,7 @@ class WMSReportController extends Controller
 
         $stockInLocations = $stockInLocationsQuery->get()->groupBy('pallet.location_id');
 
-        $locationsQuery = Location::whereIn('type', ['storage', 'picking']);
+        $locationsQuery = Location::whereIn('type', ['storage', 'picking', 'receiving', 'shipping', 'quality_control']);
         if ($warehouseId) {
             $locationsQuery->where('warehouse_id', $warehouseId);
         }

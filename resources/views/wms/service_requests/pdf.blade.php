@@ -22,7 +22,16 @@
 </head>
 <body>
     <header>
-        <div class="logo">Solistica - WMS</div> <!-- Adjust specific company name if known, using generic for now based on context -->
+        <table style="width: 100%; border: none;">
+            <tr>
+                <td style="text-align: left; vertical-align: middle;">
+                    <img src="{{ public_path('images/LogoAzul.png') }}" style="height: 60px;">
+                </td>
+                <td style="text-align: right; vertical-align: middle;">
+                    <div style="font-size: 16px; color: #2c3856; font-weight: bold;">Minmer Global - WMS</div>
+                </td>
+            </tr>
+        </table>
     </header>
 
     <table class="meta">

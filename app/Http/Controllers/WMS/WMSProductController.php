@@ -71,11 +71,25 @@ class WMSProductController extends Controller
 
         $products = $query->paginate(15)->withQueryString();
 
-        $brands = Brand::orderBy('name')->get();
-        $productTypes = ProductType::orderBy('name')->get();
-        $areas = Area::orderBy('name')->get();
+    // Look up FF product photos by matching SKU
+    $skus = $products->pluck('sku')->toArray();
+    $ffPhotos = \App\Models\ffProduct::whereIn('sku', $skus)
+        ->whereNotNull('photo_path')
+        ->where('photo_path', '!=', '')
+        ->get()
+        ->keyBy('sku');
 
-        return view('wms.products.index', compact('products', 'brands', 'productTypes', 'areas'));
+    $products->getCollection()->transform(function ($product) use ($ffPhotos) {
+        $ffProduct = $ffPhotos->get($product->sku);
+        $product->ff_photo_url = $ffProduct ? $ffProduct->photo_url : null;
+        return $product;
+    });
+
+    $brands = Brand::orderBy('name')->get();
+    $productTypes = ProductType::orderBy('name')->get();
+    $areas = Area::orderBy('name')->get();
+
+    return view('wms.products.index', compact('products', 'brands', 'productTypes', 'areas'));
     }
 
     public function create()

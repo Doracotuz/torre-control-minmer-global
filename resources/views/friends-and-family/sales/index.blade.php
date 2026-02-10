@@ -1265,7 +1265,8 @@
                     const discount = this.globalDiscount;
                     if (discount === "") return;
                     
-                    this.localCart.forEach((qty, id) => {
+                    this.localCart.forEach((qty, key) => {
+                        const { id } = this.parseKey(key);
                         this.productDiscounts[id] = discount;
                     });
                     

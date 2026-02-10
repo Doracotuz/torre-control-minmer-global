@@ -136,7 +136,7 @@ class WMSInventoryController extends Controller
 
         $kpiBasePallet = \App\Models\WMS\Pallet::where('status', 'Finished');
         $kpiBaseStock = \App\Models\WMS\InventoryStock::query();
-        $kpiBaseLocation = \App\Models\Location::where('type', 'Storage');
+        $kpiBaseLocation = \App\Models\Location::where('type', 'storage');
 
         if ($warehouseId) {
             $kpiBasePallet->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));

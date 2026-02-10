@@ -641,6 +641,7 @@ Route::middleware(['auth', 'module.access:wms'])->prefix('wms')->name('wms.')->g
     Route::get('locations/export-csv', [WMSLocationController::class, 'exportCsv'])->name('locations.export-csv');
     Route::post('locations/import', [WMSLocationController::class, 'importCsv'])->name('locations.import');
     Route::post('locations/print-labels', [WMSLocationController::class, 'printLabels'])->name('locations.print-labels');
+    Route::get('locations/print-filtered-labels', [WMSLocationController::class, 'printFilteredLabels'])->name('locations.print-filtered-labels');
     Route::get('locations/template', [WMSLocationController::class, 'downloadTemplate'])->name('locations.template');
     Route::get('locations/fetch-filtered-ids', [WMSLocationController::class, 'fetchFilteredIds'])->name('locations.fetch-filtered-ids');
     Route::resource('locations', WMSLocationController::class);

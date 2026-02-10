@@ -236,14 +236,14 @@ class WMSBillingReportController extends Controller
 
         // --- 3. Additional Metrics ---
         // Inbound POs (Received)
-        $inboundPosQuery = \App\Models\WMS\PurchaseOrder::where('status', 'received')
+        $inboundPosQuery = \App\Models\WMS\PurchaseOrder::where('status', 'Completed')
             ->whereBetween('updated_at', [$periodStart, $periodEnd]); // approx completion time
         if ($warehouseId) $inboundPosQuery->where('warehouse_id', $warehouseId);
         if ($areaId) $inboundPosQuery->where('area_id', $areaId);
         $inboundPosCount = $inboundPosQuery->count();
 
         // Outbound SOs (Shipped)
-        $outboundSosQuery = \App\Models\WMS\SalesOrder::where('status', 'shipped')
+        $outboundSosQuery = \App\Models\WMS\SalesOrder::whereIn('status', ['Packed', 'Shipped'])
             ->whereBetween('updated_at', [$periodStart, $periodEnd]);
         if ($warehouseId) $outboundSosQuery->where('warehouse_id', $warehouseId);
         if ($areaId) $outboundSosQuery->where('area_id', $areaId);
@@ -252,7 +252,7 @@ class WMSBillingReportController extends Controller
         // Shipped Pieces/Cases
         // Query SalesOrderLines for shipped orders
         $shippedLinesQuery = \App\Models\WMS\SalesOrderLine::whereHas('salesOrder', function($q) use ($periodStart, $periodEnd, $warehouseId, $areaId) {
-            $q->where('status', 'shipped') // Only shipped orders
+            $q->whereIn('status', ['Packed', 'Shipped']) // Only shipped orders
               ->whereBetween('updated_at', [$periodStart, $periodEnd]);
             if ($warehouseId) $q->where('warehouse_id', $warehouseId);
             if ($areaId) $q->where('area_id', $areaId);
@@ -405,18 +405,21 @@ class WMSBillingReportController extends Controller
         if (!$related) return $ctx;
 
         if ($assignment->assignable_type === \App\Models\WMS\PurchaseOrder::class) { // Using string map in controller is safer but class check works if model loaded
-             $ctx['warehouse_id'] = null; // POs usually don't have single warehouse until received, but we can try
+             $ctx['warehouse_id'] = $related->warehouse_id;
              // Looking at PO model, it has warehouse_id? No, usually location based.
              // But for billing, we assume where it was received? 
              // Simplification: context from PO content or generic
              $ctx['area_id'] = $related->area_id;
              $ctx['folio'] = $related->po_number;
              $ctx['area_name'] = $related->area->name ?? 'N/A';
+             $ctx['warehouse_name'] = $related->warehouse->name ?? 'N/A';
         } 
         elseif ($assignment->assignable_type === \App\Models\WMS\SalesOrder::class) {
+             $ctx['warehouse_id'] = $related->warehouse_id;
              $ctx['area_id'] = $related->area_id;
              $ctx['folio'] = $related->so_number;
              $ctx['area_name'] = $related->area->name ?? 'N/A';
+             $ctx['warehouse_name'] = $related->warehouse->name ?? 'N/A';
         }
         elseif ($assignment->assignable_type === \App\Models\WMS\ServiceRequest::class) {
              $ctx['warehouse_id'] = $related->warehouse_id;
