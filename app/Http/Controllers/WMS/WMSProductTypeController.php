@@ -13,7 +13,7 @@ class WMSProductTypeController extends Controller
     public function __construct()
     {
         $this->middleware(function ($request, $next) {
-            if (!Auth::user()->hasFfPermission('wms.products')) {
+            if (!Auth::user()->hasFfPermission('wms.product_types')) {
                 abort(403, 'No tienes permiso para gestionar tipos de producto.');
             }
             return $next($request);

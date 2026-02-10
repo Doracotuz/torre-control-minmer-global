@@ -155,7 +155,7 @@
                 </a>
                 @endif
 
-                @if(Auth::user()->hasFfPermission('admin.conditions'))
+                @if(Auth::user()->hasFfPermission('admin.channels'))
                 <a href="{{ route('ff.admin.show', 'channels') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.2s;">
                     <div class="card-img-container absolute inset-0 z-0 h-full w-full">
                         <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80" 
@@ -188,7 +188,7 @@
                 </a>
                 @endif
 
-                @if(Auth::user()->hasFfPermission('admin.conditions'))
+                @if(Auth::user()->hasFfPermission('admin.view'))
                 <a href="{{ route('ff.admin.show', 'transport') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.3s;">
                     <div class="card-img-container absolute inset-0 z-0 h-full w-full">
                         <img src="https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=600&q=80" 
@@ -221,7 +221,7 @@
                 </a>
                 @endif
 
-                @if(Auth::user()->hasFfPermission('admin.conditions'))
+                @if(Auth::user()->hasFfPermission('admin.view'))
                 <a href="{{ route('ff.admin.show', 'payment') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.4s;">
                     <div class="card-img-container absolute inset-0 z-0 h-full w-full">
                         <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80" 
@@ -254,7 +254,7 @@
                 </a>
                 @endif
 
-                @if(Auth::user()->hasFfPermission('admin.branches'))
+                @if(Auth::user()->hasFfPermission('admin.warehouses'))
                 <a href="{{ route('ff.admin.show', 'warehouses') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.5s;">
                     <div class="card-img-container absolute inset-0 z-0 h-full w-full">
                         <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80" 
@@ -287,7 +287,7 @@
                 </a>  
                 @endif
                 
-                @if(Auth::user()->hasFfPermission('admin.conditions'))
+                @if(Auth::user()->hasFfPermission('admin.qualities'))
                 <a href="{{ route('ff.admin.show', 'qualities') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.6s;">
                     <div class="card-img-container absolute inset-0 z-0 h-full w-full">
                         <img src="https://iliiet.com/wp-content/uploads/2020/09/Inspector-de-Control-de-Calidad-Industrial-e1610242729851.jpg" 

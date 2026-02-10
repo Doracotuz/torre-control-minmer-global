@@ -96,7 +96,7 @@
                         <p class="text-2xl font-raleway font-black text-white">Inventario</p>
                     </div>
                 </button>
-                @if(Auth::user()->hasFfPermission('wms.products') || Auth::user()->hasFfPermission('wms.locations'))
+                @if(Auth::user()->hasFfPermission('wms.products.view') || Auth::user()->hasFfPermission('wms.locations.view'))
                 <button @click="tab = 'catalogos'" class="group relative h-40 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500" :class="tab === 'catalogos' ? 'ring-4 ring-[#666666]/30 translate-y-[-4px]' : 'hover:translate-y-[-4px]'">
                     <img src="https://images.unsplash.com/photo-1553413077-190dd305871c?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
                     <div class="absolute inset-0 bg-gradient-to-t from-[#2c3856]/90 via-[#2c3856]/30 to-transparent"></div>
@@ -390,11 +390,11 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                     @php
                         $catalogs = [
-                            ['r' => 'wms.products.index', 't' => 'Productos', 'img' => 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.products'],
-                            ['r' => 'wms.locations.index', 't' => 'Ubicaciones', 'img' => 'https://images.unsplash.com/photo-1590247813693-5541d1c609fd?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.locations'],
+                            ['r' => 'wms.products.index', 't' => 'Productos', 'img' => 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.products.view'],
+                            ['r' => 'wms.locations.index', 't' => 'Ubicaciones', 'img' => 'https://images.unsplash.com/photo-1590247813693-5541d1c609fd?q=80&w=500&auto=format&fit=crop', 'perm' => 'wms.locations.view'],
                             ['r' => 'wms.warehouses.index', 't' => 'Almacenes', 'img' => 'https://images.unsplash.com/photo-1644079446600-219068676743?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', 'perm' => 'wms.warehouses'],
-                            ['r' => 'wms.brands.index', 't' => 'Marcas', 'img' => 'https://www.headsem.com/wp-content/uploads/2015/11/ver-las-propiedades-de-hardware-de-mi-pc-en-windows.jpg', 'perm' => 'wms.products'],
-                            ['r' => 'wms.product-types.index', 't' => 'Tipos', 'img' => 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTgJ4DjVBL8UI8GkgNeVWaBcZSHa_ANC8OEcQ&s', 'perm' => 'wms.products'],
+                            ['r' => 'wms.brands.index', 't' => 'Marcas', 'img' => 'https://www.headsem.com/wp-content/uploads/2015/11/ver-las-propiedades-de-hardware-de-mi-pc-en-windows.jpg', 'perm' => 'wms.brands'],
+                            ['r' => 'wms.product-types.index', 't' => 'Tipos', 'img' => 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTgJ4DjVBL8UI8GkgNeVWaBcZSHa_ANC8OEcQ&s', 'perm' => 'wms.product_types'],
                             ['r' => 'wms.qualities.index', 't' => 'Calidades', 'img' => 'https://img.freepik.com/fotos-premium/botella-rota-aislada-sobre-fondo-blanco_51524-17283.jpg', 'perm' => 'wms.quality'],
                             ['r' => 'wms.lpns.index', 't' => 'Generar LPNs', 'img' => 'https://infraon.io/blog/wp-content/uploads/2023/01/BARSCANNERBLOGFinal.png', 'perm' => 'wms.lpns'],
                         ];

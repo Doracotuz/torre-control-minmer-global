@@ -41,6 +41,7 @@ class FnFToWmsService
                         'length' => $ffProduct->length,
                         'width' => $ffProduct->width,
                         'height' => $ffProduct->height,
+                        'weight' => $ffProduct->master_box_weight,
                         'upc' => $ffProduct->upc,
                         'unit_of_measure' => 'PZA',
                         'pieces_per_case' => $ffProduct->pieces_per_box ?? 1, // Default to 1 to avoid DB error
@@ -53,9 +54,9 @@ class FnFToWmsService
             
             $warnings = $this->checkProductCompleteness($product);
             if (!empty($warnings)) {
-                $this->logTransaction('Product Sync Warning', "Product {$ffProduct->sku} synced but has missing fields: " . implode(', ', $warnings), ['sku' => $ffProduct->sku, 'missing' => $warnings]);
+                $this->logTransaction('Advertencia de Sincronización de Producto', "Producto {$ffProduct->sku} sincronizado pero tiene campos faltantes: " . implode(', ', $warnings), ['sku' => $ffProduct->sku, 'missing' => $warnings]);
             } else {
-                $this->logTransaction('Product Sync Success', "FnF Product {$ffProduct->sku} synced to WMS", ['sku' => $ffProduct->sku]);
+                $this->logTransaction('Sincronización de Producto Exitosa', "Producto FnF {$ffProduct->sku} sincronizado a WMS", ['sku' => $ffProduct->sku]);
             }
             
             return $product;
@@ -63,14 +64,14 @@ class FnFToWmsService
             DB::rollBack();
             if ($e->errorInfo[1] == 1062) {
                 // Check if it's UPC or SKU (though matching SKU would update, so likely UPC)
-                $this->logError('Product Sync Error', "Duplicate Value: UPC already exists on another WMS product. " . $e->getMessage(), ['sku' => $ffProduct->sku, 'upc' => $ffProduct->upc]);
+                $this->logError('Error de Sincronización de Producto', "Valor Duplicado: UPC ya existe en otro producto WMS. " . $e->getMessage(), ['sku' => $ffProduct->sku, 'upc' => $ffProduct->upc]);
             } else {
-                $this->logError('FnF Product Sync Error', $e->getMessage(), ['sku' => $ffProduct->sku]);
+                $this->logError('Error de Sincronización de Producto FnF', $e->getMessage(), ['sku' => $ffProduct->sku]);
             }
             return null;
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->logError('FnF Product Sync Error', $e->getMessage(), ['sku' => $ffProduct->sku]);
+            $this->logError('Error de Sincronización de Producto FnF', $e->getMessage(), ['sku' => $ffProduct->sku]);
             return null;
         }
     }
@@ -90,9 +91,9 @@ class FnFToWmsService
                     ]
                 );
             });
-            $this->logTransaction('Quality Sync Success', "FnF Quality {$ffQuality->name} synced to WMS", ['quality' => $ffQuality->name]);
+            $this->logTransaction('Sincronización de Calidad Exitosa', "Calidad FnF {$ffQuality->name} sincronizada a WMS", ['quality' => $ffQuality->name]);
         } catch (\Exception $e) {
-            $this->logError('FnF Quality Sync Error', $e->getMessage(), ['quality' => $ffQuality->name]);
+            $this->logError('Error de Sincronización de Calidad FnF', $e->getMessage(), ['quality' => $ffQuality->name]);
         }
     }
 
@@ -113,12 +114,12 @@ class FnFToWmsService
             });
             $warnings = $this->checkWarehouseCompleteness($warehouse);
             if (!empty($warnings)) {
-                $this->logTransaction('Warehouse Sync Warning', "Warehouse {$ffWarehouse->code} synced but has missing fields: " . implode(', ', $warnings), ['warehouse' => $ffWarehouse->code, 'missing' => $warnings]);
+                $this->logTransaction('Advertencia de Sincronización de Almacén', "Almacén {$ffWarehouse->code} sincronizado pero tiene campos faltantes: " . implode(', ', $warnings), ['warehouse' => $ffWarehouse->code, 'missing' => $warnings]);
             } else {
-                $this->logTransaction('Warehouse Sync Success', "FnF Warehouse {$ffWarehouse->code} synced to WMS", ['warehouse' => $ffWarehouse->code]);
+                $this->logTransaction('Sincronización de Almacén Exitosa', "Almacén FnF {$ffWarehouse->code} sincronizado a WMS", ['warehouse' => $ffWarehouse->code]);
             }
         } catch (\Exception $e) {
-            $this->logError('FnF Warehouse Sync Error', $e->getMessage(), ['warehouse' => $ffWarehouse->code]);
+            $this->logError('Error de Sincronización de Almacén FnF', $e->getMessage(), ['warehouse' => $ffWarehouse->code]);
         }
     }
 
@@ -138,7 +139,7 @@ class FnFToWmsService
             // Find WMS Product
             $product = Product::where('sku', $movement->product->sku)->first();
             if (!$product) {
-                $this->logError('Outbound Sync Error', "Product SKU {$movement->product->sku} not found in WMS", ['movement_id' => $movement->id]);
+                $this->logError('Error de Sincronización de Salida', "Producto SKU {$movement->product->sku} no encontrado en WMS", ['movement_id' => $movement->id]);
                 // Non-blocking, just log and skip
                 DB::commit(); 
                 return;
@@ -183,11 +184,11 @@ class FnFToWmsService
             ]);
             
             DB::commit();
-            $this->logTransaction('Outbound Order Sync Success', "FnF Movement {$movement->folio} synced to WMS SO #{$so->id}", ['movement_id' => $movement->id, 'so_id' => $so->id]);
+            $this->logTransaction('Sincronización de Pedido de Salida Exitosa', "Movimiento FnF {$movement->folio} sincronizado a Orden de Venta WMS #{$so->id}", ['movement_id' => $movement->id, 'so_id' => $so->id]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->logError('FnF Outbound Sync Error', $e->getMessage(), ['movement_id' => $movement->id]);
+            $this->logError('Error de Sincronización de Salida FnF', $e->getMessage(), ['movement_id' => $movement->id]);
         }
     }
 
@@ -229,7 +230,7 @@ class FnFToWmsService
             foreach ($movements as $movement) {
                 $product = Product::where('sku', $movement->product->sku)->first();
                 if (!$product) {
-                    $this->logError('Outbound Sync Warning', "Product {$movement->product->sku} not found for SO #$folio", ['folio' => $folio]);
+                    $this->logError('Advertencia de Sincronización de Salida', "Producto {$movement->product->sku} no encontrado para Orden de Venta #$folio", ['folio' => $folio]);
                     continue;
                 }
 
@@ -264,11 +265,11 @@ class FnFToWmsService
             }
 
             DB::commit();
-            $this->logTransaction('Outbound Order Sync Success', "FnF Folio $folio synced to WMS SO #{$so->id}", ['folio' => $folio]);
+            $this->logTransaction('Sincronización de Pedido de Salida Exitosa', "Folio FnF $folio sincronizado a Orden de Venta WMS #{$so->id}", ['folio' => $folio]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->logError('FnF Outbound Sync Error', $e->getMessage(), ['folio' => $folio]);
+            $this->logError('Error de Sincronización de Salida FnF', $e->getMessage(), ['folio' => $folio]);
         }
     }
 

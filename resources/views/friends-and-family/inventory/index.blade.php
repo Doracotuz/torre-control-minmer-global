@@ -51,7 +51,7 @@
 
                 <div class="xl:col-span-5 flex flex-col md:flex-row gap-4 h-full">
                     
-                    @if(Auth::user()->hasFfPermission('inventory.backorders'))
+                @if(Auth::user()->hasFfPermission('inventory.backorders.operational'))
                     <a href="{{ route('ff.inventory.backorders') }}" 
                     class="relative overflow-hidden w-full md:w-3/5 rounded-[2rem] bg-gradient-to-br from-[#2c3856] to-[#1e273d] p-6 text-white shadow-xl shadow-blue-900/20 group hover:shadow-2xl hover:shadow-blue-900/30 transition-all duration-300 transform hover:-translate-y-1">
                         
@@ -78,6 +78,7 @@
                     </a>
                     @endif
 
+                    @if(Auth::user()->hasFfPermission('inventory.backorders.financial'))
                     <a href="{{ route('ff.inventory.backorder_relations') }}" 
                     class="relative w-full md:w-2/5 rounded-[2rem] bg-white p-6 shadow-sm border border-slate-100 group hover:border-rose-200 transition-all duration-300 flex flex-col justify-between hover:shadow-lg hover:shadow-rose-500/10">
                         <div class="bg-rose-50 w-12 h-12 rounded-2xl flex items-center justify-center text-rose-500 mb-4 group-hover:rotate-12 transition-transform duration-300">
@@ -88,6 +89,7 @@
                             <p class="text-lg font-black text-slate-700 leading-tight mt-1 group-hover:text-rose-600 transition-colors">Pasivos y<br>Deuda</p>
                         </div>
                     </a>
+                    @endif
                 </div>
 
                 <div class="xl:col-span-7 grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
@@ -248,7 +250,7 @@
                         </button>
                         @endif
                         
-                        @if(Auth::user()->hasFfPermission('inventory.export'))
+                        @if(Auth::user()->hasFfPermission('catalog.export'))
                         <button @click="exportFilteredCsv()" 
                                 class="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-[#2c3856] hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200" 
                                 title="Exportar CSV">

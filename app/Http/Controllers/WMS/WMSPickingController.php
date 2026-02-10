@@ -74,32 +74,50 @@ class WMSPickingController extends Controller
                     }
                 };
 
-                if ($line->pallet_item_id) {
-                    $query = PalletItem::with('pallet.location', 'quality')
-                                  ->where('id', $line->pallet_item_id)
-                                  ->whereRaw('quantity - committed_quantity >= ?', [$quantityNeeded])
-                                  ->whereHas('pallet', $warehouseFilter);
-
-                    if ($areaId) {
-                        $query->whereHas('pallet', $areaFilter);
-                    }
-
-                    $palletItem = $query->first();
-                    
-                    if (!$palletItem) {
-                        throw new \Exception("El LPN asignado manualmente no tiene stock suficiente o no pertenece al área requerida.");
-                    }
+                $quantityNeeded = $line->quantity_ordered;
                 
-                } else {
+                // --- Logic for Manual LPN Assignment (Optional) ---
+                if ($line->pallet_item_id) {
+                     // ... (omitted for brevity, keeping existing single-pallet logic for manual override if desired, or forcing strict?)
+                     // For now, let's keep manual as strict single-pallet or handle it separately.
+                     // Assuming manual override is specific.
+                     $query = PalletItem::with('pallet.location', 'quality')
+                                   ->where('id', $line->pallet_item_id)
+                                   ->whereRaw('quantity - committed_quantity >= ?', [$quantityNeeded]) // Still strict for manual?
+                                   ->whereHas('pallet', $warehouseFilter);
+                     if ($areaId) $query->whereHas('pallet', $areaFilter);
+                     
+                     $palletItem = $query->first();
+                     if (!$palletItem) {
+                        throw new \Exception("El LPN asignado manualmente no tiene stock suficiente o no cumple los requisitos.");
+                     }
+                     $palletItem->increment('committed_quantity', $quantityNeeded);
+                     $pickListItems[] = [
+                        'product_id' => $line->product_id,
+                        'pallet_id' => $palletItem->pallet_id,
+                        'location_id' => $palletItem->pallet->location_id,
+                        'quantity_to_pick' => $quantityNeeded,
+                        'quality_id' => $palletItem->quality_id,
+                     ];
+                     continue; // Next line
+                }
+
+                // --- Automatic Picking Strategy (Multi-Pallet) ---
+                while ($quantityNeeded > 0) {
                     $baseQuery = PalletItem::where('product_id', $line->product_id)
                         ->where('quality_id', $line->quality_id)
-                        ->whereRaw('quantity - committed_quantity >= ?', [$quantityNeeded])
+                        ->whereRaw('quantity - committed_quantity > 0') // Just need SOME stock
                         ->whereHas('pallet', $warehouseFilter);
 
                     if ($areaId) {
                         $baseQuery->whereHas('pallet', $areaFilter);
                     }
-
+                    
+                    // Exclude pallets we've already picked from in this session? 
+                    // Actually, if we update 'committed_quantity' immediately, the 'whereRaw' handles it?
+                    // Yes, we increment committed_quantity in the loop, so next query sees reduced available.
+                    
+                    // Priority 1: Picking Locations
                     $pickingQuery = clone $baseQuery;
                     $palletItem = $pickingQuery->whereHas('pallet.location', fn($q) => $q->where('type', 'picking'))
                         ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
@@ -109,6 +127,7 @@ class WMSPickingController extends Controller
                         ->orderBy('pallets.created_at', 'asc')
                         ->first();
 
+                    // Priority 2: Storage Locations (FIFO)
                     if (!$palletItem) {
                         $storageQuery = clone $baseQuery;
                         $palletItem = $storageQuery->whereHas('pallet.location', fn($q) => $q->where('type', 'storage'))
@@ -118,6 +137,7 @@ class WMSPickingController extends Controller
                             ->first();
                     }
 
+                    // Priority 3: Any Location (FIFO)
                     if (!$palletItem) {
                         $anyLocationQuery = clone $baseQuery;
                         $palletItem = $anyLocationQuery
@@ -128,25 +148,32 @@ class WMSPickingController extends Controller
                     }
 
                     if (!$palletItem) {
-                        $msg = "No hay stock automático disponible para el producto: {$line->product->sku} (Calidad: {$line->quality->name})";
-                        if ($areaId) {
-                            $msg .= " que pertenezca al Área solicitada ({$salesOrder->area->name})";
-                        }
-                        throw new \Exception($msg . ". Verifica que el stock disponible tenga origen en una Orden de Compra de esta misma área.");
+                        // Failed to find enough stock to finish the line
+                        $msg = "Stock insuficiente para completar: {$line->product->sku} (Calidad: {$line->quality->name})";
+                        $msg .= " en Almacén: {$salesOrder->warehouse->name}";
+                        if ($areaId) $msg .= " / Área: {$salesOrder->area->name}";
+                        $msg .= ". Faltan {$quantityNeeded} unidades.";
+                        throw new \Exception($msg);
                     }
-                    
-                    $palletItem->load('pallet.location', 'quality');
-                }
-                
-                $palletItem->increment('committed_quantity', $quantityNeeded);
 
-                $pickListItems[] = [
-                    'product_id' => $line->product_id,
-                    'pallet_id' => $palletItem->pallet_id,
-                    'location_id' => $palletItem->pallet->location_id,
-                    'quantity_to_pick' => $quantityNeeded,
-                    'quality_id' => $palletItem->quality_id,
-                ];
+                    // Determine how much to pick from this pallet
+                    $available = $palletItem->quantity - $palletItem->committed_quantity;
+                    $toPick = min($available, $quantityNeeded);
+                    
+                    // Commit stock
+                    $palletItem->increment('committed_quantity', $toPick);
+                    
+                    // Add to pick list
+                    $pickListItems[] = [
+                        'product_id' => $line->product_id,
+                        'pallet_id' => $palletItem->pallet_id,
+                        'location_id' => $palletItem->pallet->location_id,
+                        'quantity_to_pick' => $toPick,
+                        'quality_id' => $palletItem->quality_id,
+                    ];
+                    
+                    $quantityNeeded -= $toPick;
+                }
             }
 
             $pickList = PickList::create([

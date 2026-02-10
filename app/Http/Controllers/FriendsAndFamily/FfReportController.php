@@ -35,7 +35,10 @@ class FfReportController extends Controller
 
         $warehousesQuery = FfWarehouse::where('is_active', true);
         if (!Auth::user()->isSuperAdmin()) {
-            $warehousesQuery->where('area_id', Auth::user()->area_id);
+            $warehousesQuery->where(function($q) {
+                $q->where('area_id', Auth::user()->area_id)
+                  ->orWhereNull('area_id');
+            });
         } elseif ($request->filled('area_id')) {
             $warehousesQuery->where('area_id', $request->input('area_id'));
         }
@@ -270,7 +273,10 @@ class FfReportController extends Controller
 
         $warehousesQuery = FfWarehouse::where('is_active', true);
         if (!Auth::user()->isSuperAdmin()) {
-            $warehousesQuery->where('area_id', Auth::user()->area_id);
+            $warehousesQuery->where(function($q) {
+                $q->where('area_id', Auth::user()->area_id)
+                  ->orWhereNull('area_id');
+            });
         } elseif ($request->filled('area_id')) {
             $warehousesQuery->where('area_id', $request->input('area_id'));
         }
@@ -465,7 +471,10 @@ class FfReportController extends Controller
 
         $warehousesQuery = FfWarehouse::where('is_active', true);
         if (!Auth::user()->isSuperAdmin()) {
-            $warehousesQuery->where('area_id', Auth::user()->area_id);
+            $warehousesQuery->where(function($q) {
+                $q->where('area_id', Auth::user()->area_id)
+                  ->orWhereNull('area_id');
+            });
         } elseif ($request->filled('area_id')) {
             $warehousesQuery->where('area_id', $request->input('area_id'));
         }
@@ -561,7 +570,10 @@ class FfReportController extends Controller
 
         $warehousesQuery = FfWarehouse::where('is_active', true);
         if (!Auth::user()->isSuperAdmin()) {
-            $warehousesQuery->where('area_id', Auth::user()->area_id);
+            $warehousesQuery->where(function($q) {
+                $q->where('area_id', Auth::user()->area_id)
+                  ->orWhereNull('area_id');
+            });
         } elseif ($request->filled('area_id')) {
             $warehousesQuery->where('area_id', $request->input('area_id'));
         }
@@ -629,7 +641,10 @@ class FfReportController extends Controller
 
         $warehousesQuery = FfWarehouse::where('is_active', true);
         if (!Auth::user()->isSuperAdmin()) {
-            $warehousesQuery->where('area_id', Auth::user()->area_id);
+            $warehousesQuery->where(function($q) {
+                $q->where('area_id', Auth::user()->area_id)
+                  ->orWhereNull('area_id');
+            });
         } elseif ($request->filled('area_id')) {
             $warehousesQuery->where('area_id', $request->input('area_id'));
         }
@@ -739,7 +754,10 @@ class FfReportController extends Controller
 
         $warehousesQuery = FfWarehouse::where('is_active', true);
         if (!Auth::user()->isSuperAdmin()) {
-            $warehousesQuery->where('area_id', Auth::user()->area_id);
+            $warehousesQuery->where(function($q) {
+                $q->where('area_id', Auth::user()->area_id)
+                  ->orWhereNull('area_id');
+            });
         } elseif ($request->filled('area_id')) {
             $warehousesQuery->where('area_id', $request->input('area_id'));
         }

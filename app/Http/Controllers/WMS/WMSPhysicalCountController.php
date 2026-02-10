@@ -111,6 +111,7 @@ class WMSPhysicalCountController extends Controller
                 $locations = Location::whereIn('code', $locationCodes)
                                      ->where('warehouse_id', $warehouseId)
                                      ->with(['pallets' => function($q) use ($areaId) {
+                                         $q->whereHas('items', fn($i) => $i->where('quantity', '>', 0));
                                          if ($areaId) {
                                              $q->whereHas('purchaseOrder', function($subQ) use ($areaId) {
                                                  $subQ->where('area_id', $areaId);
@@ -136,7 +137,7 @@ class WMSPhysicalCountController extends Controller
 
             } elseif ($validated['type'] === 'cycle') {
                 $palletsToCount = \App\Models\WMS\Pallet::where('status', 'Finished')
-                                ->whereHas('items')
+                                ->whereHas('items', fn($q) => $q->where('quantity', '>', 0))
                                 ->whereHas('location', function($q) use ($warehouseId, $validated) {
                                     $q->where('warehouse_id', $warehouseId)
                                       ->where('aisle', $validated['aisle']);
@@ -158,7 +159,7 @@ class WMSPhysicalCountController extends Controller
 
             } elseif ($validated['type'] === 'full') {
                 $palletsToCount = \App\Models\WMS\Pallet::where('status', 'Finished')
-                                ->whereHas('items')
+                                ->whereHas('items', fn($q) => $q->where('quantity', '>', 0))
                                 ->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId))
                                 ->when($areaId, function($q) use ($areaId) {
                                     $q->whereHas('purchaseOrder', fn($po) => $po->where('area_id', $areaId));

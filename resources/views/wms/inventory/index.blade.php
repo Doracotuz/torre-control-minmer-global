@@ -135,6 +135,12 @@
                             <label class="text-[12px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Orden (PO)</label>
                             <input type="text" name="po_number" value="{{ request('po_number') }}" class="input-arch text-sm" placeholder="PO-..." onchange="this.form.submit()">
                         </div>
+                        <div class="flex items-center pt-6">
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="show_zero_qty" value="1" onchange="this.form.submit()" class="form-checkbox h-5 w-5 text-[#2c3856] rounded border-gray-300 focus:ring-[#2c3856]" @checked(request('show_zero_qty'))>
+                                <span class="ml-2 text-xs font-bold text-gray-400 uppercase tracking-widest">Mostrar stock en 0</span>
+                            </label>
+                        </div>
                         <div>
                             <a href="{{ route('wms.inventory.index') }}" class="flex items-center justify-center w-full py-2 text-[12px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-widest transition-colors">
                                 <i class="fas fa-undo mr-1"></i> Reset

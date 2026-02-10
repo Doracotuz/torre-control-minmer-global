@@ -62,6 +62,12 @@ class WMSInventoryController extends Controller
             ])
             ->where('status', 'Finished');
 
+        if (!$request->has('show_zero_qty')) {
+            $query->whereHas('items', function($q) {
+                $q->where('quantity', '>', 0);
+            });
+        }
+
         if ($warehouseId) {
             $query->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
         }
@@ -294,6 +300,12 @@ public function findLpnForTransfer(Request $request)
             $query = \App\Models\WMS\Pallet::query()
                 ->with(['purchaseOrder.area', 'location', 'user', 'items.product', 'items.quality'])
                 ->where('status', 'Finished');
+
+            if (!$request->has('show_zero_qty')) {
+                $query->whereHas('items', function($q) {
+                    $q->where('quantity', '>', 0);
+                });
+            }
 
             if ($warehouseId) {
                 $query->whereHas('location', fn($q) => $q->where('warehouse_id', $warehouseId));
@@ -558,7 +570,7 @@ public function findLpnForTransfer(Request $request)
 
         $location = Location::where('code', $locationCode)
             ->orWhere(DB::raw("CONCAT(aisle,'-',rack,'-',shelf,'-',bin)"), $locationCode)
-            ->with(['warehouse', 'area'])
+            ->with(['warehouse'])
             ->first();
 
         if (!$location) {
@@ -567,6 +579,9 @@ public function findLpnForTransfer(Request $request)
 
         $pallets = Pallet::where('location_id', $location->id)
             ->where('status', 'Finished')
+            ->whereHas('items', function($q) {
+                $q->where('quantity', '>', 0);
+            })
             ->with(['items.product', 'items.quality', 'purchaseOrder.area'])
             ->get();
 

@@ -38,6 +38,7 @@ class WmsToFnFService
                         'length' => $product->length,
                         'width' => $product->width,
                         'height' => $product->height,
+                        'master_box_weight' => $product->weight,
                         'upc' => $product->upc,
                         'area_id' => $product->area_id,
                     ]
@@ -49,15 +50,15 @@ class WmsToFnFService
 
             $warnings = $this->checkProductCompleteness($ffProduct);
             if (!empty($warnings)) {
-                $this->logTransaction('Product Sync Warning', "Product {$product->sku} synced to FnF but has missing fields: " . implode(', ', $warnings), ['sku' => $product->sku, 'missing' => $warnings]);
+                $this->logTransaction('Advertencia de Sincronización de Producto', "Producto {$product->sku} sincronizado a FnF pero tiene campos faltantes: " . implode(', ', $warnings), ['sku' => $product->sku, 'missing' => $warnings]);
             } else {
-                $this->logTransaction('Product Sync Success', "Product {$product->sku} synced to FnF", ['sku' => $product->sku]);
+                $this->logTransaction('Sincronización de Producto Exitosa', "Producto {$product->sku} sincronizado a FnF", ['sku' => $product->sku]);
             }
             
             return $ffProduct;
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->logError('Product Sync Error', $e->getMessage(), ['sku' => $product->sku]);
+            $this->logError('Error de Sincronización de Producto', $e->getMessage(), ['sku' => $product->sku]);
             return null;
         }
     }
@@ -77,10 +78,10 @@ class WmsToFnFService
                     ]
                 );
             });
-            $this->logTransaction('Quality Sync Success', "Quality {$quality->name} synced to FnF", ['quality' => $quality->name]);
+            $this->logTransaction('Sincronización de Calidad Exitosa', "Calidad {$quality->name} sincronizada a FnF", ['quality' => $quality->name]);
             return $ffQuality;
         } catch (\Exception $e) {
-            $this->logError('Quality Sync Error', $e->getMessage(), ['quality_name' => $quality->name]);
+            $this->logError('Error de Sincronización de Calidad', $e->getMessage(), ['quality_name' => $quality->name]);
             return null;
         }
     }
@@ -98,19 +99,19 @@ class WmsToFnFService
                         'address' => $warehouse->address ?? 'Dirección Pendiente',
                         'is_active' => true,
                         'phone' => 'S/T', // Mandatory in FnF, missing in WMS
-                        'area_id' => 1, // Default area as WMS warehouses are global
+                        'area_id' => null, // Global warehouse by default
                     ]
                 );
             
             $warnings = $this->checkWarehouseCompleteness($ffWarehouse);
             if (!empty($warnings)) {
-                $this->logTransaction('Warehouse Sync Warning', "Warehouse {$warehouse->code} synced to FnF but has missing fields: " . implode(', ', $warnings), ['warehouse' => $warehouse->code, 'missing' => $warnings]);
+                $this->logTransaction('Advertencia de Sincronización de Almacén', "Almacén {$warehouse->code} sincronizado a FnF pero tiene campos faltantes: " . implode(', ', $warnings), ['warehouse' => $warehouse->code, 'missing' => $warnings]);
             } else {
-                $this->logTransaction('Warehouse Sync Success', "Warehouse {$warehouse->code} synced to FnF", ['warehouse' => $warehouse->code]);
+                $this->logTransaction('Sincronización de Almacén Exitosa', "Almacén {$warehouse->code} sincronizado a FnF", ['warehouse' => $warehouse->code]);
             }
             return $ffWarehouse;
         } catch (\Exception $e) {
-            $this->logError('Warehouse Sync Error', $e->getMessage(), ['warehouse_code' => $warehouse->code]);
+            $this->logError('Error de Sincronización de Almacén', $e->getMessage(), ['warehouse_code' => $warehouse->code]);
             return null;
         }
     }
@@ -144,7 +145,7 @@ class WmsToFnFService
                  // Fallback to PO lines if no pallets processed (e.g. manual bypass)
                  // But in this new logic, we assume WMS flow via pallets.
                  // If empty, nothing to sync.
-                 $this->logTransaction('Inbound Sync Warning', "PO {$po->po_number} completed but no pallet items found to sync.", ['po_id' => $po->id]);
+                 $this->logTransaction('Advertencia de Sincronización de Entrada', "OC {$po->po_number} completada pero no se encontraron pallets para sincronizar.", ['po_id' => $po->id]);
                  DB::commit();
                  return;
             }
@@ -154,7 +155,7 @@ class WmsToFnFService
                 $ffProduct = ffProduct::where('sku', $item->sku)->first();
                 
                 if (!$ffProduct) {
-                    $this->logError('Inbound Sync Error', "Product SKU {$item->sku} not found in FnF", ['po_id' => $po->id]);
+                    $this->logError('Error de Sincronización de Entrada', "Producto SKU {$item->sku} no encontrado en FnF", ['po_id' => $po->id]);
                     continue; 
                 }
 
@@ -177,7 +178,7 @@ class WmsToFnFService
                 ffInventoryMovement::create([
                     'ff_product_id' => $ffProduct->id,
                     'quantity' => $item->quantity,
-                    'reason' => 'Compra / Entrada WMS',
+                    'reason' => 'Compra / Entrada WMS - Folio: ' . $po->po_number,
                     'folio' => $po->po_number,
                     'ff_warehouse_id' => $ffWarehouse ? $ffWarehouse->id : null,
                     'ff_quality_id' => $ffQuality ? $ffQuality->id : null, // Save Quality!
@@ -189,10 +190,10 @@ class WmsToFnFService
             }
 
             DB::commit();
-            $this->logTransaction('Inbound Movement Sync Success', "PO {$po->po_number} synced to FnF Inbound with Qualities", ['po_number' => $po->po_number]);
+            $this->logTransaction('Sincronización de Movimiento de Entrada Exitosa', "OC {$po->po_number} sincronizada a Entrada FnF con Calidades", ['po_number' => $po->po_number]);
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->logError('PO Sync Error', $e->getMessage(), ['po_id' => $po->id]);
+            $this->logError('Error de Sincronización de OC', $e->getMessage(), ['po_id' => $po->id]);
         }
     }
 
@@ -235,10 +236,10 @@ class WmsToFnFService
                 'ff_quality_id' => $ffQuality ? $ffQuality->id : null,
              ]);
 
-             $this->logTransaction('Adjustment Sync Success', "Adjustment {$adjustment->id} synced to FnF", ['adjustment_id' => $adjustment->id]);
+             $this->logTransaction('Sincronización de Ajuste Exitosa', "Ajuste {$adjustment->id} sincronizado a FnF", ['adjustment_id' => $adjustment->id]);
 
         } catch (\Exception $e) {
-            $this->logError('Adjustment Sync Error', $e->getMessage(), ['adj_id' => $adjustment->id]);
+            $this->logError('Error de Sincronización de Ajuste', $e->getMessage(), ['adj_id' => $adjustment->id]);
         }
     }
 

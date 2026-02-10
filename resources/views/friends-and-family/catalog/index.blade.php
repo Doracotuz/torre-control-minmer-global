@@ -171,7 +171,7 @@
                         @if(Auth::user()->hasFfPermission('catalog.export'))
                         <a :href="generateUrl('{{ route('ff.catalog.exportCsv') }}')" target="_blank" 
                         class="col-span-2 sm:col-span-1 px-3 py-2.5 rounded-xl bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-bold shadow-sm flex items-center justify-center w-full sm:w-auto">
-                            <i class="fas fa-file-csv mr-2 text-gray-400"></i> CSV
+                            <i class="fas fa-file-csv mr-2 text-gray-400"></i> Exportar Inventario
                         </a>
                         @endif
                     </div>
@@ -631,12 +631,14 @@
                         </div>
 
                         <div class="mt-auto flex flex-col sm:flex-row gap-3 md:gap-4">
+                            @if(Auth::user()->hasFfPermission('catalog.technical_sheet'))
                             <button @click="openSheetModal(detailProduct)" 
                                     class="flex-1 py-3 md:py-4 bg-[#2c3856] text-white rounded-xl md:rounded-2xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group">
                                 <div class="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                                 <i class="fas fa-file-invoice text-lg group-hover:rotate-12 transition-transform"></i>
                                 <span class="relative z-10 text-sm md:text-base">Generar Ficha</span>
                             </button>
+                            @endif
                             
                             @if(Auth::user()->hasFfPermission('catalog.edit'))
                             <button @click="closeDetailAndEdit(detailProduct)" 

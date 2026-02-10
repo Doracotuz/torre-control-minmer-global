@@ -222,9 +222,17 @@
                                 @endif
                                 
                                 @if(Auth::user()->hasFfPermission('wms.picking'))
-                                <a href="{{ route('wms.picking.pdf', $salesOrder->pickList) }}" target="_blank" class="btn-ghost w-full py-3 flex items-center justify-center">
-                                    <i class="fas fa-file-pdf mr-2"></i> Descargar PDF
-                                </a>
+                                    <div class="space-y-3">
+                                        @if($salesOrder->status == 'Picking')
+                                            <a href="{{ route('wms.picking.show', $salesOrder->pickList) }}" class="btn-nexus w-full py-4 text-sm uppercase tracking-widest shadow-lg bg-[#ff9c00] hover:bg-orange-600 border-none text-white">
+                                                <i class="fas fa-dolly-flatbed mr-2"></i> Realizar Picking
+                                            </a>
+                                        @endif
+
+                                        <a href="{{ route('wms.picking.pdf', $salesOrder->pickList) }}" target="_blank" class="btn-ghost w-full py-3 flex items-center justify-center">
+                                            <i class="fas fa-file-pdf mr-2"></i> Descargar PDF
+                                        </a>
+                                    </div>
                                 @endif
                             </div>
                         @else

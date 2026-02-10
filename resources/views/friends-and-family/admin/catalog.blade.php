@@ -242,8 +242,8 @@
                             <div>
                                 <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Asignar al Área</label>
                                 <div class="relative">
-                                    <select name="area_id" x-model="itemAreaId" class="w-full rounded-xl px-4 py-3 input-modern text-[#2c3856] font-semibold appearance-none cursor-pointer" required>
-                                        <option value="" disabled>Seleccione un Área</option>
+                                    <select name="area_id" x-model="itemAreaId" class="w-full rounded-xl px-4 py-3 input-modern text-[#2c3856] font-semibold appearance-none cursor-pointer">
+                                        <option value="" class="font-bold text-blue-600">🌐 Global / Sin Área (Compartido)</option>
                                         @if(isset($areas))
                                             @foreach($areas as $area)
                                                 <option value="{{ $area->id }}">{{ $area->name }}</option>

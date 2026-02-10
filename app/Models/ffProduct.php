@@ -28,6 +28,7 @@ class ffProduct extends Model
         'photo_path',
         'is_active',
         'area_id',
+        'master_box_weight',
     ];
 
     protected $casts = [
@@ -37,6 +38,7 @@ class ffProduct extends Model
         'width' => 'decimal:2',
         'height' => 'decimal:2',
         'pieces_per_box' => 'integer',
+        'master_box_weight' => 'decimal:2',
     ];
 
     protected $appends = ['photo_url'];

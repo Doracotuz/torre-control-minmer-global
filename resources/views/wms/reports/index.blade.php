@@ -125,7 +125,7 @@
                     </div>
                     
                     <h3 class="text-2xl font-raleway font-black text-[#2c3856] mb-2 group-hover:text-amber-600 transition-colors">
-                        Antigüedad (Aging)
+                        Antigüedad
                     </h3>
                     <p class="text-sm text-gray-500 font-medium leading-relaxed mb-6">
                         Análisis de rotación y permanencia de stock.

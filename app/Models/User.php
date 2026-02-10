@@ -209,7 +209,7 @@ class User extends Authenticatable
             'Friends & Family' => [
                 'Catálogo' => [
                     'catalog.view' => 'Ver Catálogo',
-                    'catalog.create' => 'Crear Ficha Técnica',
+                    'catalog.create' => 'Crear Nuevo Producto',
                     'catalog.edit' => 'Editar Producto',
                     'catalog.delete' => 'Eliminar Producto',
                     'catalog.import' => 'Importar Productos',
@@ -221,7 +221,8 @@ class User extends Authenticatable
                     'inventory.move' => 'Realizar Movimientos (Entrada/Salida)',
                     'inventory.import' => 'Importar Movimientos',
                     'inventory.log' => 'Ver Bitácora de Movimientos',
-                    'inventory.backorders' => 'Gestionar Backorders',
+                    'inventory.backorders.operational' => 'Gestionar Backorders (Surtido/Operativo)',
+                    'inventory.backorders.financial' => 'Ver Reporte de Pasivos (Financiero)',
                 ],
                 'Ventas' => [
                     'sales.view' => 'Ver Módulo de Ventas',
@@ -250,7 +251,9 @@ class User extends Authenticatable
                     'admin.view' => 'Ver Panel de Administración',
                     'admin.clients' => 'Gestionar Clientes',
                     'admin.branches' => 'Gestionar Sucursales',
-                    'admin.conditions' => 'Gestionar Condiciones Comerciales',
+                    'admin.channels' => 'Gestionar Canales de Venta',
+                    'admin.warehouses' => 'Gestionar Almacenes',
+                    'admin.qualities' => 'Gestionar Calidades',
                 ],
             ],
             'WMS' => [
@@ -286,6 +289,8 @@ class User extends Authenticatable
                     'wms.products.create' => 'Crear Productos WMS',
                     'wms.products.edit' => 'Editar Productos WMS',
                     'wms.products.delete' => 'Eliminar Productos WMS',
+                    'wms.brands' => 'Gestionar Marcas',
+                    'wms.product_types' => 'Gestionar Tipos de Producto',
                     'wms.warehouses' => 'Configuración de Almacenes',
                     'wms.locations.view' => 'Ver Ubicaciones',
                     'wms.locations.manage' => 'Gestionar Ubicaciones (Crear/Editar/Eliminar)',

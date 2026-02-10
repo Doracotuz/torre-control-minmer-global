@@ -19,4 +19,6 @@ class FfWarehouse extends Model
         'area_id',
         'is_active'
     ];
+
+    public $allowsGlobalArea = true;
 }

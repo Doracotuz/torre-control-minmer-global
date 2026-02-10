@@ -106,7 +106,10 @@ class FfInventoryController extends Controller
             $areaId = Auth::user()->area_id;
             $brandsQuery->where('area_id', $areaId);
             $typesQuery->where('area_id', $areaId);
-            $warehousesQuery->where('area_id', $areaId);
+            $warehousesQuery->where(function($q) use ($areaId) {
+                $q->where('area_id', $areaId)
+                  ->orWhereNull('area_id');
+            });
             $qualitiesQuery->where('area_id', $areaId);
         }
 
@@ -152,7 +155,17 @@ class FfInventoryController extends Controller
             'quantity' => 'required|integer|not_in:0',
             'reason' => 'required|string|max:255',
             'area_id' => Auth::user()->isSuperAdmin() ? 'required|exists:areas,id' : 'nullable',
-            'warehouse_id' => ['required', Rule::exists('ff_warehouses', 'id')],
+            'warehouse_id' => [
+                'required', 
+                Rule::exists('ff_warehouses', 'id')->where(function ($query) {
+                    if (!Auth::user()->isSuperAdmin()) {
+                        $query->where(function($q) {
+                            $q->where('area_id', Auth::user()->area_id)
+                              ->orWhereNull('area_id');
+                        });
+                    }
+                })
+            ],
             'ff_quality_id' => 'nullable|exists:ff_qualities,id',
         ]);
 
@@ -283,10 +296,10 @@ class FfInventoryController extends Controller
 
         $products = $query->orderBy('description')->get();
 
-        $breakdownQuery = ffInventoryMovement::selectRaw('ff_product_id, ff_quality_id, SUM(quantity) as qty')
+        $breakdownQuery = ffInventoryMovement::selectRaw('ff_product_id, ff_quality_id, ff_warehouse_id, SUM(quantity) as qty')
             ->whereIn('ff_product_id', $products->pluck('id'))
-            ->groupBy('ff_product_id', 'ff_quality_id')
-            ->with('quality');
+            ->groupBy('ff_product_id', 'ff_quality_id', 'ff_warehouse_id')
+            ->with(['quality', 'warehouse']);
 
         if ($warehouseId) $breakdownQuery->where('ff_warehouse_id', $warehouseId);
         if ($qualityId) $breakdownQuery->where('ff_quality_id', $qualityId);
@@ -305,16 +318,17 @@ class FfInventoryController extends Controller
             $file = fopen('php://output', 'w');
             fputs($file, "\xEF\xBB\xBF");
             
-            fputcsv($file, ['SKU', 'UPC', 'Descripcion', 'Marca', 'Tipo', 'Precio Unitario', 'Pzas/Caja', 'Calidad', 'Cantidad']);
+            fputcsv($file, ['SKU', 'UPC', 'Descripcion', 'Marca', 'Tipo', 'Precio Unitario', 'Pzas/Caja', 'Almacen', 'Calidad', 'Cantidad']);
             
             foreach ($products as $product) {
                 $variants = $stockData->get($product->id);
 
                 if ($variants && $variants->count() > 0) {
                     foreach ($variants as $variant) {
-                        if ($variant->qty == 0) continue;
+                        // Removed skipping zero qty to include 0 stock products as requested
 
                         $qualityName = $variant->quality ? $variant->quality->name : 'Estándar';
+                        $warehouseName = $variant->warehouse ? $variant->warehouse->description : 'Global';
                         
                         fputcsv($file, [
                             $product->sku,
@@ -324,6 +338,7 @@ class FfInventoryController extends Controller
                             $product->type,
                             $product->unit_price,
                             $product->pieces_per_box,
+                            $warehouseName,
                             $qualityName,
                             $variant->qty
                         ]);
@@ -331,7 +346,7 @@ class FfInventoryController extends Controller
                 } else {
                     fputcsv($file, [
                         $product->sku, $product->upc, $product->description, $product->brand, $product->type, 
-                        $product->unit_price, $product->pieces_per_box, 'Sin Stock', 0
+                        $product->unit_price, $product->pieces_per_box, 'N/A', 'Sin Stock', 0
                     ]);
                 }
             }
@@ -614,8 +629,8 @@ class FfInventoryController extends Controller
 
     public function backorders(Request $request)
     {
-        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.backorders')) {
-            abort(403, 'No tienes permiso para gestionar backorders.');
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.backorders.operational')) {
+            abort(403, 'No tienes permiso para gestionar backorders (Operativo).');
         }
 
         $query = ffInventoryMovement::where('is_backorder', true)
@@ -653,8 +668,8 @@ class FfInventoryController extends Controller
 
     public function fulfillBackorder(Request $request)
     {
-        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.backorders')) {
-            return response()->json(['message' => 'No tienes permiso.'], 403);
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.backorders.operational')) {
+            abort(403, 'No tienes permiso para surtir backorders.');
         }
 
         $request->validate(['movement_id' => 'required|exists:ff_inventory_movements,id']);
@@ -733,8 +748,8 @@ class FfInventoryController extends Controller
 
     public function backorderRelations(Request $request)
     {
-        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.backorders')) {
-            abort(403, 'No tienes permiso para ver relaciones de backorders.');
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.backorders.financial')) {
+            abort(403, 'No tienes permiso para ver reporte de pasivos.');
         }
 
         $productsQuery = ffProduct::query();
@@ -788,8 +803,8 @@ class FfInventoryController extends Controller
 
     public function resolveBackorder(Request $request, $id)
     {
-        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.backorders')) {
-            return response()->json(['message' => 'No tienes permiso.'], 403);
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.backorders.operational')) {
+            return response()->json(['message' => 'No tienes permiso para resolver backorders.'], 403);
         }
 
         $request->validate([

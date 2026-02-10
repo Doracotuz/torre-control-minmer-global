@@ -159,6 +159,15 @@
                                                 <i class="fas fa-pencil-alt"></i>
                                             </a>
                                             @endif
+                                            @if(Auth::user()->isSuperAdmin())
+                                            <form action="{{ route('wms.products.destroy', $product) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.');" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-600 transition-all shadow-sm" title="Eliminar">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>

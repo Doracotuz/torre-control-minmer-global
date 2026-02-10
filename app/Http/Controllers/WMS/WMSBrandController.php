@@ -13,7 +13,7 @@ class WMSBrandController extends Controller
     public function __construct()
     {
         $this->middleware(function ($request, $next) {
-            if (!Auth::user()->hasFfPermission('wms.products')) {
+            if (!Auth::user()->hasFfPermission('wms.brands')) {
                 abort(403, 'No tienes permiso para gestionar marcas.');
             }
             return $next($request);

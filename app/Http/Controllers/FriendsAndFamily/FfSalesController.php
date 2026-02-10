@@ -153,7 +153,10 @@ class FfSalesController extends Controller
             $channelsQuery->where('area_id', $user->area_id);
             $transportsQuery->where('area_id', $user->area_id);
             $paymentsQuery->where('area_id', $user->area_id);
-            $warehousesQuery->where('area_id', $user->area_id);
+            $warehousesQuery->where(function($q) use ($user) {
+                $q->where('area_id', $user->area_id)
+                  ->orWhereNull('area_id');
+            });
             $qualitiesQuery->where('area_id', $user->area_id);
         } elseif ($user->isSuperAdmin() && $request->filled('area_id')) {
             $areaId = $request->input('area_id');
@@ -200,7 +203,10 @@ class FfSalesController extends Controller
                 'required',
                 Rule::exists('ff_warehouses', 'id')->where(function ($query) {
                     if (!Auth::user()->isSuperAdmin()) {
-                        $query->where('area_id', Auth::user()->area_id);
+                        $query->where(function($q) {
+                            $q->where('area_id', Auth::user()->area_id)
+                              ->orWhereNull('area_id');
+                        });
                     }
                 })
             ],
@@ -500,7 +506,10 @@ class FfSalesController extends Controller
                 'required', 
                 Rule::exists('ff_warehouses', 'id')->where(function ($query) {
                     if (!Auth::user()->isSuperAdmin()) {
-                        $query->where('area_id', Auth::user()->area_id);
+                        $query->where(function($q) {
+                            $q->where('area_id', Auth::user()->area_id)
+                              ->orWhereNull('area_id');
+                        });
                     }
                 })
             ],

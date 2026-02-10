@@ -14,13 +14,22 @@ trait BelongsToArea
             if (Auth::check()) {
                 $user = Auth::user();
                 if (!$user->isSuperAdmin()) {
-                    $builder->where($builder->getModel()->getTable() . '.area_id', $user->area_id);
+                    $model = $builder->getModel();
+                    // Check if model allows global access (e.g. Warehouses)
+                    if (property_exists($model, 'allowsGlobalArea') && $model->allowsGlobalArea) {
+                        $builder->where(function($q) use ($user, $model) {
+                            $q->where($model->getTable() . '.area_id', $user->area_id)
+                              ->orWhereNull($model->getTable() . '.area_id');
+                        });
+                    } else {
+                        $builder->where($builder->getModel()->getTable() . '.area_id', $user->area_id);
+                    }
                 }
             }
         });
 
         static::creating(function ($model) {
-            if (Auth::check() && !isset($model->area_id)) {
+            if (Auth::check() && !array_key_exists('area_id', $model->getAttributes())) {
                 $model->area_id = Auth::user()->area_id;
             }
         });

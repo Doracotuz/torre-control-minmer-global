@@ -214,6 +214,7 @@
                                     </div>
 
                                     <div class="flex items-center gap-12 w-full md:w-auto justify-between md:justify-end pr-4">
+                                        @if(Auth::user()->hasFfPermission('inventory.backorders.operational'))
                                         <button @click.stop="
                                                     openResolveModal({
                                                         id: {{ $product->id }},
@@ -226,6 +227,7 @@
                                             <i class="fas fa-plus text-xs"></i>
                                             <span class="text-xs font-bold uppercase tracking-wider">Ingresar</span>
                                         </button>
+                                        @endif
                                         
                                         <div class="text-right">
                                             <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pedidos</p>
@@ -311,11 +313,13 @@
                                                             </td>
                                                             <td class="px-6 py-4 text-center flex items-center justify-center gap-2">
                                                                 
+                                                                @if(Auth::user()->hasFfPermission('inventory.backorders.operational'))
                                                                 <button @click="fulfillOrder({{ $mov->id }})" 
                                                                         class="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-xs font-bold uppercase hover:bg-blue-600 hover:text-white transition-colors"
                                                                         title="Surtir (Usar stock existente)">
                                                                     <i class="fas fa-check-double mr-1"></i> Surtir
                                                                 </button>
+                                                                @endif
 
                                                                 <a href="{{ route('ff.orders.show', $mov->folio) }}" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-white hover:bg-[#2c3856] hover:border-[#2c3856] flex items-center justify-center transition-all shadow-sm">
                                                                     <i class="fas fa-arrow-right"></i>
