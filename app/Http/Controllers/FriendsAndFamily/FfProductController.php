@@ -576,6 +576,9 @@ class FfProductController extends Controller
 
     public function exportPdf(Request $request)
     {
+        Log::info('Inicio generacion PDF FF');
+        $startTime = microtime(true);
+
         if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.export')) {
             abort(403, 'No tienes permiso para exportar el catálogo.');
         }
@@ -594,6 +597,7 @@ class FfProductController extends Controller
         }
 
         $products = $query->get();
+        Log::info('Productos consultados: ' . $products->count() . ' - Tiempo: ' . round(microtime(true) - $startTime, 2) . 's');
 
         $cacheDir = storage_path('app/public/ff_catalog_cache');
         if (!file_exists($cacheDir)) {
@@ -606,11 +610,18 @@ class FfProductController extends Controller
                 $product->unit_price += $increase;
             }
 
+            $product->temp_photo_path = null; 
+
             if ($product->photo_path) {
-                $localPath = $cacheDir . '/' . $product->id . '.jpg';
+                // Generar nombre de archivo único basado en el path original de la foto
+                // Esto asegura que si la foto cambia (nuevo path en S3), se genere un nuevo archivo cache
+                $cacheKey = $product->id . '_' . md5($product->photo_path);
+                $localPath = $cacheDir . '/' . $cacheKey . '.jpg';
                 
+                $localPath = str_replace('\\', '/', $localPath);
+
                 if (file_exists($localPath)) {
-                    $product->photo_url = $localPath;
+                    $product->temp_photo_path = $localPath;
                 } else {
                     try {
                         if (Storage::disk('s3')->exists($product->photo_path)) {
@@ -631,18 +642,27 @@ class FfProductController extends Controller
                                 
                                 imagejpeg($virtualImage, $localPath, 60);
                                 
-                                $product->photo_url = $localPath;
+                                $product->temp_photo_path = $localPath;
 
                                 imagedestroy($virtualImage);
                                 imagedestroy($sourceImage);
                             }
                         }
                     } catch (\Exception $e) {
+                         Log::error("Error procesando imagen producto {$product->id}: " . $e->getMessage());
                     }
                 }
             }
+            
+            if ($product->temp_photo_path) {
+                $product->photo_url = $product->temp_photo_path;
+            } else {
+                $product->photo_url = null; 
+            }
         }
         
+        Log::info('Imagenes procesadas - Tiempo: ' . round(microtime(true) - $startTime, 2) . 's');
+
         $targetAreaId = Auth::user()->isSuperAdmin() && $request->filled('area_id') 
             ? $request->input('area_id') 
             : Auth::user()->area_id;
@@ -659,6 +679,7 @@ class FfProductController extends Controller
         $localLogoPath = null;
         try {
             $logoCachePath = $cacheDir . '/logo_' . ($targetAreaId ?? 'default') . '.png';
+            $logoCachePath = str_replace('\\', '/', $logoCachePath);
             
             if (file_exists($logoCachePath)) {
                 $localLogoPath = $logoCachePath;
@@ -670,9 +691,10 @@ class FfProductController extends Controller
                 }
             }
         } catch (\Exception $e) {
+            Log::error("Error procesando logo: " . $e->getMessage());
         }
 
-        $finalLogo = $localLogoPath ?? $this->getLogoUrl($targetAreaId);
+        $finalLogo = $localLogoPath;
 
         $data = [
             'products' => $products,
@@ -681,11 +703,14 @@ class FfProductController extends Controller
             'percentage_text' => $percentage > 0 ? " (Precios +{$percentage}%)" : ""
         ];
 
+        Log::info('Iniciando renderizado DOMPDF...');
+
         $pdf = Pdf::loadView('friends-and-family.catalog.pdf', $data);
         
         $pdf->setPaper('A4', 'portrait');
-        $pdf->setOption('isRemoteEnabled', true);
-        $pdf->setOption('dpi', 150);
+        $pdf->setOption('isRemoteEnabled', false);
+        $pdf->setOption('dpi', 96);
+        $pdf->setOption('isHtml5ParserEnabled', true);
         
         return $pdf->stream('Catalogo_FF_'.now()->format('Ymd').'.pdf');
     }
