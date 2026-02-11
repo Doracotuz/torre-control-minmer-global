@@ -540,6 +540,7 @@ class FfProductController extends Controller
     public function exportPdf(Request $request)
     {
         set_time_limit(0);
+        ini_set('max_execution_time', 600);
         ini_set('memory_limit', '1024M');
 
         $percentage = $request->input('percentage', 0);
@@ -644,7 +645,7 @@ class FfProductController extends Controller
         
         $pdf->setPaper('A4', 'portrait');
         $pdf->setOption('isRemoteEnabled', true);
-        $pdf->setOption('dpi', 150);
+        //$pdf->setOption('dpi', 150);
         
         return $pdf->stream('Catalogo_FF_'.now()->format('Ymd').'.pdf');
     }

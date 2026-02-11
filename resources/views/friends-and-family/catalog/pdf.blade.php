@@ -65,7 +65,7 @@
             border-collapse: collapse;
             border: 1px solid #d1d5db;
             background-color: #fff;
-            border-radius: 8px;
+            /* border-radius: 8px; Removed for performance */
             overflow: hidden;
         }
 
