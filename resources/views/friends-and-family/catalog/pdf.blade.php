@@ -59,42 +59,37 @@
             page-break-inside: avoid;
         }
 
-        .product-card-table {
-            width: 100%;
-            height: 425px;
-            border-collapse: collapse;
-            border: 1px solid #d1d5db;
+        .product-card {
             background-color: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
             overflow: hidden;
+            height: 425px;
+            width: 100%;
+            position: relative;
+            page-break-inside: avoid;
         }
 
-        .row-image {
+        .img-container {
             height: 220px;
-            vertical-align: middle;
+            width: 100%;
             text-align: center;
-            border-bottom: 1px solid #eee;
             background-color: white;
+            border-bottom: 1px solid #eee;
             padding: 10px;
+            line-height: 200px; 
         }
 
-        .row-image img {
+        .img-container img {
             max-height: 200px;
             max-width: 90%;
-        }
-
-        .row-body {
-            vertical-align: top;
-            padding: 15px;
-            height: 165px;
-        }
-
-        .row-price {
-            height: 40px;
-            background-color: #f1f5f9;
-            border-top: 2px solid #e5e7eb;
             vertical-align: middle;
-            text-align: right;
-            padding: 0 15px;
+            display: inline-block;
+        }
+
+        .card-body {
+            padding: 15px 15px 90px 15px;
+            position: relative;
         }
 
         .brand-row {
@@ -125,7 +120,7 @@
             line-height: 1.3;
             margin-top: 5px;
             margin-bottom: 1px;
-            height: 40px;
+            height: 20px;
             overflow: hidden;
         }
 
@@ -133,7 +128,6 @@
             font-size: 12px;
             color: #333;
             line-height: 1.6;
-            margin-top: 10px;
         }
 
         .spec-label {
@@ -148,10 +142,25 @@
             margin-right: 5px;
         }        
 
+        .price-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f1f5f9;
+            padding: 10px 15px;
+            text-align: right;
+            border-top: 2px solid #e5e7eb;
+            height: 40px;
+            box-sizing: border-box;
+        }
+
         .price-label {
             font-size: 10px;
             text-transform: uppercase;
             color: #64748b;
+            display: block;
+            margin-bottom: 2px;
             margin-right: 20px;
         }
 
@@ -159,22 +168,20 @@
             font-size: 26px;
             font-weight: 900;
             color: #2c3856;
+            display: block;
+            margin-right: 25px;
         }
 
-        .badge-container {
-            text-align: left;
-            margin-bottom: 5px;
-            height: 20px;
-        }
-        
         .badge {
-            display: inline-block;
-            padding: 4px 8px;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 5px 10px;
             border-radius: 4px;
-            font-size: 9px;
+            font-size: 10px;
             font-weight: bold;
             color: white;
-            text-transform: uppercase;
+            z-index: 10;
         }
         .bg-green { background-color: #10b981; }
         .bg-red { background-color: #ef4444; }
@@ -206,25 +213,23 @@
             <tr>
                 @foreach($row as $product)
                     <td width="50%" valign="top">
-                        
-                        <div style="border: 1px solid #d1d5db; background-color: #fff; overflow: hidden; height: 425px;">
-                            <div style="height: 220px; text-align: center; border-bottom: 1px solid #eee; background-color: white; padding: 10px; position: relative;">
-                                <div style="text-align: left; margin-bottom: 5px;">
-                                    @if($product->is_active)
-                                        <span class="badge bg-green">DISPONIBLE</span>
-                                    @else
-                                        <span class="badge bg-red">AGOTADO</span>
-                                    @endif
-                                </div>
-                                    <img src="{{ $product->cached_photo_path ?? $product->photo_url }}" alt="Prod" style="max-height: 190px; max-width: 90%; display: block; margin: 0 auto;">
+                        <div class="product-card">
+                            
+                            @if($product->is_active)
+                                <span class="badge bg-green">DISPONIBLE</span>
+                            @else
+                                <span class="badge bg-red">AGOTADO / INACTIVO</span>
+                            @endif
+
+                            <div class="img-container">
+                                <img src="{{ $product->cached_photo_path ?? $product->photo_url }}" alt="Prod">
                             </div>
 
-                            <div style="padding: 15px; height: 125px; vertical-align: top;">
+                            <div class="card-body">
                                 <div class="brand-row">
                                     <span class="brand">{{ Str::limit($product->brand ?? 'S/M', 15) }}</span>
-                                    <div style="float: right; font-family: monospace; font-weight: bold; color: #374151;">{{ $product->sku }}</div>
+                                    <span class="sku">{{ $product->sku }}</span>
                                 </div>
-                                <div style="clear: both;"></div>
 
                                 <div class="title">
                                     {{ Str::limit($product->description, 55) }}
@@ -246,12 +251,12 @@
                                 </div>
                             </div>
 
-                            <div style="height: 40px; background-color: #f1f5f9; border-top: 2px solid #e5e7eb; padding: 10px 15px; text-align: right;">
-                                <span class="price-label" style="margin-right: 15px;">Precio Unitario</span>
+                            <div class="price-container">
+                                <span class="price-label">Precio Unitario</span>
                                 <span class="price">${{ number_format($product->unit_price, 2) }}</span>
                             </div>
-                        </div>
 
+                        </div>
                     </td>
                     
                     @if($loop->count == 1 && $loop->parent->count == 1) 
