@@ -28,6 +28,26 @@ class WMSPhysicalCountController extends Controller
         });
     }
 
+    public function printCountSheet(PhysicalCountSession $session)
+    {
+        $session->load(['warehouse', 'area', 'assignedUser', 'tasks.location', 'tasks.product', 'tasks.pallet.purchaseOrder']);
+        
+        $tasks = $session->tasks->sortBy(function($task) {
+            return $task->location ? $task->location->code : 'ZZZ';
+        });
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('wms.pdf.count-sheet', compact('session', 'tasks'));
+        return $pdf->download('hoja_conteo_session_'.$session->id.'.pdf');
+    }
+
+    public function printInventoryAct(PhysicalCountSession $session)
+    {
+         $session->load(['warehouse', 'area', 'assignedUser', 'tasks.location', 'tasks.product', 'tasks.pallet', 'tasks.records']);
+         
+         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('wms.pdf.inventory-act', compact('session'));
+         return $pdf->download('acta_inventario_session_'.$session->id.'.pdf');
+    }
+
     public function index(Request $request)
     {
         $warehouseId = $request->input('warehouse_id');
@@ -98,6 +118,9 @@ class WMSPhysicalCountController extends Controller
                 'status' => 'Pending'
             ]);
 
+            $tasksToInsert = [];
+            $now = now();
+
             if ($validated['type'] === 'dirigido') {
                 $file = $request->file('locations_file');
                 $csvData = array_map('str_getcsv', file($file->getRealPath()));
@@ -127,10 +150,16 @@ class WMSPhysicalCountController extends Controller
                 foreach ($locations as $location) {
                     foreach ($location->pallets as $pallet) {
                         foreach ($pallet->items as $item) {
-                            $session->tasks()->create([
-                                'pallet_id' => $pallet->id, 'location_id' => $location->id,
-                                'product_id' => $item->product_id, 'expected_quantity' => $item->quantity,
-                            ]);
+                            $tasksToInsert[] = [
+                                'physical_count_session_id' => $session->id,
+                                'pallet_id' => $pallet->id, 
+                                'location_id' => $location->id,
+                                'product_id' => $item->product_id, 
+                                'expected_quantity' => $item->quantity,
+                                'status' => 'pending',
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ];
                         }
                     }
                 }
@@ -150,10 +179,16 @@ class WMSPhysicalCountController extends Controller
                                 
                 foreach ($palletsToCount as $pallet) {
                     foreach ($pallet->items as $item) {
-                        $session->tasks()->create([
-                            'pallet_id' => $pallet->id, 'location_id' => $pallet->location_id,
-                            'product_id' => $item->product_id, 'expected_quantity' => $item->quantity,
-                        ]);
+                        $tasksToInsert[] = [
+                            'physical_count_session_id' => $session->id,
+                            'pallet_id' => $pallet->id, 
+                            'location_id' => $pallet->location_id,
+                            'product_id' => $item->product_id, 
+                            'expected_quantity' => $item->quantity,
+                            'status' => 'pending',
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
                     }
                 }
 
@@ -169,20 +204,30 @@ class WMSPhysicalCountController extends Controller
                                 
                 foreach ($palletsToCount as $pallet) {
                     foreach ($pallet->items as $item) {
-                        $session->tasks()->create([
-                            'pallet_id' => $pallet->id, 'location_id' => $pallet->location_id,
-                            'product_id' => $item->product_id, 'expected_quantity' => $item->quantity,
-                        ]);
+                        $tasksToInsert[] = [
+                            'physical_count_session_id' => $session->id,
+                            'pallet_id' => $pallet->id, 
+                            'location_id' => $pallet->location_id,
+                            'product_id' => $item->product_id, 
+                            'expected_quantity' => $item->quantity,
+                            'status' => 'pending',
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
                     }
                 }
             }
             
-            if ($session->tasks()->count() === 0) {
+            if (empty($tasksToInsert)) {
                  throw new \Exception("No se encontraron tareas para generar. Verifique el inventario o los filtros seleccionados (almacén, área, pasillo, etc.).");
             }
 
+            foreach (array_chunk($tasksToInsert, 500) as $chunk) {
+                PhysicalCountTask::insert($chunk);
+            }
+
             DB::commit();
-            return redirect()->route('wms.physical-counts.show', $session)->with('success', 'Sesión de conteo creada y tareas generadas.');
+            return redirect()->route('wms.physical-counts.show', $session)->with('success', 'Sesión de conteo creada y tareas generadas correctamente (Optimizado).');
             
         } catch (\Exception $e) {
             DB::rollBack();
@@ -324,7 +369,13 @@ class WMSPhysicalCountController extends Controller
                      'quantity' => 0
                  ]);
             }
-            $stock->quantity = $quantityAfter;
+            
+            $stock->quantity += $difference;
+            
+            if ($stock->quantity < 0) {
+                $stock->quantity = 0;
+            }
+            
             $stock->save();
 
             $adjustment = InventoryAdjustment::create([
@@ -355,7 +406,7 @@ class WMSPhysicalCountController extends Controller
 
             DB::commit();
             return redirect()->route('wms.physical-counts.show', $task->physical_count_session_id)
-                            ->with('success', 'Inventario ajustado correctamente.');
+                            ->with('success', 'Inventario ajustado correctamente (Modo Diferencial).');
 
         } catch (\Exception $e) {
             DB::rollBack();

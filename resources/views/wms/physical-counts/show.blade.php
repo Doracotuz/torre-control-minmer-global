@@ -81,7 +81,23 @@
                         </a>
                     @endif
 
-                    <a href="{{ route('wms.physical-counts.index') }}" class="btn-ghost w-full md:w-auto px-6 py-3 text-sm uppercase tracking-wider text-center">
+                    @endif
+
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="btn-ghost w-full md:w-auto px-6 py-3 text-xs uppercase tracking-wider text-center flex items-center gap-2">
+                            <i class="fas fa-file-pdf"></i> Documentación <i class="fas fa-chevron-down ml-1"></i>
+                        </button>
+                        <div x-show="open" @click.away="open = false" class="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 flex flex-col" x-cloak>
+                            <a href="{{ route('wms.physical-counts.print-sheet', $session) }}" target="_blank" class="px-4 py-3 text-xs font-bold text-[#2c3856] hover:bg-gray-50 text-left">
+                                <i class="fas fa-clipboard-list mr-2 text-blue-500"></i> Hoja de Conteo
+                            </a>
+                            <a href="{{ route('wms.physical-counts.print-act', $session) }}" target="_blank" class="px-4 py-3 text-xs font-bold text-[#2c3856] hover:bg-gray-50 text-left">
+                                <i class="fas fa-file-contract mr-2 text-red-500"></i> Acta de Inventario
+                            </a>
+                        </div>
+                    </div>
+
+                    <a href="{{ route('wms.physical-counts.index') }}" class="btn-ghost w-full md:w-auto px-6 py-3 text-xs uppercase tracking-wider text-center">
                         <i class="fas fa-arrow-left mr-2"></i> Volver
                     </a>
                 </div>

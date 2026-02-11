@@ -672,6 +672,8 @@ Route::middleware(['auth', 'module.access:wms'])->prefix('wms')->name('wms.')->g
     Route::post('physical-counts/tasks/{task}/perform', [WMSPhysicalCountController::class, 'recordCount'])->name('physical-counts.tasks.record');
     Route::post('physical-counts/tasks/{task}/adjust', [WMSPhysicalCountController::class, 'adjustInventory'])->name('physical-counts.tasks.adjust');
     Route::get('physical-counts/tasks/{task}/candidate-lpns', [WMSPhysicalCountController::class, 'getCandidateLpns'])->name('physical-counts.tasks.candidates');
+    Route::get('/physical-counts/{session}/print-sheet', [WMSPhysicalCountController::class, 'printCountSheet'])->name('physical-counts.print-sheet');
+    Route::get('/physical-counts/{session}/print-act', [WMSPhysicalCountController::class, 'printInventoryAct'])->name('physical-counts.print-act');
     Route::get('/api/search-stock-products', [App\Http\Controllers\WMS\WMSSalesOrderController::class, 'apiSearchStockProducts'])->name('api.search-stock-products');
 
     Route::resource('sales-orders', WMSSalesOrderController::class);
