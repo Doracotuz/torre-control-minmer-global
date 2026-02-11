@@ -613,8 +613,6 @@ class FfProductController extends Controller
             $product->temp_photo_path = null; 
 
             if ($product->photo_path) {
-                // Generar nombre de archivo único basado en el path original de la foto
-                // Esto asegura que si la foto cambia (nuevo path en S3), se genere un nuevo archivo cache
                 $cacheKey = $product->id . '_' . md5($product->photo_path);
                 $localPath = $cacheDir . '/' . $cacheKey . '.jpg';
                 
