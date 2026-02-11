@@ -570,7 +570,7 @@ class FfProductController extends Controller
                 $localPath = $cacheDir . '/' . $product->id . '.jpg';
                 
                 if (file_exists($localPath)) {
-                    $product->photo_url = $localPath;
+                    $product->cached_photo_path = $localPath;
                 } else {
                     try {
                         if (Storage::disk('s3')->exists($product->photo_path)) {
@@ -591,7 +591,7 @@ class FfProductController extends Controller
                                 
                                 imagejpeg($virtualImage, $localPath, 60);
                                 
-                                $product->photo_url = $localPath;
+                                $product->cached_photo_path = $localPath;
 
                                 imagedestroy($virtualImage);
                                 imagedestroy($sourceImage);

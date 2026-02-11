@@ -216,7 +216,7 @@
                                         <span class="badge bg-red">AGOTADO</span>
                                     @endif
                                 </div>
-                                <img src="{{ $product->photo_url }}" alt="Prod" style="max-height: 190px; max-width: 90%; display: block; margin: 0 auto;">
+                                    <img src="{{ $product->cached_photo_path ?? $product->photo_url }}" alt="Prod" style="max-height: 190px; max-width: 90%; display: block; margin: 0 auto;">
                             </div>
 
                             <div style="padding: 15px; height: 125px; vertical-align: top;">
