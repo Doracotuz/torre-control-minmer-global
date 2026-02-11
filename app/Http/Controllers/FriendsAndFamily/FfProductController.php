@@ -554,9 +554,9 @@ class FfProductController extends Controller
 
         $products = $query->get();
 
-        $tempDir = storage_path('app/public/temp_pdf_' . uniqid());
-        if (!file_exists($tempDir)) {
-            mkdir($tempDir, 0777, true);
+        $cacheDir = storage_path('app/public/ff_catalog_cache');
+        if (!file_exists($cacheDir)) {
+            mkdir($cacheDir, 0777, true);
         }
 
         foreach ($products as $product) {
@@ -566,34 +566,38 @@ class FfProductController extends Controller
             }
 
             if ($product->photo_path) {
-                try {
-                    if (Storage::disk('s3')->exists($product->photo_path)) {
-                        $imageContent = Storage::disk('s3')->get($product->photo_path);
-                        $sourceImage = @imagecreatefromstring($imageContent);
-                        
-                        if ($sourceImage) {
-                            $width = imagesx($sourceImage);
-                            $newWidth = 150;
-                            $newHeight = floor(imagesy($sourceImage) * ($newWidth / $width));
+                $localPath = $cacheDir . '/' . $product->id . '.jpg';
+                
+                if (file_exists($localPath)) {
+                    $product->photo_url = $localPath;
+                } else {
+                    try {
+                        if (Storage::disk('s3')->exists($product->photo_path)) {
+                            $imageContent = Storage::disk('s3')->get($product->photo_path);
+                            $sourceImage = @imagecreatefromstring($imageContent);
                             
-                            $virtualImage = imagecreatetruecolor($newWidth, $newHeight);
-                            
-                            imagealphablending($virtualImage, false);
-                            imagesavealpha($virtualImage, true);
-                            
-                            imagecopyresampled($virtualImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, imagesy($sourceImage));
-                            
-                            $localPath = $tempDir . '/' . $product->id . '.jpg';
-                            imagejpeg($virtualImage, $localPath, 60);
-                            
-                            $product->photo_url = $localPath;
+                            if ($sourceImage) {
+                                $width = imagesx($sourceImage);
+                                $newWidth = 150;
+                                $newHeight = floor(imagesy($sourceImage) * ($newWidth / $width));
+                                
+                                $virtualImage = imagecreatetruecolor($newWidth, $newHeight);
+                                
+                                imagealphablending($virtualImage, false);
+                                imagesavealpha($virtualImage, true);
+                                
+                                imagecopyresampled($virtualImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, imagesy($sourceImage));
+                                
+                                imagejpeg($virtualImage, $localPath, 60);
+                                
+                                $product->photo_url = $localPath;
 
-                            imagedestroy($virtualImage);
-                            imagedestroy($sourceImage);
+                                imagedestroy($virtualImage);
+                                imagedestroy($sourceImage);
+                            }
                         }
+                    } catch (\Exception $e) {
                     }
-                } catch (\Exception $e) {
-                    Log::warning("Error procesando imagen para PDF: " . $e->getMessage());
                 }
             }
         }
@@ -613,13 +617,18 @@ class FfProductController extends Controller
 
         $localLogoPath = null;
         try {
-            if (Storage::disk('s3')->exists($logoKey)) {
-                $logoContent = Storage::disk('s3')->get($logoKey);
-                $localLogoPath = $tempDir . '/logo_header.png';
-                file_put_contents($localLogoPath, $logoContent);
+            $logoCachePath = $cacheDir . '/logo_' . ($targetAreaId ?? 'default') . '.png';
+            
+            if (file_exists($logoCachePath)) {
+                $localLogoPath = $logoCachePath;
+            } else {
+                if (Storage::disk('s3')->exists($logoKey)) {
+                    $logoContent = Storage::disk('s3')->get($logoKey);
+                    file_put_contents($logoCachePath, $logoContent);
+                    $localLogoPath = $logoCachePath;
+                }
             }
         } catch (\Exception $e) {
-            Log::error("Error descargando logo para PDF: " . $e->getMessage());
         }
 
         $finalLogo = $localLogoPath ?? $this->getLogoUrl($targetAreaId);
@@ -637,18 +646,7 @@ class FfProductController extends Controller
         $pdf->setOption('isRemoteEnabled', true);
         $pdf->setOption('dpi', 150);
         
-        $output = $pdf->output();
-
-        $files = glob($tempDir . '/*');
-        foreach($files as $file){ 
-            if(is_file($file)) unlink($file); 
-        }
-        rmdir($tempDir);
-        
-        return response()->streamDownload(
-            fn () => print($output),
-            'Catalogo_FF_'.now()->format('Ymd').'.pdf'
-        );
+        return $pdf->stream('Catalogo_FF_'.now()->format('Ymd').'.pdf');
     }
 
     public function generateTechnicalSheet(Request $request, ffProduct $product)
