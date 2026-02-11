@@ -65,7 +65,6 @@
             border-collapse: collapse;
             border: 1px solid #d1d5db;
             background-color: #fff;
-            /* border-radius: 8px; Removed for performance */
             overflow: hidden;
         }
 
@@ -208,55 +207,50 @@
                 @foreach($row as $product)
                     <td width="50%" valign="top">
                         
-                        <table class="product-card-table">
-                            <tr>
-                                <td class="row-image">
-                                    <div class="badge-container" style="position: absolute; margin-top: -5px; margin-left: -5px;">
-                                        @if($product->is_active)
-                                            <span class="badge bg-green">DISPONIBLE</span>
-                                        @else
-                                            <span class="badge bg-red">AGOTADO</span>
-                                        @endif
-                                    </div>
-                                    <img src="{{ $product->photo_url }}" alt="Prod">
-                                </td>
-                            </tr>
-                            
-                            <tr>
-                                <td class="row-body">
-                                    <div class="brand-row">
-                                        <span class="brand">{{ Str::limit($product->brand ?? 'S/M', 15) }}</span>
-                                        <span class="sku">{{ $product->sku }}</span>
-                                    </div>
+                        <div style="border: 1px solid #d1d5db; background-color: #fff; overflow: hidden; height: 425px;">
+                            <div style="height: 220px; text-align: center; border-bottom: 1px solid #eee; background-color: white; padding: 10px; position: relative;">
+                                <div style="text-align: left; margin-bottom: 5px;">
+                                    @if($product->is_active)
+                                        <span class="badge bg-green">DISPONIBLE</span>
+                                    @else
+                                        <span class="badge bg-red">AGOTADO</span>
+                                    @endif
+                                </div>
+                                <img src="{{ $product->photo_url }}" alt="Prod" style="max-height: 190px; max-width: 90%; display: block; margin: 0 auto;">
+                            </div>
 
-                                    <div class="title">
-                                        {{ Str::limit($product->description, 55) }}
-                                    </div>
+                            <div style="padding: 15px; height: 125px; vertical-align: top;">
+                                <div class="brand-row">
+                                    <span class="brand">{{ Str::limit($product->brand ?? 'S/M', 15) }}</span>
+                                    <div style="float: right; font-family: monospace; font-weight: bold; color: #374151;">{{ $product->sku }}</div>
+                                </div>
+                                <div style="clear: both;"></div>
 
-                                    <div class="specs">
-                                        @if($product->pieces_per_box)
-                                            <div><span class="spec-label">CAJA:</span> {{ $product->pieces_per_box }} Pzas</div>
-                                        @endif
-                                        
-                                        @if($product->upc)
-                                            <div style="margin-top: 4px;"><span class="spec-label">UPC:</span> {{ $product->upc }}
-                                            @if($product->length)
-                                                    <span class="spec-label-1"> MEDIDAS:</span> 
-                                                    {{ floatval($product->length) }}x{{ floatval($product->width) }}x{{ floatval($product->height) }}
-                                            @endif                                        
-                                            </div>
-                                        @endif
-                                    </div>
-                                </td>
-                            </tr>
+                                <div class="title">
+                                    {{ Str::limit($product->description, 55) }}
+                                </div>
 
-                            <tr>
-                                <td class="row-price">
-                                    <span class="price-label">Precio Unitario</span>
-                                    <span class="price">${{ number_format($product->unit_price, 2) }}</span>
-                                </td>
-                            </tr>
-                        </table>
+                                <div class="specs">
+                                    @if($product->pieces_per_box)
+                                        <div><span class="spec-label">CAJA:</span> {{ $product->pieces_per_box }} Pzas</div>
+                                    @endif
+                                    
+                                    @if($product->upc)
+                                        <div style="margin-top: 4px;"><span class="spec-label">UPC:</span> {{ $product->upc }}
+                                        @if($product->length)
+                                                <span class="spec-label-1"> MEDIDAS:</span> 
+                                                {{ floatval($product->length) }}x{{ floatval($product->width) }}x{{ floatval($product->height) }}
+                                        @endif                                        
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div style="height: 40px; background-color: #f1f5f9; border-top: 2px solid #e5e7eb; padding: 10px 15px; text-align: right;">
+                                <span class="price-label" style="margin-right: 15px;">Precio Unitario</span>
+                                <span class="price">${{ number_format($product->unit_price, 2) }}</span>
+                            </div>
+                        </div>
 
                     </td>
                     
