@@ -39,6 +39,14 @@
                                     </label>
                                     <p class="text-xs text-gray-500 mt-1 ml-6">Marcar si esta área representa a un cliente externo.</p>
                                 </div>
+
+                                <div class="mb-4">
+                                    <label for="allow_backorders" class="inline-flex items-center">
+                                        <input id="allow_backorders" type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" name="allow_backorders" value="1" {{ old('allow_backorders', true) ? 'checked' : '' }}>
+                                        <span class="ms-2 text-sm font-semibold text-gray-700">{{ __('Permitir Backorders') }}</span>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1 ml-6">Si se desmarca, no se permitirán ventas de productos sin stock suficiente.</p>
+                                </div>
                                 
                                 <div>
                                     <x-input-label for="storage_rate" :value="__('Tarifa de Almacenaje (Diaria)')" class="font-semibold" />

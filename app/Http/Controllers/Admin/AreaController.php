@@ -49,6 +49,7 @@ class AreaController extends Controller
         $data = $request->all();
 
         $data['is_client'] = $request->has('is_client');
+        $data['allow_backorders'] = $request->has('allow_backorders');
 
         if ($request->hasFile('icon')) {
             $data['icon_path'] = $request->file('icon')->store('area_icons', 's3');
@@ -96,6 +97,7 @@ class AreaController extends Controller
         $data = $request->all();
 
         $data['is_client'] = $request->has('is_client');
+        $data['allow_backorders'] = $request->has('allow_backorders');
 
         if ($request->hasFile('icon')) {
             if ($area->icon_path && Storage::disk('s3')->exists($area->icon_path)) {

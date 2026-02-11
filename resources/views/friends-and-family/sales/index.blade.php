@@ -901,9 +901,12 @@
                     return q ? q.name : 'Estándar';
                 },
 
-                init(initialProducts, nextFolio, clients, channels, transports, payments, warehouses, editFolio = null, areas = [], isSuperAdmin = false, qualities = []) {
+                init(initialProducts, nextFolio, clients, channels, transports, payments, warehouses, editFolio = null, areas = [], isSuperAdmin = false, qualities = [], allowBackorders = true) {
                     const productsArray = Array.isArray(initialProducts) ? initialProducts : [];
                     this.isSuperAdmin = isSuperAdmin;
+                    this.allowBackorders = allowBackorders;
+                    this.filterStock = !allowBackorders;
+                    
                     this.catalogs = { clients, channels, transports, payments, warehouses, qualities: qualities || [], areas: areas || [] };
                     this.form.folio = nextFolio;            
                     

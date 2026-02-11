@@ -177,9 +177,20 @@ class FfSalesController extends Controller
 
         $nextFolio = $this->getNextFolio();            
         
+        $allowBackorders = true;
+        if (!$user->isSuperAdmin()) {
+            $allowBackorders = $user->area->allow_backorders;
+        } elseif ($user->isSuperAdmin() && $request->filled('area_id')) {
+            $area = Area::find($request->input('area_id'));
+            if ($area) {
+                $allowBackorders = $area->allow_backorders;
+            }
+        }
+
         return view('friends-and-family.sales.index', compact(
             'products', 'nextFolio', 'clients', 'channels', 
-            'transports', 'payments', 'editFolio', 'warehouses', 'areas', 'qualities'
+            'transports', 'payments', 'editFolio', 'warehouses', 'areas', 'qualities',
+            'allowBackorders'
         ));
     }
 
@@ -603,6 +614,10 @@ class FfSalesController extends Controller
                 $isBackorder = ($currentStock - $quantity) < 0;
                 
                 if ($isBackorder) {
+                    $targetArea = Area::find($targetAreaId);
+                    if ($targetArea && !$targetArea->allow_backorders) {
+                        throw new \Exception("El área '{$targetArea->name}' no permite ventas sin existencia (Backorders). Producto: {$product->description}");
+                    }
                     $orderHasBackorder = true;
                 }
 

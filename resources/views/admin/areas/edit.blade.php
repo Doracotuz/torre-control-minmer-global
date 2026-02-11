@@ -13,10 +13,8 @@
                     @csrf
                     @method('PUT')
 
-                    {{-- grid para un layout responsivo --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-                        {{-- columna para campos de texto --}}
                         <div class="space-y-6">
                             <div>
                                 <x-input-label for="name" :value="__('Nombre del Área')" class="font-semibold" />
@@ -39,6 +37,14 @@
                                         <span class="ms-2 text-sm font-semibold text-gray-700">{{ __('¿Es un Cliente?') }}</span>
                                     </label>
                                     <p class="text-xs text-gray-500 mt-1 ml-6">Marcar si esta área representa a un cliente externo.</p>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="allow_backorders" class="inline-flex items-center">
+                                        <input id="allow_backorders" type="checkbox" class="rounded border-gray-300 text-[#ff9c00] shadow-sm focus:ring-[#ff9c00]" name="allow_backorders" value="1" {{ old('allow_backorders', $area->allow_backorders) ? 'checked' : '' }}>
+                                        <span class="ms-2 text-sm font-semibold text-gray-700">{{ __('Permitir Backorders') }}</span>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1 ml-6">Si se desmarca, no se permitirán ventas de productos sin stock suficiente.</p>
                                 </div>
                                 
                                 <div>
@@ -82,7 +88,6 @@
 
                         </div>
 
-                        {{-- columna para icono del área --}}
                         <div class="space-y-6">
                             <div>
                                 <x-input-label :value="__('Icono del Área (Opcional)')" class="font-semibold mb-3 text-center" />
@@ -114,7 +119,6 @@
                                     <p class="mt-1 text-xs text-gray-500">{{ __('JPG, PNG, GIF, SVG. Máx: 2MB.') }}</p>
                                     <x-input-error :messages="$errors->get('icon')" class="mt-2" />
                                     
-                                    {{-- opción para eliminar el icono --}}
                                     @if ($area->icon_path)
                                         <div class="pt-2">
                                             <label for="remove_icon" class="inline-flex items-center">

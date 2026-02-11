@@ -20,11 +20,13 @@ class Area extends Model
         'emitter_address',
         'emitter_colonia',
         'emitter_cp',
-        'is_client',        
+        'is_client',
+        'allow_backorders',        
     ];
 
     protected $casts = [
         'is_client' => 'boolean',
+        'allow_backorders' => 'boolean',
     ];    
 
     public function users(): HasMany
