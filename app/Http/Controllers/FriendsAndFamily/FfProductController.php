@@ -542,10 +542,6 @@ class FfProductController extends Controller
         Log::info('Inicio generacion PDF FF');
         $startTime = microtime(true);
 
-        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('catalog.export')) {
-            abort(403, 'No tienes permiso para exportar el catálogo.');
-        }
-
         set_time_limit(0);
         ini_set('memory_limit', '1024M');
 
