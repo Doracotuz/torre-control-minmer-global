@@ -238,7 +238,6 @@ class FfOrderController extends Controller
             'approved_at' => now(),
         ]);
         
-        // Trigger WMS Sync
         $syncService->syncOutboundOrderFromFolio($folio);
 
         $movements = ffInventoryMovement::where('folio', $folio)
@@ -246,7 +245,6 @@ class FfOrderController extends Controller
             ->with(['product', 'user', 'quality'])
             ->get();
             
-        // ... (rest of the method)
 
         if ($movements->isNotEmpty()) {
             $header = $movements->first();
@@ -488,7 +486,6 @@ class FfOrderController extends Controller
                 'approved_at' => now(),
             ]);
             
-            // Trigger WMS Sync
             $syncService->syncOutboundOrderFromFolio($folio);
             
             $movements = ffInventoryMovement::where('folio', $folio)

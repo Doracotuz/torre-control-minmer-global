@@ -18,7 +18,6 @@
     <div class="min-h-screen bg-transparent text-[#2b2b2b] font-montserrat pb-20 relative">
         <div class="max-w-[1800px] mx-auto px-4 md:px-6 pt-6 md:pt-10">
             
-            <!-- Header & Filters -->
             <div class="flex flex-col xl:flex-row justify-between items-start xl:items-end mb-10 gap-6">
                 <div>
                     <div class="flex items-center gap-4 mb-2">
@@ -67,7 +66,6 @@
                 </div>
             </div>
 
-            <!-- Export Actions -->
             <div class="flex justify-end gap-3 mb-8">
                 <a href="{{ route('wms.reports.billing.pdf', request()->all()) }}" target="_blank" class="btn-ghost flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50">
                     <i class="fas fa-file-pdf"></i> Exportar PDF
@@ -77,7 +75,6 @@
                 </a>
             </div>
 
-            <!-- Financial Overview Table (Compact) -->
             <div class="nexus-card overflow-hidden mb-8">
                 <div class="bg-[#2c3856] px-6 py-3 border-b border-[#2c3856] flex justify-between items-center">
                     <div>
@@ -102,7 +99,6 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                              @php $grandTotal = $kpis['grand_total'] > 0 ? $kpis['grand_total'] : 1; @endphp
-                            <!-- VAS Rows -->
                             @foreach($kpis['vas_breakdown']->take(5) as $desc => $cost)
                             <tr class="hover:bg-gray-50">
                                 <td class="px-4 py-2 font-medium text-gray-900 flex items-center gap-2">
@@ -120,7 +116,6 @@
                                 <td class="px-4 py-2 text-center text-gray-400">{{ number_format(($cost / $grandTotal) * 100, 1) }}%</td>
                             </tr>
                             @endforeach
-                            <!-- Storage -->
                              <tr class="bg-orange-50/30">
                                 <td class="px-4 py-2 font-medium text-gray-900 flex items-center gap-2">
                                     <div class="w-1.5 h-1.5 rounded-full bg-[#ff9c00]"></div> Almacenaje
@@ -135,40 +130,33 @@
                 </div>
             </div>
 
-            <!-- V4 Financial Charts Grid (6 Charts) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
                 
-                <!-- 1. Cost Evolution (Stacked Area) -->
                 <div class="nexus-card p-4 lg:col-span-2">
                     <h3 class="text-sm font-raleway font-bold text-[#2c3856] mb-4">1. Evolución de Costos (Diario)</h3>
                     <div id="chart-cost-evolution" class="h-64"></div>
                 </div>
 
-                <!-- 2. Cost Composition (Donut) -->
                 <div class="nexus-card p-4">
                     <h3 class="text-sm font-raleway font-bold text-[#2c3856] mb-4">2. Composición de Costos</h3>
                     <div id="chart-cost-composition" class="h-64 flex justify-center"></div>
                 </div>
 
-                <!-- 3. Logistics Activity (Multi-Bar) -->
                 <div class="nexus-card p-4 lg:col-span-2">
                     <h3 class="text-sm font-raleway font-bold text-[#2c3856] mb-4">3. Actividad Logística (Entradas vs Salidas)</h3>
                     <div id="chart-logistics-activity" class="h-64"></div>
                 </div>
 
-                 <!-- 4. Top Services (Bar Horizontal) -->
                 <div class="nexus-card p-4">
                     <h3 class="text-sm font-raleway font-bold text-[#2c3856] mb-4">4. Top Servicios (Costo)</h3>
                     <div id="chart-top-services" class="h-64"></div>
                 </div>
 
-                <!-- 5. Shipped Volume (Line) -->
                 <div class="nexus-card p-4">
                     <h3 class="text-sm font-raleway font-bold text-[#2c3856] mb-4">5. Volumen Embarcado (Piezas)</h3>
                     <div id="chart-shipped-volume" class="h-64"></div>
                 </div>
 
-                <!-- 6. Service Efficiency (Polar) -->
                 <div class="nexus-card p-4 lg:col-span-2">
                     <h3 class="text-sm font-raleway font-bold text-[#2c3856] mb-4">6. Mix de Servicios (Volumen vs Costo)</h3>
                      <div class="flex">
@@ -207,7 +195,6 @@
                 grid: { borderColor: '#f3f4f6', strokeDashArray: 4 }
             };
 
-            // 1. Cost Evolution (Stacked Area)
             new ApexCharts(document.querySelector("#chart-cost-evolution"), {
                 ...commonOptions,
                 series: [
@@ -221,7 +208,6 @@
                 tooltip: { y: { formatter: val => "$" + val.toLocaleString() } }
             }).render();
 
-            // 2. Cost Composition (Donut)
             new ApexCharts(document.querySelector("#chart-cost-composition"), {
                 ...commonOptions,
                 series: @json($kpis['chart_vas_vs_storage']),
@@ -232,7 +218,6 @@
                 plotOptions: { pie: { donut: { size: '65%', labels: { show: true, total: { show: true, label: 'Total', fontSize: '12px', color: '#2c3856', formatter: w => '$' + w.globals.seriesTotals.reduce((a, b) => a + b, 0).toLocaleString() } } } } }
             }).render();
 
-            // 3. Logistics Activity (Multi-Bar)
             new ApexCharts(document.querySelector("#chart-logistics-activity"), {
                 ...commonOptions,
                 series: [
@@ -245,8 +230,6 @@
                 xaxis: { categories: @json($kpis['chart_daily']['labels']), type: 'datetime', labels: { format: 'dd' } },
             }).render();
 
-            // 4. Top Services (Bar Horizontal)
-            // Limit to top 5
             const topServices = {
                 labels: @json(array_slice($kpis['chart_services']['labels'], 0, 5)),
                 costs: @json(array_slice($kpis['chart_services']['costs'], 0, 5))
@@ -261,7 +244,6 @@
                 tooltip: { y: { formatter: val => "$" + val.toLocaleString() } }
             }).render();
 
-            // 5. Shipped Volume (Line)
             new ApexCharts(document.querySelector("#chart-shipped-volume"), {
                 ...commonOptions,
                 series: [{ name: 'Piezas', data: @json($kpis['chart_daily']['pieces']) }],
@@ -271,16 +253,15 @@
                 xaxis: { categories: @json($kpis['chart_daily']['labels']), type: 'datetime', labels: { format: 'dd MMM' } },
             }).render();
 
-            // 6. Service Efficiency (Polar)
              new ApexCharts(document.querySelector("#chart-service-polar"), {
                 ...commonOptions,
-                series: @json($kpis['chart_services']['costs']), // Polar by Cost
+                series: @json($kpis['chart_services']['costs']),
                 chart: { type: 'polarArea', height: 280, fontFamily: fontUrl },
                 labels: @json($kpis['chart_services']['labels']),
                 colors: [colors.primary, colors.secondary, colors.info, colors.purple, colors.success],
                 fill: { opacity: 0.8 },
-                legend: { show: false }, // Hiding legend to save space, tooltip is enough
-                yaxis: { show: false } // Hide radial axis
+                legend: { show: false },
+                yaxis: { show: false }
             }).render();
         });
     </script>

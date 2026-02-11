@@ -18,7 +18,6 @@ class ServiceRequestController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. Service Requests
         $srQuery = ServiceRequest::with(['area', 'warehouse', 'user']);
         if ($request->filled('area_id')) $srQuery->where('area_id', $request->area_id);
         if ($request->filled('warehouse_id')) $srQuery->where('warehouse_id', $request->warehouse_id);
@@ -26,19 +25,17 @@ class ServiceRequestController extends Controller
         if ($request->filled('start_date')) $srQuery->whereDate('requested_at', '>=', $request->start_date);
         if ($request->filled('end_date')) $srQuery->whereDate('requested_at', '<=', $request->end_date);
         
-        $serviceRequests = $srQuery->latest()->limit(100)->get(); // Limit for performance
+        $serviceRequests = $srQuery->latest()->limit(100)->get();
 
-        // 2. Purchase Orders with Services
         $poQuery = PurchaseOrder::has('valueAddedServices')->with(['area', 'warehouse', 'user']);
         if ($request->filled('area_id')) $poQuery->where('area_id', $request->area_id);
         if ($request->filled('warehouse_id')) $poQuery->where('warehouse_id', $request->warehouse_id);
-        if ($request->filled('status')) $poQuery->where('status', $request->status); // Status names might differ
+        if ($request->filled('status')) $poQuery->where('status', $request->status);
         if ($request->filled('start_date')) $poQuery->whereDate('created_at', '>=', $request->start_date);
         if ($request->filled('end_date')) $poQuery->whereDate('created_at', '<=', $request->end_date);
 
         $purchaseOrders = $poQuery->latest()->limit(100)->get();
 
-        // 3. Sales Orders with Services
         $soQuery = SalesOrder::has('valueAddedServices')->with(['area', 'warehouse', 'user']);
         if ($request->filled('area_id')) $soQuery->where('area_id', $request->area_id);
         if ($request->filled('warehouse_id')) $soQuery->where('warehouse_id', $request->warehouse_id);
@@ -48,7 +45,6 @@ class ServiceRequestController extends Controller
 
         $salesOrders = $soQuery->latest()->limit(100)->get();
 
-        // Merge and Normalize
         $all = collect();
 
         foreach($serviceRequests as $item) {
@@ -83,7 +79,6 @@ class ServiceRequestController extends Controller
 
         $sorted = $all->sortByDesc('display_date');
 
-        // Manual Pagination
         $page = $request->input('page', 1);
         $perPage = 15;
         $offset = ($page * $perPage) - $perPage;
@@ -99,7 +94,7 @@ class ServiceRequestController extends Controller
         );
 
         $stats = [
-            'total' => ServiceRequest::count(), // Keep strictly SR stats or sum all? keeping SR for now as asked context implies listing them
+            'total' => ServiceRequest::count(),
             'pending' => ServiceRequest::where('status', 'pending')->count(),
             'completed' => ServiceRequest::where('status', 'completed')->count(),
             'invoiced' => ServiceRequest::where('status', 'invoiced')->count(),
@@ -114,7 +109,6 @@ class ServiceRequestController extends Controller
     public function create()
     {
         $clients = Area::where('is_client', true)->get();
-        // Assuming warehouses are available globally or filtered by permissions
         $warehouses = Warehouse::all(); 
         
         return view('wms.service_requests.create', compact('clients', 'warehouses'));
@@ -127,7 +121,6 @@ class ServiceRequestController extends Controller
             'warehouse_id' => 'required|exists:warehouses,id',
         ]);
 
-        // Generate Folio
         $lastRequest = ServiceRequest::latest()->first();
         $sequence = $lastRequest ? intval(substr($lastRequest->folio, -5)) + 1 : 1;
         $folio = 'SR-' . date('Y') . '-' . str_pad($sequence, 5, '0', STR_PAD_LEFT);
@@ -148,7 +141,7 @@ class ServiceRequestController extends Controller
     public function show(ServiceRequest $serviceRequest)
     {
         $serviceRequest->load(['valueAddedServices.service', 'area', 'warehouse', 'user']);
-        $services = ValueAddedService::all(); // For the dropdown to add services
+        $services = ValueAddedService::all();
         
         return view('wms.service_requests.show', compact('serviceRequest', 'services'));
     }

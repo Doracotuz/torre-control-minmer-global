@@ -56,7 +56,6 @@
                                             fileName = $refs.fileInput.files[0].name.split('.').slice(0, -1).join('.');
                                         }
                                     }
-                                    // Disparar la subida automáticamente al seleccionar/soltar archivos
                                     uploadFiles();
                                 } else {
                                     fileName = '';

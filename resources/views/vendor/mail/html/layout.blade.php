@@ -13,7 +13,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Raleway:wght@800&display=swap" rel="stylesheet">
 
 <style>
-/* Estilos Generales */
 body {
     box-sizing: border-box;
     font-family: 'Montserrat', sans-serif;
@@ -33,7 +32,6 @@ h1 {
     font-weight: 800;
 }
 
-/* Botón Personalizado */
 .button-primary {
     background-color: #ff9c00 !important;
     border-color: #ff9c00 !important;

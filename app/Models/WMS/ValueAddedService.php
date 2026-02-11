@@ -14,7 +14,7 @@ class ValueAddedService extends Model
     protected $fillable = [
         'code',
         'description',
-        'type', // consumable, service
+        'type',
         'cost',
     ];
 

@@ -365,8 +365,6 @@ class WMSPhysicalCountController extends Controller
 
     public function getCandidateLpns(PhysicalCountTask $task)
     {
-        // En conteos por Tarima (Cycle/Full), la tarea ya tiene el pallet_id específico.
-        // Solo retornamos los items de esa tarima.
         $palletItems = \App\Models\WMS\PalletItem::where('pallet_id', $task->pallet_id)
             ->where('product_id', $task->product_id)
             ->with([

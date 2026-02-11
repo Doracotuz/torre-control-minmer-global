@@ -590,7 +590,6 @@ public function findLpnForTransfer(Request $request)
 
     public function adjustItemQuantity(Request $request, PalletItem $palletItem)
     {
-        // Permission check handled by middleware
 
         $validator = Validator::make($request->all(), [
             'new_quantity' => 'required|integer|min:0',

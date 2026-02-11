@@ -53,8 +53,8 @@
 
     @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
     .skeleton-shimmer { animation: shimmer 2s infinite linear; background: linear-gradient(to right, #f3f4f6 4%, #e5e7eb 25%, #f3f4f6 36%); background-size: 1000px 100%; }
-    .skeleton-bar { height: 1.25rem; border-radius: 0.5rem; background-color: #e5e7eb; /* Fallback */ }
-    .skeleton-avatar { height: 2.5rem; width: 2.5rem; border-radius: 9999px; background-color: #e5e7eb; /* Fallback */ }
+    .skeleton-bar { height: 1.25rem; border-radius: 0.5rem; background-color: #e5e7eb; }
+    .skeleton-avatar { height: 2.5rem; width: 2.5rem; border-radius: 9999px; background-color: #e5e7eb; }
 
     .form-input:focus, .form-select:focus, .form-textarea:focus { --tw-ring-color: var(--color-primary); border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(44, 56, 86, 0.15); }
     

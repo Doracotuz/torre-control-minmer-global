@@ -325,7 +325,6 @@ class FfInventoryController extends Controller
 
                 if ($variants && $variants->count() > 0) {
                     foreach ($variants as $variant) {
-                        // Removed skipping zero qty to include 0 stock products as requested
 
                         $qualityName = $variant->quality ? $variant->quality->name : 'Estándar';
                         $warehouseName = $variant->warehouse ? $variant->warehouse->description : 'Global';

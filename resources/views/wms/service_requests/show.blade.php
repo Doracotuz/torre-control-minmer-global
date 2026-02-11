@@ -25,7 +25,6 @@
     <div class="min-h-screen bg-transparent text-[#2b2b2b] font-montserrat pb-20 relative">
         <div class="max-w-7xl mx-auto px-4 md:px-6 pt-6 md:pt-10">
             
-            <!-- Header -->
             <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
                 <div>
                     <h1 class="text-3xl md:text-5xl font-raleway font-black text-[#2c3856]">
@@ -53,7 +52,6 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Details -->
                 <div class="lg:col-span-1 space-y-6">
                     <div class="nexus-card p-6">
                         <h3 class="text-lg font-raleway font-black text-[#2c3856] mb-4">Detalles Generales</h3>
@@ -103,7 +101,6 @@
                     </div>
                 </div>
 
-                <!-- Services List -->
                 <div class="lg:col-span-2">
                     <div class="nexus-card p-6 md:p-8" x-data="{ showVasModal: false }">
                         <div class="flex items-center justify-between mb-6">
@@ -168,7 +165,6 @@
                             </table>
                         </div>
 
-                        <!-- Modal -->
                         <div x-show="showVasModal" x-cloak style="display: none;" class="fixed inset-0 z-[70] flex items-center justify-center p-4">
                             <div class="fixed inset-0 bg-[#2c3856]/80 backdrop-blur-sm transition-opacity" @click="showVasModal = false"></div>
                             

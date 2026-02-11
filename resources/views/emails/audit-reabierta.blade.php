@@ -8,7 +8,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
         .email-container { max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; border: 1px solid #e0e0e0; }
-        .header { background-color: #c0392b; /* Rojo para alerta */ padding: 24px; text-align: center; }
+        .header { background-color: #c0392b; padding: 24px; text-align: center; }
         .header img { max-width: 150px; }
         .content-body { padding: 30px; }
         .title { font-size: 26px; font-weight: 700; color: #c0392b; text-align: center; margin-bottom: 10px; }

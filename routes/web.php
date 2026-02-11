@@ -266,7 +266,6 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin')->name('admin.')->gro
     Route::post('/users/bulk-delete', [AdminUserController::class, 'bulkDelete'])->name('users.bulk_delete');
     Route::post('/users/bulk-resend-welcome', [AdminUserController::class, 'bulkResendWelcome'])->name('users.bulk_resend_welcome');
 
-    // Sync Notifications
     Route::get('/sync-notifications', [App\Http\Controllers\Admin\SyncNotificationController::class, 'index'])->name('sync-notifications.index');
     Route::patch('/sync-notifications/{id}/resolve', [App\Http\Controllers\Admin\SyncNotificationController::class, 'resolve'])->name('sync-notifications.resolve');
     Route::delete('/sync-notifications/{id}', [App\Http\Controllers\Admin\SyncNotificationController::class, 'destroy'])->name('sync-notifications.destroy');
@@ -716,16 +715,13 @@ Route::middleware(['auth', 'module.access:wms'])->prefix('wms')->name('wms.')->g
     Route::get('/api/search-products', [WMSProductController::class, 'apiSearchProducts'])->name('api.search-products');
     Route::get('/sales-orders/api/get-available-qualities', [WMSSalesOrderController::class, 'apiGetAvailableQualities'])->name('api.get-available-qualities');
 
-    // Value Added Services
     Route::resource('value-added-services', \App\Http\Controllers\WMS\ValueAddedServiceController::class)->except(['create', 'edit', 'show']);
     Route::post('value-added-services/assign', [\App\Http\Controllers\WMS\ValueAddedServiceController::class, 'assign'])->name('value-added-services.assign');
     Route::delete('value-added-services/assignments/{assignment}', [\App\Http\Controllers\WMS\ValueAddedServiceController::class, 'detach'])->name('value-added-services.detach');
 
-    // Service Requests (Independent Folios)
     Route::resource('service-requests', \App\Http\Controllers\WMS\ServiceRequestController::class);
     Route::get('service-requests/{serviceRequest}/pdf', [\App\Http\Controllers\WMS\ServiceRequestController::class, 'pdf'])->name('service-requests.pdf');
 
-    // Billing Reports
     Route::get('reports/billing', [\App\Http\Controllers\WMS\WMSBillingReportController::class, 'index'])->name('reports.billing.index');
     Route::get('reports/billing/pdf', [\App\Http\Controllers\WMS\WMSBillingReportController::class, 'exportPdf'])->name('reports.billing.pdf');
     Route::get('reports/billing/csv', [\App\Http\Controllers\WMS\WMSBillingReportController::class, 'exportCsv'])->name('reports.billing.csv');

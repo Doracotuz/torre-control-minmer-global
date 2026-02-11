@@ -29,7 +29,7 @@ return new class extends Migration
             $table->unsignedBigInteger('assignable_id');
             $table->index(['assignable_type', 'assignable_id'], 'wms_vas_assign_index');
             $table->integer('quantity')->default(1);
-            $table->decimal('cost_snapshot', 10, 2); // To keep history if service price changes
+            $table->decimal('cost_snapshot', 10, 2);
             $table->timestamps();
         });
     }

@@ -10,7 +10,7 @@
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-200">
 
                 <form method="POST" action="{{ route('area_admin.users.store') }}" enctype="multipart/form-data" class="p-6 md:p-8"
-                      x-data="{ // Agregado x-data para Alpine.js
+                      x-data="{
                           photoName: null,
                           photoPreview: null
                       }">

@@ -17,16 +17,11 @@ use Illuminate\Support\Facades\Log;
 
 class WmsToFnFService
 {
-    /**
-     * Sync a WMS Product to FnF Product
-     */
     public function syncProduct(Product $product)
     {
         try {
             DB::beginTransaction();
 
-            // Find or create FnF Product by SKU
-            // Find or create FnF Product by SKU
             $ffProduct = ffProduct::withoutEvents(function () use ($product) {
                 return ffProduct::updateOrCreate(
                     ['sku' => $product->sku],
@@ -63,9 +58,6 @@ class WmsToFnFService
         }
     }
 
-    /**
-     * Sync WMS Quality to FnF Quality
-     */
     public function syncQuality(Quality $quality)
     {
         try {
@@ -86,9 +78,6 @@ class WmsToFnFService
         }
     }
 
-    /**
-     * Sync WMS Warehouse to FnF Warehouse
-     */
     public function syncWarehouse(Warehouse $warehouse)
     {
         try {
@@ -98,8 +87,8 @@ class WmsToFnFService
                         'description' => $warehouse->name,
                         'address' => $warehouse->address ?? 'Dirección Pendiente',
                         'is_active' => true,
-                        'phone' => 'S/T', // Mandatory in FnF, missing in WMS
-                        'area_id' => null, // Global warehouse by default
+                        'phone' => 'S/T',
+                        'area_id' => null,
                     ]
                 );
             
@@ -116,16 +105,11 @@ class WmsToFnFService
         }
     }
 
-    /**
-     * Create Inbound Movement in FnF when PO is completed WMS
-     */
     public function createInboundMovement(PurchaseOrder $po)
     {
-        // Only if PO is completed
         try {
             DB::beginTransaction();
 
-            // Get received items matched with Quality
             $receivedItems = DB::table('pallet_items')
                 ->join('pallets', 'pallet_items.pallet_id', '=', 'pallets.id')
                 ->join('products', 'pallet_items.product_id', '=', 'products.id')
@@ -142,16 +126,12 @@ class WmsToFnFService
                 ->get();
 
             if ($receivedItems->isEmpty()) {
-                 // Fallback to PO lines if no pallets processed (e.g. manual bypass)
-                 // But in this new logic, we assume WMS flow via pallets.
-                 // If empty, nothing to sync.
                  $this->logTransaction('Advertencia de Sincronización de Entrada', "OC {$po->po_number} completada pero no se encontraron pallets para sincronizar.", ['po_id' => $po->id]);
                  DB::commit();
                  return;
             }
 
             foreach ($receivedItems as $item) {
-                // Find matching FnF Product
                 $ffProduct = ffProduct::where('sku', $item->sku)->first();
                 
                 if (!$ffProduct) {
@@ -159,20 +139,14 @@ class WmsToFnFService
                     continue; 
                 }
 
-                // Resolve FnF Quality
-                // We sync qualities to FnF by name. Find the FnF ID.
                 $ffQuality = FfQuality::where('name', $item->quality_name)
-                                        ->where('area_id', $po->area_id) // Filter by area if needed, or global
+                                        ->where('area_id', $po->area_id)
                                         ->first();
 
-                // If quality doesn't exist in FnF, try to sync it on the fly or log error?
-                // WMS to FnF Quality Sync is usually proactive.
                 if (!$ffQuality) {
-                     // Try to find global quality or just by name
                      $ffQuality = FfQuality::where('name', $item->quality_name)->first();
                 }
 
-                // Resolve Warehouse
                 $ffWarehouse = FfWarehouse::where('code', $po->warehouse->code)->first(); 
                 
                 ffInventoryMovement::create([
@@ -181,7 +155,7 @@ class WmsToFnFService
                     'reason' => 'Compra / Entrada WMS - Folio: ' . $po->po_number,
                     'folio' => $po->id,
                     'ff_warehouse_id' => $ffWarehouse ? $ffWarehouse->id : null,
-                    'ff_quality_id' => $ffQuality ? $ffQuality->id : null, // Save Quality!
+                    'ff_quality_id' => $ffQuality ? $ffQuality->id : null,
                     'order_type' => 'Purchase', 
                     'status' => 'completed',
                     'user_id' => $po->user_id ?? auth()->id() ?? 1,
@@ -197,28 +171,20 @@ class WmsToFnFService
         }
     }
 
-    /**
-     * Create Adjustment Movement in FnF
-     */
     public function createAdjustmentMovement(InventoryAdjustment $adjustment)
     {
-        // Map WMS adjustment to FnF movement
         try {
             $ffProduct = ffProduct::where('sku', $adjustment->product->sku)->first();
             if (!$ffProduct) return;
 
-             // Logic to determine if positive or negative
-             $quantity = $adjustment->quantity_adjusted ?? $adjustment->quantity_difference; // Depending on model
+             $quantity = $adjustment->quantity_adjusted ?? $adjustment->quantity_difference;
              
-             // Resolve Quality
              $ffQuality = null;
              if ($adjustment->palletItem && $adjustment->palletItem->quality) {
                  $ffQuality = FfQuality::where('name', $adjustment->palletItem->quality->name)->first();
              }
 
-             // Resolve Warehouse
-             // If adjustment has location, we can get warehouse, else default?
-             $ffWarehouseId = 1; // Default
+             $ffWarehouseId = 1;
              if ($adjustment->location && $adjustment->location->warehouse) {
                  $ffWarehouse = FfWarehouse::where('code', $adjustment->location->warehouse->code)->first();
                  if ($ffWarehouse) $ffWarehouseId = $ffWarehouse->id;
@@ -226,7 +192,7 @@ class WmsToFnFService
 
              ffInventoryMovement::create([
                 'ff_product_id' => $ffProduct->id,
-                'quantity' => $quantity, // Use signed value
+                'quantity' => $quantity,
                 'reason' => 'Ajuste WMS: ' . $adjustment->reason,
                 'order_type' => $quantity > 0 ? 'ajuste_entrada' : 'ajuste_salida', 
                 'status' => 'completed',
@@ -251,7 +217,6 @@ class WmsToFnFService
 
     protected function logTransaction($type, $message, $payload = [])
     {
-        // Log to database only, no emails
         SyncNotification::create([
             'type' => $type,
             'message' => $message,

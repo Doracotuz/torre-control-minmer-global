@@ -263,7 +263,6 @@
                         </div>
 
                         <div class="px-8 py-8">
-                            <!-- Product Photo -->
                             <div x-show="detailProduct?.ff_photo_url" class="mb-6 flex justify-center">
                                 <div class="w-48 h-48 rounded-2xl overflow-hidden border-2 border-gray-100 shadow-md bg-white">
                                     <img :src="detailProduct?.ff_photo_url" :alt="detailProduct?.name" class="w-full h-full object-contain p-2" />

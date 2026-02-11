@@ -60,7 +60,7 @@
         } elseif ($isWaitingRepair) {
             $docTitle = "Certificado de Mantenimiento (Pendiente)";
             $statusText = "FUNCIONAL / ESPERA REPARACIÓN";
-            $statusColor = "#f59e0b"; // Naranja ambar
+            $statusColor = "#f59e0b";
             $introText = "El presente documento certifica que el equipo es <strong>funcional y seguro para operar</strong>, sin embargo, queda con un estatus de <em>'En espera de reparación'</em> para correcciones estéticas o menores futuras.";
             $costLabel = "Costo del Servicio Actual";
             $partsLabel = "Refacciones Utilizadas";

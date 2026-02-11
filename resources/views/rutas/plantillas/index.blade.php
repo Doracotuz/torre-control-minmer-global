@@ -182,11 +182,10 @@
                 center: defaultLocation,
                 mapTypeId: 'roadmap',
                 gestureHandling: 'greedy', 
-                disableDefaultUI: false, // UI base
+                disableDefaultUI: false,
                 zoomControl: true,
                 zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
                 
-                // OCULTAMOS CONTROL NATIVO PARA USAR EL BOTÓN PERSONALIZADO
                 mapTypeControl: false, 
                 
                 streetViewControl: false,
@@ -219,7 +218,7 @@
                 debounce: null,
                 isMinmerStyle: true,
                 isTrafficOn: false,
-                mapType: 'roadmap', // Nuevo estado para el tipo de mapa
+                mapType: 'roadmap',
                 
                 init() {    
                     this.updateVisibleRutaIds();
@@ -247,13 +246,11 @@
                     });
                 },
 
-                // Lógica Estilo
                 toggleMapStyle() {
                     this.isMinmerStyle = !this.isMinmerStyle;
                     this.updateMapOptions();
                 },
 
-                // Lógica Tráfico
                 toggleTraffic() {
                     this.isTrafficOn = !this.isTrafficOn;
                     if(window.trafficLayer && window.indexMap) {
@@ -261,15 +258,11 @@
                     }
                 },
 
-                // NUEVA Lógica Satélite
                 toggleSatellite() {
-                    // Si estamos en 'roadmap', pasamos a 'hybrid' (satélite con etiquetas)
-                    // Si estamos en 'hybrid', volvemos a 'roadmap'
                     this.mapType = this.mapType === 'roadmap' ? 'hybrid' : 'roadmap';
                     this.updateMapOptions();
                 },
 
-                // Función centralizada para actualizar el mapa
                 updateMapOptions() {
                     if(!window.indexMap) return;
 
@@ -287,8 +280,7 @@
                     ];
 
                     window.indexMap.setOptions({
-                        mapTypeId: this.mapType, // Aplica 'roadmap' o 'hybrid'
-                        // Si estamos en modo 'roadmap', aplicamos el estilo Minmer si está activo. Si es 'hybrid', el estilo JSON no aplica.
+                        mapTypeId: this.mapType,
                         styles: (this.mapType === 'roadmap' && this.isMinmerStyle) ? minmerStyles : null
                     });
                 },

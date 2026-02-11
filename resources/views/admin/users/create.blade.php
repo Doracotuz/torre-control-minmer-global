@@ -114,7 +114,6 @@
                     const role = this.roles.find(r => r.id == value);
                     if (role) {
                         document.getElementById('ff_role_name').value = role.name;
-                        // permissions is json/array in DB, so it comes as array here
                         this.selectedPermissions = role.permissions || [];
                     }
                 });

@@ -185,14 +185,6 @@ class User extends Authenticatable
 
     public static function availableFfPermissions(): array
     {
-        // Provide a flattened version for backward compatibility if needed, 
-        // or just return the groups flattened. 
-        // However, for the new UI we will use getGroupedPermissions.
-        // This method will return the formatted groups as expected by the *old* views 
-        // until we update them, OR we can just update the views to use the new method.
-        // To be safe, let's keep this returning a simple array of groups 
-        // but looking at our new structure.
-        
         $grouped = self::getGroupedPermissions();
         $flat = [];
         foreach ($grouped as $module => $subgroups) {

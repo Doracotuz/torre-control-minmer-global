@@ -66,7 +66,6 @@
                 else if (excels.includes(ext)) this.previewType = 'excel';
                 else if (videos.includes(ext)) this.previewType = 'video';
                 else {
-                    // Si no es soportado, forzar descarga directa
                     window.location.href = url;
                     return;
                 }

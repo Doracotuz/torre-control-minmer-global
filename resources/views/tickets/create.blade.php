@@ -31,7 +31,7 @@
     .btn { padding: 0.65rem 1.25rem; border-radius: 0.5rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); transition: all 200ms ease-in-out; transform: translateY(0); border: 1px solid transparent; }
     .btn:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
     .btn-primary { background-color: var(--color-primary); color: white; }
-    .btn-primary:hover { background-color: #212a41; } /* Darker primary */
+    .btn-primary:hover { background-color: #212a41; }
     .btn-secondary { background-color: var(--color-surface); color: var(--color-text-secondary); border-color: var(--color-border); }
     .btn-secondary:hover { background-color: #f9fafb; }
 </style>

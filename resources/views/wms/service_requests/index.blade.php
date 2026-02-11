@@ -11,7 +11,6 @@
         .btn-nexus { background: #2c3856; color: white; border-radius: 0.75rem; padding: 0.65rem 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(44, 56, 86, 0.15); display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; }
         .btn-nexus:hover { background: #1a253a; transform: translateY(-1px); box-shadow: 0 8px 15px -3px rgba(44, 56, 86, 0.25); }
 
-        /* Stat Cards - Minmer Global Brand Palette */
         .stat-card {
             border-radius: 1rem; padding: 1.5rem; position: relative; overflow: hidden;
             transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1); cursor: default;
@@ -48,7 +47,6 @@
             font-weight: 600; color: #666666;
         }
 
-        /* Entrance */
         .stat-card { opacity: 0; transform: translateY(12px); animation: fadeUp 0.4s ease-out forwards; }
         .stat-card:nth-child(1) { animation-delay: 0.05s; }
         .stat-card:nth-child(2) { animation-delay: 0.12s; }
@@ -56,7 +54,6 @@
         .stat-card:nth-child(4) { animation-delay: 0.26s; }
         @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* Desktop Table */
         .nexus-table { width: 100%; border-collapse: separate; border-spacing: 0 0.4rem; }
         .nexus-table thead th { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; color: #9ca3af; font-weight: 800; padding: 0 1.25rem 0.5rem; text-align: left; }
         .nexus-row { transition: all 0.2s; }
@@ -65,7 +62,6 @@
         .nexus-row td:first-child { border-left: 1px solid #f3f4f6; border-top-left-radius: 0.75rem; border-bottom-left-radius: 0.75rem; }
         .nexus-row td:last-child { border-right: 1px solid #f3f4f6; border-top-right-radius: 0.75rem; border-bottom-right-radius: 0.75rem; }
 
-        /* Mobile Cards */
         .mobile-card { background: white; border: 1px solid #eef0f4; border-radius: 1rem; padding: 1rem 1.25rem; margin-bottom: 0.75rem; box-shadow: 0 2px 8px -2px rgba(44,56,86,0.04); }
         .mobile-card .mc-row { display: flex; justify-content: space-between; align-items: center; padding: 0.3rem 0; }
         .mobile-card .mc-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: #9ca3af; font-weight: 700; }
@@ -75,7 +71,6 @@
     <div class="min-h-screen bg-transparent text-[#2b2b2b] font-montserrat pb-20">
         <div class="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-6 md:pt-10">
 
-            <!-- Header -->
             <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
                 <div>
                     <h1 class="text-3xl md:text-5xl font-raleway font-black text-[#2c3856] mb-1">
@@ -88,7 +83,6 @@
                 </a>
             </div>
 
-            <!-- Stats -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div class="stat-card">
                     <div class="stat-header">
@@ -124,7 +118,6 @@
                 </div>
             </div>
 
-            <!-- Filters -->
             <div class="nexus-card p-4 mb-6">
                 <form method="GET" action="{{ route('wms.service-requests.index') }}" class="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
                     <div>
@@ -174,7 +167,6 @@
                 </form>
             </div>
 
-            <!-- Desktop Table (hidden on mobile) -->
             <div class="nexus-card p-5 hidden md:block">
                 <table class="nexus-table min-w-full">
                     <thead>
@@ -248,7 +240,6 @@
                 </table>
             </div>
 
-            <!-- Mobile Cards (visible only on mobile) -->
             <div class="md:hidden space-y-3">
                 @forelse($requests as $request)
                 <div class="mobile-card">

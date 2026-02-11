@@ -20,8 +20,6 @@ use App\Notifications\SyncTransactionNotification;
 
 class WmsFnFSyncTest extends TestCase
 {
-    // use RefreshDatabase; // Be careful with this on persistent environments. Maybe just create/delete.
-    // Given the user environment, I better not wipe their DB. I'll use specific cleanup.
 
     public function test_wms_product_syncs_to_fnf()
     {
@@ -36,7 +34,6 @@ class WmsFnFSyncTest extends TestCase
             'height' => 10,
             'weight' => 1,
             'unit_of_measure' => 'PZA',
-            // 'brand_id' => ... need brand
         ]);
 
         $this->assertDatabaseHas('ff_products', ['sku' => $sku]);
@@ -45,11 +42,10 @@ class WmsFnFSyncTest extends TestCase
         $this->assertEquals('Test WMS Product', $ffProduct->description);
 
         Notification::assertSentTo(
-            User::where('email', 'ismael.garcia@minmer.com')->get(), // Verify admin check logic might fail if user doesn't exist
+            User::where('email', 'ismael.garcia@minmer.com')->get(),
             SyncTransactionNotification::class
         );
         
-        // Cleanup
         $product->delete();
         if ($ffProduct) $ffProduct->delete();
     }
@@ -71,7 +67,6 @@ class WmsFnFSyncTest extends TestCase
         $product = Product::where('sku', $sku)->first();
         $this->assertEquals('Test FnF Product', $product->name);
 
-        // Cleanup
         $ffProduct->delete();
         if ($product) $product->delete();
     }

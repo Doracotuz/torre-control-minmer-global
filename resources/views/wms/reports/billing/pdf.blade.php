@@ -12,7 +12,6 @@
         .doc-title { font-size: 16px; font-weight: bold; color: #2c3856; text-transform: uppercase; text-align: right; }
         .doc-meta { font-size: 10px; color: #666; text-align: right; margin-top: 5px; }
         
-        /* KPI Cards */
         .kpi-row { width: 100%; margin-bottom: 20px; }
         .kpi-card { 
             background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; 
@@ -22,7 +21,6 @@
         .kpi-value { font-size: 20px; font-weight: bold; color: #2c3856; margin: 5px 0; }
         .kpi-sub { font-size: 8px; color: #94a3b8; }
 
-        /* Tables */
         table.data { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 8px; }
         table.data th { background: #2c3856; color: white; padding: 6px; text-align: left; text-transform: uppercase; font-weight: bold; }
         table.data td { border-bottom: 1px solid #e2e8f0; padding: 6px; }
@@ -31,7 +29,6 @@
         .text-center { text-align: center; }
         .font-bold { font-weight: bold; }
         
-        /* CSS Charts (Simple Bars/Donuts representation) */
         .bar-bg { width: 100%; background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; }
         .bar-val { height: 100%; background: #2c3856; }
         .bar-val.sec { background: #ff9c00; }
@@ -48,7 +45,6 @@
         © {{ date('Y') }} Torre de Control WMS | Reporte generado el {{ Carbon::now()->format('d/m/Y H:i') }} | Página <script type="text/php">if (isset($pdf)) { $pdf->page_text($pdf->get_width() - 40, $pdf->get_height() - 40, "{PAGE_NUM}", null, 8); }</script>
     </div>
 
-    <!-- Header -->
     <table class="header-tbl">
         <tr>
             <td class="logo-container">
@@ -68,26 +64,24 @@
         </tr>
     </table>
 
-    <!-- Executive Summary -->
     <div style="margin-bottom: 20px;">
         <div class="kpi-card" style="border-bottom: 3px solid #10B981;">
             <div class="kpi-label">Total Facturable</div>
             <div class="kpi-value">${{ number_format($kpis['grand_total'], 2) }}</div>
             <div class="kpi-sub">Almacenaje + Servicios</div>
-        </div><!--
-     --><div class="kpi-card" style="border-bottom: 3px solid #2c3856;">
+        </div>
+    <div class="kpi-card" style="border-bottom: 3px solid #2c3856;">
             <div class="kpi-label">Servicios (VAS)</div>
             <div class="kpi-value">${{ number_format($kpis['total_vas'], 2) }}</div>
             <div class="kpi-sub">{{ number_format($kpis['metrics_count']) }} Operaciones</div>
-        </div><!--
-     --><div class="kpi-card" style="border-bottom: 3px solid #ff9c00;">
+        </div>
+    <div class="kpi-card" style="border-bottom: 3px solid #ff9c00;">
             <div class="kpi-label">Almacenaje (Est.)</div>
             <div class="kpi-value">${{ number_format($kpis['total_storage'], 2) }}</div>
             <div class="kpi-sub">{{ number_format($kpis['active_pallets']) }} Pallets Activos</div>
         </div>
     </div>
 
-    <!-- Logistics Activity Brief -->
     <div class="section-header">Resumen Operativo</div>
     <table class="data" style="width: 50%; float: left; margin-right: 5%;">
         <tr>
@@ -111,7 +105,6 @@
     </table>
     <div style="clear: both;"></div>
 
-    <!-- Cost Breakdown -->
     <div class="section-header">Desglose de Costos por Concepto</div>
      <table class="data">
         <thead>

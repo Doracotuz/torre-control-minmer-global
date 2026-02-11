@@ -35,7 +35,6 @@ class SyncNotificationController extends Controller
 
         $notifications = $query->paginate(20)->withQueryString();
         
-        // Get unique types for filter dropdown
         $types = SyncNotification::select('type')->distinct()->orderBy('type')->pluck('type');
 
         return view('admin.sync_notifications.index', compact('notifications', 'types'));

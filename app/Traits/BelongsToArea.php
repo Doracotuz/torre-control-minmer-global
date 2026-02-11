@@ -15,7 +15,6 @@ trait BelongsToArea
                 $user = Auth::user();
                 if (!$user->isSuperAdmin()) {
                     $model = $builder->getModel();
-                    // Check if model allows global access (e.g. Warehouses)
                     if (property_exists($model, 'allowsGlobalArea') && $model->allowsGlobalArea) {
                         $builder->where(function($q) use ($user, $model) {
                             $q->where($model->getTable() . '.area_id', $user->area_id)

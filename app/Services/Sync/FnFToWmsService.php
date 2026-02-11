@@ -9,7 +9,7 @@ use App\Models\FfQuality;
 use App\Models\Warehouse;
 use App\Models\FfWarehouse;
 use App\Models\ffInventoryMovement;
-use App\Models\WMS\PickList; // Or SalesOrder
+use App\Models\WMS\PickList;
 use App\Models\SyncNotification;
 use App\Models\Brand;
 use App\Models\ProductType;
@@ -18,9 +18,6 @@ use Illuminate\Support\Facades\Log;
 
 class FnFToWmsService
 {
-    /**
-     * Sync FnF Product to WMS Product
-     */
     public function syncProduct(ffProduct $ffProduct)
     {
         try {
@@ -29,7 +26,6 @@ class FnFToWmsService
             $brandId = $this->resolveBrandId($ffProduct->brand, $ffProduct->area_id);
             $typeId = $this->resolveTypeId($ffProduct->type, $ffProduct->area_id);
 
-            // Sync Product without triggering WMS observers (prevents infinite loop)
             $product = Product::withoutEvents(function () use ($ffProduct, $brandId, $typeId) {
                 return Product::updateOrCreate(
                     ['sku' => $ffProduct->sku],
@@ -44,7 +40,7 @@ class FnFToWmsService
                         'weight' => $ffProduct->master_box_weight,
                         'upc' => $ffProduct->upc,
                         'unit_of_measure' => 'PZA',
-                        'pieces_per_case' => $ffProduct->pieces_per_box ?? 1, // Default to 1 to avoid DB error
+                        'pieces_per_case' => $ffProduct->pieces_per_box ?? 1,
                         'area_id' => $ffProduct->area_id,
                     ]
                 );
@@ -63,7 +59,6 @@ class FnFToWmsService
         } catch (\Illuminate\Database\QueryException $e) {
             DB::rollBack();
             if ($e->errorInfo[1] == 1062) {
-                // Check if it's UPC or SKU (though matching SKU would update, so likely UPC)
                 $this->logError('Error de Sincronización de Producto', "Valor Duplicado: UPC ya existe en otro producto WMS. " . $e->getMessage(), ['sku' => $ffProduct->sku, 'upc' => $ffProduct->upc]);
             } else {
                 $this->logError('Error de Sincronización de Producto FnF', $e->getMessage(), ['sku' => $ffProduct->sku]);
@@ -76,9 +71,6 @@ class FnFToWmsService
         }
     }
 
-    /**
-     * Sync FnF Quality to WMS
-     */
     public function syncQuality(FfQuality $ffQuality)
     {
         try {
@@ -97,9 +89,6 @@ class FnFToWmsService
         }
     }
 
-    /**
-     * Sync FnF Warehouse to WMS
-     */
     public function syncWarehouse(FfWarehouse $ffWarehouse)
     {
         try {
@@ -123,41 +112,28 @@ class FnFToWmsService
         }
     }
 
-    /**
-     * Create Outbound Request in WMS (Sales Order / Pick List)
-     * Triggered when FnF Order is Authorized
-     */
     public function createOutboundOrder(ffInventoryMovement $movement)
     {
-        // Logic: Create a SalesOrder in WMS for the team to pick
-        // We only sync negative movements (Sales/Transfers out)
         if ($movement->quantity >= 0) return;
 
         try {
             DB::beginTransaction();
 
-            // Find WMS Product
             $product = Product::where('sku', $movement->product->sku)->first();
             if (!$product) {
                 $this->logError('Error de Sincronización de Salida', "Producto SKU {$movement->product->sku} no encontrado en WMS", ['movement_id' => $movement->id]);
-                // Non-blocking, just log and skip
                 DB::commit(); 
                 return;
             }
             
-            // Resolve Warehouse
             $wmsWarehouseId = $this->resolveWarehouseId($movement->ff_warehouse_id);
             if (!$wmsWarehouseId) {
-                 // Fallback to default or area default?
-                 // For now, if no warehouse sync, we can't create WMS order correctly.
-                 // Maybe default to first warehouse of area?
                  $wh = Warehouse::where('area_id', $movement->area_id)->first();
                  $wmsWarehouseId = $wh ? $wh->id : 1; 
             }
 
-            // Create Sales Order in WMS
             $so = \App\Models\WMS\SalesOrder::create([
-                'so_number' => $movement->folio, // Use same folio
+                'so_number' => $movement->folio,
                 'customer_name' => $movement->client_name ?? 'Friends & Family',
                 'warehouse_id' => $wmsWarehouseId,
                 'area_id' => $movement->area_id,
@@ -167,7 +143,6 @@ class FnFToWmsService
                 'notes' => 'Generado desde FnF. Motivo: ' . $movement->reason
             ]);
             
-            // Resolve Quality
             $wmsQualityId = null;
             if ($movement->ff_quality_id && $movement->quality) {
                  $wmsQuality = \App\Models\WMS\Quality::where('name', $movement->quality->name)
@@ -176,7 +151,6 @@ class FnFToWmsService
                  $wmsQualityId = $wmsQuality ? $wmsQuality->id : null;
             }
 
-            // Create Line
             $so->lines()->create([
                 'product_id' => $product->id,
                 'quantity_ordered' => abs($movement->quantity),
@@ -205,14 +179,12 @@ class FnFToWmsService
             
             $first = $movements->first();
             
-            // Resolve Warehouse (use first movement's warehouse)
             $wmsWarehouseId = $this->resolveWarehouseId($first->ff_warehouse_id);
             if (!$wmsWarehouseId) {
                  $wh = Warehouse::where('area_id', $first->area_id)->first();
                  $wmsWarehouseId = $wh ? $wh->id : 1; 
             }
 
-            // 1. Create OR Find Sales Order Header
             $so = \App\Models\WMS\SalesOrder::firstOrCreate(
                 ['so_number' => $folio],
                 [
@@ -226,7 +198,6 @@ class FnFToWmsService
                 ]
             );
 
-            // 2. Sync Lines
             foreach ($movements as $movement) {
                 $product = Product::where('sku', $movement->product->sku)->first();
                 if (!$product) {
@@ -242,17 +213,11 @@ class FnFToWmsService
                      $wmsQualityId = $wmsQuality ? $wmsQuality->id : null;
                 }
 
-                // Update or Create Line
-                // Check if line exists for this product & quality to avoid duplicates if re-synced
                 $line = $so->lines()->where('product_id', $product->id)
                            ->where('quality_id', $wmsQualityId)
                            ->first();
                 
                 if ($line) {
-                    // Start fresh or accumulate? For simplicity, update quantity to match current movement
-                    // Assumption: One movement per product/quality combo in FnF Order. 
-                    // If multiple lines in FnF for same product, we should sum them or match by unique ID if available. 
-                    // FnF doesn't seem to have unique line IDs that persist well for mapping, so we'll sum or update.
                     $line->quantity_ordered = abs($movement->quantity);
                     $line->save();
                 } else {
@@ -278,7 +243,7 @@ class FnFToWmsService
         if (!$brandName) return null;
         $brand = Brand::updateOrCreate(
             ['name' => $brandName],
-            ['area_id' => $areaId] // Update area_id if it changes
+            ['area_id' => $areaId]
         );
         return $brand->id;
     }
@@ -288,14 +253,13 @@ class FnFToWmsService
         if (!$typeName) return null;
         $type = ProductType::updateOrCreate(
             ['name' => $typeName],
-            ['area_id' => $areaId] // Update area_id if it changes
+            ['area_id' => $areaId]
         );
         return $type->id;
     }
     
     protected function resolveWarehouseId($ffWarehouseId)
     {
-        // Map FnF Warehouse ID to WMS Warehouse ID via code
         $ffWarehouse = FfWarehouse::find($ffWarehouseId);
         if (!$ffWarehouse) return null;
         
@@ -311,7 +275,6 @@ class FnFToWmsService
     
     protected function logTransaction($type, $message, $payload = [])
     {
-        // Log to database only, no emails
         SyncNotification::create([
             'type' => $type,
             'message' => $message,

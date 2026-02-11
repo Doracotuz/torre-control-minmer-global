@@ -10,7 +10,6 @@ class FfUserPermissionTest extends TestCase
     public function test_has_ff_permission_returns_false_if_permissions_null()
     {
         $user = new User();
-        // ff_granular_permissions is null by default
         $this->assertFalse($user->hasFfPermission('any'));
     }
 

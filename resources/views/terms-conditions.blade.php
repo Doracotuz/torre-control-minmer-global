@@ -67,7 +67,6 @@
                 </p>
             </section>
 
-            <!-- Uso de los Servicios -->
             <section class="mb-10">
                 <h2 class="text-2xl font-semibold text-blue-900 mb-4">Uso de los Servicios</h2>
                 <p class="text-gray-600 leading-relaxed">

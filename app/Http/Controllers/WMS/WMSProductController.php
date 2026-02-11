@@ -71,7 +71,6 @@ class WMSProductController extends Controller
 
         $products = $query->paginate(15)->withQueryString();
 
-    // Look up FF product photos by matching SKU
     $skus = $products->pluck('sku')->toArray();
     $ffPhotos = \App\Models\ffProduct::whereIn('sku', $skus)
         ->whereNotNull('photo_path')

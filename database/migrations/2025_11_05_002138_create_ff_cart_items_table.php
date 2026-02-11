@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('ff_cart_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); //
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('ff_product_id')->constrained('ff_products')->onDelete('cascade');
             $table->integer('quantity');
             $table->timestamps();

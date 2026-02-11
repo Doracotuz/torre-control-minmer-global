@@ -223,7 +223,6 @@
                 },
 
                 updateLinks() {
-                    // Alpine.js reactivo actualiza automáticamente los href
                 }
             }
         }

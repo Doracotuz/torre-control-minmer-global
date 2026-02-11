@@ -1050,7 +1050,7 @@ class FfSalesController extends Controller
                 $originalMov->save();
 
                 if (abs($originalMov->quantity) > $originalMov->returned_quantity) {
-                    $allFullyReturned = false; // Aún debe de este producto
+                    $allFullyReturned = false;
                 }
             }
 

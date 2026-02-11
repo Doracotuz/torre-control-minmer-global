@@ -45,7 +45,6 @@
                             default => $countNumber . '° Conteo'
                         };
                         
-                        // Color dinámico según el intento (Azul -> Naranja -> Rojo)
                         $badgeColor = match($countNumber) {
                             1 => 'from-blue-500 to-blue-600 shadow-blue-500/30',
                             2 => 'from-orange-400 to-orange-600 shadow-orange-500/30',

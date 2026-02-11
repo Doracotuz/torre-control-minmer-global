@@ -9,7 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('ff_inventory_movements', function (Blueprint $table) {
-            // Llevaremos la cuenta de lo devuelto aquí
             $table->integer('returned_quantity')->default(0)->after('quantity');
         });
     }

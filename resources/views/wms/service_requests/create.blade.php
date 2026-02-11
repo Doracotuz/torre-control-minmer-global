@@ -29,7 +29,6 @@
                 <form method="POST" action="{{ route('wms.service-requests.store') }}" class="space-y-6">
                     @csrf
 
-                    <!-- Client / Area -->
                     <div>
                         <x-input-label for="area_id" :value="__('Cliente / Área')" class="font-raleway font-bold text-[#2c3856] text-xs uppercase tracking-wider mb-2" />
                         <select id="area_id" name="area_id" class="input-nexus block w-full bg-gray-50" required>
@@ -41,7 +40,6 @@
                         <x-input-error :messages="$errors->get('area_id')" class="mt-2" />
                     </div>
 
-                    <!-- Warehouse -->
                     <div>
                         <x-input-label for="warehouse_id" :value="__('Almacén')" class="font-raleway font-bold text-[#2c3856] text-xs uppercase tracking-wider mb-2" />
                         <select id="warehouse_id" name="warehouse_id" class="input-nexus block w-full bg-gray-50" required>

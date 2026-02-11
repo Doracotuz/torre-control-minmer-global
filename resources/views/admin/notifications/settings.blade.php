@@ -95,15 +95,12 @@
                 item.addEventListener('click', function () {
                     const userId = this.dataset.userId;
 
-                    // Ocultar todos los paneles de configuración y el placeholder
                     userSettingsPanels.forEach(panel => panel.classList.add('hidden'));
                     placeholder.classList.add('hidden');
                     
-                    // Resaltar el usuario seleccionado
                     userListItems.forEach(li => li.classList.remove('bg-blue-200', 'font-semibold'));
                     this.classList.add('bg-blue-200', 'font-semibold');
 
-                    // Mostrar el panel de configuración del usuario seleccionado
                     const activePanel = document.getElementById(`settings-for-${userId}`);
                     if (activePanel) {
                         activePanel.classList.remove('hidden');
@@ -111,7 +108,6 @@
                 });
             });
 
-            // Lógica del buscador
             searchInput.addEventListener('input', function () {
                 const searchTerm = this.value.toLowerCase();
                 userListItems.forEach(item => {

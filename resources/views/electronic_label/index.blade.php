@@ -1,5 +1,4 @@
 @php 
-    // Variables simuladas para los contadores (puedes conectarlas a tu backend después)
     $activeRequests = 0; 
     $pendingValidations = 0; 
     $registeredProducts = 0; 

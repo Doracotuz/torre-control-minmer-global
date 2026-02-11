@@ -24,7 +24,6 @@
                         <div class="space-y-6">
                             @foreach(\App\Models\User::getGroupedPermissions() as $moduleName => $subGroups)
                                 <div x-data="{ open: false }" class="border border-gray-200 rounded-2xl bg-white overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md">
-                                    <!-- Accordion Header -->
                                     <button type="button" @click="open = !open" class="w-full flex items-center justify-between p-5 bg-gray-50 hover:bg-gray-100 transition-colors">
                                         <div class="flex items-center gap-3">
                                             <div class="w-2 h-8 rounded-full {{ $moduleName === 'WMS' ? 'bg-[#ff9c00]' : 'bg-[#2c3856]' }}"></div>
@@ -37,7 +36,6 @@
                                         </div>
                                     </button>
                                     
-                                    <!-- Accordion Body -->
                                     <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" style="display: none;">
                                         <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 bg-white">
                                             @foreach($subGroups as $groupName => $permissions)

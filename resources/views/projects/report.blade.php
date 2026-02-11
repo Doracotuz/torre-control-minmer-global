@@ -126,7 +126,7 @@
         .styled-table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; }
         .styled-table th, .styled-table td { padding: 8px; border-bottom: 1px solid var(--color-border-light); text-align: left; }
         .styled-table th { background-color: var(--color-bg-light); font-weight: bold; color: var(--color-primary); font-size: 9px; text-transform: uppercase; }
-        .styled-table tr { page-break-inside: avoid; } /* Evita que las filas se corten */
+        .styled-table tr { page-break-inside: avoid; }
         .styled-table .task-overdue { color: var(--color-danger); font-weight: bold; }
         .styled-table .task-inprogress { color: var(--color-inprogress); font-weight: bold; }
         .styled-table .task-pending { color: var(--color-warning); font-weight: bold; }

@@ -10,7 +10,6 @@ use App\Models\Area;
 
 class FfPermissionTest extends TestCase
 {
-    // No database traits used to avoid migration issues in this environment
 
     public function test_user_without_permissions_cannot_access_sales_index()
     {
@@ -36,9 +35,6 @@ class FfPermissionTest extends TestCase
 
         try {
             $response = $this->actingAs($user)->get(route('ff.sales.index'));
-            // If permission check passes, it tries to query DB and will likely fail with 500.
-            // If permission check failed, it would be 403.
-            // So != 403 means permission granted.
             $this->assertNotEquals(403, $response->status(), 'User should have access, expected non-403 status.');
         } catch (\Illuminate\Database\QueryException $e) {
             $this->assertTrue(true);
@@ -112,10 +108,6 @@ class FfPermissionTest extends TestCase
 
         try {
             $response = $this->actingAs($user)->get(route('ff.admin.index'));
-            // Admin index might just return view without DB queries? 
-            // Or it checks Auth::user()->area_id which is set.
-            // It might return 200 explicitly.
-            // But safe bet is assertNotEquals(403)
             $this->assertNotEquals(403, $response->status());
         } catch (\Illuminate\Database\QueryException $e) {
             $this->assertTrue(true);

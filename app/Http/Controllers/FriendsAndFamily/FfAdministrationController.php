@@ -119,7 +119,6 @@ class FfAdministrationController extends Controller
                 abort(403, 'No tienes permiso para gestionar ' . $type);
             }
         } elseif (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.view')) {
-             // Fallback for others (transport/payment) if strict check not defined, assumes basic admin right + area check logic below
              abort(403, 'No tienes permiso para gestionar este catálogo.');
         }
 
@@ -127,9 +126,6 @@ class FfAdministrationController extends Controller
         $tableName = (new $modelClass)->getTable();
         $user = Auth::user();
         
-        // Logic for area_id:
-        // If Super Admin: use request input (can be null for global)
-        // If Regular User: force their area_id (cannot create global unless we change this policy later)
         $targetAreaId = $user->isSuperAdmin() ? $request->input('area_id') : $user->area_id;
 
         if ($type === 'warehouses') {
@@ -203,9 +199,6 @@ class FfAdministrationController extends Controller
             abort(403, 'No tienes permiso para editar este registro.');
         }
 
-        // Logic for area_id update:
-        // If Super Admin: check if 'area_id' is present in request. If so, use it (even if null).
-        // If not present (or not super admin), keep existing.
         $targetAreaId = ($user->isSuperAdmin() && $request->has('area_id')) ? $request->input('area_id') : $item->area_id;
 
         if ($type === 'warehouses') {

@@ -187,7 +187,6 @@
                             </table>
                         </div>
 
-                        <!-- Modal -->
                         <div x-show="showVasModal" x-cloak style="display: none;" class="fixed inset-0 z-[70] flex items-center justify-center p-4">
                             <div class="fixed inset-0 bg-[#2c3856]/80 backdrop-blur-sm transition-opacity" @click="showVasModal = false"></div>
                             
