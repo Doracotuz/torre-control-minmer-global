@@ -10,8 +10,8 @@
         }
 
         body {
-            margin-top: 3cm;
-            margin-bottom: 2cm;
+            margin-top: 2.8cm;
+            margin-bottom: 1.5cm;
             margin-left: 1cm;
             margin-right: 1cm;
             background-color: #ffffff;
@@ -52,7 +52,7 @@
         .products-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 20px 30px;
+            border-spacing: 15px 20px;
         }
 
         .products-table td {
@@ -64,31 +64,31 @@
             border: 1px solid #d1d5db;
             border-radius: 8px;
             overflow: hidden;
-            height: 425px;
+            height: 395px;
             width: 100%;
             position: relative;
             page-break-inside: avoid;
         }
 
         .img-container {
-            height: 220px;
+            height: 190px;
             width: 100%;
             text-align: center;
             background-color: white;
             border-bottom: 1px solid #eee;
             padding: 10px;
-            line-height: 200px; 
+            line-height: 170px; 
         }
 
         .img-container img {
-            max-height: 200px;
+            max-height: 170px;
             max-width: 90%;
             vertical-align: middle;
             display: inline-block;
         }
 
         .card-body {
-            padding: 15px 15px 90px 15px;
+            padding: 10px 15px 60px 15px;
             position: relative;
         }
 
@@ -222,7 +222,7 @@
                             @endif
 
                             <div class="img-container">
-                                <img src="{{ $product->photo_url }}" alt="Prod">
+                                <img src="{{ $product->cached_photo_path ?? $product->photo_url }}" alt="Prod">
                             </div>
 
                             <div class="card-body">
