@@ -188,7 +188,7 @@
                 </a>
                 @endif
 
-                @if(Auth::user()->hasFfPermission('admin.view'))
+                @if(Auth::user()->hasFfPermission('admin.transports'))
                 <a href="{{ route('ff.admin.show', 'transport') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.3s;">
                     <div class="card-img-container absolute inset-0 z-0 h-full w-full">
                         <img src="https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=600&q=80" 
@@ -221,7 +221,7 @@
                 </a>
                 @endif
 
-                @if(Auth::user()->hasFfPermission('admin.view'))
+                @if(Auth::user()->hasFfPermission('admin.payments'))
                 <a href="{{ route('ff.admin.show', 'payment') }}" class="modern-card group relative h-[500px] rounded-[2rem] overflow-hidden bg-white shadow-xl animate-entry" style="animation-delay: 0.4s;">
                     <div class="card-img-container absolute inset-0 z-0 h-full w-full">
                         <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80" 

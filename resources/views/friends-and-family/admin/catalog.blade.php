@@ -192,10 +192,12 @@
                                                class="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all text-xs font-bold flex items-center gap-2 mr-2 border border-indigo-100 hover:border-indigo-600">
                                                 <i class="fas fa-store-alt"></i> Sucursales
                                             </a>
+                                            @if(Auth::user()->hasFfPermission('admin.delivery_conditions'))
                                             <a :href="'/ff/admin/clients/' + item.id + '/conditions'" 
-                                            class="px-3 py-1.5 rounded-lg bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white transition-all text-xs font-bold flex items-center gap-2 mr-2 border border-teal-100 hover:border-teal-600">
+                                               class="px-3 py-1.5 rounded-lg bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white transition-all text-xs font-bold flex items-center gap-2 mr-2 border border-teal-100 hover:border-teal-600">
                                                 <i class="fas fa-clipboard-check"></i> Condiciones
-                                            </a>                                            
+                                            </a>
+                                            @endif                                            
                                         @endif
 
                                         <button @click="openEdit(item)" class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center shadow-sm" title="Editar"><i class="fas fa-pencil-alt text-sm"></i></button>

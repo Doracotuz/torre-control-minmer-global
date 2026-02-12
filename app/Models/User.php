@@ -246,6 +246,9 @@ class User extends Authenticatable
                     'admin.channels' => 'Gestionar Canales de Venta',
                     'admin.warehouses' => 'Gestionar Almacenes',
                     'admin.qualities' => 'Gestionar Calidades',
+                    'admin.transports' => 'Gestionar Transportes',
+                    'admin.payments' => 'Gestionar Pagos',
+                    'admin.delivery_conditions' => 'Gestionar Condiciones de Entrega',
                 ],
             ],
             'WMS' => [

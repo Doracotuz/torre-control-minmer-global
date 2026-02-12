@@ -112,6 +112,8 @@ class FfAdministrationController extends Controller
             'channels' => 'admin.channels',
             'warehouses' => 'admin.warehouses',
             'qualities' => 'admin.qualities',
+            'transport' => 'admin.transports',
+            'payment' => 'admin.payments',
         ];
 
         if (isset($permissionMap[$type])) {
@@ -180,6 +182,8 @@ class FfAdministrationController extends Controller
             'channels' => 'admin.channels',
             'warehouses' => 'admin.warehouses',
             'qualities' => 'admin.qualities',
+            'transport' => 'admin.transports',
+            'payment' => 'admin.payments',
         ];
 
         if (isset($permissionMap[$type])) {
@@ -253,6 +257,8 @@ class FfAdministrationController extends Controller
             'channels' => 'admin.channels',
             'warehouses' => 'admin.warehouses',
             'qualities' => 'admin.qualities',
+            'transport' => 'admin.transports',
+            'payment' => 'admin.payments',
         ];
 
         if (isset($permissionMap[$type])) {
@@ -341,7 +347,7 @@ class FfAdministrationController extends Controller
 
     public function conditionsEdit(FfClient $client)
     {
-        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.clients')) {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.delivery_conditions')) {
             abort(403, 'No tienes permiso para gestionar condiciones de clientes.');
         }
         if (!Auth::user()->isSuperAdmin() && $client->area_id !== Auth::user()->area_id) {
@@ -354,7 +360,7 @@ class FfAdministrationController extends Controller
 
     public function conditionsUpdate(Request $request, FfClient $client)
     {
-        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.clients')) {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.delivery_conditions')) {
             abort(403, 'No tienes permiso para gestionar condiciones de clientes.');
         }
         if (!Auth::user()->isSuperAdmin() && $client->area_id !== Auth::user()->area_id) {
@@ -407,7 +413,7 @@ class FfAdministrationController extends Controller
 
     public function exportConditionsPdf(FfClient $client)
     {
-        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.clients')) {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.delivery_conditions')) {
             abort(403, 'No tienes permiso para ver/exportar condiciones.');
         }
         if (!Auth::user()->isSuperAdmin() && $client->area_id !== Auth::user()->area_id) {
@@ -507,7 +513,7 @@ class FfAdministrationController extends Controller
             abort(403);
         }
 
-        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.clients')) {
+        if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('admin.delivery_conditions')) {
             abort(403, 'No tienes permiso para eliminar imágenes de condiciones.');
         }
 
