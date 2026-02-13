@@ -194,9 +194,19 @@
                             </div>
                         </div>
 
-                        <a href="{{ route('ff.orders.show', $order->folio) }}" class="block w-full py-2.5 text-center bg-[#2c3856] text-white rounded-xl text-xs font-bold shadow hover:bg-[#1e273d] transition-colors">
-                            Ver Detalles
-                        </a>
+                        <div class="flex items-center gap-2">
+                            @if($order->evidences_count > 0)
+                                <a href="{{ route('ff.orders.downloadReport', $order->folio) }}" 
+                                   class="flex-none inline-flex items-center justify-center w-10 h-10 rounded-xl bg-orange-50 border border-orange-200 text-[#ff9c00] hover:bg-[#ff9c00] hover:text-white transition-all shadow-sm"
+                                   title="Descargar Reporte de Evidencias">
+                                    <i class="fas fa-file-pdf text-lg"></i>
+                                </a>
+                            @endif
+
+                            <a href="{{ route('ff.orders.show', $order->folio) }}" class="flex-1 inline-flex items-center justify-center py-2.5 bg-[#2c3856] text-white rounded-xl text-xs font-bold shadow hover:bg-[#1e273d] transition-colors">
+                                Ver Detalles
+                            </a>
+                        </div>
                     </div>
                 @empty
                     <div class="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-100">
