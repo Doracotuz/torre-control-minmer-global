@@ -232,13 +232,22 @@ class FfOrderController extends Controller
             abort(403, 'No tienes permiso para aprobar este pedido.');
         }
 
+        $hasBackorder = ffInventoryMovement::where('folio', $folio)
+            ->where('is_backorder', 1)
+            ->where('backorder_fulfilled', 0)
+            ->exists();
+
+        $newStatus = $hasBackorder ? 'waiting_stock' : 'approved';
+
         ffInventoryMovement::where('folio', $folio)->update([
-            'status' => 'approved',
+            'status' => $newStatus,
             'approved_by' => Auth::id(),
             'approved_at' => now(),
         ]);
         
-        $syncService->syncOutboundOrderFromFolio($folio);
+        if ($newStatus === 'approved') {
+            $syncService->syncOutboundOrderFromFolio($folio);
+        }
 
         $movements = ffInventoryMovement::where('folio', $folio)
             ->where('quantity', '<', 0)
@@ -379,7 +388,11 @@ class FfOrderController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'Pedido #' . $folio . ' APROBADO y notificaciones enviadas.');
+        $msg = $newStatus === 'waiting_stock' 
+            ? 'Pedido #' . $folio . ' APROBADO (En espera de stock).' 
+            : 'Pedido #' . $folio . ' APROBADO y notificaciones enviadas.';
+
+        return redirect()->back()->with('success', $msg);
     }
 
     public function reject(Request $request, $folio)
@@ -480,13 +493,22 @@ class FfOrderController extends Controller
         try {
             DB::beginTransaction();
             
+            $hasBackorder = ffInventoryMovement::where('folio', $folio)
+                ->where('is_backorder', 1)
+                ->where('backorder_fulfilled', 0)
+                ->exists();
+
+            $newStatus = $hasBackorder ? 'waiting_stock' : 'approved';
+
             ffInventoryMovement::where('folio', $folio)->update([
-                'status' => 'approved',
+                'status' => $newStatus,
                 'approved_by' => $adminId,
                 'approved_at' => now(),
             ]);
             
-            $syncService->syncOutboundOrderFromFolio($folio);
+            if ($newStatus === 'approved') {
+                $syncService->syncOutboundOrderFromFolio($folio);
+            }
             
             $movements = ffInventoryMovement::where('folio', $folio)
                 ->where('quantity', '<', 0)
@@ -614,7 +636,10 @@ class FfOrderController extends Controller
 
             return view('friends-and-family.orders.email-response', [
                 'status' => 'success',
-                'message' => "El pedido #$folio ha sido APROBADO exitosamente. Se han enviado las notificaciones correspondientes."
+                'status' => 'success',
+                'message' => $newStatus === 'waiting_stock' 
+                    ? "El pedido #$folio ha sido APROBADO. Queda en espera de stock (Backorder)."
+                    : "El pedido #$folio ha sido APROBADO exitosamente. Se han enviado las notificaciones correspondientes."
             ]);
 
         } catch (\Exception $e) {

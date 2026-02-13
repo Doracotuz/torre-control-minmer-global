@@ -1017,6 +1017,11 @@ class FfSalesController extends Controller
 
     public function processLoanReturn(Request $request)
     {
+        return response()->json([
+            'message' => 'Funcionalidad deshabilitada. Los retornos de préstamo deben ser procesados físicamente en el almacén (WMS) para asegurar la integridad del inventario.'
+        ], 403);
+
+        /* CÓDIGO ANTERIOR (LEGADO)
         if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('sales.loans')) {
             return response()->json(['message' => 'Sin permisos para gestionar devoluciones.'], 403);
         }
@@ -1088,6 +1093,7 @@ class FfSalesController extends Controller
             DB::rollBack();
             return response()->json(['message' => $e->getMessage()], 500);
         }
+        */>
     }
 
     public function clearCart()

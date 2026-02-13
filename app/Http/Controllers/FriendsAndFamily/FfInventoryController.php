@@ -665,7 +665,7 @@ class FfInventoryController extends Controller
         return view('friends-and-family.inventory.backorders', compact('backorders', 'warehouses', 'qualities'));
     }
 
-    public function fulfillBackorder(Request $request)
+    public function fulfillBackorder(Request $request, \App\Services\Sync\FnFToWmsService $syncService)
     {
         if (!Auth::user()->isSuperAdmin() && !Auth::user()->hasFfPermission('inventory.backorders.operational')) {
             abort(403, 'No tienes permiso para surtir backorders.');
@@ -713,6 +713,20 @@ class FfInventoryController extends Controller
             'observations' => $movement->observations . " [SURTIDO EL " . date('d/m/Y') . "]",
         ]);
 
+        $pendingBackorders = ffInventoryMovement::where('folio', $movement->folio)
+            ->where('is_backorder', 1)
+            ->where('backorder_fulfilled', 0)
+            ->exists();
+
+        if (!$pendingBackorders) {
+            ffInventoryMovement::where('folio', $movement->folio)->update([
+                'status' => 'approved',
+                'approved_at' => now()
+            ]);
+            
+            $syncService->syncOutboundOrderFromFolio($movement->folio);
+        }
+
         if ($movement->user && $movement->user->email) {
             try {
                 $area = Area::find($movement->area_id);
@@ -742,7 +756,12 @@ class FfInventoryController extends Controller
             }
         }
 
-        return response()->json(['message' => 'Pedido marcado como surtido y vendedor notificado.']);
+        $msg = 'Pedido marcado como surtido.';
+        if (!$pendingBackorders) {
+            $msg .= ' ¡Orden completa! Se ha enviado a WMS.';
+        }
+
+        return response()->json(['message' => $msg]);
     }
 
     public function backorderRelations(Request $request)

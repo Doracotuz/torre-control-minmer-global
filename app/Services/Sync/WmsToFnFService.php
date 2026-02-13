@@ -14,6 +14,10 @@ use App\Models\WMS\InventoryAdjustment;
 use App\Models\SyncNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use App\Models\Area;
+use App\Mail\OrderActionMail;
 
 class WmsToFnFService
 {
@@ -163,11 +167,123 @@ class WmsToFnFService
                 ]);
             }
 
-            DB::commit();
             $this->logTransaction('Sincronización de Movimiento de Entrada Exitosa', "OC {$po->po_number} sincronizada a Entrada FnF con Calidades", ['po_number' => $po->po_number]);
+
+            foreach ($receivedItems as $item) {
+                $ffProduct = ffProduct::where('sku', $item->sku)->first();
+                $ffQuality = FfQuality::where('name', $item->quality_name)->where('area_id', $po->area_id)->first();
+                if (!$ffQuality) $ffQuality = FfQuality::where('name', $item->quality_name)->first();
+                $ffWarehouse = FfWarehouse::where('code', $po->warehouse->code)->first();
+
+                if ($ffProduct) {
+                    $this->allocateBackorders($ffProduct, $ffWarehouse, $ffQuality);
+                }
+            }
+            
         } catch (\Exception $e) {
             DB::rollBack();
             $this->logError('Error de Sincronización de OC', $e->getMessage(), ['po_id' => $po->id]);
+        }
+    }
+
+    protected function allocateBackorders($product, $warehouse, $quality)
+    {
+        try {
+            $query = ffInventoryMovement::where('ff_product_id', $product->id)
+                ->where('is_backorder', 1)
+                ->where('backorder_fulfilled', 0)
+                ->orderBy('created_at', 'asc');
+
+            if ($warehouse) {
+                $query->where('ff_warehouse_id', $warehouse->id);
+            }
+            if ($quality) {
+                $query->where('ff_quality_id', $quality->id);
+            } else {
+                $query->whereNull('ff_quality_id');
+            }
+
+            $backorders = $query->get();
+
+            if ($backorders->isEmpty()) return;
+
+            $stockQuery = $product->movements();
+            if ($warehouse) $stockQuery->where('ff_warehouse_id', $warehouse->id);
+            if ($quality) $stockQuery->where('ff_quality_id', $quality->id);
+            else $stockQuery->whereNull('ff_quality_id');
+            
+            $currentStock = $stockQuery->sum('quantity');
+
+            foreach ($backorders as $bo) {
+                $required = abs($bo->quantity);
+
+                if ($currentStock >= $required) {
+                    $bo->update([
+                        'backorder_fulfilled' => true,
+                        'observations' => $bo->observations . " [AUTO-SURTIDO FIFO: " . date('d/m/Y H:i') . "]",
+                    ]);
+
+                    $currentStock -= $required;
+
+                    $pendingBackorders = ffInventoryMovement::where('folio', $bo->folio)
+                        ->where('is_backorder', 1)
+                        ->where('backorder_fulfilled', 0)
+                        ->exists();
+
+                    if (!$pendingBackorders) {
+                        ffInventoryMovement::where('folio', $bo->folio)->update([
+                            'status' => 'approved',
+                            'approved_at' => now()
+                        ]);
+
+                        try {
+                            $syncService = app(\App\Services\Sync\FnFToWmsService::class);
+                            $syncService->syncOutboundOrderFromFolio($bo->folio);
+                            
+                            $this->logTransaction('Auto-Surtido Completo', "Pedido #{$bo->folio} liberado por llegada de stock.", ['folio' => $bo->folio]);
+                            
+                            if ($bo->user && $bo->user->email) {
+                                try {
+                                    $area = Area::find($bo->area_id);
+                                    $logoPath = ($area && $area->icon_path) ? $area->icon_path : 'LogoAzulm.PNG';
+                                    $logoUrl = Storage::disk('s3')->url($logoPath);
+                                    
+                                    $mailData = [
+                                        'folio' => $bo->folio,
+                                        'client_name' => $bo->client_name,
+                                        'company_name' => $bo->company_name,
+                                        'delivery_date' => $bo->delivery_date ? $bo->delivery_date->format('d/m/Y') : 'N/A',
+                                        'vendedor_name' => $bo->user->name,
+                                        'logo_url' => $logoUrl,
+                                        'items' => [
+                                            [
+                                                'sku' => $product->sku,
+                                                'description' => $product->description,
+                                                'quantity' => abs($bo->quantity)
+                                            ]
+                                        ]
+                                    ];
+                    
+                                    Mail::to($bo->user->email)->send(new OrderActionMail($mailData, 'backorder_filled'));
+                                } catch (\Exception $e) {
+                                    Log::error("Error enviando email auto-surtido: " . $e->getMessage());
+                                }
+                            }
+
+                        } catch (\Exception $e) {
+                            $this->logError('Error Sync Auto-Surtido', $e->getMessage(), ['folio' => $bo->folio]);
+                        }
+                    } else {
+                        $this->logTransaction('Auto-Surtido Parcial', "Linea de backorder surtida en Pedido #{$bo->folio}. Aún faltan items.", ['folio' => $bo->folio]);
+                    }
+
+                } else {
+                    break;
+                }
+            }
+
+        } catch (\Exception $e) {
+             $this->logError('Error en Auto-Allocation', $e->getMessage());
         }
     }
 
@@ -201,6 +317,11 @@ class WmsToFnFService
                 'ff_warehouse_id' => $ffWarehouseId,
                 'ff_quality_id' => $ffQuality ? $ffQuality->id : null,
              ]);
+
+             if ($quantity > 0) {
+                 $wh = FfWarehouse::find($ffWarehouseId);
+                 $this->allocateBackorders($ffProduct, $wh, $ffQuality);
+             }
 
              $this->logTransaction('Sincronización de Ajuste Exitosa', "Ajuste {$adjustment->id} sincronizado a FnF", ['adjustment_id' => $adjustment->id]);
 
